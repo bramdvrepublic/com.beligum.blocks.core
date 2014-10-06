@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<configuration>
+    <log>
+        <level>INFO</level>
+    </log>
+
+    <!--<database>-->
+        <!--<server-hostname>localhost</server-hostname>-->
+        <!--<server-database></server-database>-->
+        <!--<server-username>devel</server-username>-->
+        <!--<server-password>devel</server-password>-->
+        <!--<properties>-->
+            <!--<property>-->
+                <!--<name>hibernate.search.default.directory_provider</name>-->
+                <!--<value>filesystem</value>-->
+            <!--</property>-->
+            <!--<property>-->
+                <!--<name>hibernate.search.default.indexBase</name>-->
+                <!--<value>/tmp/lucene</value>-->
+            <!--</property>-->
+            <!--<property>-->
+                <!--<name>hibernate.show_sql</name>-->
+                <!--<value>false</value>-->
+            <!--</property>-->
+        <!--</properties>-->
+    <!--</database>-->
+
+    <production>false</production>
+
+    <server>
+        <!--
+        <custom-resources-folder>
+            <folder>/path/to/external/resources</folder>
+            <folder>/another/path/to/external/resources</folder>
+        </custom-resources-folder>
+        -->
+    </server>
+
+    <security/>
+
+    <email>
+        <use-auth>false</use-auth>
+        <use-tls>false</use-tls>
+        <use-ssl>false</use-ssl>
+
+        <hostname>localhost</hostname>
+        <port>25</port>
+
+        <username></username>
+        <password></password>
+
+        <from-address>Unconfigured email user &lt;no-reply@beligum.com&gt;</from-address>
+        <admin-address>Beligum administrator &lt;admin@beligum.com&gt;</admin-address>
+    </email>
+
+</configuration>
