@@ -1,15 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Cms test</title>
+    <link href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
+    <link href="/assets/stylesheets/style.less" rel="stylesheet" />
 
-#define($header-styles-extra)
-#end
+    <script src="/assets/javascripts/lib/my-class.min.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/boot.js" type="application/javascript" ></script>
+    <script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
 
-#define($header-scripts-extra)
-#end
+    <script src="/assets/javascripts/layout.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/hotspot.js" type="application/javascript" ></script>
 
-#define($body-args-extra)
-#end
 
-#define($body-html)
-Hello, this is your boilerplate for project com.beligum.blocks.core. Happy coding!
-#end
+</head>
+<body>
+<div class="container">
+    <div class="row can-layout">
+        <div class="col-md-12 column">
+            <div class="row">
+                <div class="col-md-6 column">
+                    <div class="row">
+                        <div class="col-md-6 blue column"></div>
+                        <div class="col-md-6 green column"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 green column"></div>
+                        <div class="col-md-3 blue column"></div>
+                        <div class="col-md-3 red column"></div>
+                        <div class="col-md-3 yellow column"></div>
+                    </div>
+                </div>
+                <div class="col-md-6 yellow column"></div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 yellow column"></div>
+                <div class="col-md-6 red column"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
-#parse("/views/templates/main.html")
+<div class="ruler"></div>
+
+</body>
+</html>
