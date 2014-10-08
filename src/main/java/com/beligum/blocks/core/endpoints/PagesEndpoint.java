@@ -51,6 +51,12 @@ public class PagesEndpoint
         Jedis redisClient = new Jedis("localhost", 6380);
         try {
             /*
+             * Get the default page (='page-class') from the cache and use it to construct a new page filled with the same blocks and rows
+             */
+            Map<String, Page> cache = PageCache.getInstance().getPageCache();
+            Page defaultPage = cache.get(pageClass);
+
+            /*
              * Get a UID for a new page instance for db-representation
              * Check if this page-id (url) is not already present in db, if so, re-render a random page-id
              */
@@ -58,12 +64,6 @@ public class PagesEndpoint
             while(redisClient.get(newPageId) != null){
                 newPageId = Page.getNewUniqueID(pageClass);
             }
-
-            /*
-             * Get the default page (='page-class') from the cache and use it to construct a new page filled with the same blocks and rows
-             */
-            Map<String, Page> cache = PageCache.getInstance().getPageCache();
-            Page defaultPage = cache.get(pageClass);
             Page newPage = new Page(newPageId, defaultPage);
 
             /*
