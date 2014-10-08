@@ -24,6 +24,7 @@
             <!--</property>-->
         <!--</properties>-->
     <!--</database>-->
+    <!--TODO: implement possibility to connect to nosql-db (f.i. Redis with server-port: 6379, server-hostname: loalhost) from this xml-file-->
 
     <production>false</production>
 
@@ -35,6 +36,10 @@
         </custom-resources-folder>
         -->
     </server>
+
+    <files>
+        <template-path>/home/bas/Projects/Workspace/idea/com.beligum.blocks/src/main/resources/templates</template-path>
+    </files>
 
     <security/>
 

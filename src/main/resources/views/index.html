@@ -1,21 +1,21 @@
-<!DOCTYPE html>
-<html>
-<head lang="en">
-    <meta charset="UTF-8">
-    <title>Cms test</title>
-    <link href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
-    <link href="/assets/stylesheets/style.less" rel="stylesheet" />
+#define($header-styles-extra)
+<link href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
+<link href="/assets/stylesheets/styles.less" rel="stylesheet" />
+#end
 
-    <script src="/assets/javascripts/lib/my-class.min.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/boot.js" type="application/javascript" ></script>
-    <script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
+#define($header-scripts-extra)
+<script src="/assets/javascripts/lib/my-class.min.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/boot.js" type="application/javascript" ></script>
+<script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
 
-    <script src="/assets/javascripts/layout.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/hotspot.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/layout.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/hotspot.js" type="application/javascript" ></script>
+#end
 
+#define($body-args-extra)
+#end
 
-</head>
-<body>
+#define($body-html)
 <div class="container">
     <div class="row can-layout">
         <div class="col-md-12 column">
@@ -43,6 +43,6 @@
 </div>
 
 <div class="ruler"></div>
+#end
 
-</body>
-</html>
+#parse("/views/templates/main.html")

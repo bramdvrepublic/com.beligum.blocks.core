@@ -1,0 +1,37 @@
+#define($header-styles-extra)
+<link href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
+<link href="/assets/stylesheets/styles.less" rel="stylesheet" />
+#end
+
+#define($header-scripts-extra)
+<script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
+<script src="/templates/pages/default/scripts.js" type="application/javascript" ></script>
+#end
+
+#define($body-args-extra)
+class="page"
+#end
+
+#define($body-html)
+<div class="container">
+    <div class="row" id="eersteRij">
+        <div class="block center-block" id="titeltje">
+            <h1>Hello world!</h1>
+        </div>
+    </div>
+    <div class="row" id="tweedeRij">
+        <div class="col-md-6">
+            <div class="block can-edit" id="vanalles">
+                Hier zult u vanalles kunnen plaatsen...
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="block" id="niets">
+                Hier kunt u niets veranderen...
+            </div>
+        </div>
+    </div>
+</div>
+#end
+
+#parse("/views/templates/main.html")
