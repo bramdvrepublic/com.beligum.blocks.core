@@ -5,6 +5,7 @@
 
     <groupId>com.beligum.blocks</groupId>
     <artifactId>blocks-core</artifactId>
+    <!--TODO BAS: should save this app-version to db, together with creator and content for each block or row-->
     <version>0.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 

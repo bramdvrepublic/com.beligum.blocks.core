@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.parsing;
+package com.beligum.blocks.core.caching;
 
 import com.beligum.core.framework.cache.CacheKey;
 

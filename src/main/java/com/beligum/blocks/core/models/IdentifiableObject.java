@@ -1,25 +1,31 @@
 package com.beligum.blocks.core.models;
 
+import com.beligum.blocks.core.identifiers.ID;
+import com.beligum.blocks.core.models.ifaces.Identifiable;
+
+import java.net.URISyntaxException;
+
 /**
  * Created by bas on 07.10.14.
- * Class representing objects having a unique identifier
+ * Inteface representing objects having a unique identifier
  */
-public class IdentifiableObject
+public class IdentifiableObject implements Identifiable
 {
     //string representing the unique id of this object
-    protected String uid;
+    protected ID id;
 
-    public IdentifiableObject(String uid)
+    /**
+     * Constructor taking a unique id.
+     * @param id id for this object
+     */
+    public IdentifiableObject(ID id)
     {
-        this.uid = uid;
+        this.id = id;
     }
 
-    public String getUid()
+
+    public ID getId()
     {
-        return uid;
-    }
-    public void setUid(String uid)
-    {
-        this.uid = uid;
+        return id;
     }
 }

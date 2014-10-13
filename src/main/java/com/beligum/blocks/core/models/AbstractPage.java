@@ -1,5 +1,10 @@
 package com.beligum.blocks.core.models;
 
+import com.beligum.blocks.core.identifiers.ID;
+import com.beligum.blocks.core.models.storables.Block;
+import com.beligum.blocks.core.models.storables.Row;
+
+import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -14,8 +19,13 @@ public abstract class AbstractPage extends IdentifiableObject
     //set with all rows of this abstract-page
     protected Set<Row> rows;
 
-    protected AbstractPage(String uid){
-        super(uid);
+    /**
+     *
+     * @param id the id of the page
+     */
+    protected AbstractPage(ID id)
+    {
+        super(id);
         this.blocks = new HashSet<>();
         this.rows = new HashSet<>();
     }
@@ -47,7 +57,7 @@ public abstract class AbstractPage extends IdentifiableObject
      * Add an element (row or block) to this abstract-page
      * @param element element to be added
      */
-    public void addElement(AbstractIdentifiableElement element)
+    public void addElement(AbstractElement element)
     {
         if(element instanceof Row){
             this.rows.add((Row) element);
@@ -64,8 +74,8 @@ public abstract class AbstractPage extends IdentifiableObject
      *
      * @return als rows and blocks in this abstract-page
      */
-    public Set<AbstractIdentifiableElement> getElements(){
-        Set<AbstractIdentifiableElement> elements = new HashSet<>();
+    public Set<AbstractElement> getElements(){
+        Set<AbstractElement> elements = new HashSet<>();
         elements.addAll(this.blocks);
         elements.addAll(this.rows);
         return elements;

@@ -9,10 +9,29 @@ public class BlocksConfig
 {
     public static String getTemplateFolder()
     {
-        String retVal = R.configuration().getString("files.template-path");
+        return getConfiguration("blocks.template-path");
+    }
+
+    public static String getSiteDomain()
+    {
+        return getConfiguration("blocks.site.domain");
+    }
+
+    public static String getSiteDBAlias()
+    {
+        return getConfiguration("blocks.site.db-alias");
+    }
+
+    /**
+     * return the text from the applications configuration file in specified tag
+     * @param configTag the configuration-tag
+     * @return the value present in the configuration-tag, if '/' is the last character, it is removed
+     */
+    private static String getConfiguration(String configTag){
+        String retVal = R.configuration().getString(configTag);
         if (retVal != null) {
-            if (retVal.charAt(retVal.length() - 1) != '/') {
-                retVal += "/";
+            if (retVal.charAt(retVal.length() - 1) == '/') {
+                retVal = retVal.substring(0, retVal.length()-1);
             }
         }
         return retVal;

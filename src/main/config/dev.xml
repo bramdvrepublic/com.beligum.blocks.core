@@ -37,9 +37,13 @@
         -->
     </server>
 
-    <files>
+    <blocks>
         <template-path>/home/bas/Projects/Workspace/idea/com.beligum.blocks/src/main/resources/templates</template-path>
-    </files>
+        <site>
+            <domain>http://localhost:8080</domain>
+            <db-alias>LOC</db-alias>
+        </site>
+    </blocks>
 
     <security/>
 
