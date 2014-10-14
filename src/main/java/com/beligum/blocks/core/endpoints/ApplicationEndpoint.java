@@ -20,9 +20,4 @@ public class ApplicationEndpoint
         return Response.ok(indexTemplate.render()).build();
     }
 
-    @Path("/{pageClassName}/{pageId}")
-    @GET
-    public Response getPageWithId(@PathParam("pageClassName") String pageClassName, @PathParam("pageId") String pageId){
-        return Response.ok("Hello World!").build();
-    }
 }

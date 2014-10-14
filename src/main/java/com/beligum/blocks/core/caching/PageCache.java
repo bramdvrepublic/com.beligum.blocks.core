@@ -2,6 +2,7 @@ package com.beligum.blocks.core.caching;
 
 import com.beligum.blocks.core.models.AbstractElement;
 import com.beligum.blocks.core.models.PageClass;
+import com.beligum.blocks.core.models.ifaces.Storable;
 import com.beligum.blocks.core.parsing.PageParser;
 import com.beligum.blocks.core.parsing.PageParserException;
 import com.beligum.core.framework.base.R;
@@ -68,8 +69,8 @@ public class PageCache
 
         //TODO BAS: remove this DEBUG feature
         System.out.println("IN CACHE:");
-        for(AbstractElement element : pageClass.getElements()) {
-            System.out.println("\n (" + element.getId() + ", " + element.getContent() + ") \n");
+        for(Storable element : pageClass.getElements()) {
+            System.out.println("\n (" + element.getId() + ", " + ((AbstractElement) element).getContent() + ") \n");
         }
     }
 

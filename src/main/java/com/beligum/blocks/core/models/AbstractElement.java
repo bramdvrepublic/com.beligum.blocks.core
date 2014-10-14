@@ -15,8 +15,6 @@ public abstract class AbstractElement extends IdentifiableObject
 {
     //string representing the (html- or velocity-)content of this element
     protected String content;
-    //long representing the version of this element
-    protected long version;
 
     /**
      * Constructor
@@ -37,7 +35,6 @@ public abstract class AbstractElement extends IdentifiableObject
     {
         this.content = content;
     }
-
 
 
     /**

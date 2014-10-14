@@ -1,10 +1,7 @@
 package com.beligum.blocks.core.identifiers;
 
 import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.parsing.PageParserException;
 
-import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 
@@ -57,8 +54,22 @@ public class RedisID extends ID
      *
      * @return the name of the version-list of this id in the Redis-db
      */
-    public String getVersionListName(){
-        return BlocksConfig.getSiteDBAlias() + id.getPath();
+    public String getUnversionedId(){
+        if(id.getFragment() != null) {
+            return BlocksConfig.getSiteDBAlias() + id.getPath() + "#" + id.getFragment();
+        }
+        else{
+            return BlocksConfig.getSiteDBAlias() + id.getPath();
+        }
+    }
+
+
+    /**
+     *
+     * @return a string-representation of this id, versioning included (of the form "<site-db-alias>/<object-path>:<version>")
+     */
+    public String getVersionedId(){
+        return toString();
     }
 
     @Override
@@ -67,6 +78,6 @@ public class RedisID extends ID
      * @return a string-representation of this id, of the form "<site-db-alias>/<object-path>:<version>"
      */
     public String toString(){
-        return getVersionListName() + ":" + this.version;
+        return getUnversionedId() + ":" + this.version;
     }
 }

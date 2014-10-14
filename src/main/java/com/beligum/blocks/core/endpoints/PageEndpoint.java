@@ -2,6 +2,7 @@ package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.caching.PageCache;
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.models.AbstractElement;
 import com.beligum.blocks.core.models.storables.Page;
 import com.beligum.blocks.core.models.PageClass;
@@ -48,84 +49,30 @@ public class PageEndpoint
     /**
      * Create a new page-instance of the page-class specified as a parameter
      */
-    public Response createPage(@PathParam("pageClassName") String pageClassName) throws URISyntaxException, IOException, PageParserException
+    public Response createPage(@PathParam("pageClassName") String pageClassName) throws IOException, PageParserException, URISyntaxException
     {
-        // TODO BAS: how can be chosen which database-server is requested to read from? (random number?)
-        Jedis redisClient = new Jedis("localhost", 6379);
-        try {
-            /*
-             * Get the page-class (containing the default blocks and rows) from the cache and use it to construct a new page
-             */
-            Map<String, PageClass> cache = PageCache.getInstance().getPageCache();
-            PageClass pageClass = cache.get(pageClassName);
+        /*
+         * Get the page-class (containing the default blocks and rows) from the cache and use it to construct a new page
+         */
+        Map<String, PageClass> cache = PageCache.getInstance().getPageCache();
+        PageClass pageClass = cache.get(pageClassName);
 
-            /*
-             * Get a UID for a new page instance for db-representation
-             * Check if this page-id (url) is not already present in db, if so, re-render a random page-id
-             */
-            String newPageURL = pageClass.renderNewPageURL();
-            while(redisClient.get(newPageURL) != null){
-                newPageURL = pageClass.renderNewPageURL();
-            }
-            Page newPage = new Page(new URL(newPageURL), pageClass);
-
-            /*
-             * Save this page-version to the db in the list holding all the different versions of this page-instance
-             */
-            redisClient.lpush(newPage.getId().getVersionListName(), newPage.getId().toString());
-
-            /*
-             * Redirect the client to the newly created page
-             */
-            return Response.seeOther(newPage.getUrl().toURI()).build();
-        }
-        finally{
-            try{
-                if(redisClient != null){
-                    redisClient.close();
-                }
-            }catch(Exception e){}
-        }
+        Page newPage = Redis.getNewPage(pageClass);
+        Redis.save(newPage);
+        /*
+         * Redirect the client to the newly created page
+         */
+        return Response.seeOther(newPage.getUrl().toURI()).build();
     }
 
-    @GET
-    @Path("/{pageClassName}/{pageId}")
-    /*
-     * return a page-instance of class 'pageClass', with id 'pageId'
-     */
-    public Response getPage(@PathParam("pageClassName") String pageClassName, @PathParam("pageId") String pageId){
-//        Template template = R.templateEngine().getEmptyTemplate(Page.getTemplatePath(pageClassName));
-//        Context velocityContext = new VelocityContext();
-//        //reads can be done from slave
-//        Jedis redisClient = new Jedis("localhost", 6380);
-//        Set<String> rowAndBlockIds = redisClient.smembers(pageClass);
-//        for(String rowOrBlockId : rowAndBlockIds){
-//            //rget most recent version (at position 1) from versioning-list stored at 'rowAndBlockId'
-//            String UID = redisClient.lindex(rowOrBlockId, 1);
-//            String content = redisClient.get(UID);
-//            //add the content of the row or block to the velocity-context as a variable for parsing
-//            velocityContext.put(rowOrBlockId, content);
-//        }
+//    @GET
+//    @Path("/{pageClassName}/{pageId}")
+//    /*
+//     * return a page-instance of class 'pageClass', with id 'pageId'
+//     */
+//    public Response getPage(@PathParam("pageClassName") String pageClassName, @PathParam("pageId") String pageId){
 //
-//            /*
-//             * We can use a velocity runtime service, so we only have to parse the template once an can merge the template multiple times
-//             */
-//        velocityContext.put("velocityTemplate", velocityTemplate.toString());
-//        RuntimeServices runtimeServices = RuntimeSingleton.getRuntimeServices();
-//
-//
-//
-//
-//
-//            /*
-//             * Parses the velocity template recursivly and returns a string with all variables in the velocityContext rendered
-//             * Note: parse depth is default set to 20
-//             * Note 2: renderTools.recurse() stops when encountering numbers, so no id may consist of only a number
-//             */
-//        RenderTool renderTool = new RenderTool();
-//        String output = renderTool.recurse(velocityContext, velocityTemplate.toString());
-        return Response.ok(/*template.render()*/"Hello world!").build();
-    }
+//    }
 
     @POST
     @Path("/{pageClass}/{pageId}")

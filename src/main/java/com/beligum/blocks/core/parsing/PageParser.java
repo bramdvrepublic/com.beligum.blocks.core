@@ -1,6 +1,5 @@
 package com.beligum.blocks.core.parsing;
 import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.identifiers.ID;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.AbstractElement;
 import com.beligum.blocks.core.models.PageClass;
@@ -16,7 +15,7 @@ import org.jsoup.select.Elements;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.String;import java.lang.StringBuilder;
+import java.lang.String;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -31,8 +30,10 @@ public class PageParser
 {
     //the outer velocity-string of the page currently being parsed
     private String pageVelocity;
-    //a set of all the blocks and rows of the page currently being parsed
-    private Set<AbstractElement> elements;
+    //a set of all the blocks of the page currently being parsed
+    private Set<Block> blocks;
+    //a set of all the rows of the page currently being parsed
+    private Set<Row> rows;
 
     /**
      *  Default constructor
@@ -40,7 +41,8 @@ public class PageParser
     public PageParser()
     {
         this.pageVelocity = null;
-        this.elements = new HashSet<>();
+        this.blocks = new HashSet<>();
+        this.rows = new HashSet<>();
     }
 
 
@@ -60,7 +62,7 @@ public class PageParser
             //fill up this parser-class, with the elements and velocity filtered from the default template-file
             this.fill(pageClassHtml, pageClassURL);
 
-            return new PageClass(pageClassName, this.elements, this.pageVelocity);
+            return new PageClass(pageClassName, this.blocks, this.rows, this.pageVelocity);
         }catch(IOException e){
             throw new ConfigurationRuntimeException("");
         }
@@ -80,6 +82,8 @@ public class PageParser
         return new Page(null, null);
     }
 
+//    public
+
     /**
      * Parses a html-file to blocks and rows (containing velocity-variables) and fills this parser up with the found content.
      * After the parse, a string containing the velocity of this page will be saved in the field 'pageVelocity' and the found blocks and rows will be stored in the field 'elements'
@@ -90,24 +94,32 @@ public class PageParser
      */
     private void fill(File htmlFile, URL baseUrl) throws IOException, PageParserException
     {
+        this.empty();
         Document htmlDOM = Jsoup.parse(htmlFile, null);
-        this.elements = recursiveParse(htmlDOM, baseUrl);
+        //fill up the rowset and the blockset
+        recursiveParse(htmlDOM, baseUrl);
         this.pageVelocity = htmlDOM.outerHtml();
     }
 
+    private void empty(){
+        this.pageVelocity = "";
+        this.rows = new HashSet<>();
+        this.blocks = new HashSet<>();
+    }
+
     /**
-     * Parses the tree starting with the node-element, looking for row- and block-elements and adding them to a set, which is returned
+     * Parses the tree starting with the node-element, looking for row- and block-elements and adding them to the proper fields in this PageParser
      * @param node root of the tree to be parsed
      * @param baseUrl the base-url used which will be used to define the row- and block-ids
      * @return a set holding blocks and rows
      */
-    private Set<AbstractElement> recursiveParse(Element node, URL baseUrl) throws PageParserException
+    private void recursiveParse(Element node, URL baseUrl) throws PageParserException
     {
         Set<AbstractElement> rowsAndBlocks = new HashSet<AbstractElement>();
         Elements children = node.children();
         for(Element child : children){
             //recursively iterate over the subtree starting with this child and add the found blocks and rows to the map
-            rowsAndBlocks.addAll(recursiveParse(child, baseUrl));
+            recursiveParse(child, baseUrl);
             //TODO BAS: only can-edit and can-layout blocks and rows should be parsed
             boolean isRow = child.classNames().contains("row");
             boolean isBlock = child.classNames().contains("block");
@@ -125,8 +137,12 @@ public class PageParser
                     }catch(URISyntaxException e){
                         throw new PageParserException("Base-url doesn't seem to be correct. Cannot construct proper IDs with this page-url: " + baseUrl, e);
                     }
-                    AbstractElement element = isRow ? new Row(id, childHtml) : new Block(id, childHtml);
-                    rowsAndBlocks.add(element);
+                    if(isRow){
+                        this.rows.add(new Row(id, childHtml));
+                    }
+                    else{
+                        this.blocks.add(new Block(id, childHtml));
+                    }
                     child.replaceWith(new TextNode("\n ${" + child.id() + "}\n", ""));
                 }
                 else{
@@ -135,10 +151,9 @@ public class PageParser
                 }
             }
             else{
-                //do nothing
+                //do nothing (skip ahead)
             }
         }
-        return rowsAndBlocks;
     }
 
 

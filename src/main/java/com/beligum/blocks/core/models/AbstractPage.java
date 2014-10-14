@@ -4,7 +4,6 @@ import com.beligum.blocks.core.identifiers.ID;
 import com.beligum.blocks.core.models.storables.Block;
 import com.beligum.blocks.core.models.storables.Row;
 
-import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -74,8 +73,8 @@ public abstract class AbstractPage extends IdentifiableObject
      *
      * @return als rows and blocks in this abstract-page
      */
-    public Set<AbstractElement> getElements(){
-        Set<AbstractElement> elements = new HashSet<>();
+    public Set<com.beligum.blocks.core.models.ifaces.StorableElement> getElements(){
+        Set<com.beligum.blocks.core.models.ifaces.StorableElement> elements = new HashSet<>();
         elements.addAll(this.blocks);
         elements.addAll(this.rows);
         return elements;

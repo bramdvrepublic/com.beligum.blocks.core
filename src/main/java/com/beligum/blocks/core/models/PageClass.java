@@ -2,10 +2,9 @@ package com.beligum.blocks.core.models;
 
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.identifiers.ID;
-import com.beligum.blocks.core.models.AbstractPage;
+import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.storables.Block;
 import com.beligum.blocks.core.models.storables.Row;
-import com.beligum.blocks.core.parsing.PageParserException;
 import org.apache.commons.configuration.ConfigurationRuntimeException;
 
 import java.net.MalformedURLException;
@@ -31,25 +30,17 @@ public class PageClass extends AbstractPage
     /**
      *
      * @param name the name of this page-class
-     * @param elements the elements (rows and blocks) this page-class contains
+     * @param blocks the (default) blocks this page-class contains
+     * @param rows the (default) rows this page-class contains
      * @param velocity the velocity-string corresponding to the most outer layer of the element-tree in this page
      */
-    public PageClass(String name, Set<AbstractElement> elements, String velocity)
+    public PageClass(String name, Set<Block> blocks, Set<Row> rows, String velocity)
     {
         super(makeID(name));
         this.name = name;
         this.velocity = velocity;
-        for(AbstractElement element : elements){
-            if(element instanceof Block){
-                this.blocks.add((Block) element);
-            }
-            else if(element instanceof Row){
-                this.rows.add((Row) element);
-            }
-            else{
-                throw new RuntimeException("Unsupported AbstractElement-type: " + element.getClass().getName());
-            }
-        }
+        this.blocks = blocks;
+        this.rows = rows;
     }
 
     public String getName(){
@@ -62,12 +53,18 @@ public class PageClass extends AbstractPage
 
     /**
      * Method for getting a new randomly determined page-uid (with versioning) for a pageInstance of this pageClass
-     * @return a randomly generated page-url of the form "/<pageClass>/<randomInt>"
+     * @return a randomly generated page-id of the form "<site-domain>/<pageClassName>/<randomInt>"
      */
-    public String renderNewPageURL(){
-        Random randomGenerator = new Random();
-        int positiveNumber = Math.abs(randomGenerator.nextInt());
-        return BlocksConfig.getSiteDomain() + "/" + this.name + "/" + positiveNumber;
+    public RedisID renderNewPageID(){
+        try {
+            Random randomGenerator = new Random();
+            int positiveNumber = Math.abs(randomGenerator.nextInt());
+            return new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + this.name + "/" + positiveNumber));
+        }catch(MalformedURLException e){
+            throw new ConfigurationRuntimeException("Specified site-domain doesn't seem to be a correct url: " + BlocksConfig.getSiteDomain(), e);
+        }catch(URISyntaxException e){
+            throw new ConfigurationRuntimeException("Cannot use this site-domain for id-rendering: " + BlocksConfig.getSiteDomain(), e);
+        }
     }
 
     /**
