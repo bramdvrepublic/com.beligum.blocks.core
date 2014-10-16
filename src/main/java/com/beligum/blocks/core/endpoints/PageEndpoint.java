@@ -57,12 +57,15 @@ public class PageEndpoint
         Map<String, PageClass> cache = PageCache.getInstance().getPageCache();
         PageClass pageClass = cache.get(pageClassName);
 
-        Page newPage = Redis.getNewPage(pageClass);
-        Redis.save(newPage);
-        /*
-         * Redirect the client to the newly created page
-         */
-        return Response.seeOther(newPage.getUrl().toURI()).build();
+        //this try-with-resource block should be set somewhere at the very beginning of the application, so the Redis-instance is closed (and it's connection-pool destroyed) at the end of the application
+        try(Redis redis = Redis.getInstance()) {
+            Page newPage = redis.getNewPage(pageClass);
+            redis.save(newPage);
+            /*
+             * Redirect the client to the newly created page
+             */
+            return Response.seeOther(newPage.getUrl().toURI()).build();
+        }
     }
 
 //    @GET

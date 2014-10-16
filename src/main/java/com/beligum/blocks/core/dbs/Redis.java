@@ -7,41 +7,69 @@ import com.beligum.blocks.core.models.ifaces.StorableElement;
 import com.beligum.blocks.core.models.storables.Block;
 import com.beligum.blocks.core.models.storables.Page;
 import com.beligum.blocks.core.models.storables.Row;
+import com.beligum.blocks.core.parsing.PageParserException;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.JedisSentinelPool;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by bas on 09.10.14.
  * Wrapper class for talking to the redis-db
+ * At the end of the application it has to be closed
  */
-public class Redis
+public class Redis implements Closeable
 {
     //TODO check/boost redis-performance with http://redis.io/topics/benchmarks
 
+//    private static final int REDIS_PORT = 6379;
+//    private static final String MASTER_HOST = "localhost";
+//    private static final int SLAVE_PORT = 6380;
+//    private static final String SLAVE_HOST = "localhost";
 
-    // TODO BAS: how can be chosen which database-server is requested to read from? (random number?)
+    //a thread-save pool for connection to the redis-master-server
+    private final JedisSentinelPool masterPool;
 
-    //TODO BAS: get Redis running in --sentinel mode (so a slave can take over when the master fails)
+    //the instance of this singleton
+    private static Redis instance = null;
 
-    //TODO BAS: get this from configuration-file
-    private static final int MASTER_PORT = 6379;
-    private static final String MASTER_HOST = "localhost";
-    private static final int SLAVE_PORT = 6380;
-    private static final String SLAVE_HOST = "localhost";
+    /**
+     * private constructor for singleton-use
+     */
+    private Redis(){
+        //TODO: redis-config should come from configuration-file dev.xml
+        //create a thread-save masterPool of Jedis-instances, using default configuration
+        Set<String> sentinels = new HashSet<>();
+        sentinels.add("localhost:26379");
+        sentinels.add("localhost:26380");
+        masterPool = new JedisSentinelPool("mymaster", sentinels);
+    }
+
+    /**
+     * Static method for getting a singleton redis-wrapper
+     * @return a singleton instance of Redis
+     */
+    public static Redis getInstance() throws IOException, PageParserException
+    {
+        if(instance == null){
+            instance = new Redis();
+        }
+        return instance;
+    }
+
 
     /**
      * Save the page to db, together with it's rows and blocks
      * @param page
      */
-    public static void save(Page page){
-        Jedis redisClient = new Jedis(MASTER_HOST, MASTER_PORT);
-        try {
+    public void save(Page page){
+        try (Jedis redisClient = masterPool.getResource()){
             /*
              * Save this page-version's id ("<pageId>:<version>") to the db in the list named "<pageId>"
              * holding all the different versions of this page-instance.
@@ -68,7 +96,7 @@ public class Redis
             Set<StorableElement> defaultElements = page.getPageClass().getElements();
             for(StorableElement element : page.getElements()) {
                 if(!defaultElements.contains(element)) {
-                    Redis.save(element);
+                    this.save(element);
                     Map<String, String> elementHash = new HashMap<>();
                     elementHash.put("content", element.getContent());
                     elementHash.put("appVersion", "test");
@@ -85,13 +113,6 @@ public class Redis
             pageInfo.put("pageClass", page.getPageClass().getName());
             redisClient.hmset(page.getInfoId(), pageInfo);
         }
-        finally{
-            try{
-                if(redisClient != null){
-                    redisClient.close();
-                }
-            }catch(Exception e){}
-        }
     }
 
 
@@ -99,10 +120,9 @@ public class Redis
      * Save the element to db
      * @param element
      */
-    public static void save(StorableElement element)
+    public void save(StorableElement element)
     {
-        Jedis redisClient = new Jedis(MASTER_HOST, MASTER_PORT);
-        try {
+        try (Jedis redisClient = masterPool.getResource()){
             //if their already exists a hash corresponding to the version of this element, throw exception
             if (redisClient.exists(element.getVersionedId())) {
                 throw new RuntimeException("The element '" + element.getUnversionedId() + "' already has a version '" + element.getVersion() + "' present in db.");
@@ -118,15 +138,6 @@ public class Redis
                                     "The element '" + element.getUnversionedId() + "' with version '" + element.getVersion() + "' already has a more recent version '" + lastVersion +
                                     "' present in db.");
                 }
-            }
-        }
-        finally {
-            try {
-                if (redisClient != null) {
-                    redisClient.close();
-                }
-            }
-            catch (Exception e) {
             }
         }
     }
@@ -167,12 +178,11 @@ public class Redis
      * @param pageClass the page-class for a new page
      * @return a new page of class 'pageClass'
      */
-    public static Page getNewPage(PageClass pageClass)
+    public Page getNewPage(PageClass pageClass)
     {
-        Jedis redisClient = new Jedis(SLAVE_HOST, SLAVE_PORT);
-        try {
+        try(Jedis redisClient = masterPool.getResource()) {
             RedisID newPageID = pageClass.renderNewPageID();
-            
+
             //Check if this page-id (url) is not already present in db, if so, re-render a random page-id
             while (redisClient.get(newPageID.getUnversionedId()) != null) {
                 newPageID = pageClass.renderNewPageID();
@@ -180,22 +190,20 @@ public class Redis
             Page newPage = new Page(newPageID, pageClass);
             return newPage;
         }
-        finally{
-            try{
-                if(redisClient != null){
-                    redisClient.close();
-                }
-            }catch(Exception e){}
-        }
     }
 
+    @Override
+    public void close() throws IOException
+    {
+        masterPool.destroy();
+    }
     /**
      * Get the last saved version of a storable
      * @param storable the storable to get the last version of
      * @param redisClient the redis-client the be used to retrieve the last version
      * @return the last version saved in db, -1 if no version is present in db
      */
-    private static Long getLastVersion(Storable storable, Jedis redisClient){
+    private Long getLastVersion(Storable storable, Jedis redisClient){
         //get last saved version from db
         List<String> versions = redisClient.lrange(storable.getUnversionedId(), 0, 0);
         if(!versions.isEmpty()) {
