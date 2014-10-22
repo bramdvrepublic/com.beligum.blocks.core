@@ -9,7 +9,7 @@ public class BlocksConfig
 {
     public static String getTemplateFolder()
     {
-        return getConfiguration("blocks.template-path");
+        return getConfiguration("blocks.template-folder");
     }
 
     public static String getSiteDomain()

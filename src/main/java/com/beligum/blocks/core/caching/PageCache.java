@@ -4,15 +4,13 @@ import com.beligum.blocks.core.models.AbstractElement;
 import com.beligum.blocks.core.models.PageClass;
 import com.beligum.blocks.core.models.ifaces.Storable;
 import com.beligum.blocks.core.parsing.PageParser;
-import com.beligum.blocks.core.parsing.PageParserException;
+import com.beligum.blocks.core.exceptions.PageParserException;
 import com.beligum.core.framework.base.R;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by bas on 07.10.14.
@@ -34,7 +32,7 @@ public class PageCache
      * @return a singleton instance of PageCache
      * @throws NullPointerException if no application cache could be found
      */
-    public static PageCache getInstance() throws IOException, PageParserException
+    public static PageCache getInstance()
     {
         if(instance == null){
             //if the application-cache doesn't exist, throw exception, else instantiate the application's page-cache with a new empty hashmap
@@ -80,7 +78,7 @@ public class PageCache
      * @throws IOException
      * @throws PageParserException
      */
-    private PageCache fillPageCache() throws IOException, PageParserException
+    private PageCache fillPageCache()
     {
         try{
             //TODO BAS: this should fill in the pageCache at startup using .add(pageClass), by running over all subfolders of "/pages"
@@ -95,10 +93,8 @@ public class PageCache
     /**
      * Add a template page (starting from the pageclass-name) to the page-cache
      * @param pageClassName the page-class-name (f.i. "default" for a pageClass filtered from the file "pages/default/index.html") of the page-class-template to be parsed and added to the cache as a couple (pageClassName, pageClass)
-     * @throws IOException
-     * @throws com.beligum.blocks.core.parsing.PageParserException
      */
-    private void  add(String pageClassName) throws IOException, PageParserException, URISyntaxException
+    private void  add(String pageClassName) throws URISyntaxException
     {
         /*
          * Get the default rows and blocks out of the template and write them to the application cache

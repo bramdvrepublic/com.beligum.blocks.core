@@ -3,8 +3,6 @@ package com.beligum.blocks.core.models;
 import com.beligum.blocks.core.identifiers.ID;
 import com.beligum.blocks.core.models.ifaces.Identifiable;
 
-import java.net.URISyntaxException;
-
 /**
  * Created by bas on 07.10.14.
  * Inteface representing objects having a unique identifier

@@ -2,6 +2,7 @@ package com.beligum.blocks.core.models;
 
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.identifiers.ID;
+import com.beligum.blocks.core.identifiers.PageID;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.storables.Block;
 import com.beligum.blocks.core.models.storables.Row;
@@ -21,7 +22,7 @@ import java.util.Set;
 public class PageClass extends AbstractPage
 {
     //the prefix that is given to page-class-id's
-    private static final String ID_PREFIX = "page";
+    private static final String ID_PREFIX = "pages";
     //string the name of this page-class
     private String name;
     //string holding the velocity-content of this pageClass
@@ -53,13 +54,13 @@ public class PageClass extends AbstractPage
 
     /**
      * Method for getting a new randomly determined page-uid (with versioning) for a pageInstance of this pageClass
-     * @return a randomly generated page-id of the form "<site-domain>/<pageClassName>/<randomInt>"
+     * @return a randomly generated page-id of the form "[site-domain]/[pageClassName]/[randomInt]"
      */
-    public RedisID renderNewPageID(){
+    public PageID renderNewPageID(){
         try {
             Random randomGenerator = new Random();
             int positiveNumber = Math.abs(randomGenerator.nextInt());
-            return new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + this.name + "/" + positiveNumber));
+            return new PageID(new URL(BlocksConfig.getSiteDomain() + "/" + this.name + "/" + positiveNumber));
         }catch(MalformedURLException e){
             throw new ConfigurationRuntimeException("Specified site-domain doesn't seem to be a correct url: " + BlocksConfig.getSiteDomain(), e);
         }catch(URISyntaxException e){

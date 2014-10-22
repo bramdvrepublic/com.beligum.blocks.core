@@ -2,6 +2,8 @@ package com.beligum.blocks.core.models.ifaces;
 
 import com.beligum.blocks.core.identifiers.RedisID;
 
+import java.util.Map;
+
 /**
  * Created by bas on 13.10.14.
  */
@@ -19,11 +21,16 @@ public interface Storable extends Identifiable
      */
     public long getVersion();
     /**
-     * @return the id of this storable with it's version attached ("<storableId>:<version>")
+     * @return the id of this storable with it's version attached ("[storableId]:[version]")
      */
     public String getVersionedId();
     /**
-     * @return the id of this storable without a version attached ("<storableId>")
+     * @return the id of this storable without a version attached ("[storableId]")
      */
     public String getUnversionedId();
+    /**
+     * Gives a hash-representation of this storable to save to the db
+     * @return a map representing the key-value structure of this element to be saved to db
+     */
+    public Map<String, String> toHash();
 }

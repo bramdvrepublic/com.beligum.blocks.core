@@ -2,12 +2,10 @@ package com.beligum.blocks.core.models.storables;
 
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.AbstractElement;
-import com.beligum.blocks.core.models.ifaces.Storable;
 import com.beligum.blocks.core.models.ifaces.StorableElement;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by bas on 01.10.14.
@@ -22,7 +20,7 @@ public class Block extends AbstractElement implements StorableElement
     /**
      * Constructor
      * @param content the (velocity) content of this block
-     * @param id the url to this row (is of the form "<site>/<pageName>#<blockId>")
+     * @param id the url to this row (is of the form "[site]/[pageName]#[blockId]")
      */
     public Block(RedisID id, String content)
     {
@@ -50,8 +48,22 @@ public class Block extends AbstractElement implements StorableElement
     public String getVersionedId(){
         return this.getId().getVersionedId();
     }
-
-
+    @Override
+    public Map<String, String> toHash(){
+        Map<String, String> hash = new HashMap<>();
+        hash.put("velocityContent", this.getContent());
+        //TODO BAS: this version should be fetched from pom.xml and added to the block.java as a field
+        hash.put("appVersion", "test");
+        //TODO: logged in user should be added here and added to the block.java as a field
+        hash.put("creator", "me");
+        hash.put("type", this.getClass().getSimpleName());
+        return hash;
+    }
+    @Override
+    public String getTemplateVariableName()
+    {
+        return this.getId().toURI().getFragment();
+    }
 
     //__________IMPLEMENTATION OF ABSTRACT METHODS OF ABSTRACTELEMENT________//
     @Override

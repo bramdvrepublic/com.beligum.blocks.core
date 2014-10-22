@@ -1,7 +1,6 @@
 package com.beligum.blocks.core.identifiers;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 
 /**
  * Created by bas on 13.10.14.

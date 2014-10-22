@@ -1,8 +1,8 @@
-package com.beligum.blocks.core.parsing;
+package com.beligum.blocks.core.exceptions;
 /**
  * Created by bas on 30.09.14.
  */
-public class PageParserException extends Exception
+public class PageParserException extends RuntimeException
 {
     public PageParserException()
     {

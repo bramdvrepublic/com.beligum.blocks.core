@@ -1,11 +1,6 @@
 package com.beligum.blocks.core.models;
 
 import com.beligum.blocks.core.identifiers.ID;
-import com.beligum.blocks.core.identifiers.RedisID;
-
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 
 /**
  * Created by bas on 01.10.14.
@@ -31,7 +26,7 @@ public abstract class AbstractElement extends IdentifiableObject
     {
         return content;
     }
-    public void setContent(String content)
+    public void setVelocityContent(String content)
     {
         this.content = content;
     }
