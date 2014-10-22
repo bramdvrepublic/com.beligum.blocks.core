@@ -233,7 +233,9 @@ blocks
 
             getDropspots: function(side, dropspots) {
               if (side == Constants.SIDE.LEFT || side == Constants.SIDE.RIGHT) {
-                  if (this instanceof column || (this instanceof block && (this.getNext() != null || this.getPrevious() != null))) {
+                  if (this instanceof column ||
+                      (this instanceof block &&
+                          (this.element.next().length > 0 || this.element.prev().length > 0))) {
                       dropspots.push(new dropspot(side, this));
                   }
               } else {
@@ -418,7 +420,6 @@ blocks
                     return null;
                 }
             },
-
 
             generateTriggers: function() {
                 this.generateTriggersForSide(Constants.SIDE.TOP);
@@ -657,9 +658,9 @@ blocks
             }
 
             if (blockElement.hasClass(Elements.config.BLOCK_CLASS)) {
-                blockElement.fadeIn(200);
+                blockElement.animate({height: "toggle"}, 1500);
             } else {
-                blockElement.find("." + Elements.config.BLOCK_CLASS).fadeIn(200);
+                blockElement.find("." + Elements.config.BLOCK_CLASS).animate({height: "toggle"}, 1500);
             }
 
             Broadcaster.sendNoTimeout("refreshLayout");
@@ -733,7 +734,7 @@ blocks
         };
 
         this.changeBlockLocation = function (block, dropLocation, side) {
-            block.element.fadeOut(200, function () {
+            block.element.animate({height: "toggle"}, 1500, function () {
                 var blockElement = removeBlock(block);
                 var dropLocationElement = getDropLocationElement(dropLocation);
                 if (dropLocationElement.hasClass(Elements.config.COLUMN_CLASS)) {

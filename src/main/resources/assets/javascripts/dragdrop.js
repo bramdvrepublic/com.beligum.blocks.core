@@ -18,6 +18,9 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.L
         removeDropPointer("anchor");
         removeDropPointer("other");
         removeDraggedOverlay();
+
+        if(blockEvent.event.pageX > $(window).innerWidth() || blockEvent.event.pageX < 0 || blockEvent.event.pageY > $(window).innerHeight() || blockEvent.event.pageY < 0) return;
+
         if (blockEvent.block.current != null) {
             Logger.debug("Drop block");
             var dropSpot = blockEvent.block.current.getTriggeredHotspot(blockEvent.direction, blockEvent.event);
@@ -35,14 +38,13 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.L
 
     var dropSpotIsDraggedBlock = function(dropSpot, blockEvent) {
         var retVal = false;
-        if (dropSpot.other() == null || dropSpot.anchor == null || blockEvent == null) return retVal;
+        if (blockEvent.drag.surface == null || dropSpot == null) return retVal;
 
         if ((blockEvent.drag.surface === dropSpot.anchor || blockEvent.drag.surface === dropSpot.other())) {
             retVal = true
-        }
-        else if (dropSpot.anchor.children.length === 1 && dropSpot.anchor.children[0] === blockEvent.drag.surface) {
+        } else if (dropSpot.anchor != null && dropSpot.anchor.children.length == 1 && dropSpot.anchor.children[0] === blockEvent.drag.surface) {
             retVal = true;
-        } else if (dropSpot.other().children.length === 1 && dropSpot.other().children[0] === blockEvent.drag.surface) {
+        } else if (dropSpot.other() != null && dropSpot.other().children.length == 1 && dropSpot.other().children[0] === blockEvent.drag.surface) {
             retVal = true;
         }
         return retVal;
@@ -79,10 +81,12 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.L
     var createDropPointer = function (name) {
         if (dropPointerElements[name] == null) {
             dropPointerElements[name] = $("<div class='blocks-dropspot' />");
+            // TODO position close to blue lin
+            // TODO make drop line thicker
             dropPointerElements[name].append(
                 $("<div style='position:absolute; top: 50%; left:50%'/>")
                     .append($("<div style='position:relative; color: white; font-size:48px; top: -24px; left:-24px; '></div>"))
-            ); // elemnet for arrow
+            ); // element for arrow
             $("body").append(dropPointerElements[name]);
             dropPointerElements[name].css("position", "absolute");
             dropPointerElements[name].css("background-color", "rgba(119, 119, 119, 0.5)");
