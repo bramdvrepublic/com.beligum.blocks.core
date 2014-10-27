@@ -1,12 +1,14 @@
 package com.beligum.blocks.core.models;
 
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.exceptions.ElementException;
 import com.beligum.blocks.core.identifiers.ID;
 import com.beligum.blocks.core.identifiers.PageID;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.storables.Block;
 import com.beligum.blocks.core.models.storables.Row;
 import org.apache.commons.configuration.ConfigurationRuntimeException;
+import org.jsoup.nodes.DocumentType;
 
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -21,12 +23,15 @@ import java.util.Set;
  */
 public class PageClass extends AbstractPage
 {
-    //the prefix that is given to page-class-id's
+    /**the prefix that is given to page-class-id's*/
     private static final String ID_PREFIX = "pages";
-    //string the name of this page-class
+    /**string the name of this page-class*/
     private String name;
-    //string holding the velocity-content of this pageClass
+    /**string holding the velocity-content of this pageClass*/
+    //TODO BAS: get rid of 'velocity' and replace by 'template'
     private String velocity;
+    /**the doctype of this pageclass*/
+    private String docType;
 
     /**
      *
@@ -34,14 +39,16 @@ public class PageClass extends AbstractPage
      * @param blocks the (default) blocks this page-class contains
      * @param rows the (default) rows this page-class contains
      * @param velocity the velocity-string corresponding to the most outer layer of the element-tree in this page
+     * @param docType the doctype of this page-class
      */
-    public PageClass(String name, Set<Block> blocks, Set<Row> rows, String velocity)
+    public PageClass(String name, Set<Block> blocks, Set<Row> rows, String velocity, String docType) throws ElementException
     {
         super(makeID(name));
         this.name = name;
         this.velocity = velocity;
-        this.blocks = blocks;
-        this.rows = rows;
+        this.setBlocks(blocks);
+        this.setRows(rows);
+        this.docType = docType;
     }
 
     public String getName(){
@@ -50,7 +57,10 @@ public class PageClass extends AbstractPage
     public String getVelocity(){
         return this.velocity;
     }
-
+    public String getDocType()
+    {
+        return docType;
+    }
 
     /**
      * Method for getting a new randomly determined page-uid (with versioning) for a pageInstance of this pageClass

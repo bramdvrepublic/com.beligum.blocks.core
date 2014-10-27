@@ -15,6 +15,7 @@ import org.apache.velocity.VelocityContext;
 import org.apache.velocity.tools.generic.RenderTool;
 
 import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URL;
 
@@ -33,7 +34,7 @@ public class ApplicationEndpoint
     //using regular expression to let all requests to undefined paths end up here
     @Path("/{randomPage:.*}")
     @GET
-    public Response getPageWithId(@PathParam("randomPage") String randomURLPath) throws NotFoundException
+    public Response getPageWithId(@PathParam("randomPage") String randomURLPath)
     {
 //        try(Redis redis = Redis.getInstance()) {
         try{
@@ -60,13 +61,14 @@ public class ApplicationEndpoint
                  * Note 2: renderTools.recurse() stops when encountering numbers, so no element's-id may consist of only a number (this should not happen since element-ids are of the form "[db-alias]:///[pagePath]#[elementId]"
                  */
                 RenderTool renderTool = new RenderTool();
+                //TODO BAS: get rid of velocity-implementation
                 renderTool.setVelocityEngine(((VelocityTemplateEngine) templateEngine).getDelegateEngine());
                 renderTool.setVelocityContext(context);
                 String pageHtml = renderTool.recurse(page.getVelocity());
                 return Response.ok(pageHtml).build();
             }
             else{
-                throw new Exception("The only template engine supported is Velocity. No other template-structured can be used for now, so for now you cannot use '" + templateEngine.getClass().getName() + "'");
+                throw new Exception("The only template engine supported is Velocity. No other template-structure can be used for now, so for now you cannot use '" + templateEngine.getClass().getName() + "'");
             }
         }
         catch(Exception e){

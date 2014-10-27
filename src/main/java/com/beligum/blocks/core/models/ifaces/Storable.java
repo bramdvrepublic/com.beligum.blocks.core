@@ -29,6 +29,15 @@ public interface Storable extends Identifiable
      */
     public String getUnversionedId();
     /**
+     * @return the version of the application this storable is supposed ot interact with
+     */
+    public String getApplicationVersion();
+
+    /**
+     * @return the creator of this storable
+     */
+    public String getCreator();
+    /**
      * Gives a hash-representation of this storable to save to the db
      * @return a map representing the key-value structure of this element to be saved to db
      */

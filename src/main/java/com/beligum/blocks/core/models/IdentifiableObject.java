@@ -10,7 +10,7 @@ import com.beligum.blocks.core.models.ifaces.Identifiable;
 public class IdentifiableObject implements Identifiable
 {
     //string representing the unique id of this object
-    protected ID id;
+    protected final ID id;
 
     /**
      * Constructor taking a unique id.

@@ -8,27 +8,35 @@ import com.beligum.blocks.core.identifiers.ID;
  */
 public abstract class AbstractElement extends IdentifiableObject
 {
-    //string representing the (html- or velocity-)content of this element
-    protected String content;
+    /**string representing the (html- or velocity-)content of this element, once the content has been set, it cannot be changed due to it's use in an elements hashCode and equals-method*/
+    protected final String content;
+    /**boolean whether or not this elements content can be changed by the client*/
+    protected boolean isFinal;
 
     /**
      * Constructor
       * @param content the (velocity) content of this element
      * @param id the id of this element
+     * @param isFinal boolean whether or not the content of this element can be changed by the client
      */
-    public AbstractElement(ID id, String content)
+    public AbstractElement(ID id, String content, boolean isFinal)
     {
         super(id);
         this.content = content;
+        this.isFinal = isFinal;
     }
 
     public String getContent()
     {
         return content;
     }
-    public void setVelocityContent(String content)
+
+    /**
+     * @return boolean whether or not this elements content can be changed by the client
+     */
+    public boolean isFinal()
     {
-        this.content = content;
+        return isFinal;
     }
 
 

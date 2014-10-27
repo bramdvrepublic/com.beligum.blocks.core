@@ -10,15 +10,14 @@ import java.net.URL;
 /**
  * Created by bas on 13.10.14.
  * ID for identifiying database-objects (with Redis), represents a string of the form "[site-alias]/[page-name]#[object-id]:[version]"
- * Ideally suited for managing
  */
 public class RedisID extends ID
 {
-    //long representing the versioning stamp
+    /**long representing the versioning stamp*/
     private long version;
-    //the url this id is based on
+    /**the url this id is based on*/
     private URL url;
-    //the preferred language of the object using this id
+    /**the preferred language of the object using this id*/
     private String language;
 
     /**
@@ -97,7 +96,7 @@ public class RedisID extends ID
         this.version = version;
     }
 
-    public URL getURL(){
+    public URL getUrl(){
         return url;
     }
 

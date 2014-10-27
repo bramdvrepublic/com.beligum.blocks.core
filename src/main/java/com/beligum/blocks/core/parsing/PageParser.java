@@ -1,7 +1,12 @@
 package com.beligum.blocks.core.parsing;
 
+import com.beligum.blocks.core.caching.PageClassCache;
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.exceptions.ElementException;
+import com.beligum.blocks.core.exceptions.PageClassCacheException;
 import com.beligum.blocks.core.exceptions.PageParserException;
+import com.beligum.blocks.core.identifiers.ElementID;
+import com.beligum.blocks.core.identifiers.PageID;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.PageClass;
 import com.beligum.blocks.core.models.storables.Block;
@@ -9,22 +14,19 @@ import com.beligum.blocks.core.models.storables.Page;
 import com.beligum.blocks.core.models.storables.Row;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.templating.ifaces.Template;
-import org.apache.commons.configuration.ConfigurationRuntimeException;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.nodes.TextNode;
+import org.jsoup.nodes.*;
 import org.jsoup.select.Elements;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -45,12 +47,22 @@ public class PageParser
      */
     public final static String CSS_CLASS_FOR_PAGECLASS_PREFIX = "page-";
 
-    //the outer velocity-string of the page currently being parsed
+    public final static String CSS_CLASS_FOR_ROW = "row";
+    public final static String CSS_CLASS_FOR_BLOCK = "block";
+
+    public final static String CSS_CLASS_FOR_MODIFIABLE_ROW = "can-modify";
+    public final static String CSS_CLASS_FOR_LAYOUTABLE_ROW = "can-layout";
+    public final static String CSS_CLASS_FOR_CREATE_ENABLED_ROW = "can-create";
+    public final static String CSS_CLASS_FOR_EDITABLE_BLOCK = "can-edit";
+
+    /**the outer velocity-string of the page currently being parsed*/
     private String pageVelocity;
-    //a set of all the blocks of the page currently being parsed
+    /**a set of all the blocks of the page currently being parsed*/
     private Set<Block> blocks;
-    //a set of all the rows of the page currently being parsed
+    /**a set of all the rows of the page currently being parsed*/
     private Set<Row> rows;
+    /**the doctype of the page currently being parsed*/
+    private String docType;
 
     /**
      *  Default constructor
@@ -60,6 +72,7 @@ public class PageParser
         this.pageVelocity = null;
         this.blocks = new HashSet<>();
         this.rows = new HashSet<>();
+        this.docType = null;
     }
 
 
@@ -67,45 +80,69 @@ public class PageParser
      * Parse the default template-file of the page-class and return a PageClass-object, filled with it's blocks, rows and the most-outer velocity-string of the page-class
      * @param pageClassName the name of the page-class to be parsed (f.i. "default" for a pageClass filtered from the file "pages/default/index.html")
      * @return a page-class parsed from the "pages/<page-class-name>/index.html"
-     * @throws com.beligum.blocks.core.exceptions.PageParserException
+     * @throws PageParserException
      */
-    public PageClass parsePageClass(String pageClassName)
+    public PageClass parsePageClass(String pageClassName) throws PageParserException
     {
-        try {
+        try{
             String templateFilename = this.getTemplatePath(pageClassName);
             File pageClassVelocity = new File(templateFilename);
             //get the url used for identifying blocks and rows for this page-class
             URL pageClassURL = PageClass.getBaseUrl(pageClassName);
             //fill up this parser-class, with the elements and velocity filtered from the default template-file
-            this.fillWithPageClass(pageClassVelocity, pageClassURL);
+            String foundPageClassName = this.fillWithPageClass(pageClassVelocity, pageClassURL);
+            if(!foundPageClassName.equals(pageClassName)){
+                throw new PageParserException("The name of the specified page-class (" + pageClassName + ") does not match the name found in the page-class template: " + foundPageClassName);
+            }
+            return new PageClass(pageClassName, this.blocks, this.rows, this.pageVelocity, this.docType);
+        }
+        catch(PageParserException e){
+            throw e;
+        }
+        catch(ElementException e){
+            throw new PageParserException("Could not create PageClass with parsed data.", e);
+        }
+        catch(Exception e){
+            throw new PageParserException("Error while parsing page-class '" + pageClassName + "' from template.", e);
+        }
+    }
 
-            return new PageClass(pageClassName, this.blocks, this.rows, this.pageVelocity);
-        }catch(IOException e){
-            throw new ConfigurationRuntimeException("");
+    /**
+     *
+     *
+     * @param pageHtml a html-page to be parsed
+     * @param pageUrl the url that will be used to id blocks and rows
+     * @return a page-instance filled with the blocks and rows filtered from the url's htmlcontent
+     */
+    public Page parsePage(String pageHtml, URL pageUrl) throws PageParserException
+
+    {
+        try{
+            String pageClassName = this.fillWithPage(pageHtml, pageUrl);
+            PageClass pageClass = PageClassCache.getInstance().getPageClassCache().get(pageClassName);
+            //return a page-instance with a newly versioned id and the found blocks and rows of class 'pageClass'
+            return new Page(new PageID(pageUrl), this.blocks, this.rows, pageClass);
+        }
+        catch(PageClassCacheException e){
+            throw new PageParserException("Error while getting page-class from cache. ", e);
+        }
+        catch (ElementException e){
+            throw new PageParserException("Could not create Page with parsed data.", e);
+        }
+        catch(Exception e){
+            throw new PageParserException("Error while parsing page '" + pageUrl + "'.", e);
         }
 
     }
 
     /**
-     *
-     *
-     * @param html a html-page to be parsed
-     * @return a page-instance filled with the blocks and rows filtered from the url's htmlcontent
-     */
-    public Page parsePage(String html) throws URISyntaxException
-
-    {
-        //TODO BAS: implement this
-        return new Page(null, null);
-    }
-
-    /**
      * check whether the specified document is a page (it must have <body class='page page-classname'> present in the html-structure)
      * @param page page to be checked
-     * @return the pageclass of the page that was checked
+     * @return the name of the page-class of the page that was checked
      * @throws PageParserException when the document isn't a correct 'page'
      */
-    public String checkPage(Document page){
+    public String checkPage(Document page) throws PageParserException
+    {
         boolean isPage = false;
         boolean hasPageClass = false;
         String pageClassName = "";
@@ -134,28 +171,55 @@ public class PageParser
 
     /**
      * Parses a velocity-file, containing a page-class, to blocks and rows containing velocity-variables and fills this parser up with the found content.
-     * After the parse, a string containing the velocity of this page will be saved in the field 'pageVelocity' and the found blocks and rows will be stored in the field 'elements'
+     * After the parse, a string containing the velocity of this page will be saved in the field 'pageVelocity' and the found blocks and rows will be stored in the fields 'blocks' and 'rows
      * @param velocityTemplate the velocitytemplate containing a html-tree of rows and blocks
      * @param baseUrl the base-url which will be used to define the row- and block-ids
-     * @return a set holding the blocks and rows that were parsed from the html-file (page)
-     * @throws IOException
+     * @return the name of the page-class found in the template
      */
-    private void fillWithPageClass(File velocityTemplate, URL baseUrl) throws IOException
+    private String fillWithPageClass(File velocityTemplate, URL baseUrl) throws PageParserException, PageClassCacheException
     {
         this.empty();
         //first fill in all known velocity-variables, so we get a normal <html><head></head><body></body></html>-structure from the template
         Template template = R.templateEngine().getEmptyTemplate(velocityTemplate.getAbsolutePath());
-        Document htmlDOM = Jsoup.parse(template.render(), BlocksConfig.getSiteDomain());
-        //throws errors if the htmlDOM is not a correct page
-        String pageClassName = this.checkPage(htmlDOM);
-        //fill up the rowset and the blockset and alter the htmlDOM to be a velocity-template holding velocity-variables for the upper-rows
-        recursiveParse(htmlDOM, baseUrl);
-        this.pageVelocity = StringEscapeUtils.unescapeXml(htmlDOM.outerHtml());
+        String pageClassName = this.fill(template.render(), baseUrl);
+        return pageClassName;
     }
 
-    private void fillWithPage(String html){
+    /**
+     * Parses a html-string, containing a page-instance, to blocks and rows containing velocity-variables and fills this parser up with the found content.
+     * After the parse, a string containing the velocity of this page will be saved in the field 'pageVelocity' and the found blocks and rows will be stored in the fields 'blocks' and 'rows
+     * @param html a html-tree of rows and blocks
+     * @param pageUrl the page-url which will be used to define the row- and block-ids
+     * @return the name of the page-class of the specified page
+     */
+    private String fillWithPage(String html, URL pageUrl) throws PageParserException, PageClassCacheException
+    {
         this.empty();
-        Document htmlDOM = Jsoup.parse(html, BlocksConfig.getSiteDomain());
+        String pageClassName = this.fill(html, pageUrl);
+        return pageClassName;
+    }
+
+
+    /**
+     * Parses a html-string, containing a html-tree of blocks and rows, to blocks and rows containing velocity-variables and fills this parser up with the found content.
+     * After the parse, a string containing the velocity of this page will be saved in the field 'pageVelocity' and the found blocks and rows will be stored in the fields 'blocks' and 'rows
+     * @param htmlTree a html-tree of rows and blocks
+     * @param baseUrl the base-url which will be used to define the row- and block-ids
+     * @return the name of the page-class found in the html-tree
+     */
+    private String fill(String htmlTree, URL baseUrl) throws PageParserException, PageClassCacheException
+    {
+        //TODO: extend Parser to let Jsoup do the hard row- and block-searching
+        //TODO BAS: ignore witespace between tags! -> makes block-comparison easier
+        Document htmlDOM = Jsoup.parse(htmlTree, BlocksConfig.getSiteDomain());
+        //throws errors if the htmlDOM is not a correct page
+        String pageClassName = this.checkPage(htmlDOM);
+        //if no document-type is present in the DOM, try to fetch the right one from the PageClassCache
+        htmlDOM = this.typeDocument(htmlDOM, pageClassName);
+        //fill up the rowset and the blockset and alter the htmlDOM to be a velocity-template holding velocity-variables for the upper-rows
+        this.recursiveParse(htmlDOM, baseUrl);
+        this.pageVelocity = StringEscapeUtils.unescapeXml(htmlDOM.outerHtml());
+        return pageClassName;
     }
 
     /**
@@ -165,6 +229,7 @@ public class PageParser
         this.pageVelocity = "";
         this.rows = new HashSet<>();
         this.blocks = new HashSet<>();
+        this.docType = null;
     }
 
     /**
@@ -174,35 +239,37 @@ public class PageParser
      * @param baseUrl the base-url used which will be used to define the row- and block-ids
      * @return a set holding blocks and rows
      */
-    private void recursiveParse(Element node, URL baseUrl)
+    private void recursiveParse(Element node, URL baseUrl) throws PageParserException
     {
         Elements children = node.children();
         for(Element child : children){
             //recursively iterate over the subtree starting with this child and add the found blocks and rows to the map
             recursiveParse(child, baseUrl);
-            //TODO BAS: only can-edit and can-layout blocks and rows should be parsed
-            boolean isRow = child.classNames().contains("row");
-            boolean isBlock = child.classNames().contains("block");
+            boolean isRow = child.classNames().contains(CSS_CLASS_FOR_ROW);
+            boolean isBlock = child.classNames().contains(CSS_CLASS_FOR_BLOCK);
             if(isRow || isBlock){
                 if(child.id() != null && !child.id().isEmpty()) {
                     //TODO BAS: is this the most efficient way we can get rid of the &quot;-problem during return-velocity-parsing, since this will read over the whole content again
                     String childHtml = StringEscapeUtils.unescapeXml(child.outerHtml());
                     //render id for this element (row or block)
-                    RedisID id = null;
+                    ElementID id = null;
                     try {
                         URI temp = baseUrl.toURI().resolve("#" + child.id());
                         URL childUrl = temp.toURL();
-                        id = new RedisID(childUrl);
+                        id = new ElementID(childUrl);
                     }catch(MalformedURLException e){
                         throw new PageParserException("Base-url doesn't seem to be correct. Cannot construct proper IDs with this page-url: " + baseUrl, e);
                     }catch(URISyntaxException e){
                         throw new PageParserException("Base-url doesn't seem to be correct. Cannot construct proper IDs with this page-url: " + baseUrl, e);
                     }
                     if(isRow){
-                        this.rows.add(new Row(id, childHtml));
+                        boolean isFinal =  !(child.classNames().contains(CSS_CLASS_FOR_MODIFIABLE_ROW) || child.classNames().contains(CSS_CLASS_FOR_LAYOUTABLE_ROW) || child.classNames().contains(
+                                        CSS_CLASS_FOR_CREATE_ENABLED_ROW));
+                        this.rows.add(new Row(id, childHtml, isFinal));
                     }
                     else{
-                        this.blocks.add(new Block(id, childHtml));
+                        boolean isFinal =  !(child.classNames().contains(CSS_CLASS_FOR_EDITABLE_BLOCK));
+                        this.blocks.add(new Block(id, childHtml, isFinal));
                     }
                     child.replaceWith(new TextNode("\n ${" + child.id() + "}\n", ""));
                 }
@@ -217,8 +284,36 @@ public class PageParser
         }
     }
 
-
-
+    /**
+     * Save the documenttype, if it can be found, to the field 'docType', since it has been lost when the client sent the html to the server (without the document-type attached)
+     * If no document-type can be found, it is fetched from the specified page-class.
+     * @param htmlDOM the document to be checked for a document-type
+     * @param pageClassName fall-back document-type for when no document type can be found in the document itself
+     * @return the same document with document-type attached, if one could be found in the
+     */
+    private Document typeDocument(Document htmlDOM, String pageClassName) throws PageClassCacheException
+    {
+        List<Node> nodes = htmlDOM.childNodes();
+        Iterator<Node> it = nodes.iterator();
+        boolean hasDocumentType = false;
+        while(!hasDocumentType && it.hasNext()){
+            Node node = it.next();
+            if (node instanceof DocumentType) {
+                this.docType = node.toString();
+                hasDocumentType = true;
+            }
+        }
+        if(!hasDocumentType){
+            this.docType = PageClassCache.getInstance().getPageClassCache().get(pageClassName).getDocType();
+            if(this.docType != null){
+                htmlDOM.prepend(this.docType);
+            }
+            else{
+                //no doctype could be found in the page-class-cache, so do nothing
+            }
+        }
+        return htmlDOM;
+    }
 
 
     /**

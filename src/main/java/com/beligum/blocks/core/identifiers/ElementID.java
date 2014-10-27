@@ -1,5 +1,6 @@
 package com.beligum.blocks.core.identifiers;
 
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 
@@ -8,46 +9,46 @@ import java.net.URL;
  */
 public class ElementID extends RedisID
 {
-    //the version of the parent of this element
-    private long parentVersion;
 
     /**
      * Constructor taking a URL. De version of this ID will be constructed using the current system's time.
      * @param url
-     * @param parentVersion the version of the parent of the element with this id
      * @throws URISyntaxException - if the given url cannot be properly used as an ID, when the url is not proparly formatted according to RFC 2396 standard
      */
-    public ElementID(URL url, long parentVersion) throws URISyntaxException
+    public ElementID(URL url) throws URISyntaxException
     {
         super(url);
-        this.parentVersion = parentVersion;
     }
 
     /**
      * Constructor taking a URL and a version.
      * @param url a url representing the unique id of an element
      * @param version the version of the object represented by this id
-     * @param parentVersion the version of the parent of the element with this id
      * @throws URISyntaxException
      */
-    public ElementID(URL url, long version, long parentVersion) throws URISyntaxException
+    public ElementID(URL url, long version) throws URISyntaxException
     {
         super(url, version);
-        this.parentVersion = parentVersion;
     }
 
-    public long getParentVersion(){
-        return parentVersion;
+    /**
+     * Constructor taking an id retrieved form the Redis db and transforming it into an ID-object
+     * @param dbId the id retrieved form db (must be of the form "[objectName]:[version]"
+     * @throws URISyntaxException when the id cannot properly be transformed into a URI, since this class is actually a wrapper around a URI
+     * @throws MalformedURLException when the id cannot properly generate a URL, based on the (in the xml-configuration) specified site-domain
+     */
+    public ElementID(String dbId) throws MalformedURLException, URISyntaxException
+    {
+        super(dbId);
     }
 
-    @Override
-    public String getVersionedId()
+    /**
+     *
+     * @return the fragment of the url to this element, this is everything after the '#' in "[site-domain]/[pageId]#[elementId]"
+     * @throws URISyntaxException
+     */
+    public String getElementId() throws URISyntaxException
     {
-        return getUnversionedId() + ":" + parentVersion + ":" + getVersion();
-    }
-    @Override
-    public String toString()
-    {
-        return getVersionedId();
+        return this.getUrl().toURI().getFragment();
     }
 }
