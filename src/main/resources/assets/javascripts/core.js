@@ -96,5 +96,12 @@ blocks.plugin("blocks.core.Constants", function() {
         3: 4,
         4: 3,
         0:0
-    }
+    };
+
+    this.COLUMN_CLASS = "column";
+    this.ROW_CLASS = "row";
+    this.BLOCK_CLASS = "block";
+    this.COLUMN_WIDTH_CLASS = "col-md-";
+    this.CAN_LAYOUT_CLASS = "can-layout";
+    this.MAX_COLUMNS = 12;
 });

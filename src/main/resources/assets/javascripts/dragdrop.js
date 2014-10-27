@@ -19,7 +19,7 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.L
         removeDropPointer("other");
         removeDraggedOverlay();
 
-        if(blockEvent.event.pageX > $(window).innerWidth() || blockEvent.event.pageX < 0 || blockEvent.event.pageY > $(window).innerHeight() || blockEvent.event.pageY < 0) return;
+        if(blockEvent.event.pageX > $(document).innerWidth() || blockEvent.event.pageX < 0 || blockEvent.event.pageY > $(document).innerHeight() || blockEvent.event.pageY < 0) return;
 
         if (blockEvent.block.current != null) {
             Logger.debug("Drop block");

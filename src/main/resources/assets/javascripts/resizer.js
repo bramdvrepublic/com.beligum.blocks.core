@@ -1,4 +1,4 @@
-blocks.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "blocks.core.Mouse", function (Broadcaster, Mouse) {
+blocks.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DomManipulation", function (Broadcaster, Mouse, DOM) {
 
 
     var checkIfHandleExists = function () {
@@ -76,13 +76,13 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "blocks.core.Mo
             var offsetLeft = 0;
             for (var i = 0; i < columns.length; i++) {
                 if (columns[i] !== resizeHandle.leftColumn) {
-                    offsetLeft += columns[i].getColumnWidth();
+                    offsetLeft += DOM.getColumnWidth(columns[i].element);
                 } else {
                     break;
                 }
             }
-            var offsetRight = offsetLeft + resizeHandle.leftColumn.getColumnWidth() + resizeHandle.rightColumn.getColumnWidth();
-            var currentColumn = offsetLeft + resizeHandle.leftColumn.getColumnWidth();
+            var offsetRight = offsetLeft + DOM.getColumnWidth(resizeHandle.leftColumn.element) + DOM.getColumnWidth(resizeHandle.rightColumn.element);
+            var currentColumn = offsetLeft + DOM.getColumnWidth(resizeHandle.leftColumn.element);
             var min = offsetLeft + 1;
             var max = offsetRight - 1;
             var colWidth = (row.getFullWidth()) / 12;
@@ -115,8 +115,8 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "blocks.core.Mo
             if (event.pageX > dragColumns[currentDragColumn + diff].start &&
                 event.pageX < dragColumns[currentDragColumn + diff].end) {
                 currentDragColumn = currentDragColumn + diff;
-                draggedHandle.leftColumn.setColumnWidth(draggedHandle.leftColumn.getColumnWidth() + diff);
-                draggedHandle.rightColumn.setColumnWidth(draggedHandle.rightColumn.getColumnWidth() - diff);
+                DOM.setColumnWidth(draggedHandle.leftColumn.element, DOM.getColumnWidth(draggedHandle.leftColumn.element) + diff);
+                DOM.setColumnWidth(draggedHandle.rightColumn.element, DOM.getColumnWidth(draggedHandle.rightColumn.element) - diff);
                 // move resizehandle
                 moveHandle();
                 break;
