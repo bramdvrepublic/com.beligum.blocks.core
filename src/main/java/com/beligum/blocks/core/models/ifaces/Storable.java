@@ -38,7 +38,7 @@ public interface Storable extends Identifiable
      */
     public String getCreator();
     /**
-     * Gives a hash-representation of this storable to save to the db
+     * Gives a hash-representation of this storable to save to the db. This method decides what information is stored in db, and what is not.
      * @return a map representing the key-value structure of this element to be saved to db
      */
     public Map<String, String> toHash();

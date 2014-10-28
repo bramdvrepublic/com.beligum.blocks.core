@@ -11,12 +11,12 @@ import java.net.URI;
  */
 public class ID
 {
-    //TODO: should we get rid of the URI-wrapping and make it "MOT/default/12353525#eenmooieb:2134345"
     //TODO BAS: currentMillis since 2000, not since 1970 -> makes things shorter
-    protected URI id;
+    /** interal uri-representation of this id */
+    protected URI idUri;
 
     public ID(URI id){
-        this.id = id;
+        this.idUri = id;
     }
 
     /**
@@ -25,12 +25,12 @@ public class ID
      */
     public URI toURI()
     {
-        return id;
+        return idUri;
     }
 
     @Override
     public String toString(){
-        return id.toString();
+        return idUri.toString();
     }
 
 
@@ -66,8 +66,8 @@ public class ID
     @Override
     public int hashCode()
     {
-        //11 and 29 are two randomly chosen prime numbers, needed for building hashcodes, ideally, these are different for each class
-        HashCodeBuilder significantFieldsSet = new HashCodeBuilder(11, 29);
+        //13 and 41 are two randomly chosen prime numbers, needed for building hashcodes, ideally, these are different for each class
+        HashCodeBuilder significantFieldsSet = new HashCodeBuilder(13, 41);
         significantFieldsSet = significantFieldsSet.append(this.toString());
         return significantFieldsSet.toHashCode();
     }

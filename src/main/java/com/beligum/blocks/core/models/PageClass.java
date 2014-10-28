@@ -1,14 +1,11 @@
 package com.beligum.blocks.core.models;
 
 import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.exceptions.ElementException;
 import com.beligum.blocks.core.identifiers.ID;
 import com.beligum.blocks.core.identifiers.PageID;
-import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.storables.Block;
 import com.beligum.blocks.core.models.storables.Row;
 import org.apache.commons.configuration.ConfigurationRuntimeException;
-import org.jsoup.nodes.DocumentType;
 
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -41,13 +38,13 @@ public class PageClass extends AbstractPage
      * @param velocity the velocity-string corresponding to the most outer layer of the element-tree in this page
      * @param docType the doctype of this page-class
      */
-    public PageClass(String name, Set<Block> blocks, Set<Row> rows, String velocity, String docType) throws ElementException
+    public PageClass(String name, Set<Block> blocks, Set<Row> rows, String velocity, String docType)
     {
         super(makeID(name));
         this.name = name;
         this.velocity = velocity;
-        this.setBlocks(blocks);
-        this.setRows(rows);
+        this.addBlocks(blocks);
+        this.addRows(rows);
         this.docType = docType;
     }
 

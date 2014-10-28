@@ -29,7 +29,7 @@ public class RedisID extends ID
     {
         super(url.toURI());
         //change the site-domain in the id-uri to it's shorter alias
-        this.id = new URI(BlocksConfig.getSiteDBAlias(), "", id.getPath(), id.getQuery(), id.getFragment());
+        this.idUri = new URI(BlocksConfig.SCHEME_NAME, BlocksConfig.getSiteDBAlias(), idUri.getPath(), idUri.getQuery(), idUri.getFragment());
         this.url = url;
         this.version = System.currentTimeMillis();
         //TODO BAS: parse the url and remove the internationlisation-information from the object's direct ID. use this class to 'getLanguage()'
@@ -45,7 +45,7 @@ public class RedisID extends ID
     {
         super(url.toURI());
         //change the site-domain in the id-uri to it's shorter alias
-        this.id = new URI("", BlocksConfig.getSiteDBAlias(), id.getPath(), id.getQuery(), id.getFragment());
+        this.idUri = new URI(BlocksConfig.SCHEME_NAME, BlocksConfig.getSiteDBAlias(), idUri.getPath(), idUri.getQuery(), idUri.getFragment());
         this.url = url;
         this.version = version;
         //TODO BAS: parse the url and remove the internationlisation-information from the object's direct ID. use this class to 'getLanguage()'
@@ -54,7 +54,7 @@ public class RedisID extends ID
 
     /**
      * Constructor taking an id retrieved form the Redis db and transforming it into an ID-object
-     * @param dbId the id retrieved form db (must be of the form "[objectName]:[version]"
+     * @param dbId the id retrieved form db (must be of the form "blocks://[siteDomainAlias]/[objectName]:[version]"
      * @throws URISyntaxException when the id cannot properly be transformed into a URI, since this class is actually a wrapper around a URI
      * @throws MalformedURLException when the id cannot properly generate a URL, based on the (in the xml-configuration) specified site-domain
      */
@@ -69,18 +69,18 @@ public class RedisID extends ID
         this.version = Long.parseLong(splitted[splitted.length-1]);
         int lastDoublePoint = dbId.lastIndexOf(':');
         String id = dbId.substring(0, lastDoublePoint);
-        this.id = new URI(id);
+        this.idUri = new URI(id);
 
         /*
          * Construct the url for this id, using the site-domain specified in the configuration-xml and the path specified by the database-id
          */
         URL siteDomain = new URL(BlocksConfig.getSiteDomain());
-        String urlPath =  this.id.getPath();
-        if(this.id.getFragment() != null){
-            urlPath += "#" + this.id.getFragment();
+        String urlPath =  this.idUri.getPath();
+        if(this.idUri.getFragment() != null){
+            urlPath += "#" + this.idUri.getFragment();
         }
-        if(this.id.getQuery() != null){
-            urlPath += "?" + this.id.getQuery();
+        if(this.idUri.getQuery() != null){
+            urlPath += "?" + this.idUri.getQuery();
         }
         this.url = new URL(siteDomain.getProtocol(), siteDomain.getHost(), siteDomain.getPort(), urlPath);
 
@@ -102,10 +102,18 @@ public class RedisID extends ID
 
     /**
      *
+     * @return the authority of the uri-representation of this id (f.i. returns 'MOT' if this id would be 'blocks://MOT/pageID#elementId')
+     */
+    public String getAuthority(){
+        return this.idUri.getAuthority();
+    }
+
+    /**
+     *
      * @return the name of the version-list of this id in the Redis-db
      */
     public String getUnversionedId(){
-        return id.toString();
+        return idUri.toString();
     }
 
 

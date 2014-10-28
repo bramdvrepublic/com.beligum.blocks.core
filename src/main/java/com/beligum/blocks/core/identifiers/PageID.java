@@ -1,5 +1,7 @@
 package com.beligum.blocks.core.identifiers;
 
+import com.beligum.blocks.core.config.DatabaseFieldNames;
+
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -9,9 +11,6 @@ import java.net.URL;
  */
 public class PageID extends RedisID
 {
-    //the suffix used to distinguish the page-info from the page-content (it's rows and blocks)
-    private static final String INFO_ID_SUFFIX = ":info";
-
     /**
      * Constructor taking a URL. De version of this ID will be constructed using the current system's time.
      * @param url a url representing the unique id of the page represented by this id
@@ -49,6 +48,6 @@ public class PageID extends RedisID
      * @return the string-id of the hash containing all page meta-data (info) of the page with this PageID
      */
     public String getPageInfoId(){
-        return getVersionedId() + INFO_ID_SUFFIX;
+        return getVersionedId() + ":" + DatabaseFieldNames.PAGE_INFO_SUFFIX;
     }
 }

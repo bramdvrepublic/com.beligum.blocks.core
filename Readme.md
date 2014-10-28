@@ -14,8 +14,13 @@ Two ID's are **equal** when their string-representation is equal (for RedisID's 
   
 #Parsing
 
+
+#Redis
+ - Only Storables can be saved to db
+ - The method 'toHash()' in Storable decides which info is saved to db in hash-form. This method should be overwritten manually. (For a Page this hash-form is saved in "[pageId]:[version]:info", for elements it is saved under "[pageId]#[elementId]:[version]"
+
+
 #Exceptions
  - The only exceptions Redis.class throws (publicly) are RedisExceptions. Their cause can of course be all sorts of other exceptions.
  - The only exceptions PageParser.class throws (publicly) are PageParserExceptions. Their cause can of course be all sorts of other exceptions.
  - The only exceptions PageClassCache.class throws (publicly) are PageClassCacheExceptions. Their cause can of course be all sorts of other exceptions.
- - ElementExceptions are thrown when something is wrong with a certain element (block or row)

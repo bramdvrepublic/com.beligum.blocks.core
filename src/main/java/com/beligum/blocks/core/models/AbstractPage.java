@@ -1,13 +1,13 @@
 package com.beligum.blocks.core.models;
 
-import com.beligum.blocks.core.exceptions.ElementException;
+import com.beligum.blocks.core.identifiers.ElementID;
 import com.beligum.blocks.core.identifiers.ID;
+import com.beligum.blocks.core.models.ifaces.Storable;
 import com.beligum.blocks.core.models.ifaces.StorableElement;
 import com.beligum.blocks.core.models.storables.Block;
 import com.beligum.blocks.core.models.storables.Row;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by bas on 08.10.14.
@@ -19,9 +19,11 @@ public abstract class AbstractPage extends IdentifiableObject
     protected Set<Block> blocks;
     /**set with all rows of this abstract-page*/
     protected Set<Row> rows;
-    /**map containing the final elements of this page, it is a hashset explicitly because it is used for hashing elements when checking for equality*/
-    private HashSet<StorableElement> cachedFinalElements = new HashSet<>();
-    /**map containing the non-final elements of this page, it is a hashset explicitly because it is used for hashing elements when checking for equality*/
+    /**set with all the element ids of this abstract-page, no double ids can be added*/
+    private Set<String> elementIds;
+    /**map containing the final elements of this page, keys = html-id's of the elements, values = element-objects*/
+    private Map<String, StorableElement> cachedFinalElements = new HashMap<>();
+    /**set containing the non-final elements of this page, it is a hashset explicitly because it is used for hashing elements when checking for equality*/
     private HashSet<StorableElement> cachedNonFinalElements = new HashSet<>();
 
     /**
@@ -33,64 +35,68 @@ public abstract class AbstractPage extends IdentifiableObject
         super(id);
         this.blocks = new HashSet<>();
         this.rows = new HashSet<>();
+        this.elementIds = new HashSet<>();
     }
 
     public Set<Block> getBlocks()
     {
         return blocks;
     }
-    public void addBlocks(Set<Block> blocks) throws ElementException
-    {
-        for(Block block : blocks){
-            if(!this.canContain(block)){
-                throw new ElementException("Only blocks with a compatible id can be added to an abstract-page. An block's id should start with the abstract-page's id. Received block-id: '" + block.getId() + "', but abstract-page-id is: '" + this.getId() + "'");
-            }
-            else{
-                this.addBlock(block);
-            }
-        }
-    }
     public Set<Row> getRows()
     {
         return rows;
     }
-    public void addRows(Set<Row> rows) throws ElementException
-    {
-        for(Row row : rows){
-            if(!canContain(row)){
-                throw new ElementException("Only rows with a compatible id can be added to an abstract-page. An row's id should start with the abstract-page's id. Received row-id: '" + row.getId() + "', but abstract-page-id is: '" + this.getId() + "'");
-            }
-            else{
-                this.addRow(row);
-            }
-        }
-    }
 
-    public void addBlock(Block block) throws ElementException
+    /**
+     * Add blocks to this abstract-page if it's element-id (everything after the '#' in the url) is not already present in this abstract-page
+     * @param blocks blocks to be added
+     */
+    public void addBlocks(Set<Block> blocks)
     {
-        if(this.canContain(block)) {
-            this.blocks.add(block);
-            this.clearCache();
-        }
-        else{
-            throw new ElementException("Only blocks with a compatible id can be added to an abstract-page. An block's id should start with the abstract-page's id. Received block-id: '" + block.getId() + "', but abstract-page-id is: '" + this.getId() + "'");
-        }
-    }
-    public void addRow(Row row) throws ElementException
-    {
-        if(this.canContain(row)) {
-            this.rows.add(row);
-            this.clearCache();
-        }
-        else{
-            throw new ElementException("Only rows with a compatible id can be added to an abstract-page. An row's id should start with the abstract-page's id. Received row-id: '" + row.getId() + "', but abstract-page-id is: '" + this.getId() + "'");
+        for(Block block : blocks) {
+            this.addBlock(block);
         }
     }
     /**
-     * Add an element (row or block) to this abstract-page
+     * Add rows to this abstract-page if it's element-id (everything after the '#' in the url) is not already present in this abstract-page
+     * @param rows rows to be added
+     */
+    public void addRows(Set<Row> rows)
+    {
+        for(Row row : rows) {
+            this.addRow(row);
+        }
+    }
+
+    /**
+     * Add a block to this abstract-page if it's element-id (everything after the '#' in the url) is not already present in this abstract-page
+     * @param block
+     */
+    public void addBlock(Block block)
+    {
+        boolean hasUniqueId = this.elementIds.add(block.getHtmlId());
+        if(hasUniqueId) {
+            this.blocks.add(block);
+        }
+        this.clearCache();
+    }
+    /**
+     * Add a row to this abstract-page if it's element-id (everything after the '#' in the url) is not already present in this abstract-page
+     * @param row
+     */
+    public void addRow(Row row)
+    {
+        boolean hasUniqueId = this.elementIds.add(row.getHtmlId());
+        if(hasUniqueId){
+            this.rows.add(row);
+        }
+        this.clearCache();
+    }
+    /**
+     * Add an element (row or block) to this abstract-page if it's element-id (everything after the '#' in the url) is not already present in this abstract-page
      * @param element element to be added
      */
-    public void addElement(StorableElement element) throws ElementException
+    public void addElement(StorableElement element)
     {
         if (element instanceof Row) {
             this.addRow((Row) element);
@@ -100,6 +106,15 @@ public abstract class AbstractPage extends IdentifiableObject
         }
         else {
             throw new RuntimeException("Could not add element to this abstract-page, the element has an unknown StorableElement-type: " + element.getClass().getName());
+        }
+    }
+    /**
+     * Add a elements (row or block) to this abstract-page if their element-id (everything after the '#' in the url) is not already present in this abstract-page
+     * @param elements elements to be added
+     */
+    public void addElements(Collection<StorableElement> elements){
+        for(StorableElement element : elements){
+            this.addElement(element);
         }
     }
 
@@ -116,14 +131,14 @@ public abstract class AbstractPage extends IdentifiableObject
 
     /**
      *
-     * @return a hashset with all elements in this page that cannot be altered by the client, it is a hashset explicitly because it is typically used with hashing to check for equality
+     * @return a map with all elements in this page that cannot be altered by the client, keys = html-id's of the elements, values = element-objects
      */
-    public HashSet<StorableElement> getFinalElements(){
+    public Map<String, StorableElement> getFinalElements(){
         if(this.cachedFinalElements.isEmpty()) {
             Set<StorableElement> elements = this.getElements();
             for (StorableElement element : elements) {
                 if(element.isFinal()) {
-                    this.cachedFinalElements.add(element);
+                    this.cachedFinalElements.put(element.getHtmlId(), element);
                 }
             }
         }
@@ -157,14 +172,5 @@ public abstract class AbstractPage extends IdentifiableObject
         if(!this.cachedFinalElements.isEmpty()) {
             this.cachedFinalElements.clear();
         }
-    }
-
-    /**
-     * Checks whether an element is compatible with this abstract-page, whether or not it can ben contained by this abstract-page
-     * @param element
-     * @return true if the id of the element starts with the id of this abstract-page (and can thus be seen as a part of the element-tree represented by this abstract-page), false otherwise
-     */
-    private boolean canContain(StorableElement element){
-        return element.getId().toString().startsWith(this.getId().toString());
     }
 }

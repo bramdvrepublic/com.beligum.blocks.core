@@ -15,7 +15,6 @@ import java.io.IOException;
 * Class extending assets-endpoint to enable template-loading from the "templates"-package instead of from the "assets"-package
 */
 @Path("/templates")
-//TODO BAS: HIER BEGINNEN: starten met veranderen van pagina (via inspector) en snel een save-knop maken met JQuery om het vervolg van het algoritme
 public class TemplateEndpoint extends AssetsEndpoint
 {
 

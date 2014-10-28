@@ -57,18 +57,21 @@ public class PageClassCache
     }
 
     /**
+     * Get the page-class with a certain name from the application cache
+     * @param pageClassName the name of the page-class to get
+     * @return a PageClass-object from the application cache
+     */
+    public PageClass get(String pageClassName){
+        return this.getPageClassCache().get(pageClassName);
+    }
+
+    /**
      *
      * @param pageClass the page-class to be added to the applications page-cache, the key will be the page-class-name
      */
     public void add(PageClass pageClass)
     {
         getPageClassCache().put(pageClass.getName(), pageClass);
-
-        //TODO BAS: remove this DEBUG feature
-        System.out.println("IN CACHE:");
-        for(Storable element : pageClass.getElements()) {
-            System.out.println("\n (" + element.getId() + ", " + ((AbstractElement) element).getContent() + ") \n");
-        }
     }
 
     /**
