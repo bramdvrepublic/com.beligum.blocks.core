@@ -1,33 +1,34 @@
-<!DOCTYPE html>
-<html>
-<head lang="en">
-    <meta charset="UTF-8">
-    <title>Cms test</title>
-    <link href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
-    <link href="/assets/stylesheets/style.less" rel="stylesheet" />
-    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+#define($header-styles-extra)
+<link href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
+<link href="/assets/stylesheets/styles.less" rel="stylesheet" />
+<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+#end
 
-    <script src="/assets/javascripts/lib/my-class.min.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/boot.js" type="application/javascript" ></script>
-    <script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
+#define($header-scripts-extra)
+<script src="/assets/javascripts/lib/my-class.min.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/boot.js" type="application/javascript" ></script>
+<script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
 
-    <!--<script src="/assets/javascripts/module.js" type="application/javascript" ></script>-->
-    <script src="/assets/javascripts/blocks.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/core.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/broadcaster.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/layout.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/dom-manipulation.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/elements.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/mouse.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/resizer.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/dragdrop.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/blockmenu.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/blockmenu-buttons.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/layout-aid.js" type="application/javascript" ></script>
+<!--<script src="/assets/javascripts/module.js" type="application/javascript" ></script>-->
+<script src="/assets/javascripts/blocks.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/core.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/broadcaster.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/layout.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/dom-manipulation.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/elements.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/mouse.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/resizer.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/dragdrop.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/blockmenu.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/blockmenu-buttons.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/layout-aid.js" type="application/javascript" ></script>
 
+#end
 
-</head>
-<body>
+#define($body-args-extra)
+#end
+
+#define($body-html)
 <div class="container">
     <div class="row can-layout">
         <div class="col-md-12 column">
@@ -55,6 +56,6 @@
 </div>
 
 <div class="ruler"></div>
+#end
 
-</body>
-</html>
+#parse("/views/templates/main.html")

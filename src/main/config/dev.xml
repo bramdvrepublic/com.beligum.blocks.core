@@ -24,6 +24,7 @@
             <!--</property>-->
         <!--</properties>-->
     <!--</database>-->
+    <!--TODO: implement possibility to connect to nosql-db (f.i. Redis with server-port: 6379, server-hostname: loalhost) from this xml-file-->
 
     <production>false</production>
 
@@ -35,6 +36,14 @@
         </custom-resources-folder>
         -->
     </server>
+
+    <blocks>
+        <template-folder>/templates</template-folder>
+        <site>
+            <domain>http://localhost:8080</domain>
+            <db-alias>LOC</db-alias>
+        </site>
+    </blocks>
 
     <security/>
 
