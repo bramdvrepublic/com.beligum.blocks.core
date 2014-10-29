@@ -16,3 +16,4 @@
 # Maven
 log/
 target/
+/src/main/config/dev.xml
