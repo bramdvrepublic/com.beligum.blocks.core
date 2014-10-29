@@ -18,4 +18,12 @@ public class ApplicationEndpoint
 
         return Response.ok(indexTemplate.render()).build();
     }
+    @Path("/demopage")
+    @GET
+    public Response demo()
+    {
+        Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/demo.html");
+
+        return Response.ok(indexTemplate.render()).build();
+    }
 }
