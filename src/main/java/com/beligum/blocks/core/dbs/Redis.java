@@ -13,9 +13,12 @@ import com.beligum.blocks.core.models.ifaces.StorableElement;
 import com.beligum.blocks.core.models.storables.Block;
 import com.beligum.blocks.core.models.storables.Page;
 import com.beligum.blocks.core.models.storables.Row;
+import com.beligum.core.framework.base.ifaces.ServerLifecycleListener;
+import org.eclipse.jetty.server.Server;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisSentinelPool;
 
+import javax.servlet.ServletContextEvent;
 import java.io.Closeable;
 import java.net.URL;
 import java.util.*;
@@ -48,7 +51,7 @@ public class Redis implements Closeable
 
     //TODO check/boost redis-performance with http://redis.io/topics/benchmarks
 
-    //TODO BAS: implement transactions and/or pipelining (https://github.com/xetorthio/jedis/wiki/AdvancedUsage)
+    //TODO BAS SH: as a second thing today: implement transactions and/or pipelining (https://github.com/xetorthio/jedis/wiki/AdvancedUsage) and try running this on the Raspberry Pies
 
 
     //a thread-save pool for connection to the redis-master-server
@@ -369,4 +372,6 @@ public class Redis implements Closeable
             throw new RedisException("Unsupported or unexisting Redis-type: " + redisType);
         }
     }
+
+
 }

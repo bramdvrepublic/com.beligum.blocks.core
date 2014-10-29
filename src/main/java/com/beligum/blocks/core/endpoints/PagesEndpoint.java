@@ -51,16 +51,14 @@ public class PagesEndpoint
         Map<String, PageClass> cache = PageClassCache.getInstance().getPageClassCache();
         PageClass pageClass = cache.get(pageClassName);
 
-        //TODO: this try-with-resource block should be set somewhere at the very beginning of the application, so the Redis-instance is closed (and it's connection-pool destroyed) at the end of the application
-//        try(Redis redis = Redis.getInstance()) {
+
         Redis redis = Redis.getInstance();
-            Page newPage = redis.getNewPage(pageClass);
-            redis.save(newPage);
+        Page newPage = redis.getNewPage(pageClass);
+        redis.save(newPage);
             /*
              * Redirect the client to the newly created page
              */
-            return Response.seeOther(newPage.getUrl().toURI()).build();
-//        }
+        return Response.seeOther(newPage.getUrl().toURI()).build();
     }
 
     @PUT
@@ -68,7 +66,7 @@ public class PagesEndpoint
     /*
      * update a page-instance with id 'pageId' to be the html specified
      */
-    public Response updatePage(@PathParam("pageId") String pageId, String html) throws MalformedURLException, PageParserException, RedisException
+    public Response updatePage(@PathParam("pageId") String pageId, String html) throws MalformedURLException, PageParserException, RedisException, URISyntaxException
     {
         URL pageUrl = new URL(BlocksConfig.getSiteDomain() + "/" + pageId);
 
@@ -76,7 +74,7 @@ public class PagesEndpoint
         Page page = parser.parsePage(html, pageUrl);
         Redis redis = Redis.getInstance();
         redis.save(page);
-        return Response.ok().build();
+        return Response.seeOther(page.getUrl().toURI()).build();
     }
 
 }
