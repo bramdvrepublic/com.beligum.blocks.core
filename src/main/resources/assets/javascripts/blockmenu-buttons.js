@@ -20,7 +20,7 @@ blocks.plugin("blocks.core.BlockMenu.delete", ["blocks.core.BlockMenu", "blocks.
         priority: 100
     })
 
-    var newBlock = $('<div class="block"></div>');
+    var newBlock = $('<div class="block"><p></p></div>');
 
     button.on("click", function(event) {
         Layouter.removeBlock(Menu.currentBlock());
@@ -52,13 +52,13 @@ blocks.plugin("blocks.core.BlockMenu.edit", ["blocks.core.BlockMenu", "blocks.co
             overlayElement.remove();
             blockElement.css("position", "");
             blockElement.css("z-index", "");
-            blockElement.removeAttr("contenteditable", "");
+            blockElement.children[0].removeAttr("contenteditable", "");
             Broadcaster.send("activateMouse");
         });
 
         blockElement.css("position", "relative");
         blockElement.css("z-index", "2001");
-        blockElement.attr("contenteditable", "true");
+        blockElement.children[0].attr("contenteditable", "true");
         Broadcaster.send("deactivateMouse");
 
 

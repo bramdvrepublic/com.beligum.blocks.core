@@ -47,14 +47,14 @@ blocks.plugin("blocks.core.layout-aid", ["blocks.core.Mouse", "blocks.core.Broad
     };
 
     Broadcaster.on(Mouse.config.EVENT.HOOVER_ENTER_BLOCK, function (event) {
-        enterBlockHoover(event)
+        //enterBlockHoover(event)
     });
     Broadcaster.on(Mouse.config.EVENT.HOOVER_LEAVE_BLOCK, function (event) {
-        leaveBlockHoover(event)
+        //leaveBlockHoover(event)
     });
 
     Broadcaster.on("layoutChanged", function() {
-        createLayoutFrame();
+        //createLayoutFrame();
     })
 
 //
