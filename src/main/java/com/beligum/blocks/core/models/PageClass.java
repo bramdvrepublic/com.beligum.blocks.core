@@ -20,7 +20,7 @@ import java.util.Set;
  */
 public class PageClass extends AbstractPage
 {
-    //TODO BAS SH: start with implementing BlockClass, BlockClassCache (and BlockParser?)
+    //TODO BAS SH: start with implementing BlockClass, BlockClassCache (and BlockParser?), you just pushed to server-side, to make sure nothing is lost during merge with client-side branch
 
     /**the prefix that is given to page-class-id's*/
     private static final String ID_PREFIX = "pages";
