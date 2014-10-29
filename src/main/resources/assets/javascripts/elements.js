@@ -1,7 +1,7 @@
 
 
 blocks
-    .plugin("blocks.core.Elements", ["blocks.core.Class", "blocks.core.Constants", function (Class, Constants) {
+    .plugin("blocks.core.Elements", ["blocks.core.Class", "blocks.core.Constants", "blocks.core.Broadcaster", function (Class, Constants, Broadcaster) {
 
         var _thisService = this;
 
@@ -482,6 +482,7 @@ blocks
                 var container = new _thisService.Container(containerElement);
                 Logger.debug(container);
                 _thisService.trees.push(container);
+                Broadcaster.send("layoutChanged")
             });
         };
 

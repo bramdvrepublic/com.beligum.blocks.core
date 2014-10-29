@@ -1,6 +1,6 @@
-blocks.plugin("blocks.core.layout-aid", ["blocks.core.Mouse", "blocks.core.Broadcaster", "blocks.core.Elements", function(Mouse, Broadcaster, elements) {
+blocks.plugin("blocks.core.layout-aid", ["blocks.core.Mouse", "blocks.core.Broadcaster", "blocks.core.Elements", function(Mouse, Broadcaster, Elements) {
 
-    var layoutFrame = $("<div />");
+    var layoutFrame = $('<div style="position: absolute; top: 0px; left: 0px; z-index: 500;" />');
     var createLayoutFrame = function() {
         layoutFrame.children().remove();
         for(var i=0; i < Elements.trees.length; i++) {
@@ -14,10 +14,10 @@ blocks.plugin("blocks.core.layout-aid", ["blocks.core.Mouse", "blocks.core.Broad
               var box = $("<div />");
               box.css("position", "absolute");
               box.css("top", element.top + "px");
-              box.css("top", element.left + "px");
+              box.css("left", element.left + "px");
               box.css("width", (element.right - element.left) + "px");
               box.css("height", (element.bottom - element.top) + "px");
-              box.css("border", "solid black 1px");
+              box.css("border", "1px solid black");
               layoutFrame.append(box);
           } else {
               for (var i=0; i < element.children.length; i++) {
@@ -35,32 +35,40 @@ blocks.plugin("blocks.core.layout-aid", ["blocks.core.Mouse", "blocks.core.Broad
     };
 
     var enterBlockHoover = function(blockEvent) {
-        showLayoutFrame();
+        if (blockEvent.block.current != null) {
+            showLayoutFrame();
+        }
     };
 
     var leaveBlockHoover = function(blockEvent) {
-        hideLayoutFrame();
+        if (blockEvent.block.current == null) {
+            hideLayoutFrame();
+        }
     };
 
     Broadcaster.on(Mouse.config.EVENT.HOOVER_ENTER_BLOCK, function (event) {
         enterBlockHoover(event)
     });
     Broadcaster.on(Mouse.config.EVENT.HOOVER_LEAVE_BLOCK, function (event) {
-        allowDrag(event)
+        leaveBlockHoover(event)
     });
 
+    Broadcaster.on("layoutChanged", function() {
+        createLayoutFrame();
+    })
 
-    Broadcaster.on(Mouse.config.EVENT.START_DRAG, function (event) {
-        dragStarted(event)
-    });
-    Broadcaster.on(Mouse.config.EVENT.END_DRAG, function (event) {
-        dragEnded(event)
-    });
-    Broadcaster.on(Mouse.config.EVENT.DRAG_LEAVE_BLOCK, function (event) {
-        dragLeaveBlock(event)
-    });
-    Broadcaster.on(Mouse.config.EVENT.DRAG_OVER_BLOCK, function (event) {
-        dragOverBlock(event)
-    });
+//
+//    Broadcaster.on(Mouse.config.EVENT.START_DRAG, function (event) {
+//        dragStarted(event)
+//    });
+//    Broadcaster.on(Mouse.config.EVENT.END_DRAG, function (event) {
+//        dragEnded(event)
+//    });
+//    Broadcaster.on(Mouse.config.EVENT.DRAG_LEAVE_BLOCK, function (event) {
+//        dragLeaveBlock(event)
+//    });
+//    Broadcaster.on(Mouse.config.EVENT.DRAG_OVER_BLOCK, function (event) {
+//        dragOverBlock(event)
+//    });
 
 }]);

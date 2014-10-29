@@ -1,7 +1,7 @@
 blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.Constants", function(Broadcaster, Mouse, Constants) {
 
     // on hoover block show menu
-    var menuElement = $('<div id="blocks-core-block-menu" class="block-menu btn-group"></div>');
+    var menuElement = $('<div id="blocks-core-block-menu" class="block-menu btn-group" style="z-index: 600"></div>');
     var buttons = [];
     var showMenuElement = function(blockEvent) {
         activeBlock = blockEvent.block.current;
