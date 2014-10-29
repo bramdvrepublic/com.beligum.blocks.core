@@ -8,14 +8,14 @@ import com.beligum.blocks.core.identifiers.ID;
  */
 public abstract class AbstractElement extends IdentifiableObject
 {
-    /**string representing the (html- or velocity-)content of this element, once the content has been set, it cannot be changed due to it's use in an elements hashCode and equals-method*/
+    /**string representing the (html- or template-)content of this element, once the content has been set, it cannot be changed due to it's use in an elements hashCode and equals-method*/
     protected final String content;
     /**boolean whether or not this elements content can be changed by the client*/
     protected boolean isFinal;
 
     /**
      * Constructor
-      * @param content the (velocity) content of this element
+      * @param content the content of this element
      * @param id the id of this element
      * @param isFinal boolean whether or not the content of this element can be changed by the client
      */

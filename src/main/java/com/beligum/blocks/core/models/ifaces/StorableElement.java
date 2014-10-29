@@ -22,13 +22,13 @@ public interface StorableElement extends Storable
 
     /**
      *
-     * @return the velocity-content of this element
+     * @return the content of this element
      */
     public String getContent();
 
     /**
      *
-     * @return the name of the f.i. velocity-variable containing the content of this element
+     * @return the name of the variable of this element in the template holding this element
      */
     public String getTemplateVariableName();
 

@@ -143,10 +143,10 @@ public class Page extends AbstractPage implements Storable
 
     /**
      *
-     * @return the most outer velocity-string for this page's block- and row-tree
+     * @return the most outer template-string for this page's block- and row-tree
      */
-    public String getVelocity(){
-        return this.getPageClass().getVelocity();
+    public String getTemplate(){
+        return this.getPageClass().getTemplate();
     }
 
 

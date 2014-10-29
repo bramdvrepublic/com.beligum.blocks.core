@@ -27,7 +27,7 @@ public class Row extends AbstractElement implements StorableElement
     /**
      * Constructor
      * @param id the id to this row (is of the form "[site]/[pageName]#[rowId]")
-     * @param content the (velocity) content of this row
+     * @param content the content of this row
      * @param isFinal boolean whether or not the content of this element can be changed by the client
      */
     public Row(ElementID id, String content, String pageClassName, boolean isFinal)
@@ -42,7 +42,7 @@ public class Row extends AbstractElement implements StorableElement
 
     /**
      * @param id the id to this row (is of the form "[site]/[pageName]#[rowId]")
-     * @param content the (velocity) content of this row
+     * @param content the content of this row
      * @param pageClassName the name of the page-class this row belongs to
      * @param isFinal boolean whether or not the content of this element can be changed by the client
      * @param applicationVersion the version of the application this row was saved under

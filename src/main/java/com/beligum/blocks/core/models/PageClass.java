@@ -20,13 +20,14 @@ import java.util.Set;
  */
 public class PageClass extends AbstractPage
 {
+    //TODO BAS SH: start with implementing BlockClass, BlockClassCache (and BlockParser?)
+
     /**the prefix that is given to page-class-id's*/
     private static final String ID_PREFIX = "pages";
     /**string the name of this page-class*/
     private String name;
-    /**string holding the velocity-content of this pageClass*/
-    //TODO BAS: get rid of 'velocity' and replace by 'template'
-    private String velocity;
+    /**string holding the template-content of this pageClass*/
+    private String template;
     /**the doctype of this pageclass*/
     private String docType;
 
@@ -35,14 +36,14 @@ public class PageClass extends AbstractPage
      * @param name the name of this page-class
      * @param blocks the (default) blocks this page-class contains
      * @param rows the (default) rows this page-class contains
-     * @param velocity the velocity-string corresponding to the most outer layer of the element-tree in this page
+     * @param template the template-string corresponding to the most outer layer of the element-tree in this page
      * @param docType the doctype of this page-class
      */
-    public PageClass(String name, Set<Block> blocks, Set<Row> rows, String velocity, String docType)
+    public PageClass(String name, Set<Block> blocks, Set<Row> rows, String template, String docType)
     {
         super(makeID(name));
         this.name = name;
-        this.velocity = velocity;
+        this.template = template;
         this.addBlocks(blocks);
         this.addRows(rows);
         this.docType = docType;
@@ -51,8 +52,8 @@ public class PageClass extends AbstractPage
     public String getName(){
         return this.name;
     }
-    public String getVelocity(){
-        return this.velocity;
+    public String getTemplate(){
+        return this.template;
     }
     public String getDocType()
     {

@@ -46,6 +46,7 @@ public class ApplicationEndpoint
              * Use the default template-engine of the application and the default template-context of this page-class for template-rendering
              */
             TemplateEngine templateEngine = R.templateEngine();
+            //TODO: this cast should be avoided here, we need a more generic 'RenderTool' where this cast should be done properly
             if(templateEngine instanceof VelocityTemplateEngine) {
                 /*
                  * Add all specific velocity-variables fetched from database to the context.
@@ -61,10 +62,9 @@ public class ApplicationEndpoint
                  * Note 2: renderTools.recurse() stops when encountering numbers, so no element's-id may consist of only a number (this should not happen since element-ids are of the form "[db-alias]:///[pagePath]#[elementId]"
                  */
                 RenderTool renderTool = new RenderTool();
-                //TODO BAS: get rid of velocity-implementation
                 renderTool.setVelocityEngine(((VelocityTemplateEngine) templateEngine).getDelegateEngine());
                 renderTool.setVelocityContext(context);
-                String pageHtml = renderTool.recurse(page.getVelocity());
+                String pageHtml = renderTool.recurse(page.getTemplate());
                 return Response.ok(pageHtml).build();
             }
             else{

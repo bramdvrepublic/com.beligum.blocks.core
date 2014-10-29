@@ -50,8 +50,6 @@ public class Redis implements Closeable
 
     //TODO check/boost redis-performance with http://redis.io/topics/benchmarks
 
-    //TODO BAS SH: as a second thing today: implement transactions and/or pipelining (https://github.com/xetorthio/jedis/wiki/AdvancedUsage) and try running this on the Raspberry Pies
-
 
     //a thread-save pool for connection to the redis-master-server
     private final JedisSentinelPool pool;

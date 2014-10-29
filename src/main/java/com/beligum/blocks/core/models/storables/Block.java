@@ -26,7 +26,7 @@ public class Block extends AbstractElement implements StorableElement
     /**
      * Constructor
      * @param id the url to this row (is of the form "[site]/[pageName]#[blockId]")
-     * @param content the (velocity) content of this block
+     * @param content the content of this block
      * @param isFinal boolean whether or not the content of this block can be changed by the client
      */
     public Block(ElementID id, String content, String pageClassName, boolean isFinal)
@@ -41,7 +41,7 @@ public class Block extends AbstractElement implements StorableElement
 
     /**
      * @param id the id to this block (is of the form "[site]/[pageName]#[blockId]")
-     * @param content the (velocity) content of this block
+     * @param content the content of this block
      * @param pageClassName the name of the page-class this block belongs to
      * @param isFinal boolean whether or not the content of this element can be changed by the client
      * @param applicationVersion the version of the application this block was saved under
