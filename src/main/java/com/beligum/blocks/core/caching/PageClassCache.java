@@ -1,9 +1,7 @@
 package com.beligum.blocks.core.caching;
 
 import com.beligum.blocks.core.exceptions.PageClassCacheException;
-import com.beligum.blocks.core.models.AbstractElement;
 import com.beligum.blocks.core.models.PageClass;
-import com.beligum.blocks.core.models.ifaces.Storable;
 import com.beligum.blocks.core.parsing.PageParser;
 import com.beligum.core.framework.base.R;
 
@@ -35,7 +33,7 @@ public class PageClassCache
         if(instance == null){
             //if the application-cache doesn't exist, throw exception, else instantiate the application's page-cache with a new empty hashmap
             if(R.cacheManager() != null && R.cacheManager().getApplicationCache() != null) {
-                if (!R.cacheManager().getApplicationCache().contains(CacheKeys.PAGE_CLASSES)) {
+                if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.PAGE_CLASSES)) {
                     R.cacheManager().getApplicationCache().put(CacheKeys.PAGE_CLASSES, new HashMap<String, PageClass>());
                     instance = new PageClassCache();
                     instance.fillPageClassCache();

@@ -2,26 +2,25 @@ package com.beligum.blocks.core.dbs;
 
 import com.beligum.blocks.core.caching.PageClassCache;
 import com.beligum.blocks.core.config.DatabaseFieldNames;
-import com.beligum.blocks.core.exceptions.PageClassCacheException;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.ElementID;
 import com.beligum.blocks.core.identifiers.PageID;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.PageClass;
-import com.beligum.blocks.core.models.ifaces.Storable;
 import com.beligum.blocks.core.models.ifaces.StorableElement;
 import com.beligum.blocks.core.models.storables.Block;
 import com.beligum.blocks.core.models.storables.Page;
 import com.beligum.blocks.core.models.storables.Row;
-import com.beligum.core.framework.base.ifaces.ServerLifecycleListener;
-import org.eclipse.jetty.server.Server;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisSentinelPool;
+import redis.clients.jedis.Pipeline;
 
-import javax.servlet.ServletContextEvent;
 import java.io.Closeable;
 import java.net.URL;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by bas on 09.10.14.
@@ -98,67 +97,85 @@ public class Redis implements Closeable
                 throw new RedisException("The page '" + page.getUnversionedId() + "' already has a version '" + page.getVersion() + "' present in db.");
             }
 
-            /*
-             * Save all non-default, non-final block- and row-ids (with id "[elementId]:[version]" or "[elementId]") in a new set named "[pageId]:[version]"
-             * Save all new versions of blocks and rows "[elementId]:[version]" in a list named "[elementId]"
-             */
-            //the page stored in db, will be null when no such page is present in db
-            Page storedPage = this.fetchPage(page.getUrl());
-            //elements of the page-class present in the cache that may not be altered, keys = html-id's of the elements, values = element-objects
-            Map<String, StorableElement> finalElements = page.getPageClass().getFinalElements();
-            //elements of the last version of this page stored in db that can be altered
-            HashSet<StorableElement> storedElements = (storedPage != null) ? storedPage.getNonFinalElements() : new HashSet<StorableElement>();
-            //elements of the page-class present in the cache that can be altered
-            HashSet<StorableElement> cachedElements = page.getPageClass().getNonFinalElements();
-            //elements of the page we want to save, which need to be compared to the above maps of elements
-            Set<StorableElement> pageElements = page.getElements();
-            //for all elements received from the page to be saved, check if they have to be saved to db, or if they are already present in the cache
-            for(StorableElement pageElement : pageElements) {
-                if(!finalElements.containsKey(pageElement.getHtmlId())) {
-                    if(!storedElements.contains(pageElement)){
-                        if(!cachedElements.contains(pageElement)) {
-                            this.save(pageElement);
-                            //TODO BAS: sometimes (like with calendar-blocks) here we will need to save the pageElementId's unversioned form
-                            redisClient.sadd(page.getVersionedId(), pageElement.getVersionedId());
+            //pipeline this block of queries to retrieve all read-data at the end of the pipeline
+            Pipeline pipelinedSaveTransaction = redisClient.pipelined();
+            //use the redis 'MULTI'-command to start using a transaction (which is atomic)
+            pipelinedSaveTransaction.multi();
+            try {
+                /*
+                 * Save all non-default, non-final block- and row-ids (with id "[elementId]:[version]" or "[elementId]") in a new set named "[pageId]:[version]"
+                 * Save all new versions of blocks and rows "[elementId]:[version]" in a list named "[elementId]"
+                 */
+                //the page stored in db, will be null when no such page is present in db
+                Page storedPage = this.fetchPage(page.getUrl());
+                //elements of the page-class present in the cache that may not be altered, keys = html-id's of the elements, values = element-objects
+                Map<String, StorableElement> finalElements = page.getPageClass().getFinalElements();
+                //elements of the last version of this page stored in db that can be altered
+                HashSet<StorableElement> storedElements = (storedPage != null) ? storedPage.getNonFinalElements() : new HashSet<StorableElement>();
+                //elements of the page-class present in the cache that can be altered
+                HashSet<StorableElement> cachedElements = page.getPageClass().getNonFinalElements();
+                //elements of the page we want to save, which need to be compared to the above maps of elements
+                Set<StorableElement> pageElements = page.getElements();
+                //for all elements received from the page to be saved, check if they have to be saved to db, or if they are already present in the cache
+                for (StorableElement pageElement : pageElements) {
+                    if (!finalElements.containsKey(pageElement.getHtmlId())) {
+                        if (!storedElements.contains(pageElement)) {
+                            if (!cachedElements.contains(pageElement)) {
+                                this.save(pageElement);
+                                //TODO BAS: sometimes (like with calendar-blocks) here we will need to save the pageElementId's unversioned form
+                                pipelinedSaveTransaction.sadd(page.getVersionedId(), pageElement.getVersionedId());
+                            }
+                            else {
+                                //nothing has to be done with unaltered, cached elements when saving to db (they are already present in the application cache)
+                            }
                         }
-                        else{
-                            //nothing has to be done with unaltered, cached elements when saving to db (they are already present in the application cache)
+                        else {
+                            //nothing has to be done with unaltered, already stored elements when saving to db (they are already present in db)
                         }
                     }
                     else {
-                        //nothing has to be done with unaltered, already stored elements when saving to db (they are already present in db)
+                        StorableElement finalElement = finalElements.get(pageElement.getHtmlId());
+                        if (!finalElement.equals(pageElement)) {
+                            throw new RedisException("Final elements cannot be altered: element with id '" + finalElement.getHtmlId() + "' is final, so it cannot be changed to \n \n "
+                                                     + pageElement.getContent() + "\n \n");
+                        }
+                        //nothing has to be done with unaltered final elements when saving to db (they are already present in the application cache and may not be altered anyhow)
                     }
+                }
+
+                /*
+                 * Save this page-version's id ("[pageId]:[version]") to the db in the list named "<pageId>"
+                 * holding all the different versions of this page-instance.
+                 */
+                //if another version is present in db, check if this page is more recent
+                Long lastVersion = this.getLastVersion(page.getId());
+                if (lastVersion == -1 || page.getVersion() > lastVersion) {
+                    pipelinedSaveTransaction.lpush(page.getUnversionedId(), page.getVersionedId());
                 }
                 else {
-                    StorableElement finalElement = finalElements.get(pageElement.getHtmlId());
-                    if(!finalElement.equals(pageElement)){
-                        throw new RedisException("Final elements cannot be altered: element with id '" + finalElement.getHtmlId() + "' is final, so it cannot be changed to \n \n "
-                                                 + pageElement.getContent() + "\n \n");
-                    }
-                    //nothing has to be done with unaltered final elements when saving to db (they are already present in the application cache and may not be altered anyhow)
+                    throw new RedisException(
+                                    "The page '" + page.getUnversionedId() + "' with version '" + page.getVersion() + "' already has a more recent version '" + lastVersion +
+                                    "' present in db.");
                 }
-            }
 
-            /*
-             * Save this page-version's id ("[pageId]:[version]") to the db in the list named "<pageId>"
-             * holding all the different versions of this page-instance.
-             */
-            //if another version is present in db, check if this page is more recent
-            Long lastVersion = this.getLastVersion(page.getId(), redisClient);
-            if (lastVersion == -1 ||  page.getVersion() > lastVersion) {
-                redisClient.lpush(page.getUnversionedId(), page.getVersionedId());
-            }
-            else {
-                throw new RedisException(
-                                "The page '" + page.getUnversionedId() + "' with version '" + page.getVersion() + "' already has a more recent version '" + lastVersion +
-                                "' present in db.");
-            }
+                /*
+                 * Save other info about the page (like it's page-class) in a hash named "[pageId]:[version]:info"
+                 */
+                pipelinedSaveTransaction.hmset(page.getInfoId(), page.getInfo());
 
-            /*
-             * Save other info about the page (like it's page-class) in a hash named "[pageId]:[version]:info"
-             */
-            redisClient.hmset(page.getInfoId(), page.getInfo());
+                //execute the transaction
+                pipelinedSaveTransaction.exec();
+                //do all the reads in this pipeline
+                pipelinedSaveTransaction.sync();
 
+            }
+            catch(Exception e){
+                //if an exception has been thrown while writing to, discard the transaction
+                pipelinedSaveTransaction.discard();
+                //do all the reads in this pipeline (not sure if this actually is necessary)
+                pipelinedSaveTransaction.sync();
+                throw e;
+            }
         }
     }
 
@@ -175,25 +192,41 @@ public class Redis implements Closeable
                 throw new RedisException("The element '" + element.getUnversionedId() + "' already has a version '" + element.getVersion() + "' present in db.");
             }
             else {
-                //if another version is present in db, check if this element is more recent
-                Long lastVersion = this.getLastVersion(element.getId(), redisClient);
-                if (lastVersion == -1 ||  element.getVersion() > lastVersion) {
-                    //add this version as the newest version to the version-list
-                    redisClient.lpush(element.getUnversionedId(), element.getVersionedId());
-                    //save the content and the meta-data in a hash with id "[elementId]:[version]"
-                    redisClient.hmset(element.getVersionedId(), element.toHash());
-                }
-                //if the same version is present in db, check if their content is equal, if not, throw exception
-                else if(lastVersion == element.getVersion()){
-                    StorableElement storedElement = this.fetchElement(element.getVersionedId());
-                    if(!element.equals(storedElement)){
-                        throw new RedisException("Trying to save element '" + element.getUnversionedId() + "' with version '" + element.getVersion() + "' which already exists in db, but has other content than found in db.");
+                //pipeline this block of queries to retrieve all read-data at the end of the pipeline
+                Pipeline pipelinedSaveTransaction = redisClient.pipelined();
+                //use the redis 'MULTI'-command to start using a transaction (which is atomic)
+                pipelinedSaveTransaction.multi();
+                try {
+                    //if another version is present in db, check if this element is more recent
+                    Long lastVersion = this.getLastVersion(element.getId());
+                    if (lastVersion == -1 || element.getVersion() > lastVersion) {
+                        //add this version as the newest version to the version-list
+                        pipelinedSaveTransaction.lpush(element.getUnversionedId(), element.getVersionedId());
+                        //save the content and the meta-data in a hash with id "[elementId]:[version]"
+                        pipelinedSaveTransaction.hmset(element.getVersionedId(), element.toHash());
                     }
+                    //if the same version is present in db, check if their content is equal, if not, throw exception
+                    else if (lastVersion == element.getVersion()) {
+                        StorableElement storedElement = this.fetchElement(element.getVersionedId());
+                        if (!element.equals(storedElement)) {
+                            throw new RedisException("Trying to save element '" + element.getUnversionedId() + "' with version '" + element.getVersion() +
+                                                     "' which already exists in db, but has other content than found in db.");
+                        }
+                    }
+                    else {
+                        throw new RedisException(
+                                        "The element '" + element.getUnversionedId() + "' with version '" + element.getVersion() + "' already has a more recent version '" + lastVersion +
+                                        "' present in db.");
+                    }
+                    //execute the transaction
+                    pipelinedSaveTransaction.exec();
+                    //do all the reads in this pipeline
+                    pipelinedSaveTransaction.sync();
                 }
-                else {
-                    throw new RedisException(
-                                    "The element '" + element.getUnversionedId() + "' with version '" + element.getVersion() + "' already has a more recent version '" + lastVersion +
-                                    "' present in db.");
+                catch(Exception e){
+                    //if an exception has been thrown while writing to, discard the transaction
+                    pipelinedSaveTransaction.discard();
+                    throw e;
                 }
             }
         }
@@ -213,7 +246,7 @@ public class Redis implements Closeable
                 return null;
             }
             //get the last version of the page corresponding to the given url
-            Long lastVersion = this.getLastVersion(wrongVersionId, redisClient);
+            Long lastVersion = this.getLastVersion(wrongVersionId);
             if(lastVersion == -1) {
                 return null;
             }
@@ -325,18 +358,19 @@ public class Redis implements Closeable
     /**
      * Get the last saved version of a storable with a certain id. If the id is a versioned one, this method will not take into account that version, it always fetches the last saved version from db.
      * @param storableID the id of the storable to get the last version of
-     * @param redisClient the redis-client the be used to retrieve the last version
      * @return the last version-number saved in db, -1 if no version is present in db
      */
-    private Long getLastVersion(RedisID storableID, Jedis redisClient){
-        //get last saved version from db
-        List<String> versions = redisClient.lrange(storableID.getUnversionedId(), 0, 0);
-        if(!versions.isEmpty()) {
-            String[] splitted = versions.get(0).split(":");
-            return Long.valueOf(splitted[splitted.length - 1]);
-        }
-        else{
-            return new Long(-1);
+    private Long getLastVersion(RedisID storableID){
+        try(Jedis redisClient = pool.getResource()) {
+            //get last saved version from db
+            List<String> versions = redisClient.lrange(storableID.getUnversionedId(), 0, 0);
+            if (!versions.isEmpty()) {
+                String[] splitted = versions.get(0).split(":");
+                return Long.valueOf(splitted[splitted.length - 1]);
+            }
+            else {
+                return new Long(-1);
+            }
         }
     }
 
