@@ -5,10 +5,10 @@ blocks.plugin("blocks.core.BlockMenu.new", ["blocks.core.BlockMenu", "blocks.cor
         priority: 100
     })
 
-    var newBlock = $('<div class="block"></div>');
+    var newBlock = $('<div class="block"><p></p></div>');
 
     button.on("click", function(event) {
-        Layouter.addNewBlockAtLocation($('<div class="block green"></div>'), Menu.currentBlock().element);
+        Layouter.addNewBlockAtLocation($('<div class="block green"><p>New block. Edit here ...</p></div>'), Menu.currentBlock().element);
     })
 }]);
 
@@ -20,7 +20,7 @@ blocks.plugin("blocks.core.BlockMenu.delete", ["blocks.core.BlockMenu", "blocks.
         priority: 100
     })
 
-    var newBlock = $('<div class="block"><p></p></div>');
+
 
     button.on("click", function(event) {
         Layouter.removeBlock(Menu.currentBlock());
@@ -52,13 +52,23 @@ blocks.plugin("blocks.core.BlockMenu.edit", ["blocks.core.BlockMenu", "blocks.co
             overlayElement.remove();
             blockElement.css("position", "");
             blockElement.css("z-index", "");
-            blockElement.children[0].removeAttr("contenteditable", "");
+            if (blockElement.children().length > 0) {
+                var p = blockElement.children().first();
+                p.removeAttr("contenteditable", "");
+            } else {
+                blockElement.removeAttr("contenteditable", "");
+            }
             Broadcaster.send("activateMouse");
         });
 
         blockElement.css("position", "relative");
         blockElement.css("z-index", "2001");
-        blockElement.children[0].attr("contenteditable", "true");
+        if (blockElement.children().length > 0) {
+            var p = blockElement.children().first();
+            p.attr("contenteditable", "true");
+        } else {
+            blockElement.attr("contenteditable", "true");
+        }
         Broadcaster.send("deactivateMouse");
 
 
