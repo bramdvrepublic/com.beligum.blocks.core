@@ -4,7 +4,7 @@
 
 
 
-blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broadcaster", "blocks.core.Constants", "blocks.core.DomManipulation", function (Elements, Broadcaster, Constants, DOM) {
+blocks.plugin("blocks.core.Layouter", ["blocks.core.Mouse", "blocks.core.Elements", "blocks.core.Broadcaster", "blocks.core.Constants", "blocks.core.DomManipulation", function (Mouse, Elements, Broadcaster, Constants, DOM) {
         var _thisService = this;
         var distributeColumnsInRow2 = function (element) {
             var columns = element.children("." + Constants.COLUMN_CLASS);
@@ -113,6 +113,7 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
 
         this.changeBlockLocation = function (block, dropLocation, side) {
             // remove dropped block
+            Broadcaster.send(Mouse.config.EVENT.DEACTIVATE_MOUSE)
             var columnWidth = DOM.getColumnWidth(block.parent.element);
             DOM.removeBlock(block, 200, function() {
                 prepareDropLocation(block.element, dropLocation, side)
@@ -130,15 +131,34 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
                 } else {
                     // this should not be possible
                 }
-                DOM.appendElement(droppedElement, dropLocationElement, side);
+                DOM.appendElement(droppedElement, dropLocationElement, side, function() {
+                    Broadcaster.sendNoTimeout("refreshLayout");
+                    Broadcaster.send(Mouse.config.EVENT.ACTIVATE_MOUSE)
+                });
 
             };
 
         };
 
-        this.addNewBlockAtBlockSide = function(blockElement, dropLocation, side) {
-
+        this.addNewBlockAtLocation = function(blockElement, dropLocationElement) {
+            if (blockElement.hasClass("block") && dropLocationElement.hasClass("block")) {
+                Broadcaster.send(Mouse.config.EVENT.DEACTIVATE_MOUSE);
+                DOM.appendElement(blockElement, dropLocationElement, Constants.SIDE.BOTTOM, function() {
+                    Broadcaster.sendNoTimeout("refreshLayout");
+                    Broadcaster.send(Mouse.config.EVENT.ACTIVATE_MOUSE);
+                })
+            }
         };
+
+    this.removeBlock = function(block) {
+        if (block instanceof Elements.Block) {
+            Broadcaster.send(Mouse.config.EVENT.DEACTIVATE_MOUSE);
+            DOM.removeBlock(block, 300, function() {
+                Broadcaster.sendNoTimeout("refreshLayout");
+                Broadcaster.send(Mouse.config.EVENT.ACTIVATE_MOUSE);
+            })
+        }
+    };
 
 
     }]);

@@ -2,38 +2,43 @@
  * Created by wouter on 8/10/14.
  */
 
-blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Layouter", "blocks.core.Mouse", "blocks.core.Constants", function (Broadcaster, Layouter, Mouse, Constants) {
+blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Elements", "blocks.core.Layouter", "blocks.core.Mouse", "blocks.core.Constants", function (Broadcaster, Elements, Layouter, Mouse, Constants) {
 
 
     var dragStarted = function (blockEvent) {
-        createDraggedOverlay(blockEvent.drag.surface);
-        createDropPointer("anchor");
-        createDropPointer("other");
-        dragging = true;
-        $("body").css("cursor", "crosshair");
+        if (blockEvent.drag.surface instanceof Elements.Block) {
+            currentBlock = blockEvent.drag.surface;
+            createDraggedOverlay(blockEvent.drag.surface);
+            createDropPointer("anchor");
+            createDropPointer("other");
+            dragging = true;
+            $("body").css("cursor", "crosshair");
+        }
     };
 
     var dragEnded = function (blockEvent) {
-        $("body").css("cursor", "auto");
-        removeDropPointer("anchor");
-        removeDropPointer("other");
-        removeDraggedOverlay();
+        if (dragging) {
+            $("body").css("cursor", "auto");
+            removeDropPointer("anchor");
+            removeDropPointer("other");
+            removeDraggedOverlay();
 
-        if(blockEvent.event.pageX > $(document).innerWidth() || blockEvent.event.pageX < 0 || blockEvent.event.pageY > $(document).innerHeight() || blockEvent.event.pageY < 0) return;
+            if (blockEvent.event.pageX > $(document).innerWidth() || blockEvent.event.pageX < 0 || blockEvent.event.pageY > $(document).innerHeight() || blockEvent.event.pageY < 0) return;
 
-        if (blockEvent.block.current != null) {
-            Logger.debug("Drop block");
-            var dropSpot = blockEvent.block.current.getTriggeredHotspot(blockEvent.direction, blockEvent.event);
-            if (!dropSpotIsDraggedBlock(dropSpot, blockEvent)) {
-                Layouter.changeBlockLocation(blockEvent.drag.surface, dropSpot.anchor, dropSpot.side);
+            if (blockEvent.block.current != null) {
+                Logger.debug("Drop block");
+                var dropSpot = blockEvent.block.current.getTriggeredHotspot(blockEvent.direction, blockEvent.event);
+                if (!dropSpotIsDraggedBlock(dropSpot, blockEvent)) {
+                    Layouter.changeBlockLocation(blockEvent.drag.surface, dropSpot.anchor, dropSpot.side);
+                } else {
+                    // do nothing. You can not drop on the block you're dragging
+                }
             } else {
-                // do nothing. You can not drop on the block you're dragging
+                Logger.debug("No drop for block");
             }
-        } else {
-            Logger.debug("No drop for block");
+            currentBlock = null;
+            dragging = false;
         }
-        currentBlock = null;
-        dragging = false;
     };
 
     var dropSpotIsDraggedBlock = function(dropSpot, blockEvent) {
@@ -166,15 +171,37 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.L
     var lastDropLocation = null;
     var currentBlock = null;
 
-    Broadcaster.on(Mouse.config.EVENT.START_DRAG_BLOCK, function (event) {
+    // on hoover block, can start drag with priority
+    // on leave block, can_not_start drag
+    var allowDrag = function(blockEvent) {
+        if (blockEvent.block.current != null) {
+            if (blockEvent.block.current != currentBlock) {
+                currentBlock = blockEvent.block.current;
+                Broadcaster.send(Mouse.config.EVENT.CAN_START_DRAG, {surface: currentBlock, priority: 200});
+            } else if (blockEvent.dragging == Constants.DRAGGING.CAN_NOT_START_DRAG) {
+                Broadcaster.send(Mouse.config.EVENT.CAN_START_DRAG, {surface: currentBlock, priority: 200});
+            }
+        } else if (blockEvent.block.current != currentBlock) {
+            Broadcaster.send(Mouse.config.EVENT.CAN_NOT_START_DRAG, {surface: currentBlock, priority: 200});
+            currentBlock = null;
+        }
+    };
+
+
+    Broadcaster.on(Mouse.config.EVENT.HOOVER_OVER_BLOCK, function (event) {
+        allowDrag(event)
+    });
+    Broadcaster.on(Mouse.config.EVENT.HOOVER_LEAVE_BLOCK, function (event) {
+        allowDrag(event)
+    });
+
+
+    Broadcaster.on(Mouse.config.EVENT.START_DRAG, function (event) {
         dragStarted(event)
     });
-    Broadcaster.on(Mouse.config.EVENT.END_DRAG_BLOCK, function (event) {
+    Broadcaster.on(Mouse.config.EVENT.END_DRAG, function (event) {
         dragEnded(event)
     });
-//    Broadcaster.on(Mouse.config.EVENT.DRAG_ENTER_BLOCK, function (event) {
-//        enterBlock(event)
-//    });
     Broadcaster.on(Mouse.config.EVENT.DRAG_LEAVE_BLOCK, function (event) {
         dragLeaveBlock(event)
     });

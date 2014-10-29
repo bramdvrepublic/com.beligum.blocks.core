@@ -62,8 +62,6 @@ blocks.plugin("blocks.core.Class", [function () {
 
         return Class;
     }
-
-
 }]);
 
 blocks.plugin("blocks.core.Constants", function() {
@@ -78,8 +76,10 @@ blocks.plugin("blocks.core.Constants", function() {
     this.DRAGGING = {
         WAITING: 1,
         YES: 2,
-        NO: 3,
-        TEXT_SELECTION: 4
+        CAN_START_DRAG: 3,
+        CAN_NOT_START_DRAG: 4,
+        NOT_ALLOWED: 5,
+        TEXT_SELECTION: 6
     };
 
     this.SIDE = {
@@ -95,8 +95,16 @@ blocks.plugin("blocks.core.Constants", function() {
         2: 1,
         3: 4,
         4: 3,
-        0:0
+        0: 0
     };
+
+    this.BLOCK_DRAG_CORNER = {
+        top: 0,
+        left: 0,
+        width: 50,
+        height: 50
+    };
+
 
     this.COLUMN_CLASS = "column";
     this.ROW_CLASS = "row";

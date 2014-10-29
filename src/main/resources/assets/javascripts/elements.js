@@ -23,7 +23,7 @@ blocks
                 }
             },
 
-            isEventInSurface: function (event) {
+            isTriggered: function (event) {
                 var retVal = false;
                 if (this.top <= event.pageY && event.pageY <= this.bottom && this.left <= event.pageX && event.pageX <= this.right) {
                     retVal = true;
@@ -97,14 +97,6 @@ blocks
                 var l = ((this.leftColumn.right + this.rightColumn.left) / 2) - (resizeHandle.DRAW_WIDTH / 2);
                 var r = ((this.leftColumn.right + this.rightColumn.left) / 2) + (resizeHandle.DRAW_WIDTH / 2);
                 this.drawSurface = new surface(t, b, l, r);
-            },
-
-            isTriggered: function (event) {
-                var retVal = false;
-                if (this.isEventInSurface(event)) {
-                    retVal = true;
-                }
-                return retVal;
             }
 
         });
@@ -144,7 +136,7 @@ blocks
 
             findActiveElement: function (event) {
                 var retVal = null;
-                if (this.isEventInSurface(event)) {
+                if (this.isTriggered(event)) {
                     var i = 0;
                     while (retVal == null && i < this.children.length) {
                         retVal = this.children[i].findActiveElement(event);
@@ -159,7 +151,7 @@ blocks
 
             findTriggeredResizeHandle: function (event, triggerType) {
                 var retVal = null;
-                if (this.isEventInSurface(event)) {
+                if (this.isTriggered(event)) {
                     // find resizeHandles
                     var triggerCount = this.resizeHandles.length;
                     for (var i = 0; i < triggerCount; i++) {

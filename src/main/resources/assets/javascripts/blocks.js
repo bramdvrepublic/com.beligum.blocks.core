@@ -1,3 +1,7 @@
+//Logger = {};
+//Logger.debug = function() {};
+//Logger.error = function() {};
+
 function blocksLoader(window) {
     /*Simple helper functions copied from angular*/
 

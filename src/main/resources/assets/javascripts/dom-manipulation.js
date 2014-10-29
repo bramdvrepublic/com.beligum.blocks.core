@@ -1,6 +1,6 @@
 blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.core.Broadcaster", "blocks.core.Constants", function (Elements, Broadcaster, Constants) {
     var _thisService = this;
-    this.getColumnWidth = function (element, callback) {
+    this.getColumnWidth = function (element) {
         var widths = element[0].className.match(/\bcol-md-\d+/g, '');
         if (widths != null && widths.length > 0) {
             var nr = widths[0].substring(7, widths[0].length);
@@ -151,7 +151,7 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.co
     };
 
 
-    this.appendElement = function (blockElement, dropLocationElement, side) {
+    this.appendElement = function (blockElement, dropLocationElement, side, callback) {
         blockElement.toggle(false);
         if (side == Constants.SIDE.RIGHT || side == Constants.SIDE.BOTTOM) {
             dropLocationElement.after(blockElement)
@@ -161,7 +161,7 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.co
 
         elementChanged(dropLocationElement.parent(), function() {
             blockElement.toggle(300, function() {
-                Broadcaster.sendNoTimeout("refreshLayout");
+                callback();
             });
 
         })
@@ -169,8 +169,12 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.co
 
 
     this.removeBlock = function (block, animationTime, callback) {
+//        block.element.css("min-height", "0px");
+//        block.element.css("min-width", "0px");
         block.element.toggle(animationTime, function() {
             var blockElement = block.element.remove();
+//            block.element.css("min-height", "30px");
+//            block.element.css("min-width", "");
             blockElement.toggle();
             if (block.parent != null) {
                 elementChanged(block.parent.element, callback);
