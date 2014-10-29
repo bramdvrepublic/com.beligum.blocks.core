@@ -1,4 +1,15 @@
-blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.Constants", function(Broadcaster, Mouse, Constants) {
+/*
+* The menu that is shown in each block.
+* with addButton you can add a button to the menu
+* addButton takes an object with:
+*   element: jquery element (the button). See bootstrap for now (<button class="btn">test</button>)
+*   priority: sets the order for the buttons. smallest is most left
+*
+*   Menu is shwon when hoovering over a block
+*   Menu is hidden while dragging
+* */
+// TODO refactor, put some things in config (element classes etc)
+blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", function(Broadcaster) {
 
     // on hoover block show menu
     var menuElement = $('<div id="blocks-core-block-menu" class="block-menu btn-group" style="z-index: 600"></div>');
@@ -27,13 +38,13 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
         if (offset.top < event.pageY && offset.top + menuElement.height() > event.pageY && offset.left < event.pageX && offset.left + menuElement.width() > event.pageX) {
             if (!dragdropPrevented) {
                 dragdropPrevented = true;
-                Broadcaster.send(Mouse.config.EVENT.DO_NOT_ALLOW_DRAG)
+                Broadcaster.send(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG)
             }
             retVal = true;
         } else {
             if (dragdropPrevented) {
                 dragdropPrevented = false;
-                Broadcaster.send(Mouse.config.EVENT.ALLOW_DRAG)
+                Broadcaster.send(Broadcaster.EVENTS.ALLOW_DRAG)
             }
         }
         return retVal;
@@ -45,6 +56,7 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
             // No block = remove menu
             if (blockEvent.block.current == null) {
                 // if mouse is still in current menu, then do not remove it.
+                // TODO: does not yet work :)
                 if (!mouseOverMenu(blockEvent.event)) {
                     hideMenuElement();
                 }
@@ -55,7 +67,7 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
         } else {
             // nothing changed, check if hoover over button
             if (mouseOverMenu(blockEvent.event)) {
-                // prevent drag drop
+                // prevent draggingOptions drop
             }
         }
     };
@@ -96,22 +108,22 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
     var activeBlock = null;
     var dragdropPrevented = false;
 
-    Broadcaster.on(Mouse.config.EVENT.HOOVER_ENTER_BLOCK, function (event) {
+    Broadcaster.on(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, function (event) {
         showMenu(event)
     });
-    Broadcaster.on(Mouse.config.EVENT.HOOVER_LEAVE_BLOCK, function (event) {
+    Broadcaster.on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, function (event) {
         // check if not active block
         showMenu(event)
     });
-    Broadcaster.on(Mouse.config.EVENT.HOOVER_OVER_BLOCK, function (event) {
+    Broadcaster.on(Broadcaster.EVENTS.HOOVER_OVER_BLOCK, function (event) {
         showMenu(event)
     });
 
-    Broadcaster.on(Mouse.config.EVENT.START_DRAG, function (event) {
+    Broadcaster.on(Broadcaster.EVENTS.START_DRAG, function (event) {
         deactivate(event);
     });
 
-    Broadcaster.on(Mouse.config.EVENT.END_DRAG, function (event) {
+    Broadcaster.on(Broadcaster.EVENTS.END_DRAG, function (event) {
         activate(event)
     });
 

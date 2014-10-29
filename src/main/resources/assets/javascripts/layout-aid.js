@@ -1,10 +1,18 @@
-blocks.plugin("blocks.core.layout-aid", ["blocks.core.Mouse", "blocks.core.Broadcaster", "blocks.core.Elements", function(Mouse, Broadcaster, Elements) {
+/*
+* For simple layout helpers
+*
+* - show frame of all blocks on hoover.
+*
+*
+* */
+
+blocks.plugin("blocks.core.layout-aid", ["blocks.core.Layouter", "blocks.core.Broadcaster", "blocks.core.Elements", function(Layouter, Broadcaster, Elements) {
 
     var layoutFrame = $('<div style="position: absolute; top: 0px; left: 0px; z-index: 500;" />');
     var createLayoutFrame = function() {
         layoutFrame.children().remove();
-        for(var i=0; i < Elements.trees.length; i++) {
-            var tree = Elements.trees[i];
+        for(var i=0; i < Layouter.getLayoutTree().length; i++) {
+            var tree = Layouter.getLayoutTree()[i];
             createFrame(tree);
         }
     };
@@ -46,10 +54,10 @@ blocks.plugin("blocks.core.layout-aid", ["blocks.core.Mouse", "blocks.core.Broad
         }
     };
 
-    Broadcaster.on(Mouse.config.EVENT.HOOVER_ENTER_BLOCK, function (event) {
+    Broadcaster.on(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, function (event) {
         //enterBlockHoover(event)
     });
-    Broadcaster.on(Mouse.config.EVENT.HOOVER_LEAVE_BLOCK, function (event) {
+    Broadcaster.on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, function (event) {
         //leaveBlockHoover(event)
     });
 
@@ -57,18 +65,5 @@ blocks.plugin("blocks.core.layout-aid", ["blocks.core.Mouse", "blocks.core.Broad
         //createLayoutFrame();
     })
 
-//
-//    Broadcaster.on(Mouse.config.EVENT.START_DRAG, function (event) {
-//        dragStarted(event)
-//    });
-//    Broadcaster.on(Mouse.config.EVENT.END_DRAG, function (event) {
-//        dragEnded(event)
-//    });
-//    Broadcaster.on(Mouse.config.EVENT.DRAG_LEAVE_BLOCK, function (event) {
-//        dragLeaveBlock(event)
-//    });
-//    Broadcaster.on(Mouse.config.EVENT.DRAG_OVER_BLOCK, function (event) {
-//        dragOverBlock(event)
-//    });
 
 }]);

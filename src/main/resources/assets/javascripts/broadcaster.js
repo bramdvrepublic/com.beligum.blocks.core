@@ -109,6 +109,28 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.RegisteredEvent", functio
         this.send(eventName, param, -1);
     }
 
+    this.EVENTS = {
+        CAN_START_DRAG: "canStartDrag",
+        CAN_NOT_START_DRAG: "canNotStartDrag",
+        START_DRAG: "startDrag",
+        END_DRAG: "endDrag",
+        ABORT_DRAG: "abortDrag",
+        ALLOW_DRAG: "allowDrag",
+        DO_NOT_ALLOW_DRAG: "disallowDrag",
+        HOOVER_LEAVE_BLOCK: "hooverLeaveLayoutElement",
+        HOOVER_ENTER_BLOCK: "hooverEnterLayoutElement",
+        HOOVER_OVER_BLOCK: "hooverEnterLayoutElement",
+        DRAG_LEAVE_BLOCK: "dragLeaveLayoutElement",
+        DRAG_ENTER_BLOCK: "dragEnterLayoutElement",
+        DRAG_OVER_BLOCK: "dragOverLayoutElement",
+        ACTIVATE_MOUSE: "activateMouse",
+        DEACTIVATE_MOUSE: "deactivateMouse",
+        DO_REFRESH_LAYOUT: "canRefreshLayout",
+        DID_REFRESH_LAYOUT: "didRefreshLayout",
+        DOM_WILL_CHANGE: "domWillChange",
+        DOM_DID_CHANGE: "domDidChange"
+    }
+
 }])
     .plugin("blocks.core.RegisteredEvent", [function () {
         this.create = function (name_t, namespace_t, callback_t) {
@@ -124,7 +146,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.RegisteredEvent", functio
                 callback(parameter);
             }
         }
-    }]);
+    }])
 
 
 

@@ -64,6 +64,8 @@ blocks.plugin("blocks.core.Class", [function () {
     }
 }]);
 
+// All constants
+
 blocks.plugin("blocks.core.Constants", function() {
     this.DIRECTION = {
         UP: 1,
@@ -98,18 +100,11 @@ blocks.plugin("blocks.core.Constants", function() {
         0: 0
     };
 
-    this.BLOCK_DRAG_CORNER = {
-        top: 0,
-        left: 0,
-        width: 50,
-        height: 50
-    };
-
-
     this.COLUMN_CLASS = "column";
     this.ROW_CLASS = "row";
     this.BLOCK_CLASS = "block";
     this.COLUMN_WIDTH_CLASS = "col-md-";
     this.CAN_LAYOUT_CLASS = "can-layout";
     this.MAX_COLUMNS = 12;
+
 });

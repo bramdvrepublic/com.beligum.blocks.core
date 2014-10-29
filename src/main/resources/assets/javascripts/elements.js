@@ -1,10 +1,16 @@
 
-
+/*
+* Classes for all layout types and surface
+* Layouter builds a virtual tree from these objects for easy searching and triggering
+* and to take some load of the dom while calculating
+*
+*
+* */
 blocks
     .plugin("blocks.core.Elements", ["blocks.core.Class", "blocks.core.Constants", "blocks.core.Broadcaster", function (Class, Constants, Broadcaster) {
 
-        var _thisService = this;
-
+        // smallest elemet with 4 corner
+        // and a function to check if x,y is inside the surface
         var surface = Class.create({
             constructor: function (top, bottom, left, right) {
                 if (top <= bottom) {
@@ -23,19 +29,24 @@ blocks
                 }
             },
 
-            isTriggered: function (event) {
+            isTriggered: function (x, y) {
                 var retVal = false;
-                if (this.top <= event.pageY && event.pageY <= this.bottom && this.left <= event.pageX && event.pageX <= this.right) {
+                if (this.top <= y && y <= this.bottom && this.left <= x && x <= this.right) {
                     retVal = true;
                 }
                 return retVal;
             }
         });
 
+        /*
+        * Special element that indicates a trigger where a block could be dropped
+        * on an other block. the dropspot is located on a SIDE of the block and the
+        * MIN and MAX value that defines the area on that side
+        * e.g. side = TOP and min =0 and max= 10 then this dropspot will be triggered with an
+        * y coordinate of 6
+        *
+        * */
         var dropspot = Class.create({
-            STATIC: {
-                WIDTH: 20 //  defines the hotspot width on the side of the blocks
-            },
 
             constructor: function (side, anchor) {
                 this.anchor = anchor;
@@ -52,6 +63,7 @@ blocks
                 return retVal;
             },
 
+
             setTrigger: function(min, max) {
                 if (min < max) {
                     this.min = min;
@@ -62,6 +74,7 @@ blocks
                 }
             },
 
+            // co is an x or y value that must be between min and max
             isTriggered: function (co) {
                 var retVal = false;
                 if (co > this.min && co < this.max) {
@@ -72,6 +85,11 @@ blocks
 
         });
 
+        /*
+        * defines a resizehandle. The surface of the resizeHandle is the are that triggers when you hoover over it
+        * the draw-surface is the surface that will be drawn in the dom (can be bigger or smaller).
+        * left and rightcolumn are the columns that this handle will resize when dragged
+        */
         var resizeHandle = Class.create(surface, {
             STATIC: {
                 DRAW_WIDTH: 5,
@@ -84,6 +102,7 @@ blocks
                 this.calculateSurface();
             },
 
+            // calculate location by location of left and right column
             calculateSurface: function () {
                 var middle = (this.leftColumn.calculateRight(this.leftColumn.element) + this.leftColumn.calculateLeft(this.rightColumn.element)) / 2;
                 this.leftColumn.right = middle;
@@ -101,6 +120,10 @@ blocks
 
         });
 
+        /*
+        * Is the abstract class for DOM elements (row, container, block)
+        * contains some helperfunctions
+        * */
         var layoutElement = Class.create(surface, {
             calculateTop: function (element) {
                 return  element.offset().top
@@ -134,12 +157,13 @@ blocks
                 this.resizeHandles = [];
             },
 
-            findActiveElement: function (event) {
+            // Easily walk the tree and find the block that contains the coordinates
+            findActiveElement: function (x, y) {
                 var retVal = null;
-                if (this.isTriggered(event)) {
+                if (this.isTriggered(x, y)) {
                     var i = 0;
                     while (retVal == null && i < this.children.length) {
-                        retVal = this.children[i].findActiveElement(event);
+                        retVal = this.children[i].findActiveElement(x, y);
                         i++;
                     }
                     if (retVal == null) {
@@ -149,19 +173,21 @@ blocks
                 return retVal;
             },
 
-            findTriggeredResizeHandle: function (event, triggerType) {
+            // find resizehandle that contains coordinates
+            findTriggeredResizeHandle: function (x, y) {
                 var retVal = null;
-                if (this.isTriggered(event)) {
+                if (this.isTriggered(x, y)) {
                     // find resizeHandles
                     var triggerCount = this.resizeHandles.length;
                     for (var i = 0; i < triggerCount; i++) {
-                        if (this.resizeHandles[i].isTriggered(event) && this.resizeHandles[i] instanceof triggerType) {
+                        if (this.resizeHandles[i].isTriggered(x, y)) {
                             return this.resizeHandles[i];
                         }
                     }
                 }
                 return retVal;
             },
+            // returns true if this block has no sibling on his left/right/top/bottom
             isOuterLeft: function () {return true},
             isOuterRight: function () { return true },
             isOuterTop: function () { return true },
@@ -177,6 +203,8 @@ blocks
                     return this.isOuterRight();
                 }
             },
+
+            // Get element at side, general function for getNext, getPrevious
             getElementAtSide: function(side) {
                 if (side == Constants.SIDE.TOP || side == Constants.SIDE.LEFT) {
                     return this.getPrevious();
@@ -201,6 +229,8 @@ blocks
                     return null;
                 }
             },
+
+            // TODO: check if deprecated
             getFullWidth: function () {
                 var retVal = 0;
                 if (this.parent != null) {
@@ -220,7 +250,9 @@ blocks
                 return retVal;
             },
 
-            getDropspots: function(side, dropspots) {
+            // find all dropspots for an element
+            // is called for a block and returns all dropspots for this block and his parents.
+            calculateDropspots: function(side, dropspots) {
                 if (side == Constants.SIDE.LEFT || side == Constants.SIDE.RIGHT) {
                     if (this instanceof column ||
                         (this instanceof block &&
@@ -233,7 +265,7 @@ blocks
                     }
                 }
                 if (this.isOuter(side) && this.parent != null) {
-                    dropspots = this.parent.getDropspots(side, dropspots);
+                    dropspots = this.parent.calculateDropspots(side, dropspots);
                 }
                 return dropspots;
             }
@@ -285,6 +317,7 @@ blocks
             isOuterTop: function () { return this.element.prev().length == 0 },
             isOuterBottom: function () { return this.element.next().length == 0 },
 
+            // Override
             getElementAtSide: function(side) {
                 if (side == Constants.SIDE.TOP) {
                     return this.getPrevious();
@@ -347,6 +380,7 @@ blocks
             isOuterLeft: function () { return this.element.prev().length == 0 },
             isOuterRight: function () { return this.element.next().length == 0 },
 
+            // Override
             getElementAtSide: function(side) {
                 if (side == Constants.SIDE.LEFT) {
                     return this.getPrevious();
@@ -375,12 +409,14 @@ blocks
                 this.generateDropspots();
             },
 
+            // gets all dropspots for this block and his parents, for each side
+            // then generate the triggers (surfaces) for each dropspot
             generateDropspots: function () {
                 this.dropspots = {};
-                this.dropspots[Constants.SIDE.TOP] = this.getDropspots(Constants.SIDE.TOP, []);
-                this.dropspots[Constants.SIDE.BOTTOM] = this.getDropspots(Constants.SIDE.BOTTOM, []);
-                this.dropspots[Constants.SIDE.LEFT] = this.getDropspots(Constants.SIDE.LEFT, []);
-                this.dropspots[Constants.SIDE.RIGHT] = this.getDropspots(Constants.SIDE.RIGHT, []);
+                this.dropspots[Constants.SIDE.TOP] = this.calculateDropspots(Constants.SIDE.TOP, []);
+                this.dropspots[Constants.SIDE.BOTTOM] = this.calculateDropspots(Constants.SIDE.BOTTOM, []);
+                this.dropspots[Constants.SIDE.LEFT] = this.calculateDropspots(Constants.SIDE.LEFT, []);
+                this.dropspots[Constants.SIDE.RIGHT] = this.calculateDropspots(Constants.SIDE.RIGHT, []);
                 this.generateTriggers();
             },
 
@@ -400,6 +436,7 @@ blocks
                 }
             },
 
+            // calculates the triggers (surface where mouse coordinates trigger a dropspot)
             generateTriggers: function() {
                 this.generateTriggersForSide(Constants.SIDE.TOP);
                 this.generateTriggersForSide(Constants.SIDE.BOTTOM);
@@ -407,6 +444,9 @@ blocks
                 this.generateTriggersForSide(Constants.SIDE.RIGHT);
             },
 
+            // generate the triggers for the dropspots
+            // e.g. 3 dropspots left =  width of trigger = half width of block / 3
+            // then set triggers for dropspot. the most left dropspot is dropspot for deepest parent
             generateTriggersForSide: function(side) {
                 var left, triggerWidth, triggers;
                 triggers = [];
@@ -426,23 +466,25 @@ blocks
 
                 var t_right = left + (triggerWidth * this.dropspots[side].length);
                 for (var i=0; i < this.dropspots[side].length ; i++) {
+                    // set min and max for trigger = trigger is zone between min x and max x (left/right) OR min y and max y (top/bottom)
                     this.dropspots[side][i].setTrigger(t_right, t_right -= triggerWidth);
                 }
             },
 
-            getTriggeredHotspot: function(direction, event) {
+            // Find the dropspot that is triggered for x and y
+            getTriggeredDropspot: function(direction, x, y) {
                 var side = null;
                 var co = 0;
                 if (direction == Constants.DIRECTION.UP || direction == Constants.DIRECTION.DOWN) {
-                    co = event.pageY;
-                    if (event.pageY < this.horizontalMiddle) {
+                    co = y;
+                    if (y < this.horizontalMiddle) {
                         side = Constants.SIDE.TOP;
                     } else {
                         side = Constants.SIDE.BOTTOM;
                     }
                 } else if (direction == Constants.DIRECTION.LEFT || direction == Constants.DIRECTION.RIGHT) {
-                    co = event.pageX;
-                    if (event.pageX < this.verticalMiddle) {
+                    co = x;
+                    if (x < this.verticalMiddle) {
                         side = Constants.SIDE.LEFT;
                     } else {
                         side = Constants.SIDE.RIGHT;
@@ -457,39 +499,12 @@ blocks
                 }
                 return null;
             }
-
-
-
         });
 
-        this.trees = [];
 
-
-        this.generateHotspots = function () {
-            // We create some sort of a heat map. We define boxes for all draggable blocks
-            // we can add left and rigth from each column
-            // and left and right from container if container has more than 1 row
-            // select each row and add bottom
-            // if row has +1 colunms, we can add also to bottom of columns
-            // except if column has +1 rows
-
-            Logger.debug("Calculate hotspots");
-            _thisService.trees = [];
-            //_this.cleanLayout();
-            $("." + Constants.CAN_LAYOUT_CLASS).each(function () {
-                var containerElement = $(this);
-                // get size of container including border & padding but not margins
-                var container = new _thisService.Container(containerElement);
-                Logger.debug(container);
-                _thisService.trees.push(container);
-                Broadcaster.send("layoutChanged")
-            });
-        };
 
         this.Surface = surface;
-        this.DropSpot = dropspot;
         this.ResizeHandle = resizeHandle;
-        this.LayoutElement = layoutElement;
         this.Row = row;
         this.Container = container;
         this.Block = block;

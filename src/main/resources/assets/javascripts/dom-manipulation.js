@@ -1,5 +1,21 @@
+/*
+* Simple plugin that handles functions for the DOM. All elements should be jQuery Objects.
+* To allow for animations, most functions that manipulate the dom directly (remove an elment, add an element)
+* take callbacks to run when their animation ends. This way you can chain your animations.
+*
+* EXTERNAL FUNCTIONS
+* appendElement
+* removeBlock
+*
+* EXTERNAL HELPER FUNCTIONS
+* ... see bottom page
+*
+*
+* */
+
 blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.core.Broadcaster", "blocks.core.Constants", function (Elements, Broadcaster, Constants) {
     var _thisService = this;
+    // Get column width (in grid units 1-12, not pixels)
     this.getColumnWidth = function (element) {
         var widths = element[0].className.match(/\bcol-md-\d+/g, '');
         if (widths != null && widths.length > 0) {
@@ -11,6 +27,7 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.co
         }
     };
 
+    // Sets the column width in grid-units, not pixels
     this.setColumnWidth = function (element, newWidth, animationTime, callback) {
         var currentClass = Constants.COLUMN_WIDTH_CLASS + this.getColumnWidth(element);
         var newClass = Constants.COLUMN_WIDTH_CLASS + newWidth;
@@ -33,6 +50,7 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.co
 
     };
 
+    // distributes the width of the columns in a row so they take the max nr of grid-units
     var distributeColumnsInRow = function (element, callback) {
         var columns = element.children("." + Constants.COLUMN_CLASS);
         // Check if current distribution of columns is incorrect
@@ -80,8 +98,24 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.co
 
     };
 
+    /*
+    * METHODS TO CLEAN THE DOM (REMOVE COLUMNS WITHOUT BLOCKS, ROWS WITHOUT COLUMNS, ...)
+    * usefull after manipulating the layout
+    * */
+
+    // generic method that starts the chain of cleaning.
+    // first delete empty elements
+    var elementChanged = function (element, callback) {
+        Logger.debug("Element Changed")
+        if (element == null) {
+            // What to do???
+        } else {
+            deleteEmptyElement(element, callback);
+        }
+    };
 
     // if Column or row is empty then delete
+    // when not deleting, try simplifying
     var deleteEmptyElement = function (element, callback) {
         if (((element.hasClass(Constants.COLUMN_CLASS) || element.hasClass(Constants.ROW_CLASS))) &&
             element.children().length == 0) {
@@ -98,6 +132,7 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.co
         }
     };
 
+    // generic method to simplify columns and rows.
     var simplifyElement = function(element, callback) {
         if (element.hasClass(Constants.COLUMN_CLASS)) {
             simplifyColumnInColumn(element, callback);
@@ -107,16 +142,6 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.co
             callback();
         }
     }
-
-    var elementChanged = function (element, callback) {
-        Logger.debug("Element Changed")
-        if (element == null) {
-            // What to do???
-        } else {
-            deleteEmptyElement(element, callback);
-        }
-    };
-
 
     // if: 1 column(A) in 1 row(B) in 1 column(C),
     // then we can put content of column A in Column C and delete A & B
@@ -151,6 +176,7 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.co
     };
 
 
+    // function to insert a block and clean up
     this.appendElement = function (blockElement, dropLocationElement, side, callback) {
         blockElement.toggle(false);
         if (side == Constants.SIDE.RIGHT || side == Constants.SIDE.BOTTOM) {
@@ -168,13 +194,10 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.co
     };
 
 
+    // Function to remove a block and clean up
     this.removeBlock = function (block, animationTime, callback) {
-//        block.element.css("min-height", "0px");
-//        block.element.css("min-width", "0px");
         block.element.toggle(animationTime, function() {
             var blockElement = block.element.remove();
-//            block.element.css("min-height", "30px");
-//            block.element.css("min-width", "");
             blockElement.toggle();
             if (block.parent != null) {
                 elementChanged(block.parent.element, callback);
@@ -183,7 +206,77 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.co
             }
         })
     };
+    /*
+     *  HELPER FUNCTIONS TO WRAP BLOCKS AND EASILY MANIPULATE LAYOUT
+     */
+    this.createRow = function () {
+        return $("<div class='" + Constants.ROW_CLASS + "'></div>")
+    };
 
+    this.createColumn = function (columnWidth) {
+        return $("<div class='" + Constants.COLUMN_CLASS + " " + Constants.COLUMN_WIDTH_CLASS + columnWidth +"'></div>");
+    };
+
+    this.wrapBlockInColumn = function (blockElement, columnWidth) {
+        return DOM.createColumn(columnWidth).append(blockElement);
+    };
+
+    this.wrapBlockInRow = function (blockElement) {
+        return DOM.createRow().append(DOM.createColumn(12).append(blockElement));
+    };
+
+    /*
+    * When 1 column contains e.g. 6 blocks and we drop a block
+    * to the right of the 3th block in that column,
+    * then we need to wrap all blocks in rows
+    *
+    * We do this efficiently and in this example this method would wrap:
+     *  - block 1 & 2 in a row (with 1 column)
+     *  - block 3 in a row (with 1 column)
+     *  - 4,5,6 in 1 row (with 1 column)
+    *
+    * this method takes a block and wraps this block in a row
+    * and also wraps the other siblings in rows
+    * */
+    this.wrapSiblingBlocksInRows = function (blockElement) {
+        var parentColumnElement = blockElement.parent();
+        if (parentColumnElement.hasClass(Constants.COLUMN_CLASS)) {
+            var before = [];
+            var current = null;
+            var after = [];
+            var children = parentColumnElement.children().remove();
+            var childCount = children.length;
+            var flag = false;
+            // grab all blocks in the parent column
+            // put all siblings before our block in the before array
+            // put all siblings after our block in the after array
+            for (var i = 0; i < childCount; i++) {
+                var child = children[i];
+                if (child === blockElement[0]) {
+                    current = child;
+                    flag = true;
+                } else if (!flag) {
+                    before.push(child);
+                } else {
+                    after.push(child)
+                }
+            }
+            // wrap before, current and after in a row and re-append to the parent
+            if (before.length > 0) {
+                parentColumnElement.append(DOM.wrapBlockInRow(before));
+            }
+            parentColumnElement.append(DOM.wrapBlockInRow(current));
+            if (after.length > 0) {
+                parentColumnElement.append(DOM.wrapBlockInRow(after));
+            }
+
+            return blockElement.parent();
+        } else {
+            return blockElement;
+        }
+    };
+
+    var DOM = this;
 
 
 }]);
