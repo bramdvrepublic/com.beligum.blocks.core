@@ -16,7 +16,7 @@ import java.util.Set;
 
 /**
  * Created by bas on 08.10.14.
- * A representation of a html page-template. It has an id of the form "page/<pageClassName>"
+ * A representation of a html page-template.
  */
 public class PageClass extends AbstractPage
 {
