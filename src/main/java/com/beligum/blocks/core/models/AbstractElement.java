@@ -39,10 +39,4 @@ public abstract class AbstractElement extends IdentifiableObject
         return isFinal;
     }
 
-
-    /**
-     * @return the name of the set of all these elements in the database
-     */
-    abstract public String getDBSetName();
-
 }

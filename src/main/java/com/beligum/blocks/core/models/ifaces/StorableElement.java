@@ -48,4 +48,9 @@ public interface StorableElement extends Storable
      * @return the name of the page-class of the page this block belongs to
      */
     public String getPageClassName();
+
+    /**
+     * @return the name of the set of all these elements in the database
+     */
+    public String getDBSetName();
 }

@@ -1,6 +1,6 @@
 package com.beligum.blocks.core.models.storables;
 
-import com.beligum.blocks.core.config.DatabaseFieldNames;
+import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.identifiers.ElementID;
 import com.beligum.blocks.core.models.AbstractElement;
 import com.beligum.blocks.core.models.ifaces.StorableElement;
@@ -78,11 +78,11 @@ public class Block extends AbstractElement implements StorableElement
     @Override
     public Map<String, String> toHash(){
         Map<String, String> hash = new HashMap<>();
-        hash.put(DatabaseFieldNames.CONTENT, this.getContent());
-        hash.put(DatabaseFieldNames.APP_VERSION, this.applicationVersion);
-        hash.put(DatabaseFieldNames.CREATOR, this.creator);
-        hash.put(DatabaseFieldNames.ELEMENT_CLASS_TYPE, this.getClass().getSimpleName());
-        hash.put(DatabaseFieldNames.PAGE_CLASS, this.pageClassName);
+        hash.put(DatabaseConstants.CONTENT, this.getContent());
+        hash.put(DatabaseConstants.APP_VERSION, this.applicationVersion);
+        hash.put(DatabaseConstants.CREATOR, this.creator);
+        hash.put(DatabaseConstants.ELEMENT_CLASS_TYPE, this.getClass().getSimpleName());
+        hash.put(DatabaseConstants.PAGE_CLASS, this.pageClassName);
         return hash;
     }
     @Override
@@ -114,7 +114,7 @@ public class Block extends AbstractElement implements StorableElement
     @Override
     public String getDBSetName()
     {
-        return DatabaseFieldNames.BLOCK_SET_NAME;
+        return DatabaseConstants.BLOCK_SET_NAME;
     }
 
 

@@ -2,8 +2,10 @@ package com.beligum.blocks.core.parsing;
 
 import com.beligum.blocks.core.caching.PageClassCache;
 import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.exceptions.PageClassCacheException;
-import com.beligum.blocks.core.exceptions.PageParserException;
+import com.beligum.blocks.core.config.CSSClasses;
+import com.beligum.blocks.core.config.CacheConstants;
+import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.exceptions.ParserException;
 import com.beligum.blocks.core.identifiers.ElementID;
 import com.beligum.blocks.core.identifiers.PageID;
 import com.beligum.blocks.core.models.PageClass;
@@ -18,10 +20,12 @@ import org.jsoup.nodes.*;
 import org.jsoup.select.Elements;
 
 import java.io.File;
+import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.text.ParseException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -31,28 +35,8 @@ import java.util.Set;
  * Created by bas on 30.09.14.
  * Parser class for parsing pages
  */
-public class PageParser
+public class PageParser extends CachableClassParser<PageClass>
 {
-
-    /**
-     * The css-class indicating that a certain <body>-tag is a page.
-     * (f.i. <body class="page">)
-     */
-    public final static String CSS_CLASS_FOR_PAGE = "page";
-    /**
-     * The prefix which a css-class indicating that a certain <body>-tag is of a certain page-class must have to be recognized as such.
-     * (f.i. 'page-default' has the prefix 'page-' added to it's page-class name 'default')
-     */
-    public final static String CSS_CLASS_FOR_PAGECLASS_PREFIX = "page-";
-
-    public final static String CSS_CLASS_FOR_ROW = "row";
-    public final static String CSS_CLASS_FOR_BLOCK = "block";
-
-    public final static String CSS_CLASS_FOR_MODIFIABLE_ROW = "can-modify";
-    public final static String CSS_CLASS_FOR_LAYOUTABLE_ROW = "can-layout";
-    public final static String CSS_CLASS_FOR_CREATE_ENABLED_ROW = "can-create";
-    public final static String CSS_CLASS_FOR_EDITABLE_BLOCK = "can-edit";
-
     /**the template containing names of variables of the page currently being parsed*/
     private String pageTemplate;
     /**a set of all the blocks of the page currently being parsed*/
@@ -74,33 +58,46 @@ public class PageParser
     }
 
 
-    /**
-     * Parse the default template-file of the page-class and return a PageClass-object, filled with it's blocks, rows and the template of the page-class
-     * @param pageClassName the name of the page-class to be parsed (f.i. "default" for a pageClass filtered from the file "pages/default/index.html")
-     * @return a page-class parsed from the "pages/<page-class-name>/index.html"
-     * @throws PageParserException
-     */
-    public PageClass parsePageClass(String pageClassName) throws PageParserException
-    {
-        try{
-            String templateFilename = this.getTemplatePath(pageClassName);
-            File pageClassTemplate = new File(templateFilename);
-            //get the url used for identifying blocks and rows for this page-class
-            URL pageClassURL = PageClass.getBaseUrl(pageClassName);
-            //fill up this parser-class, with the elements and template filtered from the default html-file
-            String foundPageClassName = this.fillWithPageClass(pageClassTemplate, pageClassURL);
-            if(!foundPageClassName.equals(pageClassName)){
-                throw new PageParserException("The name of the specified page-class (" + pageClassName + ") does not match the name found in the page-class template: " + foundPageClassName);
-            }
-            return new PageClass(pageClassName, this.blocks, this.rows, this.pageTemplate, this.docType);
-        }
-        catch(PageParserException e){
-            throw e;
-        }
-        catch(Exception e){
-            throw new PageParserException("Error while parsing page-class '" + pageClassName + "' from template.", e);
-        }
-    }
+//    /**
+//     * Parse the default template-file of the page-class and return a PageClass-object, filled with it's blocks, rows and the template of the page-class
+//     * @param pageClassName the name of the page-class to be parsed (f.i. "default" for a pageClass filtered from the file "pages/default/index.html")
+//     * @return a page-class parsed from the "pages/<page-class-name>/index.html"
+//     * @throws com.beligum.blocks.core.exceptions.ParserException
+//     */
+//    @Override
+//    public PageClass parseCachableClass(String pageClassName) throws ParserException
+//    {
+//        try{
+//            String templateFilename = this.getTemplatePath(pageClassName);
+//            File pageClassTemplate = new File(templateFilename);
+//            //get the url used for identifying blocks and rows for this page-class
+//            URL pageClassURL = PageClass.getBaseUrl(pageClassName);
+//            //fill up this parser-class, with the elements and template filtered from the default html-file
+//            String foundPageClassName = this.fillWithPageClass(pageClassTemplate, pageClassURL);
+//            if(!foundPageClassName.equals(pageClassName)){
+//                throw new ParserException("The name of the page-class (" + pageClassName + ") does not match the page-class-name found in the template: " + foundPageClassName);
+//            }
+//            return new PageClass(pageClassName, this.blocks, this.rows, this.pageTemplate, this.docType);
+//        }
+//        catch(ParserException e){
+//            throw e;
+//        }
+//        catch(Exception e){
+//            throw new ParserException("Error while parsing page-class '" + pageClassName + "' from template.", e);
+//        }
+//    }
+//
+//    /**
+//     * Parse the default template-file of the page-class and return a PageClass-object, filled with it's blocks, rows and the template of the page-class.
+//     * This method does the same as 'parseCachableClass(String pageClassName)', but is used as syntactic glue.
+//     * @param pageClassName the name of the page-class to be parsed (f.i. "default" for a pageClass filtered from the file "pages/default/index.html")
+//     * @return a page-class parsed from the "pages/<page-class-name>/index.html"
+//     * @throws com.beligum.blocks.core.exceptions.ParserException
+//     */
+//    public PageClass parsePageClass(String pageClassName) throws ParserException
+//    {
+//        return this.parseCachableClass(pageClassName);
+//    }
 
     /**
      *
@@ -109,7 +106,7 @@ public class PageParser
      * @param pageUrl the url that will be used to id blocks and rows
      * @return a page-instance filled with the blocks and rows filtered from the url's htmlcontent
      */
-    public Page parsePage(String pageHtml, URL pageUrl) throws PageParserException
+    public Page parsePage(String pageHtml, URL pageUrl) throws ParserException
 
     {
         try{
@@ -117,11 +114,11 @@ public class PageParser
             //return a page-instance with a newly versioned id and the found blocks and rows of class 'pageClass'
             return new Page(new PageID(pageUrl), this.blocks, this.rows, pageClassName);
         }
-        catch(PageClassCacheException e){
-            throw new PageParserException("Error while getting page-class from cache. ", e);
+        catch(CacheException e){
+            throw new ParserException("Error while getting page-class from cache. ", e);
         }
         catch(Exception e){
-            throw new PageParserException("Error while parsing page '" + pageUrl + "'.", e);
+            throw new ParserException("Error while parsing page '" + pageUrl + "'.", e);
         }
 
     }
@@ -130,9 +127,9 @@ public class PageParser
      * check whether the specified document is a page (it must have <body class='page page-classname'> present in the html-structure)
      * @param page page to be checked
      * @return the name of the page-class of the page that was checked
-     * @throws PageParserException when the document isn't a correct 'page'
+     * @throws com.beligum.blocks.core.exceptions.ParserException when the document isn't a correct 'page'
      */
-    public String checkPage(Document page) throws PageParserException
+    public String checkPage(Document page) throws ParserException
     {
         boolean isPage = false;
         boolean hasPageClass = false;
@@ -141,22 +138,36 @@ public class PageParser
         while(it.hasNext() && (!isPage || !hasPageClass)){
             String className = it.next();
             if(!isPage) {
-                isPage = className.equals(CSS_CLASS_FOR_PAGE);
+                isPage = className.equals(CSSClasses.PAGE);
             }
-            if(!hasPageClass && className.startsWith(CSS_CLASS_FOR_PAGECLASS_PREFIX)){
+            if(!hasPageClass && className.startsWith(CSSClasses.PAGECLASS_PREFIX)){
                 hasPageClass = true;
-                pageClassName = className.substring(CSS_CLASS_FOR_PAGECLASS_PREFIX.length(), className.length());
+                pageClassName = className.substring(CSSClasses.PAGECLASS_PREFIX.length(), className.length());
             }
         }
         if(!isPage){
-            throw new PageParserException("Not a page, <body class='" + CSS_CLASS_FOR_PAGE +"'> could not be found at '" + page.location() + "'");
+            throw new ParserException("Not a page, <body class='" + CSSClasses.PAGE +"'> could not be found at '" + page.location() + "'");
         }
         else if(!hasPageClass){
-            throw new PageParserException("Page has no page-class, <body class='" + CSS_CLASS_FOR_PAGE + " " + CSS_CLASS_FOR_PAGECLASS_PREFIX + "classname'> could not be found at '" + page.location() + "'");
+            throw new ParserException("Page has no page-class, <body class='" + CSSClasses.PAGE + " " + CSSClasses.PAGECLASS_PREFIX + "classname'> could not be found at '" + page.location() + "'");
         }
         else{
             return pageClassName;
         }
+    }
+
+    /**
+     * Parses a html-file, containing a page-class, to blocks and rows containing variables and fills this parser up with the found content.
+     * After the parse, a string containing the template of this cachable will be saved in the field 'cachableTemplate' and the found blocks and rows will be stored in the fields 'blocks' and 'rows
+     *
+     * @param cachableClassTemplate the file containing html of a cachable-class
+     * @param baseUrl               the base-url which will be used to define the row- and block-ids if
+     * @return the name of the cachable-class found in the template
+     */
+    @Override
+    protected String fill(File cachableClassTemplate, URL baseUrl) throws ParserException
+    {
+        return this.fillWithPageClass(cachableClassTemplate, baseUrl);
     }
 
 
@@ -167,7 +178,7 @@ public class PageParser
      * @param baseUrl the base-url which will be used to define the row- and block-ids
      * @return the name of the page-class found in the template
      */
-    private String fillWithPageClass(File treeFile, URL baseUrl) throws PageParserException, PageClassCacheException
+    private String fillWithPageClass(File treeFile, URL baseUrl) throws ParserException
     {
         this.empty();
         //first fill in all known variables, so we get a normal <html><head></head><body></body></html>-structure from the template
@@ -183,7 +194,7 @@ public class PageParser
      * @param pageUrl the page-url which will be used to define the row- and block-ids
      * @return the name of the page-class of the specified page
      */
-    private String fillWithPage(String html, URL pageUrl) throws PageParserException, PageClassCacheException
+    private String fillWithPage(String html, URL pageUrl) throws ParserException
     {
         this.empty();
         String pageClassName = this.fill(html, pageUrl);
@@ -198,7 +209,7 @@ public class PageParser
      * @param baseUrl the base-url which will be used to define the row- and block-ids
      * @return the name of the page-class found in the html-tree
      */
-    private String fill(String htmlTree, URL baseUrl) throws PageParserException, PageClassCacheException
+    private String fill(String htmlTree, URL baseUrl) throws ParserException
     {
         //TODO: extend Parser to let Jsoup do the hard row- and block-searching
         //TODO BAS: ignore witespace between tags! -> makes block-comparison easier
@@ -231,14 +242,14 @@ public class PageParser
      * @param pageClassName the name of the page-class (of the page) being parsed
      * @return a set holding blocks and rows
      */
-    private void recursiveParse(Element node, URL baseUrl, String pageClassName) throws PageParserException
+    private void recursiveParse(Element node, URL baseUrl, String pageClassName) throws ParserException
     {
         Elements children = node.children();
         for(Element child : children){
             //recursively iterate over the subtree starting with this child and add the found blocks and rows to the map
             recursiveParse(child, baseUrl, pageClassName);
-            boolean isRow = child.classNames().contains(CSS_CLASS_FOR_ROW);
-            boolean isBlock = child.classNames().contains(CSS_CLASS_FOR_BLOCK);
+            boolean isRow = child.classNames().contains(CSSClasses.ROW);
+            boolean isBlock = child.classNames().contains(CSSClasses.BLOCK);
             if(isRow || isBlock){
                 if(child.id() != null && !child.id().isEmpty()) {
                     //TODO BAS: is this the most efficient way we can get rid of the &quot;-problem during return-velocity-parsing, since this will read over the whole content again
@@ -250,24 +261,24 @@ public class PageParser
                         URL childUrl = temp.toURL();
                         id = new ElementID(childUrl);
                     }catch(MalformedURLException e){
-                        throw new PageParserException("Base-url doesn't seem to be correct. Cannot construct proper IDs with this page-url: " + baseUrl, e);
+                        throw new ParserException("Base-url doesn't seem to be correct. Cannot construct proper IDs with this page-url: " + baseUrl, e);
                     }catch(URISyntaxException e){
-                        throw new PageParserException("Base-url doesn't seem to be correct. Cannot construct proper IDs with this page-url: " + baseUrl, e);
+                        throw new ParserException("Base-url doesn't seem to be correct. Cannot construct proper IDs with this page-url: " + baseUrl, e);
                     }
                     if(isRow){
-                        boolean isFinal =  !(child.classNames().contains(CSS_CLASS_FOR_MODIFIABLE_ROW) || child.classNames().contains(CSS_CLASS_FOR_LAYOUTABLE_ROW) || child.classNames().contains(
-                                        CSS_CLASS_FOR_CREATE_ENABLED_ROW));
+                        boolean isFinal =  !(child.classNames().contains(CSSClasses.MODIFIABLE_ROW) || child.classNames().contains(CSSClasses.LAYOUTABLE_ROW) || child.classNames().contains(
+                                        CSSClasses.CREATE_ENABLED_ROW));
                         this.rows.add(new Row(id, childHtml, pageClassName, isFinal));
                     }
                     else{
-                        boolean isFinal =  !(child.classNames().contains(CSS_CLASS_FOR_EDITABLE_BLOCK));
+                        boolean isFinal =  !(child.classNames().contains(CSSClasses.EDITABLE_BLOCK));
                         this.blocks.add(new Block(id, childHtml, pageClassName, isFinal));
                     }
                     child.replaceWith(new TextNode("\n ${" + child.id() + "}\n", ""));
                 }
                 else{
                     //if no id i
-                    throw new PageParserException("A row- or block-element in the html-tree doesn't have an id, this shouldn't happen: \n" + child.outerHtml());
+                    throw new ParserException("A row- or block-element in the html-tree doesn't have an id, this shouldn't happen: \n" + child.outerHtml());
                 }
             }
             else{
@@ -283,37 +294,80 @@ public class PageParser
      * @param pageClassName fall-back document-type for when no document type can be found in the document itself
      * @return the same document with document-type attached, if one could be found in the
      */
-    private Document typeDocument(Document htmlDOM, String pageClassName) throws PageClassCacheException
+    private Document typeDocument(Document htmlDOM, String pageClassName) throws ParserException
     {
-        List<Node> nodes = htmlDOM.childNodes();
-        Iterator<Node> it = nodes.iterator();
-        boolean hasDocumentType = false;
-        while(!hasDocumentType && it.hasNext()){
-            Node node = it.next();
-            if (node instanceof DocumentType) {
-                this.docType = node.toString();
-                hasDocumentType = true;
+        try {
+            List<Node> nodes = htmlDOM.childNodes();
+
+            Iterator<Node> it = nodes.iterator();
+            boolean hasDocumentType = false;
+            while (!hasDocumentType && it.hasNext()) {
+                Node node = it.next();
+                if (node instanceof DocumentType) {
+                    this.docType = node.toString();
+                    hasDocumentType = true;
+                }
             }
+            if (!hasDocumentType) {
+                this.docType = PageClassCache.getInstance().getCache().get(pageClassName).getDocType();
+                if (this.docType != null) {
+                    htmlDOM.prepend(this.docType);
+                }
+                else {
+                    //no doctype could be found in the page-class-cache, so do nothing
+                }
+            }
+            return htmlDOM;
         }
-        if(!hasDocumentType){
-            this.docType = PageClassCache.getInstance().getPageClassCache().get(pageClassName).getDocType();
-            if(this.docType != null){
-                htmlDOM.prepend(this.docType);
-            }
-            else{
-                //no doctype could be found in the page-class-cache, so do nothing
-            }
+        catch(CacheException e){
+            throw new ParserException("No document-type found for html document '" + htmlDOM.title() + "' of page-class '" + pageClassName + "'. Tried to fetch it from the cache, but caught exception.", e);
         }
-        return htmlDOM;
     }
 
+    /**
+     *
+     * @return get the page-class with which this parser is filled up
+     */
+    protected PageClass getInternalCachableClass() throws ParserException
+    {
+        if(!this.isFilled()){
+            throw new ParserException("Cannot construct a page-class out of the internal parser-data. Did you fill up the parser before calling this method?");
+        }
+        try {
+            return new PageClass(this.cachableClassName, this.blocks, this.rows, this.pageTemplate, this.docType);
+        }
+        catch(URISyntaxException e){
+            throw new ParserException("Cannot construct a page-class out of the internal parser-data.", e);
+        }
+    }
 
     /**
      * returns the path to the html-template of a page-class
      * @param pageClassName name of the page-class
      */
-    private String getTemplatePath(String pageClassName){
+    protected String getTemplatePath(String pageClassName){
         return BlocksConfig.getTemplateFolder() + "/" + BlocksConfig.PAGES_FOLDER + "/" + pageClassName + "/" + BlocksConfig.INDEX_FILE_NAME;
+    }
+
+    /**
+     * returns the base-url for the page-class
+     *
+     * @param pageClassName the name of the page-class (f.i. "default" for a pageClass filtered from the file "pages/default/index.html")
+     * @return
+     */
+    @Override
+    public URL getBaseUrl(String pageClassName) throws MalformedURLException
+    {
+        return new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_CLASS_ID_PREFIX + "/" + pageClassName);
+    }
+
+    /**
+     * @return the prefix used for a page-class in the class-attribute of the html-template (i.e. "page-")
+     */
+    @Override
+    public String getCssClassPrefix()
+    {
+        return CacheConstants.PAGE_CLASS_ID_PREFIX;
     }
 
 }

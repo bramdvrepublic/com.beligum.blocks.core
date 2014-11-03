@@ -11,6 +11,8 @@ public class BlocksConfig
     public static final String SCHEME_NAME = "blocks";
     /**name of the folder where page-templates (page-classes) can be found*/
     public static final String PAGES_FOLDER = "pages";
+    /**name of the folder where block-templates (block-classes) can be found*/
+    public static final String BLOCKS_FOLDER = "blocks";
     /**standard name of the html-file a page-class- or block-class-template must have to be recognized as such*/
     public static final String INDEX_FILE_NAME = "index.html";
 
@@ -31,6 +33,10 @@ public class BlocksConfig
 
     public static String getPagesFolder() {
         return getTemplateFolder() + "/" + PAGES_FOLDER;
+    }
+
+    public static String getBlocksFolder() {
+        return getTemplateFolder() + "/" + BLOCKS_FOLDER;
     }
 
     /**

@@ -4,7 +4,7 @@ package com.beligum.blocks.core.config;
  * Created by bas on 27.10.14.
  * Class for managing field-names of (meta-)data in db
  */
-public class DatabaseFieldNames
+public class DatabaseConstants
 {
     /**name of the application-version-field in db*/
     public final static String APP_VERSION = "appVersion";

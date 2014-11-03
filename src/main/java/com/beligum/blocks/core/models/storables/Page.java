@@ -1,8 +1,8 @@
 package com.beligum.blocks.core.models.storables;
 
 import com.beligum.blocks.core.caching.PageClassCache;
-import com.beligum.blocks.core.config.DatabaseFieldNames;
-import com.beligum.blocks.core.exceptions.PageClassCacheException;
+import com.beligum.blocks.core.config.DatabaseConstants;
+import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.identifiers.PageID;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.AbstractPage;
@@ -74,14 +74,14 @@ public class Page extends AbstractPage implements Storable
      * @param blocks the blocks of the page
      * @param rows the rows of the page
      * @param pageClassName the name of the page-class this page is an instance of
-     * @throws PageClassCacheException when the page-class cannot be found in the application-cache
+     * @throws com.beligum.blocks.core.exceptions.CacheException when the page-class cannot be found in the application-cache
      */
-    public Page(PageID id, Set<Block> blocks, Set<Row> rows, String pageClassName) throws PageClassCacheException
+    public Page(PageID id, Set<Block> blocks, Set<Row> rows, String pageClassName) throws CacheException
     {
         super(id);
         this.addBlocks(blocks);
         this.addRows(rows);
-        PageClass pageClass = PageClassCache.getInstance().getPageClassCache().get(pageClassName);
+        PageClass pageClass = PageClassCache.getInstance().getCache().get(pageClassName);
         this.pageClass = pageClass;
         //TODO BAS: this version should be fetched from pom.xml
         this.applicationVersion = "test";
@@ -171,9 +171,9 @@ public class Page extends AbstractPage implements Storable
     public Map<String, String> toHash()
     {
         Map<String, String> hash = new HashMap<>();
-        hash.put(DatabaseFieldNames.APP_VERSION, this.applicationVersion);
-        hash.put(DatabaseFieldNames.CREATOR, this.creator);
-        hash.put(DatabaseFieldNames.PAGE_CLASS, this.getPageClass().getName());
+        hash.put(DatabaseConstants.APP_VERSION, this.applicationVersion);
+        hash.put(DatabaseConstants.CREATOR, this.creator);
+        hash.put(DatabaseConstants.PAGE_CLASS, this.getPageClass().getName());
         return hash;
     }
     @Override

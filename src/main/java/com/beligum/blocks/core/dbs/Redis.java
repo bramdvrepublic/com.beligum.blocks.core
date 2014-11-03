@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.dbs;
 
 import com.beligum.blocks.core.caching.PageClassCache;
-import com.beligum.blocks.core.config.DatabaseFieldNames;
+import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.ElementID;
 import com.beligum.blocks.core.identifiers.PageID;
@@ -251,9 +251,9 @@ public class Redis implements Closeable
             else{
                 PageID lastVersionId = new PageID(wrongVersionId.getUrl(), lastVersion);
                 Map<String, String> pageInfoHash = redisClient.hgetAll(lastVersionId.getPageInfoId());
-                PageClass pageClass = PageClassCache.getInstance().getPageClassCache().get(pageInfoHash.get(DatabaseFieldNames.PAGE_CLASS));
+                PageClass pageClass = PageClassCache.getInstance().getCache().get(pageInfoHash.get(DatabaseConstants.PAGE_CLASS));
                 if (pageClass == null) {
-                    throw new RedisException("Db returned a page-class name '" + pageInfoHash.get(DatabaseFieldNames.PAGE_CLASS) + "' for page '" + url + "', but no such PageClass could be found in the application cache.");
+                    throw new RedisException("Db returned a page-class name '" + pageInfoHash.get(DatabaseConstants.PAGE_CLASS) + "' for page '" + url + "', but no such PageClass could be found in the application cache.");
                 }
                 Set<String> elementIds = redisClient.smembers(lastVersionId.getVersionedId());
                 //if elements have been found in db, save them in the page
@@ -263,12 +263,12 @@ public class Redis implements Closeable
                         elements.add(this.fetchElement(elementId));
                     }
                     //TODO BAS: what should we do when the page-info hash holds more info than use for this constructor? do we need a method page.addHashInfo(Map<String, String>) or something of the sort?
-                    retVal = new Page(lastVersionId, elements, pageClass, pageInfoHash.get(DatabaseFieldNames.APP_VERSION), pageInfoHash.get(DatabaseFieldNames.CREATOR));
+                    retVal = new Page(lastVersionId, elements, pageClass, pageInfoHash.get(DatabaseConstants.APP_VERSION), pageInfoHash.get(DatabaseConstants.CREATOR));
                 }
                 //if no elements have been found, use the default elements from the page-class
                 else{
                     //TODO BAS: what should we do when the page-info hash holds more info than use for this constructor? do we need a method page.addHashInfo(Map<String, String>) or something of the sort?
-                    retVal = new Page(lastVersionId, pageClass, pageInfoHash.get(DatabaseFieldNames.APP_VERSION), pageInfoHash.get(DatabaseFieldNames.CREATOR));
+                    retVal = new Page(lastVersionId, pageClass, pageInfoHash.get(DatabaseConstants.APP_VERSION), pageInfoHash.get(DatabaseConstants.CREATOR));
                 }
             }
             return retVal;
@@ -295,18 +295,18 @@ public class Redis implements Closeable
             String elementVersionedId = this.getVersionedId(redisClient, elementId);
             ElementID elementRedisId = new ElementID(elementVersionedId);
             Map<String, String> elementHash = redisClient.hgetAll(elementVersionedId);
-            if(!elementHash.containsKey(DatabaseFieldNames.ELEMENT_CLASS_TYPE)){
+            if(!elementHash.containsKey(DatabaseConstants.ELEMENT_CLASS_TYPE)){
                 throw new RedisException("No object-type found for element: " + elementVersionedId);
             }
             else{
                 /*
                  * Retrieve field-values from the element's hash and construct a new element with those values
                  */
-                String type = elementHash.get(DatabaseFieldNames.ELEMENT_CLASS_TYPE);
-                String content = elementHash.get(DatabaseFieldNames.CONTENT);
-                String pageClassName = elementHash.get(DatabaseFieldNames.PAGE_CLASS);
-                String applicationVersion = elementHash.get(DatabaseFieldNames.APP_VERSION);
-                String creator = elementHash.get(DatabaseFieldNames.CREATOR);
+                String type = elementHash.get(DatabaseConstants.ELEMENT_CLASS_TYPE);
+                String content = elementHash.get(DatabaseConstants.CONTENT);
+                String pageClassName = elementHash.get(DatabaseConstants.PAGE_CLASS);
+                String applicationVersion = elementHash.get(DatabaseConstants.APP_VERSION);
+                String creator = elementHash.get(DatabaseConstants.CREATOR);
                 //an element that previously was saved in db, has to be changable (non-final), if not it would not have been saved in db
                 boolean isFinal = false;
                 if(type.equals(Block.class.getSimpleName())){

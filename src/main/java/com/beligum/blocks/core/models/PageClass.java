@@ -1,8 +1,10 @@
 package com.beligum.blocks.core.models;
 
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.identifiers.ID;
 import com.beligum.blocks.core.identifiers.PageID;
+import com.beligum.blocks.core.models.ifaces.CachableClass;
 import com.beligum.blocks.core.models.storables.Block;
 import com.beligum.blocks.core.models.storables.Row;
 import org.apache.commons.configuration.ConfigurationRuntimeException;
@@ -18,12 +20,8 @@ import java.util.Set;
  * Created by bas on 08.10.14.
  * A representation of a html page-template.
  */
-public class PageClass extends AbstractPage
+public class PageClass extends AbstractPage implements CachableClass
 {
-    //TODO BAS SH: start with implementing BlockClass, BlockClassCache (and BlockParser?), you just pushed to server-side, to make sure nothing is lost during merge with client-side branch
-
-    /**the prefix that is given to page-class-id's*/
-    private static final String ID_PREFIX = "pages";
     /**string the name of this page-class*/
     private String name;
     /**string holding the template-content of this pageClass*/
@@ -39,7 +37,7 @@ public class PageClass extends AbstractPage
      * @param template the template-string corresponding to the most outer layer of the element-tree in this page
      * @param docType the doctype of this page-class
      */
-    public PageClass(String name, Set<Block> blocks, Set<Row> rows, String template, String docType)
+    public PageClass(String name, Set<Block> blocks, Set<Row> rows, String template, String docType) throws URISyntaxException
     {
         super(makeID(name));
         this.name = name;
@@ -81,12 +79,9 @@ public class PageClass extends AbstractPage
      * @param pageClassName the name of the page-class (f.i. "default" for a pageClass filtered from the file "pages/default/index.html")
      * @return
      */
-    public static URL getBaseUrl(String pageClassName){
-        try{
-            return new URL(BlocksConfig.getSiteDomain() + "/" + ID_PREFIX + "/" + pageClassName);
-        }catch(MalformedURLException e){
-            throw new ConfigurationRuntimeException("Specified site-domain doesn't seem to be a correct url:  " + BlocksConfig.getSiteDomain(), e);
-        }
+    public static URL getBaseUrl(String pageClassName) throws MalformedURLException
+    {
+        return new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_CLASS_ID_PREFIX + "/" + pageClassName);
     }
 
     /**
@@ -94,12 +89,9 @@ public class PageClass extends AbstractPage
      * @param pageClassName the unique name of the pageClass
      * @return an ID for the pageclass
      */
-    private static ID makeID(String pageClassName)
+    private static ID makeID(String pageClassName) throws URISyntaxException
     {
-        try {
-            return new ID(new URI(ID_PREFIX + "/" + pageClassName));
-        }catch(URISyntaxException e){
-            throw new RuntimeException("The pageClassName seems to be incorrectly formed, can't construct page-class-id with it: " + pageClassName, e);
-        }
+        return new ID(new URI(CacheConstants.PAGE_CLASS_ID_PREFIX + "/" + pageClassName));
+
     }
 }
