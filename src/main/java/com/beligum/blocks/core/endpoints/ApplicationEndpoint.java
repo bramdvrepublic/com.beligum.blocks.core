@@ -1,5 +1,6 @@
 package com.beligum.blocks.core.endpoints;
 
+import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.models.ifaces.StorableElement;
 import com.beligum.blocks.core.models.storables.Page;
@@ -17,6 +18,7 @@ import org.apache.velocity.tools.generic.RenderTool;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.net.URI;
 import java.net.URL;
 
 @Path("/")
@@ -32,11 +34,10 @@ public class ApplicationEndpoint
     }
 
     //using regular expression to let all requests to undefined paths end up here
-    @Path("/{randomPage:.*}")
+    @Path("/{randomPage:.+}")
     @GET
     public Response getPageWithId(@PathParam("randomPage") String randomURLPath)
     {
-//        try(Redis redis = Redis.getInstance()) {
         try{
             Redis redis = Redis.getInstance();
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
