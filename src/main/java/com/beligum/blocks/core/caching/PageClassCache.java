@@ -1,10 +1,19 @@
 package com.beligum.blocks.core.caching;
 
+import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.PageClassCacheException;
 import com.beligum.blocks.core.models.PageClass;
+import com.beligum.blocks.core.models.storables.Page;
 import com.beligum.blocks.core.parsing.PageParser;
 import com.beligum.core.framework.base.R;
+import com.beligum.core.framework.utils.toolkit.FileFunctions;
 
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -79,9 +88,26 @@ public class PageClassCache
      */
     private PageClassCache fillPageClassCache() throws PageClassCacheException
     {
-        //TODO BAS: this should fill in the pageClassCache at startup using .add(pageClass), by running over all subfolders of "/pages"
-        add("default");
-        return this;
+        try {
+            URI pagesFolderUri = FileFunctions.searchClasspath(this.getClass(),BlocksConfig.getPagesFolder());
+            Path pagesFolder = Paths.get(pagesFolderUri.getSchemeSpecificPart());
+            //look for all subfolders in the pagesFolder, using a filter checking if a child of the folder is a directory or not
+            DirectoryStream<Path> pageClassFolders = Files.newDirectoryStream(pagesFolder,
+                                                                      new DirectoryStream.Filter<Path>(){
+                                                                          @Override
+                                                                          public boolean accept(Path file) throws IOException {
+                                                                              return (Files.isDirectory(file));
+                                                                          }
+                                                                      });
+            for(Path pageClassFolder : pageClassFolders){
+                String pageClassName = pageClassFolder.getFileName().toString();
+                add(pageClassName);
+            }
+            return this;
+        }
+        catch(IOException e){
+            throw new PageClassCacheException("Problem while reading page-classes from directory '" + BlocksConfig.getPagesFolder() + "'.", e);
+        }
     }
 
     /**

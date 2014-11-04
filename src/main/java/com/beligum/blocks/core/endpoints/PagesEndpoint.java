@@ -6,23 +6,21 @@ import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.PageClassCacheException;
 import com.beligum.blocks.core.exceptions.PageParserException;
 import com.beligum.blocks.core.exceptions.RedisException;
-import com.beligum.blocks.core.identifiers.ID;
-import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.PageClass;
-import com.beligum.blocks.core.models.storables.Block;
 import com.beligum.blocks.core.models.storables.Page;
 import com.beligum.blocks.core.parsing.PageParser;
 import com.beligum.core.framework.base.R;
-import com.beligum.core.framework.base.RequestContext;
 import com.beligum.core.framework.templating.ifaces.Template;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by bas on 07.10.14.
@@ -32,8 +30,11 @@ public class PagesEndpoint
 {
     @GET
     @Path("/new")
-    public Response newPage(){
-        Template template = R.templateEngine().getEmptyTemplate("/views/new.html");
+    public Response newPage() throws PageClassCacheException
+    {
+        Template template = R.templateEngine().getEmptyTemplate("/views/new-page.html");
+        Collection<PageClass> pageClasses = PageClassCache.getInstance().getPageClassCache().values();
+        template.set("pageClasses", pageClasses);
         return Response.ok(template.render()).build();
     }
 
@@ -76,5 +77,4 @@ public class PagesEndpoint
         redis.save(page);
         return Response.seeOther(page.getUrl().toURI()).build();
     }
-
 }

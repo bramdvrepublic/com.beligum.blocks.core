@@ -29,6 +29,10 @@ public class BlocksConfig
         return getConfiguration("blocks.site.db-alias");
     }
 
+    public static String getPagesFolder() {
+        return getTemplateFolder() + "/" + PAGES_FOLDER;
+    }
+
     /**
      * return the text from the applications configuration file in specified tag
      * @param configTag the configuration-tag
