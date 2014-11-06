@@ -2,8 +2,8 @@ package com.beligum.blocks.core.caching;
 
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.CacheException;
-import com.beligum.blocks.core.models.ifaces.CachableClass;
-import com.beligum.blocks.core.parsing.CachableClassParser;
+import com.beligum.blocks.core.models.classes.AbstractViewableClass;
+import com.beligum.blocks.core.parsing.AbstractViewableClassParser;
 import com.beligum.core.framework.utils.toolkit.FileFunctions;
 
 import java.io.IOException;
@@ -18,12 +18,12 @@ import java.util.Map;
 * Created by bas on 03.11.14.
 * Super class for BlockClasCache and PageClassCache
 */
-public abstract class AbstractCachableClassCache<T extends CachableClass>
+public abstract class AbstractViewableClassCache<T extends AbstractViewableClass>
 {
     /**
      * protected constructor for singleton-use of extending classes
      */
-    protected AbstractCachableClassCache(){
+    protected AbstractViewableClassCache(){
 
     }
 
@@ -61,11 +61,10 @@ public abstract class AbstractCachableClassCache<T extends CachableClass>
      * @return A full AbstractCachableClassCache
      * @throws com.beligum.blocks.core.exceptions.CacheException
      */
-    protected AbstractCachableClassCache fillCache() throws CacheException
+    protected AbstractViewableClassCache fillCache() throws CacheException
     {
         try {
             URI classesRootFolderUri = FileFunctions.searchClasspath(this.getClass(),this.getClassRootFolder());
-            //we don't need the 'file://'-part of the returned URI, so we use 'getSchemeSpecificPart()'
             Path classesRootFolder = Paths.get(classesRootFolderUri.getSchemeSpecificPart());
             //look for all subfolders in the pagesFolder, using a filter checking if a child of the folder is a directory or not
             DirectoryStream<Path> classFolders = Files.newDirectoryStream(classesRootFolder,
@@ -86,31 +85,32 @@ public abstract class AbstractCachableClassCache<T extends CachableClass>
         }
     }
 
+
     /**
      * Add a template page (starting from the pageclass-name) to the page-cache
-     * @param cachableClassName the page-class-name (f.i. "default" for a pageClass filtered from the file "pages/default/index.html") of the page-class-template to be parsed and added to the cache as a couple (pageClassName, pageClass)
+     * @param viewableClassName the page-class-name (f.i. "default" for a pageClass filtered from the file "pages/default/index.html") of the page-class-template to be parsed and added to the cache as a couple (pageClassName, pageClass)
      */
-    private void  add(String cachableClassName) throws CacheException
+    private void  add(String viewableClassName) throws CacheException
     {
         try {
             /*
              * Get the default rows and blocks out of the template and write them to the application cache
              * We get the local file representing the template, using the files.template-path in the configuration-xml-file of the server
              */
-            CachableClassParser<T> parser = this.getParser();
-            T cachableClass = parser.parseCachableClass(cachableClassName);
+            AbstractViewableClassParser<T> parser = this.getParser();
+            T viewableClass = parser.parseViewableClass(viewableClassName);
 
             /*
              * Put the filled page in the cache
              */
-            this.add(cachableClass);
+            this.add(viewableClass);
         }catch(Exception e){
-            throw new CacheException("Could not add cachable-class '" + cachableClassName + "' to the cache.", e);
+            throw new CacheException("Could not add viewable-class '" + viewableClassName + "' to the cache.", e);
         }
     }
 
     abstract protected String getClassRootFolder();
 
-    abstract protected CachableClassParser<T> getParser();
+    abstract protected AbstractViewableClassParser<T> getParser();
 
 }

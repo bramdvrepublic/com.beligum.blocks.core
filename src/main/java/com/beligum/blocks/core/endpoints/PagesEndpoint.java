@@ -1,14 +1,14 @@
 package com.beligum.blocks.core.endpoints;
 
-import com.beligum.blocks.core.caching.PageClassCache;
+import com.beligum.blocks.core.caching.EntityClassCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.ParserException;
 import com.beligum.blocks.core.exceptions.RedisException;
-import com.beligum.blocks.core.models.PageClass;
-import com.beligum.blocks.core.models.storables.Page;
-import com.beligum.blocks.core.parsing.PageParser;
+import com.beligum.blocks.core.models.classes.EntityClass;
+import com.beligum.blocks.core.models.storables.Entity;
+import com.beligum.blocks.core.parsing.EntityParser;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.templating.ifaces.Template;
 
@@ -31,28 +31,28 @@ public class PagesEndpoint
     public Response newPage() throws CacheException
     {
         Template template = R.templateEngine().getEmptyTemplate("/views/new-page.html");
-        Collection<PageClass> pageClasses = PageClassCache.getInstance().getCache().values();
+        Collection<EntityClass> pageClasses = EntityClassCache.getInstance().getCache().values();
         template.set("pageClasses", pageClasses);
-        return Response.ok(template.render()).build();
+        return Response.ok(template).build();
     }
 
     @POST
     /**
      * Create a new page-instance of the page-class specified as a parameter
      */
-    public Response createPage(@FormParam("page-class-name") /*TODO: bean validation not showing thrown errors? @NotBlank(message = "No pageclass specified.")*/ String pageClassName)
+    public Response createPage(@FormParam("page-class-name") /*TODO BAS: bean validation not showing thrown errors: use $ERRORS['page-class-name'] in html; @NotBlank(message = "No pageclass specified.")*/ String pageClassName)
                     throws CacheException, RedisException, URISyntaxException
 
     {
         /*
          * Get the page-class (containing the default blocks and rows) from the cache and use it to construct a new page
          */
-        Map<String, PageClass> cache = PageClassCache.getInstance().getCache();
-        PageClass pageClass = cache.get(pageClassName);
+        Map<String, EntityClass> cache = EntityClassCache.getInstance().getCache();
+        EntityClass pageClass = cache.get(pageClassName);
 
 
         Redis redis = Redis.getInstance();
-        Page newPage = redis.getNewPage(pageClass);
+        Entity newPage = redis.getNewPage(pageClass);
         redis.save(newPage);
             /*
              * Redirect the client to the newly created page
@@ -69,8 +69,8 @@ public class PagesEndpoint
     {
         URL pageUrl = new URL(BlocksConfig.getSiteDomain() + "/" + pageId);
 
-        PageParser parser = new PageParser();
-        Page page = parser.parsePage(html, pageUrl);
+        EntityParser parser = new EntityParser();
+        Entity page = parser.parsePage(html, pageUrl);
         Redis redis = Redis.getInstance();
         redis.save(page);
         return Response.seeOther(page.getUrl().toURI()).build();

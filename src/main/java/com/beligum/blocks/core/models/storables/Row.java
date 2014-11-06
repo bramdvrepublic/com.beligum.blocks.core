@@ -1,9 +1,9 @@
 package com.beligum.blocks.core.models.storables;
 
 import com.beligum.blocks.core.config.DatabaseConstants;
-import com.beligum.blocks.core.identifiers.ElementID;
-import com.beligum.blocks.core.models.AbstractElement;
-import com.beligum.blocks.core.models.ifaces.StorableElement;
+import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.models.AbstractViewable;
+import com.beligum.blocks.core.models.ifaces.Storable;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -11,29 +11,27 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created by bas on 01.10.14.
- * Class representing the basic layout-element in a html-page
+ * Created by bas on 05.11.14.
  */
-public class Row extends AbstractElement implements StorableElement
+public class Row extends AbstractViewable implements Storable
 {
     /**the version of the application this row is supposed to interact with*/
     private String applicationVersion;
     /**the creator of this row*/
     private String creator;
-    /**hte name (id) of the page-class of the page this row belongs to */
-    private String pageClassName;
-
+    /**boolean whether or not this elements template can be changed by the client, it cannot be changed after initialization*/
+    protected final boolean isFinal;
 
     /**
      * Constructor
      * @param id the id to this row (is of the form "[site]/[pageName]#[rowId]")
-     * @param content the content of this row
-     * @param isFinal boolean whether or not the content of this element can be changed by the client
+     * @param template the template of this row
+     * @param isFinal boolean whether or not the template of this element can be changed by the client
      */
-    public Row(ElementID id, String content, String pageClassName, boolean isFinal)
+    public Row(RedisID id, String template, boolean isFinal)
     {
-        super(id, content, isFinal);
-        this.pageClassName = pageClassName;
+        super(id, template);
+        this.isFinal = isFinal;
         //TODO BAS: this version should be fetched from pom.xml and added to the row.java as a field
         this.applicationVersion = "test";
         //TODO: logged in user should be added here
@@ -42,30 +40,63 @@ public class Row extends AbstractElement implements StorableElement
 
     /**
      * @param id the id to this row (is of the form "[site]/[pageName]#[rowId]")
-     * @param content the content of this row
-     * @param pageClassName the name of the page-class this row belongs to
-     * @param isFinal boolean whether or not the content of this element can be changed by the client
+     * @param template the template of this row
+     * @param isFinal boolean whether or not the template of this element can be changed by the client
      * @param applicationVersion the version of the application this row was saved under
      * @param creator the creator of this row
      */
-    public Row(ElementID id, String content, String pageClassName, boolean isFinal, String applicationVersion, String creator){
-        super(id, content, false);
-        this.pageClassName = pageClassName;
+    public Row(RedisID id, String template, boolean isFinal, String applicationVersion, String creator){
+        super(id, template);
+        this.isFinal = isFinal;
         this.applicationVersion = applicationVersion;
         this.creator = creator;
     }
 
+    /**
+     * @return boolean whether or not this rows template can be changed by the client
+     */
+    public boolean isFinal()
+    {
+        return isFinal;
+    }
 
-    //_______________IMPLEMENTATION OF STORABLE_ELEMENT____________________//
+    /**
+     * @return the name of the variable of this viewable in the template holding this viewable
+     */
+    public String getTemplateVariableName()
+    {
+        return this.getHtmlId();
+    }
+
+    /**
+     *
+     * @return the unique id of this element in the html-tree (html-file) it belongs to
+     */
+    public String getHtmlId()
+    {
+        return this.getId().getHtmlId();
+    }
+
+    //_______________IMPLEMENTATION OF STORABLE____________________//
+    @Override
+    public String getApplicationVersion()
+    {
+        return this.applicationVersion;
+    }
+    @Override
+    public String getCreator()
+    {
+        return this.creator;
+    }
     @Override
     public long getVersion()
     {
         return this.getId().getVersion();
     }
     @Override
-    public ElementID getId()
+    public RedisID getId()
     {
-        return (ElementID) super.getId();
+        return (RedisID) super.getId();
     }
     @Override
     public String getUnversionedId(){
@@ -78,53 +109,17 @@ public class Row extends AbstractElement implements StorableElement
     @Override
     public Map<String, String> toHash(){
         Map<String, String> hash = new HashMap<>();
-        hash.put(DatabaseConstants.CONTENT, this.getContent());
+        hash.put(DatabaseConstants.TEMPLATE, this.getTemplate());
         hash.put(DatabaseConstants.APP_VERSION, this.applicationVersion);
         hash.put(DatabaseConstants.CREATOR, this.creator);
         hash.put(DatabaseConstants.ELEMENT_CLASS_TYPE, this.getClass().getSimpleName());
-        hash.put(DatabaseConstants.PAGE_CLASS, this.pageClassName);
         return hash;
     }
-    @Override
-    public String getTemplateVariableName()
-    {
-        return this.getId().toURI().getFragment();
-    }
-    @Override
-    public String getApplicationVersion()
-    {
-        return this.applicationVersion;
-    }
-    @Override
-    public String getCreator()
-    {
-        return this.creator;
-    }
-    @Override
-    public String getPageClassName()
-    {
-        return this.pageClassName;
-    }
-    @Override
-    public String getHtmlId()
-    {
-        return this.getId().getElementIdFromFragment();
-    }
-
-
-    //__________IMPLEMENTATION OF ABSTRACT METHODS OF ABSTRACTELEMENT________//
-    @Override
-    public String getDBSetName()
-    {
-        return DatabaseConstants.ROW_SET_NAME;
-    }
-
-
 
     //___________OVERRIDE OF OBJECT_____________//
 
     /**
-     * Two rows are equal when their content, meta-data (page-class, creator and application-version), site-domain and unversioned element-id (everything after the '#') are equal
+     * Two rows are equal when their template, meta-data (page-class, creator and application-version), site-domain and unversioned element-id (everything after the '#') are equal
      * (thus equal through object-state, not object-address).
      * @param obj
      * @return true if two rows are equal, false otherwise
@@ -139,9 +134,8 @@ public class Row extends AbstractElement implements StorableElement
             else {
                 Row rowObj = (Row) obj;
                 EqualsBuilder significantFieldsSet = new EqualsBuilder();
-                significantFieldsSet = significantFieldsSet.append(content, rowObj.content)
+                significantFieldsSet = significantFieldsSet.append(template, rowObj.template)
                                                            .append(this.getHtmlId(), rowObj.getHtmlId())
-                                                           .append(this.pageClassName, rowObj.pageClassName)
                                                            .append(this.getId().getAuthority(), rowObj.getId().getAuthority())
                                                            .append(this.creator, rowObj.creator)
                                                            .append(this.applicationVersion, rowObj.applicationVersion);
@@ -154,7 +148,7 @@ public class Row extends AbstractElement implements StorableElement
     }
 
     /**
-     * Two rows have the same hashCode when their content, meta-data (page-class, creator and application-version), site-domain and unversioned element-id (everything after the '#') are equal
+     * Two rows have the same hashCode when their template, meta-data (page-class, creator and application-version), site-domain and unversioned element-id (everything after the '#') are equal
      * (thus equal through object-state, not object-address)
      * @return
      */
@@ -163,14 +157,11 @@ public class Row extends AbstractElement implements StorableElement
     {
         //7 and 31 are two randomly chosen prime numbers, needed for building hashcodes, ideally, these are different for each class
         HashCodeBuilder significantFieldsSet = new HashCodeBuilder(7, 31);
-        significantFieldsSet = significantFieldsSet.append(content)
+        significantFieldsSet = significantFieldsSet.append(template)
                                                    .append(this.getHtmlId())
-                                                   .append(this.pageClassName)
                                                    .append(this.getId().getAuthority())
                                                    .append(this.creator)
                                                    .append(this.applicationVersion);
         return significantFieldsSet.toHashCode();
     }
-
-
 }

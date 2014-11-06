@@ -2,20 +2,21 @@ package com.beligum.blocks.core.caching;
 
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.CacheException;
-import com.beligum.blocks.core.models.BlockClass;
+import com.beligum.blocks.core.models.classes.BlockClass;
+import com.beligum.blocks.core.parsing.AbstractViewableClassParser;
 import com.beligum.blocks.core.parsing.BlockParser;
-import com.beligum.blocks.core.parsing.CachableClassParser;
 import com.beligum.core.framework.base.R;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created by bas on 07.10.14.
- * Singleton for interacting with the applications block-cache, containing pairs of (block-class, default-block-instance)
- */
-public class BlockClassCache extends AbstractCachableClassCache<BlockClass>
+* Created by bas on 07.10.14.
+* Singleton for interacting with the applications block-cache, containing pairs of (block-class, default-block-instance)
+*/
+public class BlockClassCache extends AbstractViewableClassCache<BlockClass>
 {
+    //TODO BAS: implement BlockClassCache
     //the instance of this singleton
     private static BlockClassCache instance = null;
 
@@ -64,7 +65,7 @@ public class BlockClassCache extends AbstractCachableClassCache<BlockClass>
     }
 
     @Override
-    protected CachableClassParser<BlockClass> getParser()
+    protected AbstractViewableClassParser<BlockClass> getParser()
     {
         return new BlockParser();
     }

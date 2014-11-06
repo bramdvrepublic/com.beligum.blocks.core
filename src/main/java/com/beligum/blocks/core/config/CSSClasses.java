@@ -7,15 +7,20 @@ package com.beligum.blocks.core.config;
 public class CSSClasses
 {
     /**
-     * The css-class indicating that a certain <body>-tag is a page.
-     * (f.i. <body class="page">)
+     * The css-class indicating that a certain <body>-tag is a entity.
+     * (f.i. <body class="entity">)
      */
-    public final static String PAGE = "page";
+    public final static String ENTITY = "entity";
     /**
-     * The prefix which a css-class indicating that a certain <body>-tag is of a certain page-class must have to be recognized as such.
-     * (f.i. 'page-default' has the prefix 'page-' added to it's page-class name 'default')
+     * The prefix which a css-class indicating that a certain <body>-tag is of a certain entity-class must have to be recognized as such.
+     * (f.i. 'entity-default' has the prefix 'entity-' added to it's entity-class name 'default')
      */
-    public final static String PAGECLASS_PREFIX = "page-";
+    public final static String ENTITY_CLASS_PREFIX = "entity-";
+    /**
+     * The prefix which a css-class indicating that a certain <div>-tag is of a certain block-class must have to be recognized as such.
+     * (f.i. 'block-default' has the prefix 'block-' added to it's block-class name 'default')
+     */
+    public final static String BLOCK_CLASS_PREFIX = "block-";
 
     public final static String ROW = "row";
     public final static String BLOCK = "block";

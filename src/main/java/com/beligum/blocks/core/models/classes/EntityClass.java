@@ -1,11 +1,10 @@
-package com.beligum.blocks.core.models;
+package com.beligum.blocks.core.models.classes;
 
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.CSSClasses;
 import com.beligum.blocks.core.config.CacheConstants;
+import com.beligum.blocks.core.identifiers.EntityID;
 import com.beligum.blocks.core.identifiers.ID;
-import com.beligum.blocks.core.identifiers.PageID;
-import com.beligum.blocks.core.models.ifaces.CachableClass;
-import com.beligum.blocks.core.models.storables.Block;
 import com.beligum.blocks.core.models.storables.Row;
 import org.apache.commons.configuration.ConfigurationRuntimeException;
 
@@ -17,56 +16,60 @@ import java.util.Random;
 import java.util.Set;
 
 /**
- * Created by bas on 08.10.14.
- * A representation of a html page-template.
+ * Created by bas on 05.11.14.
  */
-public class PageClass extends AbstractPage implements CachableClass
+public class EntityClass extends AbstractViewableClass
 {
-    /**string the name of this page-class*/
-    private String name;
-    /**string holding the template-content of this pageClass*/
-    private String template;
     /**the doctype of this pageclass*/
     private String docType;
+    /**string the name of this page-class*/
+    private String name;
 
     /**
      *
      * @param name the name of this page-class
-     * @param blocks the (default) blocks this page-class contains
-     * @param rows the (default) rows this page-class contains
+     * @param directChildren the direct children of this page-class
      * @param template the template-string corresponding to the most outer layer of the element-tree in this page
      * @param docType the doctype of this page-class
      */
-    public PageClass(String name, Set<Block> blocks, Set<Row> rows, String template, String docType) throws URISyntaxException
+    public EntityClass(String name, Set<Row> directChildren, String template, String docType) throws URISyntaxException
     {
-        super(makeID(name));
+        super(makeId(name), directChildren, template);
         this.name = name;
-        this.template = template;
-        this.addBlocks(blocks);
-        this.addRows(rows);
         this.docType = docType;
     }
 
-    public String getName(){
-        return this.name;
-    }
-    public String getTemplate(){
-        return this.template;
+    /**
+     *
+     * @return
+     */
+    @Override
+    public String getName()
+    {
+        return name;
     }
     public String getDocType()
     {
         return docType;
+    }
+    /**
+     * @return the prefix used for a page-entity-class in the class-attribute of the html-template
+     */
+    @Override
+    public String getCssClassPrefix()
+    {
+        return CSSClasses.ENTITY_CLASS_PREFIX;
     }
 
     /**
      * Method for getting a new randomly determined page-uid (with versioning) for a pageInstance of this pageClass
      * @return a randomly generated page-id of the form "[site-domain]/[pageClassName]/[randomInt]"
      */
-    public PageID renderNewPageID(){
+    public EntityID renderNewPageID(){
         try {
             Random randomGenerator = new Random();
             int positiveNumber = Math.abs(randomGenerator.nextInt());
-            return new PageID(new URL(BlocksConfig.getSiteDomain() + "/" + this.name + "/" + positiveNumber));
+            return new EntityID(new URL(BlocksConfig.getSiteDomain() + "/" + this.name + "/" + positiveNumber));
         }catch(MalformedURLException e){
             throw new ConfigurationRuntimeException("Specified site-domain doesn't seem to be a correct url: " + BlocksConfig.getSiteDomain(), e);
         }catch(URISyntaxException e){
@@ -81,7 +84,7 @@ public class PageClass extends AbstractPage implements CachableClass
      */
     public static URL getBaseUrl(String pageClassName) throws MalformedURLException
     {
-        return new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_CLASS_ID_PREFIX + "/" + pageClassName);
+        return new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_ENTITY_CLASS_ID_PREFIX + "/" + pageClassName);
     }
 
     /**
@@ -89,9 +92,9 @@ public class PageClass extends AbstractPage implements CachableClass
      * @param pageClassName the unique name of the pageClass
      * @return an ID for the pageclass
      */
-    private static ID makeID(String pageClassName) throws URISyntaxException
+    private static ID makeId(String pageClassName) throws URISyntaxException
     {
-        return new ID(new URI(CacheConstants.PAGE_CLASS_ID_PREFIX + "/" + pageClassName));
-
+        return new ID(new URI(CacheConstants.PAGE_ENTITY_CLASS_ID_PREFIX + "/" + pageClassName));
     }
+
 }

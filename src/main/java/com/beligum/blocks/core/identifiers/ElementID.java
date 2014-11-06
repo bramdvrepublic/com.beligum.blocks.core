@@ -42,18 +42,5 @@ public class ElementID extends RedisID
         super(dbId);
     }
 
-    /**
-     *
-     * @return the fragment of the url to this element, this is everything after the '#' in "[site-domain]/[pageId]#[elementId]" and is the id found in the html-file containing this element
-     * @throws URISyntaxException
-     */
-    public String getElementIdFromFragment()
-    {
-        try{
-            return this.getUrl().toURI().getFragment();
-        }
-        catch(URISyntaxException e){
-            throw new RuntimeException("Bad uri found. This should not happen!", e);
-        }
-    }
+
 }

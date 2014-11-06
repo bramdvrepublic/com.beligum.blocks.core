@@ -11,7 +11,6 @@ import java.net.URI;
  */
 public class ID
 {
-    //TODO BAS: currentMillis since 2000, not since 1970 -> makes things shorter
     /** interal uri-representation of this id */
     protected URI idUri;
 
@@ -39,7 +38,7 @@ public class ID
     /**
      * Two ids are equal when their string-representations are equal
      * @param obj
-     * @return true if content and id of two rows are equal, false otherwise
+     * @return true if template and id of two rows are equal, false otherwise
      */
     @Override
     public boolean equals(Object obj)

@@ -1,15 +1,15 @@
 package com.beligum.blocks.core.dbs;
 
-import com.beligum.blocks.core.caching.PageClassCache;
+import com.beligum.blocks.core.caching.EntityClassCache;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.ElementID;
-import com.beligum.blocks.core.identifiers.PageID;
+import com.beligum.blocks.core.identifiers.EntityID;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.models.PageClass;
-import com.beligum.blocks.core.models.ifaces.StorableElement;
+import com.beligum.blocks.core.models.classes.EntityClass;
+import com.beligum.blocks.core.models.ifaces.Storable;
 import com.beligum.blocks.core.models.storables.Block;
-import com.beligum.blocks.core.models.storables.Page;
+import com.beligum.blocks.core.models.storables.Entity;
 import com.beligum.blocks.core.models.storables.Row;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisSentinelPool;
@@ -87,7 +87,7 @@ public class Redis implements Closeable
      * @param page
      */
     //TODO BAS: possibly you could write unit test for this basic method: making a new default-page should always result in the store and returnal of the exact html in the index.html of a default page
-    public void save(Page page) throws RedisException
+    public void save(Entity page) throws RedisException
     {
         try (Jedis redisClient = pool.getResource()){
             //if their already exists an element-set for this page-version, throw exception
@@ -105,17 +105,17 @@ public class Redis implements Closeable
                  * Save all new versions of blocks and rows "[elementId]:[version]" in a list named "[elementId]"
                  */
                 //the page stored in db, will be null when no such page is present in db
-                Page storedPage = this.fetchPage(page.getUrl());
+                Entity storedPage = this.fetchPage(page.getUrl());
                 //elements of the page-class present in the cache that may not be altered, keys = html-id's of the elements, values = element-objects
-                Map<String, StorableElement> finalElements = page.getPageClass().getFinalElements();
+                Map<String, Row> finalElements = page.getPageEntityClass().getAllFinalElements();
                 //elements of the last version of this page stored in db that can be altered
-                HashSet<StorableElement> storedElements = (storedPage != null) ? storedPage.getNonFinalElements() : new HashSet<StorableElement>();
+                HashSet<Row> storedElements = (storedPage != null) ? storedPage.getAllNonFinalElements() : new HashSet<Row>();
                 //elements of the page-class present in the cache that can be altered
-                HashSet<StorableElement> cachedElements = page.getPageClass().getNonFinalElements();
+                HashSet<Row> cachedElements = page.getPageEntityClass().getAllNonFinalElements();
                 //elements of the page we want to save, which need to be compared to the above maps of elements
-                Set<StorableElement> pageElements = page.getElements();
+                Set<Row> pageElements = page.getAllElements();
                 //for all elements received from the page to be saved, check if they have to be saved to db, or if they are already present in the cache
-                for (StorableElement pageElement : pageElements) {
+                for (Row pageElement : pageElements) {
                     if (!finalElements.containsKey(pageElement.getHtmlId())) {
                         if (!storedElements.contains(pageElement)) {
                             if (!cachedElements.contains(pageElement)) {
@@ -132,10 +132,10 @@ public class Redis implements Closeable
                         }
                     }
                     else {
-                        StorableElement finalElement = finalElements.get(pageElement.getHtmlId());
+                        Row finalElement = finalElements.get(pageElement.getHtmlId());
                         if (!finalElement.equals(pageElement)) {
                             throw new RedisException("Final elements cannot be altered: element with id '" + finalElement.getHtmlId() + "' is final, so it cannot be changed to \n \n "
-                                                     + pageElement.getContent() + "\n \n");
+                                                     + pageElement.getTemplate() + "\n \n");
                         }
                         //nothing has to be done with unaltered final elements when saving to db (they are already present in the application cache and may not be altered anyhow)
                     }
@@ -179,10 +179,10 @@ public class Redis implements Closeable
 
 
     /**
-     * Save the element to db: save content and info of an element in a hash named "[elementId]:[version]"
+     * Save the element to db: save template and info of an element in a hash named "[elementId]:[version]"
      * @param element
      */
-    public void save(StorableElement element) throws RedisException
+    public void save(Storable element) throws RedisException
     {
         try (Jedis redisClient = pool.getResource()){
             //if their already exists a hash corresponding to the version of this element, throw exception
@@ -200,12 +200,12 @@ public class Redis implements Closeable
                     if (lastVersion == -1 || element.getVersion() > lastVersion) {
                         //add this version as the newest version to the version-list
                         pipelinedSaveTransaction.lpush(element.getUnversionedId(), element.getVersionedId());
-                        //save the content and the meta-data in a hash with id "[elementId]:[version]"
+                        //save the template and the meta-data in a hash with id "[elementId]:[version]"
                         pipelinedSaveTransaction.hmset(element.getVersionedId(), element.toHash());
                     }
-                    //if the same version is present in db, check if their content is equal, if not, throw exception
+                    //if the same version is present in db, check if their template is equal, if not, throw exception
                     else if (lastVersion == element.getVersion()) {
-                        StorableElement storedElement = this.fetchElement(element.getVersionedId());
+                        Storable storedElement = this.fetchElement(element.getVersionedId());
                         if (!element.equals(storedElement)) {
                             throw new RedisException("Trying to save element '" + element.getUnversionedId() + "' with version '" + element.getVersion() +
                                                      "' which already exists in db, but has other content than found in db.");
@@ -235,11 +235,11 @@ public class Redis implements Closeable
      * @param url to the page to fetch the last version for
      * @return page from db
      */
-    public Page fetchPage(URL url) throws RedisException
+    public Entity fetchPage(URL url) throws RedisException
     {
         try (Jedis redisClient = pool.getResource()){
-            Page retVal = null;
-            PageID wrongVersionId = new PageID(url);
+            Entity retVal = null;
+            EntityID wrongVersionId = new EntityID(url);
             if(!redisClient.exists(wrongVersionId.getUnversionedId())){
                 return null;
             }
@@ -249,26 +249,26 @@ public class Redis implements Closeable
                 return null;
             }
             else{
-                PageID lastVersionId = new PageID(wrongVersionId.getUrl(), lastVersion);
+                EntityID lastVersionId = new EntityID(wrongVersionId.getUrl(), lastVersion);
                 Map<String, String> pageInfoHash = redisClient.hgetAll(lastVersionId.getPageInfoId());
-                PageClass pageClass = PageClassCache.getInstance().getCache().get(pageInfoHash.get(DatabaseConstants.PAGE_CLASS));
+                EntityClass pageClass = EntityClassCache.getInstance().getCache().get(pageInfoHash.get(DatabaseConstants.VIEWABLE_CLASS));
                 if (pageClass == null) {
-                    throw new RedisException("Db returned a page-class name '" + pageInfoHash.get(DatabaseConstants.PAGE_CLASS) + "' for page '" + url + "', but no such PageClass could be found in the application cache.");
+                    throw new RedisException("Db returned a page-class name '" + pageInfoHash.get(DatabaseConstants.VIEWABLE_CLASS) + "' for page '" + url + "', but no such PageClass could be found in the application cache.");
                 }
                 Set<String> elementIds = redisClient.smembers(lastVersionId.getVersionedId());
                 //if elements have been found in db, save them in the page
                 if(!elementIds.isEmpty()){
-                    Set<StorableElement> elements = new HashSet<>();
+                    Set<Row> elements = new HashSet<>();
                     for(String elementId : elementIds){
                         elements.add(this.fetchElement(elementId));
                     }
                     //TODO BAS: what should we do when the page-info hash holds more info than use for this constructor? do we need a method page.addHashInfo(Map<String, String>) or something of the sort?
-                    retVal = new Page(lastVersionId, elements, pageClass, pageInfoHash.get(DatabaseConstants.APP_VERSION), pageInfoHash.get(DatabaseConstants.CREATOR));
+                    retVal = new Entity(lastVersionId, elements, pageClass, pageInfoHash.get(DatabaseConstants.APP_VERSION), pageInfoHash.get(DatabaseConstants.CREATOR));
                 }
                 //if no elements have been found, use the default elements from the page-class
                 else{
                     //TODO BAS: what should we do when the page-info hash holds more info than use for this constructor? do we need a method page.addHashInfo(Map<String, String>) or something of the sort?
-                    retVal = new Page(lastVersionId, pageClass, pageInfoHash.get(DatabaseConstants.APP_VERSION), pageInfoHash.get(DatabaseConstants.CREATOR));
+                    retVal = new Entity(lastVersionId, pageClass, pageInfoHash.get(DatabaseConstants.APP_VERSION), pageInfoHash.get(DatabaseConstants.CREATOR));
                 }
             }
             return retVal;
@@ -285,7 +285,7 @@ public class Redis implements Closeable
      * @param elementId the id of an element to fetch, it can be a versioned or unversioned id
      * @return an element from db, the newest version if it is an unversioned id and the version specified by the id if it is a versioned id, or null if the element is not present in db
      */
-    public StorableElement fetchElement(String elementId) throws RedisException
+    public Row fetchElement(String elementId) throws RedisException
     {
         try(Jedis redisClient = pool.getResource()) {
             /*
@@ -303,17 +303,18 @@ public class Redis implements Closeable
                  * Retrieve field-values from the element's hash and construct a new element with those values
                  */
                 String type = elementHash.get(DatabaseConstants.ELEMENT_CLASS_TYPE);
-                String content = elementHash.get(DatabaseConstants.CONTENT);
-                String pageClassName = elementHash.get(DatabaseConstants.PAGE_CLASS);
+                String content = elementHash.get(DatabaseConstants.TEMPLATE);
+                String pageClassName = elementHash.get(DatabaseConstants.VIEWABLE_CLASS);
                 String applicationVersion = elementHash.get(DatabaseConstants.APP_VERSION);
                 String creator = elementHash.get(DatabaseConstants.CREATOR);
                 //an element that previously was saved in db, has to be changable (non-final), if not it would not have been saved in db
                 boolean isFinal = false;
                 if(type.equals(Block.class.getSimpleName())){
-                    return new Block(elementRedisId, content, pageClassName, isFinal, applicationVersion, creator);
+                    //TODO BAS: hier moet een set met elementen en kinderen opgehaald worden en een block-class
+                    return new Block(elementRedisId, null, null, applicationVersion, creator);
                 }
                 else if(type.equals(Row.class.getSimpleName())){
-                    return new Row(elementRedisId, content, pageClassName, isFinal, applicationVersion, creator);
+                    return new Row(elementRedisId, content, isFinal, applicationVersion, creator);
                 }
                 else{
                     throw new RedisException("Unsupported element-type found: " + type);
@@ -330,19 +331,19 @@ public class Redis implements Closeable
 
     /**
      * Get a UID for a new page instance for db-representation and return a new page with that id, copying all default blocks and rows from the page-class
-     * @param pageClass the page-class for a new page
+     * @param entityClass the page-class for a new page
      * @return a new page of class 'pageClass'
      */
-    public Page getNewPage(PageClass pageClass)
+    public Entity getNewPage(EntityClass entityClass)
     {
         try(Jedis redisClient = pool.getResource()) {
-            PageID newPageID = pageClass.renderNewPageID();
+            EntityID newEntityID = entityClass.renderNewPageID();
 
             //Check if this page-id (url) is not already present in db, if so, re-render a random page-id
-            while (redisClient.get(newPageID.getUnversionedId()) != null) {
-                newPageID = pageClass.renderNewPageID();
+            while (redisClient.get(newEntityID.getUnversionedId()) != null) {
+                newEntityID = entityClass.renderNewPageID();
             }
-            Page newPage = new Page(newPageID, pageClass);
+            Entity newPage = new Entity(newEntityID, entityClass);
             return newPage;
         }
     }

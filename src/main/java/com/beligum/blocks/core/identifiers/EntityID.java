@@ -9,14 +9,14 @@ import java.net.URL;
 /**
  * Created by bas on 16.10.14.
  */
-public class PageID extends RedisID
+public class EntityID extends RedisID
 {
     /**
      * Constructor taking a URL. De version of this ID will be constructed using the current system's time.
      * @param url a url representing the unique id of the page represented by this id
      * @throws URISyntaxException if the given url cannot be properly used as an ID, when the url is not properly formatted according to RFC 2396 standard
      */
-    public PageID(URL url) throws URISyntaxException
+    public EntityID(URL url) throws URISyntaxException
     {
         super(url);
     }
@@ -27,7 +27,7 @@ public class PageID extends RedisID
      * @param version
      * @throws URISyntaxException if the given url cannot be properly used as an ID
      */
-    public PageID(URL url, long version) throws URISyntaxException
+    public EntityID(URL url, long version) throws URISyntaxException
     {
         super(url, version);
     }
@@ -38,14 +38,14 @@ public class PageID extends RedisID
      * @throws URISyntaxException when the id cannot properly be transformed into a URI, since this class is actually a wrapper around a URI
      * @throws MalformedURLException when the id cannot properly generate a URL, based on the (in the xml-configuration) specified site-domain
      */
-    public PageID(String dbId) throws URISyntaxException, MalformedURLException
+    public EntityID(String dbId) throws URISyntaxException, MalformedURLException
     {
         super(dbId);
     }
 
     /**
      *
-     * @return the string-id of the hash containing all page meta-data (info) of the page with this PageID
+     * @return the string-id of the hash containing all page meta-data (info) of the page with this EntityID
      */
     public String getPageInfoId(){
         return getVersionedId() + ":" + DatabaseConstants.PAGE_INFO_SUFFIX;
