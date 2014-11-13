@@ -12,28 +12,26 @@ public class AbstractViewable extends IdentifiableObject
 {
     /**string representing the html-template of this element, once the template has been set, it cannot be changed*/
     protected final String template;
-    /**the direct children of this tree-element, a hashset is used to make it impossible to contain two double rows using row.equals(anotherRow)*/
-    protected Set<Row> directChildren = new HashSet<>();
     /**set with all the element ids of all the child-elements (and grandchild-elements) of this element, no double ids can be added*/
-    protected Set<String> elementHtmlIds = new HashSet<>();
+    protected Set<String> childHtmlIds = new HashSet<>();
     /**set containing all children (and grand-children) of this element*/
-    private Set<Row> cachedElements = new HashSet<>();
+    private Set<Row> allChildren = new HashSet<>();
     /**map containing the final elements of this page, keys = html-id's of the elements, values = element-objects*/
-    private Map<String, Row> cachedFinalElements = new HashMap<>();
+    private Map<String, Row> cachedFinalChildren = new HashMap<>();
     /**set containing the non-final elements of this page, it is a hashset explicitly because it is used for hashing elements when checking for equality*/
-    private HashSet<Row> cachedNonFinalElements = new HashSet<>();
+    private HashSet<Row> cachedNonFinalChildren = new HashSet<>();
 
     /**
      * Constructor taking a unique id.
      * @param id id for this viewable
      * @param template the template-string which represents the content of this viewable
-     * @param directChildren a set of all the direct children of this abstactViewable
+     * @param allChildren a set of all the children (and grand-children) of this abstractViewable
      */
-    public AbstractViewable(ID id, String template, Set<Row> directChildren)
+    public AbstractViewable(ID id, String template, Set<Row> allChildren)
     {
         super(id);
         this.template = template;
-        this.addDirectChildren(directChildren);
+        this.allChildren.addAll(allChildren);
     }
 
     /**
@@ -47,41 +45,23 @@ public class AbstractViewable extends IdentifiableObject
 
     /**
      *
-     * @return the direct children (also elements) of this element
-     */
-    public Set<Row> getDirectChildren(){
-        return this.directChildren;
-    }
-
-    /**
-     *
      * @return all the children (and grand-children) of this element in the element-tree
      */
-    public Set<Row> getAllElements(){
-        if(this.cachedElements.isEmpty()) {
-            Set<Row> elements = new HashSet<>();
-            if (!this.directChildren.isEmpty()) {
-                Set<Row> directChildren = this.directChildren;
-                for (Row child : directChildren) {
-                    elements.addAll(child.getAllElements());
-                }
-            }
-            this.cachedElements = elements;
-        }
-        return this.cachedElements;
+    public Set<Row> getAllChildren(){
+        return this.allChildren;
     }
 
     /**
      * Add an element to this tree-element if it's element-id (everything after the '#' in the url) is not already present in this abstract-page, nor is any of it's children's element-ids.
-     * @param element the element to be added to the page
+     * @param child the element to be added to the viewable
      * @return true if the child was correctly added, false otherwise
      */
-    public boolean addChild(Row element)
+    public boolean addChild(Row child)
     {
         boolean added = false;
-        boolean hasUniqueId = this.elementHtmlIds.add(element.getHtmlId());
+        boolean hasUniqueId = this.childHtmlIds.add(child.getHtmlId());
         if(hasUniqueId) {
-            added = this.directChildren.add(element);
+            added = this.allChildren.add(child);
         }
         this.clearCache();
         return added;
@@ -90,32 +70,23 @@ public class AbstractViewable extends IdentifiableObject
     /**
      * Add direct children to this element if and only if all of them and their grandchildren have a unique (html-)id in the tree with this element as a root and the child-set of this element has actually changed.
      * @param children children to be added
-     * @return true if the children have been added, false otherwise
+     * @return true if the children have been added and the collection of children in this viewable has changed, false otherwise
      */
-    public boolean addDirectChildren(Collection<Row> children){
+    public boolean addChildren(Collection<Row> children){
         //if no children are present in the collection, adding them is very easy :-)
         if(children.isEmpty()){
-            return true;
+            return false;
         }
 
         boolean allHaveUniqueIds = true;
         Iterator<Row> childIt = children.iterator();
         while(allHaveUniqueIds && childIt.hasNext()){
             Row child = childIt.next();
-            allHaveUniqueIds = !this.elementHtmlIds.contains(child.getHtmlId());
-            if(allHaveUniqueIds) {
-                //we're not making use of recursion, because we do not , so the tree is not
-                Collection<Row> grandchildren = child.getAllElements();
-                Iterator<Row> grandChildIt = grandchildren.iterator();
-                while(allHaveUniqueIds && grandChildIt.hasNext()){
-                    Row grandChild = grandChildIt.next();
-                    allHaveUniqueIds = !this.elementHtmlIds.contains(grandChild.getHtmlId());
-                }
-            }
+            allHaveUniqueIds = !this.childHtmlIds.contains(child.getHtmlId());
         }
         if(allHaveUniqueIds){
             boolean changed = false;
-            changed = this.directChildren.addAll(children);
+            changed = this.allChildren.addAll(children);
             if(changed){
                 this.clearCache();
             }
@@ -130,16 +101,16 @@ public class AbstractViewable extends IdentifiableObject
      *
      * @return a map with all elements in this element that cannot be altered by the client, keys = html-id's of the elements, values = element-objects
      */
-    public Map<String, Row> getAllFinalElements(){
-        if(this.cachedFinalElements.isEmpty()) {
-            Set<Row> elements = this.getAllElements();
-            for (Row element : elements) {
-                if(element.isFinal()) {
-                    this.cachedFinalElements.put(element.getHtmlId(), element);
+    public Map<String, Row> getAllFinalChildren(){
+        if(this.cachedFinalChildren.isEmpty()) {
+            Set<Row> children = this.getAllChildren();
+            for (Row child : children) {
+                if(child.isFinal()) {
+                    this.cachedFinalChildren.put(child.getHtmlId(), child);
                 }
             }
         }
-        return this.cachedFinalElements;
+        return this.cachedFinalChildren;
     }
 
     /**
@@ -147,30 +118,27 @@ public class AbstractViewable extends IdentifiableObject
      * @return a hashset with elements in this page that can be altered by the client, it is a hashset explicitly because it is typically used with hashing to check for equality
      */
     //this MUST return a HASH-set, not simply a set, since hashing will be used to check for equality
-    public HashSet<Row> getAllNonFinalElements(){
-        if(this.cachedNonFinalElements.isEmpty()) {
-            Set<Row> elements = this.getAllElements();
-            for (Row element : elements) {
-                if(!element.isFinal()) {
-                    this.cachedNonFinalElements.add(element);
+    public HashSet<Row> getAllNonFinalChildren(){
+        if(this.cachedNonFinalChildren.isEmpty()) {
+            Set<Row> children = this.getAllChildren();
+            for (Row child : children) {
+                if(!child.isFinal()) {
+                    this.cachedNonFinalChildren.add(child);
                 }
             }
         }
-        return this.cachedNonFinalElements;
+        return this.cachedNonFinalChildren;
     }
 
     /**
      * clear the cache of this abstract-page
      */
     private void clearCache(){
-        if(!this.cachedNonFinalElements.isEmpty()) {
-            this.cachedNonFinalElements.clear();
+        if(!this.cachedNonFinalChildren.isEmpty()) {
+            this.cachedNonFinalChildren.clear();
         }
-        if(!this.cachedFinalElements.isEmpty()) {
-            this.cachedFinalElements.clear();
-        }
-        if(!this.cachedElements.isEmpty()) {
-            this.cachedElements.clear();
+        if(!this.cachedFinalChildren.isEmpty()) {
+            this.cachedFinalChildren.clear();
         }
     }
 

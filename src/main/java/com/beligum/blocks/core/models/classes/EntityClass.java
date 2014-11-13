@@ -20,21 +20,21 @@ import java.util.Set;
  */
 public class EntityClass extends AbstractViewableClass
 {
-    /**the doctype of this pageclass*/
+    /**the doctype of this entityclass*/
     private String docType;
-    /**string the name of this page-class*/
+    /**string the name of this entity-class*/
     private String name;
 
     /**
      *
-     * @param name the name of this page-class
-     * @param directChildren the direct children of this page-class
-     * @param template the template-string corresponding to the most outer layer of the element-tree in this page
-     * @param docType the doctype of this page-class
+     * @param name the name of this entity-class
+     * @param allChildren all children of this entity-class
+     * @param template the template-string corresponding to the most outer layer of the element-tree in this entity
+     * @param docType the doctype of this entity-class
      */
-    public EntityClass(String name, Set<Row> directChildren, String template, String docType) throws URISyntaxException
+    public EntityClass(String name, Set<Row> allChildren, String template, String docType) throws URISyntaxException
     {
-        super(makeId(name), directChildren, template);
+        super(makeId(name), allChildren, template);
         this.name = name;
         this.docType = docType;
     }
@@ -53,7 +53,7 @@ public class EntityClass extends AbstractViewableClass
         return docType;
     }
     /**
-     * @return the prefix used for a page-entity-class in the class-attribute of the html-template
+     * @return the prefix used for a entity-entity-class in the class-attribute of the html-template
      */
     @Override
     public String getCssClassPrefix()
@@ -62,8 +62,8 @@ public class EntityClass extends AbstractViewableClass
     }
 
     /**
-     * Method for getting a new randomly determined page-uid (with versioning) for a pageInstance of this pageClass
-     * @return a randomly generated page-id of the form "[site-domain]/[pageClassName]/[randomInt]"
+     * Method for getting a new randomly determined entity-uid (with versioning) for a entityInstance of this entityClass
+     * @return a randomly generated entity-id of the form "[site-domain]/[entityClassName]/[randomInt]"
      */
     public EntityID renderNewPageID(){
         try {
@@ -78,23 +78,23 @@ public class EntityClass extends AbstractViewableClass
     }
 
     /**
-     * returns the base-url for the page-class
-     * @param pageClassName the name of the page-class (f.i. "default" for a pageClass filtered from the file "entities/default/index.html")
+     * returns the base-url for the entity-class
+     * @param entityClassName the name of the entity-class (f.i. "default" for a entityClass filtered from the file "entities/default/index.html")
      * @return
      */
-    public static URL getBaseUrl(String pageClassName) throws MalformedURLException
+    public static URL getBaseUrl(String entityClassName) throws MalformedURLException
     {
-        return new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_ENTITY_CLASS_ID_PREFIX + "/" + pageClassName);
+        return new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_ENTITY_CLASS_ID_PREFIX + "/" + entityClassName);
     }
 
     /**
-     * Return an ID for the pageclass with a (unique) name, the id for all pageclasses will be "page/<pageClassName>"
-     * @param pageClassName the unique name of the pageClass
-     * @return an ID for the pageclass
+     * Return an ID for the entityclass with a (unique) name, the id for all entityclasses will be "entity/<entityClassName>"
+     * @param entityClassName the unique name of the entityClass
+     * @return an ID for the entityclass
      */
-    private static ID makeId(String pageClassName) throws URISyntaxException
+    private static ID makeId(String entityClassName) throws URISyntaxException
     {
-        return new ID(new URI(CacheConstants.PAGE_ENTITY_CLASS_ID_PREFIX + "/" + pageClassName));
+        return new ID(new URI(CacheConstants.PAGE_ENTITY_CLASS_ID_PREFIX + "/" + entityClassName));
     }
 
 }

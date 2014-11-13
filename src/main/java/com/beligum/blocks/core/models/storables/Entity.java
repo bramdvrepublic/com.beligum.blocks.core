@@ -16,72 +16,72 @@ public class Entity extends ViewableInstance
 {
     /**
      *
-     * Constructor for a new page-instance of a certain page-class, which will be filled with the default rows and blocks from the page-class.
+     * Constructor for a new entity-instance of a certain entity-class, which will be filled with the default rows and blocks from the entity-class.
      * It's UID will be the of the form "[url]:[version]". It used the current application version and the currently logged in user for field initialization.
-     * @param id the id of this page
-     * @param entityClass the class of which this page is a page-instance
+     * @param id the id of this entity
+     * @param entityClass the class of which this entity is a entity-instance
      * @throw URISyntaxException if a url is specified not formatted strictly according to to RFC2396
      */
     public Entity(EntityID id, EntityClass entityClass)
     {
-        //a page cannot be altered by the client, so it always is final
+        //a entity cannot be altered by the client, so it always is final
         super(id, entityClass, true);
-        this.addDirectChildren(entityClass.getDirectChildren());
+        this.addChildren(entityClass.getAllChildren());
     }
 
     /**
      *
-     * Constructor for a new page-instance of a certain page-class, which will be filled with the default rows and blocks from the page-class.
+     * Constructor for a new entity-instance of a certain entity-class, which will be filled with the default rows and blocks from the entity-class.
      * It's UID will be the of the form "[url]:[version]"
-     * @param id the id of this page
-     * @param entityClass the class of which this page is a page-instance
-     * @param applicationVersion the version of the app this page was saved under
-     * @param creator the creator of this page
+     * @param id the id of this entity
+     * @param entityClass the class of which this entity is a entity-instance
+     * @param applicationVersion the version of the app this entity was saved under
+     * @param creator the creator of this entity
      * @throw URISyntaxException if a url is specified not formatted strictly according to to RFC2396
      */
     public Entity(EntityID id, EntityClass entityClass, String applicationVersion, String creator)
     {
-        //a page cannot be altered by the client, so it always is final
+        //a entity cannot be altered by the client, so it always is final
         super(id, entityClass, true);
-        this.addDirectChildren(entityClass.getDirectChildren());
+        this.addChildren(entityClass.getAllChildren());
     }
 
     /**
-     * Constructor for a new page-instance taking children and a pageclass. The rows and blocks of the pageClass are NOT copied to this page.
-     * @param id the id of this page
-     * @param directChildren the direct children for this page
-     * @param pageClassName the name of the page-class this page is an instance of
-     * @throws CacheException when the page-class cannot be found in the application-cache
+     * Constructor for a new entity-instance taking children and a entityclass. The rows and blocks of the entityClass are NOT copied to this entity.
+     * @param id the id of this entity
+     * @param allChildren all children for this entity
+     * @param entityClassName the name of the entity-class this entity is an instance of
+     * @throws CacheException when the entity-class cannot be found in the application-cache
      */
-    public Entity(EntityID id, Set<Row> directChildren, String pageClassName) throws CacheException
+    public Entity(EntityID id, Set<Row> allChildren, String entityClassName) throws CacheException
     {
-        //the template of a page is always the template of it's page-class; a page cannot be altered by the client, so it always is final
-        super(id, EntityClassCache.getInstance().get(pageClassName), true);
-        this.addDirectChildren(directChildren);
+        //the template of a entity is always the template of it's entity-class; a entity cannot be altered by the client, so it always is final
+        super(id, EntityClassCache.getInstance().get(entityClassName), true);
+        this.addChildren(allChildren);
     }
 
     /**
-     * Constructor for a new page-instance taking elements fetched from db and a pageclass (fetched from application cache).
-     * The rows and blocks are added to this page in the following order:
-     * 1. final elements of page-class, 2. blocks and rows from database specified in the set, 3. non-final elements of page-class, whose element-id's are not yet present in the page
-     * @param id the id of this page
-     * @param directChildrenFromDB the direct children of the page
-     * @param entityClass the page-class this page is an instance of
-     * @param applicationVersion the version of the app this page was saved under
-     * @param creator the creator of this page
+     * Constructor for a new entity-instance taking elements fetched from db and a entityclass (fetched from application cache).
+     * The rows and blocks are added to this entity in the following order:
+     * 1. final elements of entity-class, 2. blocks and rows from database specified in the set, 3. non-final elements of entity-class, whose element-id's are not yet present in the entity
+     * @param id the id of this entity
+     * @param allChildrenFromDB the direct children of the entity
+     * @param entityClass the entity-class this entity is an instance of
+     * @param applicationVersion the version of the app this entity was saved under
+     * @param creator the creator of this entity
      *
      */
-    public Entity(EntityID id, Set<Row> directChildrenFromDB, EntityClass entityClass, String applicationVersion, String creator)
+    public Entity(EntityID id, Set<Row> allChildrenFromDB, EntityClass entityClass, String applicationVersion, String creator)
     {
         super(id, entityClass, true, applicationVersion, creator);
-        this.addDirectChildren(entityClass.getAllFinalElements().values());
-        this.addDirectChildren(directChildrenFromDB);
-        this.addDirectChildren(entityClass.getAllNonFinalElements());
+        this.addChildren(entityClass.getAllFinalChildren().values());
+        this.addChildren(allChildrenFromDB);
+        this.addChildren(entityClass.getAllNonFinalChildren());
     }
 
     /**
      *
-     * @return the page-entity-class of this page-entity-instance
+     * @return the entity-class of this entity-instance
      */
     public EntityClass getPageEntityClass(){
         return (EntityClass) this.viewableClass;
@@ -94,7 +94,7 @@ public class Entity extends ViewableInstance
 
     /**
      *
-     * @return a url to the latest version of this page
+     * @return a url to the latest version of this entity
      */
     public URL getUrl(){
         return getId().getUrl();
@@ -102,7 +102,7 @@ public class Entity extends ViewableInstance
 
     /**
      *
-     * @return the id of the hash containing the info of this page in the db
+     * @return the id of the hash containing the info of this entity in the db
      */
     public String getInfoId(){
         return this.getId().getPageInfoId();

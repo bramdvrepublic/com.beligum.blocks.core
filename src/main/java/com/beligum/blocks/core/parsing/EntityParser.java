@@ -39,8 +39,7 @@ public class EntityParser extends AbstractViewableParser<EntityClass>
     public EntityParser(String entityClassName)
     {
         super(entityClassName);
-        this.directChildren = new HashSet<>();
-        this.elements = new HashSet<>();
+        this.allChildren = new HashSet<>();
         this.docType = null;
     }
 
@@ -99,7 +98,7 @@ public class EntityParser extends AbstractViewableParser<EntityClass>
         try{
             this.fillWithPage(pageHtml, pageUrl);
             //return a page-instance with a newly versioned id and the found blocks and rows of class 'pageClass'
-            return new Entity(new EntityID(pageUrl), this.directChildren, this.viewableClassName);
+            return new Entity(new EntityID(pageUrl), this.allChildren, this.viewableClassName);
         }
         catch(CacheException e){
             throw new ParserException("Error while getting page-class from cache. ", e);
@@ -203,8 +202,7 @@ public class EntityParser extends AbstractViewableParser<EntityClass>
      */
     protected void empty(){
         super.empty();
-        this.elements.clear();
-        this.directChildren.clear();
+        this.allChildren.clear();
         this.docType = null;
     }
 
@@ -259,7 +257,7 @@ public class EntityParser extends AbstractViewableParser<EntityClass>
             throw new ParserException("Cannot construct an entity-class out of the internal parser-data. Did you fill up the parser before calling this method?");
         }
         try {
-            return new EntityClass(this.viewableClassName, this.directChildren, this.viewableTemplate, this.docType);
+            return new EntityClass(this.viewableClassName, this.allChildren, this.viewableTemplate, this.docType);
         }
         catch(URISyntaxException e){
             throw new ParserException("Cannot construct an entity-class out of the internal parser-data.", e);

@@ -18,13 +18,13 @@ public abstract class AbstractViewableClass extends AbstractViewable
     /**
      *
      * @param id id for this viewable-class
-     * @param directChildren the direct children of this viewable-class
+     * @param allChildren all children (and grand-children) of this viewable-class
      * @param template the template-string containing this viewables direct children as template-variables
      */
-    protected AbstractViewableClass(ID id, Set<Row> directChildren, String template) throws URISyntaxException
+    protected AbstractViewableClass(ID id, Set<Row> allChildren, String template) throws URISyntaxException
     {
         //a page-class cannot be altered by the client, so it always is final
-        super(id, template, directChildren);
+        super(id, template, allChildren);
     }
 
     /**

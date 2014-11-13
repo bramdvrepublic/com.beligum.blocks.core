@@ -49,7 +49,7 @@ public class ApplicationEndpoint
                  * Add all specific velocity-variables fetched from database to the context.
                  */
                 VelocityContext context = new VelocityContext();
-                for(Row element : page.getAllElements()){
+                for(Row element : page.getAllChildren()){
                     context.put(element.getTemplateVariableName(), element.getTemplate());
                 }
 

@@ -1,11 +1,9 @@
 package com.beligum.blocks.core.models.storables;
 
 import com.beligum.blocks.core.caching.BlockClassCache;
-import com.beligum.blocks.core.caching.EntityClassCache;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.classes.BlockClass;
-import com.beligum.blocks.core.models.classes.EntityClass;
 
 import java.util.Set;
 
@@ -46,24 +44,8 @@ public class Block extends ViewableInstance
         this.content = content;
     }
 
-    /**
-     * Constructor for a new block-instance taking elements fetched from db and a blockclass (fetched from application cache).
-     * The rows and blocks are added to this block in the following order:
-     * 1. final elements of block-class, 2. blocks and rows from database specified in the set, 3. non-final elements of block-class, whose element-id's are not yet present in the block
-     * @param id the id of this block
-     * @param content the content of this block
-     * @param directChildrenFromDB the direct children of the block
-     * @param blockClass the block-class this block is an instance of
-     * @param applicationVersion the version of the app this block was saved under
-     * @param creator the creator of this block
-     *
-     */
-    public Block(RedisID id, String content, Set<Row> directChildrenFromDB, BlockClass blockClass, String applicationVersion, String creator)
+    public String getContent()
     {
-        super(id, blockClass, true, applicationVersion, creator);
-        this.content = content;
-        this.addDirectChildren(blockClass.getAllFinalElements().values());
-        this.addDirectChildren(directChildrenFromDB);
-        this.addDirectChildren(blockClass.getAllNonFinalElements());
+        return content;
     }
 }

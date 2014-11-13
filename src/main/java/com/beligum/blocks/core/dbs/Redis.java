@@ -109,13 +109,13 @@ public class Redis implements Closeable
                 //the page stored in db, will be null when no such page is present in db
                 Entity storedPage = this.fetchPage(page.getUrl());
                 //elements of the page-class present in the cache that may not be altered, keys = html-id's of the elements, values = element-objects
-                Map<String, Row> finalElements = page.getPageEntityClass().getAllFinalElements();
+                Map<String, Row> finalElements = page.getPageEntityClass().getAllFinalChildren();
                 //elements of the last version of this page stored in db that can be altered
-                HashSet<Row> storedElements = (storedPage != null) ? storedPage.getAllNonFinalElements() : new HashSet<Row>();
+                HashSet<Row> storedElements = (storedPage != null) ? storedPage.getAllNonFinalChildren() : new HashSet<Row>();
                 //elements of the page-class present in the cache that can be altered
-                HashSet<Row> cachedElements = page.getPageEntityClass().getAllNonFinalElements();
+                HashSet<Row> cachedElements = page.getPageEntityClass().getAllNonFinalChildren();
                 //elements of the page we want to save, which need to be compared to the above maps of elements
-                Set<Row> pageElements = page.getAllElements();
+                Set<Row> pageElements = page.getAllChildren();
                 //for all elements received from the page to be saved, check if they have to be saved to db, or if they are already present in the cache
                 for (Row pageElement : pageElements) {
                     if (!finalElements.containsKey(pageElement.getHtmlId())) {
@@ -137,7 +137,7 @@ public class Redis implements Closeable
                     else {
                         Row finalElement = finalElements.get(pageElement.getHtmlId());
                         if (!finalElement.equals(pageElement)) {
-                            throw new RedisException("Final elements cannot be altered: element with id '" + finalElement.getHtmlId() + "' is final, so it cannot be changed to \n \n "
+                            throw new RedisException("Final allChildren cannot be altered: element with id '" + finalElement.getHtmlId() + "' is final, so it cannot be changed to \n \n "
                                                      + pageElement.getTemplate() + "\n \n");
                         }
                         //nothing has to be done with unaltered final elements when saving to db (they are already present in the application cache and may not be altered anyhow)
@@ -307,15 +307,13 @@ public class Redis implements Closeable
                  */
                 String type = elementHash.get(DatabaseConstants.ELEMENT_CLASS_TYPE);
                 String content = elementHash.get(DatabaseConstants.TEMPLATE);
-                String viewalbeClassName = elementHash.get(DatabaseConstants.VIEWABLE_CLASS);
+                String viewableClassName = elementHash.get(DatabaseConstants.VIEWABLE_CLASS);
                 String applicationVersion = elementHash.get(DatabaseConstants.APP_VERSION);
                 String creator = elementHash.get(DatabaseConstants.CREATOR);
                 //an element that previously was saved in db, has to be changable (non-final), if not it would not have been saved in db
                 boolean isFinal = false;
                 if(type.equals(Block.class.getSimpleName())){
-                    //TODO BAS: hier moet een set met kinderen opgehaald worden
-                    BlockClass blockClass = BlockClassCache.getInstance().get(viewalbeClassName);
-                    return new Block(elementRedisId, content, null, blockClass, applicationVersion, creator);
+                    return new Block(elementRedisId, content, viewableClassName, isFinal, applicationVersion, creator);
                 }
                 else if(type.equals(Row.class.getSimpleName())){
                     //TODO BAS: hier moet een set met kinderen opgehaald worden

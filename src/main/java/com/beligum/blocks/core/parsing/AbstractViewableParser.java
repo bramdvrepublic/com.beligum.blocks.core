@@ -38,10 +38,8 @@ public abstract class AbstractViewableParser<T extends AbstractViewableClass>
     protected boolean filled;
     /**the template containing names of variables of the viewable currently being parsed*/
     protected String viewableTemplate;
-    /**the direct child-rows of the viewable currently being parsed*/
-    protected Set<Row> directChildren;
-    /**a set of all the blocks of the page currently being parsed*/
-    protected Set<Row> elements;
+    /**a set of all the rows (and blocks and entities) of the viewable currently being parsed*/
+    protected Set<Row> allChildren;
     /**the current depth in the row-tree currently being parsed*/
     private int currentRowDepth;
 
@@ -54,10 +52,8 @@ public abstract class AbstractViewableParser<T extends AbstractViewableClass>
         this.viewableClassName = viewableClassName;
         this.filled = false;
         this.viewableTemplate = "";
-        this.directChildren = new HashSet<> ();
-        this.elements = new HashSet<>();
+        this.allChildren = new HashSet<>();
         this.currentRowDepth = 0;
-        this.directChildren = new HashSet<>();
     }
 
     public String getViewableClassName()
@@ -139,7 +135,7 @@ public abstract class AbstractViewableParser<T extends AbstractViewableClass>
         //TODO BAS: typeDocument should be added again!
         //            htmlDOM = this.typeDocument(htmlDOM, pageClassName);
         //fill up the rowset and the blockset and alter the htmlDOM to be a template holding variables for the upper-rows
-        this.recursiveParse(htmlDOM, baseUrl);
+        this.allChildren = this.recursiveParse(htmlDOM, baseUrl);
         this.setFilled(true);
     }
 
@@ -205,20 +201,9 @@ public abstract class AbstractViewableParser<T extends AbstractViewableClass>
      * Alters the node-element to holding variables instead of other elements.
      * @param node root of the tree to be parsed
      * @param baseUrl the base-url used which will be used to define the row- and block-ids
+     * @return a set with all row-children of this tree-node
      */
-    private void recursiveParse(Element node, URL baseUrl) throws ParserException{
-        this.recursiveParse(node, baseUrl, 0);
-    }
-
-    /**
-     * Parses the tree starting with the node-element, looking for row- and block-elements and adding them to the proper fields in this PageParser. Blocks are always seen as leafs
-     * Alters the node-element to holding variables instead of other elements.
-     * @param node root of the tree to be parsed
-     * @param baseUrl the base-url used which will be used to define the row- and block-ids
-     * @param rowDepth the depth of the row currently being parsed
-     * @return a set of all row-children of the given node
-     */
-    private Set<Row> recursiveParse(Element node, URL baseUrl, int rowDepth) throws ParserException
+    private Set<Row> recursiveParse(Element node, URL baseUrl) throws ParserException
     {
         //TODO BAS: this should check if all blocks are inside a column, if not, throw ParserException
 
@@ -236,7 +221,7 @@ public abstract class AbstractViewableParser<T extends AbstractViewableClass>
             if(isClass){
                 if(isEntity || isBlock){
                     //a class always is on row-depth 0
-                    rowChildren.addAll(recursiveParse(child, baseUrl, 0));
+                    rowChildren.addAll(this.recursiveParse(child, baseUrl));
                     //TODO BAS: is this the most efficient way we can get rid of the &quot;-problem during return-velocity-parsing, since this will read over the whole template again
                     this.viewableTemplate = StringEscapeUtils.unescapeXml(child.outerHtml());
                 }
@@ -248,7 +233,6 @@ public abstract class AbstractViewableParser<T extends AbstractViewableClass>
                 if (child.id() == null || child.id().isEmpty()) {
                     throw new ParserException("A row or block in the html-tree doesn't have an id, this shouldn't happen: \n" + child.outerHtml());
                 }
-                rowDepth = rowDepth + 1;
                 //TODO BAS: is this the most efficient way we can get rid of the &quot;-problem during return-velocity-parsing, since this will read over the whole template again
                 String childHtml = StringEscapeUtils.unescapeXml(child.outerHtml());
                 //render id for this element (row or block)
@@ -288,32 +272,17 @@ public abstract class AbstractViewableParser<T extends AbstractViewableClass>
                 }
                 else{
                     //recursively iterate over the subtree starting with this row and add the found blocks and rows to the map
-                    this.recursiveParse(child, baseUrl, rowDepth);
+                    Set<Row> allGrandChildren = this.recursiveParse(child, baseUrl);
                     boolean isFinal = !(child.classNames().contains(CSSClasses.MODIFIABLE_ROW) || child.classNames().contains(CSSClasses.LAYOUTABLE_ROW) || child.classNames().contains(
                                     CSSClasses.CREATE_ENABLED_ROW));
-                    childRow = new Row(id, childHtml, this.directChildren, isFinal);
+                    childRow = new Row(id, childHtml, allGrandChildren, isFinal);
                 }
                 child.replaceWith(new TextNode("\n ${" + child.id() + "}\n", ""));
-                this.elements.add(childRow);
-                //TODO BAS SH: je bent aan het recursief parsen, rekening houdend met de boomdiepte, die moet in het terugkeren ook aangepast worden, net als de kinderen, die ook correct moeten toegevoegd worden aan een rij
-                if(rowDepth == this.currentRowDepth) {
-                    rowChildren.add(childRow);
-                }
-                else if(rowDepth == this.currentRowDepth + 1){
-                    this.directChildren = new HashSet<>();
-                    this.directChildren.add(childRow);
-                    this.currentRowDepth = rowDepth;
-                }
-                else if(rowDepth == this.currentRowDepth - 1){
-
-                }
-                else{
-                    throw new RuntimeException("No idea what happened, found a double step in the recursive parse. This should not happen.");
-                }
+                rowChildren.add(childRow);
             }
             else {
-                //recursively iterate over the tree (skip ahead, since we didn't find a row, block or entity)
-                this.recursiveParse(child, baseUrl);
+                //recursively iterate over the tree (skip ahead, since we didn't find a new row, block or class)
+                rowChildren.addAll(this.recursiveParse(child, baseUrl));
             }
         }
         return rowChildren;
