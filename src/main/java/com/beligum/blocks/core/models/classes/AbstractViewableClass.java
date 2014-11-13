@@ -24,8 +24,7 @@ public abstract class AbstractViewableClass extends AbstractViewable
     protected AbstractViewableClass(ID id, Set<Row> directChildren, String template) throws URISyntaxException
     {
         //a page-class cannot be altered by the client, so it always is final
-        super(id, template);
-        this.addDirectChildren(directChildren);
+        super(id, template, directChildren);
     }
 
     /**

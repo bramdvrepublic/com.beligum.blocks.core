@@ -79,7 +79,7 @@ public class EntityClass extends AbstractViewableClass
 
     /**
      * returns the base-url for the page-class
-     * @param pageClassName the name of the page-class (f.i. "default" for a pageClass filtered from the file "pages/default/index.html")
+     * @param pageClassName the name of the page-class (f.i. "default" for a pageClass filtered from the file "entities/default/index.html")
      * @return
      */
     public static URL getBaseUrl(String pageClassName) throws MalformedURLException

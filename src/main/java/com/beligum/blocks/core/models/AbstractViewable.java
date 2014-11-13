@@ -12,8 +12,8 @@ public class AbstractViewable extends IdentifiableObject
 {
     /**string representing the html-template of this element, once the template has been set, it cannot be changed*/
     protected final String template;
-    /**the direct children of this tree-element*/
-    protected Set<Row> children;
+    /**the direct children of this tree-element, a hashset is used to make it impossible to contain two double rows using row.equals(anotherRow)*/
+    protected Set<Row> directChildren = new HashSet<>();
     /**set with all the element ids of all the child-elements (and grandchild-elements) of this element, no double ids can be added*/
     protected Set<String> elementHtmlIds = new HashSet<>();
     /**set containing all children (and grand-children) of this element*/
@@ -26,11 +26,14 @@ public class AbstractViewable extends IdentifiableObject
     /**
      * Constructor taking a unique id.
      * @param id id for this viewable
+     * @param template the template-string which represents the content of this viewable
+     * @param directChildren a set of all the direct children of this abstactViewable
      */
-    public AbstractViewable(ID id, String template)
+    public AbstractViewable(ID id, String template, Set<Row> directChildren)
     {
         super(id);
         this.template = template;
+        this.addDirectChildren(directChildren);
     }
 
     /**
@@ -47,7 +50,7 @@ public class AbstractViewable extends IdentifiableObject
      * @return the direct children (also elements) of this element
      */
     public Set<Row> getDirectChildren(){
-        return this.children;
+        return this.directChildren;
     }
 
     /**
@@ -57,8 +60,8 @@ public class AbstractViewable extends IdentifiableObject
     public Set<Row> getAllElements(){
         if(this.cachedElements.isEmpty()) {
             Set<Row> elements = new HashSet<>();
-            if (!this.children.isEmpty()) {
-                Set<Row> directChildren = this.children;
+            if (!this.directChildren.isEmpty()) {
+                Set<Row> directChildren = this.directChildren;
                 for (Row child : directChildren) {
                     elements.addAll(child.getAllElements());
                 }
@@ -78,7 +81,7 @@ public class AbstractViewable extends IdentifiableObject
         boolean added = false;
         boolean hasUniqueId = this.elementHtmlIds.add(element.getHtmlId());
         if(hasUniqueId) {
-            added = this.children.add(element);
+            added = this.directChildren.add(element);
         }
         this.clearCache();
         return added;
@@ -90,6 +93,11 @@ public class AbstractViewable extends IdentifiableObject
      * @return true if the children have been added, false otherwise
      */
     public boolean addDirectChildren(Collection<Row> children){
+        //if no children are present in the collection, adding them is very easy :-)
+        if(children.isEmpty()){
+            return true;
+        }
+
         boolean allHaveUniqueIds = true;
         Iterator<Row> childIt = children.iterator();
         while(allHaveUniqueIds && childIt.hasNext()){
@@ -107,7 +115,7 @@ public class AbstractViewable extends IdentifiableObject
         }
         if(allHaveUniqueIds){
             boolean changed = false;
-            changed = this.children.addAll(children);
+            changed = this.directChildren.addAll(children);
             if(changed){
                 this.clearCache();
             }

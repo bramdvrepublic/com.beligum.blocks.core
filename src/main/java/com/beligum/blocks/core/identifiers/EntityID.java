@@ -48,6 +48,6 @@ public class EntityID extends RedisID
      * @return the string-id of the hash containing all page meta-data (info) of the page with this EntityID
      */
     public String getPageInfoId(){
-        return getVersionedId() + ":" + DatabaseConstants.PAGE_INFO_SUFFIX;
+        return getVersionedId() + ":" + DatabaseConstants.ENTITY_INFO_SUFFIX;
     }
 }

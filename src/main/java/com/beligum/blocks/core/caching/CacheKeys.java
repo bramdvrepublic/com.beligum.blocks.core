@@ -7,8 +7,8 @@ import com.beligum.core.framework.cache.CacheKey;
  */
 public enum CacheKeys implements CacheKey
 {
-    //points to hashmap of page-classes
-    PAGE_CLASSES,
+    //points to hashmap of entity-classes
+    ENTITY_CLASSES,
     //points to hashmap of block-classes
     BLOCK_CLASSES
 }

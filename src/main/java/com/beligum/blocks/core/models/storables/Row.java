@@ -8,7 +8,9 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by bas on 05.11.14.
@@ -26,11 +28,12 @@ public class Row extends AbstractViewable implements Storable
      * Constructor
      * @param id the id to this row (is of the form "[site]/[pageName]#[rowId]")
      * @param template the template of this row
+     * @param directChildren the direct children of this row
      * @param isFinal boolean whether or not the template of this element can be changed by the client
      */
-    public Row(RedisID id, String template, boolean isFinal)
+    public Row(RedisID id, String template, Set<Row> directChildren, boolean isFinal)
     {
-        super(id, template);
+        super(id, template, directChildren);
         this.isFinal = isFinal;
         //TODO BAS: this version should be fetched from pom.xml and added to the row.java as a field
         this.applicationVersion = "test";
@@ -42,11 +45,12 @@ public class Row extends AbstractViewable implements Storable
      * @param id the id to this row (is of the form "[site]/[pageName]#[rowId]")
      * @param template the template of this row
      * @param isFinal boolean whether or not the template of this element can be changed by the client
+     * @param directChildren the direct children of this row
      * @param applicationVersion the version of the application this row was saved under
      * @param creator the creator of this row
      */
-    public Row(RedisID id, String template, boolean isFinal, String applicationVersion, String creator){
-        super(id, template);
+    public Row(RedisID id, String template, Set<Row> directChildren, boolean isFinal, String applicationVersion, String creator){
+        super(id, template, directChildren);
         this.isFinal = isFinal;
         this.applicationVersion = applicationVersion;
         this.creator = creator;

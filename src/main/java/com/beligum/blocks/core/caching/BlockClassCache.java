@@ -3,7 +3,7 @@ package com.beligum.blocks.core.caching;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.models.classes.BlockClass;
-import com.beligum.blocks.core.parsing.AbstractViewableClassParser;
+import com.beligum.blocks.core.parsing.AbstractViewableParser;
 import com.beligum.blocks.core.parsing.BlockParser;
 import com.beligum.core.framework.base.R;
 
@@ -65,8 +65,8 @@ public class BlockClassCache extends AbstractViewableClassCache<BlockClass>
     }
 
     @Override
-    protected AbstractViewableClassParser<BlockClass> getParser()
+    protected AbstractViewableParser<BlockClass> getParser(String blockClassName)
     {
-        return new BlockParser();
+        return new BlockParser(blockClassName);
     }
 }

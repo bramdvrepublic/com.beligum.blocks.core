@@ -10,7 +10,7 @@ import com.beligum.blocks.core.models.classes.EntityClass;
 public class CacheConstants
 {
     /**the prefix that is given to page-class-id's*/
-    public static final String PAGE_ENTITY_CLASS_ID_PREFIX = "pages";
+    public static final String PAGE_ENTITY_CLASS_ID_PREFIX = "entities";
     /**the prefix that is given to block-class-id's*/
     public static final String BLOCK_CLASS_ID_PREFIX = "blocks";
 

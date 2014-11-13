@@ -1,5 +1,6 @@
 package com.beligum.blocks.core.models.storables;
 
+import com.beligum.blocks.core.caching.BlockClassCache;
 import com.beligum.blocks.core.caching.EntityClassCache;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.identifiers.RedisID;
@@ -13,43 +14,36 @@ import java.util.Set;
  */
 public class Block extends ViewableInstance
 {
+    /**the content of this block*/
+    private String content;
 
     /**
      * Constructor
      *
      * @param id       the id to this block (is of the form "[site]/[pageName]#[blockId]")
-     * @param blockClass the class of which this block is a block-instance
+     * @param content the content of this block
+     * @param blockClassName the class of which this block is a block-instance
      * @param isFinal  boolean whether or not the template of this element can be changed by the client
+     * @throws CacheException if something went wrong while fetching the blockclass for the application cache
      */
-    public Block(RedisID id, BlockClass blockClass, boolean isFinal)
+    public Block(RedisID id, String content, String blockClassName, boolean isFinal) throws CacheException
     {
-        super(id, blockClass, isFinal);
+        super(id, BlockClassCache.getInstance().get(blockClassName), isFinal);
+        this.content = content;
     }
 
     /**
      * @param id                 the id to this block (is of the form "[site]/[pageName]#[blockId]")
-     * @param blockClass the class of which this block is a block-instance
+     * @param content the content of this block
+     * @param blockClassName the class of which this block is a block-instance
      * @param isFinal            boolean whether or not the template of this element can be changed by the client
      * @param applicationVersion the version of the application this block was saved under
      * @param creator            the creator of this block
      */
-    public Block(RedisID id, BlockClass blockClass, boolean isFinal, String applicationVersion, String creator)
+    public Block(RedisID id, String content, String blockClassName, boolean isFinal, String applicationVersion, String creator) throws CacheException
     {
-        super(id, blockClass, isFinal, applicationVersion, creator);
-    }
-
-    /**
-     * Constructor for a new block-instance taking children and a blockclass. The rows and blocks of the blockClass are NOT copied to this block.
-     * @param id the id of this block
-     * @param directChildren the direct children for this block
-     * @param blockClassName the name of the block-class this block is an instance of
-     * @throws com.beligum.blocks.core.exceptions.CacheException when the block-class cannot be found in the application-cache
-     */
-    public Block(RedisID id, Set<Row> directChildren, String blockClassName) throws CacheException
-    {
-        //the template of a block is always the template of it's block-class; a block cannot be altered by the client, so it always is final
-        super(id, EntityClassCache.getInstance().get(blockClassName), true);
-        this.addDirectChildren(directChildren);
+        super(id, BlockClassCache.getInstance().get(blockClassName), isFinal, applicationVersion, creator);
+        this.content = content;
     }
 
     /**
@@ -57,17 +51,19 @@ public class Block extends ViewableInstance
      * The rows and blocks are added to this block in the following order:
      * 1. final elements of block-class, 2. blocks and rows from database specified in the set, 3. non-final elements of block-class, whose element-id's are not yet present in the block
      * @param id the id of this block
+     * @param content the content of this block
      * @param directChildrenFromDB the direct children of the block
-     * @param blockEntityClass the block-class this block is an instance of
+     * @param blockClass the block-class this block is an instance of
      * @param applicationVersion the version of the app this block was saved under
      * @param creator the creator of this block
      *
      */
-    public Block(RedisID id, Set<Row> directChildrenFromDB, EntityClass blockEntityClass, String applicationVersion, String creator)
+    public Block(RedisID id, String content, Set<Row> directChildrenFromDB, BlockClass blockClass, String applicationVersion, String creator)
     {
-        super(id, blockEntityClass, true, applicationVersion, creator);
-        this.addDirectChildren(blockEntityClass.getAllFinalElements().values());
+        super(id, blockClass, true, applicationVersion, creator);
+        this.content = content;
+        this.addDirectChildren(blockClass.getAllFinalElements().values());
         this.addDirectChildren(directChildrenFromDB);
-        this.addDirectChildren(blockEntityClass.getAllNonFinalElements());
+        this.addDirectChildren(blockClass.getAllNonFinalElements());
     }
 }

@@ -23,7 +23,7 @@ public class ViewableInstance extends Row
     public ViewableInstance(RedisID id, AbstractViewableClass viewableClass, boolean isFinal)
     {
         //the template of a viewable instance is always the template of it's viewable-class
-        super(id, viewableClass.getTemplate(), isFinal);
+        super(id, viewableClass.getTemplate(), viewableClass.getDirectChildren(), isFinal);
         this.viewableClass = viewableClass;
     }
     /**
@@ -36,7 +36,7 @@ public class ViewableInstance extends Row
     public ViewableInstance(RedisID id, AbstractViewableClass viewableClass, boolean isFinal, String applicationVersion, String creator)
     {
         //the template of a viewable instance is always the template of it's viewable-class
-        super(id, viewableClass.getTemplate(), isFinal, applicationVersion, creator);
+        super(id, viewableClass.getTemplate(), viewableClass.getDirectChildren(), isFinal, applicationVersion, creator);
         this.viewableClass = viewableClass;
     }
 

@@ -29,4 +29,7 @@ public class CSSClasses
     public final static String LAYOUTABLE_ROW = "can-layout";
     public final static String CREATE_ENABLED_ROW = "can-create";
     public final static String EDITABLE_BLOCK = "can-edit";
+
+    public final static String DEFAULT_BLOCK_CLASS = "default";
+    public final static String DEFAULT_ENTITY_CLASS = "default";
 }

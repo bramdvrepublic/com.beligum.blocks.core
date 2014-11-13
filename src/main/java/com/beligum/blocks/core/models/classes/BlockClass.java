@@ -7,6 +7,7 @@ import com.beligum.blocks.core.models.storables.Row;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -20,12 +21,12 @@ public class BlockClass extends AbstractViewableClass
     /**
      *
      * @param name the name of this block-class
-     * @param directChildren the direct children of this block-class
      * @param template the template-string corresponding to the most outer layer of the element-tree in this block
      */
-    public BlockClass(String name, Set<Row> directChildren, String template) throws URISyntaxException
+    public BlockClass(String name, String template) throws URISyntaxException
     {
-        super(makeId(name), directChildren, template);
+        //a block-class doesn't have any children, so it uses an empty hashset to represent that state
+        super(makeId(name), new HashSet<Row>(), template);
         this.name = name;
     }
 

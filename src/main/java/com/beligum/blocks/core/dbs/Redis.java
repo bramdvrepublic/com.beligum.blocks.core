@@ -1,11 +1,13 @@
 package com.beligum.blocks.core.dbs;
 
+import com.beligum.blocks.core.caching.BlockClassCache;
 import com.beligum.blocks.core.caching.EntityClassCache;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.ElementID;
 import com.beligum.blocks.core.identifiers.EntityID;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.models.classes.BlockClass;
 import com.beligum.blocks.core.models.classes.EntityClass;
 import com.beligum.blocks.core.models.ifaces.Storable;
 import com.beligum.blocks.core.models.storables.Block;
@@ -117,6 +119,7 @@ public class Redis implements Closeable
                 //for all elements received from the page to be saved, check if they have to be saved to db, or if they are already present in the cache
                 for (Row pageElement : pageElements) {
                     if (!finalElements.containsKey(pageElement.getHtmlId())) {
+                        //TODO BAS: we also want to save id's of previous entities in db, so if we change the class-template and then return to the original template, we can easily return the original stored elements, this can be done by checking which storedElments haven't been accessed by a pageElement yet and then save the id's of those elements to
                         if (!storedElements.contains(pageElement)) {
                             if (!cachedElements.contains(pageElement)) {
                                 this.save(pageElement);
@@ -304,17 +307,19 @@ public class Redis implements Closeable
                  */
                 String type = elementHash.get(DatabaseConstants.ELEMENT_CLASS_TYPE);
                 String content = elementHash.get(DatabaseConstants.TEMPLATE);
-                String pageClassName = elementHash.get(DatabaseConstants.VIEWABLE_CLASS);
+                String viewalbeClassName = elementHash.get(DatabaseConstants.VIEWABLE_CLASS);
                 String applicationVersion = elementHash.get(DatabaseConstants.APP_VERSION);
                 String creator = elementHash.get(DatabaseConstants.CREATOR);
                 //an element that previously was saved in db, has to be changable (non-final), if not it would not have been saved in db
                 boolean isFinal = false;
                 if(type.equals(Block.class.getSimpleName())){
-                    //TODO BAS: hier moet een set met elementen en kinderen opgehaald worden en een block-class
-                    return new Block(elementRedisId, null, null, applicationVersion, creator);
+                    //TODO BAS: hier moet een set met kinderen opgehaald worden
+                    BlockClass blockClass = BlockClassCache.getInstance().get(viewalbeClassName);
+                    return new Block(elementRedisId, content, null, blockClass, applicationVersion, creator);
                 }
                 else if(type.equals(Row.class.getSimpleName())){
-                    return new Row(elementRedisId, content, isFinal, applicationVersion, creator);
+                    //TODO BAS: hier moet een set met kinderen opgehaald worden
+                    return new Row(elementRedisId, content, null, isFinal, applicationVersion, creator);
                 }
                 else{
                     throw new RedisException("Unsupported element-type found: " + type);

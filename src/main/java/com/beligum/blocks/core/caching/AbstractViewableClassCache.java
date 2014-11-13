@@ -3,7 +3,7 @@ package com.beligum.blocks.core.caching;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.models.classes.AbstractViewableClass;
-import com.beligum.blocks.core.parsing.AbstractViewableClassParser;
+import com.beligum.blocks.core.parsing.AbstractViewableParser;
 import com.beligum.core.framework.utils.toolkit.FileFunctions;
 
 import java.io.IOException;
@@ -81,14 +81,14 @@ public abstract class AbstractViewableClassCache<T extends AbstractViewableClass
             return this;
         }
         catch(IOException e){
-            throw new CacheException("Problem while reading page-classes from directory '" + BlocksConfig.getPagesFolder() + "'.", e);
+            throw new CacheException("Problem while reading page-classes from directory '" + BlocksConfig.getEntitiesFolder() + "'.", e);
         }
     }
 
 
     /**
      * Add a template page (starting from the pageclass-name) to the page-cache
-     * @param viewableClassName the page-class-name (f.i. "default" for a pageClass filtered from the file "pages/default/index.html") of the page-class-template to be parsed and added to the cache as a couple (pageClassName, pageClass)
+     * @param viewableClassName the page-class-name (f.i. "default" for a pageClass filtered from the file "entities/default/index.html") of the page-class-template to be parsed and added to the cache as a couple (pageClassName, pageClass)
      */
     private void  add(String viewableClassName) throws CacheException
     {
@@ -97,20 +97,25 @@ public abstract class AbstractViewableClassCache<T extends AbstractViewableClass
              * Get the default rows and blocks out of the template and write them to the application cache
              * We get the local file representing the template, using the files.template-path in the configuration-xml-file of the server
              */
-            AbstractViewableClassParser<T> parser = this.getParser();
-            T viewableClass = parser.parseViewableClass(viewableClassName);
+            AbstractViewableParser<T> parser = this.getParser(viewableClassName);
+            T viewableClass = parser.parseViewableClass();
 
             /*
              * Put the filled page in the cache
              */
             this.add(viewableClass);
         }catch(Exception e){
-            throw new CacheException("Could not add viewable-class '" + viewableClassName + "' to the cache.", e);
+            throw new CacheException("Could not add viewable-class '" + viewableClassName + "' to the " + this.getParser(viewableClassName).getViewableCssClass() +  "-cache.", e);
         }
     }
 
     abstract protected String getClassRootFolder();
 
-    abstract protected AbstractViewableClassParser<T> getParser();
+    /**
+     *
+     * @param viewableClassName the name of the viewable-class to get a parser for
+     * @return a parser for parsing the viewable with a certain viewable-class name
+     */
+    abstract protected AbstractViewableParser<T> getParser(String viewableClassName);
 
 }

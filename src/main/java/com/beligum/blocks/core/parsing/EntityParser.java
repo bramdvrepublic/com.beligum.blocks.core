@@ -26,9 +26,9 @@ import java.util.List;
 
 /**
  * Created by bas on 30.09.14.
- * Parser class for parsing pages
+ * Parser class for parsing entities
  */
-public class EntityParser extends AbstractViewableClassParser<EntityClass>
+public class EntityParser extends AbstractViewableParser<EntityClass>
 {
     /**the doctype of the page currently being parsed*/
     private String docType;
@@ -36,8 +36,9 @@ public class EntityParser extends AbstractViewableClassParser<EntityClass>
     /**
      *  Default constructor
      */
-    public EntityParser()
+    public EntityParser(String entityClassName)
     {
+        super(entityClassName);
         this.directChildren = new HashSet<>();
         this.elements = new HashSet<>();
         this.docType = null;
@@ -46,8 +47,8 @@ public class EntityParser extends AbstractViewableClassParser<EntityClass>
 
 //    /**
 //     * Parse the default template-file of the page-class and return a PageClass-object, filled with it's blocks, rows and the template of the page-class
-//     * @param pageClassName the name of the page-class to be parsed (f.i. "default" for a pageClass filtered from the file "pages/default/index.html")
-//     * @return a page-class parsed from the "pages/<page-class-name>/index.html"
+//     * @param pageClassName the name of the page-class to be parsed (f.i. "default" for a pageClass filtered from the file "entities/default/index.html")
+//     * @return a page-class parsed from the "entities/<page-class-name>/index.html"
 //     * @throws com.beligum.blocks.core.exceptions.ParserException
 //     */
 //    @Override
@@ -76,8 +77,8 @@ public class EntityParser extends AbstractViewableClassParser<EntityClass>
 //    /**
 //     * Parse the default template-file of the page-class and return a PageClass-object, filled with it's blocks, rows and the template of the page-class.
 //     * This method does the same as 'parseViewableClass(String pageClassName)', but is used as syntactic glue.
-//     * @param pageClassName the name of the page-class to be parsed (f.i. "default" for a pageClass filtered from the file "pages/default/index.html")
-//     * @return a page-class parsed from the "pages/<page-class-name>/index.html"
+//     * @param pageClassName the name of the page-class to be parsed (f.i. "default" for a pageClass filtered from the file "entities/default/index.html")
+//     * @return a page-class parsed from the "entities/<page-class-name>/index.html"
 //     * @throws com.beligum.blocks.core.exceptions.ParserException
 //     */
 //    public PageClass parsePageClass(String pageClassName) throws ParserException
@@ -96,9 +97,9 @@ public class EntityParser extends AbstractViewableClassParser<EntityClass>
 
     {
         try{
-            String pageClassName = this.fillWithPage(pageHtml, pageUrl);
+            this.fillWithPage(pageHtml, pageUrl);
             //return a page-instance with a newly versioned id and the found blocks and rows of class 'pageClass'
-            return new Entity(new EntityID(pageUrl), this.directChildren, pageClassName);
+            return new Entity(new EntityID(pageUrl), this.directChildren, this.viewableClassName);
         }
         catch(CacheException e){
             throw new ParserException("Error while getting page-class from cache. ", e);
@@ -142,24 +143,6 @@ public class EntityParser extends AbstractViewableClassParser<EntityClass>
 //        }
 //    }
 
-    /**
-     * Parses a html-file, containing a page-class, to blocks and rows containing variables and fills this parser up with the found template.
-     * After the parse, a string containing the template of this viewable will be saved in the field 'viewableTemplate' and the found blocks and rows will be stored in the fields 'blocks' and 'rows
-     *
-     * @param pageEntityClassTemplateString a string containing the html of a page-entity-class
-     * @param baseUrl               the base-url which will be used to define the row- and block-ids if
-     * @return the name of the viewable-class found in the template
-     */
-    @Override
-    protected String fill(String pageEntityClassTemplateString, URL baseUrl) throws ParserException
-    {
-        String pageClassName = super.fill(pageEntityClassTemplateString, baseUrl);
-        //after filling up the blocks, rows, page-template and doc-type, we fill up the fields of CachableClassParser
-        this.setFilled(true);
-        this.setViewableClassName(pageClassName);
-        return pageClassName;
-    }
-
 
 //    /**
 //     * Parses a html-file, containing a page-class, to blocks and rows containing variables and fills this parser up with the found template.
@@ -185,12 +168,10 @@ public class EntityParser extends AbstractViewableClassParser<EntityClass>
      * After the parse, a string containing the template of this page will be saved in the field 'pageTemplate' and the found blocks and rows will be stored in the fields 'blocks' and 'rows
      * @param html a html-tree of rows and blocks
      * @param pageUrl the page-url which will be used to define the row- and block-ids
-     * @return the name of the page-class of the specified page
      */
-    private String fillWithPage(String html, URL pageUrl) throws ParserException
+    private void fillWithPage(String html, URL pageUrl) throws ParserException
     {
-        String pageClassName = this.fill(html, pageUrl);
-        return pageClassName;
+        this.fill(html, pageUrl);
     }
 
 
@@ -226,82 +207,6 @@ public class EntityParser extends AbstractViewableClassParser<EntityClass>
         this.directChildren.clear();
         this.docType = null;
     }
-
-//    /**
-//     * Parse a document and fill in all parser-content-fields
-//     *
-//     * @param DOM     the document to be parsed
-//     * @param baseUrl the base-url which will be used to define the ids
-//     * @return the documents template, with template-variable-names were actual rows used to be
-//     */
-//    @Override
-//    protected Document parse(Document DOM, URL baseUrl) throws ParserException
-//    {
-//        this.recursiveParse(DOM, baseUrl);
-//        return DOM;
-//    }
-//    /**
-//     * Parses the tree starting with the node-element, looking for row- and block-elements and adding them to the proper fields in this PageParser. Blocks are always seen as leafs
-//     * Alters the node-element to holding variables instead of other elements.
-//     * @param node root of the tree to be parsed
-//     * @param baseUrl the base-url used which will be used to define the row- and block-ids
-//     */
-//    private void recursiveParse(Element node, URL baseUrl) throws ParserException
-//    {
-//        try {
-//            //TODO BAS: this should check if all blocks are inside a column, if not, throw ParserException
-//
-//            Elements children = node.children();
-//            for (Element child : children) {
-//                boolean isRow = child.classNames().contains(CSSClasses.ROW);
-//                boolean isBlock = child.classNames().contains(CSSClasses.BLOCK);
-//                if (isRow || isBlock) {
-//                    if (child.id() != null && !child.id().isEmpty()) {
-//                        //TODO BAS: is this the most efficient way we can get rid of the &quot;-problem during return-velocity-parsing, since this will read over the whole template again
-//                        String childHtml = StringEscapeUtils.unescapeXml(child.outerHtml());
-//                        //render id for this element (row or block)
-//                        ElementID id = null;
-//                        try {
-//                            URI temp = baseUrl.toURI().resolve("#" + child.id());
-//                            URL childUrl = temp.toURL();
-//                            id = new ElementID(childUrl);
-//                        }
-//                        catch (MalformedURLException e) {
-//                            throw new ParserException("Base-url doesn't seem to be correct. Cannot construct proper IDs with this page-url: " + baseUrl, e);
-//                        }
-//                        catch (URISyntaxException e) {
-//                            throw new ParserException("Base-url doesn't seem to be correct. Cannot construct proper IDs with this page-url: " + baseUrl, e);
-//                        }
-//                        if (isBlock)  {
-//                            //we found a block, so we do not parse any further recursively (block == leaf)
-//                            //TODO BAS: block-class should be added here, and block should be added to direct children of parent-block
-//                            boolean isFinal = !(child.classNames().contains(CSSClasses.EDITABLE_BLOCK));
-//                            BlockClass blockClass = BlockClassCache.getInstance().get("default");
-//                            this.elements.add(new Block(id, null, isFinal));
-//                        }
-//                        else{
-//                            //recursively iterate over the subtree starting with this row and add the found blocks and rows to the map
-//                            recursiveParse(child, baseUrl);
-//                            boolean isFinal = !(child.classNames().contains(CSSClasses.MODIFIABLE_ROW) || child.classNames().contains(CSSClasses.LAYOUTABLE_ROW) || child.classNames().contains(
-//                                            CSSClasses.CREATE_ENABLED_ROW));
-//                            this.elements.add(new Row(id, childHtml, isFinal));
-//                        }
-//                        child.replaceWith(new TextNode("\n ${" + child.id() + "}\n", ""));
-//                    }
-//                    else {
-//                        //if no id i
-//                        throw new ParserException("A row- or block-element in the html-tree doesn't have an id, this shouldn't happen: \n" + child.outerHtml());
-//                    }
-//                }
-//                else {
-//                    //do nothing (skip ahead)
-//                }
-//            }
-//        }
-//        catch(CacheException e){
-//            throw new ParserException("Could not parse the node '" + node.nodeName() + "'.", e);
-//        }
-//    }
 
     /**
      * Save the documenttype, if it can be found, to the field 'docType', since it has been lost when the client sent the html to the server (without the document-type attached)
@@ -340,6 +245,9 @@ public class EntityParser extends AbstractViewableClassParser<EntityClass>
         }
     }
 
+
+
+
     /**
      *
      * @return get the page-class with which this parser is filled up
@@ -348,20 +256,20 @@ public class EntityParser extends AbstractViewableClassParser<EntityClass>
     protected EntityClass getInternalViewableClass() throws ParserException
     {
         if(!this.isFilled()){
-            throw new ParserException("Cannot construct a page-class out of the internal parser-data. Did you fill up the parser before calling this method?");
+            throw new ParserException("Cannot construct an entity-class out of the internal parser-data. Did you fill up the parser before calling this method?");
         }
         try {
-            return new EntityClass(this.getCachableClassName(), this.directChildren, this.viewableTemplate, this.docType);
+            return new EntityClass(this.viewableClassName, this.directChildren, this.viewableTemplate, this.docType);
         }
         catch(URISyntaxException e){
-            throw new ParserException("Cannot construct a page-class out of the internal parser-data.", e);
+            throw new ParserException("Cannot construct an entity-class out of the internal parser-data.", e);
         }
     }
 
     /**
      * returns the base-url for the page-entity-class
      *
-     * @param pageEntityClassName the name of the page-entity-class (f.i. "default" for a pageClass filtered from the file "pages/default/index.html")
+     * @param pageEntityClassName the name of the page-entity-class (f.i. "default" for a pageClass filtered from the file "entities/default/index.html")
      * @return
      */
     @Override
@@ -389,15 +297,24 @@ public class EntityParser extends AbstractViewableClassParser<EntityClass>
     @Override
     protected String getRelativeTemplatePath(String pageEntityClassName)
     {
-        return BlocksConfig.getTemplateFolder() + "/" + BlocksConfig.PAGES_FOLDER + "/" + pageEntityClassName + "/" + BlocksConfig.INDEX_FILE_NAME;
+        return BlocksConfig.getTemplateFolder() + "/" + BlocksConfig.ENTITIES_FOLDER + "/" + pageEntityClassName + "/" + BlocksConfig.INDEX_FILE_NAME;
     }
 
     /**
      * @return the prefix used for a page-class in the class-attribute of the html-template (i.e. "page-")
      */
     @Override
-    public String getCssClassPrefix()
+    public String getViewableCssClassPrefix()
     {
         return CSSClasses.ENTITY_CLASS_PREFIX;
+    }
+
+    /**
+     * @return the css class-name the parser must find in a certain <div class='classname'>-tag to know the html represents a viewable class
+     */
+    @Override
+    public String getViewableCssClass()
+    {
+        return CSSClasses.ENTITY;
     }
 }
