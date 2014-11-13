@@ -16,6 +16,7 @@ import org.hibernate.validator.constraints.NotBlank;
 
 import javax.validation.Valid;
 import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -54,37 +55,38 @@ public class EntitiesEndpoint
          * Get the page-class (containing the default blocks and rows) from the cache and use it to construct a new page
          */
         Map<String, EntityClass> cache = EntityClassCache.getInstance().getCache();
-        EntityClass pageClass = cache.get(entityClassName);
+        EntityClass entityClass = cache.get(entityClassName);
 
 
         Redis redis = Redis.getInstance();
-        Entity newPage = redis.getNewPage(pageClass);
-        redis.save(newPage);
+        Entity newEntity = redis.getNewEntity(entityClass);
+        redis.save(newEntity);
             /*
              * Redirect the client to the newly created page
              */
-        return Response.seeOther(newPage.getUrl().toURI()).build();
+        return Response.seeOther(newEntity.getUrl().toURI()).build();
     }
 
     @PUT
     @Path("/{entityId:.*}")
+    @Consumes(MediaType.APPLICATION_JSON)
     /*
-     * update a page-instance with id 'pageId' to be the html specified
+     * update a page-instance with id 'entityId' to be the html specified
      */
     public Response updateEntity(
                     @PathParam("entityId")
-                    String pageId,
+                    String entityId,
                     @Valid
                     ValidationEntity validationEntity) throws MalformedURLException, ParserException, RedisException, URISyntaxException
     {
         String html = validationEntity.getHtml();
         String entityClassName = validationEntity.getEntityClassName();
-        URL pageUrl = new URL(BlocksConfig.getSiteDomain() + "/" + pageId);
+        URL entityUrl = new URL(BlocksConfig.getSiteDomain() + "/" + entityId);
 
         EntityParser parser = new EntityParser(entityClassName);
-        Entity page = parser.parsePage(html, pageUrl);
+        Entity entity = parser.parseEntity(html, entityUrl);
         Redis redis = Redis.getInstance();
-        redis.save(page);
-        return Response.seeOther(page.getUrl().toURI()).build();
+        redis.save(entity);
+        return Response.seeOther(entity.getUrl().toURI()).build();
     }
 }

@@ -6,7 +6,7 @@ import com.beligum.blocks.core.config.CSSClasses;
 import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.ParserException;
-import com.beligum.blocks.core.identifiers.EntityID;
+import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.classes.EntityClass;
 import com.beligum.blocks.core.models.storables.Entity;
 import com.beligum.core.framework.utils.toolkit.FileFunctions;
@@ -43,48 +43,6 @@ public class EntityParser extends AbstractViewableParser<EntityClass>
         this.docType = null;
     }
 
-
-//    /**
-//     * Parse the default template-file of the page-class and return a PageClass-object, filled with it's blocks, rows and the template of the page-class
-//     * @param pageClassName the name of the page-class to be parsed (f.i. "default" for a pageClass filtered from the file "entities/default/index.html")
-//     * @return a page-class parsed from the "entities/<page-class-name>/index.html"
-//     * @throws com.beligum.blocks.core.exceptions.ParserException
-//     */
-//    @Override
-//    public PageClass parseViewableClass(String pageClassName) throws ParserException
-//    {
-//        try{
-//            String templateFilename = this.getAbsoluteTemplatePath(pageClassName);
-//            File pageClassTemplate = new File(templateFilename);
-//            //get the url used for identifying blocks and rows for this page-class
-//            URL pageClassURL = PageClass.getBaseUrl(pageClassName);
-//            //fill up this parser-class, with the elements and template filtered from the default html-file
-//            String foundPageClassName = this.fillWithPageEntityClass(pageClassTemplate, pageClassURL);
-//            if(!foundPageClassName.equals(pageClassName)){
-//                throw new ParserException("The name of the page-class (" + pageClassName + ") does not match the page-class-name found in the template: " + foundPageClassName);
-//            }
-//            return new PageClass(pageClassName, this.blocks, this.rows, this.pageTemplate, this.docType);
-//        }
-//        catch(ParserException e){
-//            throw e;
-//        }
-//        catch(Exception e){
-//            throw new ParserException("Error while parsing page-class '" + pageClassName + "' from template.", e);
-//        }
-//    }
-//
-//    /**
-//     * Parse the default template-file of the page-class and return a PageClass-object, filled with it's blocks, rows and the template of the page-class.
-//     * This method does the same as 'parseViewableClass(String pageClassName)', but is used as syntactic glue.
-//     * @param pageClassName the name of the page-class to be parsed (f.i. "default" for a pageClass filtered from the file "entities/default/index.html")
-//     * @return a page-class parsed from the "entities/<page-class-name>/index.html"
-//     * @throws com.beligum.blocks.core.exceptions.ParserException
-//     */
-//    public PageClass parsePageClass(String pageClassName) throws ParserException
-//    {
-//        return this.parseViewableClass(pageClassName);
-//    }
-
     /**
      *
      *
@@ -92,13 +50,14 @@ public class EntityParser extends AbstractViewableParser<EntityClass>
      * @param pageUrl the url that will be used to id blocks and rows
      * @return a page-instance filled with the blocks and rows filtered from the url's htmlcontent
      */
-    public Entity parsePage(String pageHtml, URL pageUrl) throws ParserException
+    public Entity parseEntity(String pageHtml, URL pageUrl) throws ParserException
 
     {
         try{
-            this.fillWithPage(pageHtml, pageUrl);
-            //return a page-instance with a newly versioned id and the found blocks and rows of class 'pageClass'
-            return new Entity(new EntityID(pageUrl), this.allChildren, this.viewableClassName);
+            this.fillWithEntity(pageHtml, pageUrl);
+            //TODO BAS: Is this completely save to do? This means we don't add changed, final rows to the entity (which shouldn't be done anyway). Can we still manage error-logging then?
+            //return a page-instance with a newly versioned id and the found editable blocks and rows added to it's children, appart form the final blocks and rows from it's entity-class
+            return new Entity(new RedisID(pageUrl), this.allChildren, this.viewableClassName);
         }
         catch(CacheException e){
             throw new ParserException("Error while getting page-class from cache. ", e);
@@ -109,93 +68,16 @@ public class EntityParser extends AbstractViewableParser<EntityClass>
 
     }
 
-//    /**
-//     * check whether the specified document is a page (it must have <body class='page page-classname'> present in the html-structure)
-//     * @param page page to be checked
-//     * @return the name of the page-class of the page that was checked
-//     * @throws com.beligum.blocks.core.exceptions.ParserException when the document isn't a correct 'page'
-//     */
-//    public String checkPage(Document page) throws ParserException
-//    {
-//        boolean isPage = false;
-//        boolean hasPageClass = false;
-//        String pageClassName = "";
-//        Iterator<String> it = page.body().classNames().iterator();
-//        while(it.hasNext() && (!isPage || !hasPageClass)){
-//            String className = it.next();
-//            if(!isPage) {
-//                isPage = className.equals(CSSClasses.ENTITY);
-//            }
-//            if(!hasPageClass && className.startsWith(CSSClasses.ENTITY_CLASS_PREFIX)){
-//                hasPageClass = true;
-//                pageClassName = className.substring(CSSClasses.ENTITY_CLASS_PREFIX.length(), className.length());
-//            }
-//        }
-//        if(!isPage){
-//            throw new ParserException("Not a page, <body class='" + CSSClasses.ENTITY +"'> could not be found at '" + page.location() + "'");
-//        }
-//        else if(!hasPageClass){
-//            throw new ParserException("Page has no page-class, <body class='" + CSSClasses.ENTITY + " " + CSSClasses.ENTITY_CLASS_PREFIX + "classname'> could not be found at '" + page.location() + "'");
-//        }
-//        else{
-//            return pageClassName;
-//        }
-//    }
-
-
-//    /**
-//     * Parses a html-file, containing a page-class, to blocks and rows containing variables and fills this parser up with the found template.
-//     * After the parse, a string containing the template of this page will be saved in the field 'pageTemplate' and the found blocks and rows will be stored in the fields 'blocks' and 'rows
-//     * @param treeFilename the file containing a html-tree of rows and blocks
-//     * @param baseUrl the base-url which will be used to define the row- and block-ids
-//     * @return the name of the page-class found in the template
-//     */
-//    private String fillWithPageEntityClass(String treeFilename, URL baseUrl) throws ParserException
-//    {
-//        try {
-//            //first fill in all known variables, so we get a normal <html><head></head><body></body></html>-structure from the template
-//            Template template = R.templateEngine().getEmptyTemplate(treeFilename);
-//            String pageClassName = this.fill(template.render(), baseUrl);
-//            return pageClassName;
-//        }catch(NullPointerException e){
-//            throw e;
-//        }
-//    }
-
     /**
      * Parses a html-string, containing a page-instance, to blocks and rows containing variables and fills this parser up with the found template.
      * After the parse, a string containing the template of this page will be saved in the field 'pageTemplate' and the found blocks and rows will be stored in the fields 'blocks' and 'rows
      * @param html a html-tree of rows and blocks
      * @param pageUrl the page-url which will be used to define the row- and block-ids
      */
-    private void fillWithPage(String html, URL pageUrl) throws ParserException
+    private void fillWithEntity(String html, URL pageUrl) throws ParserException
     {
         this.fill(html, pageUrl);
     }
-
-
-//    /**
-//     * Parses a html-string, containing a html-tree of blocks and rows, to blocks and rows containing variables and fills this parser up with the found template.
-//     * After the parse, a string containing the template of this page will be saved in the field 'pageTemplate' and the found blocks and rows will be stored in the fields 'blocks' and 'rows
-//     * @param htmlTree a html-tree of rows and blocks
-//     * @param baseUrl the base-url which will be used to define the row- and block-ids
-//     * @return the name of the page-class found in the html-tree
-//     */
-//    private String fill(String htmlTree, URL baseUrl) throws ParserException
-//    {
-//        this.empty();
-//        //TODO: extend Parser to let Jsoup do the hard row- and block-searching
-//        //TODO BAS: ignore witespace between tags! -> makes block-comparison easier
-//        Document htmlDOM = Jsoup.parse(htmlTree, BlocksConfig.getSiteDomain());
-//        //throws errors if the htmlDOM is not a correct page
-//        String pageClassName = this.checkPage(htmlDOM);
-//        //if no document-type is present in the DOM, try to fetch the right one from the PageClassCache
-//        htmlDOM = this.typeDocument(htmlDOM, pageClassName);
-//        //fill up the rowset and the blockset and alter the htmlDOM to be a template holding variables for the upper-rows
-//        this.recursiveParse(htmlDOM, baseUrl);
-//        this.pageTemplate = StringEscapeUtils.unescapeXml(htmlDOM.outerHtml());
-//        return pageClassName;
-//    }
 
     /**
      * Empties this pageparser, so no residues of previous parsings will be lingering during parse.

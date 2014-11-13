@@ -16,7 +16,6 @@ import java.util.Map;
 */
 public class BlockClassCache extends AbstractViewableClassCache<BlockClass>
 {
-    //TODO BAS: implement BlockClassCache
     //the instance of this singleton
     private static BlockClassCache instance = null;
 

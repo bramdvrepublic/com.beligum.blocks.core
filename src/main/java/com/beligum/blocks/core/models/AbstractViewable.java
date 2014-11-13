@@ -52,15 +52,16 @@ public class AbstractViewable extends IdentifiableObject
     }
 
     /**
-     * Add an element to this tree-element if it's element-id (everything after the '#' in the url) is not already present in this abstract-page, nor is any of it's children's element-ids.
+     * Add an element to this tree-element if it's element-id (everything after the '#' in the url) is not already present in this abstract-page
      * @param child the element to be added to the viewable
      * @return true if the child was correctly added, false otherwise
      */
     public boolean addChild(Row child)
     {
         boolean added = false;
-        boolean hasUniqueId = this.childHtmlIds.add(child.getHtmlId());
+        boolean hasUniqueId = !this.childHtmlIds.contains(child.getHtmlId());
         if(hasUniqueId) {
+            this.childHtmlIds.add(child.getHtmlId());
             added = this.allChildren.add(child);
         }
         this.clearCache();
@@ -68,33 +69,21 @@ public class AbstractViewable extends IdentifiableObject
     }
 
     /**
-     * Add direct children to this element if and only if all of them and their grandchildren have a unique (html-)id in the tree with this element as a root and the child-set of this element has actually changed.
+     * Add children to this viewable
      * @param children children to be added
-     * @return true if the children have been added and the collection of children in this viewable has changed, false otherwise
+     * @return true if the collection of children in this viewable has changed, false otherwise
      */
     public boolean addChildren(Collection<Row> children){
-        //if no children are present in the collection, adding them is very easy :-)
-        if(children.isEmpty()){
-            return false;
-        }
-
-        boolean allHaveUniqueIds = true;
-        Iterator<Row> childIt = children.iterator();
-        while(allHaveUniqueIds && childIt.hasNext()){
-            Row child = childIt.next();
-            allHaveUniqueIds = !this.childHtmlIds.contains(child.getHtmlId());
-        }
-        if(allHaveUniqueIds){
-            boolean changed = false;
-            changed = this.allChildren.addAll(children);
-            if(changed){
-                this.clearCache();
+        boolean changed = false;
+        for(Row child : children){
+            if(!changed){
+                changed = this.addChild(child);
             }
-            return changed;
+            else{
+                this.addChild(child);
+            }
         }
-        else{
-            return false;
-        }
+        return changed;
     }
 
     /**

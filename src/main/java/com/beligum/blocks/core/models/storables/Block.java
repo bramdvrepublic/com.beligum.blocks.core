@@ -1,10 +1,12 @@
 package com.beligum.blocks.core.models.storables;
 
 import com.beligum.blocks.core.caching.BlockClassCache;
+import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.classes.BlockClass;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -12,9 +14,6 @@ import java.util.Set;
  */
 public class Block extends ViewableInstance
 {
-    /**the content of this block*/
-    private String content;
-
     /**
      * Constructor
      *
@@ -26,8 +25,7 @@ public class Block extends ViewableInstance
      */
     public Block(RedisID id, String content, String blockClassName, boolean isFinal) throws CacheException
     {
-        super(id, BlockClassCache.getInstance().get(blockClassName), isFinal);
-        this.content = content;
+        super(id, content, BlockClassCache.getInstance().get(blockClassName), isFinal);
     }
 
     /**
@@ -40,12 +38,6 @@ public class Block extends ViewableInstance
      */
     public Block(RedisID id, String content, String blockClassName, boolean isFinal, String applicationVersion, String creator) throws CacheException
     {
-        super(id, BlockClassCache.getInstance().get(blockClassName), isFinal, applicationVersion, creator);
-        this.content = content;
-    }
-
-    public String getContent()
-    {
-        return content;
+        super(id, content, BlockClassCache.getInstance().get(blockClassName), isFinal, applicationVersion, creator);
     }
 }

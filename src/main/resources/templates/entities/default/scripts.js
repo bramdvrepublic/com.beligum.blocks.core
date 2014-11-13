@@ -2,10 +2,11 @@ function save(){
     var html = document.documentElement.outerHTML;
     $.ajax({
         type: "PUT",
-        data: {
-            html: html,
+        contentType: "application/json",
+        data: JSON.stringify({
+            html: html + "",
             entityClassName: "default"
-        },
+        }),
         url: "/entities" + document.location.pathname
     });
 }

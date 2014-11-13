@@ -8,7 +8,6 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -81,6 +80,14 @@ public class Row extends AbstractViewable implements Storable
         return this.getId().getHtmlId();
     }
 
+    /**
+     *
+     * @return the unique id of the hash representing this row in db (of the form "[rowId]:[version]:hash")
+     */
+    public String getHashId(){
+        return this.getId().getHashId();
+    }
+
     //_______________IMPLEMENTATION OF STORABLE____________________//
     @Override
     public String getApplicationVersion()
@@ -116,7 +123,7 @@ public class Row extends AbstractViewable implements Storable
         hash.put(DatabaseConstants.TEMPLATE, this.getTemplate());
         hash.put(DatabaseConstants.APP_VERSION, this.applicationVersion);
         hash.put(DatabaseConstants.CREATOR, this.creator);
-        hash.put(DatabaseConstants.ELEMENT_CLASS_TYPE, this.getClass().getSimpleName());
+        hash.put(DatabaseConstants.ROW_TYPE, this.getClass().getSimpleName());
         return hash;
     }
 

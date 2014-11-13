@@ -37,7 +37,7 @@ public class ApplicationEndpoint
         try{
             Redis redis = Redis.getInstance();
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
-            Entity page = redis.fetchPage(url);
+            Entity entity = redis.fetchEntity(url);
 
             /*
              * Use the default template-engine of the application and the default template-context of this page-class for template-rendering
@@ -49,8 +49,8 @@ public class ApplicationEndpoint
                  * Add all specific velocity-variables fetched from database to the context.
                  */
                 VelocityContext context = new VelocityContext();
-                for(Row element : page.getAllChildren()){
-                    context.put(element.getTemplateVariableName(), element.getTemplate());
+                for(Row child : entity.getAllChildren()){
+                    context.put(child.getTemplateVariableName(), child.getTemplate());
                 }
 
                 /*
@@ -61,7 +61,7 @@ public class ApplicationEndpoint
                 RenderTool renderTool = new RenderTool();
                 renderTool.setVelocityEngine(((VelocityTemplateEngine) templateEngine).getDelegateEngine());
                 renderTool.setVelocityContext(context);
-                String pageHtml = renderTool.recurse(page.getTemplate());
+                String pageHtml = renderTool.recurse(entity.getTemplate());
                 return Response.ok(pageHtml).build();
             }
             else{

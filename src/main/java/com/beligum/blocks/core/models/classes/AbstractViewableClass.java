@@ -13,7 +13,12 @@ import java.util.Set;
 public abstract class AbstractViewableClass extends AbstractViewable
 {
 
-    //TODO BAS: once you're parsing and caching again, this class should fill up with stuff equal for block-class and page-entity-class
+    /** the template this viewable-class should be rendered in*/
+    private String pageTemplate;
+    /** the scripts this viewable-class needs*/
+    private Set<String> scripts;
+    /** the (css-)layout-files this viewable-class needs*/
+    private Set<String> styles;
 
     /**
      *
@@ -25,8 +30,21 @@ public abstract class AbstractViewableClass extends AbstractViewable
     {
         //a page-class cannot be altered by the client, so it always is final
         super(id, template, allChildren);
+        //TODO BAS: here pageTemplate, scripts and styles should be added, could be extracted from the 'template' or defaults could be added
     }
 
+    public String getPageTemplate()
+    {
+        return pageTemplate;
+    }
+    public Set<String> getScripts()
+    {
+        return scripts;
+    }
+    public Set<String> getStyles()
+    {
+        return styles;
+    }
     /**
      *
      * @return the name of this viewable-class

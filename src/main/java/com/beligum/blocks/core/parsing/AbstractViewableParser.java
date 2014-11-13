@@ -4,7 +4,7 @@ import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.CSSClasses;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.ParserException;
-import com.beligum.blocks.core.identifiers.ElementID;
+import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.classes.AbstractViewableClass;
 import com.beligum.blocks.core.models.storables.Block;
 import com.beligum.blocks.core.models.storables.Row;
@@ -121,9 +121,9 @@ public abstract class AbstractViewableParser<T extends AbstractViewableClass>
      * Parses a html-file, containing a viewable-class and fills this parser up with the found template.
      * @param viewableClassTemplateString the relative path to the file containing html of a viewable-class
      * @param baseUrl the base-url which will be used to define the row- and block-ids
-     * @return the name of the viewable-class found in the template
+     * @return the document constructed by the parser
      */
-    protected void fill(String viewableClassTemplateString, URL baseUrl) throws ParserException
+    protected Document fill(String viewableClassTemplateString, URL baseUrl) throws ParserException
     {
         this.empty();
         //TODO: extend Parser to let Jsoup do the hard row- and block-searching
@@ -137,17 +137,10 @@ public abstract class AbstractViewableParser<T extends AbstractViewableClass>
         //fill up the rowset and the blockset and alter the htmlDOM to be a template holding variables for the upper-rows
         this.allChildren = this.recursiveParse(htmlDOM, baseUrl);
         this.setFilled(true);
+        //TODO BAS: is this the most efficient way we can get rid of the &quot;-problem during return-velocity-parsing, since this will read over the whole template again
+        this.viewableTemplate = StringEscapeUtils.unescapeXml(htmlDOM.outerHtml());
+        return htmlDOM;
     }
-
-//    /**
-//     * Parse a document and fill in all parser-content-fields Parses a html-document, containing a viewable-class, to blocks and rows containing variables and fills this parser up with the found template.
-//     * After the parse, a string containing the template of this viewable will be saved in the field 'viewableTemplate' TODO BAS: and the found blocks and rows will be stored in the field 'elements'
-//     *
-//     * @param DOM the document to be parsed
-//     * @param baseUrl the base-url which will be used to define the ids
-//     * @return the documents template, with template-variable-names were actual rows used to be
-//     */
-//    abstract protected Document parse(Document DOM, URL baseUrl) throws ParserException;
 
     /**
      * check whether the specified document is a viewableInstance (it must have <body class='page page-classname'> present in the html-structure)
@@ -222,8 +215,6 @@ public abstract class AbstractViewableParser<T extends AbstractViewableClass>
                 if(isEntity || isBlock){
                     //a class always is on row-depth 0
                     rowChildren.addAll(this.recursiveParse(child, baseUrl));
-                    //TODO BAS: is this the most efficient way we can get rid of the &quot;-problem during return-velocity-parsing, since this will read over the whole template again
-                    this.viewableTemplate = StringEscapeUtils.unescapeXml(child.outerHtml());
                 }
                 else{
                     throw new ParserException("Found a class-definition for '" + child.tag().toString() + "' instead of '" + this.getViewableCssClassPrefix() + this.getViewableClassName() + "', which is expected.");
@@ -233,19 +224,16 @@ public abstract class AbstractViewableParser<T extends AbstractViewableClass>
                 if (child.id() == null || child.id().isEmpty()) {
                     throw new ParserException("A row or block in the html-tree doesn't have an id, this shouldn't happen: \n" + child.outerHtml());
                 }
-                //TODO BAS: is this the most efficient way we can get rid of the &quot;-problem during return-velocity-parsing, since this will read over the whole template again
-                String childHtml = StringEscapeUtils.unescapeXml(child.outerHtml());
                 //render id for this element (row or block)
-                ElementID id = null;
+                RedisID id;
                 try {
                     URI temp = baseUrl.toURI().resolve("#" + child.id());
                     URL childUrl = temp.toURL();
-                    id = new ElementID(childUrl);
+                    id = new RedisID(childUrl);
                 }
                 catch (MalformedURLException | URISyntaxException e) {
                     throw new ParserException("Base-url doesn't seem to be correct. Cannot construct proper IDs with this page-url: " + baseUrl, e);
                 }
-                Row childRow = null;
                 if (isBlock) {
                     //we found a block, so we do not parse any further recursively (block == leaf)
                     Set<String> classNames = child.classNames();
@@ -265,20 +253,28 @@ public abstract class AbstractViewableParser<T extends AbstractViewableClass>
 
                     boolean isFinal = !(classNames.contains(CSSClasses.EDITABLE_BLOCK));
                     try{
-                        childRow = new Block(id, childHtml, blockClassName, isFinal);
+                        //TODO BAS: is this the most efficient way we can get rid of the &quot;-problem during return-velocity-parsing, since this will read over the whole template again
+                        String childTemplate = StringEscapeUtils.unescapeXml(child.outerHtml());
+                        Block childBlock = new Block(id, childTemplate, blockClassName, isFinal);
+                        rowChildren.add(childBlock);
                     }catch(CacheException e){
                         throw new ParserException("Couldn't retrieve block-class '" + blockClassName + "'from cacher.", e);
                     }
                 }
                 else{
-                    //recursively iterate over the subtree starting with this row and add the found blocks and rows to the map
-                    Set<Row> allGrandChildren = this.recursiveParse(child, baseUrl);
                     boolean isFinal = !(child.classNames().contains(CSSClasses.MODIFIABLE_ROW) || child.classNames().contains(CSSClasses.LAYOUTABLE_ROW) || child.classNames().contains(
                                     CSSClasses.CREATE_ENABLED_ROW));
-                    childRow = new Row(id, childHtml, allGrandChildren, isFinal);
+                    /*
+                     * the grandchildren of the row were currently parsing, must be added to it's children an so must they be added to as children of this row's row-child
+                     */
+                    Set<Row> allGrandChildren = this.recursiveParse(child, baseUrl);
+                    rowChildren.addAll(allGrandChildren);
+                    //TODO BAS: is this the most efficient way we can get rid of the &quot;-problem during return-velocity-parsing, since this will read over the whole template again
+                    String childTemplate = StringEscapeUtils.unescapeXml(child.outerHtml());
+                    Row childRow = new Row(id, childTemplate, allGrandChildren, isFinal);
+                    rowChildren.add(childRow);
                 }
                 child.replaceWith(new TextNode("\n ${" + child.id() + "}\n", ""));
-                rowChildren.add(childRow);
             }
             else {
                 //recursively iterate over the tree (skip ahead, since we didn't find a new row, block or class)

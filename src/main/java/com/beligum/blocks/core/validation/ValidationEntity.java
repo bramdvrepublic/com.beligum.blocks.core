@@ -15,11 +15,11 @@ public class ValidationEntity
     @NotBlank
     private String entityClassName;
 
-    public ValidationEntity(String html, String entityClassName)
-    {
-        this.html = html;
-        this.entityClassName = entityClassName;
-    }
+//    public ValidationEntity(String html, String entityClassName)
+//    {
+//        this.html = html;
+//        this.entityClassName = entityClassName;
+//    }
 
     public String getHtml()
     {

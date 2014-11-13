@@ -1,11 +1,13 @@
 package com.beligum.blocks.core.models.storables;
 
 import com.beligum.blocks.core.caching.EntityClassCache;
+import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
-import com.beligum.blocks.core.identifiers.EntityID;
+import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.classes.EntityClass;
 
 import java.net.URL;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -22,11 +24,10 @@ public class Entity extends ViewableInstance
      * @param entityClass the class of which this entity is a entity-instance
      * @throw URISyntaxException if a url is specified not formatted strictly according to to RFC2396
      */
-    public Entity(EntityID id, EntityClass entityClass)
+    public Entity(RedisID id, EntityClass entityClass)
     {
         //a entity cannot be altered by the client, so it always is final
         super(id, entityClass, true);
-        this.addChildren(entityClass.getAllChildren());
     }
 
     /**
@@ -39,25 +40,10 @@ public class Entity extends ViewableInstance
      * @param creator the creator of this entity
      * @throw URISyntaxException if a url is specified not formatted strictly according to to RFC2396
      */
-    public Entity(EntityID id, EntityClass entityClass, String applicationVersion, String creator)
+    public Entity(RedisID id, EntityClass entityClass, String applicationVersion, String creator)
     {
         //a entity cannot be altered by the client, so it always is final
         super(id, entityClass, true);
-        this.addChildren(entityClass.getAllChildren());
-    }
-
-    /**
-     * Constructor for a new entity-instance taking children and a entityclass. The rows and blocks of the entityClass are NOT copied to this entity.
-     * @param id the id of this entity
-     * @param allChildren all children for this entity
-     * @param entityClassName the name of the entity-class this entity is an instance of
-     * @throws CacheException when the entity-class cannot be found in the application-cache
-     */
-    public Entity(EntityID id, Set<Row> allChildren, String entityClassName) throws CacheException
-    {
-        //the template of a entity is always the template of it's entity-class; a entity cannot be altered by the client, so it always is final
-        super(id, EntityClassCache.getInstance().get(entityClassName), true);
-        this.addChildren(allChildren);
     }
 
     /**
@@ -65,31 +51,39 @@ public class Entity extends ViewableInstance
      * The rows and blocks are added to this entity in the following order:
      * 1. final elements of entity-class, 2. blocks and rows from database specified in the set, 3. non-final elements of entity-class, whose element-id's are not yet present in the entity
      * @param id the id of this entity
-     * @param allChildrenFromDB the direct children of the entity
-     * @param entityClass the entity-class this entity is an instance of
-     * @param applicationVersion the version of the app this entity was saved under
-     * @param creator the creator of this entity
+     * @param childrenFromDB the children of the entity fetched form db
+     * @param entityClassName the entity-class this entity is an instance of
+     * @throws CacheException when the entity-class can not be found in the application cache
      *
      */
-    public Entity(EntityID id, Set<Row> allChildrenFromDB, EntityClass entityClass, String applicationVersion, String creator)
+    public Entity(RedisID id, Set<Row> childrenFromDB, String entityClassName) throws CacheException
     {
-        super(id, entityClass, true, applicationVersion, creator);
-        this.addChildren(entityClass.getAllFinalChildren().values());
-        this.addChildren(allChildrenFromDB);
-        this.addChildren(entityClass.getAllNonFinalChildren());
+        super(id, childrenFromDB, EntityClassCache.getInstance().get(entityClassName), true);
+    }
+
+    /**
+     * Constructor for a new entity-instance taking elements fetched from db and a entityclass (fetched from application cache).
+     * The rows and blocks are added to this entity in the following order:
+     * 1. final elements of entity-class, 2. blocks and rows from database specified in the set, 3. non-final elements of entity-class, whose element-id's are not yet present in the entity
+     * @param id the id of this entity
+     * @param childrenFromDB the children of the entity fetched form db
+     * @param entityClassName the entity-class this entity is an instance of
+     * @param applicationVersion the version of the app this entity was saved under
+     * @param creator the creator of this entity
+     * @throws CacheException when the entity-class can not be found in the application cache
+     *
+     */
+    public Entity(RedisID id, Set<Row> childrenFromDB, String entityClassName, String applicationVersion, String creator) throws CacheException
+    {
+        super(id, childrenFromDB, EntityClassCache.getInstance().get(entityClassName), true, applicationVersion, creator);
     }
 
     /**
      *
      * @return the entity-class of this entity-instance
      */
-    public EntityClass getPageEntityClass(){
+    public EntityClass getEntityClass(){
         return (EntityClass) this.viewableClass;
-    }
-
-    @Override
-    public EntityID getId(){
-        return (EntityID) this.id;
     }
 
     /**
@@ -102,13 +96,20 @@ public class Entity extends ViewableInstance
 
     /**
      *
-     * @return the id of the hash containing the info of this entity in the db
+     * @return all non-final children of this entity that aren't present in it's viewable-class (and thus already in the application-cache)
      */
-    public String getInfoId(){
-        return this.getId().getPageInfoId();
+    public HashSet<Row> getNotCachedNonFinalChildren(){
+        HashSet<Row> notCachedNonFinalChildren = this.getAllNonFinalChildren();
+        Set<Row> cachedNonFinalChildren = this.getViewableClass().getAllNonFinalChildren();
+        notCachedNonFinalChildren.removeAll(cachedNonFinalChildren);
+        return notCachedNonFinalChildren;
     }
 
-    public Map<String, String> getInfo(){
-        return this.toHash();
+    @Override
+    public Map<String, String> toHash()
+    {
+        Map<String, String> hash = super.toHash();
+        hash.remove(DatabaseConstants.TEMPLATE);
+        return hash;
     }
 }

@@ -3,8 +3,8 @@ package com.beligum.blocks.core.models.classes;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.CSSClasses;
 import com.beligum.blocks.core.config.CacheConstants;
-import com.beligum.blocks.core.identifiers.EntityID;
 import com.beligum.blocks.core.identifiers.ID;
+import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.storables.Row;
 import org.apache.commons.configuration.ConfigurationRuntimeException;
 
@@ -65,11 +65,11 @@ public class EntityClass extends AbstractViewableClass
      * Method for getting a new randomly determined entity-uid (with versioning) for a entityInstance of this entityClass
      * @return a randomly generated entity-id of the form "[site-domain]/[entityClassName]/[randomInt]"
      */
-    public EntityID renderNewPageID(){
+    public RedisID renderNewEntityID(){
         try {
             Random randomGenerator = new Random();
             int positiveNumber = Math.abs(randomGenerator.nextInt());
-            return new EntityID(new URL(BlocksConfig.getSiteDomain() + "/" + this.name + "/" + positiveNumber));
+            return new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + this.name + "/" + positiveNumber));
         }catch(MalformedURLException e){
             throw new ConfigurationRuntimeException("Specified site-domain doesn't seem to be a correct url: " + BlocksConfig.getSiteDomain(), e);
         }catch(URISyntaxException e){
