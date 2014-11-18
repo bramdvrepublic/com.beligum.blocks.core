@@ -9,26 +9,28 @@
 #end
 
 #define($body-html)
-<div class="entity entity-default">
-    <div class="row" id="eersteRij">
-        <div class="block center-block" id="titeltje">
-            <h1>Hello world!</h1>
+<div class="container">
+    <div class="row can-edit" id="eersteRij">
+        <div class="col-md-12 column">
+            <div class="block center-block" id="titeltje">
+                <h1>Hello world!</h1>
+            </div>
         </div>
     </div>
-    <div class="row" id="tweedeRij">
-        <div class="col-md-6">
+    <div class="row can-edit" id="tweedeRij">
+        <div class="col-md-6 column">
             <div class="block can-edit" id="vanalles">
                 Hier zult u vanalles kunnen plaatsen...
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-6 column">
             <div class="block" id="niets">
                 Hier kunt u niets veranderen...
             </div>
         </div>
     </div>
     <div class="row" id="knoprij">
-        <div class="col-md-12">
+        <div class="col-md-12 column">
             <div class="block" id="knopje">
                 <button type="button" class="btn btn-default" onclick="save()">Save</button>
             </div>

@@ -7,7 +7,7 @@
 *
 * */
 blocks
-    .plugin("blocks.core.Elements", ["blocks.core.Class", "blocks.core.Constants", "blocks.core.Broadcaster", function (Class, Constants, Broadcaster) {
+    .plugin("blocks.core.Elements", ["blocks.core.Class", "blocks.core.Constants", "blocks.core.DomManipulation", function (Class, Constants, DOM) {
 
         // smallest elemet with 4 corner
         // and a function to check if x,y is inside the surface
@@ -77,7 +77,7 @@ blocks
             // co is an x or y value that must be between min and max
             isTriggered: function (co) {
                 var retVal = false;
-                if (co > this.min && co < this.max) {
+                if (co >= this.min && co <= this.max) {
                     retVal = true;
                 }
                 return retVal;
@@ -147,6 +147,7 @@ blocks
             right: 0,
             element: null,
             parent: null,
+            isLayoutable: false,
 
             constructor: function (top, bottom, left, right, element, parent, index) {
                 layoutElement.Super.call(this, top, bottom, left, right);
@@ -155,6 +156,7 @@ blocks
                 this.element = element;
                 this.children = [];
                 this.resizeHandles = [];
+                this.isLayoutable = false;
             },
 
             // Easily walk the tree and find the block that contains the coordinates
@@ -268,14 +270,26 @@ blocks
                     dropspots = this.parent.calculateDropspots(side, dropspots);
                 }
                 return dropspots;
+            },
+
+            setLayoutable: function(canLayout) {
+                if (canLayout) {
+                    this.isLayoutable = canLayout;
+                } else if (!this.isLayoutable && this.parent != null) {
+                    this.isLayoutable = this.parent.isLayoutable;
+                } else {
+                    this.isLayoutable = false;
+                }
             }
         });
 
         // A row inside a column or a container
         // Can only contain columns
         var row = Class.create(layoutElement, {
+
             constructor: function (top, bottom, left, right, element, parent, index) {
                 row.Super.call(this, top, bottom, left, right, element, parent, index);
+                this.setLayoutable(DOM.canLayoutRow(element));
                 this.generateChildren();
             },
 
@@ -328,12 +342,18 @@ blocks
                 }
             }
 
+
+
+
+
         });
 
         // A column (inside a row) -> Can contain rows or blocks
         var column = Class.create(layoutElement, {
             constructor: function (top, bottom, left, right, element, parent, index) {
                 column.Super.call(this, top, bottom, left, right, element, parent, index);
+                // will be set to true if parent is true
+                this.setLayoutable(false);
                 this.generateChildren();
             },
 
@@ -403,10 +423,16 @@ blocks
         var block = Class.create(row, {
             constructor: function (top, bottom, left, right, element, parent, index) {
                 block.Super.call(this, top, bottom, left, right, element, parent, index);
+                // if a block is editable does not depend on the parent
+                this.isEditable = DOM.canEditBlock(element);
+
+                // Only generate dropspots if one of parents is layoutable
                 this.dropspots = {};
-                this.verticalMiddle = this.left + ((this.right - this.left) / 2);
-                this.horizontalMiddle = this.top + ((this.bottom - this.top) / 2);
-                this.generateDropspots();
+                if (this.isLayoutable) {
+                    this.verticalMiddle = this.left + ((this.right - this.left) / 2);
+                    this.horizontalMiddle = this.top + ((this.bottom - this.top) / 2);
+                    this.generateDropspots();
+                }
             },
 
             // gets all dropspots for this block and his parents, for each side
@@ -490,7 +516,7 @@ blocks
                         side = Constants.SIDE.RIGHT;
                     }
                 }
-                if (side != null) {
+                if (side != null && this.dropspots[side] != null) {
                     for (var i = 0; i < this.dropspots[side].length; i++) {
                         if (this.dropspots[side][i].isTriggered(co)) {
                             return this.dropspots[side][i];

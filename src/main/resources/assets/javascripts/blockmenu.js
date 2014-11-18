@@ -9,21 +9,33 @@
 *   Menu is hidden while dragging
 * */
 // TODO refactor, put some things in config (element classes etc)
+// TODO when showing menu set height block double of menu
 blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", function(Broadcaster) {
 
     // on hoover block show menu
-    var menuElement = $('<div id="blocks-core-block-menu" class="block-menu btn-group" style="z-index: 600"></div>');
+    var menuElement = $('<div id="blocks-core-block-menu" class="block-menu btn-group-xs btn-group" style="z-index: 600"></div>');
     var buttons = [];
+    var timeOutHandler = null;
+
     var showMenuElement = function(blockEvent) {
+        clearTimeout(timeOutHandler);
+        menuElement.hide();
         activeBlock = blockEvent.block.current;
-        menuElement.css("position", "absolute");
-        menuElement.css("top", activeBlock.top + "px");
-        menuElement.css("left", activeBlock.left + "px");
-        menuElement.show();
+        timeOutHandler = setTimeout(function() {
+            menuElement.css("position", "absolute");
+            menuElement.css("top", activeBlock.top + "px");
+            // center menu in block
+            var menuWidth = menuElement.width();
+            var menuLeft = activeBlock.left + ((activeBlock.right - activeBlock.left) / 2) - (menuWidth / 2);
+            if (menuLeft < 0) menuLeft = 0;
+            menuElement.css("left", menuLeft + "px");
+            menuElement.show();
+        }, 400);
     };
 
     var hideMenuElement = function() {
         activeBlock = null;
+        clearTimeout(timeOutHandler);
         menuElement.hide();
     };
 
@@ -38,13 +50,13 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", function(Broa
         if (offset.top < event.pageY && offset.top + menuElement.height() > event.pageY && offset.left < event.pageX && offset.left + menuElement.width() > event.pageX) {
             if (!dragdropPrevented) {
                 dragdropPrevented = true;
-                Broadcaster.send(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG)
+                Broadcaster.send(new Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG())
             }
             retVal = true;
         } else {
             if (dragdropPrevented) {
                 dragdropPrevented = false;
-                Broadcaster.send(Broadcaster.EVENTS.ALLOW_DRAG)
+                Broadcaster.send(new Broadcaster.EVENTS.DO_ALLOW_DRAG())
             }
         }
         return retVal;
@@ -76,10 +88,12 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", function(Broa
         if (button.priority == null) button.priority = 0;
         var added = false;
         for (var i=0; i < buttons.length; i++) {
-            if (buttons[i].priority < button.priority) {
-                    buttons.splice(i,0, button);
-                    menuElement.append(button.element);
-                    menuElement.append(buttons[i]);
+            var b = buttons[i];
+            if (b.priority <= button.priority) {
+                buttons.splice(i+1 ,0, button);
+                b.element.before(button.element);
+                added = true;
+                break;
             }
         }
         if (!added) {
@@ -108,23 +122,23 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", function(Broa
     var activeBlock = null;
     var dragdropPrevented = false;
 
-    Broadcaster.on(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, function (event) {
-        showMenu(event)
+    Broadcaster.on(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, "blocks.core.BlockMenu", function (event) {
+        showMenu(event.blockEvent)
     });
-    Broadcaster.on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, function (event) {
+    Broadcaster.on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, "blocks.core.BlockMenu", function (event) {
         // check if not active block
-        showMenu(event)
+        showMenu(event.blockEvent)
     });
-    Broadcaster.on(Broadcaster.EVENTS.HOOVER_OVER_BLOCK, function (event) {
-        showMenu(event)
-    });
-
-    Broadcaster.on(Broadcaster.EVENTS.START_DRAG, function (event) {
-        deactivate(event);
+    Broadcaster.on(Broadcaster.EVENTS.HOOVER_OVER_BLOCK, "blocks.core.BlockMenu", function (event) {
+        showMenu(event.blockEvent)
     });
 
-    Broadcaster.on(Broadcaster.EVENTS.END_DRAG, function (event) {
-        activate(event)
+    Broadcaster.on(Broadcaster.EVENTS.START_DRAG, "blocks.core.BlockMenu", function (event) {
+        deactivate(event.blockEvent);
+    });
+
+    Broadcaster.on(Broadcaster.EVENTS.END_DRAG, "blocks.core.BlockMenu", function (event) {
+        activate(event.blockEvent)
     });
 
 }]);

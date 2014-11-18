@@ -6,7 +6,7 @@
 *
 * */
 
-blocks.plugin("blocks.core.layout-aid", ["blocks.core.Layouter", "blocks.core.Broadcaster", "blocks.core.Elements", function(Layouter, Broadcaster, Elements) {
+blocks.plugin("blocks.core.LayoutAid", ["blocks.core.Layouter", "blocks.core.Broadcaster", "blocks.core.Elements", "blocks.core.Constants", function(Layouter, Broadcaster, Elements, Constants) {
 
     var layoutFrame = $('<div style="position: absolute; top: 0px; left: 0px; z-index: 500;" />');
     var createLayoutFrame = function() {
@@ -25,7 +25,7 @@ blocks.plugin("blocks.core.layout-aid", ["blocks.core.Layouter", "blocks.core.Br
               box.css("left", element.left + "px");
               box.css("width", (element.right - element.left) + "px");
               box.css("height", (element.bottom - element.top) + "px");
-              box.css("border", "1px solid black");
+              box.css("border", "1px dotted grey");
               layoutFrame.append(box);
           } else {
               for (var i=0; i < element.children.length; i++) {
@@ -54,15 +54,18 @@ blocks.plugin("blocks.core.layout-aid", ["blocks.core.Layouter", "blocks.core.Br
         }
     };
 
-    Broadcaster.on(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, function (event) {
-        //enterBlockHoover(event)
+    Broadcaster.on(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, "blocks.core.LayoutAid", function (event) {
+        enterBlockHoover(event.blockEvent)
     });
-    Broadcaster.on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, function (event) {
-        //leaveBlockHoover(event)
+    Broadcaster.on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, "blocks.core.LayoutAid", function (event) {
+        leaveBlockHoover(event.blockEvent)
+    });
+    Broadcaster.on(Broadcaster.EVENTS.START_DRAG, "blocks.core.LayoutAid", function (event) {
+        hideLayoutFrame();
     });
 
-    Broadcaster.on("layoutChanged", function() {
-        //createLayoutFrame();
+    Broadcaster.on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, "blocks.core.LayoutAid", function() {
+        createLayoutFrame();
     })
 
 

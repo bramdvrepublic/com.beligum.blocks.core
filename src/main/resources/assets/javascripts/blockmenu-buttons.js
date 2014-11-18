@@ -1,3 +1,15 @@
+/*
+*
+* Buttons for a blockMenu.
+* Add a button by calling addButton (of a blockMenu) with an object () the button
+*
+* Button object:
+*   - element: jQuery element that is the button, normally a bootstrap button (with class btn)
+*   - priority: sets the priority of the button. Button with higher priority will be placed more to the left (front)
+*
+* */
+// TODO add button to layout inside a reference block
+// block-reference class
 blocks.plugin("blocks.core.BlockMenu.new", ["blocks.core.BlockMenu", "blocks.core.Layouter",  function(Menu, Layouter) {
     var button = $('<div type="button" class="btn btn-default"><i class="glyphicon glyphicon-asterisk"></i></div>')
     Menu.addButton({
@@ -8,36 +20,42 @@ blocks.plugin("blocks.core.BlockMenu.new", ["blocks.core.BlockMenu", "blocks.cor
     var newBlock = $('<div class="block"><p></p></div>');
 
     button.on("click", function(event) {
-        Layouter.addNewBlockAtLocation($('<div class="block green"><p>New block. Edit here ...</p></div>'), Menu.currentBlock().element);
+        Layouter.addNewBlockAtLocation($('<div class="block green"><p>New block. Edit here ...</p></div>'), Menu.currentBlock());
     })
 }]);
 
 
-blocks.plugin("blocks.core.BlockMenu.delete", ["blocks.core.BlockMenu", "blocks.core.Layouter", function(Menu, Layouter) {
+blocks.plugin("blocks.core.BlockMenu.delete", ["blocks.core.BlockMenu", "blocks.core.Layouter", "blocks.core.notification", function(Menu, Layouter, notification) {
     var button = $('<div type="button" class="btn btn-default"><i class="glyphicon glyphicon-trash"></i></div>')
     Menu.addButton({
         element: button,
-        priority: 100
+        priority: 105
     })
-
-
-
+    var currentBlock = Menu.currentBlock();
     button.on("click", function(event) {
-        Layouter.removeBlock(Menu.currentBlock());
+        notification.alert("Delete", "<p>You will now delete this block!</p>", function() {
+            Layouter.removeBlock(currentBlock);
+        });
     })
 }]);
 
 blocks.plugin("blocks.core.BlockMenu.edit", ["blocks.core.BlockMenu", "blocks.core.Broadcaster", function(Menu, Broadcaster) {
-    var button = $('<div type="button" class="btn btn-default"><i class="glyphicon glyphicon-pencil"></i></div>')
-    Menu.addButton({
-        element: button,
-        priority: 100
-    })
 
 
+    // TODO: On resize we should stop the editing
     button.on("click", function(event) {
         // go into edit mode
         var blockElement = Menu.currentBlock().element;
+        var blockBackground =  $("<div />");
+        blockBackground.css("background-color", "#FFFFFF");
+        blockBackground.css("position", "absolute");
+        blockBackground.css("top", Menu.currentBlock().top +"px");
+        blockBackground.css("left", Menu.currentBlock().left +"px");
+        blockBackground.css("width", (Menu.currentBlock().right - Menu.currentBlock().left) +"px");
+        blockBackground.css("height", (Menu.currentBlock().bottom - Menu.currentBlock().top) +"px");
+        blockBackground.css("z-index", 2000);
+
+
         var overlayElement = $("<div />");
         overlayElement.addClass("blocks-edit-overlay");
         overlayElement.css("position", "absolute");
@@ -48,17 +66,23 @@ blocks.plugin("blocks.core.BlockMenu.edit", ["blocks.core.BlockMenu", "blocks.co
         overlayElement.css("width", $(document).width() + "px");
         overlayElement.css("height", $(document).height() + "px");
         overlayElement.css("z-index", "1000");
+
         overlayElement.click(function() {
+            blockBackground.remove();
             overlayElement.remove();
             blockElement.css("position", "");
             blockElement.css("z-index", "");
             if (blockElement.children().length > 0) {
                 var p = blockElement.children().first();
                 p.removeAttr("contenteditable", "");
+                // use native javascript focus. otherwise focus
+                // won't work on contenteditable element
+                // TODO: try http://stackoverflow.com/questions/2388164/set-focus-on-div-contenteditable-element#16863913
+                p.get(0).focus();
             } else {
                 blockElement.removeAttr("contenteditable", "");
             }
-            Broadcaster.send("activateMouse");
+            Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE());
         });
 
         blockElement.css("position", "relative");
@@ -66,13 +90,15 @@ blocks.plugin("blocks.core.BlockMenu.edit", ["blocks.core.BlockMenu", "blocks.co
         if (blockElement.children().length > 0) {
             var p = blockElement.children().first();
             p.attr("contenteditable", "true");
+            //p.focus();
         } else {
             blockElement.attr("contenteditable", "true");
         }
-        Broadcaster.send("deactivateMouse");
+        Broadcaster.send(new Broadcaster.EVENTS.DEACTIVATE_MOUSE());
 
 
         $("body").append(overlayElement);
+        $("body").append(blockBackground);
 
     })
 }]);
