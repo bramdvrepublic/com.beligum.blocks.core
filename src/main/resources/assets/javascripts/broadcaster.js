@@ -27,126 +27,251 @@
 * Using Broadcaster.sendNoTimeout("lookup") has the same effect as Broadcaster.send("lookup", null, -1);
 *
 * */
-blocks.plugin("blocks.core.Broadcaster", ["blocks.core.RegisteredEvent", function (RegisteredEvent) {
+blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Class", function (Class) {
     this.active = true;
     var events = [];
 
+    var RegisteredEvent = Class.create({
+        constructor: function (name, callback, namespace) {
+            this.name = name;
+            this.namespace = namespace;
+            this.callback = callback != null ? callback : function () {};
+        },
+
+        run: function(event, timeout) {
+            var timeOut = (timeOut == null || timeOut == undefined) ? 0 : timeout ;
+
+            if (this.namespace == event.namespace || event.namespace == null) {
+                if (timeOut < 0) {
+                    this.callback(event);
+                } else {
+                    setTimeout(this.callback(event), timeOut);
+                }
+            }
+        }
+
+
+    });
+
     var activate = function () {
         this.active = true;
-    }
+    };
 
     var deactivate = function () {
         this.active = false;
-    }
+    };
 
-    this.on = function (eventName, callback) {
-        var splitName = eventName.split(".");
-        var name = splitName[0];
-        var namespace = null;
-        if (splitName.length > 1) {
-            namespace = splitName[1];
-        }
+    this.on = function (event, namespace, callback) {
+        if (typeof event === 'function' && event.prototype.NAME != null) {
+            var name = event.prototype.NAME;
 
-        if (events[name] == null) {
-            events[name] = [];
-        }
-        var event = new RegisteredEvent.create(name, namespace, callback);
-        events[name].push(event);
-    }
-
-    this.off = function (eventName) {
-        var splitName = eventName.split(".");
-        var name = splitName[0];
-        var namespace = null;
-        if (splitName.length > 1) {
-            namespace = splitName[1];
-        }
-        if (events[name] != null) {
-            var okEvents = [];
-            var removeEvents = [];
-
-            for (var i = 0; i < events[name].length; i++) {
-                var e = events[name][i];
-                if (e.name == name && (e.namespace == namespace || namespace == null)) {
-                    removeEvents.push(e);
-                } else {
-                    okEvents.push(e);
-                }
+            if (events[name] == null) {
+                events[name] = [];
             }
-            events[name] = okEvents;
+            var event = new RegisteredEvent(name, callback, namespace);
+            events[name].push(event);
+        } else {
+
+        }
+    };
+
+    this.off = function (event, namespace) {
+        if (typeof event === 'function' && event.prototype.NAME != null) {
+            var name = event.prototype.NAME;
+
+            if (events[name] != null) {
+                var okEvents = [];
+                var removeEvents = [];
+
+                for (var i = 0; i < events[name].length; i++) {
+                    var e = events[name][i];
+                    if (e.name == name && (e.namespace == namespace || namespace == null)) {
+                        removeEvents.push(e);
+                    } else {
+                        okEvents.push(e);
+                    }
+                }
+                events[name] = okEvents;
+            }
         }
     };
 
     // send events async with timeout
     // if timeout < 0 send events sync (or use sendNoTimeout)
-    this.send = function (eventName, param, timeout) {
-        var timeOut = timeout;
-        if (timeOut == null || timeOut == undefined) {
-            timeOut = 0;
-        }
-        var splitName = eventName.split(".");
-        var name = splitName[0];
-        var namespace = null;
-        if (splitName.length > 1) {
-            namespace = splitName[1];
-        }
+    this.send = function (event, timeout) {
+
+        var name = event.NAME;
+        //Logger.debug("event send: " + event.NAME);
+        //Logger.debug(event);
 
         if (events[name] != null) {
             for (var i = 0; i < events[name].length; i++) {
-                var currentEvent = events[name][i];
-                if (currentEvent.namespace == namespace || namespace == null) {
-                    if (timeOut < 0) {
-                        events[name][i].run(param);
-                    } else {
-                        setTimeout(currentEvent.run(param), timeOut);
-                    }
-                }
+                var registeredEvent = events[name][i];
+                registeredEvent.run(event, timeout);
             }
         }
     };
 
     this.sendNoTimeout = function (eventName, param) {
         this.send(eventName, param, -1);
-    }
+    };
 
-    this.EVENTS = {
-        CAN_START_DRAG: "canStartDrag",
-        CAN_NOT_START_DRAG: "canNotStartDrag",
-        START_DRAG: "startDrag",
-        END_DRAG: "endDrag",
-        ABORT_DRAG: "abortDrag",
-        ALLOW_DRAG: "allowDrag",
-        DO_NOT_ALLOW_DRAG: "disallowDrag",
-        HOOVER_LEAVE_BLOCK: "hooverLeaveLayoutElement",
-        HOOVER_ENTER_BLOCK: "hooverEnterLayoutElement",
-        HOOVER_OVER_BLOCK: "hooverEnterLayoutElement",
-        DRAG_LEAVE_BLOCK: "dragLeaveLayoutElement",
-        DRAG_ENTER_BLOCK: "dragEnterLayoutElement",
-        DRAG_OVER_BLOCK: "dragOverLayoutElement",
-        ACTIVATE_MOUSE: "activateMouse",
-        DEACTIVATE_MOUSE: "deactivateMouse",
-        DO_REFRESH_LAYOUT: "canRefreshLayout",
-        DID_REFRESH_LAYOUT: "didRefreshLayout",
-        DOM_WILL_CHANGE: "domWillChange",
-        DOM_DID_CHANGE: "domDidChange"
-    }
+    var BasicEvent = Class.create({
+
+        NAME: "UNKNOWN_EVENT",
+        namespace: null
+    });
+    this.BASIC_EVENT = BasicEvent;
+
+    this.EVENTS = {};
+    // EVents with callback
+
+    // Owner is a string that identifies the owner of the request
+    this.EVENTS.ENABLE_DRAG = Class.create(BasicEvent, {
+
+        constructor: function(priority, owner, callback) {
+            this.priority = priority;
+            this.owner = owner;
+            if (this.priority == null) this.priority = 0;
+            this.cb = callback;
+        },
+
+        callback: function(enabled) {
+            if (this.cb != null) this.cb(enabled);
+        },
+        NAME: "ENABLE_DRAG"
+    });
+    this.EVENTS.DISABLE_DRAG = Class.create(BasicEvent, {
+        constructor: function(priority, owner) {
+            this.priority = priority;
+            this.owner = owner;
+            if (this.priority == null) this.priority = 0;
+        },
+
+        NAME: "DISABLE_DRAG"
+    });
+
+    this.EVENTS.DRAG_DISABLED = Class.create(BasicEvent, {
+        constructor: function(priority, owner) {
+            this.priority = priority;
+            this.owner = owner;
+            if (this.priority == null) this.priority = 0;
+        },
+
+        NAME: "DRAG_DISABLED"
+    });
+
+    // Events with blockEvent as argument
+    this.EVENTS.START_DRAG = Class.create(BasicEvent, {
+        constructor: function(blockEvent) {
+            this.blockEvent = blockEvent;
+        },
+        NAME: "START_DRAG"
+    });
+    this.EVENTS.END_DRAG = Class.create(BasicEvent, {
+        constructor: function(blockEvent) {
+            this.blockEvent = blockEvent;
+        },
+        NAME: "END_DRAG"
+    });
+    this.EVENTS.ABORT_DRAG = Class.create(BasicEvent, {
+        constructor: function(blockEvent) {
+            this.blockEvent = blockEvent;
+        },
+        NAME: "ABORT_DRAG"
+    });
+    this.EVENTS.DRAG_LEAVE_BLOCK = Class.create(BasicEvent, {
+        constructor: function(blockEvent) {
+            this.blockEvent = blockEvent;
+        },
+        NAME: "DRAG_LEAVE_BLOCK"
+    });
+    this.EVENTS.DRAG_ENTER_BLOCK = Class.create(BasicEvent, {
+        constructor: function(blockEvent) {
+            this.blockEvent = blockEvent;
+        },
+        NAME: "DRAG_ENTER_BLOCK"
+    });
+    this.EVENTS.DRAG_OVER_BLOCK = Class.create(BasicEvent, {
+        constructor: function(blockEvent) {
+            this.blockEvent = blockEvent;
+        },
+        NAME: "DRAG_OVER_BLOCK"
+    });
+    this.EVENTS.HOOVER_LEAVE_BLOCK = Class.create(BasicEvent, {
+        constructor: function(blockEvent) {
+            this.blockEvent = blockEvent;
+        },
+        NAME: "HOOVER_LEAVE_BLOCK"
+    });
+    this.EVENTS.HOOVER_ENTER_BLOCK = Class.create(BasicEvent, {
+        constructor: function(blockEvent) {
+            this.blockEvent = blockEvent;
+        },
+        NAME: "HOOVER_ENTER_BLOCK"
+    });
+    this.EVENTS.HOOVER_OVER_BLOCK = Class.create(BasicEvent, {
+
+        constructor: function(blockEvent) {
+            this.blockEvent = blockEvent;
+        },
+        NAME: "HOOVER_OVER_BLOCK"
+    });
+    this.EVENTS.END_HOOVER = Class.create(BasicEvent, {
+        constructor: function(blockEvent) {
+            this.blockEvent = blockEvent;
+        },
+        NAME: "END_HOOVER"
+    });
+
+    // Notifications
+    this.EVENTS.DO_ALLOW_DRAG = Class.create(BasicEvent, {
+        NAME: "ALLOW_DRAG"
+    });
+    this.EVENTS.DO_NOT_ALLOW_DRAG = Class.create(BasicEvent, {
+        NAME: "DO_NOT_ALLOW_DRAG"
+    });
+    this.EVENTS.ACTIVATE_MOUSE = Class.create(BasicEvent, {
+        NAME: "ACTIVATE_MOUSE"
+    });
+    this.EVENTS.DEACTIVATE_MOUSE = Class.create(BasicEvent, {
+        NAME: "DEACTIVATE_MOUSE"
+    });
+
+    this.EVENTS.DO_REFRESH_LAYOUT = Class.create(BasicEvent, {
+        NAME: "DO_REFRESH_LAYOUT"
+    });
+    this.EVENTS.DID_REFRESH_LAYOUT = Class.create(BasicEvent, {
+        NAME: "DID_REFRESH_LAYOUT"
+    });
+    this.EVENTS.DOM_WILL_CHANGE = Class.create(BasicEvent, {
+        NAME: "DOM_WILL_CHANGE"
+    });
+    this.EVENTS.DOM_DID_CHANGE = Class.create(BasicEvent, {
+        NAME: "DOM_WILL_CHANGE"
+    });
+
+    this.EVENTS.REGISTER_EDITABLE_BLOCK = Class.create(BasicEvent, {
+        constructor: function(blockClassName, adminUrl) {
+            this.blockClassName = blockClassName;
+            this.adminUrl = adminUrl;
+        },
+        NAME: "REGISTER_BLOCK"
+    });
+
+    this.EVENTS.PREPARE_EDIT_BLOCK = Class.create(BasicEvent, {
+        NAME: "PREPARE_EDIT_BLOCK"
+    });
+
+    this.EVENTS.START_EDIT_BLOCK = Class.create(BasicEvent, {
+        NAME: "START_EDIT_BLOCK"
+    });
+
+    this.EVENTS.END_EDIT_BLOCK = Class.create(BasicEvent, {
+        NAME: "END_EDIT_BLOCK"
+    });
+
+
+
 
 }])
-    .plugin("blocks.core.RegisteredEvent", [function () {
-        this.create = function (name_t, namespace_t, callback_t) {
-            var name = name_t;
-            var namespace = namespace_t;
-            var callback = function () {
-            };
-            if (callback_t != null) {
-                callback = callback_t;
-            }
-
-            this.run = function (parameter) {
-                callback(parameter);
-            }
-        }
-    }])
-
-
-

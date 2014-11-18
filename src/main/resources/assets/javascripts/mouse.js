@@ -66,29 +66,26 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
     // flag if this module is active
     var active = false;
     // dragging options, kept here for reference while waiting for drag
-    var draggingStatus = Constants.DRAGGING.CAN_NOT_START_DRAG;
-    var draggingOptions = {startEvent: null, surface: null};
+    var draggingStatus = Constants.DRAGGING.DISABLED;
+    var draggingOptions = {startEvent: null, owner: null, priority: null};
     // the active block for the last 2 mouseEvents
     var block = {current: null, previous: null};
     // array of coordinates {x, y} from the last mouseEvents, used to calculate the direction
     var _lastPoints = [];
     var config = this.config;
 
-    var resetMouse = function (force) {
-        if (force) {
-            draggingStatus = Constants.DRAGGING.CAN_NOT_START_DRAG;
-        }
-        block = {current: null, previous: null};
-        resetDrag();
-    };
+    var windowFrame = {width: 0, height: 0};
 
-    var resetDrag = function() {
-        // do not accidentally enable dragging while dragging is not allowed
+    var resetMouse = function (force) {
+        windowFrame = {width: window.innerWidth, height: window.innerHeight}
+        block = {current: null, previous: null};
         if (draggingStatus != Constants.DRAGGING.NOT_ALLOWED) {
-            draggingStatus = Constants.DRAGGING.CAN_NOT_START_DRAG;
+            draggingStatus = Constants.DRAGGING.DISABLED;
+            Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.DRAG_DISABLED(draggingOptions.priority, draggingOptions.owner));
         }
         draggingOptions.startEvent = null;
-        draggingOptions.surface = null;
+        draggingOptions.owner = null;
+        draggingOptions.priority = null;
     };
 
 
@@ -128,19 +125,20 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
     var getHooveredBlockForEvent = function (event) {
         block.previous = block.current;
         block.current = null;
-
-        // First search for active element
-        // If an element is active, we have a big chance the next event is in the same element, so we start our search here
-        if (block.previous != null) {
-            block.current = block.previous.findActiveElement(event.pageX, event.pageY);
-        }
-        // Our shortcut failed so search the full page
-        // we loop the trees of elements to find the smallest active element
-        if (block.current == null) {
-            var i = 0;
-            while (i < Layouter.getLayoutTree().length && block.current == null) {
-                block.current = Layouter.getLayoutTree()[i].findActiveElement(event.pageX, event.pageY);
-                i++;
+        if (draggingStatus != Constants.DRAGGING.TEXT_SELECTION && active) {
+            // First search for active element
+            // If an element is active, we have a big chance the next event is in the same element, so we start our search here
+            if (block.previous != null) {
+                block.current = block.previous.findActiveElement(event.pageX, event.pageY);
+            }
+            // Our shortcut failed so search the full page
+            // we loop the trees of elements to find the smallest active element
+            if (block.current == null) {
+                var i = 0;
+                while (i < Layouter.getLayoutTree().length && block.current == null) {
+                    block.current = Layouter.getLayoutTree()[i].findActiveElement(event.pageX, event.pageY);
+                    i++;
+                }
             }
         }
 
@@ -164,89 +162,110 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
     };
 
     /*
-    * on mousedown and dragging allowed and surface to drag selected:
-    *   - wait for drag
-    *   - disable selection
-    *   - keep current jQuery event as startevent
-    * */
+     * on mousedown and dragging allowed and surface to drag selected:
+     *   - wait for drag
+     *   - disable selection
+     *   - keep current jQuery event as startevent
+     * */
 
     var mouseDown = function (event) {
-        if (active && draggingStatus != Constants.DRAGGING.NOT_ALLOWED) {
-            if (draggingStatus == Constants.DRAGGING.CAN_START_DRAG) {
+        if (active) {
+//            if (draggingStatus == Constants.DRAGGING.YES) {
+//                Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.ABORT_DRAG(createBlockEvent(event)));
+//                resetMouse();
+//                return;
+//            }
+            // check for left mouse click
+            if (event.which == 1) {
+                var currentEvent = createBlockEvent(event);
+                if (draggingStatus == Constants.DRAGGING.ENABLED &&
+                    currentEvent.block.current != null &&
+                    currentEvent.block.current.isLayoutable) {
                     draggingStatus = Constants.DRAGGING.WAITING;
                     draggingOptions.startEvent = event;
                     disableSelection();
+                } else {
+                    resetMouse();
+                    draggingStatus = Constants.DRAGGING.TEXT_SELECTION;
+                    Broadcaster.send(new Broadcaster.EVENTS.END_HOOVER(createBlockEvent(event)));
+                    Logger.debug("We can not start draggingOptions because dragging is already in place or not allowed. " + draggingStatus);
+                }
             } else {
-                resetDrag();
-                Logger.debug("We can not start draggingOptions because dragging is already in place or not allowed. " + draggingStatus);
-            }
-        }
-    }
-
-    /*
-    * If dragging send END_OF_DRAG and reset draggingOptions
-    * */
-    var mouseUp = function (event) {
-        enableSelection();
-        if (active && draggingStatus != Constants.DRAGGING.NOT_ALLOWED) {
-            var oldDragStatus = draggingStatus;
-            if (oldDragStatus == Constants.DRAGGING.YES) {
-                Broadcaster.sendNoTimeout(Broadcaster.EVENTS.END_DRAG, createBlockEvent(event));
+                // middle or right mouse button presses
+                //TODO
+                if (draggingStatus == Constants.DRAGGING.YES) {
+                    Broadcaster.send(new Broadcaster.EVENTS.ABORT_DRAG(createBlockEvent(event)));
+                }
                 resetMouse();
-                mouseMove(event);
-            } else {
-                resetDrag();
             }
         }
     };
 
     /*
-    * While waiting for drag, check if threshold is activated to really start drag
-    * */
+     * If dragging send END_OF_DRAG and reset draggingOptions
+     * */
+    var mouseUp = function (event) {
+        enableSelection();
+        if (active) {
+            if (draggingStatus != Constants.DRAGGING.NOT_ALLOWED) {
+                var oldDragStatus = draggingStatus;
+                if (oldDragStatus == Constants.DRAGGING.YES) {
+                    Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.END_DRAG(createBlockEvent(event)));
+
+                }
+            }
+            resetMouse();
+        }
+};
+
+    /*
+     * While waiting for drag, check if threshold is activated to really start drag
+     * */
     var enableDragAfterTreshold = function (event) {
         if (Math.abs(draggingOptions.startEvent.pageX - event.pageX) > config.DRAGGING_THRESHOLD ||
             Math.abs(draggingOptions.startEvent.pageY - event.pageY) > config.DRAGGING_THRESHOLD) {
-            if (draggingOptions.surface != null) {
-                draggingStatus = Constants.DRAGGING.YES;
-                Broadcaster.send(Broadcaster.EVENTS.START_DRAG, createBlockEvent(event));
-            }
+            draggingStatus = Constants.DRAGGING.YES;
+            Broadcaster.send(new Broadcaster.EVENTS.START_DRAG(createBlockEvent(event)));
         }
     };
 
     /*
-    *
-    * */
+     *
+     * */
     var mouseMove = function (event) {
         if (active) {
-            if (draggingStatus != Constants.DRAGGING.YES) {
+            createBlockEvent(event);
+            // Abort outside window
+            if (event.pageX < 0 || event.pageY > windowFrame.width || event.pageY < 0 || event.pageY > windowFrame.height) {
+                mouseUp(event);
+            } else if (draggingStatus == Constants.DRAGGING.WAITING) {
+                enableDragAfterTreshold(event);
+            } else if (draggingStatus != Constants.DRAGGING.YES) {
                 if (block.current != block.previous) {
                     if (block.current == null) {
-                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, createBlockEvent(event));
+                        Broadcaster.send(new Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK(createBlockEvent(event)));
                     } else if (block.previous == null) {
-                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, createBlockEvent(event));
+                        Broadcaster.send(new Broadcaster.EVENTS.HOOVER_ENTER_BLOCK(createBlockEvent(event)));
                     } else {
-                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, createBlockEvent(event));
-                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, createBlockEvent(event));
-                    }
-                } else {
-                    Broadcaster.send(Broadcaster.EVENTS.HOOVER_OVER_BLOCK, createBlockEvent(event));
-                }
-
-                if (draggingStatus == Constants.DRAGGING.WAITING) {
-                    enableDragAfterTreshold(event)
-                }
-            } else {
-                if (block.current != block.previous) {
-                    if (block.current == null) {
-                        Broadcaster.send(Broadcaster.EVENTS.DRAG_LEAVE_BLOCK, createBlockEvent(event));
-                    } else if (block.previous == null) {
-                        Broadcaster.send(Broadcaster.EVENTS.DRAG_ENTER_BLOCK, createBlockEvent(event));
-                    } else {
-                        Broadcaster.send(Broadcaster.EVENTS.DRAG_ENTER_BLOCK, createBlockEvent(event));
-                        Broadcaster.send(Broadcaster.EVENTS.DRAG_LEAVE_BLOCK, createBlockEvent(event));
+                        Broadcaster.send(new Broadcaster.EVENTS.HOOVER_ENTER_BLOCK(createBlockEvent(event)));
+                        Broadcaster.send(new Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK(createBlockEvent(event)));
                     }
                 } else if (block.current != null) {
-                    Broadcaster.send(Broadcaster.EVENTS.DRAG_OVER_BLOCK, createBlockEvent(event));
+                    Broadcaster.send(new Broadcaster.EVENTS.HOOVER_OVER_BLOCK(createBlockEvent(event)));
+                }
+
+            } else if (draggingStatus == Constants.DRAGGING.YES) {
+                if (block.current != block.previous) {
+                    if (block.current == null) {
+                        Broadcaster.send(new Broadcaster.EVENTS.DRAG_LEAVE_BLOCK(createBlockEvent(event)));
+                    } else if (block.previous == null) {
+                        Broadcaster.send(new Broadcaster.EVENTS.DRAG_ENTER_BLOCK(createBlockEvent(event)));
+                    } else {
+                        Broadcaster.send(new Broadcaster.EVENTS.DRAG_ENTER_BLOCK(createBlockEvent(event)));
+                        Broadcaster.send(new Broadcaster.EVENTS.DRAG_LEAVE_BLOCK(createBlockEvent(event)));
+                    }
+                } else if (block.current != null) {
+                    Broadcaster.send(new Broadcaster.EVENTS.DRAG_OVER_BLOCK(createBlockEvent(event)));
                 }
 
             }
@@ -254,32 +273,37 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
     };
 
 
-    var canStartDrag = function (options) {
-        Logger.debug("try change can start drag " + options.priority + "  - " + draggingOptions.priority);
-        if (options.surface != null && options.surface instanceof  Elements.Surface) {
-            if ((draggingOptions.surface != null && draggingOptions.priority >= options.priority) || draggingOptions.surface == null) {
-                draggingOptions.surface = options.surface;
-                draggingOptions.priority = options.priority;
-                if (draggingStatus != Constants.DRAGGING.NOT_ALLOWED) {
-                    draggingStatus = Constants.DRAGGING.CAN_START_DRAG;
-                }
-            } else {
-                // Another element with a higher priority is already selected
-                Logger.debug("An other element is already selected");
+    var enableDrag = function (event) {
+        Logger.debug("Request to enable drag for " + event.owner);
 
-            }
+        if ((draggingOptions.priority <= event.priority
+            || draggingStatus == Constants.DRAGGING.DISABLED)
+            && draggingStatus != Constants.DRAGGING.NOT_ALLOWED) {
+                Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.DRAG_DISABLED(draggingOptions.priority, draggingOptions.owner));
+                event.callback();
+                draggingOptions.owner = event.owner;
+                draggingOptions.priority = event.priority;
+                draggingOptions.callback = event.callback;
+                draggingStatus = Constants.DRAGGING.ENABLED;
+                Logger.debug("Dragging enabled for " + event.owner);
         } else {
-            Logger.debug("We can not drag this type of element")
+            // Another element with a higher priority is already selected
+            Logger.debug("Dragging is already reserved for namespace " + draggingOptions.owner);
         }
+
     };
 
-    var canNotStartDrag = function (options) {
+    var disableDrag = function (event) {
+        // Do nothing if dragging is not allowed or not allowed status could be overwritten
         if (draggingStatus == Constants.DRAGGING.NOT_ALLOWED) return;
-        Logger.debug("try change can not start drag")
-        if (options == null || draggingOptions.surface == options.surface) {
-            resetDrag();
-            block.previous = null;
-            block.current = null;
+        Logger.debug("Request to disable drag for " + event.owner);
+
+        // TODO: check if someone with higher priority can disable drag from lower priority namespace
+        if (draggingStatus == Constants.DRAGGING.ENABLED && event.owner == draggingOptions.owner) {
+            resetMouse();
+            Logger.debug("Dragging for " + event.owner + " disabled")
+        } else {
+            Logger.debug("Dragging is reserved for other owner " + draggingOptions.owner);
         }
     };
 
@@ -290,32 +314,35 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
     };
 
     var allowDrag = function() {
-        Logger.debug("Dragging allowed")
+        Logger.debug("Dragging allowed");
+        draggingStatus = Constants.DRAGGING.DISABLED;
         resetMouse(true);
     };
 
     // disable cross-browser text selection
     var disableSelection = function () {
         // http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
-        $("body").css("-webkit-touch-callout", "none");
-        $("body").css("-khtml-user-select", "none");
-        $("body").css("-moz-user-select", "none");
-        $("body").css("-ms-user-select", "none");
-        $("body").css("user-select", "none");
+        $("html").css("-webkit-touch-callout", "none");
+        $("html").css("-khtml-user-select", "none");
+        $("html").css("-moz-user-select", "none");
+        $("html").css("-ms-user-select", "none");
+        $("html").css("user-select", "none");
+        $("html").attr("oncontextmenu", "return false;");
         // IE < 10
-        $("body").attr("onselectstart", "return false;");
+        $("html").attr("onselectstart", "return false;");
 
     };
 
     // enable cross-browser text selection
     var enableSelection = function () {
         //http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
-        $("body").css("-webkit-touch-callout", "text");
-        $("body").css("-khtml-user-select", "text");
-        $("body").css("-moz-user-select", "text");
-        $("body").css("-ms-user-select", "text");
-        $("body").css("user-select", "text");
-        $("body").attr("onselectstart", "return true;");
+        $("html").css("-webkit-touch-callout", "text");
+        $("html").css("-khtml-user-select", "text");
+        $("html").css("-moz-user-select", "text");
+        $("html").css("-ms-user-select", "text");
+        $("html").css("user-select", "text");
+        $("html").attr("oncontextmenu", "");
+        $("html").attr("onselectstart", "return true;");
     }
 
     var registerMouseEvents = function () {
@@ -331,15 +358,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
                     mouseMove(event)
                 }
             );
-            // Moving out of window, stop dragging
-            // TODO better check if we are outside window
-            // if document is smaller then the window this triggers to soon
-            $(document).on("mouseout.blocks_core", function (event) {
-                var from = event.relatedTarget || event.toElement;
-                if (!from || from.nodeName == "HTML") {
-                    mouseUp(event);
-                }
-            });
+
             resetMouse(true);
         }
     };
@@ -360,12 +379,12 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
         // TODO: What if layout refreshes while we are dragging
         resetMouse();
     });
-    Broadcaster.on(Broadcaster.EVENTS.CAN_START_DRAG, function (options) {canStartDrag(options);});
-    Broadcaster.on(Broadcaster.EVENTS.CAN_NOT_START_DRAG, function (options) {canNotStartDrag(options);});
-    Broadcaster.on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function () {registerMouseEvents();});
-    Broadcaster.on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, function () {unregisterMouseEvents();});
-    Broadcaster.on(Broadcaster.EVENTS.ALLOW_DRAG, function () {allowDrag();});
-    Broadcaster.on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, function () {disallowDrag();});
+    Broadcaster.on(Broadcaster.EVENTS.ENABLE_DRAG, "blocks.core.Mouse", function (event) {enableDrag(event);});
+    Broadcaster.on(Broadcaster.EVENTS.DISABLE_DRAG, "blocks.core.Mouse", function (event) {disableDrag(event);});
+    Broadcaster.on(Broadcaster.EVENTS.ACTIVATE_MOUSE, "blocks.core.Mouse", function () {registerMouseEvents();});
+    Broadcaster.on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, "blocks.core.Mouse", function () {unregisterMouseEvents();});
+    Broadcaster.on(Broadcaster.EVENTS.DO_ALLOW_DRAG, "blocks.core.Mouse", function () {allowDrag();});
+    Broadcaster.on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, "blocks.core.Mouse", function () {disallowDrag();});
 
 
     if (this.config.ACTIVATE_AT_BOOT) {

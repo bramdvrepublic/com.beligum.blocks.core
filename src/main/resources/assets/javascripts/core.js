@@ -2,12 +2,74 @@
  * Created by wouter on 13/10/14.
  */
 
+// All constants
+
+blocks.plugin("blocks.core.Constants", function() {
+    this.DIRECTION = {
+        UP: 1,
+        DOWN: 2,
+        LEFT: 3,
+        RIGHT: 4,
+        NONE: 0
+    };
+
+    this.DRAGGING = {
+        WAITING: 1,
+        YES: 2,
+        ENABLED: 3,
+        DISABLED: 4,
+        NOT_ALLOWED: 5,
+        TEXT_SELECTION: 6
+    };
+
+    this.SIDE = {
+        TOP: 1,
+        BOTTOM: 2,
+        LEFT: 3,
+        RIGHT: 4,
+        NONE: 0
+    };
+
+    this.OPPOSITE_SIDE = {
+        1: 2,
+        2: 1,
+        3: 4,
+        4: 3,
+        0: 0
+    };
+
+    this.CONTAINER_CLASS = "container"
+    this.COLUMN_CLASS = "column";
+    this.ROW_CLASS = "row";
+    this.BLOCK_CLASS = "block";
+
+    this.COLUMN_WIDTH_CLASS = "col-md-";
+    this.CAN_LAYOUT_ROW_CLASS = "can-edit"; // can layout row and add and delete blocks
+    this.REFERENCE_BLOCK_CLASS = "block-reference"
+
+    this.CAN_EDIT_BLOCK_CLASS = "can-edit"; // specifies edit and delete
+    this.CAN_CAST_BLOCK_CLASS = "can-cast-block"
+
+    this.MAX_COLUMNS = 12;
+
+
+    this.BLOCK_OVERLAY_INDEX = 2000;
+    this.SELECTED_BLOCK_INDEX = 2050;
+    this.SELECTED_BLOCK_BACKGROUND_INDEX = 2040;
+    this.DIALOG_INDEX = 4000;
+    this.DIALOG_OVERLAY_INDEX = 3000;
+    this.RESIZEHANDLE_INDEX = 2500;
+
+
+});
+
+
 blocks.plugin("blocks.core.Class", [function () {
 
     //============================================================================
     // @method my.extendClass
     // @params Class:function, extension:Object, ?override:boolean=true
-    var extendClass = my.extendClass = function (Class, extension, override) {
+    var extendClass = function (Class, extension, override) {
         if (extension.STATIC) {
             extend(Class, extension.STATIC, override);
             delete extension.STATIC;
@@ -51,6 +113,7 @@ blocks.plugin("blocks.core.Class", [function () {
             Class.prototype = new SuperClassEmpty();
             Class.prototype.constructor = Class;
             Class.Super = SuperClass;
+
             extend(Class, SuperClass, false);
         }
 
@@ -64,47 +127,135 @@ blocks.plugin("blocks.core.Class", [function () {
     }
 }]);
 
-// All constants
+blocks.plugin("blocks.core.Logger", ["blocks.core.Class", function(Class) {
+    Application = Class.create({
 
-blocks.plugin("blocks.core.Constants", function() {
-    this.DIRECTION = {
-        UP: 1,
-        DOWN: 2,
-        LEFT: 3,
-        RIGHT: 4,
-        NONE: 0
-    };
+        //-----CONSTANTS-----
+        STATIC: {
+            LEVEL_DEBUG: 1,
+            LEVEL_INFO: 2,
+            LEVEL_WARN: 3,
+            LEVEL_ERROR: 4,
+            LEVEL_ASSERT: 5
+        },
 
-    this.DRAGGING = {
-        WAITING: 1,
-        YES: 2,
-        CAN_START_DRAG: 3,
-        CAN_NOT_START_DRAG: 4,
-        NOT_ALLOWED: 5,
-        TEXT_SELECTION: 6
-    };
+        //-----VARIABLES-----
 
-    this.SIDE = {
-            TOP: 1,
-            BOTTOM: 2,
-            LEFT: 3,
-            RIGHT: 4,
-            NONE: 0
-    };
+        //-----CONSTRUCTOR-----
+        constructor: function () {
+            this.APP_NAME = "Youthr";
+            this.LOG_LEVEL = this.LEVEL_DEBUG;
+        }
 
-    this.OPPOSITE_SIDE = {
-        1: 2,
-        2: 1,
-        3: 4,
-        4: 3,
-        0: 0
-    };
+    });
 
-    this.COLUMN_CLASS = "column";
-    this.ROW_CLASS = "row";
-    this.BLOCK_CLASS = "block";
-    this.COLUMN_WIDTH_CLASS = "col-md-";
-    this.CAN_LAYOUT_CLASS = "can-layout";
-    this.MAX_COLUMNS = 12;
+    //make it 'static'
+    Application = new Application();
 
-});
+
+    Logger = Class.create({
+
+        //-----CONSTANTS-----
+        STATIC: {
+        },
+
+        //-----VARIABLES-----
+        currentLevel: Application.LOG_LEVEL,
+
+        //-----CONSTRUCTOR-----
+        constructor: function () {
+        },
+
+        //-----PUBLIC METHODS-----
+        log: function (msg, level) {
+            if (level && level >= this.currentLevel) {
+                this._doLog(msg, level);
+            }
+            else {
+                this._doLog(msg);
+            }
+        },
+        debug: function (msg, objs) {
+            this.log(msg, Application.LEVEL_DEBUG);
+        },
+        info: function (msg) {
+            this.log(msg, Application.LEVEL_INFO);
+        },
+        warn: function (msg) {
+            this.log(msg, Application.LEVEL_WARN);
+        },
+        error: function (msg) {
+            this.log(msg, Application.LEVEL_ERROR);
+        },
+        assert: function (msg) {
+            this.log(msg, Application.LEVEL_ASSERT);
+        },
+        dir: function (obj) {
+            if (!typeof(console) == 'undefined') {
+                console.dir(obj);
+            }
+        },
+        trace: function () {
+            if (!typeof(console) == 'undefined') {
+                console.trace();
+            }
+        },
+        setLevel: function (level) {
+            this.currentLevel = level;
+        },
+
+        //-----PRIVATE METHODS-----
+        _doLog: function (msg, level) {
+            var prefix = "";
+
+            var placeholderChar = "s";
+            if (msg instanceof Object) {
+                placeholderChar = "o";
+            }
+
+            var haveConsole = typeof(console) != 'undefined';
+
+            switch (level) {
+                case Application.LEVEL_DEBUG:
+                    if (haveConsole && console.debug) {
+                        console.debug('DEBUG: %' + placeholderChar, msg);
+                    }
+                    break;
+                case Application.LEVEL_INFO:
+                    if (haveConsole && console.info) {
+                        console.info('INFO: %' + placeholderChar, msg);
+                    }
+                    break;
+                case Application.LEVEL_WARN:
+                    if (haveConsole && console.warn) {
+                        console.warn('WARN: %' + placeholderChar, msg);
+                    }
+                    break;
+                case Application.LEVEL_ERROR:
+                    if (haveConsole && console.error) {
+                        console.error('ERROR: %' + placeholderChar, msg);
+                    }
+                    else {
+                        alert('ERROR: ' + msg);
+                    }
+                    break;
+                case Application.LEVEL_ASSERT:
+                    if (haveConsole && console.assert) {
+                        console.assert('ASSERT: %' + placeholderChar, msg);
+                    }
+                    break;
+                default:
+                    if (haveConsole && console.log) {
+                        console.log(msg);
+                    }
+                    break;
+            }
+        }
+    });
+
+    //make it 'static'
+    Logger = new Logger();
+
+
+}]);
+

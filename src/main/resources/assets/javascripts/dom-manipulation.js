@@ -13,9 +13,19 @@
 *
 * */
 
-blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.core.Broadcaster", "blocks.core.Constants", function (Elements, Broadcaster, Constants) {
+blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Broadcaster", "blocks.core.Constants", function (Broadcaster, Constants) {
     var _thisService = this;
     // Get column width (in grid units 1-12, not pixels)
+
+    this.canEditBlock = function(element) {
+        return element.hasClass(Constants.CAN_EDIT_BLOCK_CLASS);
+    };
+
+    this.canLayoutRow = function(element) {
+        return element.hasClass(Constants.CAN_LAYOUT_ROW_CLASS);
+    };
+
+
     this.getColumnWidth = function (element) {
         var widths = element[0].className.match(/\bcol-md-\d+/g, '');
         if (widths != null && widths.length > 0) {
@@ -148,7 +158,7 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.co
     var simplifyColumnInColumn = function (element, callback) {
         if (element.parent().children().length == 1 && // 1 column in row
             element.parent().parent().children().length == 1 &&  // 1 row in column
-            !element.parent().hasClass(Constants.CAN_LAYOUT_CLASS)) { // do not delete can_layout elements
+            !element.parent().hasClass(Constants.CAN_LAYOUT_ROW_CLASS)) { // do not delete can_layout elements
             var parentColumn = element.parent().parent();
             var children = element.children().remove();
             parentColumn.children().remove();
@@ -164,7 +174,7 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.co
     var simplifyRowInRow = function (element, callback) {
         if (element.parent().children().length == 1 && // 1 row (A) in column (B)
             element.parent().parent().children().length == 1 &&  // 1 column(B) in row (C)
-            !(element.hasClass(Constants.CAN_LAYOUT_CLASS))) { // do not delete can_layout elements
+            !(element.hasClass(Constants.CAN_LAYOUT_ROW_CLASS))) { // do not delete can_layout elements
             var parentRow = element.parent().parent(); // Row C
             var children = element.children().remove();
             parentRow.children().remove();

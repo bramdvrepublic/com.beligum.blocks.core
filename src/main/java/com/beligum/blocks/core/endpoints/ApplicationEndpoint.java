@@ -30,7 +30,7 @@ public class ApplicationEndpoint
     {
         Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/index.html");
 
-        return Response.ok(indexTemplate.render()).build();
+        return Response.ok(indexTemplate).build();
     }
 
     //using regular expression to let all requests to undefined paths end up here

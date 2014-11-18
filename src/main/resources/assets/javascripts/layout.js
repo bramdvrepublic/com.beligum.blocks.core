@@ -35,7 +35,7 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
             } else {
                 // Do nothing
             }
-        } else if (dropLocationElement.hasClass(Constants.CAN_LAYOUT_CLASS)) {
+        } else if (dropLocationElement.hasClass(Constants.CAN_LAYOUT_ROW_CLASS)) {
             var childrenColumns = dropLocationElement.children();
             if (childrenColumns.length > 1) {
                 retVal = DOM.createRow().append(childrenColumns.remove());
@@ -56,7 +56,7 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
     // remove block and add it at side of droplocation
     this.changeBlockLocation = function (block, dropLocation, side) {
         // remove dropped block
-        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE)
+        Broadcaster.send(new Broadcaster.EVENTS.DEACTIVATE_MOUSE())
         var columnWidth = DOM.getColumnWidth(block.parent.element);
         DOM.removeBlock(block, 200, function() {
             prepareDropLocation(block.element, dropLocation, side)
@@ -75,8 +75,8 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
                 // this should not be possible
             }
             DOM.appendElement(droppedElement, dropLocationElement, side, function() {
-                Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DOM_DID_CHANGE);
-                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE)
+                Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.DOM_DID_CHANGE());
+                Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE())
             });
 
         };
@@ -87,11 +87,11 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
     this.addNewBlockAtLocation = function(blockElement, dropLocation) {
         dropLocationElement = dropLocation.element;
         if (blockElement.hasClass("block") && dropLocation instanceof Elements.Block) {
-            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
-            Broadcaster.send(Broadcaster.EVENTS.DOM_WILL_CHANGE);
+            Broadcaster.send(new Broadcaster.EVENTS.DEACTIVATE_MOUSE());
+            Broadcaster.send(new Broadcaster.EVENTS.DOM_WILL_CHANGE());
             DOM.appendElement(blockElement, dropLocationElement, Constants.SIDE.BOTTOM, function() {
-                Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DOM_DID_CHANGE);
-                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+                Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.DOM_DID_CHANGE());
+                Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE());
             })
         }
     };
@@ -99,14 +99,17 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
     // remove block
     this.removeBlock = function(block) {
         if (block instanceof Elements.Block) {
-            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+            Broadcaster.send(new Broadcaster.EVENTS.DEACTIVATE_MOUSE());
             DOM.removeBlock(block, 300, function() {
-                Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DOM_DID_CHANGE);
-                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+                Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.DOM_DID_CHANGE());
+                Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE());
             })
         }
     };
 
+    // The parent element where the tree is build
+    // if null this is automatically set to the container
+    var layoutParentElement = null;
     var layoutTree = null;
 
     this.getLayoutTree = function() {
@@ -114,11 +117,11 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
             buildLayoutTree();
         }
         return layoutTree;
-    }
+    };
 
     var buildLayoutTree = function () {
         // We create some sort of a heat map. We define boxes for all draggable blocks
-        // we can add left and rigth from each column
+        // we can add left and right from each column
         // and left and right from container if container has more than 1 row
         // select each row and add bottom
         // if row has +1 colunms, we can add also to bottom of columns
@@ -127,30 +130,31 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
         Logger.debug("Calculate hotspots");
         layoutTree = [];
         //_this.cleanLayout();
-        $("." + Constants.CAN_LAYOUT_CLASS).each(function () {
-            var containerElement = $(this);
+        if (layoutParentElement == null) {
+            layoutParentElement = $("." + Constants.CONTAINER_CLASS);
+        }
+
+        layoutParentElement.children("." + Constants.ROW_CLASS).each(function () {
+            var parentRow = $(this);
             // get size of container including border & padding but not margins
-            var container = new Elements.Container(containerElement);
+            var container = new Elements.Container(parentRow);
             Logger.debug(container);
             layoutTree.push(container);
         });
-        Broadcaster.send(Broadcaster.EVENTS.DID_REFRESH_LAYOUT);
+        Broadcaster.send(new Broadcaster.EVENTS.DID_REFRESH_LAYOUT());
     };
 
-    Broadcaster.on(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, function() {
+    Broadcaster.on(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, "blocks.core.Layouter", function() {
         buildLayoutTree();
     })
 
-    Broadcaster.on(Broadcaster.EVENTS.DOM_DID_CHANGE, function() {
-        Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);
+    Broadcaster.on(Broadcaster.EVENTS.DOM_DID_CHANGE, "blocks.core.Layouter", function() {
+        Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.DO_REFRESH_LAYOUT());
     })
-
-
-
 
     // On Boot
     $(window).on("resize.blocks_core", function () {
-        Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);
+        Broadcaster.send(new Broadcaster.EVENTS.DO_REFRESH_LAYOUT());
     });
 
 
