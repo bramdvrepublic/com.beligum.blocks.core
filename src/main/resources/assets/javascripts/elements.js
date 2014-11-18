@@ -419,7 +419,7 @@ blocks
             }
         });
 
-        // Special kind of row that can contain content
+        // Special kind of row that can contain template
         var block = Class.create(row, {
             constructor: function (top, bottom, left, right, element, parent, index) {
                 block.Super.call(this, top, bottom, left, right, element, parent, index);

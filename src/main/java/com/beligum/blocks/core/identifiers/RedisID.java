@@ -1,6 +1,7 @@
 package com.beligum.blocks.core.identifiers;
 
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.DatabaseConstants;
 
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -66,10 +67,21 @@ public class RedisID extends ID
          * Note: "objectId" could hold ":"-signs
          */
         String[] splitted = dbId.split(":");
-        this.version = Long.parseLong(splitted[splitted.length-1]);
-        int lastDoublePoint = dbId.lastIndexOf(':');
-        String id = dbId.substring(0, lastDoublePoint);
-        this.idUri = new URI(id);
+        if(splitted[splitted.length-1].contentEquals(DatabaseConstants.HASH_SUFFIX)){
+            //TODO BAS: generalize this when using internationalization
+            this.version = Long.parseLong(splitted[splitted.length - 2]);
+            int lastDoublePoint = dbId.lastIndexOf(':');
+            String versionedId = dbId.substring(0, lastDoublePoint);
+            int oneButLastDoublePoint = versionedId.lastIndexOf(':');
+            String id = versionedId.substring(0, oneButLastDoublePoint);
+            this.idUri = new URI(id);
+        }
+        else {
+            this.version = Long.parseLong(splitted[splitted.length - 1]);
+            int lastDoublePoint = dbId.lastIndexOf(':');
+            String id = dbId.substring(0, lastDoublePoint);
+            this.idUri = new URI(id);
+        }
 
         /*
          * Construct the url for this id, using the site-domain specified in the configuration-xml and the path specified by the database-id
@@ -124,6 +136,32 @@ public class RedisID extends ID
     public String getVersionedId(){
         return toString();
     }
+
+    /**
+     *
+     * @return the html-id of the url to this element, this is everything after the '#' in "[site-domain]/[pageId]#[elementId]" and is the id found in the html-file containing this element
+     * @throws URISyntaxException
+     */
+    public String getHtmlId()
+    {
+        try{
+            return this.getUrl().toURI().getFragment();
+        }
+        catch(URISyntaxException e){
+            throw new RuntimeException("Bad uri found. This should not happen!", e);
+        }
+    }
+
+
+
+    /**
+     *
+     * @return the string-id of the hash containing all page meta-data (info) of the page with this EntityID
+     */
+    public String getHashId(){
+        return getVersionedId() + ":" + DatabaseConstants.HASH_SUFFIX;
+    }
+
 
     @Override
     /**

@@ -28,6 +28,11 @@ public interface Storable extends Identifiable
      * @return the id of this storable without a version attached ("[storableId]")
      */
     public String getUnversionedId();
+
+    /**
+     * @return the id of the hash representing this storable ("[storableId]:[version]:hash")
+     */
+    public String getHashId();
     /**
      * @return the version of the application this storable is supposed ot interact with
      */
