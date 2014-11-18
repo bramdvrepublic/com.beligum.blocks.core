@@ -5,15 +5,11 @@
 
 #define($header-scripts-extra)
 <script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
-<script src="/templates/pages/default/scripts.js" type="application/javascript" ></script>
-#end
-
-#define($body-args-extra)
-class="page page-waterput"
+<script src="/templates/entities/default/scripts.js" type="application/javascript" ></script>
 #end
 
 #define($body-html)
-<div class="container">
+<div class="entity entity-waterput">
     <div class="row" id="waterputtitelrij">
         <div class="block center-block" id="waterputtitelblock">
             <h1>Dit is een waterput!</h1>
@@ -34,5 +30,5 @@ class="page page-waterput"
 </div>
 #end
 
-##TODO BAS: this should not have to be added
+##TODO BAS: this should not have to be explicitly mentioned here
 #parse("/views/templates/main.html")

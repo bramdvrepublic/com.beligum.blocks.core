@@ -144,7 +144,7 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.co
     }
 
     // if: 1 column(A) in 1 row(B) in 1 column(C),
-    // then we can put content of column A in Column C and delete A & B
+    // then we can put template of column A in Column C and delete A & B
     var simplifyColumnInColumn = function (element, callback) {
         if (element.parent().children().length == 1 && // 1 column in row
             element.parent().parent().children().length == 1 &&  // 1 row in column
@@ -152,7 +152,7 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.co
             var parentColumn = element.parent().parent();
             var children = element.children().remove();
             parentColumn.children().remove();
-            parentColumn.append(children); // column with new content
+            parentColumn.append(children); // column with new template
             elementChanged(parentColumn, callback)
         } else {
             callback();
@@ -160,7 +160,7 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.co
     };
 
     // if: 1 Row(A) in 1 Column(B) in 1 Row(C),
-    // then we can put content of Row A in Row C and delete A & B
+    // then we can put template of Row A in Row C and delete A & B
     var simplifyRowInRow = function (element, callback) {
         if (element.parent().children().length == 1 && // 1 row (A) in column (B)
             element.parent().parent().children().length == 1 &&  // 1 column(B) in row (C)
@@ -168,7 +168,7 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Elements", "blocks.co
             var parentRow = element.parent().parent(); // Row C
             var children = element.children().remove();
             parentRow.children().remove();
-            parentRow.append(children); // column with new content
+            parentRow.append(children); // column with new template
             elementChanged(parentRow, callback);
         } else {
             distributeColumnsInRow(element, callback);

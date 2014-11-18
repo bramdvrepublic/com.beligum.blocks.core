@@ -10,7 +10,9 @@ public class BlocksConfig
     /**name of the scheme used for uri-identification of objects in the blocks-project*/
     public static final String SCHEME_NAME = "blocks";
     /**name of the folder where page-templates (page-classes) can be found*/
-    public static final String PAGES_FOLDER = "pages";
+    public static final String ENTITIES_FOLDER = "entities";
+    /**name of the folder where block-templates (block-classes) can be found*/
+    public static final String BLOCKS_FOLDER = "blocks";
     /**standard name of the html-file a page-class- or block-class-template must have to be recognized as such*/
     public static final String INDEX_FILE_NAME = "index.html";
 
@@ -29,8 +31,12 @@ public class BlocksConfig
         return getConfiguration("blocks.site.db-alias");
     }
 
-    public static String getPagesFolder() {
-        return getTemplateFolder() + "/" + PAGES_FOLDER;
+    public static String getEntitiesFolder() {
+        return getTemplateFolder() + "/" + ENTITIES_FOLDER;
+    }
+
+    public static String getBlocksFolder() {
+        return getTemplateFolder() + "/" + BLOCKS_FOLDER;
     }
 
     /**

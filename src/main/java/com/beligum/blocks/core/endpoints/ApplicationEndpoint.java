@@ -1,24 +1,21 @@
 package com.beligum.blocks.core.endpoints;
 
-import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.dbs.Redis;
-import com.beligum.blocks.core.models.ifaces.StorableElement;
-import com.beligum.blocks.core.models.storables.Page;
+import com.beligum.blocks.core.models.storables.Entity;
+import com.beligum.blocks.core.models.storables.Row;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.base.RequestContext;
 import com.beligum.core.framework.templating.ifaces.Template;
-import com.beligum.core.framework.templating.ifaces.TemplateContext;
 import com.beligum.core.framework.templating.ifaces.TemplateEngine;
-import com.beligum.core.framework.templating.velocity.VelocityTemplate;
-import com.beligum.core.framework.templating.velocity.VelocityTemplateContext;
 import com.beligum.core.framework.templating.velocity.VelocityTemplateEngine;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.tools.generic.RenderTool;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.GET;
+import javax.ws.rs.NotFoundException;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
-import java.net.URI;
 import java.net.URL;
 
 @Path("/")
@@ -29,8 +26,7 @@ public class ApplicationEndpoint
     public Response index()
     {
         Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/index.html");
-
-        return Response.ok(indexTemplate.render()).build();
+        return Response.ok(indexTemplate).build();
     }
 
     //using regular expression to let all requests to undefined paths end up here
@@ -41,7 +37,7 @@ public class ApplicationEndpoint
         try{
             Redis redis = Redis.getInstance();
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
-            Page page = redis.fetchPage(url);
+            Entity entity = redis.fetchEntity(url);
 
             /*
              * Use the default template-engine of the application and the default template-context of this page-class for template-rendering
@@ -53,8 +49,8 @@ public class ApplicationEndpoint
                  * Add all specific velocity-variables fetched from database to the context.
                  */
                 VelocityContext context = new VelocityContext();
-                for(StorableElement element : page.getElements()){
-                    context.put(element.getTemplateVariableName(), element.getContent());
+                for(Row child : entity.getAllChildren()){
+                    context.put(child.getTemplateVariableName(), child.getTemplate());
                 }
 
                 /*
@@ -65,7 +61,7 @@ public class ApplicationEndpoint
                 RenderTool renderTool = new RenderTool();
                 renderTool.setVelocityEngine(((VelocityTemplateEngine) templateEngine).getDelegateEngine());
                 renderTool.setVelocityContext(context);
-                String pageHtml = renderTool.recurse(page.getTemplate());
+                String pageHtml = renderTool.recurse(entity.getTemplate());
                 return Response.ok(pageHtml).build();
             }
             else{
