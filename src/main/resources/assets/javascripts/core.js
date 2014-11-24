@@ -45,7 +45,7 @@ blocks.plugin("blocks.core.Constants", function() {
 
     this.COLUMN_WIDTH_CLASS = "col-md-";
     this.CAN_LAYOUT_ROW_CLASS = "can-edit"; // can layout row and add and delete blocks
-    this.REFERENCE_BLOCK_CLASS = "block-reference"
+    this.REFERENCE_BLOCK_CLASS = "block-parsedContent"
 
     this.CAN_EDIT_BLOCK_CLASS = "can-edit"; // specifies edit and delete
     this.CAN_CAST_BLOCK_CLASS = "can-cast-block"
