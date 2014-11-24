@@ -1,11 +1,15 @@
 package com.beligum.blocks.html.parsers;
 
+import com.beligum.blocks.core.models.storables.Entity;
+import com.beligum.blocks.core.models.storables.Row;
 import com.beligum.blocks.html.models.types.DefaultValue;
+import com.beligum.blocks.html.models.types.Identifiable;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.NodeVisitor;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Stack;
 
 /**
@@ -13,6 +17,7 @@ import java.util.Stack;
  */
 public class AbstractEntityNodeVisitor implements NodeVisitor
 {
+
     private Stack<Integer> containerDepth = new Stack<Integer>();
     private Stack<Integer> typeDepth = new Stack<Integer>();
     private Stack<Element> typeStack = new Stack<Element>();
@@ -22,7 +27,7 @@ public class AbstractEntityNodeVisitor implements NodeVisitor
     public void head(Node node, int depth) {
         if (node instanceof Element) {
             Element element = (Element) node;
-            if (AbstractParser.isType(element)) {
+            if (AbstractParser.isBlock(element)) {
                 if (element.hasClass("container")) {
                     if (containerDepth.peek() == null) {
                         containerDepth.push(depth);
@@ -39,12 +44,13 @@ public class AbstractEntityNodeVisitor implements NodeVisitor
         // Here we create the new DefaultValue
         if (node instanceof Element) {
             Element element = (Element) node;
-            if (AbstractParser.isType(element)) {
+            if (AbstractParser.isBlock(element)) {
                 typeDepth.pop();
                 typeStack.pop();
             }
         }
     }
+
 
     protected String getPropertyFieldId(Element element) {
         return AbstractParser.getProperty(element) + typeDepth.peek();
@@ -72,11 +78,12 @@ public class AbstractEntityNodeVisitor implements NodeVisitor
         }
     }
 
-    protected void replaceNodeWithReference(Element element) {
+    protected Element replaceNodeWithReference(Element element) {
         Element replacementNode = new Element(element.tag(),"");
         replacementNode.attributes().addAll(element.attributes());
         replacementNode.attr("parsedContent", "");
         element.replaceWith(replacementNode);
+        return replacementNode;
     }
 
     protected boolean inContainer(int depth) {
@@ -97,5 +104,6 @@ public class AbstractEntityNodeVisitor implements NodeVisitor
             }
         }
     }
+
 
 }
