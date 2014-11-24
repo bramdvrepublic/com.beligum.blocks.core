@@ -65,7 +65,7 @@
 blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elements", "blocks.core.Layouter", "blocks.core.Constants", function (Broadcaster, Elements, Layouter, Constants) {
     // flag if this module is active
     var active = false;
-    // dragging options, kept here for reference while waiting for drag
+    // dragging options, kept here for parsedContent while waiting for drag
     var draggingStatus = Constants.DRAGGING.DISABLED;
     var draggingOptions = {startEvent: null, owner: null, priority: null};
     // the active block for the last 2 mouseEvents

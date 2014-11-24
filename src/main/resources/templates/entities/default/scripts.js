@@ -1,4 +1,4 @@
-function save(){
+function save() {
     var html = document.documentElement.outerHTML;
     $.ajax({
         type: "PUT",
