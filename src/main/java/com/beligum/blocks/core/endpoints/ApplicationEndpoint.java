@@ -1,8 +1,8 @@
 package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.storables.Entity;
-import com.beligum.blocks.core.models.storables.Row;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.base.RequestContext;
 import com.beligum.core.framework.templating.ifaces.Template;
@@ -37,7 +37,8 @@ public class ApplicationEndpoint
         try{
             Redis redis = Redis.getInstance();
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
-            Entity entity = redis.fetchEntity(url);
+            RedisID id = new RedisID(url);
+            Entity entity = redis.fetchEntity(id, true, true);
 
             /*
              * Use the default template-engine of the application and the default template-context of this page-class for template-rendering
@@ -49,7 +50,7 @@ public class ApplicationEndpoint
                  * Add all specific velocity-variables fetched from database to the context.
                  */
                 VelocityContext context = new VelocityContext();
-                for(Row child : entity.getAllChildren()){
+                for(Entity child : entity.getAllChildren()){
                     context.put(child.getTemplateVariableName(), child.getTemplate());
                 }
 

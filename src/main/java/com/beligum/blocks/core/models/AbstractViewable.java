@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.models;
 
 import com.beligum.blocks.core.identifiers.ID;
-import com.beligum.blocks.core.models.storables.Row;
+import com.beligum.blocks.core.models.storables.Entity;
 
 import java.util.*;
 
@@ -15,11 +15,11 @@ public class AbstractViewable extends IdentifiableObject
     /**set with all the element ids of all the child-elements (and grandchild-elements) of this element, no double ids can be added*/
     protected Set<String> childHtmlIds = new HashSet<>();
     /**set containing all children (and grand-children) of this element*/
-    private Set<Row> allChildren = new HashSet<>();
+    private Set<Entity> allChildren = new HashSet<>();
     /**map containing the final elements of this page, keys = html-id's of the elements, values = element-objects*/
-    private Map<String, Row> cachedFinalChildren = new HashMap<>();
+    private Map<String, Entity> cachedFinalChildren = new HashMap<>();
     /**set containing the non-final elements of this page, it is a hashset explicitly because it is used for hashing elements when checking for equality*/
-    private HashSet<Row> cachedNonFinalChildren = new HashSet<>();
+    private HashSet<Entity> cachedNonFinalChildren = new HashSet<>();
 
     /**
      * Constructor taking a unique id.
@@ -27,7 +27,7 @@ public class AbstractViewable extends IdentifiableObject
      * @param template the template-string which represents the content of this viewable
      * @param allChildren a set of all the children (and grand-children) of this abstractViewable
      */
-    public AbstractViewable(ID id, String template, Set<Row> allChildren)
+    public AbstractViewable(ID id, String template, Set<Entity> allChildren)
     {
         super(id);
         this.template = template;
@@ -47,7 +47,7 @@ public class AbstractViewable extends IdentifiableObject
      *
      * @return all the children (and grand-children) of this element in the element-tree
      */
-    public Set<Row> getAllChildren(){
+    public Set<Entity> getAllChildren(){
         return this.allChildren;
     }
 
@@ -56,7 +56,7 @@ public class AbstractViewable extends IdentifiableObject
      * @param child the element to be added to the viewable
      * @return true if the child was correctly added, false otherwise
      */
-    public boolean addChild(Row child)
+    public boolean addChild(Entity child)
     {
         boolean added = false;
         boolean hasUniqueId = !this.childHtmlIds.contains(child.getHtmlId());
@@ -73,9 +73,9 @@ public class AbstractViewable extends IdentifiableObject
      * @param children children to be added
      * @return true if the collection of children in this viewable has changed, false otherwise
      */
-    public boolean addChildren(Collection<Row> children){
+    public boolean addChildren(Collection<Entity> children){
         boolean changed = false;
-        for(Row child : children){
+        for(Entity child : children){
             if(!changed){
                 changed = this.addChild(child);
             }
@@ -90,10 +90,10 @@ public class AbstractViewable extends IdentifiableObject
      *
      * @return a map with all elements in this element that cannot be altered by the client, keys = html-id's of the elements, values = element-objects
      */
-    public Map<String, Row> getAllFinalChildren(){
+    public Map<String, Entity> getAllFinalChildren(){
         if(this.cachedFinalChildren.isEmpty()) {
-            Set<Row> children = this.getAllChildren();
-            for (Row child : children) {
+            Set<Entity> children = this.getAllChildren();
+            for (Entity child : children) {
                 if(child.isFinal()) {
                     this.cachedFinalChildren.put(child.getHtmlId(), child);
                 }
@@ -107,10 +107,10 @@ public class AbstractViewable extends IdentifiableObject
      * @return a hashset with elements in this page that can be altered by the client, it is a hashset explicitly because it is typically used with hashing to check for equality
      */
     //this MUST return a HASH-set, not simply a set, since hashing will be used to check for equality
-    public HashSet<Row> getAllNonFinalChildren(){
+    public HashSet<Entity> getAllNonFinalChildren(){
         if(this.cachedNonFinalChildren.isEmpty()) {
-            Set<Row> children = this.getAllChildren();
-            for (Row child : children) {
+            Set<Entity> children = this.getAllChildren();
+            for (Entity child : children) {
                 if(!child.isFinal()) {
                     this.cachedNonFinalChildren.add(child);
                 }

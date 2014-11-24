@@ -3,7 +3,6 @@ package com.beligum.blocks.core.caching;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.models.classes.AbstractViewableClass;
-import com.beligum.blocks.core.parsing.AbstractViewableParser;
 import com.beligum.core.framework.utils.toolkit.FileFunctions;
 
 import java.io.IOException;

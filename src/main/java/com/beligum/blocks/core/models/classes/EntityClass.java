@@ -5,7 +5,7 @@ import com.beligum.blocks.core.config.CSSClasses;
 import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.identifiers.ID;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.models.storables.Row;
+import com.beligum.blocks.core.models.storables.Entity;
 import org.apache.commons.configuration.ConfigurationRuntimeException;
 
 import java.net.MalformedURLException;
@@ -32,7 +32,7 @@ public class EntityClass extends AbstractViewableClass
      * @param template the template-string corresponding to the most outer layer of the element-tree in this entity
      * @param docType the doctype of this entity-class
      */
-    public EntityClass(String name, Set<Row> allChildren, String template, String docType) throws URISyntaxException
+    public EntityClass(String name, Set<Entity> allChildren, String template, String docType) throws URISyntaxException
     {
         super(makeId(name), allChildren, template);
         this.name = name;

@@ -56,7 +56,7 @@ public class Entity extends ViewableInstance
      * @throws CacheException when the entity-class can not be found in the application cache
      *
      */
-    public Entity(RedisID id, Set<Row> childrenFromDB, String entityClassName) throws CacheException
+    public Entity(RedisID id, Set<Entity> childrenFromDB, String entityClassName) throws CacheException
     {
         super(id, childrenFromDB, EntityClassCache.getInstance().get(entityClassName), true);
     }
@@ -73,7 +73,7 @@ public class Entity extends ViewableInstance
      * @throws CacheException when the entity-class can not be found in the application cache
      *
      */
-    public Entity(RedisID id, Set<Row> childrenFromDB, String entityClassName, String applicationVersion, String creator) throws CacheException
+    public Entity(RedisID id, Set<Entity> childrenFromDB, String entityClassName, String applicationVersion, String creator) throws CacheException
     {
         super(id, childrenFromDB, EntityClassCache.getInstance().get(entityClassName), true, applicationVersion, creator);
     }
@@ -98,9 +98,9 @@ public class Entity extends ViewableInstance
      *
      * @return all non-final children of this entity that aren't present in it's viewable-class (and thus already in the application-cache)
      */
-    public HashSet<Row> getNotCachedNonFinalChildren(){
-        HashSet<Row> notCachedNonFinalChildren = this.getAllNonFinalChildren();
-        Set<Row> cachedNonFinalChildren = this.getViewableClass().getAllNonFinalChildren();
+    public HashSet<Entity> getNotCachedNonFinalChildren(){
+        HashSet<Entity> notCachedNonFinalChildren = this.getAllNonFinalChildren();
+        Set<Entity> cachedNonFinalChildren = this.getViewableClass().getAllNonFinalChildren();
         notCachedNonFinalChildren.removeAll(cachedNonFinalChildren);
         return notCachedNonFinalChildren;
     }

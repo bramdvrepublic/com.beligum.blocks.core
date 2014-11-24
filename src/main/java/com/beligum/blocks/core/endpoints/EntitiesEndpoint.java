@@ -8,7 +8,6 @@ import com.beligum.blocks.core.exceptions.ParserException;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.models.classes.EntityClass;
 import com.beligum.blocks.core.models.storables.Entity;
-import com.beligum.blocks.core.parsing.EntityParser;
 import com.beligum.blocks.core.validation.ValidationEntity;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.templating.ifaces.Template;

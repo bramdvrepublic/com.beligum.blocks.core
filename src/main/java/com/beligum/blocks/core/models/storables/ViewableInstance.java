@@ -1,7 +1,6 @@
 package com.beligum.blocks.core.models.storables;
 
 import com.beligum.blocks.core.config.DatabaseConstants;
-import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.classes.AbstractViewableClass;
 
@@ -49,10 +48,10 @@ public class ViewableInstance extends Row
      * @param childrenFromDB all children for this entity fetched form db
      * @param viewableClass the viewable-class this viewable is an instance of
      */
-    public ViewableInstance(RedisID id, Set<Row> childrenFromDB, AbstractViewableClass viewableClass, boolean isFinal)
+    public ViewableInstance(RedisID id, Set<Entity> childrenFromDB, AbstractViewableClass viewableClass, boolean isFinal)
     {
         //the children of the viewable class should not be copied to the entity lightly
-        super(id, viewableClass.getTemplate(), new HashSet<Row>(), isFinal);
+        super(id, viewableClass.getTemplate(), new HashSet<Entity>(), isFinal);
         this.addChildren(viewableClass.getAllFinalChildren().values());
         this.addChildren(childrenFromDB);
         this.addChildren(viewableClass.getAllNonFinalChildren());
@@ -67,10 +66,10 @@ public class ViewableInstance extends Row
      * @param applicationVersion the version of the application this instance was saved under
      * @param creator            the creator of this instance
      */
-    public ViewableInstance(RedisID id, Set<Row> childrenFromDB, AbstractViewableClass viewableClass, boolean isFinal, String applicationVersion, String creator)
+    public ViewableInstance(RedisID id, Set<Entity> childrenFromDB, AbstractViewableClass viewableClass, boolean isFinal, String applicationVersion, String creator)
     {
         //the children of the viewable class should not be copied to the entity lightly
-        super(id, viewableClass.getTemplate(), new HashSet<Row>(), isFinal, applicationVersion, creator);
+        super(id, viewableClass.getTemplate(), new HashSet<Entity>(), isFinal, applicationVersion, creator);
         this.addChildren(viewableClass.getAllFinalChildren().values());
         this.addChildren(childrenFromDB);
         this.addChildren(viewableClass.getAllNonFinalChildren());
