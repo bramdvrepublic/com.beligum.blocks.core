@@ -1,9 +1,8 @@
 package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.storables.Entity;
-import com.beligum.blocks.core.models.storables.Row;
-import com.beligum.blocks.html.Cacher.TypeCacher;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.base.RequestContext;
 import com.beligum.core.framework.templating.ifaces.Template;
@@ -28,27 +27,28 @@ public class ApplicationEndpoint
     public Response index()
     {
         Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/index.html");
-        TypeCacher.instance().reset();
+//        TypeCacher.instance().reset();
         return Response.ok(indexTemplate).build();
     }
 
-    @Path("/show")
-    @GET
-    public Response show()
-    {
-        TypeCacher.instance().reset();
-
-        com.beligum.blocks.html.models.types.Template template = TypeCacher.instance().getTemplate("default");
-        Element element = TypeCacher.instance().getContent("free");
-
-        return Response.ok(template.renderContent(element)).build();
-    }
+//    @Path("/show")
+//    @GET
+//    public Response show()
+//    {
+//        TypeCacher.instance().reset();
+//
+//        com.beligum.blocks.html.Template template = TypeCacher.instance().getTemplate("default");
+//        Element element = TypeCacher.instance().getContent("free");
+//
+//        return Response.ok(template.renderContent(element)).build();
+//    }
 
     @Path("/reset")
     @GET
     public Response reset()
     {
-        TypeCacher.instance().reset();
+//        TypeCacher.instance().reset();
+        // TODO enqble reset of EntityClassCache
         return Response.ok("OK: all templates loaded").build();
     }
 
@@ -60,19 +60,20 @@ public class ApplicationEndpoint
         try{
             Redis redis = Redis.getInstance();
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
-            Entity entity = redis.fetchEntity(url);
+            RedisID id = new RedisID(url);
+            Entity entity = redis.fetchEntity(id, true, true);
 
             /*
              * Use the default template-engine of the application and the default template-context of this page-class for template-rendering
              */
             TemplateEngine templateEngine = R.templateEngine();
-            //TODO: this cast should be avoided here, we need a more generic 'RenderTool' where this cast should be done properly
+            //TODO BAS SH: put this in PageTemplate: this cast should be avoided here, we need a more generic 'RenderTool' where this cast should be done properly
             if(templateEngine instanceof VelocityTemplateEngine) {
                 /*
                  * Add all specific velocity-variables fetched from database to the context.
                  */
                 VelocityContext context = new VelocityContext();
-                for(Row child : entity.getAllChildren()){
+                for(Entity child : entity.getAllChildren()){
                     context.put(child.getTemplateVariableName(), child.getTemplate());
                 }
 
@@ -95,8 +96,5 @@ public class ApplicationEndpoint
             throw new NotFoundException("The page '" + randomURLPath + "' could not be found.", e);
         }
     }
-
-
-    //TODO BAS: schrijf de ReadMe voor het parse-gedeelte
 
 }

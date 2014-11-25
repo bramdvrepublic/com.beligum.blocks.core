@@ -3,8 +3,7 @@ package com.beligum.blocks.core.caching;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.models.classes.EntityClass;
-import com.beligum.blocks.core.parsing.AbstractViewableParser;
-import com.beligum.blocks.core.parsing.EntityParser;
+import com.beligum.blocks.html.PageTemplate;
 import com.beligum.core.framework.base.R;
 
 import java.util.HashMap;
@@ -36,12 +35,15 @@ public class EntityClassCache extends AbstractViewableClassCache<EntityClass>
             if (instance == null) {
                 //if the application-cache doesn't exist, throw exception, else instantiate the application's page-cache with a new empty hashmap
                 if (R.cacheManager() != null && R.cacheManager().getApplicationCache() != null) {
-                    if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.ENTITY_CLASSES)) {
+
+                    if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.ENTITY_CLASSES) || !R.cacheManager().getApplicationCache().containsKey(CacheKeys.PAGETEMPLATES)) {
                         R.cacheManager().getApplicationCache().put(CacheKeys.ENTITY_CLASSES, new HashMap<String, EntityClass>());
+                        R.cacheManager().getApplicationCache().put(CacheKeys.PAGETEMPLATES, new HashMap<String, PageTemplate>());
                         instance = new EntityClassCache();
                         instance.fillCache();
                     }
                 }
+
                 else {
                     throw new NullPointerException("No application-cache found.");
                 }
@@ -62,15 +64,27 @@ public class EntityClassCache extends AbstractViewableClassCache<EntityClass>
         return (Map<String, EntityClass>) R.cacheManager().getApplicationCache().get(CacheKeys.ENTITY_CLASSES);
     }
 
-    @Override
-    protected String getClassRootFolder()
-    {
-        return BlocksConfig.getEntitiesFolder();
+    public Map<String, PageTemplate> getPageTemplateCache(){
+        return (Map<String, PageTemplate>) R.cacheManager().getApplicationCache().get(CacheKeys.PAGETEMPLATES);
     }
 
-    @Override
-    protected AbstractViewableParser<EntityClass> getParser(String entityClassName)
-    {
-        return new EntityParser(entityClassName);
+    public void addPageTemplate(PageTemplate pageTemplate) throws CacheException {
+        if(!getPageTemplateCache().containsKey(pageTemplate.getName())) {
+            getPageTemplateCache().put(pageTemplate.getName(), pageTemplate);
+        }
+        else{
+            throw new CacheException("Cannot add pageTemplate '" + pageTemplate.getName() + "' to cache, since it is already present.");
+        }
     }
+//    @Override
+//    protected String getClassRootFolder()
+//    {
+//        return BlocksConfig.getEntitiesFolder();
+//    }
+//
+//    @Override
+//    protected AbstractViewableParser<EntityClass> getParser(String entityClassName)
+//    {
+//        return new EntityParser(entityClassName);
+//    }
 }

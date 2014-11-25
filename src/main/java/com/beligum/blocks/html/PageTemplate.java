@@ -1,10 +1,10 @@
-package com.beligum.blocks.html.models.types;
+package com.beligum.blocks.html;
 
 import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.html.Cacher.TypeCacher;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
+import com.beligum.blocks.core.models.storables.Entity;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
+import org.jsoup.nodes.TextNode;
 import org.jsoup.parser.Tag;
 
 import java.util.List;
@@ -12,14 +12,14 @@ import java.util.List;
 /**
  * Created by wouter on 20/11/14.
  */
-public class Template
+public class PageTemplate
 {
-    private Element tempContent;
+    private String template;
     private String name;
     private boolean htmlSeen = false;
 
 
-    public Template(Element node) {
+    public PageTemplate(Element node) {
         super();
         Element parent = node.parent();
         while (parent.parent() != null) {
@@ -28,12 +28,10 @@ public class Template
             }
             parent = parent.parent();
         }
-        Element e = new Element(Tag.valueOf("div"), "");
-        e.attr("template-content", "");
+        Node e = new TextNode("${" + BlocksConfig.TEMPLATE_ENTITY_VARIABLE + "}", BlocksConfig.getSiteDomain());
         node.replaceWith(e);
 
-        this.tempContent = parent;
-        TypeCacher.instance().addTemplate(this, false);
+        this.template = parent.outerHtml();
     }
 
 
@@ -48,12 +46,13 @@ public class Template
         return retVal;
     }
 
-    public String renderContent(Element element) {
-        Element filledTemplate = this.tempContent.clone();
-        List<Element> nodes = filledTemplate.select("div[template-content]");
-        Element node = nodes.get(0);
-        node.replaceWith(element);
-        return filledTemplate.outerHtml();
+    public String renderContent(Entity entity) {
+//        Element filledTemplate = this.tempContent.clone();
+//        List<Element> nodes = filledTemplate.select("div[template-content]");
+//        Element node = nodes.get(0);
+//        node.replaceWith(element);
+        // TODO render content with velocity
+        return "";
     }
 
 

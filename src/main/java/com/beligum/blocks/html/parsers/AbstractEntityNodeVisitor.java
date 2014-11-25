@@ -1,15 +1,13 @@
 package com.beligum.blocks.html.parsers;
 
+import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.models.storables.Entity;
-import com.beligum.blocks.core.models.storables.Row;
-import com.beligum.blocks.html.models.types.DefaultValue;
-import com.beligum.blocks.html.models.types.Identifiable;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
+import org.jsoup.nodes.TextNode;
 import org.jsoup.select.NodeVisitor;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Stack;
 
 /**
@@ -78,10 +76,12 @@ public class AbstractEntityNodeVisitor implements NodeVisitor
         }
     }
 
-    protected Element replaceNodeWithReference(Element element) {
-        Element replacementNode = new Element(element.tag(),"");
-        replacementNode.attributes().addAll(element.attributes());
-        replacementNode.attr("parsedContent", "");
+    protected Node replaceNodeWithReference(Element element, Entity entity) {
+//        Element replacementNode = new Element(element.tag(),"");
+//        replacementNode.attributes().addAll(element.attributes());
+//        replacementNode.attr("parsedContent", "");
+//        element.replaceWith(replacementNode);
+        TextNode replacementNode = new TextNode("${" + entity.getTemplateVariableName() + "}", BlocksConfig.getSiteDomain());
         element.replaceWith(replacementNode);
         return replacementNode;
     }

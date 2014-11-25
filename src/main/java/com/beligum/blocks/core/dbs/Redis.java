@@ -4,10 +4,7 @@ import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.classes.EntityClass;
-import com.beligum.blocks.core.models.ifaces.Storable;
-import com.beligum.blocks.core.models.storables.Block;
 import com.beligum.blocks.core.models.storables.Entity;
-import com.beligum.blocks.core.models.storables.Row;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisSentinelPool;
 import redis.clients.jedis.Pipeline;
@@ -102,17 +99,17 @@ public class Redis implements Closeable
                  * Save all new versions of blocks and rows "[elementId]:[version]" in a list named "[elementId]"
                  */
                 //the entity stored in db, will be null when no such entity is present in db
-                Entity storedEntity = this.fetchEntity(entity.getUrl());
+                Entity storedEntity = this.fetchEntity(entity.getId(), true, true);
                 //elements of the entity-class present in the cache that may not be altered, keys = html-id's of the elements, values = element-objects
-                Map<String, Row> finalChildren = entity.getAllFinalChildren();
+                Map<String, Entity> finalChildren = entity.getAllFinalChildren();
                 //elements of the last version of this entity stored in db that can be altered
-                HashSet<Row> storedChildren = (storedEntity != null) ? storedEntity.getNotCachedNonFinalChildren() : new HashSet<Row>();
+                HashSet<Entity> storedChildren = (storedEntity != null) ? storedEntity.getNotCachedNonFinalChildren() : new HashSet<Entity>();
                 //elements of the entity-class present in the cache that can be altered
-                HashSet<Row> cachedChildren = entity.getViewableClass().getAllNonFinalChildren();
+                HashSet<Entity> cachedChildren = entity.getViewableClass().getAllNonFinalChildren();
                 //elements of the entity we want to save, which need to be compared to the above maps of elements
-                Set<Row> entityChildren = entity.getAllChildren();
+                Set<Entity> entityChildren = entity.getAllChildren();
                 //for all elements received from the entity to be saved, check if they have to be saved to db, or if they are already present in the cache
-                for (Row entityChild : entityChildren) {
+                for (Entity entityChild : entityChildren) {
                     if (!finalChildren.containsKey(entityChild.getHtmlId())) {
                         //TODO BAS: we also want to save id's of previous entities in db, so if we change the class-template and then return to the original template, we can easily return the original stored elements, this can be done by checking which storedElments haven't been accessed by a entityElement yet and then save the id's of those elements to
                         if (!storedChildren.contains(entityChild)) {
@@ -130,9 +127,9 @@ public class Redis implements Closeable
                         }
                     }
                     else {
-                        Row finalChild = finalChildren.get(entityChild.getHtmlId());
+                        Entity finalChild = finalChildren.get(entityChild.getHtmlId());
                         if (!finalChild.equals(entityChild)) {
-                            throw new RedisException("Row with id '" + finalChild.getHtmlId() + "' is final, so it cannot be changed from A) to B) \n \n A) \n"
+                            throw new RedisException("Entity with id '" + finalChild.getHtmlId() + "' is final, so it cannot be changed from A) to B) \n \n A) \n"
                                                      + finalChild.getTemplate() +  "\n \n B) \n " + entityChild.getTemplate() + "\n \n");
                         }
                         //nothing has to be done with unaltered final elements when saving to db (they are already present in the application cache and may not be altered anyhow)
@@ -176,83 +173,88 @@ public class Redis implements Closeable
     }
 
 
-    /**
-     * Save the block to db: save template and info of a block in a hash named "[blockId]:[version]:hash"
-     * @param row
-     */
-    public void save(Row row) throws RedisException
-    {
-        try (Jedis redisClient = pool.getResource()){
-            //if their already exists a hash corresponding to the version of this element, throw exception
-            if (redisClient.exists(row.getVersionedId())) {
-                throw new RedisException("The element '" + row.getUnversionedId() + "' already has a version '" + row.getVersion() + "' present in db.");
-            }
-            else {
-                //pipeline this block of queries to retrieve all read-data at the end of the pipeline
-                Pipeline pipelinedSaveTransaction = redisClient.pipelined();
-                //use the redis 'MULTI'-command to start using a transaction (which is atomic)
-                pipelinedSaveTransaction.multi();
-                try {
-                    //if another version is present in db, check if this element is more recent
-                    Long lastVersion = this.getLastVersion(row.getId());
-                    if (lastVersion == -1 || row.getVersion() > lastVersion) {
-                        //TODO BAS: here all child-rows should be added to a set, maybe only the id's should be saved, that's probably enough
-                        //add this version as the newest version to the version-list
-                        pipelinedSaveTransaction.lpush(row.getUnversionedId(), row.getVersionedId());
-                        //save the template and the meta-data in a hash with id "[elementId]:[version]"
-                        pipelinedSaveTransaction.hmset(row.getHashId(), row.toHash());
-                    }
-                    //if the same version is present in db, check if their template is equal, if not, throw exception
-                    else if (lastVersion == row.getVersion()) {
-                        Storable storedElement = this.fetchRow(row.getVersionedId());
-                        if (!row.equals(storedElement)) {
-                            throw new RedisException("Trying to save element '" + row.getUnversionedId() + "' with version '" + row.getVersion() +
-                                                     "' which already exists in db, but has other content than found in db.");
-                        }
-                    }
-                    else {
-                        throw new RedisException(
-                                        "The element '" + row.getUnversionedId() + "' with version '" + row.getVersion() + "' already has a more recent version '" + lastVersion +
-                                        "' present in db.");
-                    }
-                    //execute the transaction
-                    pipelinedSaveTransaction.exec();
-                    //do all the reads in this pipeline
-                    pipelinedSaveTransaction.sync();
-                }
-                catch(Exception e){
-                    //if an exception has been thrown while writing to, discard the transaction
-                    pipelinedSaveTransaction.discard();
-                    throw e;
-                }
-            }
-        }
-    }
+//    /**
+//     * Save the block to db: save template and info of a block in a hash named "[blockId]:[version]:hash"
+//     * @param row
+//     */
+//    public void save(Entity row) throws RedisException
+//    {
+//        try (Jedis redisClient = pool.getResource()){
+//            //if their already exists a hash corresponding to the version of this element, throw exception
+//            if (redisClient.exists(row.getVersionedId())) {
+//                throw new RedisException("The element '" + row.getUnversionedId() + "' already has a version '" + row.getVersion() + "' present in db.");
+//            }
+//            else {
+//                //pipeline this block of queries to retrieve all read-data at the end of the pipeline
+//                Pipeline pipelinedSaveTransaction = redisClient.pipelined();
+//                //use the redis 'MULTI'-command to start using a transaction (which is atomic)
+//                pipelinedSaveTransaction.multi();
+//                try {
+//                    //if another version is present in db, check if this element is more recent
+//                    Long lastVersion = this.getLastVersion(row.getId());
+//                    if (lastVersion == -1 || row.getVersion() > lastVersion) {
+//                        //TODO BAS: here all child-rows should be added to a set, maybe only the id's should be saved, that's probably enough
+//                        //add this version as the newest version to the version-list
+//                        pipelinedSaveTransaction.lpush(row.getUnversionedId(), row.getVersionedId());
+//                        //save the template and the meta-data in a hash with id "[elementId]:[version]"
+//                        pipelinedSaveTransaction.hmset(row.getHashId(), row.toHash());
+//                    }
+//                    //if the same version is present in db, check if their template is equal, if not, throw exception
+//                    else if (lastVersion == row.getVersion()) {
+//                        Storable storedElement = this.fetchRow(row.getVersionedId());
+//                        if (!row.equals(storedElement)) {
+//                            throw new RedisException("Trying to save element '" + row.getUnversionedId() + "' with version '" + row.getVersion() +
+//                                                     "' which already exists in db, but has other content than found in db.");
+//                        }
+//                    }
+//                    else {
+//                        throw new RedisException(
+//                                        "The element '" + row.getUnversionedId() + "' with version '" + row.getVersion() + "' already has a more recent version '" + lastVersion +
+//                                        "' present in db.");
+//                    }
+//                    //execute the transaction
+//                    pipelinedSaveTransaction.exec();
+//                    //do all the reads in this pipeline
+//                    pipelinedSaveTransaction.sync();
+//                }
+//                catch(Exception e){
+//                    //if an exception has been thrown while writing to, discard the transaction
+//                    pipelinedSaveTransaction.discard();
+//                    throw e;
+//                }
+//            }
+//        }
+//    }
 
     /**
-     * Get the last version of a entity and all of it's blocks an rows from the db
-     * @param url to the entity to fetch the last version for
+     * Get the specified version of a entity.
+     * @param id the id of the entity
+     * @param fetchLastVersion true if the last version of the entity must be fetched, false if the version of the redis-id must be used
+     * @param fetchChildren true if the children of this entity must be fetched from db too, or false if not (and an entity with an empty children-set is returned)
      * @return entity from db
      */
-    public Entity fetchEntity(URL url) throws RedisException
+    public Entity fetchEntity(RedisID id, boolean fetchLastVersion, boolean fetchChildren) throws RedisException
     {
         try (Jedis redisClient = pool.getResource()){
             Entity retVal = null;
-            RedisID wrongVersionId = new RedisID(url);
-            if(!redisClient.exists(wrongVersionId.getUnversionedId())){
+            if(!redisClient.exists(id.getUnversionedId())){
                 return null;
             }
-            //get the last version of the entity corresponding to the given url
-            Long lastVersion = this.getLastVersion(wrongVersionId);
-            if(lastVersion == -1) {
+            //get the last version of the entity corresponding to the given url, or the one specified by the redis-id
+            Long lastVersion = fetchLastVersion ? this.getLastVersion(id) : id.getVersion();
+            if(lastVersion < 0) {
                 return null;
             }
             else{
-                RedisID lastVersionId = new RedisID(wrongVersionId.getUrl(), lastVersion);
+                RedisID lastVersionId = new RedisID(id.getUrl(), lastVersion);
                 Map<String, String> entityInfoHash = redisClient.hgetAll(lastVersionId.getHashId());
-                Set<String> childIds = redisClient.smembers(lastVersionId.getVersionedId()); Set<Row> childrenFromDB = new HashSet<>();
-                for(String elementId : childIds){
-                    childrenFromDB.add(this.fetchRow(elementId));
+                Set<Entity> childrenFromDB = new HashSet<>();
+                if(fetchChildren) {
+                    Set<String> childIds = redisClient.smembers(lastVersionId.getVersionedId());
+                    for (String childStringId : childIds) {
+                        RedisID childRedisId = new RedisID(childStringId);
+                        childrenFromDB.add(this.fetchEntity(childRedisId, fetchLastVersion, fetchChildren));
+                    }
                 }
                 String entityClassName = entityInfoHash.get(DatabaseConstants.VIEWABLE_CLASS);
                 //TODO BAS: what should we do when the entity-info hash holds more info than use for this constructor? do we need a method entity.addHashInfo(Map<String, String>) or something of the sort?
@@ -261,60 +263,60 @@ public class Redis implements Closeable
             return retVal;
         }
         catch(Exception e){
-            throw new RedisException("Could not fetch entity with url '" + url + "' from db.", e);
+            throw new RedisException("Could not fetch entity with id '" + id + "' from db.", e);
         }
     }
 
 
 
-    /**
-     * Get an element from the db.
-     * @param elementId the id of an element to fetch, it can be a versioned or unversioned id
-     * @return an element from db, the newest version if it is an unversioned id and the version specified by the id if it is a versioned id, or null if the element is not present in db
-     */
-    public Row fetchRow(String elementId) throws RedisException
-    {
-        try(Jedis redisClient = pool.getResource()) {
-            /*
-             * Get the right version of the element-id, i.d. the last version if it is an unversioned id or the specified version if it is.
-             * With the right version found, fetch all data and return a correct type of java-object.
-             */
-            String elementVersionedId = this.getVersionedId(redisClient, elementId);
-            RedisID elementRedisId = new RedisID(elementVersionedId);
-            Map<String, String> elementHash = redisClient.hgetAll(elementRedisId.getHashId());
-            if(!elementHash.containsKey(DatabaseConstants.ROW_TYPE)){
-                throw new RedisException("No object-type found for element: " + elementVersionedId);
-            }
-            else{
-                /*
-                 * Retrieve field-values from the element's hash and construct a new element with those values
-                 */
-                String type = elementHash.get(DatabaseConstants.ROW_TYPE);
-                String content = elementHash.get(DatabaseConstants.TEMPLATE);
-                String viewableClassName = elementHash.get(DatabaseConstants.VIEWABLE_CLASS);
-                String applicationVersion = elementHash.get(DatabaseConstants.APP_VERSION);
-                String creator = elementHash.get(DatabaseConstants.CREATOR);
-                //an element that previously was saved in db, has to be changable (non-final), if not it would not have been saved in db
-                boolean isFinal = false;
-                if(type.equals(Block.class.getSimpleName())){
-                    return new Block(elementRedisId, content, viewableClassName, isFinal, applicationVersion, creator);
-                }
-                else if(type.equals(Row.class.getSimpleName())){
-                    //TODO BAS: hier moet een set met kinderen opgehaald worden
-                    return new Row(elementRedisId, content, null, isFinal, applicationVersion, creator);
-                }
-                else{
-                    throw new RedisException("Unsupported element-type found: " + type);
-                }
-            }
-        }
-        catch(RedisException e){
-            throw e;
-        }
-        catch(Exception e){
-            throw new RedisException("Error while fetching element from db.", e);
-        }
-    }
+//    /**
+//     * Get an element from the db.
+//     * @param elementId the id of an element to fetch, it can be a versioned or unversioned id
+//     * @return an element from db, the newest version if it is an unversioned id and the version specified by the id if it is a versioned id, or null if the element is not present in db
+//     */
+//    public Entity fetchRow(String elementId) throws RedisException
+//    {
+//        try(Jedis redisClient = pool.getResource()) {
+//            /*
+//             * Get the right version of the element-id, i.d. the last version if it is an unversioned id or the specified version if it is.
+//             * With the right version found, fetch all data and return a correct type of java-object.
+//             */
+//            String elementVersionedId = this.getVersionedId(redisClient, elementId);
+//            RedisID elementRedisId = new RedisID(elementVersionedId);
+//            Map<String, String> elementHash = redisClient.hgetAll(elementRedisId.getHashId());
+//            if(!elementHash.containsKey(DatabaseConstants.ROW_TYPE)){
+//                throw new RedisException("No object-type found for element: " + elementVersionedId);
+//            }
+//            else{
+//                /*
+//                 * Retrieve field-values from the element's hash and construct a new element with those values
+//                 */
+//                String type = elementHash.get(DatabaseConstants.ROW_TYPE);
+//                String content = elementHash.get(DatabaseConstants.TEMPLATE);
+//                String viewableClassName = elementHash.get(DatabaseConstants.VIEWABLE_CLASS);
+//                String applicationVersion = elementHash.get(DatabaseConstants.APP_VERSION);
+//                String creator = elementHash.get(DatabaseConstants.CREATOR);
+//                //an element that previously was saved in db, has to be changable (non-final), if not it would not have been saved in db
+//                boolean isFinal = false;
+//                if(type.equals(Block.class.getSimpleName())){
+//                    return new Block(elementRedisId, content, viewableClassName, isFinal, applicationVersion, creator);
+//                }
+//                else if(type.equals(Entity.class.getSimpleName())){
+//                    //TODO BAS: hier moet een set met kinderen opgehaald worden
+//                    return new Entity(elementRedisId, content, null, isFinal, applicationVersion, creator);
+//                }
+//                else{
+//                    throw new RedisException("Unsupported element-type found: " + type);
+//                }
+//            }
+//        }
+//        catch(RedisException e){
+//            throw e;
+//        }
+//        catch(Exception e){
+//            throw new RedisException("Error while fetching element from db.", e);
+//        }
+//    }
 
     /**
      * Get a UID for a new entity instance for db-representation and return a new entity with that id, copying all default blocks and rows from the entity-class

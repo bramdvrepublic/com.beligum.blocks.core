@@ -3,12 +3,11 @@ package com.beligum.blocks.core.models.classes;
 import com.beligum.blocks.core.config.CSSClasses;
 import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.identifiers.ID;
-import com.beligum.blocks.core.models.storables.Row;
+import com.beligum.blocks.core.models.storables.Entity;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Created by bas on 05.11.14.
@@ -26,7 +25,7 @@ public class BlockClass extends AbstractViewableClass
     public BlockClass(String name, String template) throws URISyntaxException
     {
         //a block-class doesn't have any children, so it uses an empty hashset to represent that state
-        super(makeId(name), new HashSet<Row>(), template);
+        super(makeId(name), new HashSet<Entity>(), template);
         this.name = name;
     }
 

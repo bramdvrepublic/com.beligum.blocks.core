@@ -34,7 +34,11 @@ public class RedisID extends ID
         this.url = url;
         this.version = System.currentTimeMillis();
         //TODO BAS: parse the url and remove the internationlisation-information from the object's direct ID. use this class to 'getLanguage()'
-        this.language = "en";
+        String[] languages = BlocksConfig.getLanguages();
+        boolean urlHasLanguage = false;
+        if(!urlHasLanguage) {
+            this.language = languages[0];
+        }
     }
 
     /**
@@ -45,12 +49,36 @@ public class RedisID extends ID
     public RedisID(URL url, long version) throws URISyntaxException
     {
         super(url.toURI());
-        //change the site-domain in the id-uri to it's shorter alias
-        this.idUri = new URI(BlocksConfig.SCHEME_NAME, BlocksConfig.getSiteDBAlias(), idUri.getPath(), idUri.getQuery(), idUri.getFragment());
+        //parse the url and remove the language-information
+        String[] languages = BlocksConfig.getLanguages();
+        this.language = languages[0];
+        String uriPath = idUri.getPath();
+        String[] splitted = uriPath.split("/");
+        //TODO BAS: test this with a url like form www.mot.be/ , will splitted[0] be null, or will this give an indexoutofboundsexception?
+        String foundLanguage = splitted[0];
+        boolean urlHasKnownLanguage = false;
+        int i = 0;
+        while(i<languages.length){
+            if(languages[i].contentEquals(foundLanguage)) {
+                urlHasKnownLanguage = true;
+            }
+            i++;
+        }
+        if(urlHasKnownLanguage) {
+            this.language = foundLanguage;
+            //remove the language-information from the middle of the id
+            uriPath = "";
+            for(int j = 1; j<splitted.length; j++){
+                uriPath += splitted[j];
+            }
+        }
+        else{
+            this.language = languages[0];
+        }
+        //change the site-domain in the id-uri to it's shorter aliasString[] languages = BlocksConfig.getLanguages();
+        this.idUri = new URI(BlocksConfig.SCHEME_NAME, BlocksConfig.getSiteDBAlias(), uriPath, idUri.getQuery(), idUri.getFragment());
         this.url = url;
         this.version = version;
-        //TODO BAS: parse the url and remove the internationlisation-information from the object's direct ID. use this class to 'getLanguage()'
-        this.language = "en";
     }
 
     /**
@@ -108,6 +136,10 @@ public class RedisID extends ID
         this.version = version;
     }
 
+    public String getLanguage()
+    {
+        return language;
+    }
     public URL getUrl(){
         return url;
     }
@@ -136,6 +168,7 @@ public class RedisID extends ID
     public String getVersionedId(){
         return toString();
     }
+
 
     /**
      *
@@ -170,5 +203,14 @@ public class RedisID extends ID
      */
     public String toString(){
         return getUnversionedId() + ":" + this.version;
+    }
+
+    /**
+     * Initialize language, parsed from the url. If no language is present, use the preferred language.
+     * @param url
+     */
+    private void initializeLanguage(URL url){
+        String[] languages = BlocksConfig.getLanguages();
+        this.language = languages[0];
     }
 }

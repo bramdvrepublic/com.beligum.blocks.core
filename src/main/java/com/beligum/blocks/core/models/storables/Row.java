@@ -30,7 +30,7 @@ public class Row extends AbstractViewable implements Storable
      * @param allChildren the children of this row
      * @param isFinal boolean whether or not the template of this element can be changed by the client
      */
-    public Row(RedisID id, String template, Set<Row> allChildren, boolean isFinal)
+    public Row(RedisID id, String template, Set<Entity> allChildren, boolean isFinal)
     {
         super(id, template, allChildren);
         this.isFinal = isFinal;
@@ -48,7 +48,7 @@ public class Row extends AbstractViewable implements Storable
      * @param applicationVersion the version of the application this row was saved under
      * @param creator the creator of this row
      */
-    public Row(RedisID id, String template, Set<Row> allChildren, boolean isFinal, String applicationVersion, String creator){
+    public Row(RedisID id, String template, Set<Entity> allChildren, boolean isFinal, String applicationVersion, String creator){
         super(id, template, allChildren);
         this.isFinal = isFinal;
         this.applicationVersion = applicationVersion;
@@ -138,18 +138,18 @@ public class Row extends AbstractViewable implements Storable
     @Override
     public boolean equals(Object obj)
     {
-        if(obj instanceof Row) {
+        if(obj instanceof Entity) {
             if(obj == this){
                 return true;
             }
             else {
-                Row rowObj = (Row) obj;
+                Row entityObj = (Row) obj;
                 EqualsBuilder significantFieldsSet = new EqualsBuilder();
-                significantFieldsSet = significantFieldsSet.append(template, rowObj.template)
-                                                           .append(this.getHtmlId(), rowObj.getHtmlId())
-                                                           .append(this.getId().getAuthority(), rowObj.getId().getAuthority())
-                                                           .append(this.creator, rowObj.creator)
-                                                           .append(this.applicationVersion, rowObj.applicationVersion);
+                significantFieldsSet = significantFieldsSet.append(template, entityObj.template)
+                                                           .append(this.getHtmlId(), entityObj.getHtmlId())
+                                                           .append(this.getId().getAuthority(), entityObj.getId().getAuthority())
+                                                           .append(this.creator, entityObj.creator)
+                                                           .append(this.applicationVersion, entityObj.applicationVersion);
                 return significantFieldsSet.isEquals();
             }
         }
