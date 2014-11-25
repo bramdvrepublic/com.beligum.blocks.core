@@ -27,9 +27,9 @@
 //import java.util.Set;
 //
 ///**
-// * Created by bas on 03.11.14.
-// * Interface defining what you need to be able to parse a CachableClass (like f.i. a PageClass or BlockClass)
-// */
+//* Created by bas on 03.11.14.
+//* Interface defining what you need to be able to parse a CachableClass (like f.i. a PageClass or BlockClass)
+//*/
 //public abstract class AbstractViewableParser<T extends AbstractViewableClass>
 //{
 //    /** the name of the viewable-class currently being parsed */

@@ -25,9 +25,9 @@
 //import java.util.List;
 //
 ///**
-// * Created by bas on 30.09.14.
-// * Parser class for parsing entities
-// */
+//* Created by bas on 30.09.14.
+//* Parser class for parsing entities
+//*/
 //public class EntityParser extends AbstractViewableParser<EntityClass>
 //{
 //    /**the doctype of the page currently being parsed*/

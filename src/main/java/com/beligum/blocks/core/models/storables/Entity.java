@@ -47,7 +47,7 @@ public class Entity extends ViewableInstance
     }
 
     /**
-     * Constructor for a new entity-instance taking elements fetched from db and a entityclass (fetched from application cache).
+     * Constructor for a new entity-instance taking elements fetched from db and an entity-class (fetched from application cache).
      * The rows and blocks are added to this entity in the following order:
      * 1. final elements of entity-class, 2. blocks and rows from database specified in the set, 3. non-final elements of entity-class, whose element-id's are not yet present in the entity
      * @param id the id of this entity

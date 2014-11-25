@@ -74,7 +74,4 @@ public class ApplicationEndpoint
         }
     }
 
-
-    //TODO BAS: schrijf de ReadMe voor het parse-gedeelte
-
 }

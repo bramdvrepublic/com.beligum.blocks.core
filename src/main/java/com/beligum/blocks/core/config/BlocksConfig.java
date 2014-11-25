@@ -2,6 +2,8 @@ package com.beligum.blocks.core.config;
 
 import com.beligum.core.framework.base.R;
 
+import java.util.List;
+
 /**
  * Created by bas on 08.10.14.
  */
@@ -15,6 +17,9 @@ public class BlocksConfig
     public static final String BLOCKS_FOLDER = "blocks";
     /**standard name of the html-file a page-class- or block-class-template must have to be recognized as such*/
     public static final String INDEX_FILE_NAME = "index.html";
+
+    /**the languages this site can work with, ordered from most preferred languages, to less preferred*/
+    public static String[] cachedLanguages;
 
     public static String getTemplateFolder()
     {
@@ -37,6 +42,17 @@ public class BlocksConfig
 
     public static String getBlocksFolder() {
         return getTemplateFolder() + "/" + BLOCKS_FOLDER;
+    }
+
+    /**
+     *
+     * @return the languages this site can work with, ordered from most preferred language, to less preferred
+     */
+    public static String[] getLanguages(){
+        if(cachedLanguages.length==0){
+            cachedLanguages = R.configuration().getStringArray("blocks.site.languages");
+        }
+        return cachedLanguages;
     }
 
     /**

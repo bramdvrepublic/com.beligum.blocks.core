@@ -1,15 +1,15 @@
 #define($header-styles-extra)
-<link href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
+<link  href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
 <link href="/assets/stylesheets/styles.less" rel="stylesheet" />
 #end
 
 #define($header-scripts-extra)
-<script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
-<script src="/templates/entities/default/scripts.js" type="application/javascript" ></script>
+
 #end
 
 #define($body-html)
 <div class="entity entity-default container">
+
     <div class="row can-edit" id="eersteRij">
         <div class="col-md-12 column">
             <div class="block center-block" id="titeltje">
@@ -17,7 +17,9 @@
             </div>
         </div>
     </div>
-    <div class="row can-edit" id="tweedeRij">
+    <div class="row can-edit" id="tweedeRij" typeof="location">
+        <script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
+        <script src="/templates/entities/default/scripts.js" type="application/javascript" ></script>
         <div class="col-md-6 column">
             <div class="block can-edit" id="vanalles">
                 Hier zult u vanalles kunnen plaatsen...
