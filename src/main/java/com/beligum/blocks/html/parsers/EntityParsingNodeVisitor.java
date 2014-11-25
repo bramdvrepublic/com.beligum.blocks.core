@@ -131,7 +131,12 @@ public class EntityParsingNodeVisitor extends AbstractEntityNodeVisitor
     protected void createTemplate(Element element) {
         if (element.hasAttr("content")) {
             PageTemplate pageTemplate = new PageTemplate(element);
-            // TODO cache template
+
+            try {
+                EntityClassCache.getInstance().addPageTemplate(pageTemplate);
+            } catch (Exception e) {
+                // TODO show error somewhere?
+            }
         }
     }
 

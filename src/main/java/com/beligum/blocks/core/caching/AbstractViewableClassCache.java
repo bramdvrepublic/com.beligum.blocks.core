@@ -3,6 +3,7 @@ package com.beligum.blocks.core.caching;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.models.classes.AbstractViewableClass;
+import com.beligum.blocks.html.PageTemplate;
 import com.beligum.blocks.html.parsers.AbstractParser;
 
 import java.io.IOException;
@@ -52,6 +53,8 @@ public abstract class AbstractViewableClassCache<T extends AbstractViewableClass
             throw new CacheException("Cannot add cachable-class '" + cachableClass.getName() + "' to cache, since it is already present.");
         }
     }
+
+
 
     /**
      * Fill up the page-cache with all page-class-templates found in file-system
