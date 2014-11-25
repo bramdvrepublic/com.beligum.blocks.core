@@ -183,21 +183,26 @@ public class RedisID extends ID
         String uriPath = idUri.getPath();
         String[] splitted = uriPath.split("/");
         //the uri-path always starts with "/", so the first index in the splitted-array always will be empty ""
-        String foundLanguage = splitted[1];
-        boolean urlHasKnownLanguage = false;
-        int i = 0;
-        while(i<languages.length){
-            if(languages[i].contentEquals(foundLanguage)) {
-                urlHasKnownLanguage = true;
+        if(splitted.length > 1) {
+            String foundLanguage = splitted[1];
+            boolean urlHasKnownLanguage = false;
+            int i = 0;
+            while (i < languages.length) {
+                if (languages[i].contentEquals(foundLanguage)) {
+                    urlHasKnownLanguage = true;
+                }
+                i++;
             }
-            i++;
-        }
-        if(urlHasKnownLanguage) {
-            this.language = foundLanguage;
-            //remove the language-information from the middle of the id
-            uriPath = "";
-            for(int j = 2; j<splitted.length; j++){
-                uriPath += splitted[j];
+            if (urlHasKnownLanguage) {
+                this.language = foundLanguage;
+                //remove the language-information from the middle of the id
+                uriPath = "";
+                for (int j = 2; j < splitted.length; j++) {
+                    uriPath += splitted[j];
+                }
+            }
+            else {
+                this.language = languages[0];
             }
         }
         else{

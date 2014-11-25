@@ -34,7 +34,7 @@ public class EntityClass extends AbstractViewableClass
      */
     public EntityClass(String name, Set<Entity> allChildren, String template, String docType) throws URISyntaxException
     {
-        super(makeId(name), allChildren, template);
+        super(new ID(new URI(name)), allChildren, template);
         this.name = name;
         this.docType = docType;
     }
@@ -84,17 +84,7 @@ public class EntityClass extends AbstractViewableClass
      */
     public static URL getBaseUrl(String entityClassName) throws MalformedURLException
     {
-        return new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_ENTITY_CLASS_ID_PREFIX + "/" + entityClassName);
-    }
-
-    /**
-     * Return an ID for the entityclass with a (unique) name, the id for all entityclasses will be "entity/<entityClassName>"
-     * @param entityClassName the unique name of the entityClass
-     * @return an ID for the entityclass
-     */
-    private static ID makeId(String entityClassName) throws URISyntaxException
-    {
-        return new ID(new URI(CacheConstants.PAGE_ENTITY_CLASS_ID_PREFIX + "/" + entityClassName));
+        return new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.ENTITY_CLASS_ID_PREFIX + "/" + entityClassName);
     }
 
 }

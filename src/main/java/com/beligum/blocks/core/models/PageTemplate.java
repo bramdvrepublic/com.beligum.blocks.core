@@ -1,65 +1,48 @@
 package com.beligum.blocks.core.models;
 
-import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.VelocityVariables;
+import com.beligum.blocks.core.identifiers.ID;
 import com.beligum.blocks.core.models.storables.Entity;
 import com.beligum.core.framework.base.R;
-import com.beligum.core.framework.templating.ifaces.Template;
 import com.beligum.core.framework.templating.ifaces.TemplateEngine;
 import com.beligum.core.framework.templating.velocity.VelocityTemplateEngine;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.tools.generic.RenderTool;
-import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Node;
-import org.jsoup.nodes.TextNode;
-import org.jsoup.parser.Tag;
 
-import javax.ws.rs.core.Response;
-import java.util.List;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * Created by wouter on 20/11/14.
  */
-public class PageTemplate
+public class PageTemplate extends IdentifiableObject
 {
+
     private String template;
-    private String name;
     private boolean htmlSeen = false;
 
 
-    public PageTemplate(Element node) {
-        super();
-        Element parent = node.parent();
-        while (parent.parent() != null) {
-            if (parent.tagName().equals("html")) {
-                name = parent.attr("template");
-            }
-            parent = parent.parent();
-        }
-        Node e = new TextNode("${" + BlocksConfig.TEMPLATE_ENTITY_VARIABLE + "}", BlocksConfig.getSiteDomain());
-        node.replaceWith(e);
-
-        this.template = parent.outerHtml();
+    public PageTemplate(String name, String template) throws URISyntaxException
+    {
+        super(new ID(new URI(name)));
+        this.template = template;
     }
 
-
-
     public String getName() {
-        return this.name;
+        if(this.id != null){
+            return this.id.toString();
+        }
+        else{
+            return null;
+        }
     }
 
     public boolean isTemplate() {
-        boolean retVal = false;
-        if (this.name != null) retVal = true;
-        return retVal;
+        return this.getName() != null && !this.getName().isEmpty();
     }
 
     public String renderContent(Entity entity) throws Exception
     {
-        //        Element filledTemplate = this.tempContent.clone();
-        //        List<Element> nodes = filledTemplate.select("div[template-content]");
-        //        Element node = nodes.get(0);
-        //        node.replaceWith(element);
-
         /*
          * Use the default template-engine of the application and the default template-context of this page-template for template-rendering
          */
@@ -69,6 +52,7 @@ public class PageTemplate
              * Add all specific velocity-variables fetched from database to the context.
              */
             VelocityContext context = new VelocityContext();
+            context.put(VelocityVariables.ENTITY_VARIABLE_NAME, entity.getTemplate());
             for(Entity child : entity.getAllChildren()){
                 context.put(child.getTemplateVariableName(), child.getTemplate());
             }

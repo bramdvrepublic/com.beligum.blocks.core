@@ -2,6 +2,7 @@ package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.caching.EntityClassCache;
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.VelocityVariables;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.ParserException;
@@ -9,7 +10,7 @@ import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.models.classes.EntityClass;
 import com.beligum.blocks.core.models.storables.Entity;
 import com.beligum.blocks.core.validation.ValidationEntity;
-import com.beligum.blocks.core.parsers.parsers.AbstractParser;
+import com.beligum.blocks.core.parsers.AbstractParser;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.templating.ifaces.Template;
 import org.hibernate.validator.constraints.NotBlank;
@@ -36,7 +37,7 @@ public class EntitiesEndpoint
     {
         Template template = R.templateEngine().getEmptyTemplate("/views/new-page.html");
         Collection<EntityClass> pageClasses = EntityClassCache.getInstance().getCache().values();
-        template.set("pageClasses", pageClasses);
+        template.set(VelocityVariables.ENTITY_CLASSES, pageClasses);
         return Response.ok(template).build();
     }
 
@@ -54,9 +55,9 @@ public class EntitiesEndpoint
         /*
          * Get the page-class (containing the default blocks and rows) from the cache and use it to construct a new page
          */
+        //TODO BAS SH: je bent net begonnen met doorlopen van het save-algoritme voor een entity (dus startend met het maken van een nieuwe lege entity)
         Map<String, EntityClass> cache = EntityClassCache.getInstance().getCache();
         EntityClass entityClass = cache.get(entityClassName);
-
 
         Redis redis = Redis.getInstance();
         Entity newEntity = redis.getNewEntity(entityClass);

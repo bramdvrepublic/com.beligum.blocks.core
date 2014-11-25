@@ -5,11 +5,14 @@ import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.classes.EntityClass;
 import com.beligum.blocks.core.models.storables.Entity;
+import com.beligum.core.framework.utils.Logger;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisSentinelPool;
 import redis.clients.jedis.Pipeline;
 
 import java.io.Closeable;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashSet;
 import java.util.List;
@@ -144,6 +147,7 @@ public class Redis implements Closeable
                 Long lastVersion = this.getLastVersion(entity.getId());
                 if (lastVersion == -1 || entity.getVersion() > lastVersion) {
                     pipelinedSaveTransaction.lpush(entity.getUnversionedId(), entity.getVersionedId());
+                    pipelinedSaveTransaction.sadd(entity.getEntityClass().getName(), entity.getUnversionedId());
                 }
                 else {
                     throw new RedisException(
@@ -169,6 +173,25 @@ public class Redis implements Closeable
                 pipelinedSaveTransaction.sync();
                 throw e;
             }
+        }
+    }
+
+    public Set<Entity> getEntitiesOfClass(String entityClassName) throws RedisException
+    {
+        try (Jedis redisClient = pool.getResource()){
+            Set<String> entityIds = redisClient.smembers(entityClassName);
+            Set<Entity> entities = new HashSet<>();
+            //TODO BAS: can we use pipelines (or transactions) here?
+            for(String entityId : entityIds){
+                try {
+                    Entity entity = this.fetchEntity(new RedisID(entityId), true, true);
+                    entities.add(entity);
+                }
+                catch(URISyntaxException | MalformedURLException e){
+                    Logger.error("Found bad id in db: " + entityId, e);
+                }
+            }
+            return entities;
         }
     }
 

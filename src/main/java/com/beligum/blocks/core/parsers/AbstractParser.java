@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.parsers.parsers;
+package com.beligum.blocks.core.parsers;
 
 import com.beligum.blocks.core.config.CSSClasses;
 import com.beligum.blocks.core.models.storables.Entity;
@@ -17,7 +17,6 @@ public abstract class AbstractParser
     public void parse(String html) {
 
     }
-
 
     public static Entity cacheEntity(URL url, String html) {
         Document doc = Jsoup.parse(html);

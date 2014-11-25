@@ -1,15 +1,26 @@
-package com.beligum.blocks.core.parsers.parsers;
+package com.beligum.blocks.core.parsers;
 
 import com.beligum.blocks.core.caching.EntityClassCache;
+import com.beligum.blocks.core.caching.PageTemplateCache;
+import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.CSSClasses;
+import com.beligum.blocks.core.config.VelocityVariables;
+import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.exceptions.ParserException;
+import com.beligum.blocks.core.identifiers.ID;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.models.PageTemplate;
 import com.beligum.blocks.core.models.classes.EntityClass;
 import com.beligum.blocks.core.models.storables.Entity;
-import com.beligum.blocks.core.models.PageTemplate;
+import com.beligum.core.framework.utils.Logger;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
+import org.jsoup.nodes.TextNode;
 
+import java.net.URI;
 import java.net.URL;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.Stack;
 
@@ -80,14 +91,19 @@ public class EntityParsingNodeVisitor extends AbstractEntityNodeVisitor
         return retVal;
     }
 
-    private Entity getEntityForElement(Element element, Set<Entity> children) {
-        Entity retVal = null;
+    private Entity getEntityForElement(Element element, Set<Entity> children)
+    {
         try {
-            new Entity(new RedisID(this.url), this.getChildren(), AbstractParser.getType(element));
-        } catch (Exception e) {
-
+            return new Entity(new RedisID(this.url), this.getChildren(), AbstractParser.getType(element));
         }
-        return retVal;
+        catch (RuntimeException e){
+            throw new RuntimeException("Runtime error while getting entity for element \n \n" + element.outerHtml(), e);
+        }
+        catch (Exception e) {
+            Logger.error("Error while getting entity for element \n \n" + element.outerHtml(), e);
+            //TODO: throwing this runtimeexception should be changed to handling the exceptions and showing them to the end-user
+            throw new RuntimeException("Something went wrong which should be handled in a catch-clause.", e);
+        }
     }
 
     protected void pushChildren() {
@@ -115,26 +131,40 @@ public class EntityParsingNodeVisitor extends AbstractEntityNodeVisitor
     }
 
     public Entity getParsedEntity() {
-        Entity retVal = null;
-        if (!this.entitySet.empty() && this.entitySet.size() > 0) {
-            retVal = this.getChildren().iterator().next();
+        Iterator<Entity> childIt = this.getChildren().iterator();
+        if (childIt.hasNext()) {
+            return childIt.next();
         }
-        return retVal;
+        else{
+            return null;
+        }
     }
 
     protected void prepareTemplate(Element element) {
-        if (element.tag().equals("html") && element.hasAttr("template")) {
+        if (element.tag().equals("html") && element.hasAttr(CSSClasses.TEMPLATE_ATTR)) {
             this.template = element;
         }
     }
 
-    protected void createTemplate(Element element) {
-        if (element.hasAttr("content")) {
-            PageTemplate pageTemplate = new PageTemplate(element);
-
+    protected void createTemplate(Element element)
+    {
+        if (element.hasAttr(CSSClasses.TEMPLATE_CONTENT_ATTR) && doCache) {
             try {
-                EntityClassCache.getInstance().addPageTemplate(pageTemplate);
+                Element parent = element.parent();
+                //initialize the page-template name by searching for the first template-attribute we find before the specified node and take the value of that attribute to be the name
+                String templateName = "";
+                while (parent.parent() != null) {
+                    if (parent.tagName().equals("html")) {
+                        templateName = parent.attr(CSSClasses.TEMPLATE_ATTR);
+                    }
+                    parent = parent.parent();
+                }
+                Node newNode = new TextNode("${" + VelocityVariables.ENTITY_VARIABLE_NAME + "}", BlocksConfig.getSiteDomain());
+                element.replaceWith(newNode);
+                PageTemplate pageTemplate = new PageTemplate(templateName, element.outerHtml());
+                PageTemplateCache.getInstance().add(pageTemplate);
             } catch (Exception e) {
+                Logger.error("Something went wrong while creating template.", e);
                 // TODO show error somewhere?
             }
         }

@@ -1,6 +1,9 @@
 package com.beligum.blocks.core.endpoints;
 
+import com.beligum.blocks.core.caching.PageTemplateCache;
+import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.identifiers.ID;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.PageTemplate;
 import com.beligum.blocks.core.models.storables.Entity;
@@ -18,6 +21,7 @@ import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
+import java.net.URI;
 import java.net.URL;
 
 @Path("/")
@@ -49,7 +53,7 @@ public class ApplicationEndpoint
     public Response reset()
     {
 //        TypeCacher.instance().reset();
-        // TODO enqble reset of EntityClassCache
+        // TODO enable reset of EntityClassCache
         return Response.ok("OK: all templates loaded").build();
     }
 
@@ -63,8 +67,10 @@ public class ApplicationEndpoint
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
             RedisID id = new RedisID(url);
             Entity entity = redis.fetchEntity(id, true, true);
-            PageTemplate pageTemplate;
-            return Response.ok(pageTemplate.renderContent()).build();
+            //TODO: the pagetemplate should be fetched from cache or db
+            PageTemplate pageTemplate = PageTemplateCache.getInstance().get("default");
+            String content = pageTemplate.renderContent(entity);
+            return Response.ok(content).build();
         }
         catch(Exception e){
             throw new NotFoundException("The page '" + randomURLPath + "' could not be found.", e);

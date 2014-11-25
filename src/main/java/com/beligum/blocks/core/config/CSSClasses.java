@@ -32,4 +32,10 @@ public class CSSClasses
 
     public final static String DEFAULT_BLOCK_CLASS = "default";
     public final static String DEFAULT_ENTITY_CLASS = "default";
+
+
+    /**the attribute indicating a html-file defines a page-template*/
+    public final static String TEMPLATE_ATTR = "template";
+    /**the attribute indicating the template-content should be pasted their*/
+    public final static String TEMPLATE_CONTENT_ATTR = "template-content";
 }
