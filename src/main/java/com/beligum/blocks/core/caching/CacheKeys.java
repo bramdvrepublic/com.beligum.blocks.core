@@ -10,5 +10,7 @@ public enum CacheKeys implements CacheKey
     //points to hashmap of entity-classes
     ENTITY_CLASSES,
     //points to hashmap of block-classes
-    BLOCK_CLASSES
+    BLOCK_CLASSES,
+
+    PAGETEMPLATES
 }
