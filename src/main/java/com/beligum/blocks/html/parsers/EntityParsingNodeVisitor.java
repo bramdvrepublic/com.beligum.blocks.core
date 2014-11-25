@@ -20,13 +20,16 @@ import java.util.Stack;
 public class EntityParsingNodeVisitor extends AbstractEntityNodeVisitor
 {
     Element template;
+    Set<Entity> parsedEntities = new HashSet<Entity>();
 //    private Stack<HashSet<EntityClass>> entityClassSet = new Stack<HashSet<EntityClass>>();
     private Stack<HashSet<Entity>> entitySet = new Stack<HashSet<Entity>>();
     private URL url;
+    private boolean doCache;
 
 
-    public EntityParsingNodeVisitor(URL url) {
+    public EntityParsingNodeVisitor(URL url, boolean doCache) {
         this.url = url;
+        this.doCache = doCache;
     }
 
     @Override
@@ -36,9 +39,7 @@ public class EntityParsingNodeVisitor extends AbstractEntityNodeVisitor
         if (node instanceof Element) {
             this.pushChildren();
             Element element = (Element) node;
-            if (element.tag().equals("html") && element.hasAttr("template")) {
-                this.template = (Element) node;
-            }
+            this.prepareTemplate(element);
         }
     }
 
@@ -53,13 +54,11 @@ public class EntityParsingNodeVisitor extends AbstractEntityNodeVisitor
                 Set<Entity> children = this.popChildren();
                 EntityClass entityClass = getEntityClassForElement(element, children);
                 Entity entity = getEntityForElement(element, children);
+                parsedEntities.add(entity);
                 this.getChildren().add(entity);
             }
+            this.createTemplate(element);
 
-            if (node.hasAttr("content")) {
-                Template template = new Template(element);
-                TypeCacher.instance().addTemplate(template, false);
-            }
         }
     }
 
@@ -68,15 +67,13 @@ public class EntityParsingNodeVisitor extends AbstractEntityNodeVisitor
         try {
             String entityName = AbstractParser.getType(element);
 
-            EntityClass storedClass = EntityClassCache.getInstance().get(entityName);
-            EntityClass entityClass = new EntityClass(entityName, children, element.outerHtml(), null);
-            // TODO Wouter: check for blueprint to overwrite class in cache
-            if (storedClass == null || storedClass.getTemplate() == null) {
-                // Cache this entityClass
-                retVal = entityClass;
-            } else {
-                retVal =  storedClass;
+            if (doCache) {
+                EntityClass entityClass = new EntityClass(entityName, children, element.outerHtml(), null);
+                EntityClassCache.getInstance().add(entityClass);
+
             }
+            retVal = EntityClassCache.getInstance().get(entityName);
+
         } catch (Exception e) {
 
         }
@@ -94,7 +91,11 @@ public class EntityParsingNodeVisitor extends AbstractEntityNodeVisitor
     }
 
     protected void pushChildren() {
-    this.entitySet.push(new HashSet<Entity>());
+        if (this.entitySet.empty()) {
+            // push one
+            this.entitySet.push(new HashSet<Entity>());
+        }
+        this.entitySet.push(new HashSet<Entity>());
 }
 
     protected Set<Entity> popChildren() {
@@ -102,14 +103,48 @@ public class EntityParsingNodeVisitor extends AbstractEntityNodeVisitor
     }
 
     protected Set<Entity> getChildren() {
-        return this.entitySet.peek();
+        Set<Entity> retVal = null;
+        if (!this.entitySet.empty()) {
+            retVal = this.entitySet.peek();
+        }
+        return retVal;
+    }
+
+    public Set<Entity> getAllParsedEntities() {
+        return this.parsedEntities;
+    }
+
+    public Entity getParsedEntity() {
+        Entity retVal = null;
+        if (!this.entitySet.empty() && this.entitySet.size() > 0) {
+            retVal = this.getChildren().iterator().next();
+        }
+        return retVal;
+    }
+
+    protected void prepareTemplate(Element element) {
+        if (element.tag().equals("html") && element.hasAttr("template")) {
+            this.template = element;
+        }
+    }
+
+    protected void createTemplate(Element element) {
+        if (element.hasAttr("content")) {
+            Template template = new Template(element);
+            TypeCacher.instance().addTemplate(template, false);
+        }
     }
 
 
-
-    public static Entity PersistingNodeVisitor(URL url, Element element) {
-        EntityParsingNodeVisitor visitor = new EntityParsingNodeVisitor(url);
+    public static Entity cache(URL url, Element element) {
+        EntityParsingNodeVisitor visitor = new EntityParsingNodeVisitor(url, true);
         element.traverse(visitor);
-        return visitor.result;
+        return visitor.getParsedEntity();
+    }
+
+    public static Entity parse(URL url, Element element) {
+        EntityParsingNodeVisitor visitor = new EntityParsingNodeVisitor(url, false);
+        element.traverse(visitor);
+        return visitor.getParsedEntity();
     }
 }
