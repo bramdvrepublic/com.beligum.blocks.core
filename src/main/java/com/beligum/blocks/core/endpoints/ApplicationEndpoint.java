@@ -3,7 +3,6 @@ package com.beligum.blocks.core.endpoints;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.storables.Entity;
-import com.beligum.blocks.core.models.storables.Row;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.base.RequestContext;
 import com.beligum.core.framework.templating.ifaces.Template;
@@ -28,7 +27,7 @@ public class ApplicationEndpoint
     public Response index()
     {
         Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/index.html");
-        TypeCacher.instance().reset();
+//        TypeCacher.instance().reset();
         return Response.ok(indexTemplate).build();
     }
 

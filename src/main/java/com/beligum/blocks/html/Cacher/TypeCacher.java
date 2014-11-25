@@ -1,11 +1,9 @@
 package com.beligum.blocks.html.Cacher;
 
-import com.beligum.blocks.html.models.Content;
 import com.beligum.blocks.html.models.types.DefaultValue;
-import com.beligum.blocks.html.models.types.Identifiable;
 import com.beligum.blocks.html.models.types.Template;
 import com.beligum.blocks.html.parsers.AbstractParser;
-import com.beligum.blocks.html.parsers.CachingNodeVisitor;
+import com.beligum.blocks.html.parsers.EntityParsingNodeVisitor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -128,7 +126,7 @@ public class TypeCacher
                 {
                     if (filePath.getFileName().toString().endsWith("html")) {
                         Document d = Jsoup.parse(new String(Files.readAllBytes(filePath)));
-                        d.traverse(new CachingNodeVisitor());
+                        d.traverse(new EntityParsingNodeVisitor());
                     }
                     return FileVisitResult.CONTINUE;
                 }

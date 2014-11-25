@@ -1,8 +1,13 @@
 package com.beligum.blocks.html.parsers;
 
+import com.beligum.blocks.core.config.CSSClasses;
+import com.beligum.blocks.core.models.storables.Entity;
 import com.beligum.blocks.html.models.types.DefaultValue;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
+import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 
@@ -16,14 +21,17 @@ public abstract class AbstractParser
     }
 
 
+    public static Entity cache(URL url, String html) {
+        Document doc = Jsoup.parse(html);
+        return EntityParsingNodeVisitor.cache(url, doc);
 
-    // Create Content here
-    public abstract void saveParsedContent(Element element, Element parentContent);
+    }
 
-    public abstract void saveTemplate(Element element);
+    public static Entity parse(URL url, String html) {
+        Document doc = Jsoup.parse(html);
+        return EntityParsingNodeVisitor.parse(url, doc);
 
-
-
+    }
     /*
     * Static methods to analyze html elements
     * */
@@ -123,6 +131,7 @@ public abstract class AbstractParser
         if (node.hasAttr("typeof")) {
             retVal = node.attr("typeof");
         }
+        if (retVal == null) retVal = CSSClasses.DEFAULT_ENTITY_CLASS;
         return retVal;
     }
 
