@@ -1,7 +1,6 @@
 package com.beligum.blocks.core.config;
 
 import com.beligum.blocks.core.models.classes.AbstractViewableClass;
-import com.beligum.blocks.core.models.classes.BlockClass;
 import com.beligum.blocks.core.models.classes.EntityClass;
 
 /**
@@ -23,9 +22,6 @@ public class CacheConstants
     public static String getViewableClassIdPrefix(Class<? extends AbstractViewableClass> viewableClassType){
         if(viewableClassType.isInstance(EntityClass.class)){
             return PAGE_ENTITY_CLASS_ID_PREFIX;
-        }
-        else if(viewableClassType.isInstance(BlockClass.class)){
-            return BLOCK_CLASS_ID_PREFIX;
         }
         else{
             throw new RuntimeException("Unsupported viewable-class type: '" + viewableClassType.getName() + "'.");

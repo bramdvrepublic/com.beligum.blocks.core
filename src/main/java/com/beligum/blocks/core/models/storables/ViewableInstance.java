@@ -4,6 +4,7 @@ import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.classes.AbstractViewableClass;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -121,10 +122,13 @@ public class ViewableInstance extends Row
         return this.template;
     }
 
-    @Override
     public Map<String, String> toHash()
     {
-        Map<String, String> hash = super.toHash();
+        Map<String, String> hash = new HashMap<>();
+        hash.put(DatabaseConstants.TEMPLATE, this.getTemplate());
+        hash.put(DatabaseConstants.APP_VERSION, this.applicationVersion);
+        hash.put(DatabaseConstants.CREATOR, this.creator);
+        hash.put(DatabaseConstants.ROW_TYPE, this.getClass().getSimpleName());
         hash.put(DatabaseConstants.VIEWABLE_CLASS, this.getViewableClass().getName());
         return hash;
     }

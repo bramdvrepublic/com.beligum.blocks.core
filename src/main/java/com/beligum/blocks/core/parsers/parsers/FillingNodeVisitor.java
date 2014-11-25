@@ -1,4 +1,4 @@
-package com.beligum.blocks.html.parsers;
+package com.beligum.blocks.core.parsers.parsers;
 
 /**
  * Created by wouter on 23/11/14.

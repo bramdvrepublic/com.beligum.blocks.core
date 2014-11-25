@@ -1,4 +1,4 @@
-package com.beligum.blocks.html.parsers;
+package com.beligum.blocks.core.parsers.parsers;
 
 import com.beligum.blocks.core.config.CSSClasses;
 import com.beligum.blocks.core.models.storables.Entity;

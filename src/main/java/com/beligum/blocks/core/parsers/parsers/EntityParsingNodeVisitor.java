@@ -1,10 +1,10 @@
-package com.beligum.blocks.html.parsers;
+package com.beligum.blocks.core.parsers.parsers;
 
 import com.beligum.blocks.core.caching.EntityClassCache;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.classes.EntityClass;
 import com.beligum.blocks.core.models.storables.Entity;
-import com.beligum.blocks.html.PageTemplate;
+import com.beligum.blocks.core.models.PageTemplate;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 

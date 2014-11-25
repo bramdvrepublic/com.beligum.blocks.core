@@ -5,8 +5,12 @@ import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.classes.EntityClass;
+import com.beligum.blocks.core.models.ifaces.Storable;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.net.URL;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -14,7 +18,7 @@ import java.util.Set;
 /**
  * Created by bas on 05.11.14.
  */
-public class Entity extends ViewableInstance
+public class Entity extends ViewableInstance implements Storable
 {
     /**
      *
@@ -47,7 +51,7 @@ public class Entity extends ViewableInstance
     }
 
     /**
-     * Constructor for a new entity-instance taking elements fetched from db and an entity-class (fetched from application cache).
+     * Constructor for a new entity-instance taking elements fetched from db and an entityclass (fetched from application cache).
      * The rows and blocks are added to this entity in the following order:
      * 1. final elements of entity-class, 2. blocks and rows from database specified in the set, 3. non-final elements of entity-class, whose element-id's are not yet present in the entity
      * @param id the id of this entity
@@ -105,11 +109,114 @@ public class Entity extends ViewableInstance
         return notCachedNonFinalChildren;
     }
 
+    /**
+     *
+     * @return the unique id of this element in the html-tree (html-file) it belongs to
+     */
+    public String getHtmlId()
+    {
+        return this.getId().getHtmlId();
+    }
+
+    /**
+     *
+     * @return the unique id of the hash representing this row in db (of the form "[rowId]:[version]:hash")
+     */
+    public String getHashId(){
+        return this.getId().getHashId();
+    }
+
+    /**
+     * @return the name of the variable of this viewable in the template holding this viewable
+     */
+    public String getTemplateVariableName()
+    {
+        return this.getHtmlId();
+    }
+
+    //_______________IMPLEMENTATION OF STORABLE____________________//
+    @Override
+    public String getApplicationVersion()
+    {
+        return this.applicationVersion;
+    }
+    @Override
+    public String getCreator()
+    {
+        return this.creator;
+    }
+    @Override
+    public long getVersion()
+    {
+        return this.getId().getVersion();
+    }
+    @Override
+    public RedisID getId()
+    {
+        return (RedisID) super.getId();
+    }
+    @Override
+    public String getUnversionedId(){
+        return this.getId().getUnversionedId();
+    }
+    @Override
+    public String getVersionedId(){
+        return this.getId().getVersionedId();
+    }
     @Override
     public Map<String, String> toHash()
     {
         Map<String, String> hash = super.toHash();
         hash.remove(DatabaseConstants.TEMPLATE);
         return hash;
+    }
+
+    //___________OVERRIDE OF OBJECT_____________//
+
+    /**
+     * Two rows are equal when their template, meta-data (page-class, creator and application-version), site-domain and unversioned element-id (everything after the '#') are equal
+     * (thus equal through object-state, not object-address).
+     * @param obj
+     * @return true if two rows are equal, false otherwise
+     */
+    @Override
+    public boolean equals(Object obj)
+    {
+        if(obj instanceof Entity) {
+            if(obj == this){
+                return true;
+            }
+            else {
+                Entity entityObj = (Entity) obj;
+                EqualsBuilder significantFieldsSet = new EqualsBuilder();
+                significantFieldsSet = significantFieldsSet.append(template, entityObj.template)
+                                                           .append(this.getHtmlId(), entityObj.getHtmlId())
+                                                           .append(this.getId().getAuthority(), entityObj.getId().getAuthority())
+                                                           .append(this.creator, entityObj.creator)
+                                                           .append(this.applicationVersion, entityObj.applicationVersion);
+                return significantFieldsSet.isEquals();
+            }
+        }
+        else{
+            return false;
+        }
+    }
+
+    /**
+     * Two rows have the same hashCode when their template, meta-data (page-class, creator and application-version), site-domain and unversioned element-id (everything after the '#') are equal
+     * (thus equal through object-state, not object-address)
+     * @return
+     */
+    @Override
+    public int hashCode()
+    {
+        //7 and 31 are two randomly chosen prime numbers, needed for building hashcodes, ideally, these are different for each class
+        HashCodeBuilder significantFieldsSet = new HashCodeBuilder(7, 31);
+        significantFieldsSet = significantFieldsSet.append(template)
+                                                   .append(this.getHtmlId())
+                                                   .append(this.getId().getAuthority())
+                                                   .append(this.creator)
+                                                   .append(this.applicationVersion);
+        return significantFieldsSet.toHashCode();
     }
 }

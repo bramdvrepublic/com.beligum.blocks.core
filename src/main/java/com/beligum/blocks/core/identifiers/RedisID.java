@@ -29,16 +29,9 @@ public class RedisID extends ID
     public RedisID(URL url) throws URISyntaxException
     {
         super(url.toURI());
-        //change the site-domain in the id-uri to it's shorter alias
-        this.idUri = new URI(BlocksConfig.SCHEME_NAME, BlocksConfig.getSiteDBAlias(), idUri.getPath(), idUri.getQuery(), idUri.getFragment());
+        this.idUri = initializeLanguage(url);
         this.url = url;
         this.version = System.currentTimeMillis();
-        //TODO BAS: parse the url and remove the internationlisation-information from the object's direct ID. use this class to 'getLanguage()'
-        String[] languages = BlocksConfig.getLanguages();
-        boolean urlHasLanguage = false;
-        if(!urlHasLanguage) {
-            this.language = languages[0];
-        }
     }
 
     /**
@@ -49,34 +42,7 @@ public class RedisID extends ID
     public RedisID(URL url, long version) throws URISyntaxException
     {
         super(url.toURI());
-        //parse the url and remove the language-information
-        String[] languages = BlocksConfig.getLanguages();
-        this.language = languages[0];
-        String uriPath = idUri.getPath();
-        String[] splitted = uriPath.split("/");
-        //TODO BAS: test this with a url like form www.mot.be/ , will splitted[0] be null, or will this give an indexoutofboundsexception?
-        String foundLanguage = splitted[0];
-        boolean urlHasKnownLanguage = false;
-        int i = 0;
-        while(i<languages.length){
-            if(languages[i].contentEquals(foundLanguage)) {
-                urlHasKnownLanguage = true;
-            }
-            i++;
-        }
-        if(urlHasKnownLanguage) {
-            this.language = foundLanguage;
-            //remove the language-information from the middle of the id
-            uriPath = "";
-            for(int j = 1; j<splitted.length; j++){
-                uriPath += splitted[j];
-            }
-        }
-        else{
-            this.language = languages[0];
-        }
-        //change the site-domain in the id-uri to it's shorter aliasString[] languages = BlocksConfig.getLanguages();
-        this.idUri = new URI(BlocksConfig.SCHEME_NAME, BlocksConfig.getSiteDBAlias(), uriPath, idUri.getQuery(), idUri.getFragment());
+        this.idUri = initializeLanguage(url);
         this.url = url;
         this.version = version;
     }
@@ -206,11 +172,38 @@ public class RedisID extends ID
     }
 
     /**
-     * Initialize language, parsed from the url. If no language is present, use the preferred language.
-     * @param url
+     * Initialize the language-field of this object, parsed from the url. If no language is present, use the site's preferred language.
+     * Also change the site-domain of the url to the site-alias specified in the configuration-file.
+     * @param url the url to be parsed
+     * @return a uri corresponding to the specified url, with the language-information removed
      */
-    private void initializeLanguage(URL url){
+    private URI initializeLanguage(URL url) throws URISyntaxException
+    {
         String[] languages = BlocksConfig.getLanguages();
-        this.language = languages[0];
+        String uriPath = idUri.getPath();
+        String[] splitted = uriPath.split("/");
+        //the uri-path always starts with "/", so the first index in the splitted-array always will be empty ""
+        String foundLanguage = splitted[1];
+        boolean urlHasKnownLanguage = false;
+        int i = 0;
+        while(i<languages.length){
+            if(languages[i].contentEquals(foundLanguage)) {
+                urlHasKnownLanguage = true;
+            }
+            i++;
+        }
+        if(urlHasKnownLanguage) {
+            this.language = foundLanguage;
+            //remove the language-information from the middle of the id
+            uriPath = "";
+            for(int j = 2; j<splitted.length; j++){
+                uriPath += splitted[j];
+            }
+        }
+        else{
+            this.language = languages[0];
+        }
+        //change the site-domain in the id-uri to it's shorter aliasString[] languages = BlocksConfig.getLanguages();
+        return new URI(BlocksConfig.SCHEME_NAME, BlocksConfig.getSiteDBAlias(), uriPath, idUri.getQuery(), idUri.getFragment());
     }
 }

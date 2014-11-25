@@ -14,12 +14,12 @@ import java.util.Set;
 /**
  * Created by bas on 05.11.14.
  */
-public class Row extends AbstractViewable implements Storable
+public class Row extends AbstractViewable
 {
     /**the version of the application this row is supposed to interact with*/
-    private String applicationVersion;
+    protected String applicationVersion;
     /**the creator of this row*/
-    private String creator;
+    protected String creator;
     /**boolean whether or not this elements template can be changed by the client, it cannot be changed after initialization*/
     protected final boolean isFinal;
 
@@ -63,116 +63,5 @@ public class Row extends AbstractViewable implements Storable
         return isFinal;
     }
 
-    /**
-     * @return the name of the variable of this viewable in the template holding this viewable
-     */
-    public String getTemplateVariableName()
-    {
-        return this.getHtmlId();
-    }
 
-    /**
-     *
-     * @return the unique id of this element in the html-tree (html-file) it belongs to
-     */
-    public String getHtmlId()
-    {
-        return this.getId().getHtmlId();
-    }
-
-    /**
-     *
-     * @return the unique id of the hash representing this row in db (of the form "[rowId]:[version]:hash")
-     */
-    public String getHashId(){
-        return this.getId().getHashId();
-    }
-
-    //_______________IMPLEMENTATION OF STORABLE____________________//
-    @Override
-    public String getApplicationVersion()
-    {
-        return this.applicationVersion;
-    }
-    @Override
-    public String getCreator()
-    {
-        return this.creator;
-    }
-    @Override
-    public long getVersion()
-    {
-        return this.getId().getVersion();
-    }
-    @Override
-    public RedisID getId()
-    {
-        return (RedisID) super.getId();
-    }
-    @Override
-    public String getUnversionedId(){
-        return this.getId().getUnversionedId();
-    }
-    @Override
-    public String getVersionedId(){
-        return this.getId().getVersionedId();
-    }
-    @Override
-    public Map<String, String> toHash(){
-        Map<String, String> hash = new HashMap<>();
-        hash.put(DatabaseConstants.TEMPLATE, this.getTemplate());
-        hash.put(DatabaseConstants.APP_VERSION, this.applicationVersion);
-        hash.put(DatabaseConstants.CREATOR, this.creator);
-        hash.put(DatabaseConstants.ROW_TYPE, this.getClass().getSimpleName());
-        return hash;
-    }
-
-    //___________OVERRIDE OF OBJECT_____________//
-
-    /**
-     * Two rows are equal when their template, meta-data (page-class, creator and application-version), site-domain and unversioned element-id (everything after the '#') are equal
-     * (thus equal through object-state, not object-address).
-     * @param obj
-     * @return true if two rows are equal, false otherwise
-     */
-    @Override
-    public boolean equals(Object obj)
-    {
-        if(obj instanceof Entity) {
-            if(obj == this){
-                return true;
-            }
-            else {
-                Row entityObj = (Row) obj;
-                EqualsBuilder significantFieldsSet = new EqualsBuilder();
-                significantFieldsSet = significantFieldsSet.append(template, entityObj.template)
-                                                           .append(this.getHtmlId(), entityObj.getHtmlId())
-                                                           .append(this.getId().getAuthority(), entityObj.getId().getAuthority())
-                                                           .append(this.creator, entityObj.creator)
-                                                           .append(this.applicationVersion, entityObj.applicationVersion);
-                return significantFieldsSet.isEquals();
-            }
-        }
-        else{
-            return false;
-        }
-    }
-
-    /**
-     * Two rows have the same hashCode when their template, meta-data (page-class, creator and application-version), site-domain and unversioned element-id (everything after the '#') are equal
-     * (thus equal through object-state, not object-address)
-     * @return
-     */
-    @Override
-    public int hashCode()
-    {
-        //7 and 31 are two randomly chosen prime numbers, needed for building hashcodes, ideally, these are different for each class
-        HashCodeBuilder significantFieldsSet = new HashCodeBuilder(7, 31);
-        significantFieldsSet = significantFieldsSet.append(template)
-                                                   .append(this.getHtmlId())
-                                                   .append(this.getId().getAuthority())
-                                                   .append(this.creator)
-                                                   .append(this.applicationVersion);
-        return significantFieldsSet.toHashCode();
-    }
 }

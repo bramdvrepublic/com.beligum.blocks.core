@@ -9,7 +9,7 @@ import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.models.classes.EntityClass;
 import com.beligum.blocks.core.models.storables.Entity;
 import com.beligum.blocks.core.validation.ValidationEntity;
-import com.beligum.blocks.html.parsers.AbstractParser;
+import com.beligum.blocks.core.parsers.parsers.AbstractParser;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.templating.ifaces.Template;
 import org.hibernate.validator.constraints.NotBlank;
