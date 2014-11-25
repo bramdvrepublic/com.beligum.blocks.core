@@ -1,33 +1,29 @@
-blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.BlockMenu", function(Broadcaster, Menu) {
+blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overlay", function(Broadcaster, Overlay) {
 
-    var registeredBlocks = {};
-    /*
-    * registerblock
-    *  - admin-page-url
-    *  - can edit
-    *  - class-name
-    *
-    * */
-    var registerBlock = function (event) {
-        if (event.blockClassName != null && event.adminUrl != null) {
-            if (registeredBlocks[event.blockClassName] == null) {
-                registeredBlocks[event.blockClassName] = event.adminUrl;
-            } else {
-                // ALREADY EXISTS: notification
-            }
-        } else {
+    var editor = null;
 
-        }
-    };
-    Broadcaster.on(Broadcaster.EVENTS.REGISTER_EDITABLE_BLOCK, "blocks.core.Edit", function(event) {
-        registerBlock(event);
-    })
-
-    var button = $('<div type="button" class="btn btn-small btn-default"><i class="glyphicon glyphicon-pencil"></i></div>')
-    Menu.addButton({
-        element: button,
-        priority: 110
+    Broadcaster.on(Broadcaster.EVENTS.DOUBLE_CLICK_BLOCK, "blocks.core.Edit", function(event) {
+        editBlock(event.blockEvent);
     });
+
+    var editBlock = function(blockEvent) {
+        if (blockEvent.block.current != null) {
+            if (blockEvent.block.current.canEdit()) {
+                Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.DEACTIVATE_MOUSE());
+                var element = blockEvent.block.current;
+                Overlay.createForBlock(blockEvent.block.current, function() {
+                    Broadcaster.send(new Broadcaster.EVENTS.DOM_DID_CHANGE());
+                    Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE());
+                    editor.destroy();
+                    $(element).attr("contenteditable", "");
+
+                });
+                $(blockEvent.block.current.element).attr("contenteditable", true);
+                $(blockEvent.block.current.element).focus();
+                editor = $(blockEvent.block.current.element).ckeditor().editor;
+            }
+        }
+    }
 
 
 

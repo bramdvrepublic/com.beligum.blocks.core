@@ -15,6 +15,7 @@
 
 blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Broadcaster", "blocks.core.Constants", function (Broadcaster, Constants) {
     var _thisService = this;
+    var DOM = this;
     // Get column width (in grid units 1-12, not pixels)
 
     this.canEditBlock = function(element) {
@@ -24,6 +25,18 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Broadcaster", "blocks
     this.canLayoutRow = function(element) {
         return element.hasClass(Constants.CAN_LAYOUT_ROW_CLASS);
     };
+
+    this.isRow = function(element) {
+        return element.hasClass(Constants.ROW_CLASS);
+    }
+
+    this.isColumn = function(element) {
+        return element.hasClass(Constants.COLUMN_CLASS);
+    }
+
+    this.isBlock = function(element) {
+        return element.hasAttribute(Constants.IS_TYPE) || element.hasAttribute(Constants.IS_PROPERTY) || !(_thisService.isColumn(element) && _thisService.isRow(element));
+    }
 
 
     this.getColumnWidth = function (element) {
@@ -234,6 +247,15 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Broadcaster", "blocks
     this.wrapBlockInRow = function (blockElement) {
         return DOM.createRow().append(DOM.createColumn(12).append(blockElement));
     };
+
+    this.wrapColumnInRow = function (blockElement) {
+        DOM.setColumnWidth(blockElement, 12)
+        return DOM.createRow().append(blockElement);
+    }
+
+    this.wrapRowInColumn = function (blockElement) {
+        return DOM.wrapBlockInColumn(blockElement, 12);
+    }
 
     /*
     * When 1 column contains e.g. 6 blocks and we drop a block

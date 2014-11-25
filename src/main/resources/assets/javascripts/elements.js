@@ -9,6 +9,12 @@
 blocks
     .plugin("blocks.core.Elements", ["blocks.core.Class", "blocks.core.Constants", "blocks.core.DomManipulation", function (Class, Constants, DOM) {
 
+        // Define a has Attribute function for jquery
+        $.fn.hasAttribute = function(name) {
+            return this.attr(name) !== undefined;
+        };
+
+
         // smallest elemet with 4 corner
         // and a function to check if x,y is inside the surface
         var surface = Class.create({
@@ -280,6 +286,10 @@ blocks
                 } else {
                     this.isLayoutable = false;
                 }
+            },
+
+            canEdit: function() {
+                return true;
             }
         });
 
@@ -290,7 +300,13 @@ blocks
             constructor: function (top, bottom, left, right, element, parent, index) {
                 row.Super.call(this, top, bottom, left, right, element, parent, index);
                 this.setLayoutable(DOM.canLayoutRow(element));
-                this.generateChildren();
+                if ((element.hasAttribute(Constants.IS_ENTITY) || element.hasAttribute(Constants.IS_PROPERTY)) && !element.hasAttribute(Constants.FAKE_BLOCK)) {
+                    element.attr(Constants.FAKE_BLOCK, "");
+                    var newBlock = new block(top, bottom, left, right, element, this.parent, 0);
+                    this.children.push(newBlock);
+                } else {
+                    this.generateChildren();
+                }
             },
 
             generateChildren: function () {
@@ -354,7 +370,13 @@ blocks
                 column.Super.call(this, top, bottom, left, right, element, parent, index);
                 // will be set to true if parent is true
                 this.setLayoutable(false);
-                this.generateChildren();
+                if ((element.hasAttribute(Constants.IS_ENTITY) || element.hasAttribute(Constants.IS_PROPERTY)) && !element.hasAttribute(Constants.FAKE_BLOCK)) {
+                    element.attr(Constants.FAKE_BLOCK, "");
+                    var newBlock = new block(top, bottom, left, right, element, this.parent, 0);
+                    this.children.push(newBlock);
+                } else {
+                    this.generateChildren();
+                }
             },
 
             generateChildren: function () {
@@ -423,6 +445,7 @@ blocks
         var block = Class.create(row, {
             constructor: function (top, bottom, left, right, element, parent, index) {
                 block.Super.call(this, top, bottom, left, right, element, parent, index);
+                element.removeAttr(Constants.FAKE_BLOCK);
                 // if a block is editable does not depend on the parent
                 this.isEditable = DOM.canEditBlock(element);
 

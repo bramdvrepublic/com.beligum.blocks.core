@@ -224,6 +224,13 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Class", function (Class) 
         NAME: "END_HOOVER"
     });
 
+    this.EVENTS.DOUBLE_CLICK_BLOCK = Class.create(BasicEvent, {
+        constructor: function(blockEvent) {
+            this.blockEvent = blockEvent;
+        },
+        NAME: "DOUBLE_CLICK_BLOCK"
+    });
+
     // Notifications
     this.EVENTS.DO_ALLOW_DRAG = Class.create(BasicEvent, {
         NAME: "ALLOW_DRAG"

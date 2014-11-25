@@ -22,7 +22,7 @@ import java.net.URL;
 @Path("/")
 public class ApplicationEndpoint
 {
-    @Path("/")
+    @Path("/index")
     @GET
     public Response index()
     {

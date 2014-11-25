@@ -42,17 +42,19 @@ blocks.plugin("blocks.core.Constants", function() {
     this.COLUMN_CLASS = "column";
     this.ROW_CLASS = "row";
     this.BLOCK_CLASS = "block";
+    this.FAKE_BLOCK = "fake-block";
 
     this.COLUMN_WIDTH_CLASS = "col-md-";
-    this.CAN_LAYOUT_ROW_CLASS = "can-edit"; // can layout row and add and delete blocks
-    this.REFERENCE_BLOCK_CLASS = "block-parsedContent"
-
+    this.CAN_LAYOUT_ROW_CLASS = "can-layout"; // can layout row and add and delete blocks
     this.CAN_EDIT_BLOCK_CLASS = "can-edit"; // specifies edit and delete
-    this.CAN_CAST_BLOCK_CLASS = "can-cast-block"
+    this.CAN_CAST_BLOCK_CLASS = "can-cast-block";
+    this.IS_ENTITY = "typeof";
+    this.IS_PROPERTY = "property";
 
     this.MAX_COLUMNS = 12;
 
 
+    this.OVERLAY_CLASS = "blocks-overlay";
     this.BLOCK_OVERLAY_INDEX = 2000;
     this.SELECTED_BLOCK_INDEX = 2050;
     this.SELECTED_BLOCK_BACKGROUND_INDEX = 2040;

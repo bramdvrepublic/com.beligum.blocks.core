@@ -358,6 +358,9 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
                     mouseMove(event)
                 }
             );
+            $(document).on("dblclick.blocks_core", function(event) {
+                    Broadcaster.send(new Broadcaster.EVENTS.DOUBLE_CLICK_BLOCK(createBlockEvent(event)));
+            });
 
             resetMouse(true);
         }
@@ -370,8 +373,6 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
             $(document).off("mousedown.blocks_core");
             $(document).off("mouseup.blocks_core");
             $(document).off("mousemove.blocks_core");
-            $(document).off("resize.blocks_core");
-            $(document).off("mouseout.blocks_core");
         }
     };
 

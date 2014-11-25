@@ -1,10 +1,16 @@
-#define($header-styles-extra)
+<!DOCTYPE html>
+<html template="default">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title></title>
 <link href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
 <link href="/assets/stylesheets/styles.less" rel="stylesheet" />
+<link href="/assets/stylesheets/blocks.less" rel="stylesheet" />
 <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
-#end
 
-#define($header-scripts-extra)
 
 <script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
 
@@ -21,18 +27,21 @@
 <script src="/assets/javascripts/blockmenu.js" type="application/javascript" ></script>
 <script src="/assets/javascripts/blockmenu-buttons.js" type="application/javascript" ></script>
 <script src="/assets/javascripts/layout-aid.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/notification.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/edit.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/overlay.js" type="application/javascript" ></script>
 
-#end
+<script src="/assets/javascripts/ckeditor/ckeditor.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/ckeditor/adapters/jquery.js" type="application/javascript" ></script>
 
-#define($body-args-extra)
-#end
+    </head>
+<body>
 
-#define($body-html)
 <div class="container">
     <div class="row can-layout">
         <div class="col-md-12 column">
             <div class="row">
-                <div class="col-md-6 column">
+                <div typeof="test" class="col-md-6 column">
                     <div class="row">
                         <div class="col-md-6 column"><div class="block blue">1</div><div class="block green">2</div></div>
                         <div class="col-md-6 column"><div class="block yellow">3</div></div>
@@ -55,6 +64,4 @@
 </div>
 
 <div class="ruler"></div>
-#end
-
-#parse("/views/templates/main.html")
+</body>
