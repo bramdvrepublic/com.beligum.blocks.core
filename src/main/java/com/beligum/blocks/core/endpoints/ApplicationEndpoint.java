@@ -10,6 +10,7 @@ import com.beligum.core.framework.templating.ifaces.TemplateEngine;
 import com.beligum.core.framework.templating.velocity.VelocityTemplateEngine;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.tools.generic.RenderTool;
+import org.jsoup.nodes.Element;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
@@ -26,7 +27,28 @@ public class ApplicationEndpoint
     public Response index()
     {
         Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/index.html");
+//        TypeCacher.instance().reset();
         return Response.ok(indexTemplate).build();
+    }
+
+    @Path("/show")
+    @GET
+    public Response show()
+    {
+        TypeCacher.instance().reset();
+
+        com.beligum.blocks.html.models.types.Template template = TypeCacher.instance().getTemplate("default");
+        Element element = TypeCacher.instance().getContent("free");
+
+        return Response.ok(template.renderContent(element)).build();
+    }
+
+    @Path("/reset")
+    @GET
+    public Response reset()
+    {
+        TypeCacher.instance().reset();
+        return Response.ok("OK: all templates loaded").build();
     }
 
     //using regular expression to let all requests to undefined paths end up here

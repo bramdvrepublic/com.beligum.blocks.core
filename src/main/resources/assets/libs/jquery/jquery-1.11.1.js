@@ -121,7 +121,7 @@ jQuery.fn = jQuery.prototype = {
 		// Build a new jQuery matched element set
 		var ret = jQuery.merge( this.constructor(), elems );
 
-		// Add the old object onto the stack (as a reference)
+		// Add the old object onto the stack (as a parsedContent)
 		ret.prevObject = this;
 		ret.context = this.context;
 
@@ -2733,7 +2733,7 @@ jQuery.fn.extend({
 // Initialize a jQuery object
 
 
-// A central reference to the root jQuery(document)
+// A central parsedContent to the root jQuery(document)
 var rootjQuery,
 
 	// Use the correct document accordingly with window argument (sandbox)
@@ -2852,7 +2852,7 @@ var rootjQuery,
 // Give the init function the jQuery prototype for later instantiation
 init.prototype = jQuery.fn;
 
-// Initialize central reference
+// Initialize central parsedContent
 rootjQuery = jQuery( document );
 
 
