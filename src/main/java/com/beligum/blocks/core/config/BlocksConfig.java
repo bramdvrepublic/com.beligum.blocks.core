@@ -18,6 +18,8 @@ public class BlocksConfig
     /**standard name of the html-file a page-class- or block-class-template must have to be recognized as such*/
     public static final String INDEX_FILE_NAME = "index.html";
 
+    public static final String TEMPLATE_ENTITY_VARIABLE = "templateEntity";
+
     /**the languages this site can work with, ordered from most preferred languages, to less preferred*/
     public static String[] cachedLanguages;
 
@@ -49,7 +51,7 @@ public class BlocksConfig
      * @return the languages this site can work with, ordered from most preferred language, to less preferred
      */
     public static String[] getLanguages(){
-        if(cachedLanguages.length==0){
+        if(cachedLanguages==null){
             cachedLanguages = R.configuration().getStringArray("blocks.site.languages");
         }
         return cachedLanguages;

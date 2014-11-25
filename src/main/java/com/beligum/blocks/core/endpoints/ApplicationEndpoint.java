@@ -31,23 +31,24 @@ public class ApplicationEndpoint
         return Response.ok(indexTemplate).build();
     }
 
-    @Path("/show")
-    @GET
-    public Response show()
-    {
-        TypeCacher.instance().reset();
-
-        com.beligum.blocks.html.models.types.Template template = TypeCacher.instance().getTemplate("default");
-        Element element = TypeCacher.instance().getContent("free");
-
-        return Response.ok(template.renderContent(element)).build();
-    }
+//    @Path("/show")
+//    @GET
+//    public Response show()
+//    {
+//        TypeCacher.instance().reset();
+//
+//        com.beligum.blocks.html.Template template = TypeCacher.instance().getTemplate("default");
+//        Element element = TypeCacher.instance().getContent("free");
+//
+//        return Response.ok(template.renderContent(element)).build();
+//    }
 
     @Path("/reset")
     @GET
     public Response reset()
     {
-        TypeCacher.instance().reset();
+//        TypeCacher.instance().reset();
+        // TODO enqble reset of EntityClassCache
         return Response.ok("OK: all templates loaded").build();
     }
 
@@ -66,7 +67,7 @@ public class ApplicationEndpoint
              * Use the default template-engine of the application and the default template-context of this page-class for template-rendering
              */
             TemplateEngine templateEngine = R.templateEngine();
-            //TODO: this cast should be avoided here, we need a more generic 'RenderTool' where this cast should be done properly
+            //TODO BAS SH: put this in PageTemplate: this cast should be avoided here, we need a more generic 'RenderTool' where this cast should be done properly
             if(templateEngine instanceof VelocityTemplateEngine) {
                 /*
                  * Add all specific velocity-variables fetched from database to the context.

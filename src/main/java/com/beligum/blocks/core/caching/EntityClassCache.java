@@ -40,6 +40,7 @@ public class EntityClassCache extends AbstractViewableClassCache<EntityClass>
                         instance.fillCache();
                     }
                 }
+
                 else {
                     throw new NullPointerException("No application-cache found.");
                 }
@@ -60,15 +61,15 @@ public class EntityClassCache extends AbstractViewableClassCache<EntityClass>
         return (Map<String, EntityClass>) R.cacheManager().getApplicationCache().get(CacheKeys.ENTITY_CLASSES);
     }
 
-    @Override
-    protected String getClassRootFolder()
-    {
-        return BlocksConfig.getEntitiesFolder();
-    }
-
-    @Override
-    protected AbstractViewableParser<EntityClass> getParser(String entityClassName)
-    {
-        return new EntityParser(entityClassName);
-    }
+//    @Override
+//    protected String getClassRootFolder()
+//    {
+//        return BlocksConfig.getEntitiesFolder();
+//    }
+//
+//    @Override
+//    protected AbstractViewableParser<EntityClass> getParser(String entityClassName)
+//    {
+//        return new EntityParser(entityClassName);
+//    }
 }

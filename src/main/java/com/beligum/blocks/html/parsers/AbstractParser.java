@@ -2,13 +2,11 @@ package com.beligum.blocks.html.parsers;
 
 import com.beligum.blocks.core.config.CSSClasses;
 import com.beligum.blocks.core.models.storables.Entity;
-import com.beligum.blocks.html.models.types.DefaultValue;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
 import java.net.URL;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -21,13 +19,13 @@ public abstract class AbstractParser
     }
 
 
-    public static Entity cache(URL url, String html) {
+    public static Entity cacheEntity(URL url, String html) {
         Document doc = Jsoup.parse(html);
         return EntityParsingNodeVisitor.cache(url, doc);
 
     }
 
-    public static Entity parse(URL url, String html) {
+    public static Entity parseEntity(URL url, String html) {
         Document doc = Jsoup.parse(html);
         return EntityParsingNodeVisitor.parse(url, doc);
 

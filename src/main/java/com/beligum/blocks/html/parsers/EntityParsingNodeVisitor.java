@@ -4,8 +4,7 @@ import com.beligum.blocks.core.caching.EntityClassCache;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.classes.EntityClass;
 import com.beligum.blocks.core.models.storables.Entity;
-import com.beligum.blocks.html.Cacher.TypeCacher;
-import com.beligum.blocks.html.models.types.Template;
+import com.beligum.blocks.html.PageTemplate;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 
@@ -50,10 +49,11 @@ public class EntityParsingNodeVisitor extends AbstractEntityNodeVisitor
         if (node instanceof Element) {
             Element element = (Element) node;
             if (AbstractParser.isBlock(element)) {
-                Element reference = replaceNodeWithReference(element);
+
                 Set<Entity> children = this.popChildren();
                 EntityClass entityClass = getEntityClassForElement(element, children);
                 Entity entity = getEntityForElement(element, children);
+                replaceNodeWithReference(element, entity);
                 parsedEntities.add(entity);
                 this.getChildren().add(entity);
             }
@@ -130,8 +130,8 @@ public class EntityParsingNodeVisitor extends AbstractEntityNodeVisitor
 
     protected void createTemplate(Element element) {
         if (element.hasAttr("content")) {
-            Template template = new Template(element);
-            TypeCacher.instance().addTemplate(template, false);
+            PageTemplate pageTemplate = new PageTemplate(element);
+            // TODO cache template
         }
     }
 

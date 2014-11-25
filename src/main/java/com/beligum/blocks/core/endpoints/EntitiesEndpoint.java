@@ -9,6 +9,7 @@ import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.models.classes.EntityClass;
 import com.beligum.blocks.core.models.storables.Entity;
 import com.beligum.blocks.core.validation.ValidationEntity;
+import com.beligum.blocks.html.parsers.AbstractParser;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.templating.ifaces.Template;
 import org.hibernate.validator.constraints.NotBlank;
@@ -82,8 +83,7 @@ public class EntitiesEndpoint
         String entityClassName = validationEntity.getEntityClassName();
         URL entityUrl = new URL(BlocksConfig.getSiteDomain() + "/" + entityId);
 
-        EntityParser parser = new EntityParser(entityClassName);
-        Entity entity = parser.parseEntity(html, entityUrl);
+        Entity entity = AbstractParser.parseEntity(entityUrl, html);
         Redis redis = Redis.getInstance();
         redis.save(entity);
         return Response.seeOther(entity.getUrl().toURI()).build();
