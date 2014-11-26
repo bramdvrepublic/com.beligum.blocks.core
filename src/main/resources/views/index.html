@@ -19,20 +19,21 @@
 <script src="/assets/javascripts/core.js" type="application/javascript" ></script>
 <script src="/assets/javascripts/broadcaster.js" type="application/javascript" ></script>
 <script src="/assets/javascripts/layout.js" type="application/javascript" ></script>
-<script src="/assets/javascripts/dom-manipulation.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/utils/dom-manipulation.js" type="application/javascript" ></script>
 <script src="/assets/javascripts/elements.js" type="application/javascript" ></script>
 <script src="/assets/javascripts/mouse.js" type="application/javascript" ></script>
 <script src="/assets/javascripts/resizer.js" type="application/javascript" ></script>
 <script src="/assets/javascripts/dragdrop.js" type="application/javascript" ></script>
-<script src="/assets/javascripts/blockmenu.js" type="application/javascript" ></script>
-<script src="/assets/javascripts/blockmenu-buttons.js" type="application/javascript" ></script>
-<script src="/assets/javascripts/layout-aid.js" type="application/javascript" ></script>
-<script src="/assets/javascripts/notification.js" type="application/javascript" ></script>
-<script src="/assets/javascripts/edit.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/blockmenu/blockmenu.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/blockmenu/blockmenu-buttons.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/blockmenu/dragbutton.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/utils/layout-aid.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/utils/notification.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/blockmenu/edit.js" type="application/javascript" ></script>
     <script src="/assets/javascripts/overlay.js" type="application/javascript" ></script>
 
-<script src="/assets/javascripts/ckeditor/ckeditor.js" type="application/javascript" ></script>
-<script src="/assets/javascripts/ckeditor/adapters/jquery.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/ckeditor/ckeditor.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/ckeditor/adapters/jquery.js" type="application/javascript" ></script>
 
     </head>
 <body>
@@ -41,7 +42,7 @@
     <div class="row can-layout">
         <div class="col-md-12 column">
             <div class="row">
-                <div typeof="test" class="col-md-6 column">
+                <div class="col-md-6 column" typeof="test" >
                     <div class="row">
                         <div class="col-md-6 column"><div class="block blue">1</div><div class="block green">2</div></div>
                         <div class="col-md-6 column"><div class="block yellow">3</div></div>
@@ -55,8 +56,8 @@
                 </div>
                 <div class="col-md-6 column"><div class="block red">10</div></div>
             </div>
-            <div class="row">
-                <div class="col-md-6 column"><div class="block blue">11</div><div class="block yellow">12</div></div>
+            <div class="row" >
+                <div class="col-md-6 column" typeof="test2"><div class="block blue">11</div><div class="block yellow">12</div></div>
                 <div class="col-md-6 column"><div class="block red">13</div><div class="block blue">14</div></div>
             </div>
         </div>

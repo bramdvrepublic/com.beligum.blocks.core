@@ -448,7 +448,7 @@ blocks
                 element.removeAttr(Constants.FAKE_BLOCK);
                 // if a block is editable does not depend on the parent
                 this.isEditable = DOM.canEditBlock(element);
-
+                this.children = [];
                 // Only generate dropspots if one of parents is layoutable
                 this.dropspots = {};
                 if (this.isLayoutable) {

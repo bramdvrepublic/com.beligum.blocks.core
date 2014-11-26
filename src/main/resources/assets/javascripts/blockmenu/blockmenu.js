@@ -4,6 +4,9 @@
 * addButton takes an object with:
 *   element: jquery element (the button). See bootstrap for now (<button class="btn">test</button>)
 *   priority: sets the order for the buttons. smallest is most left
+*   visible: if null, button is always shown, otherwise function that takes
+*           block as argument and returns true/false if this button should
+*           be shown (for this block)
 *
 *   Menu is shwon when hoovering over a block
 *   Menu is hidden while dragging
@@ -84,6 +87,11 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", function(Broa
         }
     };
 
+
+    /*
+    * Add buttin to menu
+    *
+    * */
     this.addButton = function(button) {
         if (button.priority == null) button.priority = 0;
         var added = false;

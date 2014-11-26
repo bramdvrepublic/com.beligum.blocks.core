@@ -270,6 +270,7 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.E
     // on leave block, can_not_start draggingOptions
     var allowDrag = function(blockEvent) {
         if (currentDraggedBlockChanged(blockEvent)) {
+            Logger.debug("Try to enable drag for blocks");
             if (!draggingEnabled && currentDraggedBlock != null && currentDraggedBlock.isLayoutable)  {
                 Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.ENABLE_DRAG(200, "blocks.core.DragDrop", dragEnabled));
             } else if (draggingEnabled && (currentDraggedBlock == null || !currentDraggedBlock.isLayoutable)) {

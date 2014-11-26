@@ -179,16 +179,16 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
             if (event.which == 1) {
                 var currentEvent = createBlockEvent(event);
                 if (draggingStatus == Constants.DRAGGING.ENABLED &&
-                    currentEvent.block.current != null &&
-                    currentEvent.block.current.isLayoutable) {
+                    currentEvent.block.current != null) {
                     draggingStatus = Constants.DRAGGING.WAITING;
                     draggingOptions.startEvent = event;
                     disableSelection();
                 } else {
+                    Logger.debug("We can not start because dragging is already in place or not allowed. " + draggingStatus);
                     resetMouse();
                     draggingStatus = Constants.DRAGGING.TEXT_SELECTION;
                     Broadcaster.send(new Broadcaster.EVENTS.END_HOOVER(createBlockEvent(event)));
-                    Logger.debug("We can not start draggingOptions because dragging is already in place or not allowed. " + draggingStatus);
+
                 }
             } else {
                 // middle or right mouse button presses

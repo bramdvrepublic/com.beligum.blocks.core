@@ -18,7 +18,7 @@
  */
 
 blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broadcaster", "blocks.core.Constants", "blocks.core.DomManipulation", function (Elements, Broadcaster, Constants, DOM) {
-
+    var Layouter = this;
     // Helper function to return the jQuery Element of the drop location
     // and prepare the dropLocation for the drop
     // 1. if drop location is block with siblings in column and side left/right
@@ -139,7 +139,7 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
 
     // The parent element where the tree is build
     // if null this is automatically set to the container
-    var layoutParentElement = null;
+    this.layoutParentElement = null;
     var layoutTree = null;
 
     this.getLayoutTree = function() {
@@ -147,6 +147,11 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
             buildLayoutTree();
         }
         return layoutTree;
+    };
+
+    this.setLayoutParent = function(element) {
+        Layouter.layoutParentElement = element;
+        buildLayoutTree();
     };
 
     var buildLayoutTree = function () {
@@ -160,11 +165,11 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
         Logger.debug("Calculate hotspots");
         layoutTree = [];
         //_this.cleanLayout();
-        if (layoutParentElement == null) {
-            layoutParentElement = $("." + Constants.CONTAINER_CLASS);
+        if (Layouter.layoutParentElement == null) {
+            Layouter.layoutParentElement = $("." + Constants.CONTAINER_CLASS);
         }
 
-        layoutParentElement.children("." + Constants.ROW_CLASS).each(function () {
+        Layouter.layoutParentElement.children("." + Constants.ROW_CLASS).each(function () {
             var parentRow = $(this);
             var container = new Elements.Container(parentRow);
             Logger.debug(container);

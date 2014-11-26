@@ -127,38 +127,19 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Class", function (Class) 
     // EVents with callback
 
     // Owner is a string that identifies the owner of the request
-    this.EVENTS.ENABLE_DRAG = Class.create(BasicEvent, {
+    this.EVENTS.ENABLE_BLOCK_DRAG = Class.create(BasicEvent, {
 
-        constructor: function(priority, owner, callback) {
-            this.priority = priority;
-            this.owner = owner;
-            if (this.priority == null) this.priority = 0;
-            this.cb = callback;
-        },
-
-        callback: function(enabled) {
-            if (this.cb != null) this.cb(enabled);
+        constructor: function(blockEvent) {
+            this.blockEvent = blockEvent;
         },
         NAME: "ENABLE_DRAG"
     });
-    this.EVENTS.DISABLE_DRAG = Class.create(BasicEvent, {
-        constructor: function(priority, owner) {
-            this.priority = priority;
-            this.owner = owner;
-            if (this.priority == null) this.priority = 0;
+    this.EVENTS.DISABLE_BLOCK_DRAG = Class.create(BasicEvent, {
+        constructor: function(blockEvent) {
+            this.blockEvent = blockEvent;
         },
 
         NAME: "DISABLE_DRAG"
-    });
-
-    this.EVENTS.DRAG_DISABLED = Class.create(BasicEvent, {
-        constructor: function(priority, owner) {
-            this.priority = priority;
-            this.owner = owner;
-            if (this.priority == null) this.priority = 0;
-        },
-
-        NAME: "DRAG_DISABLED"
     });
 
     // Events with blockEvent as argument
