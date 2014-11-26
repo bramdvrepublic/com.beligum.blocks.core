@@ -13,6 +13,8 @@ public class CacheConstants
     public static final String ENTITY_CLASS_ID_PREFIX = "entities";
     /**the prefix that is given to page-template-id's*/
     public static final String PAGE_TEMPLATE_ID_PREFIX = "pageTemplates";
+    /**the name of the default entity-class*/
+    public static final String DEFAULT_ENTITY_CLASS_NAME = "default";
 
     /**
      *

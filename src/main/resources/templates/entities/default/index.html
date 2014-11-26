@@ -8,24 +8,24 @@
 #end
 
 #define($body-html)
-<div class="entity entity-default container">
+<div class="entity entity-default container" typeof="pagina">
 
-    <div class="row can-edit" id="eersteRij">
+    <div class="row can-edit" id="eersteRij" typeof="helloworld">
         <div class="col-md-12 column">
             <div class="block center-block" id="titeltje">
                 <h1>Hello world!</h1>
             </div>
         </div>
     </div>
-    <div class="row can-edit" id="tweedeRij" typeof="location">
+    <div class="row can-edit" id="tweedeRij">
         <script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
         <script src="/templates/entities/default/scripts.js" type="application/javascript" ></script>
         <div class="col-md-6 column">
-            <div class="block can-edit" id="vanalles">
+            <div class="block can-edit" id="vanalles" typeof="veranderbaar">
                 Hier zult u vanalles kunnen plaatsen...
             </div>
         </div>
-        <div class="col-md-6 column">
+        <div class="col-md-6 column" typeof="onveranderbaar">
             <div class="block" id="niets">
                 Hier kunt u niets veranderen...
             </div>

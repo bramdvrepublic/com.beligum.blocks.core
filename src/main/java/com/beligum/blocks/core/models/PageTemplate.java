@@ -65,7 +65,7 @@ public class PageTemplate extends IdentifiableObject
             RenderTool renderTool = new RenderTool();
             renderTool.setVelocityEngine(((VelocityTemplateEngine) templateEngine).getDelegateEngine());
             renderTool.setVelocityContext(context);
-            String pageHtml = renderTool.recurse(entity.getTemplate());
+            String pageHtml = renderTool.recurse(this.template);
             return pageHtml;
         }
         else{

@@ -13,9 +13,7 @@ public class DatabaseConstants
     /**name of the template-field in db*/
     public final static String TEMPLATE = "template";
     /**name of the page-class-field in db*/
-    public final static String VIEWABLE_CLASS = "viewableClass";
-    /**name of the type-field in db*/
-    public final static String ROW_TYPE = "type";
+    public final static String ENTITY_CLASS = "entityClass";
     /**the suffix used to indicate a entities meta-data-hash in db, it is the suffix used to distinguish the page-info from the page-template (it's rows and blocks)*/
     public final static String HASH_SUFFIX = "hash";
 }

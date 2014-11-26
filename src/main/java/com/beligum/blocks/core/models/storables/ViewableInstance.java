@@ -70,10 +70,12 @@ public class ViewableInstance extends Row
     public ViewableInstance(RedisID id, Set<Entity> childrenFromDB, AbstractViewableClass viewableClass, boolean isFinal, String applicationVersion, String creator)
     {
         //the children of the viewable class should not be copied to the entity lightly
-        super(id, viewableClass.getTemplate(), new HashSet<Entity>(), isFinal, applicationVersion, creator);
-        this.addChildren(viewableClass.getAllFinalChildren().values());
-        this.addChildren(childrenFromDB);
-        this.addChildren(viewableClass.getAllNonFinalChildren());
+        super(id, viewableClass != null ? viewableClass.getTemplate() : "", new HashSet<Entity>(), isFinal, applicationVersion, creator);
+        if(viewableClass != null) {
+            this.addChildren(viewableClass.getAllFinalChildren().values());
+            this.addChildren(childrenFromDB);
+            this.addChildren(viewableClass.getAllNonFinalChildren());
+        }
         this.viewableClass = viewableClass;
     }
 
@@ -128,8 +130,7 @@ public class ViewableInstance extends Row
         hash.put(DatabaseConstants.TEMPLATE, this.getTemplate());
         hash.put(DatabaseConstants.APP_VERSION, this.applicationVersion);
         hash.put(DatabaseConstants.CREATOR, this.creator);
-        hash.put(DatabaseConstants.ROW_TYPE, this.getClass().getSimpleName());
-        hash.put(DatabaseConstants.VIEWABLE_CLASS, this.getViewableClass().getName());
+        hash.put(DatabaseConstants.ENTITY_CLASS, this.getViewableClass().getName());
         return hash;
     }
 }

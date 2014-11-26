@@ -1,5 +1,6 @@
 package com.beligum.blocks.core.dbs;
 
+import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
@@ -13,7 +14,6 @@ import redis.clients.jedis.Pipeline;
 import java.io.Closeable;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -58,12 +58,13 @@ public class Redis implements Closeable
      * private constructor for singleton-use
      */
     private Redis(){
-        //TODO: redis-config should come from configuration-file dev.xml (senitels host and port, masterName)
         //create a thread-save pool of Jedis-instances, using default configuration
+        String[] sentinelHostsAndPorts = BlocksConfig.getRedisSentinels();
         Set<String> sentinels = new HashSet<>();
-        sentinels.add("localhost:26379");
-        sentinels.add("localhost:26380");
-        pool = new JedisSentinelPool("mymaster", sentinels);
+        for(int i = 0; i<sentinelHostsAndPorts.length; i++){
+            sentinels.add(sentinelHostsAndPorts[i]);
+        }
+        pool = new JedisSentinelPool(BlocksConfig.getRedisMasterName(), sentinels);
     }
 
     /**
@@ -279,7 +280,7 @@ public class Redis implements Closeable
                         childrenFromDB.add(this.fetchEntity(childRedisId, fetchLastVersion, fetchChildren));
                     }
                 }
-                String entityClassName = entityInfoHash.get(DatabaseConstants.VIEWABLE_CLASS);
+                String entityClassName = entityInfoHash.get(DatabaseConstants.ENTITY_CLASS);
                 //TODO BAS: what should we do when the entity-info hash holds more info than use for this constructor? do we need a method entity.addHashInfo(Map<String, String>) or something of the sort?
                 retVal = new Entity(lastVersionId, childrenFromDB, entityClassName, entityInfoHash.get(DatabaseConstants.APP_VERSION), entityInfoHash.get(DatabaseConstants.CREATOR));
             }
@@ -316,7 +317,7 @@ public class Redis implements Closeable
 //                 */
 //                String type = elementHash.get(DatabaseConstants.ROW_TYPE);
 //                String content = elementHash.get(DatabaseConstants.TEMPLATE);
-//                String viewableClassName = elementHash.get(DatabaseConstants.VIEWABLE_CLASS);
+//                String viewableClassName = elementHash.get(DatabaseConstants.ENTITY_CLASS);
 //                String applicationVersion = elementHash.get(DatabaseConstants.APP_VERSION);
 //                String creator = elementHash.get(DatabaseConstants.CREATOR);
 //                //an element that previously was saved in db, has to be changable (non-final), if not it would not have been saved in db

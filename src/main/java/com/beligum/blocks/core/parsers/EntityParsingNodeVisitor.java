@@ -161,7 +161,7 @@ public class EntityParsingNodeVisitor extends AbstractEntityNodeVisitor
                 }
                 Node newNode = new TextNode("${" + VelocityVariables.ENTITY_VARIABLE_NAME + "}", BlocksConfig.getSiteDomain());
                 element.replaceWith(newNode);
-                PageTemplate pageTemplate = new PageTemplate(templateName, element.outerHtml());
+                PageTemplate pageTemplate = new PageTemplate(templateName, parent.outerHtml());
                 PageTemplateCache.getInstance().add(pageTemplate);
             } catch (Exception e) {
                 Logger.error("Something went wrong while creating template.", e);

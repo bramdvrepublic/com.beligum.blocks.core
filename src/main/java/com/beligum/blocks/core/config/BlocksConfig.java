@@ -19,6 +19,9 @@ public class BlocksConfig
     /**the languages this site can work with, ordered from most preferred languages, to less preferred*/
     public static String[] cachedLanguages;
 
+    /**the redis-sentinels*/
+    public static String[] cachedRedisSentinels;
+
     public static String getTemplateFolder()
     {
         return getConfiguration("blocks.template-folder");
@@ -40,6 +43,21 @@ public class BlocksConfig
 
     public static String getPageTemplatesFolder() {
         return getTemplateFolder() + "/" + PAGE_TEMPLATES_FOLDER;
+    }
+
+    public static String getRedisMasterName(){
+        return getConfiguration("blocks.redis.master-name");
+    }
+
+    /**
+     *
+     * @return the sentinel-locations for the redis-db (f.i. localhost:26379)
+     */
+    public static String[] getRedisSentinels(){
+        if(cachedRedisSentinels==null){
+            cachedRedisSentinels = R.configuration().getStringArray("blocks.redis.sentinels");
+        }
+        return cachedRedisSentinels;
     }
 
     /**

@@ -27,7 +27,7 @@ public class AbstractEntityNodeVisitor implements NodeVisitor
             Element element = (Element) node;
             if (AbstractParser.isBlock(element)) {
                 if (element.hasClass("container")) {
-                    if (containerDepth.peek() == null) {
+                    if (containerDepth.size() > 0 && containerDepth.peek() == null) {
                         containerDepth.push(depth);
                     }
                 }

@@ -1,6 +1,7 @@
 package com.beligum.blocks.core.caching;
 
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.models.classes.EntityClass;
 import com.beligum.core.framework.base.R;
@@ -52,6 +53,24 @@ public class EntityClassCache extends AbstractIdentifiableObjectCache<EntityClas
         }
     }
 
+    /**
+     * Get the entity-class with a certain name from the application cache.
+     * If that entity-class does not exist, return the default entity-class.
+     *
+     * @param name the unique name of the entity-class to get
+     * @return an entity-class from the application cache
+     */
+    @Override
+    public EntityClass get(String name) throws CacheException
+    {
+        EntityClass entityClass = super.get(name);
+        if(entityClass != null) {
+            return entityClass;
+        }
+        else{
+            return super.get(CacheConstants.DEFAULT_ENTITY_CLASS_NAME);
+        }
+    }
     /**
      * @param identifiableObject the identifiable object to be added to the applications cache, the key will be the object's id
      */
