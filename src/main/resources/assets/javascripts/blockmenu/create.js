@@ -34,3 +34,32 @@ blocks.plugin("blocks.core.BlockMenu.new", ["blocks.core.BlockMenu", "blocks.cor
 
 
 }]);
+
+blocks.plugin("blocks.core.BlockMenu.newText", ["blocks.core.BlockMenu", "blocks.core.Layouter", "blocks.core.Notification",  function(Menu, Layouter, Notification) {
+    var button = $('<div type="button" class="btn btn-default"><i class="glyphicon glyphicon-align-justify"></i></div>')
+    Menu.addButton({
+        element: button,
+        priority: 100
+    });
+
+    var newBlock = $("<div class='block can-edit' typeof='text'><h1>Enter here your text.</h1></div>")
+
+    button.on("click", function(event) {
+        var currentBlock = Menu.currentBlock();
+        // copy block and add to body
+        Layouter.addNewBlockAtLocation($(newBlock[0].outerHTML), Menu.currentBlock());
+    })
+
+//    button.on("click", function(event) {
+//        var currentBlock = Menu.currentBlock();
+//        Notification.alert("Add new block", modalText, function(content) {
+//            var value = content.find("#blocktypeselect").val();
+//            var newBlock = blocks[value];
+//            Layouter.addNewBlockAtLocation($(newBlock[0].outerHTML), Menu.currentBlock());
+//        });
+//    })
+
+
+
+
+}]);
