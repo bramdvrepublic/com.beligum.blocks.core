@@ -1,3 +1,4 @@
+// Overlay when editing and for dialogs
 .blocks-overlay {
   top: 0px;
   left: 0px;
@@ -9,10 +10,12 @@
   background-color: #000000;
 }
 
+// Handle to resize columns
 .column-resize-handle {
   background-color: #6fc7df;
 }
 
+// Hover with mouse over block
 .block-hover {
   -webkit-box-shadow: 0 5px 20px rgba(51, 102, 146, 0.70), 0 0 8px 5px rgba(111, 199, 223, 0.90) ;
   box-shadow: 0 5px 20px rgba(51, 102, 146, 0.70), 0 0 8px 5px rgba(111, 199, 223, 0.90) ;
@@ -22,6 +25,7 @@ iframe {
   pointer-events: none;
 }
 
+// force for height wrapping divs
 .image {
   display: inline-block;
 }
@@ -29,10 +33,12 @@ iframe {
 iframe.edit {
   pointer-events: auto;
 }
+// ckeditor also uses iframes
 iframe.cke_panel_frame  {
   pointer-events: auto;
 }
 
+// Div that contains the panel for the backend
 .admin-backend {
   padding: 10px 10px;
 }
@@ -52,6 +58,7 @@ iframe.cke_panel_frame  {
 //  transform: rotateX(89deg);
 //}
 
+// used to flip to backend
 .flip {
   -webkit-transform: rotateY(180deg);
   transform: rotateY(180deg);
