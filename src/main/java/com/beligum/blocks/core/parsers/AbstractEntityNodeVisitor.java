@@ -1,10 +1,10 @@
 package com.beligum.blocks.core.parsers;
 
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.models.storables.Entity;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
-import org.jsoup.nodes.TextNode;
 import org.jsoup.select.NodeVisitor;
 
 import java.util.HashMap;
@@ -77,11 +77,18 @@ public class AbstractEntityNodeVisitor implements NodeVisitor
     }
 
     protected Node replaceNodeWithReference(Element element, Entity entity) {
-//        Element replacementNode = new Element(element.tag(),"");
-//        replacementNode.attributes().addAll(element.attributes());
-//        replacementNode.attr("parsedContent", "");
-//        element.replaceWith(replacementNode);
-        TextNode replacementNode = new TextNode("${" + entity.getTemplateVariableName() + "}", BlocksConfig.getSiteDomain());
+        return replaceNodeWithReference(element, entity.getTemplateVariableName());
+    }
+
+    protected Node replaceNodeWithReference(Element element, String referenceTo)
+    {
+        //        Element replacementNode = new Element(element.tag(),"");
+        //        replacementNode.attributes().addAll(element.attributes());
+        //        replacementNode.attr("parsedContent", "");
+        //        element.replaceWith(replacementNode);
+        Element replacementNode = new Element(element.tag(), BlocksConfig.getSiteDomain());
+        replacementNode.attributes().addAll(element.attributes());
+        replacementNode.attr(ParserConstants.REFERENCE_TO, referenceTo);
         element.replaceWith(replacementNode);
         return replacementNode;
     }

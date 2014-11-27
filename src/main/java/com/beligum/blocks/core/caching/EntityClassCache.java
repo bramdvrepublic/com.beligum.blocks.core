@@ -39,6 +39,7 @@ public class EntityClassCache extends AbstractIdentifiableObjectCache<EntityClas
                     if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.ENTITY_CLASSES) || !R.cacheManager().getApplicationCache().containsKey(CacheKeys.PAGE_TEMPLATES)) {
                         R.cacheManager().getApplicationCache().put(CacheKeys.ENTITY_CLASSES, new HashMap<String, EntityClass>());
                         instance = new EntityClassCache();
+                        //TODO save a default instance of all entity-classes to db (under blocks://LOC/entityClassName#propertyName), for remebering history of classes (check if class has changed before saving new instance to db)
                         instance.fillCache();
                     }
                 }

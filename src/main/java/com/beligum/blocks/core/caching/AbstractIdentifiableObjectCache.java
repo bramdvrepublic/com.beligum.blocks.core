@@ -2,6 +2,7 @@ package com.beligum.blocks.core.caching;
 
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.exceptions.ParserException;
 import com.beligum.blocks.core.models.IdentifiableObject;
 import com.beligum.blocks.core.parsers.AbstractParser;
 import com.beligum.core.framework.utils.Logger;
@@ -79,7 +80,12 @@ public abstract class AbstractIdentifiableObjectCache<T extends IdentifiableObje
                                     throws IOException
                     {
                         if (filePath.getFileName().toString().endsWith("html")) {
-                            AbstractParser.cacheEntity(new URL(BlocksConfig.getSiteDomain()), new String(Files.readAllBytes(filePath)));
+                            try {
+                                AbstractParser.cacheEntity(new URL(BlocksConfig.getSiteDomain()), new String(Files.readAllBytes(filePath)));
+                            }
+                            catch (ParserException e) {
+                                Logger.error("Parse error while parsing file '" + filePath + "'.", e);
+                            }
                         }
                         return FileVisitResult.CONTINUE;
                     }

@@ -26,7 +26,7 @@ public class ViewableInstance extends Row
     public ViewableInstance(RedisID id, AbstractViewableClass viewableClass, boolean isFinal)
     {
         //the template of a viewable instance is always the template of it's viewable-class
-        super(id, viewableClass.getTemplate(), viewableClass.getAllChildren(), isFinal);
+        super(id, viewableClass.getTemplate(), viewableClass.getChildren(), isFinal);
         this.viewableClass = viewableClass;
     }
     /**
@@ -39,43 +39,37 @@ public class ViewableInstance extends Row
     public ViewableInstance(RedisID id, AbstractViewableClass viewableClass, boolean isFinal, String applicationVersion, String creator)
     {
         //the template of a viewable instance is always the template of it's viewable-class
-        super(id, viewableClass.getTemplate(), viewableClass.getAllChildren(), isFinal, applicationVersion, creator);
+        super(id, viewableClass.getTemplate(), viewableClass.getChildren(), isFinal, applicationVersion, creator);
         this.viewableClass = viewableClass;
     }
 
     /**
      * Constructor for a new viewable-instance taking children and a entityclass. First the final children from the viewableClass are added, then the children specified in the parameter 'allChildren' and in the end the non-final children found in the viewableClass.
      * @param id the id of this entity
-     * @param childrenFromDB all children for this entity fetched form db
+     * @param directChildren direct children for this entity fetched form db
      * @param viewableClass the viewable-class this viewable is an instance of
      */
-    public ViewableInstance(RedisID id, Set<Entity> childrenFromDB, AbstractViewableClass viewableClass, boolean isFinal)
+    public ViewableInstance(RedisID id, Set<Entity> directChildren, AbstractViewableClass viewableClass, boolean isFinal)
     {
         //the children of the viewable class should not be copied to the entity lightly
         super(id, viewableClass.getTemplate(), new HashSet<Entity>(), isFinal);
-        this.addChildren(viewableClass.getAllFinalChildren().values());
-        this.addChildren(childrenFromDB);
-        this.addChildren(viewableClass.getAllNonFinalChildren());
+        this.addDirectChildren(directChildren);
         this.viewableClass = viewableClass;
     }
 
     /**
      * Constructor for a new viewable-instance taking children and a entityclass. First the final children from the viewableClass are added, then the children specified in the parameter 'allChildren' and in the end the non-final children found in the viewableClass.
      * @param id the id of this entity
-     * @param childrenFromDB all children for this entity fetched form db
+     * @param directChildren all children for this entity fetched form db
      * @param viewableClass the viewable-class this viewable is an instance of
      * @param applicationVersion the version of the application this instance was saved under
      * @param creator            the creator of this instance
      */
-    public ViewableInstance(RedisID id, Set<Entity> childrenFromDB, AbstractViewableClass viewableClass, boolean isFinal, String applicationVersion, String creator)
+    public ViewableInstance(RedisID id, Set<Entity> directChildren, AbstractViewableClass viewableClass, boolean isFinal, String applicationVersion, String creator)
     {
         //the children of the viewable class should not be copied to the entity lightly
         super(id, viewableClass != null ? viewableClass.getTemplate() : "", new HashSet<Entity>(), isFinal, applicationVersion, creator);
-        if(viewableClass != null) {
-            this.addChildren(viewableClass.getAllFinalChildren().values());
-            this.addChildren(childrenFromDB);
-            this.addChildren(viewableClass.getAllNonFinalChildren());
-        }
+        this.addDirectChildren(directChildren);
         this.viewableClass = viewableClass;
     }
 
@@ -88,7 +82,7 @@ public class ViewableInstance extends Row
      */
     public ViewableInstance(RedisID id, String content, AbstractViewableClass viewableClass, boolean isFinal)
     {
-        super(id, content, viewableClass.getAllChildren(), isFinal);
+        super(id, content, viewableClass.getChildren(), isFinal);
         this.viewableClass = viewableClass;
     }
 
@@ -103,7 +97,7 @@ public class ViewableInstance extends Row
      */
     public ViewableInstance(RedisID id, String content, AbstractViewableClass viewableClass, boolean isFinal, String applicationVersion, String creator)
     {
-        super(id, content, viewableClass.getAllChildren(), isFinal, applicationVersion, creator);
+        super(id, content, viewableClass.getChildren(), isFinal, applicationVersion, creator);
         this.viewableClass = viewableClass;
     }
 

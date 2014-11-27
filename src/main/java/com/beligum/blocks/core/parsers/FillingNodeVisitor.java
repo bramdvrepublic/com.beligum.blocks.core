@@ -1,25 +1,42 @@
 package com.beligum.blocks.core.parsers;
 
+import com.beligum.blocks.core.config.ParserConstants;
+import com.beligum.blocks.core.models.storables.Entity;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
+
 /**
- * Created by wouter on 23/11/14.
- */
+* Created by wouter on 23/11/14.
+*/
 public class FillingNodeVisitor extends AbstractEntityNodeVisitor
 {
 //    Element filledNode;
-//
-//    public void head(Node node, int depth) {
-//        if (node instanceof Element) {
-//            Element element = (Element)node;
+
+    public Node doHead(Node node, int depth) {
+        if (node instanceof Element) {
+            Element element = (Element)node;
 //            if (filledNode == null) {
 //                this.filledNode = element;
 //            }
-//            if (AbstractParser.isReference((Element)node)) {
-//                this.mergeElement(element);
-//            }
-//            super.head(node, depth);
-//        }
-//    }
+            if (AbstractParser.isReference(element)) {
+                String resource = element.attr(ParserConstants.REFERENCE_TO);
+
+                node.replaceWith(this.parseEntityToHtml(entity));
+            }
+        }
+        super.head(node, depth);
+        return node;
+    }
+
+    public static Document parseEntityToHtml(Entity entity){
+        return Jsoup.parse(entity.getTemplate());
+    }
+
+//    public void mergeElement(Element element){
 //
+//    }
 //
 //    /*
 //    *

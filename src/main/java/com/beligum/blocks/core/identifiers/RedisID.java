@@ -15,7 +15,7 @@ import java.net.URL;
 public class RedisID extends ID
 {
     /**long representing the versioning stamp*/
-    private long version;
+    private long version = -1;
     /**the url this id is based on*/
     private URL url;
     /**the preferred language of the object using this id*/
@@ -49,31 +49,42 @@ public class RedisID extends ID
 
     /**
      * Constructor taking an id retrieved form the Redis db and transforming it into an ID-object
-     * @param dbId the id retrieved form db (must be of the form "blocks://[siteDomainAlias]/[objectName]:[version]"
+     * @param unversionedDbId the id retrieved form db (must be of the form "blocks://[siteDomainAlias]/[objectName]") without a version attached
      * @throws URISyntaxException when the id cannot properly be transformed into a URI, since this class is actually a wrapper around a URI
      * @throws MalformedURLException when the id cannot properly generate a URL, based on the (in the xml-configuration) specified site-domain
      */
-    public RedisID(String dbId) throws URISyntaxException, MalformedURLException
+    public RedisID(String unversionedDbId, long version) throws MalformedURLException, URISyntaxException
+    {
+        this(unversionedDbId + ":" + version);
+    }
+
+    /**
+     * Constructor taking an id retrieved form the Redis db and transforming it into an ID-object
+     * @param versionedDbId the id retrieved form db (must be of the form "blocks://[siteDomainAlias]/[objectName]:[version]"
+     * @throws URISyntaxException when the id cannot properly be transformed into a URI, since this class is actually a wrapper around a URI
+     * @throws MalformedURLException when the id cannot properly generate a URL, based on the (in the xml-configuration) specified site-domain
+     */
+    public RedisID(String versionedDbId) throws URISyntaxException, MalformedURLException
     {
         super(null);
         /*
          * Split the string into "objectId" and "version"
          * Note: "objectId" could hold ":"-signs
          */
-        String[] splitted = dbId.split(":");
+        String[] splitted = versionedDbId.split(":");
         if(splitted[splitted.length-1].contentEquals(DatabaseConstants.HASH_SUFFIX)){
             //TODO BAS: generalize this when using internationalization
             this.version = Long.parseLong(splitted[splitted.length - 2]);
-            int lastDoublePoint = dbId.lastIndexOf(':');
-            String versionedId = dbId.substring(0, lastDoublePoint);
+            int lastDoublePoint = versionedDbId.lastIndexOf(':');
+            String versionedId = versionedDbId.substring(0, lastDoublePoint);
             int oneButLastDoublePoint = versionedId.lastIndexOf(':');
             String id = versionedId.substring(0, oneButLastDoublePoint);
             this.idUri = new URI(id);
         }
         else {
             this.version = Long.parseLong(splitted[splitted.length - 1]);
-            int lastDoublePoint = dbId.lastIndexOf(':');
-            String id = dbId.substring(0, lastDoublePoint);
+            int lastDoublePoint = versionedDbId.lastIndexOf(':');
+            String id = versionedDbId.substring(0, lastDoublePoint);
             this.idUri = new URI(id);
         }
 

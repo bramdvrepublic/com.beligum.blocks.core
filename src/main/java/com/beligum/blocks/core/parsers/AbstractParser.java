@@ -1,13 +1,24 @@
 package com.beligum.blocks.core.parsers;
 
-import com.beligum.blocks.core.config.CSSClasses;
+import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.ParserConstants;
+import com.beligum.blocks.core.exceptions.ParserException;
+import com.beligum.blocks.core.models.PageTemplate;
 import com.beligum.blocks.core.models.storables.Entity;
+import com.beligum.core.framework.utils.toolkit.BasicFunctions;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.TextNode;
+import org.jsoup.parser.Parser;
+import org.jsoup.select.Elements;
+import sun.org.mozilla.javascript.ast.Block;
 
 import java.net.URL;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by wouter on 21/11/14.
@@ -18,13 +29,15 @@ public abstract class AbstractParser
 
     }
 
-    public static Entity cacheEntity(URL url, String html) {
+    public static Entity cacheEntity(URL url, String html) throws ParserException
+    {
         Document doc = Jsoup.parse(html);
         return EntityParsingNodeVisitor.cache(url, doc);
 
     }
 
-    public static Entity parseEntity(URL url, String html) {
+    public static Entity parseEntity(URL url, String html) throws ParserException
+    {
         Document doc = Jsoup.parse(html);
         return EntityParsingNodeVisitor.parse(url, doc);
 
@@ -100,7 +113,7 @@ public abstract class AbstractParser
     }
 
     public static boolean isReference(Element node) {
-        return node.hasAttr("reference");
+        return node.hasAttr(ParserConstants.REFERENCE_TO);
     }
 
     public static boolean isProperty(Element node) {
@@ -128,7 +141,7 @@ public abstract class AbstractParser
         if (node.hasAttr("typeof")) {
             retVal = node.attr("typeof");
         }
-        if (retVal == null) retVal = CSSClasses.DEFAULT_ENTITY_CLASS;
+        if (retVal == null) retVal = ParserConstants.DEFAULT_ENTITY_CLASS;
         return retVal;
     }
 
@@ -166,8 +179,26 @@ public abstract class AbstractParser
     }
 
 
-    public static String getResource(Element element) {
-        return element.attr("resource");
+    public static Set<String> getChildIdsFromTemplate(String template)
+    {
+        Set<String> childIds = new HashSet<>();
+        Document templateDOM = Jsoup.parse(template, BlocksConfig.getSiteDomain(), Parser.xmlParser());
+        //TODO: hier bezig
+        Elements children = templateDOM.select("[" + ParserConstants.REFERENCE_TO + "]");
+        for(Element child : children){
+            childIds.add(child.attr(ParserConstants.REFERENCE_TO));
+        }
+        return childIds;
+    }
+
+    public static String renderEntitiesInsidePageTemplate(PageTemplate pageTemplate, Entity entity){
+        Document DOM = Jsoup.parse(pageTemplate.getTemplate());
+        Elements referenceBlocks = DOM.select(ParserConstants.REFERENCE_TO);
+        for(Element reference : referenceBlocks){
+            reference.replaceWith(new TextNode(entity.getTemplate(), BlocksConfig.getSiteDomain()));
+        }
+        DOM.traverse(new FillingNodeVisitor());
+        return DOM.outerHtml();
     }
 
 

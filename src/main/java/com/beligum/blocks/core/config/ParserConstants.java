@@ -4,7 +4,7 @@ package com.beligum.blocks.core.config;
  * Created by bas on 03.11.14.
  * CSS-class-names used while parsing html to blocks
  */
-public class CSSClasses
+public class ParserConstants
 {
     /**
      * The css-class indicating that a certain <body>-tag is a entity.
@@ -16,21 +16,11 @@ public class CSSClasses
      * (f.i. 'entity-default' has the prefix 'entity-' added to it's entity-class name 'default')
      */
     public final static String ENTITY_CLASS_PREFIX = "entity-";
-    /**
-     * The prefix which a css-class indicating that a certain <div>-tag is of a certain block-class must have to be recognized as such.
-     * (f.i. 'block-default' has the prefix 'block-' added to it's block-class name 'default')
-     */
-    public final static String BLOCK_CLASS_PREFIX = "block-";
 
-    public final static String ROW = "row";
-    public final static String BLOCK = "block";
+    public final static String LAYOUTABLE = "can-layout";
+    public final static String CREATE_ENABLED = "can-create";
+    public final static String EDITABLE = "can-edit";
 
-    public final static String MODIFIABLE_ROW = "can-modify";
-    public final static String LAYOUTABLE_ROW = "can-layout";
-    public final static String CREATE_ENABLED_ROW = "can-create";
-    public final static String EDITABLE_BLOCK = "can-edit";
-
-    public final static String DEFAULT_BLOCK_CLASS = "default";
     public final static String DEFAULT_ENTITY_CLASS = "default";
 
 
@@ -38,4 +28,14 @@ public class CSSClasses
     public final static String TEMPLATE_ATTR = "template";
     /**the attribute indicating the template-content should be pasted their*/
     public final static String TEMPLATE_CONTENT_ATTR = "template-content";
+
+    /**the name of the variable in the template containing the entity to be rendered inside*/
+    public static final String PAGE_TEMPLATE_ENTITY_VARIABLE_NAME = "entity";
+
+    /**the name of the variable in the new-page template, containing all possible entity-classes*/
+    public static final String ENTITY_CLASSES = "entityClasses";
+    /**the form a reference-node takes inside parsed templates*/
+    public static final String REFERENCE_TO = "reference-to";
+    /**the form a reference-node takes inside parsed templates*/
+    public static final String RESOURCE = "resource";
 }

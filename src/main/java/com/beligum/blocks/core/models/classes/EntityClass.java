@@ -1,18 +1,15 @@
 package com.beligum.blocks.core.models.classes;
 
 import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.config.CSSClasses;
+import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.identifiers.ID;
-import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.storables.Entity;
-import org.apache.commons.configuration.ConfigurationRuntimeException;
 
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Random;
 import java.util.Set;
 
 /**
@@ -58,24 +55,10 @@ public class EntityClass extends AbstractViewableClass
     @Override
     public String getCssClassPrefix()
     {
-        return CSSClasses.ENTITY_CLASS_PREFIX;
+        return ParserConstants.ENTITY_CLASS_PREFIX;
     }
 
-    /**
-     * Method for getting a new randomly determined entity-uid (with versioning) for a entityInstance of this entityClass
-     * @return a randomly generated entity-id of the form "[site-domain]/[entityClassName]/[randomInt]"
-     */
-    public RedisID renderNewEntityID(){
-        try {
-            Random randomGenerator = new Random();
-            int positiveNumber = Math.abs(randomGenerator.nextInt());
-            return new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + this.name + "/" + positiveNumber));
-        }catch(MalformedURLException e){
-            throw new ConfigurationRuntimeException("Specified site-domain doesn't seem to be a correct url: " + BlocksConfig.getSiteDomain(), e);
-        }catch(URISyntaxException e){
-            throw new ConfigurationRuntimeException("Cannot use this site-domain for id-rendering: " + BlocksConfig.getSiteDomain(), e);
-        }
-    }
+
 
     /**
      * returns the base-url for the entity-class

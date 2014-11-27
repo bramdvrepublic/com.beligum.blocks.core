@@ -3,21 +3,17 @@ package com.beligum.blocks.core.parsers;
 import com.beligum.blocks.core.caching.EntityClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.config.CSSClasses;
-import com.beligum.blocks.core.config.VelocityVariables;
+import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.ParserException;
-import com.beligum.blocks.core.identifiers.ID;
-import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.PageTemplate;
 import com.beligum.blocks.core.models.classes.EntityClass;
 import com.beligum.blocks.core.models.storables.Entity;
 import com.beligum.core.framework.utils.Logger;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
-import org.jsoup.nodes.TextNode;
 
-import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -47,14 +43,27 @@ public class EntityParsingNodeVisitor extends AbstractEntityNodeVisitor
         super.head(node, depth);
 
         if (node instanceof Element) {
-            this.pushChildren();
             Element element = (Element) node;
+            if(AbstractParser.isBlock(element)) {
+                this.pushChildren();
+            }
             this.prepareTemplate(element);
         }
     }
 
     @Override
     public void tail(Node node, int depth) {
+        try{
+            this.doTail(node, depth);
+        }
+        catch(ParserException e){
+            Logger.error("Error while parsing node \n \n" + node.outerHtml(), e);
+
+        }
+    }
+
+    public Node doTail(Node node, int depth) throws ParserException
+    {
         super.tail(node, depth);
         // Here we create the new DefaultValue
         if (node instanceof Element) {
@@ -62,47 +71,46 @@ public class EntityParsingNodeVisitor extends AbstractEntityNodeVisitor
             if (AbstractParser.isBlock(element)) {
 
                 Set<Entity> children = this.popChildren();
-                EntityClass entityClass = getEntityClassForElement(element, children);
-                Entity entity = getEntityForElement(element, children);
-                replaceNodeWithReference(element, entity);
+                EntityClass entityClass;
+                if(doCache) {
+                    entityClass = getNewEntityClassFromElement(element, children);
+                }
+                else{
+                    entityClass = getEntityClassForElement(element);
+                }
+                Entity entity = new Entity(entityClass);
+                node = replaceNodeWithReference(element, entity);
                 parsedEntities.add(entity);
                 this.getChildren().add(entity);
             }
             this.createTemplate(element);
-
         }
+        return node;
     }
 
-    private EntityClass getEntityClassForElement(Element element, Set<Entity> children) {
-        EntityClass retVal = null;
-        try {
-            String entityName = AbstractParser.getType(element);
-
-            if (doCache) {
-                EntityClass entityClass = new EntityClass(entityName, children, element.outerHtml(), null);
-                EntityClassCache.getInstance().add(entityClass);
-
-            }
-            retVal = EntityClassCache.getInstance().get(entityName);
-
-        } catch (Exception e) {
-
-        }
-        return retVal;
-    }
-
-    private Entity getEntityForElement(Element element, Set<Entity> children)
+    private EntityClass getEntityClassForElement(Element element) throws ParserException
     {
+        String entityClassName = "";
         try {
-            return new Entity(new RedisID(this.url), this.getChildren(), AbstractParser.getType(element));
+            entityClassName = AbstractParser.getType(element);
+            return EntityClassCache.getInstance().get(entityClassName);
         }
-        catch (RuntimeException e){
-            throw new RuntimeException("Runtime error while getting entity for element \n \n" + element.outerHtml(), e);
+        catch (CacheException e){
+            throw new ParserException("Couldn't get entity-class '" + entityClassName +"' from cache, while parsing: \n \n " + element.outerHtml(), e);
         }
-        catch (Exception e) {
-            Logger.error("Error while getting entity for element \n \n" + element.outerHtml(), e);
-            //TODO: throwing this runtimeexception should be changed to handling the exceptions and showing them to the end-user
-            throw new RuntimeException("Something went wrong which should be handled in a catch-clause.", e);
+    }
+
+    private EntityClass getNewEntityClassFromElement(Element element, Set<Entity> children) throws ParserException
+    {
+        String entityClassName = "";
+        try {
+            entityClassName = AbstractParser.getType(element);
+            EntityClass entityClass = new EntityClass(entityClassName, children, element.outerHtml(), null);
+            EntityClassCache.getInstance().add(entityClass);
+            return EntityClassCache.getInstance().get(entityClassName);
+        }
+        catch(URISyntaxException | CacheException e){
+            throw new ParserException("Error while creating new entity-class '" + entityClassName +"'.", e);
         }
     }
 
@@ -119,11 +127,12 @@ public class EntityParsingNodeVisitor extends AbstractEntityNodeVisitor
     }
 
     protected Set<Entity> getChildren() {
-        Set<Entity> retVal = null;
         if (!this.entitySet.empty()) {
-            retVal = this.entitySet.peek();
+            return this.entitySet.peek();
         }
-        return retVal;
+        else {
+            return new HashSet<Entity>();
+        }
     }
 
     public Set<Entity> getAllParsedEntities() {
@@ -141,26 +150,25 @@ public class EntityParsingNodeVisitor extends AbstractEntityNodeVisitor
     }
 
     protected void prepareTemplate(Element element) {
-        if (element.tag().equals("html") && element.hasAttr(CSSClasses.TEMPLATE_ATTR)) {
+        if (element.tag().equals("html") && element.hasAttr(ParserConstants.TEMPLATE_ATTR)) {
             this.template = element;
         }
     }
 
     protected void createTemplate(Element element)
     {
-        if (element.hasAttr(CSSClasses.TEMPLATE_CONTENT_ATTR) && doCache) {
+        if (element.hasAttr(ParserConstants.TEMPLATE_CONTENT_ATTR) && doCache) {
             try {
                 Element parent = element.parent();
                 //initialize the page-template name by searching for the first template-attribute we find before the specified node and take the value of that attribute to be the name
                 String templateName = "";
                 while (parent.parent() != null) {
                     if (parent.tagName().equals("html")) {
-                        templateName = parent.attr(CSSClasses.TEMPLATE_ATTR);
+                        templateName = parent.attr(ParserConstants.TEMPLATE_ATTR);
                     }
                     parent = parent.parent();
                 }
-                Node newNode = new TextNode("${" + VelocityVariables.ENTITY_VARIABLE_NAME + "}", BlocksConfig.getSiteDomain());
-                element.replaceWith(newNode);
+                this.replaceNodeWithReference(element, ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME);
                 PageTemplate pageTemplate = new PageTemplate(templateName, parent.outerHtml());
                 PageTemplateCache.getInstance().add(pageTemplate);
             } catch (Exception e) {
@@ -171,15 +179,19 @@ public class EntityParsingNodeVisitor extends AbstractEntityNodeVisitor
     }
 
 
-    public static Entity cache(URL url, Element element) {
+    public static Entity cache(URL url, Element element) throws ParserException
+    {
         EntityParsingNodeVisitor visitor = new EntityParsingNodeVisitor(url, true);
-        element.traverse(visitor);
+        EntityNodeTraversor traversor = new EntityNodeTraversor(visitor);
+        traversor.traverse(element);
         return visitor.getParsedEntity();
     }
 
-    public static Entity parse(URL url, Element element) {
+    public static Entity parse(URL url, Element element) throws ParserException
+    {
         EntityParsingNodeVisitor visitor = new EntityParsingNodeVisitor(url, false);
-        element.traverse(visitor);
+        EntityNodeTraversor traversor = new EntityNodeTraversor(visitor);
+        traversor.traverse(element);
         return visitor.getParsedEntity();
     }
 }

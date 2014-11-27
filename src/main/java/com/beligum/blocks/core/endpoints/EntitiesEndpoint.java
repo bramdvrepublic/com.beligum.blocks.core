@@ -2,15 +2,15 @@ package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.caching.EntityClassCache;
 import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.config.VelocityVariables;
+import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.ParserException;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.models.classes.EntityClass;
 import com.beligum.blocks.core.models.storables.Entity;
-import com.beligum.blocks.core.validation.ValidationEntity;
 import com.beligum.blocks.core.parsers.AbstractParser;
+import com.beligum.blocks.core.validation.ValidationEntity;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.templating.ifaces.Template;
 import org.hibernate.validator.constraints.NotBlank;
@@ -37,7 +37,7 @@ public class EntitiesEndpoint
     {
         Template template = R.templateEngine().getEmptyTemplate("/views/new-page.html");
         Collection<EntityClass> pageClasses = EntityClassCache.getInstance().getCache().values();
-        template.set(VelocityVariables.ENTITY_CLASSES, pageClasses);
+        template.set(ParserConstants.ENTITY_CLASSES, pageClasses);
         return Response.ok(template).build();
     }
 
@@ -60,7 +60,8 @@ public class EntitiesEndpoint
         EntityClass entityClass = cache.get(entityClassName);
 
         Redis redis = Redis.getInstance();
-        Entity newEntity = redis.getNewEntity(entityClass);
+        //this constructor will create a fresh entity, uniquely IDed by Redis
+        Entity newEntity = new Entity(entityClass);
         redis.save(newEntity);
             /*
              * Redirect the client to the newly created page

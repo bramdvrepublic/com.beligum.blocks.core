@@ -1,34 +1,29 @@
-#define($header-styles-extra)
+<html>
+<head>
 <link  href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
 <link href="/assets/stylesheets/styles.less" rel="stylesheet" />
-#end
+</head>
 
-#define($header-scripts-extra)
-
-#end
-
-#define($body-html)
-<div class="entity entity-default container" typeof="pagina">
-
-    <div class="row can-edit" id="eersteRij" typeof="helloworld">
+<body>
+<div class="container" typeof="page">
+    <div class="row can-edit"typeof="helloworld">
         <div class="col-md-12 column">
-            <div class="block center-block" id="titeltje">
+            <div class="center-block">
                 <h1>Hello world!</h1>
             </div>
         </div>
     </div>
-    <div class="row can-edit" id="tweedeRij">
+    <div class="row can-edit" typeof="blabla">
         <script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
-        <script src="/templates/entities/default/scripts.js" type="application/javascript" ></script>
+        <script src="/templates/entities/pagina.js" type="application/javascript" ></script>
         <div class="col-md-6 column">
-            <div class="block can-edit" id="vanalles" typeof="veranderbaar">
+            <div class="can-edit" typeof="veranderbaar">
                 Hier zult u vanalles kunnen plaatsen...
             </div>
         </div>
         <div class="col-md-6 column" typeof="onveranderbaar">
-            <div class="block" id="niets">
-                Hier kunt u niets veranderen...
-            </div>
+            Hier kunt u niets veranderen...
+            <img>
         </div>
     </div>
     <div class="row" id="knoprij">
@@ -39,7 +34,5 @@
         </div>
     </div>
 </div>
-#end
-
-##TODO BAS: this should not have to be explicitly mentioned here
-#parse("/views/templates/main.html")
+</body>
+</html>
