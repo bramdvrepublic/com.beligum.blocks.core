@@ -1,4 +1,4 @@
-blocks.plugin("blocks.core.notification", [function() {
+blocks.plugin("blocks.core.Notification", ["blocks.core.Broadcaster", function(Broadcaster) {
     // Todo show/hide overlay
     this.dialog = function(title, message, okFunction, cancelFunction) {
         var modal = $("<div class='modal'></div>").css("background-color", "#ffffff");
@@ -8,13 +8,14 @@ blocks.plugin("blocks.core.notification", [function() {
         var modalTitle = $("<h4 class='modal-title'>" + title + "</h4>");
         var modalBody = $("<div class='modal-body'>" + message + "</div>");
         var modalFooter = $("<div class='modal-footer'></div>");
-        var closeButton = $('<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>');
+        var closeButton = $('<button type="button" class="btn btn-default" >Cancel</button>');
         var okButton = $('<button type="button" class="btn btn-primary">Ok</button>');
 
         var hideDialog = function(callback) {
             modal.fadeOut(200, function() {
                 modal.remove();
-                callback();
+                Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE());
+                callback(modalBody);
             });
         };
 
@@ -24,13 +25,19 @@ blocks.plugin("blocks.core.notification", [function() {
             modalFooter.append(closeButton)
         } else {
             okButton.on("click", function() {hideDialog(okFunction)});
+            closeIcon.on("click", function() {hideDialog(okFunction)});
         }
 
+        Broadcaster.send(new Broadcaster.EVENTS.DEACTIVATE_MOUSE());
         modalFooter.append(okButton);
         modal.append(modalDialog.append(modalHeader.append(closeIcon).append(modalTitle)).append(modalBody).append(modalFooter));
         modal.hide();
+        modal.addClass("modal-centered");
         $("body").append(modal);
+        modal.css("margin-left", -modal.width()/2)
+        modal.css("margin-top", -modal.height()/2);
         modal.fadeIn(200);
+
     };
 
     this.alert = function(title, message, okFunction) {

@@ -13,7 +13,7 @@
 * */
 // TODO refactor, put some things in config (element classes etc)
 // TODO when showing menu set height block double of menu
-blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", function(Broadcaster) {
+blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.Overlay", function(Broadcaster, Overlay) {
 
     // on hoover block show menu
     var menuElement = $('<div id="blocks-core-block-menu" class="block-menu btn-group-xs btn-group" style="z-index: 600"></div>');
@@ -24,6 +24,13 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", function(Broa
         clearTimeout(timeOutHandler);
         menuElement.hide();
         activeBlock = blockEvent.block.current;
+        for (var i = 0; i < buttons.length; i++) {
+            if (buttons[i].enabled != null && !buttons[i].enabled(activeBlock)) {
+                $(buttons[i].element).addClass("disabled");
+            } else {
+                $(buttons[i].element).removeClass("disabled");
+            }
+        }
         timeOutHandler = setTimeout(function() {
             menuElement.css("position", "absolute");
             menuElement.css("top", activeBlock.top + "px");
@@ -32,8 +39,9 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", function(Broa
             var menuLeft = activeBlock.left + ((activeBlock.right - activeBlock.left) / 2) - (menuWidth / 2);
             if (menuLeft < 0) menuLeft = 0;
             menuElement.css("left", menuLeft + "px");
-            menuElement.show();
-        }, 400);
+            menuElement.css("z-index", Overlay.maxIndex() + 1);
+            menuElement.fadeIn(500);
+        }, 200);
     };
 
     var hideMenuElement = function() {
@@ -71,7 +79,7 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", function(Broa
             // No block = remove menu
             if (blockEvent.block.current == null) {
                 // if mouse is still in current menu, then do not remove it.
-                // TODO: does not yet work :)
+                // TODO: does not yet work. Or does it?
                 if (!mouseOverMenu(blockEvent.event)) {
                     hideMenuElement();
                 }

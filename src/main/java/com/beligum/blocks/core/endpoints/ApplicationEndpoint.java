@@ -31,6 +31,24 @@ public class ApplicationEndpoint
         return Response.ok(indexTemplate).build();
     }
 
+    @Path("/wetenschapper")
+    @GET
+    public Response wetenschapper()
+    {
+        Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/wetenschapper.html");
+        //        TypeCacher.instance().reset();
+        return Response.ok(indexTemplate).build();
+    }
+
+    @Path("/")
+    @GET
+    public Response overzicht()
+    {
+        Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/overzicht.html");
+        //        TypeCacher.instance().reset();
+        return Response.ok(indexTemplate).build();
+    }
+
 //    @Path("/show")
 //    @GET
 //    public Response show()
@@ -53,7 +71,7 @@ public class ApplicationEndpoint
     }
 
     //using regular expression to let all requests to undefined paths end up here
-    @Path("/{randomPage:.+}")
+    @Path("/test/{randomPage:.+}")
     @GET
     public Response getPageWithId(@PathParam("randomPage") String randomURLPath)
     {

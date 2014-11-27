@@ -10,30 +10,18 @@
 * */
 // TODO add button to layout inside a parsedContent block
 // block-parsedContent class
-blocks.plugin("blocks.core.BlockMenu.new", ["blocks.core.BlockMenu", "blocks.core.Layouter",  function(Menu, Layouter) {
-    var button = $('<div type="button" class="btn btn-default"><i class="glyphicon glyphicon-asterisk"></i></div>')
-    Menu.addButton({
-        element: button,
-        priority: 100
-    })
-
-    var newBlock = $('<div class="block"><p></p></div>');
-
-    button.on("click", function(event) {
-        Layouter.addNewBlockAtLocation($('<div class="block green"><p>New block. Edit here ...</p></div>'), Menu.currentBlock());
-    })
-}]);
 
 
-blocks.plugin("blocks.core.BlockMenu.delete", ["blocks.core.BlockMenu", "blocks.core.Layouter", "blocks.core.notification", function(Menu, Layouter, notification) {
+blocks.plugin("blocks.core.BlockMenu.delete", ["blocks.core.BlockMenu", "blocks.core.Layouter", "blocks.core.Notification", function(Menu, Layouter, Notification) {
     var button = $('<div type="button" class="btn btn-default"><i class="glyphicon glyphicon-trash"></i></div>')
     Menu.addButton({
         element: button,
         priority: 105
     })
-    var currentBlock = Menu.currentBlock();
+
     button.on("click", function(event) {
-        notification.alert("Delete", "<p>You will now delete this block!</p>", function() {
+        var currentBlock = Menu.currentBlock();
+        Notification.alert("Delete", "<p>You will now delete this block!</p>", function() {
             Layouter.removeBlock(currentBlock);
         });
     })

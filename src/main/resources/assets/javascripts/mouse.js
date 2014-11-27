@@ -66,8 +66,8 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
     // flag if this module is active
     var active = false;
     // dragging options, kept here for parsedContent while waiting for drag
-    var draggingStatus = Constants.DRAGGING.DISABLED;
-    var draggingOptions = {startEvent: null, owner: null, priority: null};
+    var draggingStatus = Constants.DRAGGING.NO;
+    var draggingStart = null;
     // the active block for the last 2 mouseEvents
     var block = {current: null, previous: null};
     // array of coordinates {x, y} from the last mouseEvents, used to calculate the direction
@@ -79,13 +79,9 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
     var resetMouse = function (force) {
         windowFrame = {width: window.innerWidth, height: window.innerHeight}
         block = {current: null, previous: null};
-        if (draggingStatus != Constants.DRAGGING.NOT_ALLOWED) {
-            draggingStatus = Constants.DRAGGING.DISABLED;
-            Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.DRAG_DISABLED(draggingOptions.priority, draggingOptions.owner));
-        }
-        draggingOptions.startEvent = null;
-        draggingOptions.owner = null;
-        draggingOptions.priority = null;
+        draggingStart = null;
+        draggingStatus = Constants.DRAGGING.NO;
+        Broadcaster.send(new Broadcaster.EVENTS.ENABLE_BLOCK_DRAG);
     };
 
 
@@ -151,13 +147,11 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
             event: event,
             block: block,
             direction: calculateDirection(event),
-            draggingStatus: draggingStatus
+            draggingStatus: draggingStatus,
+            draggingStart: draggingStart
         };
 
-        if (draggingStatus == Constants.DRAGGING.YES) {
-            blocksEvent.draggingOptions = draggingOptions;
-            blocksEvent.draggingStatus = draggingStatus;
-        }
+
         return blocksEvent;
     };
 
@@ -178,10 +172,10 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
             // check for left mouse click
             if (event.which == 1) {
                 var currentEvent = createBlockEvent(event);
-                if (draggingStatus == Constants.DRAGGING.ENABLED &&
+                if (draggingStatus == Constants.DRAGGING.NO &&
                     currentEvent.block.current != null) {
                     draggingStatus = Constants.DRAGGING.WAITING;
-                    draggingOptions.startEvent = event;
+                    draggingStart = event;
                     disableSelection();
                 } else {
                     Logger.debug("We can not start because dragging is already in place or not allowed. " + draggingStatus);
@@ -192,7 +186,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
                 }
             } else {
                 // middle or right mouse button presses
-                //TODO
+                //TODO ??
                 if (draggingStatus == Constants.DRAGGING.YES) {
                     Broadcaster.send(new Broadcaster.EVENTS.ABORT_DRAG(createBlockEvent(event)));
                 }
@@ -222,8 +216,8 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
      * While waiting for drag, check if threshold is activated to really start drag
      * */
     var enableDragAfterTreshold = function (event) {
-        if (Math.abs(draggingOptions.startEvent.pageX - event.pageX) > config.DRAGGING_THRESHOLD ||
-            Math.abs(draggingOptions.startEvent.pageY - event.pageY) > config.DRAGGING_THRESHOLD) {
+        if (Math.abs(draggingStart.pageX - event.pageX) > config.DRAGGING_THRESHOLD ||
+            Math.abs(draggingStart.pageY - event.pageY) > config.DRAGGING_THRESHOLD) {
             draggingStatus = Constants.DRAGGING.YES;
             Broadcaster.send(new Broadcaster.EVENTS.START_DRAG(createBlockEvent(event)));
         }
@@ -234,7 +228,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
      * */
     var mouseMove = function (event) {
         if (active) {
-            createBlockEvent(event);
+            var blockEvent = createBlockEvent(event);
             // Abort outside window
             if (event.pageX < 0 || event.pageY > windowFrame.width || event.pageY < 0 || event.pageY > windowFrame.height) {
                 mouseUp(event);
@@ -243,29 +237,31 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
             } else if (draggingStatus != Constants.DRAGGING.YES) {
                 if (block.current != block.previous) {
                     if (block.current == null) {
-                        Broadcaster.send(new Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK(createBlockEvent(event)));
+                        Broadcaster.send(new Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK(blockEvent));
                     } else if (block.previous == null) {
-                        Broadcaster.send(new Broadcaster.EVENTS.HOOVER_ENTER_BLOCK(createBlockEvent(event)));
+                        Broadcaster.send(new Broadcaster.EVENTS.HOOVER_ENTER_BLOCK(blockEvent));
                     } else {
-                        Broadcaster.send(new Broadcaster.EVENTS.HOOVER_ENTER_BLOCK(createBlockEvent(event)));
-                        Broadcaster.send(new Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK(createBlockEvent(event)));
+                        Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK(blockEvent));
+                        Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.HOOVER_ENTER_BLOCK(blockEvent));
+
+                        //Logger.debug("changed blocks");
                     }
                 } else if (block.current != null) {
-                    Broadcaster.send(new Broadcaster.EVENTS.HOOVER_OVER_BLOCK(createBlockEvent(event)));
+                    Broadcaster.send(new Broadcaster.EVENTS.HOOVER_OVER_BLOCK(blockEvent));
                 }
 
             } else if (draggingStatus == Constants.DRAGGING.YES) {
                 if (block.current != block.previous) {
                     if (block.current == null) {
-                        Broadcaster.send(new Broadcaster.EVENTS.DRAG_LEAVE_BLOCK(createBlockEvent(event)));
+                        Broadcaster.send(new Broadcaster.EVENTS.DRAG_LEAVE_BLOCK(blockEvent));
                     } else if (block.previous == null) {
-                        Broadcaster.send(new Broadcaster.EVENTS.DRAG_ENTER_BLOCK(createBlockEvent(event)));
+                        Broadcaster.send(new Broadcaster.EVENTS.DRAG_ENTER_BLOCK(blockEvent));
                     } else {
-                        Broadcaster.send(new Broadcaster.EVENTS.DRAG_ENTER_BLOCK(createBlockEvent(event)));
-                        Broadcaster.send(new Broadcaster.EVENTS.DRAG_LEAVE_BLOCK(createBlockEvent(event)));
+                        Broadcaster.send(new Broadcaster.EVENTS.DRAG_ENTER_BLOCK(blockEvent));
+                        Broadcaster.send(new Broadcaster.EVENTS.DRAG_LEAVE_BLOCK(blockEvent));
                     }
                 } else if (block.current != null) {
-                    Broadcaster.send(new Broadcaster.EVENTS.DRAG_OVER_BLOCK(createBlockEvent(event)));
+                    Broadcaster.send(new Broadcaster.EVENTS.DRAG_OVER_BLOCK(blockEvent));
                 }
 
             }
@@ -273,49 +269,14 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
     };
 
 
-    var enableDrag = function (event) {
-        Logger.debug("Request to enable drag for " + event.owner);
-
-        if ((draggingOptions.priority <= event.priority
-            || draggingStatus == Constants.DRAGGING.DISABLED)
-            && draggingStatus != Constants.DRAGGING.NOT_ALLOWED) {
-                Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.DRAG_DISABLED(draggingOptions.priority, draggingOptions.owner));
-                event.callback();
-                draggingOptions.owner = event.owner;
-                draggingOptions.priority = event.priority;
-                draggingOptions.callback = event.callback;
-                draggingStatus = Constants.DRAGGING.ENABLED;
-                Logger.debug("Dragging enabled for " + event.owner);
-        } else {
-            // Another element with a higher priority is already selected
-            Logger.debug("Dragging is already reserved for namespace " + draggingOptions.owner);
-        }
-
-    };
-
-    var disableDrag = function (event) {
-        // Do nothing if dragging is not allowed or not allowed status could be overwritten
-        if (draggingStatus == Constants.DRAGGING.NOT_ALLOWED) return;
-        Logger.debug("Request to disable drag for " + event.owner);
-
-        // TODO: check if someone with higher priority can disable drag from lower priority namespace
-        if (draggingStatus == Constants.DRAGGING.ENABLED && event.owner == draggingOptions.owner) {
-            resetMouse();
-            Logger.debug("Dragging for " + event.owner + " disabled")
-        } else {
-            Logger.debug("Dragging is reserved for other owner " + draggingOptions.owner);
-        }
-    };
 
     var disallowDrag = function() {
         Logger.debug("Dragging not allowed");
-        draggingOptions.surface = null;
         draggingStatus = Constants.DRAGGING.NOT_ALLOWED;
     };
 
     var allowDrag = function() {
         Logger.debug("Dragging allowed");
-        draggingStatus = Constants.DRAGGING.DISABLED;
         resetMouse(true);
     };
 
@@ -380,8 +341,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
         // TODO: What if layout refreshes while we are dragging
         resetMouse();
     });
-    Broadcaster.on(Broadcaster.EVENTS.ENABLE_DRAG, "blocks.core.Mouse", function (event) {enableDrag(event);});
-    Broadcaster.on(Broadcaster.EVENTS.DISABLE_DRAG, "blocks.core.Mouse", function (event) {disableDrag(event);});
+
     Broadcaster.on(Broadcaster.EVENTS.ACTIVATE_MOUSE, "blocks.core.Mouse", function () {registerMouseEvents();});
     Broadcaster.on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, "blocks.core.Mouse", function () {unregisterMouseEvents();});
     Broadcaster.on(Broadcaster.EVENTS.DO_ALLOW_DRAG, "blocks.core.Mouse", function () {allowDrag();});
@@ -391,6 +351,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
     if (this.config.ACTIVATE_AT_BOOT) {
         $(document).ready(function () {
             registerMouseEvents();
+
         });
     }
 

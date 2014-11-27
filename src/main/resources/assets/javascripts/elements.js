@@ -153,7 +153,9 @@ blocks
             right: 0,
             element: null,
             parent: null,
-            isLayoutable: false,
+            canLayout: false,
+            canDrag: false,
+            canEdit: false,
 
             constructor: function (top, bottom, left, right, element, parent, index) {
                 layoutElement.Super.call(this, top, bottom, left, right);
@@ -162,7 +164,20 @@ blocks
                 this.element = element;
                 this.children = [];
                 this.resizeHandles = [];
-                this.isLayoutable = false;
+                this.canDrag = false;
+                if (element != null) {
+                    this.canEdit = DOM.canEdit(element);
+                    if (this.parent != null) {
+                        if (this.parent.canLayout || this.parent.canDrag) {
+                            this.canDrag = true;
+                        }
+                    } else {
+                        this.canLayout = DOM.canLayout(element);
+                        if (this.canLayout) {
+                            this.canDrag = true;
+                        }
+                    }
+                }
             },
 
             // Easily walk the tree and find the block that contains the coordinates
@@ -261,13 +276,17 @@ blocks
             // find all dropspots for an element
             // is called for a block and returns all dropspots for this block and his parents.
             calculateDropspots: function(side, dropspots) {
+                if (this instanceof column) {
+                    var x = 0;
+                }
+
                 if (side == Constants.SIDE.LEFT || side == Constants.SIDE.RIGHT) {
                     if (this instanceof column ||
                         (this instanceof block &&
                             (this.element.next().length > 0 || this.element.prev().length > 0))) {
                         dropspots.push(new dropspot(side, this));
                     }
-                } else {
+                } else { // TOP & BOTTOM
                     if (this instanceof row || this instanceof block) {
                         dropspots.push(new dropspot(side, this));
                     }
@@ -278,112 +297,20 @@ blocks
                 return dropspots;
             },
 
-            setLayoutable: function(canLayout) {
-                if (canLayout) {
-                    this.isLayoutable = canLayout;
-                } else if (!this.isLayoutable && this.parent != null) {
-                    this.isLayoutable = this.parent.isLayoutable;
-                } else {
-                    this.isLayoutable = false;
-                }
-            },
 
-            canEdit: function() {
-                return true;
-            }
-        });
-
-        // A row inside a column or a container
-        // Can only contain columns
-        var row = Class.create(layoutElement, {
-
-            constructor: function (top, bottom, left, right, element, parent, index) {
-                row.Super.call(this, top, bottom, left, right, element, parent, index);
-                this.setLayoutable(DOM.canLayoutRow(element));
-                if ((element.hasAttribute(Constants.IS_ENTITY) || element.hasAttribute(Constants.IS_PROPERTY)) && !element.hasAttribute(Constants.FAKE_BLOCK)) {
-                    element.attr(Constants.FAKE_BLOCK, "");
-                    var newBlock = new block(top, bottom, left, right, element, this.parent, 0);
-                    this.children.push(newBlock);
-                } else {
-                    this.generateChildren();
-                }
-            },
-
-            generateChildren: function () {
-                // check only for columns
-                var columns = this.element.children("." + Constants.COLUMN_CLASS);
-                var innerZone = new layoutElement(this.top, this.bottom, this.left, this.right, null);
-
-                if (columns.length > 0) {
-                    var columnCount = columns.length;
-                    var oldColumn = null;
-                    for (var i = 0; i < columnCount; i++) {
-                        // create zone for child
-                        var currentColumn = $(columns[i]);
-                        var zoneLeft = innerZone.left;
-                        var zoneRight = innerZone.right;
-                        if (i > 0) { // Not first column
-                            // left side is between previous column and this column
-                            var previousColumn = $(columns[i - 1]);
-                            zoneLeft = (this.calculateRight(previousColumn) + this.calculateLeft(currentColumn)) / 2;
-                        }
-                        if (i < columnCount - 1) { // not last column
-                            // right side is between next column and this column
-                            var nextColumn = $(columns[i + 1]);
-                            zoneRight = (this.calculateRight(currentColumn) + this.calculateLeft(nextColumn)) / 2;
-                        }
-                        var newColumn = new column(innerZone.top, innerZone.bottom, zoneLeft, zoneRight, currentColumn, this, i);
-                        if (oldColumn != null) {
-                            // add resizeHandle
-                            this.resizeHandles.push(new resizeHandle(oldColumn, newColumn));
-                        }
-
-                        this.children.push(newColumn);
-                        oldColumn = newColumn;
-                    }
-                }
-            },
-
-            isOuterTop: function () { return this.element.prev().length == 0 },
-            isOuterBottom: function () { return this.element.next().length == 0 },
-
-            // Override
-            getElementAtSide: function(side) {
-                if (side == Constants.SIDE.TOP) {
-                    return this.getPrevious();
-                } else if (side == Constants.SIDE.BOTTOM) {
-                    return this.getNext();
-                } else {
-                    return null;
-                }
-            }
-
-
-
-
-
-        });
-
-        // A column (inside a row) -> Can contain rows or blocks
-        var column = Class.create(layoutElement, {
-            constructor: function (top, bottom, left, right, element, parent, index) {
-                column.Super.call(this, top, bottom, left, right, element, parent, index);
-                // will be set to true if parent is true
-                this.setLayoutable(false);
-                if ((element.hasAttribute(Constants.IS_ENTITY) || element.hasAttribute(Constants.IS_PROPERTY)) && !element.hasAttribute(Constants.FAKE_BLOCK)) {
-                    element.attr(Constants.FAKE_BLOCK, "");
-                    var newBlock = new block(top, bottom, left, right, element, this.parent, 0);
-                    this.children.push(newBlock);
-                } else {
-                    this.generateChildren();
-                }
-            },
-
-            generateChildren: function () {
+            generateChildrenForColumn: function () {
                 var childType = Constants.ROW_CLASS;
                 var rows = this.element.children("." + Constants.ROW_CLASS);
                 if (rows.length == 0) {
-                    rows = this.element.children("." + Constants.BLOCK_CLASS);
+                    var rows = this.element.children();
+                    var blocks = true;
+                    for (var x=0; i < rows.length; i++) {
+                        if ($(rows[x].css('display') !== 'block')) {
+                            blocks = fals;
+                            rows = [];
+                            break;
+                        }
+                    }
                     childType = Constants.BLOCK_CLASS;
                 }
 
@@ -419,6 +346,91 @@ blocks
                 }
             },
 
+            generateChildrenForRow: function () {
+                // check only for columns
+                var columns = this.element.children("." + Constants.COLUMN_CLASS);
+                var innerZone = new layoutElement(this.top, this.bottom, this.left, this.right, null);
+
+                if (columns.length > 0) {
+                    var columnCount = columns.length;
+                    var oldColumn = null;
+                    for (var i = 0; i < columnCount; i++) {
+                        // create zone for child
+                        var currentColumn = $(columns[i]);
+                        var zoneLeft = innerZone.left;
+                        var zoneRight = innerZone.right;
+                        if (i > 0) { // Not first column
+                            // left side is between previous column and this column
+                            var previousColumn = $(columns[i - 1]);
+                            zoneLeft = (this.calculateRight(previousColumn) + this.calculateLeft(currentColumn)) / 2;
+                        }
+                        if (i < columnCount - 1) { // not last column
+                            // right side is between next column and this column
+                            var nextColumn = $(columns[i + 1]);
+                            zoneRight = (this.calculateRight(currentColumn) + this.calculateLeft(nextColumn)) / 2;
+                        }
+                        var newColumn = new column(innerZone.top, innerZone.bottom, zoneLeft, zoneRight, currentColumn, this, i);
+                        if (oldColumn != null) {
+                            // add resizeHandle
+                            this.resizeHandles.push(new resizeHandle(oldColumn, newColumn));
+                        }
+
+                        this.children.push(newColumn);
+                        oldColumn = newColumn;
+                    }
+                }
+            }
+
+        });
+
+        // A row inside a column or a container
+        // Can only contain columns
+        var row = Class.create(layoutElement, {
+
+            constructor: function (top, bottom, left, right, element, parent, index) {
+                row.Super.call(this, top, bottom, left, right, element, parent, index);
+
+                if (!(this instanceof container) && (element.hasAttribute(Constants.IS_ENTITY) || element.hasAttribute(Constants.IS_PROPERTY)) && !element.hasAttribute(Constants.FAKE_BLOCK)) {
+                    element.attr(Constants.FAKE_BLOCK, "");
+                    var newBlock = new block(top, bottom, left, right, element, this.parent, 0);
+                    this.children.push(newBlock);
+                } else {
+                    this.generateChildrenForRow();
+                }
+            },
+
+
+            isOuterTop: function () { return this.element.prev().length == 0 },
+            isOuterBottom: function () { return this.element.next().length == 0 },
+
+            // Override
+            getElementAtSide: function(side) {
+                if (side == Constants.SIDE.TOP) {
+                    return this.getPrevious();
+                } else if (side == Constants.SIDE.BOTTOM) {
+                    return this.getNext();
+                } else {
+                    return null;
+                }
+            }
+
+        });
+
+        // A column (inside a row) -> Can contain rows or blocks
+        var column = Class.create(layoutElement, {
+            constructor: function (top, bottom, left, right, element, parent, index) {
+                column.Super.call(this, top, bottom, left, right, element, parent, index);
+                // will be set to true if parent is true
+
+                if (!(this instanceof container) && (element.hasAttribute(Constants.IS_ENTITY) || element.hasAttribute(Constants.IS_PROPERTY)) && !element.hasAttribute(Constants.FAKE_BLOCK)) {
+                    element.attr(Constants.FAKE_BLOCK, "");
+                    var newBlock = new block(top, bottom, left, right, element, this.parent, 0);
+                    this.children.push(newBlock);
+                } else {
+                    this.generateChildrenForColumn();
+                }
+            },
+
             isOuterLeft: function () { return this.element.prev().length == 0 },
             isOuterRight: function () { return this.element.next().length == 0 },
 
@@ -438,6 +450,11 @@ blocks
         var container = Class.create(row, {
             constructor: function (element) {
                 container.Super.call(this, this.calculateTop(element), this.calculateBottom(element), this.calculateLeft(element), this.calculateRight(element), element, null, 0);
+                if (DOM.isColumn(element) || DOM.isContainer(element)) {
+                    this.generateChildrenForColumn();
+                } else if (DOM.isRow(element)) {
+                   this.generateChildrenForRow();
+                }
             }
         });
 
@@ -447,11 +464,11 @@ blocks
                 block.Super.call(this, top, bottom, left, right, element, parent, index);
                 element.removeAttr(Constants.FAKE_BLOCK);
                 // if a block is editable does not depend on the parent
-                this.isEditable = DOM.canEditBlock(element);
+
                 this.children = [];
                 // Only generate dropspots if one of parents is layoutable
                 this.dropspots = {};
-                if (this.isLayoutable) {
+                if (this.canDrag) {
                     this.verticalMiddle = this.left + ((this.right - this.left) / 2);
                     this.horizontalMiddle = this.top + ((this.bottom - this.top) / 2);
                     this.generateDropspots();
@@ -470,13 +487,46 @@ blocks
             },
 
             isOuterTop: function () {
-                return this.element.prev().length == 0
+                var retVal = true;
+                if (!DOM.isColumn(this.element)) {
+                    retVal = this.element.prev().length == 0
+                }
+                return retVal;
             },
             isOuterBottom: function () {
-                return this.element.next().length == 0
+                var retVal = true;
+                if (!DOM.isColumn(this.element)) {
+                    retVal = this.element.next().length == 0
+                }
+                return retVal;
             },
+
+            isOuterLeft: function () {
+                var retVal = true;
+                if (DOM.isColumn(this.element)) {
+                    retVal = this.element.prev().length == 0
+                }
+                return retVal;
+            },
+            isOuterRight: function () {
+                var retVal = true;
+                if (DOM.isColumn(this.element)) {
+                    retVal = this.element.next().length == 0
+                }
+                return retVal;
+            },
+
             getElementAtSide: function(side) {
-                if (side == Constants.SIDE.TOP) {
+                // TODO if block is column, this is not correct
+                if (DOM.isColumn(this.element)) {
+                    if (side == Constants.SIDE.LEFT) {
+                        return this.getPrevious();
+                    } else if (side == Constants.SIDE.RIGHT) {
+                        return this.getNext();
+                    } else {
+                        return null;
+                    }
+                } else if (side == Constants.SIDE.TOP) {
                     return this.getPrevious();
                 } else if (side == Constants.SIDE.BOTTOM) {
                     return this.getNext();

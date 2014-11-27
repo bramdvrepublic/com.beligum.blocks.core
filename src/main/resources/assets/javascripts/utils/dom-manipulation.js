@@ -18,11 +18,11 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Broadcaster", "blocks
     var DOM = this;
     // Get column width (in grid units 1-12, not pixels)
 
-    this.canEditBlock = function(element) {
+    this.canEdit = function(element) {
         return element.hasClass(Constants.CAN_EDIT_BLOCK_CLASS);
     };
 
-    this.canLayoutRow = function(element) {
+    this.canLayout = function(element) {
         return element.hasClass(Constants.CAN_LAYOUT_ROW_CLASS);
     };
 
@@ -32,6 +32,10 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Broadcaster", "blocks
 
     this.isColumn = function(element) {
         return element.hasClass(Constants.COLUMN_CLASS);
+    }
+
+    this.isContainer = function(element) {
+        return element.hasClass(Constants.CONTAINER_CLASS);
     }
 
     this.isBlock = function(element) {

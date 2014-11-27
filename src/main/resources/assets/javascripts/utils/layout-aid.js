@@ -6,7 +6,7 @@
 *
 * */
 
-blocks.plugin("blocks.core.LayoutAid", ["blocks.core.Layouter", "blocks.core.Broadcaster", "blocks.core.Elements", "blocks.core.Constants", function(Layouter, Broadcaster, Elements, Constants) {
+blocks.plugin("blocks.core.LayoutAid", ["blocks.core.Layouter", "blocks.core.Broadcaster", "blocks.core.Elements", "blocks.core.Constants", "blocks.core.Overlay", function(Layouter, Broadcaster, Elements, Constants, Overlay) {
 
     var layoutFrame = $('<div style="position: absolute; top: 0px; left: 0px; z-index: 500;" />');
     var createLayoutFrame = function() {
@@ -42,26 +42,37 @@ blocks.plugin("blocks.core.LayoutAid", ["blocks.core.Layouter", "blocks.core.Bro
         layoutFrame.remove();
     };
 
+    var currentBlock = null;
+
     var enterBlockHoover = function(blockEvent) {
         if (blockEvent.block.current != null) {
-            showLayoutFrame();
+//            showLayoutFrame();
+            Overlay.highlightBlock(blockEvent.block.current);Overlay.highlightBlock(blockEvent.block.current);
+            currentBlock = blockEvent.block.current;
         }
     };
 
     var leaveBlockHoover = function(blockEvent) {
-        if (blockEvent.block.current == null) {
-            hideLayoutFrame();
+        if (currentBlock != null) {
+//            hideLayoutFrame();
+            Overlay.unhighlightBlock(currentBlock);
         }
     };
 
     Broadcaster.on(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, "blocks.core.LayoutAid", function (event) {
-        enterBlockHoover(event.blockEvent)
+        Logger.debug("changed blocks enter");
+        enterBlockHoover(event.blockEvent);
+
     });
     Broadcaster.on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, "blocks.core.LayoutAid", function (event) {
-        leaveBlockHoover(event.blockEvent)
+        Logger.debug("changed blocks leave");
+        leaveBlockHoover(event.blockEvent);
     });
     Broadcaster.on(Broadcaster.EVENTS.START_DRAG, "blocks.core.LayoutAid", function (event) {
-        hideLayoutFrame();
+        leaveBlockHoover(event.blockEvent);
+    });
+    Broadcaster.on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, "blocks.core.LayoutAid", function (event) {
+        leaveBlockHoover(event.blockEvent);
     });
 
     Broadcaster.on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, "blocks.core.LayoutAid", function() {

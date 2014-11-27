@@ -1,9 +1,74 @@
 .blocks-overlay {
   top: 0px;
   left: 0px;
+  right: 0px;
+  bottom: 0px;
   position: absolute;
   width: 100%;
   height: 100%;
-  opacity: 0.3;
-  background-color: #234153;
+  opacity: 0.9;
+  background-color: #000000;
+}
+
+.column-resize-handle {
+  background-color: #6fc7df;
+}
+
+.block-hover {
+  -webkit-box-shadow: 0 5px 20px rgba(51, 102, 146, 0.70), 0 0 8px 5px rgba(111, 199, 223, 0.90) ;
+  box-shadow: 0 5px 20px rgba(51, 102, 146, 0.70), 0 0 8px 5px rgba(111, 199, 223, 0.90) ;
+}
+
+iframe {
+  pointer-events: none;
+}
+
+img {
+  display: block;
+}
+
+iframe.edit {
+  pointer-events: auto;
+}
+iframe.cke_panel_frame  {
+  pointer-events: auto;
+}
+
+.admin-backend {
+  padding: 10px 10px;
+}
+
+//.admin-animation-front {
+//  -webkit-transform: translateZ(50px);
+//  transform: translateZ(50px);
+//}
+//
+//.admin-animation-back {
+//  -webkit-transform: rotateX(-90deg) translateZ(-50px);
+//  transform: rotateX(-90deg) translateZ(-50px);
+//}
+//
+//.admin-flipped {
+//  -webkit-transform: rotateX(89deg);
+//  transform: rotateX(89deg);
+//}
+
+.flip {
+  -webkit-transform: rotateY(180deg);
+  transform: rotateY(180deg);
+
+}
+
+.block-overlay-background {
+  background-color: white;
+}
+
+.modal-centered {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 650px;
+  height: 240px;
+  border: 1px solid #787878;
+
 }

@@ -166,15 +166,28 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
         layoutTree = [];
         //_this.cleanLayout();
         if (Layouter.layoutParentElement == null) {
-            Layouter.layoutParentElement = $("." + Constants.CONTAINER_CLASS);
+            Layouter.layoutParentElement = $("body");
         }
 
-        Layouter.layoutParentElement.children("." + Constants.ROW_CLASS).each(function () {
-            var parentRow = $(this);
-            var container = new Elements.Container(parentRow);
-            Logger.debug(container);
-            layoutTree.push(container);
-        });
+        var findContainersInParent = function(parent) {
+
+            if (DOM.canLayout(parent) || DOM.canEdit(parent)) {
+                var container = new Elements.Container(parent);
+                Logger.debug(container);
+                layoutTree.push(container);
+            } else {
+                var children = parent.children();
+                for (var i = 0; i < children.length; i++) {
+                    findContainersInParent($(children[i]));
+                }
+            }
+//            if (parent.next() != null) {
+//                findContainersInParent(parent.next());
+//            }
+        };
+
+        findContainersInParent(Layouter.layoutParentElement);
+
         Broadcaster.send(new Broadcaster.EVENTS.DID_REFRESH_LAYOUT());
     };
 

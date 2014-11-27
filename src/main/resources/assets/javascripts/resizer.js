@@ -12,7 +12,7 @@
 *
 * */
 
-blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broadcaster", "blocks.core.Constants", "blocks.core.DomManipulation", function (Elements, Broadcaster, Constants, DOM) {
+blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broadcaster", "blocks.core.Constants", "blocks.core.DomManipulation", "blocks.core.Overlay", function (Elements, Broadcaster, Constants, DOM, Overlay) {
     var active = false;
     var draggingEnabled = false;
     var dragging = false;
@@ -44,10 +44,10 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
     // Check if a handle exists in the dom and if not, add 1
     var checkIfHandleElementExists = function () {
         if (resizeHandleElement == null) {
-            // TODO set handle class in config
-            $(".column-resize-handle").remove();
-            resizeHandleElement = $("<div class='.column-resize-handle' />")
-            $("body").append(resizeHandleElement);
+            $("." + Constants.COLUMN_RESIZER_CLASS).remove();
+            resizeHandleElement = $("<div/>").addClass(Constants.COLUMN_RESIZER_CLASS);
+            resizeHandleElement.css("z-index", (Overlay.maxIndex() + 1));
+            $("html").append(resizeHandleElement);
         }
     };
 
@@ -55,12 +55,11 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
     var showHandleElement = function (surface) {
         checkIfHandleElementExists();
         resizeHandleElement.css('position', 'absolute');
-        resizeHandleElement.css('background-color', 'black');
         resizeHandleElement.css("left", surface.left + "px");
         resizeHandleElement.css("top", surface.top + "px");
         resizeHandleElement.css("width", surface.right - surface.left + "px");
         resizeHandleElement.css("height", surface.bottom - surface.top + "px");
-        $("body").css("cursor", "col-resize");
+        $("html").css("cursor", "col-resize");
     };
 
     // update the position of the handle element in the dom
@@ -72,11 +71,10 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
 
     // remove the handle from the dom
     var removeHandleElement = function () {
-        // TODO set drag priority in config
         if (resizeHandleElement != null) {
-            resizeHandleElement.remove();
+            $("." + Constants.COLUMN_RESIZER_CLASS).remove();
             resizeHandleElement = null;
-            $("body").css("cursor", 'auto');
+            $("html").css("cursor", 'auto');
         }
     };
 
@@ -92,9 +90,9 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
             }
         } else if (blockEvent.block.current != null) {
             // find the first parent that is a row (but not a block)
-            var activeRow = null;
-            if (blockEvent.block.current.parent != null) {
-                activeRow = blockEvent.block.current.parent.parent
+            var activeRow = blockEvent.block.current.parent;
+            while (!(activeRow instanceof Elements.Row || activeRow == null)) {
+                activeRow = activeRow.parent
             }
 
             if (activeRow != null && activeRow instanceof Elements.Row) {
@@ -122,20 +120,15 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
     var manageActiveResizeHandle = function (blocksEvent) {
         if (activeResizehandleChanged(blocksEvent)) {
             if (activeResizeHandle != null && !draggingEnabled) {
-                Broadcaster.send(new Broadcaster.EVENTS.ENABLE_DRAG(1000, "blocks.core.Resizer", dragEnabled));
+                Broadcaster.send(new Broadcaster.EVENTS.DISABLE_BLOCK_DRAG(blocksEvent));
+                draggingEnabled = true;
+                showHandleElement(activeResizeHandle.drawSurface);
             }  else if (activeResizeHandle == null && draggingEnabled) {
-                Broadcaster.send(new Broadcaster.EVENTS.DISABLE_DRAG(1000, "blocks.core.Resizer"));
+                Broadcaster.send(new Broadcaster.EVENTS.ENABLE_BLOCK_DRAG(blocksEvent));
                 draggingEnabled = false;
             }
         }
     };
-
-    var dragEnabled = function() {
-        if (!draggingEnabled) {
-            draggingEnabled = true;
-            showHandleElement(activeResizeHandle.drawSurface);
-        }
-    }
 
 
     /*
@@ -280,9 +273,6 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
         endDrag(event.blockEvent)
     });
 
-    Broadcaster.on(Broadcaster.EVENTS.DRAG_DISABLED, "blocks.core.Resizer", function (event) {
-            draggingEnabled = false;
-    });
 
     // On boot
     activate();
