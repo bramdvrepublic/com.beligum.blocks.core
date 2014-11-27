@@ -133,12 +133,12 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.E
             // TODO position close to blue lin
             // TODO make drop line thicker
             dropPointerElements[name].append(
-                $("<div style='position:absolute;'/>")
-                    .append($("<div style='position:relative; color: white;'></div>"))
+                $("<div class='droppointer-arrow-container' style='position:absolute;'/>")
+                    .append($("<div class='droppointer-arrow' style='position:relative;'></div>"))
             ); // element for arrow
             $("body").append(dropPointerElements[name]);
             dropPointerElements[name].css("position", "absolute");
-            dropPointerElements[name].css("background-color", "rgba(119, 119, 119, 0.5)");
+//            dropPointerElements[name].css("background-color", "rgba(119, 119, 119, 0.5)");
         }
         hideDropPointerElement(name);
     };
@@ -233,7 +233,7 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.E
     // Creates an overlay for the block we are dragging to show that we can not drop there
     var createDraggedOverlay = function(surface) {
         if (draggedOverlay == null) {
-            draggedOverlay = $("<div style=\"position: absolute; left:"+surface.left+"px; top:"+surface.top+"px; height: "+(surface.bottom - surface.top)+"px; width:"+(surface.right-surface.left)+"px; background: url('/assets/images/blocks/stripe.png');\" />");
+            draggedOverlay = $("<div class='dragged-block' style=\"position: absolute; left:"+surface.left+"px; top:"+surface.top+"px; height: "+(surface.bottom - surface.top)+"px; width:"+(surface.right-surface.left)+"px; \" />");
             $("body").append(draggedOverlay);
         }
     };
