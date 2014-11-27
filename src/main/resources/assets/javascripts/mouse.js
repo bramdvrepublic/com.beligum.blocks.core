@@ -77,7 +77,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
     var windowFrame = {width: 0, height: 0};
 
     var resetMouse = function (force) {
-        windowFrame = {width: window.innerWidth, height: window.innerHeight}
+        windowFrame = {width: document.innerWidth, height: document.innerHeight}
         block = {current: null, previous: null};
         draggingStart = null;
         draggingStatus = Constants.DRAGGING.NO;
@@ -230,9 +230,9 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
         if (active) {
             var blockEvent = createBlockEvent(event);
             // Abort outside window
-            if (event.pageX < 0 || event.pageY > windowFrame.width || event.pageY < 0 || event.pageY > windowFrame.height) {
-                mouseUp(event);
-            } else if (draggingStatus == Constants.DRAGGING.WAITING) {
+//            if (event.pageX < 0 || event.pageY > windowFrame.width || event.pageY < 0 || event.pageY > windowFrame.height) {
+//                mouseUp(event);
+            if (draggingStatus == Constants.DRAGGING.WAITING) {
                 enableDragAfterTreshold(event);
             } else if (draggingStatus != Constants.DRAGGING.YES) {
                 if (block.current != block.previous) {
@@ -323,6 +323,10 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
                     Broadcaster.send(new Broadcaster.EVENTS.DOUBLE_CLICK_BLOCK(createBlockEvent(event)));
             });
 
+            $(document).mouseleave(function(){
+                mouseUp(event);
+                Logger.debug("Mouse out of window. Cancel!");
+            })
             resetMouse(true);
         }
     };
@@ -347,6 +351,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
     Broadcaster.on(Broadcaster.EVENTS.DO_ALLOW_DRAG, "blocks.core.Mouse", function () {allowDrag();});
     Broadcaster.on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, "blocks.core.Mouse", function () {disallowDrag();});
 
+    window.ondragstart = function() {return false;};
 
     if (this.config.ACTIVATE_AT_BOOT) {
         $(document).ready(function () {

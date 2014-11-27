@@ -27,7 +27,7 @@ blocks.plugin("blocks.core.BlockMenu.new", ["blocks.core.BlockMenu", "blocks.cor
 
     var blocks = {
         video : $('<div typeof="video"><div class="embed-responsive embed-responsive-16by9"><iframe  class="iframe" class="embed-responsive-item" src="//player.vimeo.com/video/26196053?color=94127a"></iframe></div></div>'),
-        image : $('<div class="block" typeof="image"><div><img src="/assets/images/navigo/wetenschapper.jpg" width="100%" height="100%" /><div></div></div></div>'),
+        image : $('<div class="block" typeof="image"><div class="image-container"><img class="img-responsive" src="/assets/images/navigo/wetenschapper.jpg" /><div class="clear"></div></div></div>'),
         text : $("<div class='block can-edit' typeof='text'><h1>Enter here your text.</h1></div>"),
         layout: $("<div class='block can-layout' ></div>")
     }

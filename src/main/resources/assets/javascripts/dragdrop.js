@@ -22,7 +22,7 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.E
     **/
 
     var dragStarted = function (blockEvent) {
-        if (draggingEnabled) {
+        if (draggingEnabled && currentDraggedBlock != null) {
             //currentBlock = blockEvent.draggingOptions.surface;
             createDraggedOverlay(currentDraggedBlock);
             createDropPointerElement("anchor");
@@ -109,7 +109,9 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.E
     * */
     var dropSpotIsDraggedBlock = function(dropSpot, blockEvent) {
         var retVal = false;
-        if (currentDraggedBlock == null || dropSpot == null) return retVal;
+        // This is an error. Return true to prevent drop
+        // TODO: How can this happen
+        if (currentDraggedBlock == null || dropSpot == null) return true;
         // dragged block equals anchor or other
         if ((currentDraggedBlock === dropSpot.anchor || currentDraggedBlock === dropSpot.other())) {
             retVal = true
@@ -262,7 +264,7 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.E
     var setCurrentDraggedBlock = function(blockEvent) {
         if (draggingEnabled) {
             var retVal = false;
-            if (blockEvent.block.current != currentDraggedBlock) {
+            if (blockEvent != null && blockEvent.block.current != currentDraggedBlock) {
                 currentDraggedBlock = blockEvent.block.current;
                 retVal = true
             }
@@ -296,7 +298,7 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.E
         setCurrentDraggedBlock(event.blockEvent)
     });
     Broadcaster.on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, "blocks.core.DragDrop", function (event) {
-        setCurrentDraggedBlock(event.blockEvent)
+        setCurrentDraggedBlock(null)
     });
 
 
