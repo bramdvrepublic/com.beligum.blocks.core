@@ -1,0 +1,38 @@
+#define($header-styles-extra)
+<link href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
+<link href="/assets/stylesheets/styles.less" rel="stylesheet" />
+#end
+
+#define($header-scripts-extra)
+<script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
+<script src="/templates/entities/default/scripts.js" type="application/javascript" ></script>
+#end
+
+#define($body-html)
+<div class="entity entity-waterput row">
+    <div class="column col-md-12">
+        <div class="row" id="waterputtitelrij">
+            <div class="col-md-12 column">
+                <div class="block center-block" id="waterputtitelblock">
+                    <h1>Dit is een waterput!</h1>
+                </div>
+            </div>
+        </div>
+        <div class="row can-edit" id="nogeenrij">
+            <div class="col-md-6 column">
+                <div class="block" id="nogeenblok">
+                    Hier zult u vanalles kunnen plaatsen...
+                </div>
+            </div>
+            <div class="col-md-6 column">
+                <div class="block" id="weeraleenblok">
+                    Hier kunt u niets veranderen...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+#end
+
+##TODO BAS: this should not have to be explicitly mentioned here
+#parse("/views/templates/main.html")

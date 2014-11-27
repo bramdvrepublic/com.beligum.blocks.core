@@ -1,0 +1,37 @@
+#define($header-styles-extra)
+<link href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
+<link href="/assets/stylesheets/styles.less" rel="stylesheet" />
+#end
+
+#define($header-scripts-extra)
+<script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
+#end
+
+#define($body-html)
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="block center-block">
+                <h1>Wilt u een nieuwe pagina aanmaken?</h1>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <form method="POST" action="/entities">
+            <div class="col-md-2">
+                <select name="page-class-name" id="class-selection" class="form-control">
+                    #foreach($pageClass in $pageClasses)
+                        <option value="$pageClass.name">$pageClass.name</option>
+                    #end
+                </select>
+            </div>
+            <div class="col-md-8">
+                <button type="submit" class="col-md-6 btn btn-default">New page</button>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+#end
+
+#parse("/views/templates/main.html")
