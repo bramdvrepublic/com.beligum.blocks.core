@@ -36,8 +36,8 @@ public class EntitiesEndpoint
     public Response newPage() throws CacheException
     {
         Template template = R.templateEngine().getEmptyTemplate("/views/new-page.html");
-        Collection<EntityClass> pageClasses = EntityClassCache.getInstance().getCache().values();
-        template.set(ParserConstants.ENTITY_CLASSES, pageClasses);
+        Collection<EntityClass> entityClasses = EntityClassCache.getInstance().getCache().values();
+        template.set(ParserConstants.ENTITY_CLASSES, entityClasses);
         return Response.ok(template).build();
     }
 

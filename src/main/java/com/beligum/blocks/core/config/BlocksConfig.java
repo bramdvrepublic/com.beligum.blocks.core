@@ -15,6 +15,8 @@ public class BlocksConfig
     public static final String PAGE_TEMPLATES_FOLDER = "pageTemplates";
     /**standard name of the html-file a page-class- or block-class-template must have to be recognized as such*/
     public static final String INDEX_FILE_NAME = "index.html";
+    /**the default language for this site, if no language is specified in the configuration-xml*/
+    public static final String DEFAULT_LANGUAGE = "language_default";
 
     /**the languages this site can work with, ordered from most preferred languages, to less preferred*/
     public static String[] cachedLanguages;
@@ -51,7 +53,7 @@ public class BlocksConfig
 
     /**
      *
-     * @return the sentinel-locations for the redis-db (f.i. localhost:26379)
+     * @return The sentinel-locations for the redis-db (f.i. localhost:26379) specified in the configuration xml or null if no sentiles are specified in the configuration xml.
      */
     public static String[] getRedisSentinels(){
         if(cachedRedisSentinels==null){
@@ -62,11 +64,15 @@ public class BlocksConfig
 
     /**
      *
-     * @return the languages this site can work with, ordered from most preferred language, to less preferred
+     * @return The languages this site can work with, ordered from most preferred language, to less preferred. If no such languages are specified in the configuration xml, an array with a default language is returned.
      */
     public static String[] getLanguages(){
         if(cachedLanguages==null){
             cachedLanguages = R.configuration().getStringArray("blocks.site.languages");
+            if(cachedLanguages.length == 0){
+                cachedLanguages = new String[1];
+                cachedLanguages[0] = DEFAULT_LANGUAGE;
+            }
         }
         return cachedLanguages;
     }
