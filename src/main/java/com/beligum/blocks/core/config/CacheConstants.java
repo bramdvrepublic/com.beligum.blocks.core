@@ -1,8 +1,8 @@
 package com.beligum.blocks.core.config;
 
 import com.beligum.blocks.core.models.IdentifiableObject;
-import com.beligum.blocks.core.models.PageTemplate;
-import com.beligum.blocks.core.models.classes.EntityClass;
+import com.beligum.blocks.core.models.templates.PageTemplate;
+import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 
 /**
  * Created by bas on 03.11.14.
@@ -23,7 +23,7 @@ public class CacheConstants
      * @throws RuntimeException if a unsupported viewable-class-type is specified (only EntityClass.class and BlockClass.class are supported)
      */
     public static String getIdPrefix(Class<? extends IdentifiableObject> identifiableObjectType){
-        if(identifiableObjectType.isInstance(EntityClass.class)){
+        if(identifiableObjectType.isInstance(EntityTemplateClass.class)){
             return ENTITY_CLASS_ID_PREFIX;
         }
         else if(identifiableObjectType.isInstance(PageTemplate.class)){

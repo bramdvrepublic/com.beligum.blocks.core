@@ -1,9 +1,7 @@
 package com.beligum.blocks.core.caching;
 
-import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.CacheException;
-import com.beligum.blocks.core.models.PageTemplate;
-import com.beligum.blocks.core.models.classes.EntityClass;
+import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.core.framework.base.R;
 
 import java.util.HashMap;

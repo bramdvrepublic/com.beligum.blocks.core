@@ -1,31 +1,23 @@
-package com.beligum.blocks.core.models;
+package com.beligum.blocks.core.models.templates;
 
-import com.beligum.blocks.core.config.ParserConstants;
-import com.beligum.blocks.core.exceptions.ParserException;
+import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.ID;
-import com.beligum.blocks.core.models.storables.Entity;
-import com.beligum.blocks.core.parsers.AbstractParser;
+import com.beligum.blocks.core.parsers.TemplateParser;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by wouter on 20/11/14.
  */
-public class PageTemplate extends IdentifiableObject
+public class PageTemplate extends AbstractTemplate
 {
-
-    private String template;
     private boolean htmlSeen = false;
 
 
     public PageTemplate(String name, String template) throws URISyntaxException
     {
-        super(new ID(new URI(name)));
-        this.template = template;
+        super(new ID(new URI(name)), template);
     }
 
     public String getName() {
@@ -37,10 +29,6 @@ public class PageTemplate extends IdentifiableObject
         }
     }
 
-    public String getTemplate()
-    {
-        return template;
-    }
     public boolean isTemplate() {
         return this.getName() != null && !this.getName().isEmpty();
     }
@@ -77,9 +65,9 @@ public class PageTemplate extends IdentifiableObject
 //        }
 //    }
 
-    public String renderContent(Entity entity) throws ParserException
+    public String renderContent(EntityTemplate entityTemplate) throws ParseException
     {
-        return AbstractParser.renderEntitiesInsidePageTemplate(this, entity);
+        return new TemplateParser().renderEntitiesInsidePageTemplate(this, entityTemplate);
     }
 
     /**

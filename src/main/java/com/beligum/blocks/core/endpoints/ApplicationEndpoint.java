@@ -1,34 +1,20 @@
 package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.caching.PageTemplateCache;
-import com.beligum.blocks.core.config.CacheConstants;
-import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
-import com.beligum.blocks.core.identifiers.ID;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.models.PageTemplate;
-import com.beligum.blocks.core.models.storables.Entity;
+import com.beligum.blocks.core.models.templates.PageTemplate;
+import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.base.RequestContext;
 import com.beligum.core.framework.templating.ifaces.Template;
-import com.beligum.core.framework.templating.ifaces.TemplateEngine;
-import com.beligum.core.framework.templating.velocity.VelocityTemplateEngine;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.velocity.VelocityContext;
-import org.apache.velocity.tools.generic.RenderTool;
-import org.jcp.xml.dsig.internal.dom.Utils;
-import org.jsoup.nodes.Element;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
-import java.net.URI;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
 
 @Path("/")
 public class ApplicationEndpoint
@@ -72,10 +58,10 @@ public class ApplicationEndpoint
             Redis redis = Redis.getInstance();
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
             RedisID lastVersionId = new RedisID(url, redis.getLastVersion(url));
-            Entity entity = redis.fetchEntity(lastVersionId, true);
+            EntityTemplate entityTemplate = redis.fetchEntityTemplate(lastVersionId);
             //TODO: the pagetemplate should be fetched from cache or db
             PageTemplate pageTemplate = PageTemplateCache.getInstance().get("default");
-            String page = pageTemplate.renderContent(entity);
+            String page = pageTemplate.renderContent(entityTemplate);
             return Response.ok(page).build();
         }
         catch(Exception e){

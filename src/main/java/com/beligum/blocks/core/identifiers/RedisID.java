@@ -146,24 +146,6 @@ public class RedisID extends ID
         return toString();
     }
 
-
-    /**
-     *
-     * @return the html-id of the url to this element, this is everything after the '#' in "[site-domain]/[pageId]#[elementId]" and is the id found in the html-file containing this element
-     * @throws URISyntaxException
-     */
-    public String getHtmlId()
-    {
-        try{
-            return this.getUrl().toURI().getFragment();
-        }
-        catch(URISyntaxException e){
-            throw new RuntimeException("Bad uri found. This should not happen!", e);
-        }
-    }
-
-
-
     /**
      *
      * @return the string-id of the hash containing all page meta-data (info) of the page with this EntityID

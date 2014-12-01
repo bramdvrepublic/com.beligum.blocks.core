@@ -1,9 +1,7 @@
-package com.beligum.blocks.core.parsers;
+package com.beligum.blocks.core.parsers.jsoup;
 
-import com.beligum.blocks.core.exceptions.ParserException;
-import com.beligum.blocks.core.models.storables.Entity;
+import com.beligum.blocks.core.exceptions.ParseException;
 import org.jsoup.nodes.Node;
-import org.jsoup.select.NodeTraversor;
 import org.jsoup.select.NodeVisitor;
 
 /**
@@ -13,15 +11,15 @@ import org.jsoup.select.NodeVisitor;
  * <p/>
  * This implementation does not use recursion, so a deep DOM does not risk blowing the stack.
  */
-public class EntityNodeTraversor
+public class Traversor
 {
-    private EntityParsingNodeVisitor visitor;
+    private AbstractVisitor visitor;
 
     /**
      * Create a new traversor.
      * @param visitor a class implementing the {@link NodeVisitor} interface, to be called when visiting each node.
      */
-    public EntityNodeTraversor(EntityParsingNodeVisitor visitor)
+    public Traversor(AbstractVisitor visitor)
     {
         this.visitor = visitor;
     }
@@ -30,8 +28,9 @@ public class EntityNodeTraversor
      * Start a depth-first traverse of the root and all of its descendants.
      * @param root the root node point to traverse.
      */
-    public void traverse(Node root) throws ParserException
+    public void traverse(Node root) throws ParseException
     {
+        //TODO BAS SH: start debugging traverse() after big refactor (Entity -> EntityTemplate)
         Node node = root;
         int depth = 0;
 
@@ -42,11 +41,11 @@ public class EntityNodeTraversor
                 depth++;
             } else {
                 while (node.nextSibling() == null && depth > 0) {
-                    visitor.doTail(node, depth);
+                    visitor.tail(node, depth);
                     node = node.parentNode();
                     depth--;
                 }
-                node = visitor.doTail(node, depth);
+                node = visitor.tail(node, depth);
 
                 if (node == root)
                     break;

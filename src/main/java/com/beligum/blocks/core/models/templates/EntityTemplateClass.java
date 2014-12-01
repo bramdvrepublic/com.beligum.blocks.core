@@ -1,21 +1,17 @@
-package com.beligum.blocks.core.models.classes;
+package com.beligum.blocks.core.models.templates;
 
 import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.config.CacheConstants;
-import com.beligum.blocks.core.identifiers.ID;
-import com.beligum.blocks.core.models.storables.Entity;
+import com.beligum.blocks.core.dbs.Redis;
 
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Set;
 
 /**
  * Created by bas on 05.11.14.
  */
-public class EntityClass extends AbstractViewableClass
+public class EntityTemplateClass extends AbstractTemplate
 {
     /**the doctype of this entityclass*/
     private String docType;
@@ -25,22 +21,20 @@ public class EntityClass extends AbstractViewableClass
     /**
      *
      * @param name the name of this entity-class
-     * @param allChildren all children of this entity-class
      * @param template the template-string corresponding to the most outer layer of the element-tree in this entity
      * @param docType the doctype of this entity-class
      */
-    public EntityClass(String name, Set<Entity> allChildren, String template, String docType) throws URISyntaxException
+    public EntityTemplateClass(String name, String template, String docType) throws URISyntaxException
     {
-        super(new ID(new URI(name)), allChildren, template);
+        super(Redis.getInstance().renderNewEntityTemplateClassID(name), template);
         this.name = name;
         this.docType = docType;
     }
 
     /**
      *
-     * @return
+     * @return the name of this entity-class
      */
-    @Override
     public String getName()
     {
         return name;
@@ -49,15 +43,6 @@ public class EntityClass extends AbstractViewableClass
     {
         return docType;
     }
-    /**
-     * @return the prefix used for a entity-entity-class in the class-attribute of the html-template
-     */
-    @Override
-    public String getCssClassPrefix()
-    {
-        return ParserConstants.ENTITY_CLASS_PREFIX;
-    }
-
 
 
     /**

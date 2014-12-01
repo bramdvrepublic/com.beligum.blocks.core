@@ -2,9 +2,9 @@ package com.beligum.blocks.core.caching;
 
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.CacheException;
-import com.beligum.blocks.core.exceptions.ParserException;
+import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.models.IdentifiableObject;
-import com.beligum.blocks.core.parsers.AbstractParser;
+import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.utils.Logger;
 import com.beligum.core.framework.utils.toolkit.FileFunctions;
 
@@ -81,9 +81,9 @@ public abstract class AbstractIdentifiableObjectCache<T extends IdentifiableObje
                     {
                         if (filePath.getFileName().toString().endsWith("html")) {
                             try {
-                                AbstractParser.cacheEntity(new URL(BlocksConfig.getSiteDomain()), new String(Files.readAllBytes(filePath)));
+                                new TemplateParser().cacheEntityTemplateClasses(new URL(BlocksConfig.getSiteDomain()), new String(Files.readAllBytes(filePath)));
                             }
-                            catch (ParserException e) {
+                            catch (ParseException e) {
                                 Logger.error("Parse error while parsing file '" + filePath + "'.", e);
                             }
                         }
