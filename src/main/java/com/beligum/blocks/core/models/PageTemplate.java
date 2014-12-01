@@ -1,6 +1,7 @@
 package com.beligum.blocks.core.models;
 
 import com.beligum.blocks.core.config.ParserConstants;
+import com.beligum.blocks.core.exceptions.ParserException;
 import com.beligum.blocks.core.identifiers.ID;
 import com.beligum.blocks.core.models.storables.Entity;
 import com.beligum.blocks.core.parsers.AbstractParser;
@@ -76,7 +77,8 @@ public class PageTemplate extends IdentifiableObject
 //        }
 //    }
 
-    public String renderContent(Entity entity){
+    public String renderContent(Entity entity) throws ParserException
+    {
         return AbstractParser.renderEntitiesInsidePageTemplate(this, entity);
     }
 

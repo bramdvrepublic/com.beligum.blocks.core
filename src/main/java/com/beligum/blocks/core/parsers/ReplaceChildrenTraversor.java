@@ -3,9 +3,10 @@ package com.beligum.blocks.core.parsers;
 import com.beligum.blocks.core.exceptions.ParserException;
 import com.beligum.blocks.core.models.storables.Entity;
 import org.jsoup.nodes.Node;
-import org.jsoup.select.NodeTraversor;
 import org.jsoup.select.NodeVisitor;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -15,30 +16,32 @@ import java.util.Set;
  * <p/>
  * This implementation does not use recursion, so a deep DOM does not risk blowing the stack.
  */
-public class FillingNodeTraversor
+public class ReplaceChildrenTraversor
 {
-    private FillingNodeVisitor visitor;
+    private ReplaceChildrenVisitor visitor;
 
     /**
      * Create a new traversor.
      * @param visitor a class implementing the {@link NodeVisitor} interface, to be called when visiting each node.
      */
-    public FillingNodeTraversor(FillingNodeVisitor visitor)
+    public ReplaceChildrenTraversor(ReplaceChildrenVisitor visitor)
     {
         this.visitor = visitor;
     }
 
     /**
-     * Start a depth-first traverse of the root and all of its descendants.
-     * @param root the root node point to traverse.
+     * Start a depth-first traverse of the root and all of its descendants, replacing all reference nodes with their corresponding entity's template
+     * @param entityRoot the root node of the entity to traverse.
+     * @param entityChildMap a map, mapping the template resource-names of the children of the entity to traverse, to entity-objects
+     *
      */
-    public void traverse(Node root, Set<Entity> entityChildren) throws ParserException
+    public void traverse(Node entityRoot, Map<String, Entity> entityChildMap) throws ParserException
     {
-        Node node = root;
+        Node node = entityRoot;
         int depth = 0;
 
         while (node != null) {
-            node = visitor.doHead(node, depth, entityChild);
+            node = visitor.doHead(node, depth, entityChildMap);
             if (node.childNodeSize() > 0) {
                 node = node.childNode(0);
                 depth++;
@@ -50,7 +53,7 @@ public class FillingNodeTraversor
                 }
                 visitor.tail(node, depth);
 
-                if (node == root)
+                if (node == entityRoot)
                     break;
                 node = node.nextSibling();
             }

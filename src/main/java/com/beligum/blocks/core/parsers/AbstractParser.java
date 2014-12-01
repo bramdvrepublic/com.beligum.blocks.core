@@ -5,19 +5,15 @@ import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.ParserException;
 import com.beligum.blocks.core.models.PageTemplate;
 import com.beligum.blocks.core.models.storables.Entity;
-import com.beligum.core.framework.utils.toolkit.BasicFunctions;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.nodes.TextNode;
 import org.jsoup.parser.Parser;
 import org.jsoup.select.Elements;
-import sun.org.mozilla.javascript.ast.Block;
 
 import java.net.URL;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -191,15 +187,15 @@ public abstract class AbstractParser
         return childIds;
     }
 
-    public static String renderEntitiesInsidePageTemplate(PageTemplate pageTemplate, Entity entity){
+    public static String renderEntitiesInsidePageTemplate(PageTemplate pageTemplate, Entity entity) throws ParserException
+    {
         Document DOM = Jsoup.parse(pageTemplate.getTemplate());
         Elements referenceBlocks = DOM.select(ParserConstants.REFERENCE_TO);
         for(Element reference : referenceBlocks){
-            reference.replaceWith(new TextNode(entity.getTemplate(), BlocksConfig.getSiteDomain()));
+            reference.replaceWith(entity.renderHtmlDOM());
         }
-        DOM.traverse(new FillingNodeVisitor());
+        DOM.traverse(new ReplaceChildrenVisitor());
         return DOM.outerHtml();
     }
-
 
 }

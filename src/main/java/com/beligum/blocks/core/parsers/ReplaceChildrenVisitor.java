@@ -1,37 +1,43 @@
 package com.beligum.blocks.core.parsers;
 
 import com.beligum.blocks.core.config.ParserConstants;
+import com.beligum.blocks.core.exceptions.ParserException;
 import com.beligum.blocks.core.models.storables.Entity;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 
+import java.util.Map;
+import java.util.Set;
+
 /**
 * Created by wouter on 23/11/14.
 */
-public class FillingNodeVisitor extends AbstractEntityNodeVisitor
+public class ReplaceChildrenVisitor extends AbstractEntityNodeVisitor
 {
 //    Element filledNode;
 
-    public Node doHead(Node node, int depth) {
+    public Node doHead(Node node, int depth, Map<String, Entity> entityChildren) throws ParserException
+    {
         if (node instanceof Element) {
             Element element = (Element)node;
 //            if (filledNode == null) {
 //                this.filledNode = element;
 //            }
             if (AbstractParser.isReference(element)) {
-                String resource = element.attr(ParserConstants.REFERENCE_TO);
-
-                node.replaceWith(this.parseEntityToHtml(entity));
+                String resourceId = element.attr(ParserConstants.REFERENCE_TO);
+                Entity resource = entityChildren.get(resourceId);
+                if(resource != null){
+                    node.replaceWith(resource.renderHtmlDOM());
+                }
+                else{
+                    throw new ParserException("Could not replace reference to'" + resourceId + "'. It is not a child of the current entity being parsed.");
+                }
             }
         }
         super.head(node, depth);
         return node;
-    }
-
-    public static Document parseEntityToHtml(Entity entity){
-        return Jsoup.parse(entity.getTemplate());
     }
 
 //    public void mergeElement(Element element){

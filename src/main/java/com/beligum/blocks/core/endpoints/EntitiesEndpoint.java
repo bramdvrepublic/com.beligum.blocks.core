@@ -55,7 +55,6 @@ public class EntitiesEndpoint
         /*
          * Get the page-class (containing the default blocks and rows) from the cache and use it to construct a new page
          */
-        //TODO BAS SH: je bent net begonnen met doorlopen van het save-algoritme voor een entity (dus startend met het maken van een nieuwe lege entity)
         Map<String, EntityClass> cache = EntityClassCache.getInstance().getCache();
         EntityClass entityClass = cache.get(entityClassName);
 

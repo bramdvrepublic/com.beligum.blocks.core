@@ -8,8 +8,8 @@ import com.beligum.blocks.core.exceptions.ParserException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.classes.EntityClass;
 import com.beligum.blocks.core.models.ifaces.Storable;
-import com.beligum.blocks.core.parsers.FillingNodeTraversor;
-import com.beligum.blocks.core.parsers.FillingNodeVisitor;
+import com.beligum.blocks.core.parsers.ReplaceChildrenTraversor;
+import com.beligum.blocks.core.parsers.ReplaceChildrenVisitor;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.jsoup.Jsoup;
@@ -17,6 +17,8 @@ import org.jsoup.nodes.Document;
 import org.jsoup.parser.Parser;
 
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -24,6 +26,7 @@ import java.util.Set;
  */
 public class Entity extends ViewableInstance implements Storable
 {
+
     /**
      *
      * Constructor for a new entity-instance of a certain entity-class, which will be filled with the default children from the entity-class.
@@ -96,6 +99,18 @@ public class Entity extends ViewableInstance implements Storable
     public Entity(RedisID id, Set<Entity> directChildren, String entityClassName, String applicationVersion, String creator) throws CacheException
     {
         super(id, directChildren, EntityClassCache.getInstance().get(entityClassName), true, applicationVersion, creator);
+    }
+
+    /**
+     *
+     * @return a map, mapping the template variable names of all children of this entity to the children themselves
+     */
+    public Map<String, Entity> getChildMap(){
+        Map<String, Entity> childMap = new HashMap<>();
+        for(Entity child : this.getChildren()){
+            childMap.put(child.getTemplateVariableName(), child);
+        }
+        return childMap;
     }
 
     /**
@@ -229,12 +244,17 @@ public class Entity extends ViewableInstance implements Storable
         return significantFieldsSet.toHashCode();
     }
 
-    public String renderHtml() throws ParserException
+    /**
+     * Render a html document with all the entities children filled in.
+     * @return
+     * @throws ParserException
+     */
+    public Document renderHtmlDOM() throws ParserException
     {
-        //TODO BAS SH: Je probeert om de parsing in het terugkeren te regelen. Vertrekkend van de PageTemplate, wordt een node- en entity-boom doorlopen en worden de entities op de juist plaats doorlopen. Waarschijnlijk is de enige manier om dit snel te doen, de parser en redis laten samenwerken en eigenlijk de entity-instance niet echt te gebruiken.
+        //TODO BAS SH: Je probeert om de parsing in het terugkeren te regelen. Vertrekkend van de PageTemplate, wordt een node- en entity-boom doorlopen en worden de entities op de juist plaats doorlopen. Waarschijnlijk is de enige manier om dit snel te doen, de parser en redis laten samenwerken en eigenlijk de entity-instance niet echt te gebruiken, maar dat zouden we graag vermijden om duidelijke afscheiding te hebben tussen parsing en db. Daarvoor wordt het waarschijnlijk ook beter om een set met kinderen op te slaan in de db.
         Document entityDOM = Jsoup.parse(this.template, BlocksConfig.getSiteDomain(), Parser.xmlParser());
-        FillingNodeTraversor traversor = new FillingNodeTraversor(new FillingNodeVisitor());
-        traversor.traverse(entityDOM, this.getChildren());
-        return entityDOM.outerHtml();
+        ReplaceChildrenTraversor traversor = new ReplaceChildrenTraversor(new ReplaceChildrenVisitor());
+        traversor.traverse(entityDOM, this.getChildMap());
+        return entityDOM;
     }
 }
