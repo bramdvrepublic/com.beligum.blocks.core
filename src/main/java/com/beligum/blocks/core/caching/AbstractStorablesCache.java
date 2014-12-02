@@ -1,16 +1,18 @@
 package com.beligum.blocks.core.caching;
 
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.ParseException;
+import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.IdentifiableObject;
+import com.beligum.blocks.core.models.ifaces.Storable;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.utils.Logger;
 import com.beligum.core.framework.utils.toolkit.FileFunctions;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Map;
@@ -18,7 +20,7 @@ import java.util.Map;
 /**
 * Created by bas on 03.11.14.
 */
-public abstract class AbstractIdentifiableObjectCache<T extends IdentifiableObject>
+public abstract class AbstractStorablesCache<T extends Storable>
 {
     /** boolean telling us whether or not one of the inheriting classes is already running through the template-html-files*/
     private static boolean runningTroughHtmlTemplates = false;
@@ -26,7 +28,7 @@ public abstract class AbstractIdentifiableObjectCache<T extends IdentifiableObje
     /**
      * protected constructor for singleton-use of extending classes
      */
-    protected AbstractIdentifiableObjectCache(){
+    protected AbstractStorablesCache(){
 
     }
 
@@ -37,31 +39,28 @@ public abstract class AbstractIdentifiableObjectCache<T extends IdentifiableObje
     abstract public Map<String, T> getCache();
 
     /**
-     * Get the identifiable-object with a certain name from the application cache
-     * @param name the unique name of the identifiable object to get
-     * @return a identifiable-object from the application cache
+     * Get the storable-object with a certain name from the application cache
+     * @param name the unique name of the storable object to get
+     * @return a storable-object from the application cache
      */
-    public T get(String name) throws CacheException
-    {
-        return this.getCache().get(name);
-    }
+     abstract public T get(String name) throws CacheException;
 
     /**
      *
-     * @param identifiableObject the identifiable object to be added to the applications cache, the key will be the object's id
+     * @param storable the storable object to be added to the applications cache, the key will be the object's unversioned id
      */
-    public void add(T identifiableObject) throws CacheException
+    public void add(T storable) throws CacheException
     {
-        if(!getCache().containsKey(identifiableObject.getId().toString())) {
-            getCache().put(identifiableObject.getId().toString(), identifiableObject);
+        if(!getCache().containsKey(storable.getUnversionedId())) {
+            getCache().put(storable.getUnversionedId(), storable);
         }
         else{
-            throw new CacheException("Cannot add identifiable object '" + identifiableObject.getId() + "' to cache, since it is already present.");
+            throw new CacheException("Cannot add storable object '" + storable.getId() + "' to cache, since it is already present.");
         }
     }
 
     /**
-     * Fill up the page-cache with all identifiable object-templates found in file-system
+     * Fill up the page-cache with all storable object-templates found in file-system
      * @return A full AbstractCachableClassCache
      * @throws com.beligum.blocks.core.exceptions.CacheException
      */
@@ -81,7 +80,7 @@ public abstract class AbstractIdentifiableObjectCache<T extends IdentifiableObje
                     {
                         if (filePath.getFileName().toString().endsWith("html")) {
                             try {
-                                new TemplateParser().cacheEntityTemplateClasses(new URL(BlocksConfig.getSiteDomain()), new String(Files.readAllBytes(filePath)));
+                                new TemplateParser().cacheTemplates(new String(Files.readAllBytes(filePath)));
                             }
                             catch (ParseException e) {
                                 Logger.error("Parse error while parsing file '" + filePath + "'.", e);
@@ -104,7 +103,7 @@ public abstract class AbstractIdentifiableObjectCache<T extends IdentifiableObje
 //
 //    /**
 //     * Add a template page (starting from the pageclass-name) to the page-cache
-//     * @param viewableClassName the identifiable object-name (f.i. "default" for a pageClass filtered from the file "entities/default/index.html") of the identifiable object-template to be parsed and added to the cache as a couple (pageClassName, pageClass)
+//     * @param viewableClassName the storable object-name (f.i. "default" for a pageClass filtered from the file "entities/default/index.html") of the storable object-template to be parsed and added to the cache as a couple (pageClassName, pageClass)
 //     */
 //    private void  add(String viewableClassName) throws CacheException
 //    {
@@ -128,7 +127,7 @@ public abstract class AbstractIdentifiableObjectCache<T extends IdentifiableObje
 //    /**
 //     *
 //     * @param pageTemplateName
-//     * @return a valid ID-object constructed from the (unique) name of this identifiable object
+//     * @return a valid ID-object constructed from the (unique) name of this storable object
 //     * @throws CacheException if no valid ID can be constructed from the specified name
 //     */
 //    abstract public ID getNewId(String pageTemplateName) throws CacheException;

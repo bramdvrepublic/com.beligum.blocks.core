@@ -1,7 +1,9 @@
 package com.beligum.blocks.core.caching;
 
 import com.beligum.blocks.core.config.CacheConstants;
+import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.core.framework.base.R;
 
@@ -12,7 +14,7 @@ import java.util.Map;
  * Created by bas on 07.10.14.
  * Singleton for interacting with the applications page-cache, containing pairs of (page-class, default-page-instance)
  */
-public class EntityTemplateClassCache extends AbstractIdentifiableObjectCache<EntityTemplateClass>
+public class EntityTemplateClassCache extends AbstractStorablesCache<EntityTemplateClass>
 {
     //the instance of this singleton
     private static EntityTemplateClassCache instance = null;
@@ -63,22 +65,24 @@ public class EntityTemplateClassCache extends AbstractIdentifiableObjectCache<En
     @Override
     public EntityTemplateClass get(String name) throws CacheException
     {
-        EntityTemplateClass entityTemplateClass = super.get(name);
+        Map<String, EntityTemplateClass> applicationCache = this.getCache();
+        EntityTemplateClass entityTemplateClass = applicationCache.get(RedisID.renderNewEntityTemplateClassID(name).getUnversionedId());
         if(entityTemplateClass != null) {
             return entityTemplateClass;
         }
         else{
-            return super.get(CacheConstants.DEFAULT_ENTITY_CLASS_NAME);
+            return applicationCache.get(CacheConstants.DEFAULT_ENTITY_CLASS_NAME);
         }
     }
     /**
-     * @param identifiableObject the identifiable object to be added to the applications cache, the key will be the object's id
+     * @param entityTemplateClass the entity-template-class to be added to the applications cache, the key will be the object's unversioned id
      */
     @Override
-    public void add(EntityTemplateClass identifiableObject) throws CacheException
+    public void add(EntityTemplateClass entityTemplateClass) throws CacheException
     {
         //TODO: for an entity the super method should be overwritten, so we can add the same EntityClass twice and choose for the 'bleuprint' to be kept in the cache
-        super.add(identifiableObject);
+        //TODO 2: last version should be fetched from db and when the template has changed a new version should be created and saved to db
+        super.add(entityTemplateClass);
     }
     /**
      * This method returns a map with all default page-instances (value) of all present pageClasses (key)

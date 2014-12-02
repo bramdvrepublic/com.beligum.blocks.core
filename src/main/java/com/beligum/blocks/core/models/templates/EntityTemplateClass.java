@@ -3,6 +3,7 @@ package com.beligum.blocks.core.models.templates;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.identifiers.RedisID;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -26,7 +27,7 @@ public class EntityTemplateClass extends AbstractTemplate
      */
     public EntityTemplateClass(String name, String template, String docType) throws URISyntaxException
     {
-        super(Redis.getInstance().renderNewEntityTemplateClassID(name), template);
+        super(RedisID.renderNewEntityTemplateClassID(name), template);
         this.name = name;
         this.docType = docType;
     }

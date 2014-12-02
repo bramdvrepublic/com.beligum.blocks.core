@@ -1,6 +1,10 @@
 package com.beligum.blocks.core.caching;
 
+import com.beligum.blocks.core.config.CacheConstants;
+import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.core.framework.base.R;
 
@@ -10,7 +14,7 @@ import java.util.Map;
 /**
  * Created by bas on 25.11.14.
  */
-public class PageTemplateCache extends AbstractIdentifiableObjectCache<PageTemplate>
+public class PageTemplateCache extends AbstractStorablesCache<PageTemplate>
 {
     //the instance of this singleton
     private static PageTemplateCache instance = null;
@@ -49,6 +53,23 @@ public class PageTemplateCache extends AbstractIdentifiableObjectCache<PageTempl
         catch(CacheException e){
             throw new CacheException("Couldn't initialize entity-class-cache.", e);
         }
+    }
+
+
+    /**
+     * Get the entity-class with a certain name from the application cache.
+     * If that entity-class does not exist, return the default entity-class.
+     *
+     * @param name the unique name of the entity-class to get
+     * @return an entity-class from the application cache
+     */
+    @Override
+    public PageTemplate get(String name) throws CacheException
+    {
+        Map<String, PageTemplate> applicationCache = this.getCache();
+        PageTemplate pageTemplate = applicationCache.get(RedisID.renderNewPageTemplateID(name).getUnversionedId());
+        return pageTemplate;
+        //TODO BAS: This needs a default value to fall back to. How do we define a default? Do we use the framework-default or something?
     }
 
     /**

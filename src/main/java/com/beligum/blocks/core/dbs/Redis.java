@@ -1,6 +1,7 @@
 package com.beligum.blocks.core.dbs;
 
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
@@ -201,7 +202,7 @@ public class Redis implements Closeable
     }
 
     /**
-     * Method for getting a new randomly determined entity-uid (with versioning) for a entityInstance of an entityClass
+     * Method for getting a new randomly determined entity-uid (with versioning) for a entityInstance of an entityClass, used by RedisID to render a new, random and unique id.
      * @return a randomly generated entity-id of the form "[site-domain]/[entityClassName]/[randomInt]"
      */
     public RedisID renderNewEntityTemplateID(EntityTemplateClass entityTemplateClass){
@@ -215,22 +216,6 @@ public class Redis implements Closeable
                 retVal = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClass.getName() + "/" + positiveNumber));
             }
             return retVal;
-        }catch(MalformedURLException e){
-            throw new ConfigurationRuntimeException("Specified site-domain doesn't seem to be a correct url: " + BlocksConfig.getSiteDomain(), e);
-        }catch(URISyntaxException e){
-            throw new ConfigurationRuntimeException("Cannot use this site-domain for id-rendering: " + BlocksConfig.getSiteDomain(), e);
-        }
-    }
-
-    /**
-     * Method for getting a new template-class uid for a certain class.
-     * @param entityTemplateClassName
-     * @return A versioned id of the form "blocks://[db-alias]/[entityTemplateClassName]"
-     */
-    public RedisID renderNewEntityTemplateClassID(String entityTemplateClassName){
-        //we're not actually going to the db to determine a new redis-id for a class, it will use a new versioning (current time millis) to get a new version, so we don't actually need to check for that version in db
-        try{
-            return new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClassName));
         }catch(MalformedURLException e){
             throw new ConfigurationRuntimeException("Specified site-domain doesn't seem to be a correct url: " + BlocksConfig.getSiteDomain(), e);
         }catch(URISyntaxException e){

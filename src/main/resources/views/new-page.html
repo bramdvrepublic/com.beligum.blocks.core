@@ -21,7 +21,7 @@
             <div class="col-md-2">
                 <select name="page-class-name" id="class-selection" class="form-control">
                     #foreach($entityClass in $entityClasses)
-                        <option value="$entityClass.name">$entityClass.name</option>
+                        <option value="$entityClass.getName()">$!entityClass.getName()</option>
                     #end
                 </select>
             </div>

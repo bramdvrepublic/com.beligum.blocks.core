@@ -1,10 +1,9 @@
 package com.beligum.blocks.core.models.templates;
 
 import com.beligum.blocks.core.exceptions.ParseException;
-import com.beligum.blocks.core.identifiers.ID;
+import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.parsers.TemplateParser;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 
 /**
@@ -12,12 +11,11 @@ import java.net.URISyntaxException;
  */
 public class PageTemplate extends AbstractTemplate
 {
-    private boolean htmlSeen = false;
-
+    //TODO BAS: should the creator of a page-template be the <author>-tag of the html file?, or else "server-start" or something?
 
     public PageTemplate(String name, String template) throws URISyntaxException
     {
-        super(new ID(new URI(name)), template);
+        super(RedisID.renderNewPageTemplateID(name), template);
     }
 
     public String getName() {
@@ -67,7 +65,7 @@ public class PageTemplate extends AbstractTemplate
 
     public String renderContent(EntityTemplate entityTemplate) throws ParseException
     {
-        return new TemplateParser().renderEntitiesInsidePageTemplate(this, entityTemplate);
+        return new TemplateParser().renderEntityInsidePageTemplate(this, entityTemplate);
     }
 
     /**

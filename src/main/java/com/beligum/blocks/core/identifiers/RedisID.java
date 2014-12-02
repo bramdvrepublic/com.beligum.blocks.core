@@ -1,12 +1,18 @@
 package com.beligum.blocks.core.identifiers;
 
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.config.DatabaseConstants;
+import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.models.templates.EntityTemplateClass;
+import org.apache.commons.configuration.ConfigurationRuntimeException;
+import redis.clients.jedis.Jedis;
 
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Random;
 
 /**
  * Created by bas on 13.10.14.
@@ -203,5 +209,45 @@ public class RedisID extends ID
         }
         //change the site-domain in the id-uri to it's shorter aliasString[] languages = BlocksConfig.getLanguages();
         return new URI(BlocksConfig.SCHEME_NAME, BlocksConfig.getSiteDBAlias(), uriPath, idUri.getQuery(), idUri.getFragment());
+    }
+
+    //__________________STATIC METHODS FOR ID-RENDERING______________________
+    /**
+     * Method for getting a new randomly determined entity-uid (with versioning) for a entityTemplate-instance of an entityTemplateClass
+     * @return a randomly generated entity-id of the form "[site-domain]/[entityTemplateClassName]/[randomInt]"
+     */
+    public static RedisID renderNewEntityTemplateID(EntityTemplateClass entityTemplateClass){
+        return Redis.getInstance().renderNewEntityTemplateID(entityTemplateClass);
+    }
+
+    /**
+     * Method for getting a new template-class uid for a certain class.
+     * @param entityTemplateClassName
+     * @return A versioned id of the form "blocks://[db-alias]/[entityTemplateClassName]"
+     */
+    public static RedisID renderNewEntityTemplateClassID(String entityTemplateClassName){
+        //we're not actually going to the db to determine a new redis-id for a class, it will use a new versioning (current time millis) to get a new version, so we don't actually need to check for that version in db
+        try{
+            return new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClassName));
+        }catch(MalformedURLException e){
+            throw new ConfigurationRuntimeException("Specified site-domain doesn't seem to be a correct url: " + BlocksConfig.getSiteDomain(), e);
+        }catch(URISyntaxException e){
+            throw new ConfigurationRuntimeException("Cannot use this site-domain for id-rendering: " + BlocksConfig.getSiteDomain(), e);
+        }
+    }
+
+    /**
+     * Method for getting a new template-class uid for a certain class.
+     * @param pageTemplateName
+     * @return A versioned id of the form "blocks://[db-alias]/pageTemplates/[pageTemplateName]"
+     */
+    public static RedisID renderNewPageTemplateID(String pageTemplateName){
+        try{
+            return new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName));
+        }catch(MalformedURLException e){
+            throw new ConfigurationRuntimeException("Specified site-domain doesn't seem to be a correct url: " + BlocksConfig.getSiteDomain(), e);
+        }catch(URISyntaxException e){
+            throw new ConfigurationRuntimeException("Cannot use this site-domain for id-rendering: " + BlocksConfig.getSiteDomain(), e);
+        }
     }
 }

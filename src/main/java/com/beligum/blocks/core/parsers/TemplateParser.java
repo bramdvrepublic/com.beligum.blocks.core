@@ -25,7 +25,12 @@ import java.util.Set;
 public class TemplateParser
 {
 
-    public void cacheEntityTemplateClasses(URL url, String html) throws ParseException
+    /**
+     * Parse all templates found in the specified html and cache them in the correct cacher. (PageTemplate in PageTemplateCache, EntityTemplateClass in EntityTemplateClassCache)
+     * @param html the html to be parsed
+     * @throws ParseException
+     */
+    public void cacheTemplates(String html) throws ParseException
     {
         Document doc = Jsoup.parse(html);
         ToTemplateVisitor visitor = new ToTemplateVisitor(true);
@@ -41,25 +46,25 @@ public class TemplateParser
 
     }
 
-    public Set<String> getChildIdsFromTemplate(String template)
-    {
-        Set<String> childIds = new HashSet<>();
-        Document templateDOM = Jsoup.parse(template, BlocksConfig.getSiteDomain(), Parser.xmlParser());
-        //TODO: hier bezig
-        Elements children = templateDOM.select("[" + ParserConstants.REFERENCE_TO + "]");
-        for(Element child : children){
-            childIds.add(child.attr(ParserConstants.REFERENCE_TO));
-        }
-        return childIds;
-    }
+//    public Set<String> getChildIdsFromTemplate(String template)
+//    {
+//        Set<String> childIds = new HashSet<>();
+//        Document templateDOM = Jsoup.parse(template, BlocksConfig.getSiteDomain(), Parser.xmlParser());
+//        //TODO: hier bezig
+//        Elements children = templateDOM.select("[" + ParserConstants.REFERENCE_TO + "]");
+//        for(Element child : children){
+//            childIds.add(child.attr(ParserConstants.REFERENCE_TO));
+//        }
+//        return childIds;
+//    }
 
-    public String renderEntitiesInsidePageTemplate(PageTemplate pageTemplate, EntityTemplate entityTemplate) throws ParseException
+    public String renderEntityInsidePageTemplate(PageTemplate pageTemplate, EntityTemplate entityTemplate) throws ParseException
     {
         Document DOM = Jsoup.parse(pageTemplate.getTemplate());
-        Elements referenceBlocks = DOM.select(ParserConstants.REFERENCE_TO);
+        Elements referenceBlocks = DOM.select("[" + ParserConstants.REFERENCE_TO + "]");
         for(Element reference : referenceBlocks){
             //TODO: implement this, I just needed a compiling version
-            reference.replaceWith(new TextNode("", ""));
+            reference.replaceWith(new TextNode(entityTemplate.getTemplate(), ""));
         }
         Traversor traversor = new Traversor(new ToHtmlVisitor());
         traversor.traverse(DOM);

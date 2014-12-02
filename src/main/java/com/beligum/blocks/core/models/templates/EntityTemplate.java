@@ -22,10 +22,6 @@ public class EntityTemplate extends AbstractTemplate implements Storable
     /**the class of which this viewable is a viewable-instance*/
     //TODO BAS: is this actually a class-object, or just a name?
     protected final EntityTemplateClass entityTemplateClass;
-    /**the version of the application this row is supposed to interact with*/
-    protected String applicationVersion;
-    /**the creator of this row*/
-    protected String creator;
 
     /**
      *
@@ -36,12 +32,8 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      * @throw URISyntaxException if a url is specified not formatted strictly according to RFC2396
      */
     public EntityTemplate(EntityTemplateClass entityTemplateClass){
-        super(Redis.getInstance().renderNewEntityTemplateID(entityTemplateClass), entityTemplateClass.getTemplate());
+        super(RedisID.renderNewEntityTemplateID(entityTemplateClass), entityTemplateClass.getTemplate());
         this.entityTemplateClass = entityTemplateClass;
-        //TODO BAS: this version should be fetched from pom.xml and added to the row.java as a field
-        this.applicationVersion = "test";
-        //TODO: logged in user should be added here
-        this.creator = "me";
     }
 
     /**
@@ -69,7 +61,7 @@ public class EntityTemplate extends AbstractTemplate implements Storable
         if(hash != null && !hash.isEmpty() && hash.containsKey(DatabaseConstants.TEMPLATE) && hash.containsKey(DatabaseConstants.ENTITY_TEMPLATE_CLASS)) {
             EntityTemplate newInstance = new EntityTemplate(id, EntityTemplateClassCache.getInstance().get(hash.get(DatabaseConstants.ENTITY_TEMPLATE_CLASS)));
             newInstance.template = hash.get(DatabaseConstants.TEMPLATE);
-            //TODO BAS: here use Field.java or something of the sort, should make sure the rest of the hash (like application version and creator) is filled in, even if not all fields are present in the hash
+            //TODO BAS: maybe this should go to AbstractTemplate?: here use Field.java or something of the sort, should make sure the rest of the hash (like application version and creator) is filled in, even if not all fields are present in the hash
 
             return newInstance;
         }
@@ -106,13 +98,6 @@ public class EntityTemplate extends AbstractTemplate implements Storable
 //        return notCachedNonFinalChildren;
 //    }
 
-    /**
-     *
-     * @return the unique id of the hash representing this row in db (of the form "[rowId]:[version]:hash")
-     */
-    public String getHashId(){
-        return this.getId().getHashId();
-    }
 
     /**
      * @return the name of the variable of this viewable in the template holding this viewable
@@ -122,44 +107,17 @@ public class EntityTemplate extends AbstractTemplate implements Storable
         return this.getUnversionedId();
     }
 
+    /**
+     * Gives a hash-representation of this storable to save to the db. This method decides what information is stored in db, and what is not.
+     *
+     * @return a map representing the key-value structure of this element to be saved to db
+     */
+    @Override
     public Map<String, String> toHash()
     {
-        Map<String, String> hash = new HashMap<>();
-        hash.put(DatabaseConstants.TEMPLATE, this.getTemplate());
-        hash.put(DatabaseConstants.APP_VERSION, this.applicationVersion);
-        hash.put(DatabaseConstants.CREATOR, this.creator);
+        Map<String, String> hash = super.toHash();
         hash.put(DatabaseConstants.ENTITY_TEMPLATE_CLASS, this.getEntityTemplateClass().getName());
         return hash;
-    }
-
-    //_______________IMPLEMENTATION OF STORABLE____________________//
-    @Override
-    public String getApplicationVersion()
-    {
-        return this.applicationVersion;
-    }
-    @Override
-    public String getCreator()
-    {
-        return this.creator;
-    }
-    @Override
-    public long getVersion()
-    {
-        return this.getId().getVersion();
-    }
-    @Override
-    public RedisID getId()
-    {
-        return (RedisID) super.getId();
-    }
-    @Override
-    public String getUnversionedId(){
-        return this.getId().getUnversionedId();
-    }
-    @Override
-    public String getVersionedId(){
-        return this.getId().getVersionedId();
     }
 
     //___________OVERRIDE OF OBJECT_____________//
@@ -181,8 +139,8 @@ public class EntityTemplate extends AbstractTemplate implements Storable
                 EntityTemplate entityTemplateObj = (EntityTemplate) obj;
                 EqualsBuilder significantFieldsSet = new EqualsBuilder();
                 significantFieldsSet = significantFieldsSet.append(template, entityTemplateObj.template)
-                                                           .append(this.getTemplateVariableName(), entityTemplateObj.getTemplateVariableName())
-                                                           .append(this.getId().getAuthority(), entityTemplateObj.getId().getAuthority())
+                                                           .append(this.getUnversionedId(), entityTemplateObj.getUnversionedId())
+//                                                           .append(this.getTemplateVariableName(), entityTemplateObj.getTemplateVariableName())
                                                            .append(this.creator, entityTemplateObj.creator)
                                                            .append(this.applicationVersion, entityTemplateObj.applicationVersion);
                 return significantFieldsSet.isEquals();
@@ -204,8 +162,8 @@ public class EntityTemplate extends AbstractTemplate implements Storable
         //7 and 31 are two randomly chosen prime numbers, needed for building hashcodes, ideally, these are different for each class
         HashCodeBuilder significantFieldsSet = new HashCodeBuilder(7, 31);
         significantFieldsSet = significantFieldsSet.append(template)
-                                                   .append(this.getTemplateVariableName())
-                                                   .append(this.getId().getAuthority())
+                                                   .append(this.getUnversionedId())
+//                                                   .append(this.getTemplateVariableName())
                                                    .append(this.creator)
                                                    .append(this.applicationVersion);
         return significantFieldsSet.toHashCode();

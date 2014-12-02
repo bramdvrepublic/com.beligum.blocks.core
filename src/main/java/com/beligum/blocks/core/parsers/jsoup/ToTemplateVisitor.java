@@ -13,7 +13,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 
 import java.net.URL;
-import java.nio.file.NotDirectoryException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -55,10 +54,10 @@ public class ToTemplateVisitor extends AbstractVisitor
             Set<EntityTemplate> children = this.popChildren();
             EntityTemplateClass entityTemplateClass;
             if(doCache) {
-                entityTemplateClass = getNewEntityClassFromElement(element);
+                entityTemplateClass = getNewEntityTemplateClassFromNode(element);
             }
             else{
-                entityTemplateClass = getEntityClassForElement(element);
+                entityTemplateClass = getEntityTemplateClassForNode(element);
             }
             EntityTemplate entityTemplate = new EntityTemplate(entityTemplateClass);
             node = replaceElementWithReference(element, entityTemplate);
@@ -71,26 +70,51 @@ public class ToTemplateVisitor extends AbstractVisitor
         return node;
     }
 
-    private EntityTemplateClass getEntityClassForElement(Element element) throws ParseException
+    /**
+     *
+     * @param node
+     * @return the entity-template-class correspoding to the node's typeof-attribute's value
+     * @throws ParseException
+     */
+    private EntityTemplateClass getEntityTemplateClassForNode(Node node) throws ParseException
     {
         String entityClassName = "";
         try {
-            entityClassName = this.getTypeOf(element);
-            return EntityTemplateClassCache.getInstance().get(entityClassName);
+            entityClassName = this.getTypeOf(node);
+            if(entityClassName != null) {
+                return EntityTemplateClassCache.getInstance().get(entityClassName);
+            }
+            else{
+                throw new Exception(Node.class.getSimpleName() + " '" + node + "' does not define an entity.");
+            }
         }
         catch (CacheException e){
-            throw new ParseException("Couldn't get entity-class '" + entityClassName +"' from cache, while parsing: \n \n " + element.outerHtml(), e);
+            throw new ParseException("Couldn't get entity-class '" + entityClassName +"' from cache, while parsing: \n \n " + node.outerHtml(), e);
+        }
+        catch (Exception e){
+            throw new ParseException("Error while getting entity-template-class for: \n \n" + node.outerHtml(), e);
         }
     }
 
-    private EntityTemplateClass getNewEntityClassFromElement(Element element) throws ParseException
+    /**
+     *
+     * @param node node defining an entity-template-class
+     * @return the entity-template-class defined by the node
+     * @throws ParseException
+     */
+    private EntityTemplateClass getNewEntityTemplateClassFromNode(Node node) throws ParseException
     {
         String entityClassName = "";
         try {
-            entityClassName = this.getTypeOf(element);
-            EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, element.outerHtml(), null);
-            EntityTemplateClassCache.getInstance().add(entityTemplateClass);
-            return EntityTemplateClassCache.getInstance().get(entityClassName);
+            entityClassName = this.getTypeOf(node);
+            if(entityClassName != null) {
+                EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, node.outerHtml(), null);
+                EntityTemplateClassCache.getInstance().add(entityTemplateClass);
+                return EntityTemplateClassCache.getInstance().get(entityClassName);
+            }
+            else{
+                throw new Exception(Node.class.getSimpleName() + " '" + node + "' does not define an entity.");
+            }
         }
         catch(Exception e){
             throw new ParseException("Error while creating new entity-class '" + entityClassName +"'.", e);
