@@ -1,10 +1,7 @@
 package com.beligum.blocks.core.caching;
 
-import com.beligum.blocks.core.config.CacheConstants;
-import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.core.framework.base.R;
 
@@ -14,7 +11,7 @@ import java.util.Map;
 /**
  * Created by bas on 25.11.14.
  */
-public class PageTemplateCache extends AbstractStorablesCache<PageTemplate>
+public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
 {
     //the instance of this singleton
     private static PageTemplateCache instance = null;
@@ -78,25 +75,9 @@ public class PageTemplateCache extends AbstractStorablesCache<PageTemplate>
      * @returns a map of all the currently cached Cachables from the application cache
      */
     @Override
-    public Map<String, PageTemplate> getCache()
+    protected Map<String, PageTemplate> getCache()
     {
         return (Map<String, PageTemplate>) R.cacheManager().getApplicationCache().get(CacheKeys.PAGE_TEMPLATES);
     }
 
-
-//    /**
-//     *
-//     * @param pageTemplateName
-//     * @return a valid ID-object constructed from the (unique) name of this identifiable object
-//     * @throws CacheException if no valid ID can be constructed from the specified name
-//     */
-//    public ID getNewId(String pageTemplateName) throws CacheException
-//    {
-//        try{
-//            return new ID(new URI(CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName));
-//        }
-//        catch(URISyntaxException e){
-//            throw new CacheException("No valid ID can be constructed from the entity-class name '" + pageTemplateName + "'.", e);
-//        }
-//    }
 }

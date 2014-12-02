@@ -3,6 +3,7 @@ package com.beligum.blocks.core.parsers.jsoup;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.ParserConstants;
+import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.models.templates.PageTemplate;
@@ -35,7 +36,7 @@ public class ToTemplateVisitor extends AbstractVisitor
     }
 
     @Override
-    public Node head(Node node, int depth) {
+    public Node head(Node node, int depth) throws ParseException {
         node = super.head(node, depth);
 
         if(isEntity(node)) {

@@ -35,7 +35,7 @@ public class EntitiesEndpoint
     public Response newPage() throws CacheException
     {
         Template template = R.templateEngine().getEmptyTemplate("/views/new-page.html");
-        Collection<EntityTemplateClass> entityTemplateClasses = EntityTemplateClassCache.getInstance().getCache().values();
+        Collection<EntityTemplateClass> entityTemplateClasses = EntityTemplateClassCache.getInstance().values();
         template.set(ParserConstants.ENTITY_CLASSES, entityTemplateClasses);
         return Response.ok(template).build();
     }
@@ -54,13 +54,11 @@ public class EntitiesEndpoint
         /*
          * Get the page-class (containing the default blocks and rows) from the cache and use it to construct a new page
          */
-        Map<String, EntityTemplateClass> cache = EntityTemplateClassCache.getInstance().getCache();
-        EntityTemplateClass entityTemplateClass = cache.get(entityClassName);
+        EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(entityClassName);
 
-        Redis redis = Redis.getInstance();
         //this constructor will create a fresh entity, uniquely IDed by Redis
         EntityTemplate newEntityTemplate = new EntityTemplate(entityTemplateClass);
-        redis.save(newEntityTemplate);
+        Redis.getInstance().save(newEntityTemplate);
             /*
              * Redirect the client to the newly created page
              */

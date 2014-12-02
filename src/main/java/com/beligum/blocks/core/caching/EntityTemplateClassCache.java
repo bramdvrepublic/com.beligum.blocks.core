@@ -14,7 +14,7 @@ import java.util.Map;
  * Created by bas on 07.10.14.
  * Singleton for interacting with the applications page-cache, containing pairs of (page-class, default-page-instance)
  */
-public class EntityTemplateClassCache extends AbstractStorablesCache<EntityTemplateClass>
+public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTemplateClass>
 {
     //the instance of this singleton
     private static EntityTemplateClassCache instance = null;
@@ -81,7 +81,6 @@ public class EntityTemplateClassCache extends AbstractStorablesCache<EntityTempl
     public void add(EntityTemplateClass entityTemplateClass) throws CacheException
     {
         //TODO: for an entity the super method should be overwritten, so we can add the same EntityClass twice and choose for the 'bleuprint' to be kept in the cache
-        //TODO 2: last version should be fetched from db and when the template has changed a new version should be created and saved to db
         super.add(entityTemplateClass);
     }
     /**
@@ -89,25 +88,7 @@ public class EntityTemplateClassCache extends AbstractStorablesCache<EntityTempl
      * @returns a map of all the currently cached page-classes from the application cache
      */
     @Override
-    public Map<String, EntityTemplateClass> getCache(){
+    protected Map<String, EntityTemplateClass> getCache(){
         return (Map<String, EntityTemplateClass>) R.cacheManager().getApplicationCache().get(CacheKeys.ENTITY_CLASSES);
     }
-
-
-
-//    /**
-//     *
-//     * @param entityClassName
-//     * @return a valid ID-object constructed from the (unique) name of this identifiable object
-//     * @throws CacheException if no valid ID can be constructed from the specified name
-//     */
-//    public ID getNewId(String entityClassName) throws CacheException
-//    {
-//        try{
-//            return new ID(new URI(CacheConstants.ENTITY_CLASS_ID_PREFIX + "/" + entityClassName));
-//        }
-//        catch(URISyntaxException e){
-//            throw new CacheException("No valid ID can be constructed from the entity-class name '" + entityClassName + "'.", e);
-//        }
-//    }
 }

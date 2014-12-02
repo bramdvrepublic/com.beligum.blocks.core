@@ -7,14 +7,6 @@ import com.beligum.core.framework.base.R;
  */
 public class BlocksConfig
 {
-    /**name of the scheme used for uri-identification of objects in the blocks-project*/
-    public static final String SCHEME_NAME = "blocks";
-    /**name of the folder where page-templates (page-classes) can be found*/
-    public static final String ENTITIES_FOLDER = "entities";
-    /**name of the folder where block-templates (block-classes) can be found*/
-    public static final String PAGE_TEMPLATES_FOLDER = "pageTemplates";
-    /**standard name of the html-file a page-class- or block-class-template must have to be recognized as such*/
-    public static final String INDEX_FILE_NAME = "index.html";
     /**the default language for this site, if no language is specified in the configuration-xml*/
     public static final String DEFAULT_LANGUAGE = "language_default";
 
@@ -37,14 +29,6 @@ public class BlocksConfig
     public static String getSiteDBAlias()
     {
         return getConfiguration("blocks.site.db-alias");
-    }
-
-    public static String getEntitiesFolder() {
-        return getTemplateFolder() + "/" + ENTITIES_FOLDER;
-    }
-
-    public static String getPageTemplatesFolder() {
-        return getTemplateFolder() + "/" + PAGE_TEMPLATES_FOLDER;
     }
 
     public static String getRedisMasterName(){

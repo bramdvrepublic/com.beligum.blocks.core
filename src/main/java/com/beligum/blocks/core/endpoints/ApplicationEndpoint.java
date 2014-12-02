@@ -57,7 +57,7 @@ public class ApplicationEndpoint
         try{
             Redis redis = Redis.getInstance();
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
-            RedisID lastVersionId = new RedisID(url, redis.getLastVersion(url));
+            RedisID lastVersionId = new RedisID(url, RedisID.LAST_VERSION);
             EntityTemplate entityTemplate = redis.fetchEntityTemplate(lastVersionId);
             //TODO: the pagetemplate should be fetched from cache or db
             PageTemplate pageTemplate = PageTemplateCache.getInstance().get("default");

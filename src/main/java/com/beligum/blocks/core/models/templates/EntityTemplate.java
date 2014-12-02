@@ -61,6 +61,8 @@ public class EntityTemplate extends AbstractTemplate implements Storable
         if(hash != null && !hash.isEmpty() && hash.containsKey(DatabaseConstants.TEMPLATE) && hash.containsKey(DatabaseConstants.ENTITY_TEMPLATE_CLASS)) {
             EntityTemplate newInstance = new EntityTemplate(id, EntityTemplateClassCache.getInstance().get(hash.get(DatabaseConstants.ENTITY_TEMPLATE_CLASS)));
             newInstance.template = hash.get(DatabaseConstants.TEMPLATE);
+            newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
+            newInstance.creator = hash.get(DatabaseConstants.CREATOR);
             //TODO BAS: maybe this should go to AbstractTemplate?: here use Field.java or something of the sort, should make sure the rest of the hash (like application version and creator) is filled in, even if not all fields are present in the hash
 
             return newInstance;

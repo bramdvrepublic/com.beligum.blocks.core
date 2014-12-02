@@ -16,21 +16,22 @@ import org.jsoup.nodes.Node;
 public class ToHtmlVisitor extends AbstractVisitor
 {
 
-    public Node doHead(Node node, int depth) throws ParseException
+    @Override
+    public Node head(Node node, int depth) throws ParseException
     {
         if (node instanceof Element) {
             Element element = (Element)node;
-            String resourceId = getReferencedId(element);
-            if (!StringUtils.isEmpty(resourceId)) {
+            String unversionedResourceId = getReferencedId(element);
+            if (!StringUtils.isEmpty(unversionedResourceId)) {
                 try {
-                    RedisID id = new RedisID(resourceId);
+                    RedisID id = new RedisID(unversionedResourceId, RedisID.LAST_VERSION);
                     EntityTemplate resource = Redis.getInstance().fetchEntityTemplate(id);
                     if (resource != null) {
                         Document resourceDOM = Jsoup.parse(resource.getTemplate());
-                        node.replaceWith(this.doHead(resourceDOM, depth + 1));
+                        node.replaceWith(this.head(resourceDOM, depth + 1));
                     }
                     else {
-                        throw new ParseException("Could not replace reference to'" + resourceId + "'. It is not a child of the current entity being parsed.");
+                        throw new ParseException("Could not replace reference to'" + unversionedResourceId + "'. It is not a child of the current entity being parsed.");
                     }
                 }
                 catch(ParseException e){

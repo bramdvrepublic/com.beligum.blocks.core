@@ -60,11 +60,14 @@ public class TemplateParser
 
     public String renderEntityInsidePageTemplate(PageTemplate pageTemplate, EntityTemplate entityTemplate) throws ParseException
     {
-        Document DOM = Jsoup.parse(pageTemplate.getTemplate());
+        Document DOM = Jsoup.parse(pageTemplate.getTemplate(), BlocksConfig.getSiteDomain(), Parser.xmlParser());
         Elements referenceBlocks = DOM.select("[" + ParserConstants.REFERENCE_TO + "]");
         for(Element reference : referenceBlocks){
             //TODO: implement this, I just needed a compiling version
-            reference.replaceWith(new TextNode(entityTemplate.getTemplate(), ""));
+            Document entityDOM = Jsoup.parse(entityTemplate.getTemplate(), BlocksConfig.getSiteDomain(), Parser.xmlParser());
+            //a Document has a <#root>-tag indicating the fact that it is indeed a Document, we only want the actual html to be put into the reference-element
+            Element entityRoot = entityDOM.child(0);
+            reference.replaceWith(entityRoot);
         }
         Traversor traversor = new Traversor(new ToHtmlVisitor());
         traversor.traverse(DOM);

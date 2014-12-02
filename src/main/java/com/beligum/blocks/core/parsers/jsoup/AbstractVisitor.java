@@ -19,7 +19,7 @@ public class AbstractVisitor
     private Stack<Node> typeOfStack = new Stack<>();
 
 
-    public Node head(Node node, int depth)
+    public Node head(Node node, int depth) throws ParseException
     {
         if (isEntity(node)) {
             typeOfStack.push(node);
