@@ -56,8 +56,9 @@ blocks.plugin("blocks.core.Admin", ["blocks.core.BlockMenu", "blocks.core.Overla
 
     button.click(function() {
         // insert html
-        Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.DEACTIVATE_MOUSE());
+        // store the current block before we deactivate the mouse
         var block = Menu.currentBlock();
+        Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.DEACTIVATE_MOUSE());
         var element = block.element;
         var front = $("<div />");
         var back = $("<div />");

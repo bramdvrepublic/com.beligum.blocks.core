@@ -459,7 +459,7 @@ blocks
         });
 
         // Special kind of row that can contain template
-        var block = Class.create(row, {
+        var block = Class.create(layoutElement, {
             constructor: function (top, bottom, left, right, element, parent, index) {
                 block.Super.call(this, top, bottom, left, right, element, parent, index);
                 element.removeAttr(Constants.FAKE_BLOCK);
@@ -564,7 +564,8 @@ blocks
                 }
 
                 var t_right = left + (triggerWidth * this.dropspots[side].length);
-                for (var i=0; i < this.dropspots[side].length ; i++) {
+//                for (var i=0; i < this.dropspots[side].length ; i++) {
+                for (var i=this.dropspots[side].length - 1; i >= 0 ; i--) {
                     // set min and max for trigger = trigger is zone between min x and max x (left/right) OR min y and max y (top/bottom)
                     this.dropspots[side][i].setTrigger(t_right, t_right -= triggerWidth);
                 }

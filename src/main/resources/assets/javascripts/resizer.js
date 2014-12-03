@@ -59,7 +59,7 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
         resizeHandleElement.css("top", surface.top + "px");
         resizeHandleElement.css("width", surface.right - surface.left + "px");
         resizeHandleElement.css("height", surface.bottom - surface.top + "px");
-        $("html").css("cursor", "col-resize");
+        $("body").css("cursor", "col-resize");
     };
 
     // update the position of the handle element in the dom

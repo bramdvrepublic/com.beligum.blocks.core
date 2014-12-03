@@ -6,7 +6,7 @@ blocks.plugin("blocks.core.BlockMenu.new", ["blocks.core.BlockMenu", "blocks.cor
     Menu.addButton({
         element: button,
         priority: 100
-    })
+    });
 
     var modalText = '<div class="form-inline" role="form"><div class="form-group">' +
         '<label for="inputPassword2" class="sr-only">Type block : </label>'  +
@@ -14,12 +14,13 @@ blocks.plugin("blocks.core.BlockMenu.new", ["blocks.core.BlockMenu", "blocks.cor
         '<option value="text">text</option><option value="layout">layout</option>' +
             '</div></div>';
 
+
     button.on("click", function(event) {
         var currentBlock = Menu.currentBlock();
         Notification.alert("Add new block", modalText, function(content) {
             var value = content.find("#blocktypeselect").val();
             var newBlock = blocks[value];
-            Layouter.addNewBlockAtLocation($(newBlock[0].outerHTML), Menu.currentBlock());
+            Layouter.addNewBlockAtLocation($(newBlock[0].outerHTML), currentBlock);
         });
     })
 
@@ -31,7 +32,6 @@ blocks.plugin("blocks.core.BlockMenu.new", ["blocks.core.BlockMenu", "blocks.cor
         text : $("<div class='block can-edit' typeof='text'><h1>Enter here your text.</h1></div>"),
         layout: $("<div class='block can-layout' ></div>")
     }
-
 
 }]);
 
@@ -49,17 +49,6 @@ blocks.plugin("blocks.core.BlockMenu.newText", ["blocks.core.BlockMenu", "blocks
         // copy block and add to body
         Layouter.addNewBlockAtLocation($(newBlock[0].outerHTML), Menu.currentBlock());
     })
-
-//    button.on("click", function(event) {
-//        var currentBlock = Menu.currentBlock();
-//        Notification.alert("Add new block", modalText, function(content) {
-//            var value = content.find("#blocktypeselect").val();
-//            var newBlock = blocks[value];
-//            Layouter.addNewBlockAtLocation($(newBlock[0].outerHTML), Menu.currentBlock());
-//        });
-//    })
-
-
 
 
 }]);

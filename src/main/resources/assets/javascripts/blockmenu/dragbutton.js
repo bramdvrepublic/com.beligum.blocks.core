@@ -16,15 +16,20 @@ blocks.plugin("blocks.core.Dragbutton", ["blocks.core.BlockMenu", "blocks.core.L
         enabled: isEnabled
     })
 
+    var layoutParent = function() {
+        Broadcaster.send(new Broadcaster.EVENTS.DEACTIVATE_MOUSE());
+        Layouter.setLayoutParent(null);
+        Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE());
+    };
 
     button.click(function() {
         var currentBlock = Menu.currentBlock();
         if (isEnabled(currentBlock)) {
             Broadcaster.send(new Broadcaster.EVENTS.DEACTIVATE_MOUSE());
             Layouter.setLayoutParent($(currentBlock.element));
+            Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE());
             Overlay.createForBlock(currentBlock, function () {
-                Layouter.setLayoutParent(null);
-                Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE());
+                layoutParent();
             });
         }
     })

@@ -35,32 +35,44 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
         if (block != null) {
             if (enabled(block) ) {
                 Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.DEACTIVATE_MOUSE());
-                var element = block.element;
-                if (!isIframe(block) && editor == null) {
-                    Overlay.createForBlock(block, function () {
-                        Broadcaster.send(new Broadcaster.EVENTS.DOM_DID_CHANGE());
-                        Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE());
-                        editor.destroy();
-                        editor = null;
-                        $(element).removeAttr("contenteditable");
-
-                    });
-                    $(element).attr("contenteditable", true);
-                    $(element).focus();
-                    editor = $(element).ckeditor().editor;
-                } else {
-                    var iframe = element.find("iframe");
-                    Overlay.createForBlock(block, function () {
-                        $(iframe.removeClass("edit"));
-                        Broadcaster.send(new Broadcaster.EVENTS.DOM_DID_CHANGE());
-                        Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE());
-
-                    });
-                    $(iframe.addClass("edit"));
-                }
+                doEditText(block);
+                doEditIframe(block);
             }
         }
     }
+
+    var doEditText = function(block) {
+        if (!isIframe(block) && editor == null) {
+            var element = block.element;
+            Overlay.createForBlock(block, function () {
+                Broadcaster.send(new Broadcaster.EVENTS.DOM_DID_CHANGE());
+                Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE());
+                editor.destroy();
+                editor = null;
+                $(element).removeAttr("contenteditable");
+
+            });
+            $(element).attr("contenteditable", true);
+            $(element).focus();
+            editor = $(element).ckeditor().editor;
+        }
+    }
+
+    var doEditIframe = function(block) {
+        if (isIframe(block)) {
+            editor == null;
+            var iframe = block.element.find("iframe");
+            Overlay.createForBlock(block, function () {
+                $(iframe.removeClass("edit"));
+                Broadcaster.send(new Broadcaster.EVENTS.DOM_DID_CHANGE());
+                Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE());
+
+            });
+            $(iframe.addClass("edit"));
+        }
+    }
+
+
 
 
 

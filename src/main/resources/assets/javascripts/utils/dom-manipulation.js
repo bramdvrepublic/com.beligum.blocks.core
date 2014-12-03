@@ -245,20 +245,43 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Broadcaster", "blocks
     };
 
     this.wrapBlockInColumn = function (blockElement, columnWidth) {
-        return DOM.createColumn(columnWidth).append(blockElement);
+        columnWidth = columnWidth == null ? 12 : columnWidth;
+        var col = DOM.createColumn(columnWidth)
+        blockElement = blockElement.replaceWith(col);
+        col.append(blockElement);
+        return col;
     };
 
     this.wrapBlockInRow = function (blockElement) {
-        return DOM.createRow().append(DOM.createColumn(12).append(blockElement));
+        var row = DOM.createRow();
+        blockElement = blockElement.replaceWith(row);
+        row.append(DOM.createColumn(12).append(blockElement));
+        return row;
     };
 
     this.wrapColumnInRow = function (blockElement) {
-        DOM.setColumnWidth(blockElement, 12)
-        return DOM.createRow().append(blockElement);
-    }
+        DOM.setColumnWidth(blockElement, 12);
+        var row = DOM.createRow();
+        blockElement = blockElement.replaceWith(row);
+        row.append(blockElement);
+        return row;
+    };
+
+    this.wrapColumnInColumn = function (blockElement) {
+        var width = DOM.getColumnWidth(blockElement);
+        DOM.setColumnWidth(blockElement, 12);
+        var col = DOM.createColumn(width);
+        blockElement = blockElement.replaceWith(col);
+        col.append(DOM.createRow().append(blockElement));
+        return col;
+    };
 
     this.wrapRowInColumn = function (blockElement) {
         return DOM.wrapBlockInColumn(blockElement, 12);
+    }
+
+    this.wrapRowInRow = function (blockElement) {
+        return DOM.wrapColumnInRow(DOM.wrapRowInColumn(blockElement, 12));
     }
 
     /*
@@ -273,6 +296,9 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Broadcaster", "blocks
     *
     * this method takes a block and wraps this block in a row
     * and also wraps the other siblings in rows
+    *
+    * returns the blockelement(!) inside a new row and column
+    *
     * */
     this.wrapSiblingBlocksInRows = function (blockElement) {
         var parentColumnElement = blockElement.parent();
@@ -299,17 +325,17 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Broadcaster", "blocks
             }
             // wrap before, current and after in a row and re-append to the parent
             if (before.length > 0) {
-                parentColumnElement.append(DOM.wrapBlockInRow(before));
+                parentColumnElement.append(DOM.wrapBlockInRow($(before)));
             }
-            parentColumnElement.append(DOM.wrapBlockInRow(current));
+            parentColumnElement.append(DOM.wrapBlockInRow($(current)));
             if (after.length > 0) {
-                parentColumnElement.append(DOM.wrapBlockInRow(after));
+                parentColumnElement.append(DOM.wrapBlockInRow($(after)));
             }
 
-            return blockElement.parent();
-        } else {
             return blockElement;
         }
+
+        return blockElement;
     };
 
     var DOM = this;

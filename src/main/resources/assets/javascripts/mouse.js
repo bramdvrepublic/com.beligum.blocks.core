@@ -71,33 +71,34 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
     // the active block for the last 2 mouseEvents
     var block = {current: null, previous: null};
     // array of coordinates {x, y} from the last mouseEvents, used to calculate the direction
-    var _lastPoints = [];
+    var mediumPoints = {x: 0, y:0, sum: {x: 0, y:0}, total:0, points: []};
     var config = this.config;
 
     var windowFrame = {width: 0, height: 0};
 
     var resetMouse = function (force) {
-        windowFrame = {width: document.innerWidth, height: document.innerHeight}
+        windowFrame = {width: document.innerWidth, height: document.innerHeight};
+        mediumPoints = {x: 0, y:0, sum: {x: 0, y:0}, total:0, points: []};
         block = {current: null, previous: null};
         draggingStart = null;
         draggingStatus = Constants.DRAGGING.NO;
         Broadcaster.send(new Broadcaster.EVENTS.ENABLE_BLOCK_DRAG);
+        //$(document).trigger("mousemove");
     };
 
 
     // returns the current mouse direction
     var calculateDirection = function(event) {
-        var REMEMBER_NR_OF_POINTS = 10;
-        var newPoint = {x: event.pageX, y: event.pageY}
-        var lastPoint;
-        _lastPoints.push(newPoint);
-        if (_lastPoints.length < REMEMBER_NR_OF_POINTS) {
-            lastPoint = _lastPoints[0];
-        } else {
-            lastPoint = _lastPoints.shift();
+        var REMEMBER_NR_OF_POINTS = 60;
+        var newPoint = {x: event.pageX, y: event.pageY};
+        if (mediumPoints.total == 0) {
+            mediumPoints.x = newPoint.x;
+            mediumPoints.y = newPoint.y;
+            mediumPoints.points.push(newPoint);
+            mediumPoints.total = 1;
         }
-        var deltaX = newPoint.x - lastPoint.x;
-        var deltaY = newPoint.y - lastPoint.y;
+        var deltaX = newPoint.x - mediumPoints.x;
+        var deltaY = newPoint.y - mediumPoints.y;
         var retVal;
         if (Math.abs(deltaX) > Math.abs(deltaY)) {
             if (deltaX < 0) {
@@ -114,6 +115,23 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
         } else {
             retVal = Constants.DIRECTION.NONE;
         }
+
+        if (mediumPoints.total > REMEMBER_NR_OF_POINTS) {
+            var p = mediumPoints.points.shift();
+            mediumPoints.sum.x -= p.x;
+            mediumPoints.sum.y -= p.y;
+            mediumPoints.total -= 1;
+        }
+        mediumPoints.points.push(newPoint);
+        mediumPoints.sum.x += newPoint.x;
+        mediumPoints.sum.y += newPoint.y;
+        mediumPoints.total += 1;
+
+//        mediumPoints.x = (mediumPoints.sum.x / mediumPoints.total);
+//        mediumPoints.y = (mediumPoints.sum.y / mediumPoints.total);
+        mediumPoints.x = (mediumPoints.x + newPoint.x) / 2;
+        mediumPoints.y = (mediumPoints.y + newPoint.y) / 2;
+
         return retVal;
     };
 
@@ -163,7 +181,9 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
      * */
 
     var mouseDown = function (event) {
+        Logger.debug("mouse down anyway");
         if (active) {
+            Logger.debug("mouse down active");
 //            if (draggingStatus == Constants.DRAGGING.YES) {
 //                Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.ABORT_DRAG(createBlockEvent(event)));
 //                resetMouse();
@@ -171,9 +191,11 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
 //            }
             // check for left mouse click
             if (event.which == 1) {
+                Logger.debug("mouse down left");
                 var currentEvent = createBlockEvent(event);
                 if (draggingStatus == Constants.DRAGGING.NO &&
                     currentEvent.block.current != null) {
+                    Logger.debug("mouse down active");
                     draggingStatus = Constants.DRAGGING.WAITING;
                     draggingStart = event;
                     disableSelection();
@@ -363,7 +385,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
 
 }])
     .config("blocks.core.Mouse", {
-        DRAGGING_THRESHOLD: 0,
+        DRAGGING_THRESHOLD: 50,
         ACTIVATE_AT_BOOT: true
     });
 

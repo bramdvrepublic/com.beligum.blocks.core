@@ -6,7 +6,7 @@
 *
 * */
 
-blocks.plugin("blocks.core.LayoutAid", ["blocks.core.Layouter", "blocks.core.Broadcaster", "blocks.core.Elements", "blocks.core.Constants", "blocks.core.Overlay", function(Layouter, Broadcaster, Elements, Constants, Overlay) {
+blocks.plugin("blocks.core.LayoutAid", ["blocks.core.Layouter", "blocks.core.Broadcaster", "blocks.core.Elements", "blocks.core.Constants", "blocks.core.Overlay", "blocks.core.BlockMenu", function(Layouter, Broadcaster, Elements, Constants, Overlay, BlockMenu) {
 
     var layoutFrame = $('<div style="position: absolute; top: 0px; left: 0px; z-index: 500;" />');
     var createLayoutFrame = function() {
@@ -33,29 +33,31 @@ blocks.plugin("blocks.core.LayoutAid", ["blocks.core.Layouter", "blocks.core.Bro
               }
           }
     };
-
-    var showLayoutFrame = function() {
-        $("body").append(layoutFrame);
-    };
-
-    var hideLayoutFrame = function() {
-        layoutFrame.remove();
-    };
+//
+//    var showLayoutFrame = function() {
+//        $("body").append(layoutFrame);
+//    };
+//
+//    var hideLayoutFrame = function() {
+//        layoutFrame.remove();
+//    };
 
     var currentBlock = null;
 
     var enterBlockHoover = function(blockEvent) {
-        if (blockEvent.block.current != null) {
+        if (blockEvent.block.current != null && !BlockMenu.mouseOverMenu()) {
 //            showLayoutFrame();
             Overlay.highlightBlock(blockEvent.block.current);Overlay.highlightBlock(blockEvent.block.current);
             currentBlock = blockEvent.block.current;
+            BlockMenu.showMenuElement(blockEvent);
         }
     };
 
     var leaveBlockHoover = function(blockEvent) {
-        if (currentBlock != null) {
+        if (currentBlock != null && !BlockMenu.mouseOverMenu()) {
 //            hideLayoutFrame();
             Overlay.unhighlightBlock(currentBlock);
+            BlockMenu.hideMenuElement(blockEvent);
         }
     };
 
