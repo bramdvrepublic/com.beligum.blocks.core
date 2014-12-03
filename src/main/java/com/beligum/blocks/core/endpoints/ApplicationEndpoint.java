@@ -45,7 +45,7 @@ public class ApplicationEndpoint
     public Response reset()
     {
 //        TypeCacher.instance().reset();
-        // TODO enable reset of EntityClassCache
+        // TODO BAS: enable reset of EntityClassCache
         return Response.ok("OK: all templates loaded").build();
     }
 
@@ -59,7 +59,10 @@ public class ApplicationEndpoint
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
             RedisID lastVersionId = new RedisID(url, RedisID.LAST_VERSION);
             EntityTemplate entityTemplate = redis.fetchEntityTemplate(lastVersionId);
-            //TODO: the pagetemplate should be fetched from cache or db
+            if(entityTemplate == null){
+                throw new NullPointerException("Could not find page " + randomURLPath + " in db, received null.");
+            }
+            //TODO BAS: the pagetemplate should be fetched from cache or db
             PageTemplate pageTemplate = PageTemplateCache.getInstance().get("default");
             String page = pageTemplate.renderContent(entityTemplate);
             return Response.ok(page).build();

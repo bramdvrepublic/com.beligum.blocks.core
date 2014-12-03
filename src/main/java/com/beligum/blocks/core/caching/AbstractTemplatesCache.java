@@ -6,7 +6,6 @@ import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.AbstractTemplate;
-import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.utils.Logger;
 import com.beligum.core.framework.utils.toolkit.FileFunctions;
@@ -47,23 +46,58 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
      abstract public T get(String name) throws CacheException;
 
     /**
-     *
+     * Try to add this template to the cache. If a template with the same id is present, the template will not be added and false will be returned.
+     * A version will also be stored in the redis-db if the template has be added.
      * @param template the template to be added to the applications cache, the key will be the object's unversioned id
+     * @return true if the template has been added, false if not
      */
-    public void add(T template) throws CacheException
+    public boolean add(T template) throws CacheException
     {
         try{
             if(!getCache().containsKey(template.getUnversionedId())) {
-                RedisID lastVersion = new RedisID(template.getId().getUrl(), RedisID.LAST_VERSION);
-                EntityTemplate storedTemplate = Redis.getInstance().fetchEntityTemplate(template.getId());
                 getCache().put(template.getUnversionedId(), template);
-                //TODO: last version should be fetched from db and when the template has changed a new version should be created and saved to db
+                RedisID lastVersion = new RedisID(template.getId().getUrl(), RedisID.LAST_VERSION);
+                AbstractTemplate storedTemplate = Redis.getInstance().fetchTemplate(lastVersion, this.getCachedClass());
+                if(!template.equals(storedTemplate)){
+                    Redis.getInstance().save(template);
+                }
+                return true;
             }
             else{
-                throw new CacheException("Cannot add template '" + template.getId() + "' to cache, since it is already present.");
+                return false;
             }
         }catch (Exception e){
-            throw new CacheException("Error while caching template with id '" + template.getId() + "'.", e);
+            throw new CacheException("Error while trying to add template with id '" + template.getId() + "'.", e);
+        }
+    }
+
+    /**
+     * Add a template to the cache. If a template with the same id is already present in the cache, it is replaced with the one specified.
+     * A new version will be stored in the redis-db.
+     * @param template the template to be added to the applications cache, the key will be the object's unversioned id
+     * @return the template with the same unversioned id which was in the cache before, or null if no template with that id was present in cache before
+     */
+    public AbstractTemplate replace(T template) throws CacheException
+    {
+        try{
+            boolean added = this.add(template);
+            if(added) {
+                return null;
+            }
+            else{
+                AbstractTemplate cachedTemplate = getCache().get(template.getUnversionedId());
+                if(!template.equals(cachedTemplate)){
+                    //TODO: last version should be fetched from db and when the template has changed a new version should be created and saved to db
+                    RedisID lastVersion = new RedisID(template.getId().getUrl(), RedisID.LAST_VERSION);
+                    AbstractTemplate storedTemplate = Redis.getInstance().fetchTemplate(lastVersion, this.getCachedClass());
+                    if (!template.equals(storedTemplate)){
+                        Redis.getInstance().save(template);
+                    }
+                }
+                return cachedTemplate;
+            }
+        }catch (Exception e){
+            throw new CacheException("Error while replacing template with id '" + template.getId() + "'.", e);
         }
     }
 
@@ -88,7 +122,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                     {
                         if (filePath.getFileName().toString().endsWith("html")) {
                             try {
-                                new TemplateParser().cacheTemplates(new String(Files.readAllBytes(filePath)));
+                                new TemplateParser().cacheTemplatesFromFile(new String(Files.readAllBytes(filePath)));
                             }
                             catch (ParseException e) {
                                 Logger.error("Parse error while parsing file '" + filePath + "'.", e);
@@ -116,7 +150,10 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
         return this.getCache().values();
     }
 
-    //TODO BAS SH: implementeer deze methode voor PageTemplateCache en EntityTemplateClassCache, om de add(template)-methode algemeen te kunnen implementeren, zonder een type te moeten opslaan in de db
+    /**
+     *
+     * @return the object-class being stored in this cache
+     */
     abstract public Class<? extends AbstractTemplate> getCachedClass();
 
 }

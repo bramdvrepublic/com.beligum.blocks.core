@@ -19,6 +19,7 @@ public class ToHtmlVisitor extends AbstractVisitor
     @Override
     public Node head(Node node, int depth) throws ParseException
     {
+
         if (node instanceof Element) {
             Element element = (Element)node;
             String unversionedResourceId = getReferencedId(element);
@@ -29,9 +30,6 @@ public class ToHtmlVisitor extends AbstractVisitor
                     if (resource != null) {
                         Document resourceDOM = Jsoup.parse(resource.getTemplate());
                         node.replaceWith(this.head(resourceDOM, depth + 1));
-                    }
-                    else {
-                        throw new ParseException("Could not replace reference to'" + unversionedResourceId + "'. It is not a child of the current entity being parsed.");
                     }
                 }
                 catch(ParseException e){
@@ -46,52 +44,4 @@ public class ToHtmlVisitor extends AbstractVisitor
         return node;
     }
 
-
-
-//    public void mergeElement(Element element) {
-//        // check inheritance of mutability
-//        // mutability of entity prevails??
-//        Element content = this.getContent(element); // DB data
-//        Element defaultValue = getDefaultValue(element);
-//        if (content != null) {
-//            if (AbstractParser.hasTypeOf(element)) {
-//                // if element not editable, keep layout
-//                // but(!!) we will keep the content of the saved block
-//                // DON't CARE ABOUT MUTABILITY property
-//                // LOOK AT ENTITY BLUEPRINT
-//                // IF Entity is mutable, get from DB
-//                // if ENTITY not completely mutable, copy only properties from DB
-//                if (!AbstractParser.isMutable(defaultValue)) {
-//                   copyContent(content, defaultValue);
-//                   content = defaultValue;
-//                }
-//
-//            } else if (AbstractParser.isProperty(element)) {
-//                // Is property but not type
-//                // TODO: discussion
-//                // For now we look nu further
-//                // (you can not have properties inside untyped properties
-//                if (!AbstractParser.isMutable(element)) {
-//                    content = defaultValue;
-//                }
-//            }
-//        } else {
-//            content = defaultValue;
-//        }
-//
-//        // try to merge content
-//        // If not bootstrap layout , then rip layout from new
-//        // if bootstrap layout and new is different:
-//        // then match row-row, column - container/column,
-//        // row/column or column/row
-//        // altijd er in steken ipv vervangen
-////        if (AbstractParser.isBootstrapRow(content) && AbstractParser.isBootstrapRow(element)) {
-////
-////        } else if (AbstractParser.isBootstrapRow(element) && AbstractParser.isBootstrapColumn(content)) {
-////
-////        }
-//        if (content != null) {
-//            element.replaceWith(content);
-//        }
-//    }
 }

@@ -252,7 +252,8 @@ public class RedisID extends ID
      * Method for getting a new randomly determined entity-uid (with versioning) for a entityTemplate-instance of an entityTemplateClass
      * @return a randomly generated entity-id of the form "[site-domain]/[entityTemplateClassName]/[randomInt]"
      */
-    public static RedisID renderNewEntityTemplateID(EntityTemplateClass entityTemplateClass){
+    public static RedisID renderNewEntityTemplateID(EntityTemplateClass entityTemplateClass) throws IDException
+    {
         return Redis.getInstance().renderNewEntityTemplateID(entityTemplateClass);
     }
 

@@ -30,7 +30,6 @@ public class Traversor
      */
     public void traverse(Node root) throws ParseException
     {
-        //TODO BAS SH: start debugging traverse() after big refactor (Entity -> EntityTemplate)
         Node node = root;
         int depth = 0;
 

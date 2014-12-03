@@ -4,6 +4,8 @@ import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.exceptions.DeserializationException;
+import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.ifaces.Storable;
 import com.beligum.core.framework.utils.Logger;
@@ -29,9 +31,10 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      * It's UID will be the of the form "[url]:[version]" and will be rendered by the Redis-singleton.
      * It uses the current application version and the currently logged in user for field initialization.
      * @param entityTemplateClass the class of which this entity is a entity-instance
-     * @throw URISyntaxException if a url is specified not formatted strictly according to RFC2396
+     * @throw IDException if no id could be constructed using the entity-template-class-name
      */
-    public EntityTemplate(EntityTemplateClass entityTemplateClass){
+    public EntityTemplate(EntityTemplateClass entityTemplateClass) throws IDException
+    {
         super(RedisID.renderNewEntityTemplateID(entityTemplateClass), entityTemplateClass.getTemplate());
         this.entityTemplateClass = entityTemplateClass;
     }
@@ -56,20 +59,28 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      * @param hash a map, mapping field-names to field-values
      * @return an entity-template or throws an exception if no entity-template could be constructed from the specified hash
      */
-    public static EntityTemplate createInstanceFromHash(RedisID id, Map<String, String> hash) throws Exception
+    public static EntityTemplate createInstanceFromHash(RedisID id, Map<String, String> hash) throws DeserializationException
     {
-        if(hash != null && !hash.isEmpty() && hash.containsKey(DatabaseConstants.TEMPLATE) && hash.containsKey(DatabaseConstants.ENTITY_TEMPLATE_CLASS)) {
-            EntityTemplate newInstance = new EntityTemplate(id, EntityTemplateClassCache.getInstance().get(hash.get(DatabaseConstants.ENTITY_TEMPLATE_CLASS)));
-            newInstance.template = hash.get(DatabaseConstants.TEMPLATE);
-            newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
-            newInstance.creator = hash.get(DatabaseConstants.CREATOR);
-            //TODO BAS: maybe this should go to AbstractTemplate?: here use Field.java or something of the sort, should make sure the rest of the hash (like application version and creator) is filled in, even if not all fields are present in the hash
+        try{
+            if(hash != null && !hash.isEmpty() && hash.containsKey(DatabaseConstants.TEMPLATE) && hash.containsKey(DatabaseConstants.ENTITY_TEMPLATE_CLASS)) {
+                EntityTemplate newInstance = new EntityTemplate(id, EntityTemplateClassCache.getInstance().get(hash.get(DatabaseConstants.ENTITY_TEMPLATE_CLASS)));
+                newInstance.template = hash.get(DatabaseConstants.TEMPLATE);
+                newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
+                newInstance.creator = hash.get(DatabaseConstants.CREATOR);
+                //TODO BAS: this should go to AbstractTemplate: here use Field.java or something of the sort, should make sure the rest of the hash (like application version and creator) is filled in, even if not all fields are present in the hash
 
-            return newInstance;
+                return newInstance;
+            }
+            else{
+                Logger.error("Could not construct an entity-template from the specified hash: " + hash);
+                throw new DeserializationException("Could not construct an entity-template from the specified hash: " + hash);
+            }
         }
-        else{
-            Logger.error("Could not construct an entity-template from the specified hash: " + hash);
-            throw new Exception("Could not construct an entity-template from the specified hash: " + hash);
+        catch(DeserializationException e){
+            throw e;
+        }
+        catch(CacheException e){
+            throw new DeserializationException("Could not construct an object of class '" + EntityTemplate.class.getName() + "' from specified hash.", e);
         }
     }
 
@@ -102,14 +113,6 @@ public class EntityTemplate extends AbstractTemplate implements Storable
 
 
     /**
-     * @return the name of the variable of this viewable in the template holding this viewable
-     */
-    public String getTemplateVariableName()
-    {
-        return this.getUnversionedId();
-    }
-
-    /**
      * Gives a hash-representation of this storable to save to the db. This method decides what information is stored in db, and what is not.
      *
      * @return a map representing the key-value structure of this element to be saved to db
@@ -125,28 +128,16 @@ public class EntityTemplate extends AbstractTemplate implements Storable
     //___________OVERRIDE OF OBJECT_____________//
 
     /**
-     * Two rows are equal when their template, meta-data (page-class, creator and application-version), site-domain and unversioned element-id (everything after the '#') are equal
+     * Two templates are equal when their template-content, url and meta-data are equal
      * (thus equal through object-state, not object-address).
      * @param obj
-     * @return true if two rows are equal, false otherwise
+     * @return true if two templates are equal, false otherwise
      */
     @Override
     public boolean equals(Object obj)
     {
         if(obj instanceof EntityTemplate) {
-            if(obj == this){
-                return true;
-            }
-            else {
-                EntityTemplate entityTemplateObj = (EntityTemplate) obj;
-                EqualsBuilder significantFieldsSet = new EqualsBuilder();
-                significantFieldsSet = significantFieldsSet.append(template, entityTemplateObj.template)
-                                                           .append(this.getUnversionedId(), entityTemplateObj.getUnversionedId())
-//                                                           .append(this.getTemplateVariableName(), entityTemplateObj.getTemplateVariableName())
-                                                           .append(this.creator, entityTemplateObj.creator)
-                                                           .append(this.applicationVersion, entityTemplateObj.applicationVersion);
-                return significantFieldsSet.isEquals();
-            }
+            return super.equals(obj);
         }
         else{
             return false;
@@ -154,20 +145,13 @@ public class EntityTemplate extends AbstractTemplate implements Storable
     }
 
     /**
-     * Two rows have the same hashCode when their template, meta-data (page-class, creator and application-version), site-domain and unversioned element-id (everything after the '#') are equal
+     * Two templates have the same hashCode when their template-content, url and meta-data are equal.
      * (thus equal through object-state, not object-address)
      * @return
      */
     @Override
     public int hashCode()
     {
-        //7 and 31 are two randomly chosen prime numbers, needed for building hashcodes, ideally, these are different for each class
-        HashCodeBuilder significantFieldsSet = new HashCodeBuilder(7, 31);
-        significantFieldsSet = significantFieldsSet.append(template)
-                                                   .append(this.getUnversionedId())
-//                                                   .append(this.getTemplateVariableName())
-                                                   .append(this.creator)
-                                                   .append(this.applicationVersion);
-        return significantFieldsSet.toHashCode();
+        return super.hashCode();
     }
 }

@@ -7,6 +7,7 @@ import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
+import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.configuration.ConfigurationRuntimeException;
 import redis.clients.jedis.Jedis;
@@ -135,8 +136,39 @@ public class Redis implements Closeable
         }
     }
 
-    public AbstractTemplate fetchTemplate(RedisID id, Class<? extends AbstractTemplate> type){
-        
+    /**
+     * Get the specified version of a template.
+     * @param id the id of the template in db
+     * @param type The sort of template to be fetched
+     * @return a template of the specified type
+     * @throws RedisException
+     */
+    public AbstractTemplate fetchTemplate(RedisID id, Class<? extends AbstractTemplate> type) throws RedisException
+    {
+        try (Jedis redisClient = pool.getResource()) {
+            if (!redisClient.exists(id.getUnversionedId())) {
+                return null;
+            }
+            Map<String, String> entityHash = redisClient.hgetAll(id.getVersionedId());
+            if(type == EntityTemplate.class){
+                return EntityTemplate.createInstanceFromHash(id, entityHash);
+            }
+            else if(type == EntityTemplateClass.class){
+                return EntityTemplateClass.createInstanceFromHash(id, entityHash);
+            }
+            else if(type == PageTemplate.class){
+                return PageTemplate.createInstanceFromHash(id, entityHash);
+            }
+            else{
+                throw new RedisException("Unsupported template-type: " + type.getName() + "'.");
+            }
+        }
+        catch(RedisException e){
+            throw e;
+        }
+        catch(Exception e){
+            throw new RedisException("Could not fetch entity-template with id '" + id + "' from db.", e);
+        }
     }
 
     /**
@@ -146,16 +178,27 @@ public class Redis implements Closeable
      */
     public EntityTemplate fetchEntityTemplate(RedisID id) throws RedisException
     {
-        try (Jedis redisClient = pool.getResource()) {
-            if (!redisClient.exists(id.getUnversionedId())) {
-                return null;
-            }
-            Map<String, String> entityHash = redisClient.hgetAll(id.getVersionedId());
-            return EntityTemplate.createInstanceFromHash(id, entityHash);
-        }
-        catch(Exception e){
-            throw new RedisException("Could not fetch entity-template with id '" + id + "' from db.", e);
-        }
+        return (EntityTemplate) fetchTemplate(id, EntityTemplate.class);
+    }
+
+    /**
+     * Get the specified version of a entity-template-class
+     * @param id the id of the entity-template-class
+     * @return entity-template-class from db
+     */
+    public EntityTemplateClass fetchEntityTemplateClass(RedisID id) throws RedisException
+    {
+        return (EntityTemplateClass) fetchTemplate(id, EntityTemplateClass.class);
+    }
+
+    /**
+     * Get the specified version of a page-template
+     * @param id the id of the page-template
+     * @return page-template from db
+     */
+    public PageTemplate fetchPageTemplate(RedisID id) throws RedisException
+    {
+        return (PageTemplate) fetchTemplate(id, PageTemplate.class);
     }
 
     /**

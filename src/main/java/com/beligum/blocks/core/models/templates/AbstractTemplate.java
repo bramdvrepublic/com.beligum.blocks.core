@@ -6,6 +6,8 @@ import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.IdentifiableObject;
 import com.beligum.blocks.core.models.ifaces.Storable;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.*;
 
@@ -112,5 +114,60 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
         hash.put(DatabaseConstants.APP_VERSION, this.applicationVersion);
         hash.put(DatabaseConstants.CREATOR, this.creator);
         return hash;
+    }
+
+    //________________OVERRIDE OF OBJECT_______________//
+
+    /**
+     * Two templates have the same hashCode when their template-content, url and meta-data are equal.
+     * (thus equal through object-state, not object-address)
+     * @return
+     */
+    @Override
+    public int hashCode()
+    {
+        //7 and 31 are two randomly chosen prime numbers, needed for building hashcodes, ideally, these are different for each class
+        HashCodeBuilder significantFieldsSet = new HashCodeBuilder(7, 31);
+        significantFieldsSet = significantFieldsSet.append(template)
+                        .append(this.getUnversionedId())
+                                        //                                                   .append(this.getTemplateVariableName())
+                        .append(this.creator)
+                        .append(this.applicationVersion);
+        return significantFieldsSet.toHashCode();
+    }
+
+    /**
+     * Two templates are equal when their template-content, url and meta-data are equal
+     * (thus equal through object-state, not object-address).
+     * @param obj
+     * @return true if two templates are equal, false otherwise
+     */
+    @Override
+    public boolean equals(Object obj)
+    {
+        if(obj instanceof AbstractTemplate) {
+            if(obj == this){
+                return true;
+            }
+            else {
+                AbstractTemplate abstractTemplateObj = (AbstractTemplate) obj;
+                EqualsBuilder significantFieldsSet = new EqualsBuilder();
+                significantFieldsSet = significantFieldsSet.append(template, abstractTemplateObj.template)
+                                .append(this.getUnversionedId(), abstractTemplateObj.getUnversionedId())
+                                                //                                                           .append(this.getTemplateVariableName(), entityTemplateObj.getTemplateVariableName())
+                                .append(this.creator, abstractTemplateObj.creator)
+                                .append(this.applicationVersion, abstractTemplateObj.applicationVersion);
+                return significantFieldsSet.isEquals();
+            }
+        }
+        else{
+            return false;
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return this.getTemplate();
     }
 }

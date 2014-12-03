@@ -3,7 +3,9 @@ package com.beligum.blocks.core.caching;
 import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.models.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.core.framework.base.R;
 
@@ -56,8 +58,8 @@ public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTempl
     }
 
     /**
-     * Get the entity-class with a certain name from the application cache.
-     * If that entity-class does not exist, return the default entity-class.
+     * Get the entity-template-class with a certain name from the application cache.
+     * If that entity-template-class does not exist, return the default entity-class.
      *
      * @param name the unique name of the entity-class to get
      * @return an entity-class from the application cache
@@ -66,22 +68,24 @@ public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTempl
     public EntityTemplateClass get(String name) throws CacheException
     {
         Map<String, EntityTemplateClass> applicationCache = this.getCache();
-        EntityTemplateClass entityTemplateClass = applicationCache.get(RedisID.renderNewEntityTemplateClassID(name).getUnversionedId());
-        if(entityTemplateClass != null) {
-            return entityTemplateClass;
-        }
-        else{
+        if(name == null) {
+            //TODO BAS: when is the default-class added and how does it look like? this should be implemented!
             return applicationCache.get(CacheConstants.DEFAULT_ENTITY_CLASS_NAME);
         }
-    }
-    /**
-     * @param entityTemplateClass the entity-template-class to be added to the applications cache, the key will be the object's unversioned id
-     */
-    @Override
-    public void add(EntityTemplateClass entityTemplateClass) throws CacheException
-    {
-        //TODO: for an entity the super method should be overwritten, so we can add the same EntityClass twice and choose for the 'bleuprint' to be kept in the cache
-        super.add(entityTemplateClass);
+        else {
+            try {
+                EntityTemplateClass entityTemplateClass = applicationCache.get(RedisID.renderNewEntityTemplateClassID(name).getUnversionedId());
+                if (entityTemplateClass != null) {
+                    return entityTemplateClass;
+                }
+                else {
+                    return applicationCache.get(CacheConstants.DEFAULT_ENTITY_CLASS_NAME);
+                }
+            }
+            catch (IDException e) {
+                throw new CacheException("Could not get " + EntityTemplateClass.class.getSimpleName() + "' from cache.", e);
+            }
+        }
     }
     /**
      * This method returns a map with all default page-instances (value) of all present pageClasses (key)
@@ -90,5 +94,14 @@ public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTempl
     @Override
     protected Map<String, EntityTemplateClass> getCache(){
         return (Map<String, EntityTemplateClass>) R.cacheManager().getApplicationCache().get(CacheKeys.ENTITY_CLASSES);
+    }
+
+    /**
+     * @return the object-class being stored in this cache
+     */
+    @Override
+    public Class<? extends AbstractTemplate> getCachedClass()
+    {
+        return EntityTemplateClass.class;
     }
 }

@@ -1,7 +1,9 @@
 package com.beligum.blocks.core.caching;
 
 import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.models.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.core.framework.base.R;
 
@@ -63,10 +65,14 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
     @Override
     public PageTemplate get(String name) throws CacheException
     {
-        Map<String, PageTemplate> applicationCache = this.getCache();
-        PageTemplate pageTemplate = applicationCache.get(RedisID.renderNewPageTemplateID(name).getUnversionedId());
-        return pageTemplate;
-        //TODO BAS: This needs a default value to fall back to. How do we define a default? Do we use the framework-default or something?
+        try {
+            Map<String, PageTemplate> applicationCache = this.getCache();
+            PageTemplate pageTemplate = applicationCache.get(RedisID.renderNewPageTemplateID(name).getUnversionedId());
+            return pageTemplate;
+            //TODO BAS: This needs a default value to fall back to. How do we define a default? Do we use the framework-default or something?
+        }catch(IDException e){
+            throw new CacheException("Could not get "+ PageTemplate.class.getSimpleName() + " '" + name + "' from cache.", e);
+        }
     }
 
     /**
@@ -80,4 +86,9 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
         return (Map<String, PageTemplate>) R.cacheManager().getApplicationCache().get(CacheKeys.PAGE_TEMPLATES);
     }
 
+    @Override
+    public Class<? extends AbstractTemplate> getCachedClass()
+    {
+        return PageTemplate.class;
+    }
 }

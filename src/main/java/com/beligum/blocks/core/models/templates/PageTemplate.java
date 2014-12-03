@@ -1,21 +1,31 @@
 package com.beligum.blocks.core.models.templates;
 
+import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.config.DatabaseConstants;
+import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.exceptions.DeserializationException;
+import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.core.framework.utils.Logger;
 
 import java.net.URISyntaxException;
+import java.util.Map;
 
 /**
  * Created by wouter on 20/11/14.
  */
 public class PageTemplate extends AbstractTemplate
 {
-    //TODO BAS: should the creator of a page-template be the <author>-tag of the html file?, or else "server-start" or something?
-
-    public PageTemplate(String name, String template) throws URISyntaxException
+    public PageTemplate(String name, String template) throws IDException
     {
         super(RedisID.renderNewPageTemplateID(name), template);
+        //TODO BAS: should the creator of a page-template be the <author>-tag of the html file?, or else "server-start" or something?
+    }
+
+    public PageTemplate(RedisID id, String template){
+        super(id, template);
     }
 
     public String getName() {
@@ -69,29 +79,61 @@ public class PageTemplate extends AbstractTemplate
     }
 
     /**
-     * Returns a string representation of the object. In general, the
-     * {@code toString} method returns a string that
-     * "textually represents" this object. The result should
-     * be a concise but informative representation that is easy for a
-     * person to read.
-     * It is recommended that all subclasses override this method.
-     * <p/>
-     * The {@code toString} method for class {@code Object}
-     * returns a string consisting of the name of the class of which the
-     * object is an instance, the at-sign character `{@code @}', and
-     * the unsigned hexadecimal representation of the hash code of the
-     * object. In other words, this method returns a string equal to the
-     * value of:
-     * <blockquote>
-     * <pre>
-     * getClass().getName() + '@' + Integer.toHexString(hashCode())
-     * </pre></blockquote>
-     *
-     * @return a string representation of the object.
+     * The PageTemplate-class can be used as a factory, to construct page-templates from data found in a hash in the redis-db
+     * @param hash a map, mapping field-names to field-values
+     * @return an page-template or null if no page-template could be constructed from the specified hash
+     */
+    public static PageTemplate createInstanceFromHash(RedisID id, Map<String, String> hash) throws DeserializationException
+    {
+        try{
+            if(hash != null && !hash.isEmpty() && hash.containsKey(DatabaseConstants.TEMPLATE)) {
+                PageTemplate newInstance = new PageTemplate(id, hash.get(DatabaseConstants.TEMPLATE));
+                newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
+                newInstance.creator = hash.get(DatabaseConstants.CREATOR);
+                //TODO BAS: this should go to AbstractTemplate: here use Field.java or something of the sort, should make sure the rest of the hash (like application version and creator) is filled in, even if not all fields are present in the hash
+
+                return newInstance;
+            }
+            else{
+                Logger.error("Could not construct a page-template from the specified hash: " + hash);
+                throw new DeserializationException("Could not construct a page-template from the specified hash: " + hash);
+            }
+        }
+        catch(DeserializationException e){
+            throw e;
+        }
+        catch(Exception e){
+            throw new DeserializationException("Could not construct an object of class '" + PageTemplate.class.getName() + "' from specified hash.", e);
+        }
+    }
+
+    //________________OVERRIDE OF OBJECT_______________//
+
+    /**
+     * Two templates have the same hashCode when their template-content, url and meta-data are equal.
+     * (thus equal through object-state, not object-address)
+     * @return
      */
     @Override
-    public String toString()
+    public int hashCode()
     {
-        return this.getTemplate();
+        return super.hashCode();
+    }
+
+    /**
+     * Two templates are equal when their template-content, url and meta-data are equal
+     * (thus equal through object-state, not object-address).
+     * @param obj
+     * @return true if two templates are equal, false otherwise
+     */
+    @Override
+    public boolean equals(Object obj)
+    {
+        if(obj instanceof PageTemplate) {
+            return super.equals(obj);
+        }
+        else{
+            return false;
+        }
     }
 }

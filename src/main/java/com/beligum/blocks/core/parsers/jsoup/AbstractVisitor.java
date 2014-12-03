@@ -6,8 +6,8 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
-import org.jsoup.parser.Tag;
 
+import java.lang.annotation.ElementType;
 import java.util.List;
 import java.util.Stack;
 
@@ -35,8 +35,11 @@ public class AbstractVisitor
         return node;
     }
 
-
-    protected Node getlastParent() {
+    /**
+     *
+     * @return the node containing the type of the last typed parent visited
+     */
+    protected Node getParentTypeNode() {
         if (!this.typeOfStack.empty()) {
             return this.typeOfStack.peek();
         } else {
@@ -44,8 +47,12 @@ public class AbstractVisitor
         }
     }
 
-    protected Element replaceElementWithReference(Element element, EntityTemplate entityTemplate) {
-        return replaceElementWithReference(element, entityTemplate.getTemplateVariableName());
+    protected Element replaceElementWithPropertyReference(Element element) {
+        return replaceElementWithReference(element, getPropertyId(element));
+    }
+
+    protected Element replaceElementWithEntityReference(Element element, EntityTemplate entity){
+        return replaceElementWithReference(element, entity.getUnversionedId());
     }
 
     protected Element replaceElementWithReference(Element element, String referenceTo)
@@ -69,7 +76,7 @@ public class AbstractVisitor
      * @param node
      * @return the id of the entity this node is a reference to, an empty string if their is no id present or null if it not a reference-node
      */
-    protected String getReferencedId(Node node){
+    public String getReferencedId(Node node){
         if(isReference(node)){
             return node.attr(ParserConstants.REFERENCE_TO);
         }
@@ -79,6 +86,9 @@ public class AbstractVisitor
     }
 
     public boolean isReference(Node node) {
+        if(node == null){
+            return false;
+        }
         return node.hasAttr(ParserConstants.REFERENCE_TO);
     }
 
@@ -98,6 +108,9 @@ public class AbstractVisitor
      * @return true if the specified element has a rdf-"typeof" attribute, false otherwise
      */
     public boolean hasTypeOf(Node node) {
+        if(node == null){
+            return false;
+        }
         boolean retVal = false;
         if (node.hasAttr("typeof")) {
             retVal = true;
@@ -111,6 +124,9 @@ public class AbstractVisitor
      * @return true if the specified element has a rdf-"property" attribute, false otherwise
      */
     public boolean isProperty(Node node) {
+        if(node == null){
+            return false;
+        }
         boolean retVal = false;
         if (node.hasAttr("property")) {
             retVal = true;
@@ -137,6 +153,9 @@ public class AbstractVisitor
 
 
     public boolean isPageTemplateRoot(Node root){
+        if(root == null){
+            return false;
+        }
         return root.hasAttr(ParserConstants.PAGE_TEMPLATE_ATTR);
     }
 
@@ -150,6 +169,9 @@ public class AbstractVisitor
     }
 
     public boolean hasResource(Element element) {
+        if(element == null){
+            return false;
+        }
         boolean retVal = false;
         if (element.hasAttr("resource")) {
             retVal = true;
@@ -162,11 +184,19 @@ public class AbstractVisitor
      * @param node
      * @return true if the specified element is "html" and has an attribute "template", false otherwise
      */
-    public boolean isTemplate(Node node) {
-        return node.nodeName().equals("html") && node.hasAttr(ParserConstants.PAGE_TEMPLATE_ATTR);
+    public boolean isPageTemplate(Node node) {
+        if(node == null){
+            return false;
+        }
+        else {
+            return node.nodeName().equals("html") && node.hasAttr(ParserConstants.PAGE_TEMPLATE_ATTR);
+        }
     }
 
     public boolean isLayoutable(Element node) {
+        if(node == null){
+            return false;
+        }
         boolean retVal = false;
         if (node.hasAttr("can-layout")) {
             retVal = true;
@@ -175,6 +205,9 @@ public class AbstractVisitor
     }
 
     public boolean isReplaceable(Element node) {
+        if(node == null){
+            return false;
+        }
         boolean retVal = false;
         if (node.hasAttr("can-replace")) {
             retVal = true;
@@ -183,14 +216,23 @@ public class AbstractVisitor
     }
 
     public boolean isBootstrapContainer(Element node) {
+        if(node == null){
+            return false;
+        }
         return node.hasClass("container");
     }
 
     public boolean isBootstrapRow(Element node) {
+        if(node == null){
+            return false;
+        }
         return node.hasClass("row");
     }
 
     public boolean isBootstrapColumn(Element node) {
+        if(node == null){
+            return false;
+        }
         boolean retVal = false;
         for (String cName: node.classNames()) {
             if (cName.startsWith("col-")) {
@@ -219,21 +261,32 @@ public class AbstractVisitor
 
 
 
-    public String getProperty(Element node) {
-        return node.attr("property");
+    public String getProperty(Node node) {
+        if(isProperty(node)) {
+            return node.attr("property");
+        }
+        else{
+            return null;
+        }
     }
 
 
 
-    public boolean isBlueprint(Element node) {
+    public boolean isBlueprint(Node node) {
+        if(node == null){
+            return false;
+        }
         boolean retVal = false;
-        if (node.hasAttr("blueprint")) {
+        if (node.hasAttr(ParserConstants.BLEUPRINT)) {
             retVal = true;
         }
         return retVal;
     }
 
     public boolean isEditable(Element node) {
+        if(node == null){
+            return false;
+        }
         boolean retVal = false;
         if (node.hasAttr("can-edit")) {
             retVal = true;
@@ -242,6 +295,9 @@ public class AbstractVisitor
     }
 
     public boolean isInlineEditable(Element node) {
+        if(node == null){
+            return false;
+        }
         boolean retVal = false;
         if (node.hasAttr("can-edit-inline")) {
             retVal = true;
@@ -250,6 +306,26 @@ public class AbstractVisitor
     }
 
 
+    /**
+     * @return the property-id using the property-name of this entity-node and the last class-node visited, or null if no property-name can be found
+     */
+    public String getPropertyId(Node node)
+    {
+        if(isProperty(node)) {
+            Node parentEntityNode = getParentTypeNode();
+            String parentEntityClassName = getTypeOf(parentEntityNode);
+            if(parentEntityClassName == null){
+                return null;
+            }
+            else {
+                return parentEntityClassName + "#" + getProperty(node);
+            }
+        }
+        else{
+            return null;
+        }
+
+    }
 
     public boolean isMutable(Element node) {
         return isLayoutable(node) || isReplaceable(node) || isEditable(node) || isInlineEditable(node);
