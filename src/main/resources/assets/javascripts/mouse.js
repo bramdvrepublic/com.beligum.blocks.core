@@ -60,118 +60,29 @@
  *
  */
 
-
-
 blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elements", "blocks.core.Layouter", "blocks.core.Constants", function (Broadcaster, Elements, Layouter, Constants) {
     // flag if this module is active
     var active = false;
     // dragging options, kept here for parsedContent while waiting for drag
     var draggingStatus = Constants.DRAGGING.NO;
     var draggingStart = null;
-    // the active block for the last 2 mouseEvents
-    var block = {current: null, previous: null};
+    var clickStarted = false;
+    var currentBlock = null;
     // array of coordinates {x, y} from the last mouseEvents, used to calculate the direction
-    var mediumPoints = {x: 0, y:0, sum: {x: 0, y:0}, total:0, points: []};
     var config = this.config;
-
     var windowFrame = {width: 0, height: 0};
 
-    var resetMouse = function (force) {
+    var resetMouse = function () {
         windowFrame = {width: document.innerWidth, height: document.innerHeight};
-        mediumPoints = {x: 0, y:0, sum: {x: 0, y:0}, total:0, points: []};
-        block = {current: null, previous: null};
+        clickStarted = false;
         draggingStart = null;
         draggingStatus = Constants.DRAGGING.NO;
-        Broadcaster.send(new Broadcaster.EVENTS.ENABLE_BLOCK_DRAG);
-        //$(document).trigger("mousemove");
-    };
-
-
-    // returns the current mouse direction
-    var calculateDirection = function(event) {
-        var REMEMBER_NR_OF_POINTS = 60;
-        var newPoint = {x: event.pageX, y: event.pageY};
-        if (mediumPoints.total == 0) {
-            mediumPoints.x = newPoint.x;
-            mediumPoints.y = newPoint.y;
-            mediumPoints.points.push(newPoint);
-            mediumPoints.total = 1;
-        }
-        var deltaX = newPoint.x - mediumPoints.x;
-        var deltaY = newPoint.y - mediumPoints.y;
-        var retVal;
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            if (deltaX < 0) {
-                retVal =  Constants.DIRECTION.LEFT;
-            } else {
-                retVal = Constants.DIRECTION.RIGHT;
-            }
-        } else if (Math.abs(deltaX) < Math.abs(deltaY)) {
-            if (deltaY < 0) {
-                retVal = Constants.DIRECTION.UP;
-            } else {
-                retVal = Constants.DIRECTION.DOWN;
-            }
-        } else {
-            retVal = Constants.DIRECTION.NONE;
-        }
-
-        if (mediumPoints.total > REMEMBER_NR_OF_POINTS) {
-            var p = mediumPoints.points.shift();
-            mediumPoints.sum.x -= p.x;
-            mediumPoints.sum.y -= p.y;
-            mediumPoints.total -= 1;
-        }
-        mediumPoints.points.push(newPoint);
-        mediumPoints.sum.x += newPoint.x;
-        mediumPoints.sum.y += newPoint.y;
-        mediumPoints.total += 1;
-
-//        mediumPoints.x = (mediumPoints.sum.x / mediumPoints.total);
-//        mediumPoints.y = (mediumPoints.sum.y / mediumPoints.total);
-        mediumPoints.x = (mediumPoints.x + newPoint.x) / 2;
-        mediumPoints.y = (mediumPoints.y + newPoint.y) / 2;
-
-        return retVal;
-    };
-
-    // sets the current active block
-    var getHooveredBlockForEvent = function (event) {
-        block.previous = block.current;
-        block.current = null;
-        if (draggingStatus != Constants.DRAGGING.TEXT_SELECTION && active) {
-            // First search for active element
-            // If an element is active, we have a big chance the next event is in the same element, so we start our search here
-            if (block.previous != null) {
-                block.current = block.previous.findActiveElement(event.pageX, event.pageY);
-            }
-            // Our shortcut failed so search the full page
-            // we loop the trees of elements to find the smallest active element
-            if (block.current == null) {
-                var i = 0;
-                while (i < Layouter.getLayoutTree().length && block.current == null) {
-                    block.current = Layouter.getLayoutTree()[i].findActiveElement(event.pageX, event.pageY);
-                    i++;
-                }
-            }
-        }
+        currentBlock = null;
+        Broadcaster.send(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG);
 
     };
 
-    // create a block event from a jQuery mouseEvent
-    var createBlockEvent = function (event) {
-        getHooveredBlockForEvent(event);
-        var blocksEvent = {
-            event: event,
-            block: block,
-            direction: calculateDirection(event),
-            draggingStatus: draggingStatus,
-            draggingStart: draggingStart
-        };
 
-
-        return blocksEvent;
-    };
 
     /*
      * on mousedown and dragging allowed and surface to drag selected:
@@ -181,21 +92,18 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
      * */
 
     var mouseDown = function (event) {
-        Logger.debug("mouse down anyway");
         if (active) {
-            Logger.debug("mouse down active");
-//            if (draggingStatus == Constants.DRAGGING.YES) {
-//                Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.ABORT_DRAG(createBlockEvent(event)));
-//                resetMouse();
-//                return;
-//            }
+            clickStarted = true;
+            setTimeout(function() {
+                clickStarted = false;
+            }, config.CLICK_TIMEOUT);
+
             // check for left mouse click
             if (event.which == 1) {
-                Logger.debug("mouse down left");
-                var currentEvent = createBlockEvent(event);
+                var block = Broadcaster.getHooveredBlockForPosition(event.pageX, event.pageY);
                 if (draggingStatus == Constants.DRAGGING.NO &&
-                    currentEvent.block.current != null) {
-                    Logger.debug("mouse down active");
+                    block != null) {
+
                     draggingStatus = Constants.DRAGGING.WAITING;
                     draggingStart = event;
                     disableSelection();
@@ -203,14 +111,14 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
                     Logger.debug("We can not start because dragging is already in place or not allowed. " + draggingStatus);
                     resetMouse();
                     draggingStatus = Constants.DRAGGING.TEXT_SELECTION;
-                    Broadcaster.send(new Broadcaster.EVENTS.END_HOOVER(createBlockEvent(event)));
+                    Broadcaster.send(Broadcaster.EVENTS.END_HOOVER);
 
                 }
             } else {
                 // middle or right mouse button presses
                 //TODO ??
                 if (draggingStatus == Constants.DRAGGING.YES) {
-                    Broadcaster.send(new Broadcaster.EVENTS.ABORT_DRAG(createBlockEvent(event)));
+                    Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG);
                 }
                 resetMouse();
             }
@@ -226,9 +134,11 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
             if (draggingStatus != Constants.DRAGGING.NOT_ALLOWED) {
                 var oldDragStatus = draggingStatus;
                 if (oldDragStatus == Constants.DRAGGING.YES) {
-                    Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.END_DRAG(createBlockEvent(event)));
-
+                    Broadcaster.sendNoTimeout(Broadcaster.EVENTS.END_DRAG);
                 }
+            }
+            if (clickStarted) {
+
             }
             resetMouse();
         }
@@ -241,8 +151,18 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
         if (Math.abs(draggingStart.pageX - event.pageX) > config.DRAGGING_THRESHOLD ||
             Math.abs(draggingStart.pageY - event.pageY) > config.DRAGGING_THRESHOLD) {
             draggingStatus = Constants.DRAGGING.YES;
-            Broadcaster.send(new Broadcaster.EVENTS.START_DRAG(createBlockEvent(event)));
+            Broadcaster.send(Broadcaster.EVENTS.START_DRAG, {draggingStart: draggingStart});
         }
+    };
+
+
+    var blockChanged = function(block) {
+        var retVal = false;
+        if (block.current != currentBlock) {
+            retVal= true;
+            currentBlock = block.current();
+        }
+        return retVal;
     };
 
     /*
@@ -250,40 +170,44 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
      * */
     var mouseMove = function (event) {
         if (active) {
-            var blockEvent = createBlockEvent(event);
-            // Abort outside window
-//            if (event.pageX < 0 || event.pageY > windowFrame.width || event.pageY < 0 || event.pageY > windowFrame.height) {
-//                mouseUp(event);
+            var changed = false;
+            var block = Broadcaster.block();
+            // check if block changed since last mouse move
+            if (block.current !== currentBlock) {
+                Logger.debug("New block");
+                changed = true;
+                currentBlock = block.current;
+            }
             if (draggingStatus == Constants.DRAGGING.WAITING) {
                 enableDragAfterTreshold(event);
             } else if (draggingStatus != Constants.DRAGGING.YES) {
-                if (block.current != block.previous) {
+                if (changed) {
                     if (block.current == null) {
-                        Broadcaster.send(new Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK(blockEvent));
+                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK);
                     } else if (block.previous == null) {
-                        Broadcaster.send(new Broadcaster.EVENTS.HOOVER_ENTER_BLOCK(blockEvent));
+                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK);
                     } else {
-                        Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK(blockEvent));
-                        Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.HOOVER_ENTER_BLOCK(blockEvent));
+                        Broadcaster.sendNoTimeout(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK);
+                        Broadcaster.sendNoTimeout(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK);
 
                         //Logger.debug("changed blocks");
                     }
                 } else if (block.current != null) {
-                    Broadcaster.send(new Broadcaster.EVENTS.HOOVER_OVER_BLOCK(blockEvent));
+                    Broadcaster.send(Broadcaster.EVENTS.HOOVER_OVER_BLOCK);
                 }
 
             } else if (draggingStatus == Constants.DRAGGING.YES) {
-                if (block.current != block.previous) {
+                if (changed) {
                     if (block.current == null) {
-                        Broadcaster.send(new Broadcaster.EVENTS.DRAG_LEAVE_BLOCK(blockEvent));
+                        Broadcaster.send(Broadcaster.EVENTS.DRAG_LEAVE_BLOCK);
                     } else if (block.previous == null) {
-                        Broadcaster.send(new Broadcaster.EVENTS.DRAG_ENTER_BLOCK(blockEvent));
+                        Broadcaster.send(Broadcaster.EVENTS.DRAG_ENTER_BLOCK);
                     } else {
-                        Broadcaster.send(new Broadcaster.EVENTS.DRAG_ENTER_BLOCK(blockEvent));
-                        Broadcaster.send(new Broadcaster.EVENTS.DRAG_LEAVE_BLOCK(blockEvent));
+                        Broadcaster.send(Broadcaster.EVENTS.DRAG_ENTER_BLOCK);
+                        Broadcaster.send(Broadcaster.EVENTS.DRAG_LEAVE_BLOCK);
                     }
                 } else if (block.current != null) {
-                    Broadcaster.send(new Broadcaster.EVENTS.DRAG_OVER_BLOCK(blockEvent));
+                    Broadcaster.send(Broadcaster.EVENTS.DRAG_OVER_BLOCK);
                 }
 
             }
@@ -332,17 +256,17 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
         if (!active) {
             active = true;
             $(document).on("mousedown.blocks_core", function (event) {
-                mouseDown(event)
+                mouseDown(event);
             });
             $(document).on("mouseup.blocks_core", function (event) {
-                mouseUp(event)
+                mouseUp(event);
             });
             $(document).on("mousemove.blocks_core", function (event) {
-                    mouseMove(event)
-                }
-            );
+                mouseMove(event);
+            });
+
             $(document).on("dblclick.blocks_core", function(event) {
-                    Broadcaster.send(new Broadcaster.EVENTS.DOUBLE_CLICK_BLOCK(createBlockEvent(event)));
+                Broadcaster.send(Broadcaster.EVENTS.DOUBLE_CLICK_BLOCK);
             });
 
             $(document).mouseleave(function(){
@@ -363,22 +287,22 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
         }
     };
 
-    Broadcaster.on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, function () {
+    $(document).on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, function () {
         // TODO: What if layout refreshes while we are dragging
         resetMouse();
     });
 
-    Broadcaster.on(Broadcaster.EVENTS.ACTIVATE_MOUSE, "blocks.core.Mouse", function () {registerMouseEvents();});
-    Broadcaster.on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, "blocks.core.Mouse", function () {unregisterMouseEvents();});
-    Broadcaster.on(Broadcaster.EVENTS.DO_ALLOW_DRAG, "blocks.core.Mouse", function () {allowDrag();});
-    Broadcaster.on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, "blocks.core.Mouse", function () {disallowDrag();});
+
+    $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function () {registerMouseEvents();});
+    $(document).on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, function () {unregisterMouseEvents();});
+    $(document).on(Broadcaster.EVENTS.DO_ALLOW_DRAG, function () {allowDrag();});
+    $(document).on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, function () {disallowDrag();});
 
     window.ondragstart = function() {return false;};
 
     if (this.config.ACTIVATE_AT_BOOT) {
         $(document).ready(function () {
             registerMouseEvents();
-
         });
     }
 
@@ -386,6 +310,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
 }])
     .config("blocks.core.Mouse", {
         DRAGGING_THRESHOLD: 50,
+        CLICK_TIMEOUT: 500,
         ACTIVATE_AT_BOOT: true
     });
 

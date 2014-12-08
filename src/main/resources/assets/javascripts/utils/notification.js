@@ -14,7 +14,7 @@ blocks.plugin("blocks.core.Notification", ["blocks.core.Broadcaster", function(B
         var hideDialog = function(callback) {
             modal.fadeOut(200, function() {
                 modal.remove();
-                Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE());
+                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
                 callback(modalBody);
             });
         };
@@ -28,7 +28,7 @@ blocks.plugin("blocks.core.Notification", ["blocks.core.Broadcaster", function(B
             closeIcon.on("click", function() {hideDialog(okFunction)});
         }
 
-        Broadcaster.send(new Broadcaster.EVENTS.DEACTIVATE_MOUSE());
+        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         modalFooter.append(okButton);
         modal.append(modalDialog.append(modalHeader.append(closeIcon).append(modalTitle)).append(modalBody).append(modalFooter));
         modal.hide();

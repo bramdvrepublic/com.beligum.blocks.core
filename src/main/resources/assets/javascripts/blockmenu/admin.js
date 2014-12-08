@@ -58,7 +58,7 @@ blocks.plugin("blocks.core.Admin", ["blocks.core.BlockMenu", "blocks.core.Overla
         // insert html
         // store the current block before we deactivate the mouse
         var block = Menu.currentBlock();
-        Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.DEACTIVATE_MOUSE());
+        Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         var element = block.element;
         var front = $("<div />");
         var back = $("<div />");
@@ -132,8 +132,8 @@ blocks.plugin("blocks.core.Admin", ["blocks.core.BlockMenu", "blocks.core.Overla
                 back.remove();
                 side.remove();
                 frontback.remove();
-                Broadcaster.send(new Broadcaster.EVENTS.DOM_DID_CHANGE());
-                Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE());
+                Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
+                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
             }, 600);
         });
 

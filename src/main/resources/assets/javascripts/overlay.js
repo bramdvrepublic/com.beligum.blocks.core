@@ -69,6 +69,7 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", function(Constant
         return overlaybackground;
     }
     this.addBlockBackground = addBlockBackground;
+
     var setAbsolute = function(block, relative) {
         var zindex = maxIndex() + 1;
         block.element.css("z-index", zindex);

@@ -84,8 +84,8 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
     var findActiveResizeHandle = function(blockEvent) {
         var retVal = null;
         if (activeResizeHandle != null) {
-            if (activeResizeHandle.top <=  blockEvent.event.pageY && activeResizeHandle.bottom >= blockEvent.event.pageY &&
-                activeResizeHandle.left <= blockEvent.event.pageX && activeResizeHandle.right >= blockEvent.event.pageX) {
+            if (activeResizeHandle.top <=  blockEvent.pageY && activeResizeHandle.bottom >= blockEvent.pageY &&
+                activeResizeHandle.left <= blockEvent.pageX && activeResizeHandle.right >= blockEvent.pageX) {
                 retVal =  activeResizeHandle;
             }
         } else if (blockEvent.block.current != null) {
@@ -96,7 +96,7 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
             }
 
             if (activeRow != null && activeRow instanceof Elements.Row) {
-                retVal = activeRow.findTriggeredResizeHandle(blockEvent.event.pageX, blockEvent.event.pageY, Elements.ResizeHandle);
+                retVal = activeRow.findTriggeredResizeHandle(blockEvent.pageX, blockEvent.pageY, Elements.ResizeHandle);
             }
         }
         return retVal;
@@ -120,11 +120,11 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
     var manageActiveResizeHandle = function (blocksEvent) {
         if (activeResizehandleChanged(blocksEvent)) {
             if (activeResizeHandle != null && !draggingEnabled) {
-                Broadcaster.send(new Broadcaster.EVENTS.DISABLE_BLOCK_DRAG(blocksEvent));
+                Broadcaster.send(Broadcaster.EVENTS.DISABLE_BLOCK_DRAG);
                 draggingEnabled = true;
                 showHandleElement(activeResizeHandle.drawSurface);
             }  else if (activeResizeHandle == null && draggingEnabled) {
-                Broadcaster.send(new Broadcaster.EVENTS.ENABLE_BLOCK_DRAG(blocksEvent));
+                Broadcaster.send(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG);
                 draggingEnabled = false;
             }
         }
@@ -158,7 +158,7 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
             $(document).off("mousemove.resizehandledrag");
             removeHandleElement();
             $('body').css("cursor", 'auto')
-            Broadcaster.send(new Broadcaster.EVENTS.DOM_DID_CHANGE());
+            Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
         }
     };
 
@@ -175,7 +175,7 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
     var initDrag = function (resizeHandle) {
         activeResizeHandle = resizeHandle;
         if (resizeHandle.leftColumn.parent == resizeHandle.rightColumn.parent) {
-            // for the parent row of the calculate offset left and offset right
+            // for the parent row of the column, calculate offset left and offset right
             // offset = nr of columns
             var row = resizeHandle.leftColumn.parent;
             var columns = row.children;
@@ -245,32 +245,32 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
     };
 
 
-    Broadcaster.on(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, "blocks.core.Resizer", function (event) {
-        manageActiveResizeHandle(event.blockEvent)
+    $(document).on(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, function (event) {
+        manageActiveResizeHandle(event)
     });
-    Broadcaster.on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, "blocks.core.Resizer", function (event) {
-        manageActiveResizeHandle(event.blockEvent)
+    $(document).on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, function (event) {
+        manageActiveResizeHandle(event)
     });
-    Broadcaster.on(Broadcaster.EVENTS.HOOVER_OVER_BLOCK, "blocks.core.Resizer", function (event) {
-        manageActiveResizeHandle(event.blockEvent)
+    $(document).on(Broadcaster.EVENTS.HOOVER_OVER_BLOCK, function (event) {
+        manageActiveResizeHandle(event)
     });
 
-    Broadcaster.on(Broadcaster.EVENTS.DO_ALLOW_DRAG, "blocks.core.Resizer", function () {
+    $(document).on(Broadcaster.EVENTS.DO_ALLOW_DRAG, function () {
         activate();
     });
-    Broadcaster.on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, "blocks.core.Resizer", function () {
+    $(document).on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, function () {
         deactivate();
     });
 
     // effective dragging
-    Broadcaster.on(Broadcaster.EVENTS.START_DRAG, "blocks.core.Resizer", function (event) {
-        startDrag(event.blockEvent)
+    $(document).on(Broadcaster.EVENTS.START_DRAG, function (event) {
+        startDrag(event)
     });
-    Broadcaster.on(Broadcaster.EVENTS.END_DRAG, "blocks.core.Resizer", function (event) {
-        endDrag(event.blockEvent)
+    $(document).on(Broadcaster.EVENTS.END_DRAG, function (event) {
+        endDrag(event)
     });
-    Broadcaster.on(Broadcaster.EVENTS.ABORT_DRAG, "blocks.core.Resizer", function (event) {
-        endDrag(event.blockEvent)
+    $(document).on(Broadcaster.EVENTS.ABORT_DRAG, function (event) {
+        endDrag(event)
     });
 
 

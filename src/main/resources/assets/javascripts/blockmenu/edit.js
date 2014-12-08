@@ -27,14 +27,14 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
     });
 
     // Double click is edit
-    Broadcaster.on(Broadcaster.EVENTS.DOUBLE_CLICK_BLOCK, "blocks.core.Edit", function(event) {
-        edit.editBlock(event.blockEvent.block.current);
+    $(document).on(Broadcaster.EVENTS.DOUBLE_CLICK_BLOCK, function(event) {
+        edit.editBlock(event.block.current);
     });
 
     this.editBlock = function(block) {
         if (block != null) {
             if (enabled(block) ) {
-                Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.DEACTIVATE_MOUSE());
+                Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
                 doEditText(block);
                 doEditIframe(block);
             }
@@ -45,8 +45,8 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
         if (!isIframe(block) && editor == null) {
             var element = block.element;
             Overlay.createForBlock(block, function () {
-                Broadcaster.send(new Broadcaster.EVENTS.DOM_DID_CHANGE());
-                Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE());
+                Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
+                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
                 editor.destroy();
                 editor = null;
                 $(element).removeAttr("contenteditable");
@@ -64,8 +64,8 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
             var iframe = block.element.find("iframe");
             Overlay.createForBlock(block, function () {
                 $(iframe.removeClass("edit"));
-                Broadcaster.send(new Broadcaster.EVENTS.DOM_DID_CHANGE());
-                Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE());
+                Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
+                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
 
             });
             $(iframe.addClass("edit"));

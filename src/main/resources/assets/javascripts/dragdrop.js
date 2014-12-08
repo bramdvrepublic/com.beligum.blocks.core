@@ -23,9 +23,8 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.E
 
     var dragStarted = function (blockEvent) {
         Logger.debug("drag started");
-        Logger.debug(currentDraggedBlock);
+        currentDraggedBlock = Broadcaster.getHooveredBlockForPosition(blockEvent.pageX, blockEvent.pageY).current;
         if (draggingEnabled && currentDraggedBlock != null) {
-            //currentBlock = blockEvent.draggingOptions.surface;
             createDraggedOverlay(currentDraggedBlock);
             createDropPointerElement("anchor");
             createDropPointerElement("other");
@@ -50,7 +49,7 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.E
         if (dragging && blockEvent.block.current != null && blockEvent.block.current.canDrag) {
             // find the triggered dropspot
             // dropspot has an "anchor" block and sometimes "other" (when dropping between 2 columns, 2 rows, 2 blocks)
-            var dropSpot = blockEvent.block.current.getTriggeredDropspot(blockEvent.direction, blockEvent.event.pageX, blockEvent.event.pageY);
+            var dropSpot = blockEvent.block.current.getTriggeredDropspot(blockEvent.direction, blockEvent.pageX, blockEvent.pageY);
             if (lastDropLocation != dropSpot) {
                 lastDropLocation = dropSpot;
                 // We can not drop on ourselves so skip
@@ -77,7 +76,7 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.E
             // check for null (e.g during abort_drag)
             if (currentDraggedBlock != null && blockEvent.block.current != null && blockEvent.block.current.canDrag) {
                 Logger.debug("Drop block");
-                var dropSpot = blockEvent.block.current.getTriggeredDropspot(blockEvent.direction, blockEvent.event.pageX, blockEvent.event.pageY);
+                var dropSpot = blockEvent.block.current.getTriggeredDropspot(blockEvent.direction, blockEvent.pageX, blockEvent.pageY);
                 // If we did not drop on ourself, change location
                 if (!dropSpotIsDraggedBlock(dropSpot, blockEvent)) {
                     Layouter.changeBlockLocation(currentDraggedBlock, dropSpot.anchor, dropSpot.side);
@@ -265,19 +264,6 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.E
     cssArrowClass[Constants.SIDE.RIGHT] = "glyphicon-arrow-right";
 
 
-    var setCurrentDraggedBlock = function(blockEvent) {
-        if (draggingEnabled) {
-            var retVal = false;
-            if (blockEvent != null && blockEvent.block.current != currentDraggedBlock) {
-                currentDraggedBlock = blockEvent.block.current;
-                retVal = true
-            }
-        } else {
-            currentDraggedBlock = null;
-        }
-    };
-
-
     // on hoover block, can start draggingOptions with priority
     // on leave block, can_not_start draggingOptions
 //    var allowDrag = function(blockEvent) {
@@ -298,54 +284,44 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.E
 //    };
 
 
-    Broadcaster.on(Broadcaster.EVENTS.HOOVER_OVER_BLOCK, "blocks.core.DragDrop", function (event) {
-        setCurrentDraggedBlock(event.blockEvent);
-        Logger.debug("dragging hoover set block");
-        //Logger.debug(event.blockEvent);
+    $(document).on(Broadcaster.EVENTS.START_DRAG, function (event) {
+        dragStarted(event)
     });
-    Broadcaster.on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, "blocks.core.DragDrop", function (event) {
-        setCurrentDraggedBlock(null)
+    $(document).on(Broadcaster.EVENTS.END_DRAG, function (event) {
+        dragEnded(event)
     });
-
-
-    Broadcaster.on(Broadcaster.EVENTS.START_DRAG, "blocks.core.DragDrop", function (event) {
-        dragStarted(event.blockEvent)
-    });
-    Broadcaster.on(Broadcaster.EVENTS.END_DRAG, "blocks.core.DragDrop", function (event) {
-        dragEnded(event.blockEvent)
-    });
-    Broadcaster.on(Broadcaster.EVENTS.ABORT_DRAG, "blocks.core.DragDrop", function (event) {
-        dragAborted(event.blockEvent);
+    $(document).on(Broadcaster.EVENTS.ABORT_DRAG, function (event) {
+        dragAborted(event);
 
     });
 
-    Broadcaster.on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, "blocks.core.DragDrop", function (event) {
+    $(document).on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, function (event) {
         Logger.debug("dragging not allowed");
         currentDraggedBlock = null;
             draggingEnabled = true;
     });
 
-    Broadcaster.on(Broadcaster.EVENTS.DO_ALLOW_DRAG, "blocks.core.DragDrop", function (event) {
+    $(document).on(Broadcaster.EVENTS.DO_ALLOW_DRAG, function (event) {
         Logger.debug("dragging allowed");
         if (!draggingEnabled) {
             draggingEnabled = false;
         }
     });
 
-    Broadcaster.on(Broadcaster.EVENTS.DRAG_LEAVE_BLOCK, "blocks.core.DragDrop", function (event) {
-        dragLeaveBlock(event.blockEvent)
+    $(document).on(Broadcaster.EVENTS.DRAG_LEAVE_BLOCK, function (event) {
+        dragLeaveBlock(event)
     });
-    Broadcaster.on(Broadcaster.EVENTS.DRAG_OVER_BLOCK, "blocks.core.DragDrop", function (event) {
-        dragOverBlock(event.blockEvent)
+    $(document).on(Broadcaster.EVENTS.DRAG_OVER_BLOCK, function (event) {
+        dragOverBlock(event)
     });
 
-    Broadcaster.on(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG, "blocks.core.DragDrop", function (event) {
+    $(document).on(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG, function (event) {
         draggingEnabled = true;
         Logger.debug("dragging enabled");
         $("body").css("cursor", "pointer");;
     });
 
-    Broadcaster.on(Broadcaster.EVENTS.DISABLE_BLOCK_DRAG, "blocks.core.DragDrop", function (event) {
+    $(document).on(Broadcaster.EVENTS.DISABLE_BLOCK_DRAG, function (event) {
         Logger.debug("dragging disabled");
         draggingEnabled = false;
         currentDraggedBlock = null;

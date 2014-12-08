@@ -142,8 +142,8 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
         droppedElement = droppedFunctions[droppedString](droppedElement, dropLocationElement);
 
         DOM.appendElement(droppedElement, dropLocationElement, side, function() {
-            Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.DOM_DID_CHANGE());
-            Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE())
+            Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DOM_DID_CHANGE);
+            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
         });
 
     };
@@ -151,7 +151,7 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
     // remove block and add it at side of droplocation
     this.changeBlockLocation = function (block, dropLocation, side) {
         // remove dropped block
-        Broadcaster.send(new Broadcaster.EVENTS.DEACTIVATE_MOUSE());
+        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         // Get column width of the dropped element
         var columnWidthDroppedElement = 12;
         if (DOM.isColumn(block.element.parent())) {
@@ -171,8 +171,8 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
     // Add new jquery Object at bottom of dropLocation
     this.addNewBlockAtLocation = function(blockElement, dropLocation) {
         dropLocationElement = dropLocation.element;
-        Broadcaster.send(new Broadcaster.EVENTS.DEACTIVATE_MOUSE());
-        Broadcaster.send(new Broadcaster.EVENTS.DOM_WILL_CHANGE());
+        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+        Broadcaster.send(Broadcaster.EVENTS.DOM_WILL_CHANGE);
 
         drop(blockElement, dropLocationElement, Constants.SIDE.BOTTOM);
 
@@ -183,80 +183,15 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
     // remove block
     this.removeBlock = function(block) {
         if (block instanceof Elements.Block) {
-            Broadcaster.send(new Broadcaster.EVENTS.DEACTIVATE_MOUSE());
+            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
             DOM.removeBlock(block, 300, function() {
-                Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.DOM_DID_CHANGE());
-                Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE());
+                Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DOM_DID_CHANGE);
+                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
             })
         }
     };
 
-    // The parent element where the tree is build
-    // if null this is automatically set to the container
-    this.layoutParentElement = null;
-    var layoutTree = null;
 
-    this.getLayoutTree = function() {
-        if (layoutTree == null) {
-            buildLayoutTree();
-        }
-        return layoutTree;
-    };
-
-    this.setLayoutParent = function(element) {
-        Layouter.layoutParentElement = element;
-        buildLayoutTree();
-    };
-
-    var buildLayoutTree = function () {
-        // We create some sort of a heat map. We define boxes for all draggable blocks
-        // we can add left and right from each column
-        // and left and right from container if container has more than 1 row
-        // select each row and add bottom
-        // if row has +1 colunms, we can add also to bottom of columns
-        // except if column has +1 rows
-
-        Logger.debug("Calculate hotspots");
-        layoutTree = [];
-        //_this.cleanLayout();
-        if (Layouter.layoutParentElement == null) {
-            Layouter.layoutParentElement = $("body");
-        }
-
-        var findContainersInParent = function(parent) {
-
-            if (DOM.canLayout(parent) || DOM.canEdit(parent)) {
-                var container = new Elements.Container(parent);
-                Logger.debug(container);
-                layoutTree.push(container);
-            } else {
-                var children = parent.children();
-                for (var i = 0; i < children.length; i++) {
-                    findContainersInParent($(children[i]));
-                }
-            }
-//            if (parent.next() != null) {
-//                findContainersInParent(parent.next());
-//            }
-        };
-
-        findContainersInParent(Layouter.layoutParentElement);
-
-        Broadcaster.send(new Broadcaster.EVENTS.DID_REFRESH_LAYOUT());
-    };
-
-    Broadcaster.on(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, "blocks.core.Layouter", function() {
-        buildLayoutTree();
-    })
-
-    Broadcaster.on(Broadcaster.EVENTS.DOM_DID_CHANGE, "blocks.core.Layouter", function() {
-        Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.DO_REFRESH_LAYOUT());
-    })
-
-    // On Boot
-    $(window).on("resize.blocks_core", function () {
-        Broadcaster.send(new Broadcaster.EVENTS.DO_REFRESH_LAYOUT());
-    });
 
 
 

@@ -13,7 +13,7 @@
 *
 * */
 
-blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Broadcaster", "blocks.core.Constants", function (Broadcaster, Constants) {
+blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function (Constants) {
     var _thisService = this;
     var DOM = this;
     // Get column width (in grid units 1-12, not pixels)
