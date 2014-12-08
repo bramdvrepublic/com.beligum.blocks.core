@@ -12,7 +12,7 @@
 *
 * */
 
-blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broadcaster", "blocks.core.Constants", "blocks.core.DomManipulation", function (Elements, Broadcaster, Constants, DOM) {
+blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broadcaster", "blocks.core.Constants", "blocks.core.DomManipulation", "blocks.core.Overlay", function (Elements, Broadcaster, Constants, DOM, Overlay) {
     var active = false;
     var draggingEnabled = false;
     var dragging = false;
@@ -44,10 +44,10 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
     // Check if a handle exists in the dom and if not, add 1
     var checkIfHandleElementExists = function () {
         if (resizeHandleElement == null) {
-            // TODO set handle class in config
-            $(".column-resize-handle").remove();
-            resizeHandleElement = $("<div class='.column-resize-handle' />")
-            $("body").append(resizeHandleElement);
+            $("." + Constants.COLUMN_RESIZER_CLASS).remove();
+            resizeHandleElement = $("<div/>").addClass(Constants.COLUMN_RESIZER_CLASS);
+            resizeHandleElement.css("z-index", (Overlay.maxIndex() + 1));
+            $("html").append(resizeHandleElement);
         }
     };
 
@@ -55,7 +55,6 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
     var showHandleElement = function (surface) {
         checkIfHandleElementExists();
         resizeHandleElement.css('position', 'absolute');
-        resizeHandleElement.css('background-color', 'black');
         resizeHandleElement.css("left", surface.left + "px");
         resizeHandleElement.css("top", surface.top + "px");
         resizeHandleElement.css("width", surface.right - surface.left + "px");
@@ -72,11 +71,10 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
 
     // remove the handle from the dom
     var removeHandleElement = function () {
-        // TODO set drag priority in config
         if (resizeHandleElement != null) {
-            resizeHandleElement.remove();
+            $("." + Constants.COLUMN_RESIZER_CLASS).remove();
             resizeHandleElement = null;
-            $("body").css("cursor", 'auto');
+            $("html").css("cursor", 'auto');
         }
     };
 
@@ -86,19 +84,19 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
     var findActiveResizeHandle = function(blockEvent) {
         var retVal = null;
         if (activeResizeHandle != null) {
-            if (activeResizeHandle.top <=  blockEvent.event.pageY && activeResizeHandle.bottom >= blockEvent.event.pageY &&
-                activeResizeHandle.left <= blockEvent.event.pageX && activeResizeHandle.right >= blockEvent.event.pageX) {
+            if (activeResizeHandle.top <=  blockEvent.pageY && activeResizeHandle.bottom >= blockEvent.pageY &&
+                activeResizeHandle.left <= blockEvent.pageX && activeResizeHandle.right >= blockEvent.pageX) {
                 retVal =  activeResizeHandle;
             }
         } else if (blockEvent.block.current != null) {
             // find the first parent that is a row (but not a block)
-            var activeRow = null;
-            if (blockEvent.block.current.parent != null) {
-                activeRow = blockEvent.block.current.parent.parent
+            var activeRow = blockEvent.block.current.parent;
+            while (!(activeRow instanceof Elements.Row || activeRow == null)) {
+                activeRow = activeRow.parent
             }
 
             if (activeRow != null && activeRow instanceof Elements.Row) {
-                retVal = activeRow.findTriggeredResizeHandle(blockEvent.event.pageX, blockEvent.event.pageY, Elements.ResizeHandle);
+                retVal = activeRow.findTriggeredResizeHandle(blockEvent.pageX, blockEvent.pageY, Elements.ResizeHandle);
             }
         }
         return retVal;
@@ -122,20 +120,15 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
     var manageActiveResizeHandle = function (blocksEvent) {
         if (activeResizehandleChanged(blocksEvent)) {
             if (activeResizeHandle != null && !draggingEnabled) {
-                Broadcaster.send(new Broadcaster.EVENTS.ENABLE_DRAG(1000, "blocks.core.Resizer", dragEnabled));
+                Broadcaster.send(Broadcaster.EVENTS.DISABLE_BLOCK_DRAG);
+                draggingEnabled = true;
+                showHandleElement(activeResizeHandle.drawSurface);
             }  else if (activeResizeHandle == null && draggingEnabled) {
-                Broadcaster.send(new Broadcaster.EVENTS.DISABLE_DRAG(1000, "blocks.core.Resizer"));
+                Broadcaster.send(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG);
                 draggingEnabled = false;
             }
         }
     };
-
-    var dragEnabled = function() {
-        if (!draggingEnabled) {
-            draggingEnabled = true;
-            showHandleElement(activeResizeHandle.drawSurface);
-        }
-    }
 
 
     /*
@@ -165,7 +158,7 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
             $(document).off("mousemove.resizehandledrag");
             removeHandleElement();
             $('body').css("cursor", 'auto')
-            Broadcaster.send(new Broadcaster.EVENTS.DOM_DID_CHANGE());
+            Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
         }
     };
 
@@ -182,7 +175,7 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
     var initDrag = function (resizeHandle) {
         activeResizeHandle = resizeHandle;
         if (resizeHandle.leftColumn.parent == resizeHandle.rightColumn.parent) {
-            // for the parent row of the calculate offset left and offset right
+            // for the parent row of the column, calculate offset left and offset right
             // offset = nr of columns
             var row = resizeHandle.leftColumn.parent;
             var columns = row.children;
@@ -252,37 +245,34 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
     };
 
 
-    Broadcaster.on(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, "blocks.core.Resizer", function (event) {
-        manageActiveResizeHandle(event.blockEvent)
+    $(document).on(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, function (event) {
+        manageActiveResizeHandle(event)
     });
-    Broadcaster.on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, "blocks.core.Resizer", function (event) {
-        manageActiveResizeHandle(event.blockEvent)
+    $(document).on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, function (event) {
+        manageActiveResizeHandle(event)
     });
-    Broadcaster.on(Broadcaster.EVENTS.HOOVER_OVER_BLOCK, "blocks.core.Resizer", function (event) {
-        manageActiveResizeHandle(event.blockEvent)
+    $(document).on(Broadcaster.EVENTS.HOOVER_OVER_BLOCK, function (event) {
+        manageActiveResizeHandle(event)
     });
 
-    Broadcaster.on(Broadcaster.EVENTS.DO_ALLOW_DRAG, "blocks.core.Resizer", function () {
+    $(document).on(Broadcaster.EVENTS.DO_ALLOW_DRAG, function () {
         activate();
     });
-    Broadcaster.on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, "blocks.core.Resizer", function () {
+    $(document).on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, function () {
         deactivate();
     });
 
     // effective dragging
-    Broadcaster.on(Broadcaster.EVENTS.START_DRAG, "blocks.core.Resizer", function (event) {
-        startDrag(event.blockEvent)
+    $(document).on(Broadcaster.EVENTS.START_DRAG, function (event) {
+        startDrag(event)
     });
-    Broadcaster.on(Broadcaster.EVENTS.END_DRAG, "blocks.core.Resizer", function (event) {
-        endDrag(event.blockEvent)
+    $(document).on(Broadcaster.EVENTS.END_DRAG, function (event) {
+        endDrag(event)
     });
-    Broadcaster.on(Broadcaster.EVENTS.ABORT_DRAG, "blocks.core.Resizer", function (event) {
-        endDrag(event.blockEvent)
+    $(document).on(Broadcaster.EVENTS.ABORT_DRAG, function (event) {
+        endDrag(event)
     });
 
-    Broadcaster.on(Broadcaster.EVENTS.DRAG_DISABLED, "blocks.core.Resizer", function (event) {
-            draggingEnabled = false;
-    });
 
     // On boot
     activate();

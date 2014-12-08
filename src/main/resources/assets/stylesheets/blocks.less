@@ -1,0 +1,124 @@
+// Overlay when editing and for dialogs
+.blocks-overlay {
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
+  position: fixed;
+
+  opacity: 0.9;
+  background-color: #000000;
+}
+
+// Handle to resize columns
+.column-resize-handle {
+  background-color: #6fc7df;
+}
+
+// Hover with mouse over block
+.block-hover {
+  -webkit-box-shadow: 0 5px 20px rgba(51, 102, 146, 0.70), 0 0 8px 5px rgba(111, 199, 223, 0.90) ;
+  box-shadow: 0 5px 20px rgba(51, 102, 146, 0.70), 0 0 8px 5px rgba(111, 199, 223, 0.90) ;
+}
+
+iframe {
+  pointer-events: none;
+}
+
+// force for height wrapping divs
+.image {
+  display: inline-block;
+}
+
+iframe.edit {
+  pointer-events: auto;
+}
+// ckeditor also uses iframes
+iframe.cke_panel_frame  {
+  pointer-events: auto;
+}
+
+// Div that contains the panel for the backend
+.admin-backend {
+  padding: 10px 10px;
+}
+
+//.admin-animation-front {
+//  -webkit-transform: translateZ(50px);
+//  transform: translateZ(50px);
+//}
+//
+//.admin-animation-back {
+//  -webkit-transform: rotateX(-90deg) translateZ(-50px);
+//  transform: rotateX(-90deg) translateZ(-50px);
+//}
+//
+//.admin-flipped {
+//  -webkit-transform: rotateX(89deg);
+//  transform: rotateX(89deg);
+//}
+
+// used to flip to backend
+.flip {
+  -webkit-transform: rotateY(180deg);
+  transform: rotateY(180deg);
+
+}
+
+.block-overlay-background {
+  background-color: white;
+}
+
+.modal-centered {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 650px;
+  height: 240px;
+  border: 1px solid #787878;
+
+}
+
+.ruler {
+  position: absolute;
+  background-color: black;
+  left: 0px;
+  top: 0px;
+  width: 0px;
+  height: 0px;
+}
+
+// grijze vlakken die over de blocken waarnaast gedropt zal worden, wordt gelegd.
+.blocks-dropspot {
+  background-color: rgba(119, 119, 119, 0.5);
+}
+
+// locatie container voor de pijl
+.droppointer-arrow-container {
+
+}
+// De pijltjes tijdens het draggen
+// font size is automatisch!
+.droppointer-arrow {
+  color: deepskyblue;
+}
+
+// markering voor het blok dat versleept wordt
+.dragged-block {
+  background: url('/assets/images/blocks/stripe.png');
+//  background-color: red;
+}
+
+// container type btn-group-xs waar alle knopjes inzitten.
+// Wordt gecentreerd
+.block-menu {
+  // alle knoppen
+  .btn {
+  }
+  .btn.diabled {
+
+  }
+}
+
+
+

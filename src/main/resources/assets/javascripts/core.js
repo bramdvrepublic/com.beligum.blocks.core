@@ -16,8 +16,7 @@ blocks.plugin("blocks.core.Constants", function() {
     this.DRAGGING = {
         WAITING: 1,
         YES: 2,
-        ENABLED: 3,
-        DISABLED: 4,
+        NO: 3,
         NOT_ALLOWED: 5,
         TEXT_SELECTION: 6
     };
@@ -42,15 +41,26 @@ blocks.plugin("blocks.core.Constants", function() {
     this.COLUMN_CLASS = "column";
     this.ROW_CLASS = "row";
     this.BLOCK_CLASS = "block";
+    this.FAKE_BLOCK = "fake-block";
 
     this.COLUMN_WIDTH_CLASS = "col-md-";
-    this.CAN_LAYOUT_ROW_CLASS = "can-edit"; // can layout row and add and delete blocks
-    this.REFERENCE_BLOCK_CLASS = "block-parsedContent"
-
+    this.CAN_LAYOUT_ROW_CLASS = "can-layout"; // can layout row and add and delete blocks
     this.CAN_EDIT_BLOCK_CLASS = "can-edit"; // specifies edit and delete
-    this.CAN_CAST_BLOCK_CLASS = "can-cast-block"
+    this.CAN_CAST_BLOCK_CLASS = "can-cast-block";
+    this.IS_ENTITY = "typeof";
+    this.IS_PROPERTY = "property";
 
     this.MAX_COLUMNS = 12;
+
+
+    this.OVERLAY_CLASS = "blocks-overlay";
+    this.OVERLAY_BACKGROUND_CLASS = "block-hover";
+    this.COLUMN_RESIZER_CLASS = "column-resize-handle";
+    this.BLOCK_HOVER_CLASS = "block-hover";
+    this.OVERLAY_BACKGROUND_CLASS = "block-overlay-background";
+    this.ADMIN_ANIMATION_FRONT = "admin-animation-front";
+    this.ADMIN_ANIMATION_BACK = "admin-animation-back";
+    this.ADMIN_ANIMATION_MASTER = "admin-animation-master";
 
 
     this.BLOCK_OVERLAY_INDEX = 2000;

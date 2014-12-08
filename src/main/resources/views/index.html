@@ -1,60 +1,74 @@
-#define($header-styles-extra)
-<link href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
-<link href="/assets/stylesheets/styles.less" rel="stylesheet" />
-<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
-#end
+<!DOCTYPE html>
+<html template="default">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-#define($header-scripts-extra)
+    <title></title>
+    <link href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
+    <link href="/assets/stylesheets/styles.less" rel="stylesheet" />
+    <link href="/assets/stylesheets/blocks.less" rel="stylesheet" />
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
 
-<script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
 
-<!--<script src="/assets/javascripts/module.js" type="application/javascript" ></script>-->
-<script src="/assets/javascripts/blocks.js" type="application/javascript" ></script>
-<script src="/assets/javascripts/core.js" type="application/javascript" ></script>
-<script src="/assets/javascripts/broadcaster.js" type="application/javascript" ></script>
-<script src="/assets/javascripts/layout.js" type="application/javascript" ></script>
-<script src="/assets/javascripts/dom-manipulation.js" type="application/javascript" ></script>
-<script src="/assets/javascripts/elements.js" type="application/javascript" ></script>
-<script src="/assets/javascripts/mouse.js" type="application/javascript" ></script>
-<script src="/assets/javascripts/resizer.js" type="application/javascript" ></script>
-<script src="/assets/javascripts/dragdrop.js" type="application/javascript" ></script>
-<script src="/assets/javascripts/blockmenu.js" type="application/javascript" ></script>
-<script src="/assets/javascripts/blockmenu-buttons.js" type="application/javascript" ></script>
-<script src="/assets/javascripts/layout-aid.js" type="application/javascript" ></script>
+    <script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
 
-#end
+    <!--<script src="/assets/javascripts/module.js" type="application/javascript" ></script>-->
+    <script src="/assets/javascripts/blocks.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/core.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/broadcaster.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/layout.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/utils/dom-manipulation.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/elements.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/mouse.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/resizer.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/dragdrop.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/blockmenu/blockmenu.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/blockmenu/blockmenu-buttons.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/blockmenu/dragbutton.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/utils/layout-aid.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/utils/notification.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/blockmenu/edit.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/blockmenu/admin.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/blockmenu/create.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/overlay.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/blocks/image.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/blocks/video.js" type="application/javascript" ></script>
 
-#define($body-args-extra)
-#end
+    <script src="/assets/javascripts/ckeditor/ckeditor.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/ckeditor/adapters/jquery.js" type="application/javascript" ></script>
 
-#define($body-html)
-<div class="container">
-    <div class="row can-layout">
+</head>
+<body>
+
+<div class="container can-layout">
+    <div class="row ">
         <div class="col-md-12 column">
             <div class="row">
-                <div class="col-md-6 column">
-                    <div class="row">
-                        <div class="col-md-6 column"><div class="block blue">1</div><div class="block green">2</div></div>
+                <div class="col-md-6 column" >
+                    <div class="row   can-layout" typeof="test">
+                        <div class="col-md-6 column"><div class="block blue can-edit">1</div><div class="block green">2</div></div>
                         <div class="col-md-6 column"><div class="block yellow">3</div></div>
                     </div>
-                    <div class="row">
+                    <div class="row" >
                         <div class="col-md-3 column"><div class="block yellow">4</div></div>
                         <div class="col-md-3 column"><div class="block blue">5</div></div>
                         <div class="col-md-3 column"><div class="block yellow">6</div><div class="block red">7</div></div>
                         <div class="col-md-3 column"><div class="block red">8</div><div class="block blue">9</div></div>
                     </div>
                 </div>
-                <div class="col-md-6 column"><div class="block red">10</div></div>
+                <div class="col-md-6 column">
+                    <div typeof="video"><div class="embed-responsive embed-responsive-16by9"><iframe  class="iframe" class="embed-responsive-item" src="//player.vimeo.com/video/26196053?color=94127a"></iframe></div></div>
+                </div>
             </div>
-            <div class="row">
-                <div class="col-md-6 column"><div class="block blue">11</div><div class="block yellow">12</div></div>
-                <div class="col-md-6 column"><div class="block red">13</div><div class="block blue">14</div></div>
+            <div class="row" >
+                <div class="col-md-6 column" typeof="test2"><div class="block blue can-edit">11</div><div class="block yellow">12</div></div>
+                <div class="col-md-6 column"><div class="block red can-edit">13</div><div class="block blue can-edit">14</div></div>
             </div>
         </div>
     </div>
 </div>
 
 <div class="ruler"></div>
-#end
-
-#parse("/views/templates/main.html")
+</body>
