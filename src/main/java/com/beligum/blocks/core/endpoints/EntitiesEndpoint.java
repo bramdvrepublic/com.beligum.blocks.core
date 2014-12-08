@@ -1,28 +1,23 @@
 package com.beligum.blocks.core.endpoints;
 
-import com.beligum.blocks.core.caching.EntityClassCache;
-import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
-import com.beligum.blocks.core.exceptions.ParserException;
+import com.beligum.blocks.core.exceptions.IDException;
+import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.exceptions.RedisException;
-import com.beligum.blocks.core.models.classes.EntityClass;
-import com.beligum.blocks.core.models.storables.Entity;
-import com.beligum.blocks.core.validation.ValidationEntity;
-import com.beligum.blocks.html.parsers.AbstractParser;
+import com.beligum.blocks.core.models.templates.EntityTemplate;
+import com.beligum.blocks.core.models.templates.EntityTemplateClass;
+import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.templating.ifaces.Template;
 import org.hibernate.validator.constraints.NotBlank;
 
-import javax.validation.Valid;
 import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Collection;
-import java.util.Map;
 
 /**
  * Created by bas on 07.10.14.
@@ -35,8 +30,8 @@ public class EntitiesEndpoint
     public Response newPage() throws CacheException
     {
         Template template = R.templateEngine().getEmptyTemplate("/views/new-page.html");
-        Collection<EntityClass> pageClasses = EntityClassCache.getInstance().getCache().values();
-        template.set("pageClasses", pageClasses);
+        Collection<EntityTemplateClass> entityTemplateClasses = EntityTemplateClassCache.getInstance().values();
+        template.set(ParserConstants.ENTITY_CLASSES, entityTemplateClasses);
         return Response.ok(template).build();
     }
 
@@ -48,44 +43,34 @@ public class EntitiesEndpoint
                     @FormParam("page-class-name")
                     @NotBlank(message = "No entity-class specified.")
                     String entityClassName)
-                    throws CacheException, RedisException, URISyntaxException
+                    throws CacheException, RedisException, IDException, URISyntaxException, ParseException
 
     {
+        EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(entityClassName);
+        URL entityUrl = new TemplateParser().saveNewEntityTemplateToDb(entityTemplateClass);
         /*
-         * Get the page-class (containing the default blocks and rows) from the cache and use it to construct a new page
+         * Redirect the client to the newly created entity's page
          */
-        Map<String, EntityClass> cache = EntityClassCache.getInstance().getCache();
-        EntityClass entityClass = cache.get(entityClassName);
-
-
-        Redis redis = Redis.getInstance();
-        Entity newEntity = redis.getNewEntity(entityClass);
-        redis.save(newEntity);
-            /*
-             * Redirect the client to the newly created page
-             */
-        return Response.seeOther(newEntity.getUrl().toURI()).build();
+        return Response.seeOther(entityUrl.toURI()).build();
     }
 
-    @PUT
-    @Path("/{entityId:.*}")
-    @Consumes(MediaType.APPLICATION_JSON)
-    /*
-     * update a page-instance with id 'entityId' to be the html specified
-     */
-    public Response updateEntity(
-                    @PathParam("entityId")
-                    String entityId,
-                    @Valid
-                    ValidationEntity validationEntity) throws MalformedURLException, ParserException, RedisException, URISyntaxException
-    {
-        String html = validationEntity.getHtml();
-        String entityClassName = validationEntity.getEntityClassName();
-        URL entityUrl = new URL(BlocksConfig.getSiteDomain() + "/" + entityId);
-
-        Entity entity = AbstractParser.parseEntity(entityUrl, html);
-        Redis redis = Redis.getInstance();
-        redis.save(entity);
-        return Response.seeOther(entity.getUrl().toURI()).build();
-    }
+//    @PUT
+//    @Path("/{entityId:.*}")
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    /*
+//     * update a page-instance with id 'entityId' to be the html specified
+//     */
+//    public Response updateEntity(
+//                    @PathParam("entityId")
+//                    String entityId,
+//                    @NotBlank(message = "No page found to update to.")
+//                    String html) throws MalformedURLException, ParseException, RedisException, URISyntaxException
+//    {
+//        URL entityUrl = new URL(BlocksConfig.getSiteDomain() + "/" + entityId);
+//
+//        AbstractTemplate entityTemplate = new TemplateParser().parseEntityTemplate(entityUrl, html);
+//        Redis redis = Redis.getInstance();
+//        redis.save(entityTemplate);
+//        return Response.seeOther(entityTemplate.getUrl().toURI()).build();
+//    }
 }

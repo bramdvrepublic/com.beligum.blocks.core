@@ -20,8 +20,8 @@
         <form method="POST" action="/entities">
             <div class="col-md-2">
                 <select name="page-class-name" id="class-selection" class="form-control">
-                    #foreach($pageClass in $pageClasses)
-                        <option value="$pageClass.name">$pageClass.name</option>
+                    #foreach($entityClass in $entityClasses)
+                        <option value="$entityClass.getName()">$!entityClass.getName()</option>
                     #end
                 </select>
             </div>

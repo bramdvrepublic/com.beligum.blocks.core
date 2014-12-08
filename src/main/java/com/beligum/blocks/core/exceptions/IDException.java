@@ -1,15 +1,16 @@
 package com.beligum.blocks.core.exceptions;
+
 /**
- * Created by bas on 30.09.14.
+ * Created by bas on 02.12.14.
  */
-public class ParserException extends Exception
+public class IDException extends Exception
 {
     /**
      * Constructs a new exception with {@code null} as its detail message.
      * The cause is not initialized, and may subsequently be initialized by a
      * call to {@link #initCause}.
      */
-    public ParserException()
+    public IDException()
     {
     }
     /**
@@ -20,7 +21,7 @@ public class ParserException extends Exception
      * @param message the detail message. The detail message is saved for
      *                later retrieval by the {@link #getMessage()} method.
      */
-    public ParserException(String message)
+    public IDException(String message)
     {
         super(message);
     }
@@ -38,7 +39,7 @@ public class ParserException extends Exception
      *                unknown.)
      * @since 1.4
      */
-    public ParserException(String message, Throwable cause)
+    public IDException(String message, Throwable cause)
     {
         super(message, cause);
     }
@@ -56,7 +57,7 @@ public class ParserException extends Exception
      *              unknown.)
      * @since 1.4
      */
-    public ParserException(Throwable cause)
+    public IDException(Throwable cause)
     {
         super(cause);
     }
@@ -74,7 +75,7 @@ public class ParserException extends Exception
      *                           be writable
      * @since 1.7
      */
-    public ParserException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace)
+    public IDException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace)
     {
         super(message, cause, enableSuppression, writableStackTrace);
     }

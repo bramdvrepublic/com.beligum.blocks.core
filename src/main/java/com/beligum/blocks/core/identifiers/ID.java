@@ -1,9 +1,12 @@
 package com.beligum.blocks.core.identifiers;
 
+import com.beligum.blocks.core.exceptions.IDException;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 
 /**
  * Created by bas on 13.10.14.
@@ -16,6 +19,21 @@ public class ID
 
     public ID(URI id){
         this.idUri = id;
+    }
+
+    /**
+     * Constructor used by RedisID to start from a url to get an ID instead of a uri
+     * @param id
+     * @throws IDException when a bad id has been specified
+     */
+    protected ID(URL id) throws IDException
+    {
+        try{
+            this.idUri = id.toURI();
+        }
+        catch(URISyntaxException e){
+            throw new IDException("Specified url cannot be used as id, since it is a bad uri.", e);
+        }
     }
 
     /**

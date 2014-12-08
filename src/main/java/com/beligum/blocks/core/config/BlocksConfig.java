@@ -2,26 +2,19 @@ package com.beligum.blocks.core.config;
 
 import com.beligum.core.framework.base.R;
 
-import java.util.List;
-
 /**
  * Created by bas on 08.10.14.
  */
 public class BlocksConfig
 {
-    /**name of the scheme used for uri-identification of objects in the blocks-project*/
-    public static final String SCHEME_NAME = "blocks";
-    /**name of the folder where page-templates (page-classes) can be found*/
-    public static final String ENTITIES_FOLDER = "entities";
-    /**name of the folder where block-templates (block-classes) can be found*/
-    public static final String BLOCKS_FOLDER = "blocks";
-    /**standard name of the html-file a page-class- or block-class-template must have to be recognized as such*/
-    public static final String INDEX_FILE_NAME = "index.html";
-
-    public static final String TEMPLATE_ENTITY_VARIABLE = "templateEntity";
+    /**the default language for this site, if no language is specified in the configuration-xml*/
+    public static final String DEFAULT_LANGUAGE = "language_default";
 
     /**the languages this site can work with, ordered from most preferred languages, to less preferred*/
     public static String[] cachedLanguages;
+
+    /**the redis-sentinels*/
+    public static String[] cachedRedisSentinels;
 
     public static String getTemplateFolder()
     {
@@ -38,21 +31,32 @@ public class BlocksConfig
         return getConfiguration("blocks.site.db-alias");
     }
 
-    public static String getEntitiesFolder() {
-        return getTemplateFolder() + "/" + ENTITIES_FOLDER;
-    }
-
-    public static String getBlocksFolder() {
-        return getTemplateFolder() + "/" + BLOCKS_FOLDER;
+    public static String getRedisMasterName(){
+        return getConfiguration("blocks.redis.master-name");
     }
 
     /**
      *
-     * @return the languages this site can work with, ordered from most preferred language, to less preferred
+     * @return The sentinel-locations for the redis-db (f.i. localhost:26379) specified in the configuration xml or null if no sentiles are specified in the configuration xml.
+     */
+    public static String[] getRedisSentinels(){
+        if(cachedRedisSentinels==null){
+            cachedRedisSentinels = R.configuration().getStringArray("blocks.redis.sentinels");
+        }
+        return cachedRedisSentinels;
+    }
+
+    /**
+     *
+     * @return The languages this site can work with, ordered from most preferred language, to less preferred. If no such languages are specified in the configuration xml, an array with a default language is returned.
      */
     public static String[] getLanguages(){
         if(cachedLanguages==null){
             cachedLanguages = R.configuration().getStringArray("blocks.site.languages");
+            if(cachedLanguages.length == 0){
+                cachedLanguages = new String[1];
+                cachedLanguages[0] = DEFAULT_LANGUAGE;
+            }
         }
         return cachedLanguages;
     }
