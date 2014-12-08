@@ -19,7 +19,7 @@ import java.util.Stack;
  */
 public class AbstractVisitor
 {
-    private Stack<Node> typeOfStack = new Stack<>();
+    protected Stack<Node> typeOfStack = new Stack<>();
 
 
     public Node head(Node node, int depth) throws ParseException
@@ -42,14 +42,20 @@ public class AbstractVisitor
      *
      * @return the node containing the type of the last typed parent visited
      */
-    protected Node getParentTypeNode() {
+    protected String getParentType() {
         if (!this.typeOfStack.empty()) {
-            return this.typeOfStack.peek();
+            return getTypeOf(this.typeOfStack.peek());
         } else {
             return null;
         }
     }
 
+    /**
+     *
+     * @param element
+     * @return an entity-template wich is the property that was found in the specified element
+     * @throws ParseException
+     */
     protected Element replaceElementWithPropertyReference(Element element) throws ParseException
     {
         return replaceElementWithReference(element, getPropertyId(element));
@@ -329,19 +335,18 @@ public class AbstractVisitor
     public String getPropertyId(Node node) throws ParseException
     {
         if(isEntity(node)) {
-            Node parentEntityNode = getParentTypeNode();
-            String parentEntityClassName = getTypeOf(parentEntityNode);
+            String parentEntityClassName = this.getParentType();
             if(parentEntityClassName == null){
                 return null;
             }
             else {
                 String propertyName = getProperty(node);
-                String propertyHtmlId = node.attr("id");
-                if(StringUtils.isEmpty(propertyName) && StringUtils.isEmpty(propertyHtmlId)){
-                    throw new ParseException("Found property without a name or id at node: \n \n " + node.outerHtml());
+                if(StringUtils.isEmpty(propertyName)){
+                    //TODO BAS SH: net gevonden dat dit voor een typeof-property zonder property-attribuut niet mag teruggeven, dat geeft een probleem bij SH2
+                    return null;
                 }
                 try {
-                    return RedisID.renderNewPropertyId(parentEntityClassName, propertyName, propertyHtmlId).toString();
+                    return RedisID.renderNewPropertyId(parentEntityClassName, propertyName).getUnversionedId();
 
                 }catch(IDException e){
                     throw new ParseException("Could not render new property-id.", e);

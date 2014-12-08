@@ -89,13 +89,15 @@ public class RedisID extends ID
     }
 
     /**
-     * Constructor taking an id retrieved form the Redis db and transforming it into an ID-object
+     * Constructor taking an id retrieved form the Redis db and transforming it into an ID-object.
+     * If no version is present in the specified id, the last version is returned.
      * @param versionedDbId the id retrieved form db (must be of the form "blocks://[siteDomainAlias]/[objectName]:[version]"
      * @throws URISyntaxException when the id cannot properly be transformed into a URI, since this class is actually a wrapper around a URI
      * @throws IDException when the id cannot properly be generated from the specified string
      */
     public RedisID(String versionedDbId) throws IDException
     {
+        //TODO BAS: this should check the form of the string to be a redis-id
         super((URI) null);
         try {
             /*
@@ -113,9 +115,20 @@ public class RedisID extends ID
             //            this.idUri = new URI(id);
             //        }
             //        else {
-            long version = Long.parseLong(splitted[splitted.length - 1]);
-            int lastDoublePoint = versionedDbId.lastIndexOf(':');
-            String unversionedId = versionedDbId.substring(0, lastDoublePoint);
+
+            long version = NO_VERSION;
+            String unversionedId = "";
+            //if only two parts have been splitted of, this is not a versioned id and we look for the last version
+            if(splitted.length == 2){
+                //TODO BAS: do we want the default to be the LAST_VERSION, or NO_VERSION
+                version = LAST_VERSION;
+                unversionedId = versionedDbId;
+            }
+            else {
+                version = Long.parseLong(splitted[splitted.length - 1]);
+                int lastDoublePoint = versionedDbId.lastIndexOf(':');
+                unversionedId = versionedDbId.substring(0, lastDoublePoint);
+            }
             this.idUri = new URI(unversionedId);
             if (version == LAST_VERSION) {
                 this.version = Redis.getInstance().getLastVersion(unversionedId);
@@ -288,13 +301,13 @@ public class RedisID extends ID
     }
 
     /**
-     * Method for getting a new property-id for a certain property (blocks://[db-alias]/[parent-typeof]#[property-name]_[optional-html-id-value]:[version]
+     * Method for getting a new property-id for a certain property (blocks://[db-alias]/[parent-typeof]#[property-name]:[version]
      * @param owningEntityClassName
      * @param propertyName
      * @return
      * @throws IDException
      */
-    public static RedisID renderNewPropertyId(String owningEntityClassName, String propertyName, String propertyId) throws IDException
+    public static RedisID renderNewPropertyId(String owningEntityClassName, String propertyName) throws IDException
     {
         try{
             if(owningEntityClassName == null){
@@ -304,9 +317,6 @@ public class RedisID extends ID
                 propertyName = "";
             }
             String url = BlocksConfig.getSiteDomain() + "/" + owningEntityClassName + "#" + propertyName;
-            if(!StringUtils.isEmpty(propertyId)){
-                url += "_" + propertyId;
-            }
             return new RedisID(new URL(url));
         }catch(MalformedURLException e){
             throw new IDException("Couldn't construct proper id with '" + BlocksConfig.getSiteDomain() + "/" + owningEntityClassName + "#" + propertyName + "'", e);

@@ -3,6 +3,7 @@ package com.beligum.blocks.core.parsers.jsoup;
 import antlr.debug.ParserEventSupport;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
+import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
@@ -24,13 +25,15 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                 String unversionedResourceId = getReferencedId(node);
                 if (!StringUtils.isEmpty(unversionedResourceId)) {
                     String propertyId = getPropertyId(node);
+                    //TODO BAS SH2: als we werken met een typeof-property die geen property-attribute heeft, zal getPropertyId(node) null teruggeven en dan zal er nooit in de if-block gegaan worden, terwijl we dat wel willen
                     if(unversionedResourceId.contentEquals(propertyId)){
                         EntityTemplateClass nodeClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
                         EntityTemplate newInstance = new EntityTemplate(nodeClass);
+                        Redis.getInstance().save(newInstance);
                         node = replaceElementWithEntityReference((Element) node, newInstance);
                     }
                     else{
-                        throw new ParseException("Class '" + getTypeOf(getParentTypeNode()) + "' doesn't hold correct referencing: " + unversionedResourceId);
+                        throw new ParseException("Class '" + this.getParentType() + "' doesn't hold correct referencing: " + unversionedResourceId);
                     }
                 }
             }

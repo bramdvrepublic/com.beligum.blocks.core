@@ -54,6 +54,11 @@ public class EntityTemplate extends AbstractTemplate implements Storable
         this.entityTemplateClass = entityTemplateClass;
     }
 
+    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, String template){
+        super(id, template);
+        this.entityTemplateClass = entityTemplateClass;
+    }
+
     /**
      * The EntityTemplate-class can be used as a factory, to construct entity-templates from data found in a hash in the redis-db
      * @param hash a map, mapping field-names to field-values

@@ -3,7 +3,9 @@ package com.beligum.blocks.core.parsers.jsoup;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.ParserConstants;
+import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.ParseException;
+import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
@@ -33,11 +35,25 @@ public class FileToCacheVisitor extends AbstractVisitor
             try {
                 Element element = (Element) node;
                 EntityTemplateClass entityTemplateClass = cacheEntityTemplateClassFromNode(element);
-                node = replaceElementWithPropertyReference(element);
-                //TODO BAS: the replacementnode, should be cached as a DefaultPropertyTemplate or something of the sort? or is db-storage enough?
+                if(isProperty(node)) {
+                    EntityTemplate propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element)), entityTemplateClass, element.outerHtml());
+                    //TODO BAS: the replacementnode, should be cached as a DefaultPropertyTemplate or something of the sort? or is db-storage enough?
+                    //TODO BAS: only when the instance doesn't exist yet, the save should be performed!!!
+                    Redis.getInstance().save(propertyInstance);
+                    node = replaceElementWithPropertyReference(element);
+                }
+                else if(this.typeOfStack.size()>0){
+                    EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass);
+                    //TODO BAS: only when the instance doesn't exist yet, the save should be performed!!!
+                    Redis.getInstance().save(instance);
+                    node = replaceElementWithEntityReference(element, instance);
+                }
+                else{
+                    //do nothing, since we have found the ending of the outer-most typeof-tag
+                }
             }
             catch (Exception e) {
-                throw new ParseException("Could not parse an " + EntityTemplateClass.class.getSimpleName() + " from " + Node.class.getSimpleName() + " " + node, e);
+                throw new ParseException("Could not parse an " + EntityTemplateClass.class.getSimpleName() + " from " + Node.class.getSimpleName() + " \n \n:" + node, e);
             }
         }
         else if (node instanceof Element) {
