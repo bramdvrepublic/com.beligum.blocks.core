@@ -6,16 +6,18 @@ package com.beligum.blocks.core.config;
  */
 public class DatabaseConstants
 {
+    /**name of the scheme used for uri-identification of objects in the blocks-project*/
+    public static final String SCHEME_NAME = "blocks";
     /**name of the application-version-field in db*/
     public final static String APP_VERSION = "appVersion";
     /**name of the creator-field in db*/
     public final static String CREATOR = "creator";
     /**name of the template-field in db*/
     public final static String TEMPLATE = "template";
-    /**name of the page-class-field in db*/
-    public final static String VIEWABLE_CLASS = "viewableClass";
-    /**name of the type-field in db*/
-    public final static String ROW_TYPE = "type";
+    /**name of the entity-template-class-field in db*/
+    public final static String ENTITY_TEMPLATE_CLASS = "entityTemplateClass";
     /**the suffix used to indicate a entities meta-data-hash in db, it is the suffix used to distinguish the page-info from the page-template (it's rows and blocks)*/
     public final static String HASH_SUFFIX = "hash";
+    /**the doctype field-name*/
+    public final static String DOC_TYPE = "docType";
 }
