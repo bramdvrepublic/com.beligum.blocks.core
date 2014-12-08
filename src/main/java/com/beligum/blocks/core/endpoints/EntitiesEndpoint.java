@@ -14,10 +14,13 @@ import com.beligum.core.framework.templating.ifaces.Template;
 import org.hibernate.validator.constraints.NotBlank;
 
 import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Created by bas on 07.10.14.
@@ -73,4 +76,20 @@ public class EntitiesEndpoint
 //        redis.save(entityTemplate);
 //        return Response.seeOther(entityTemplate.getUrl().toURI()).build();
 //    }
+
+    @GET
+    @Path("/list")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+        /*
+         * update a page-instance with id 'entityId' to be the html specified
+         */
+    public Response updateEntity() throws CacheException
+    {
+        List<String> entityNames = new ArrayList<String>();
+        for (EntityTemplateClass e: EntityTemplateClassCache.getInstance().values()) {
+            entityNames.add(e.getName());
+        }
+        return Response.ok(entityNames).build();
+    }
 }
