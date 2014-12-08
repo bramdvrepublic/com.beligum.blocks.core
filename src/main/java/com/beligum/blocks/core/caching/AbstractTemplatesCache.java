@@ -55,12 +55,16 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     {
         try{
             if(!getCache().containsKey(template.getUnversionedId())) {
-                getCache().put(template.getUnversionedId(), template);
                 RedisID lastVersion = new RedisID(template.getId().getUrl(), RedisID.LAST_VERSION);
                 AbstractTemplate storedTemplate = Redis.getInstance().fetchTemplate(lastVersion, this.getCachedClass());
                 if(!template.equals(storedTemplate)){
                     Redis.getInstance().save(template);
                 }
+                else{
+                    //if this template was already stored in db, we should cache the db-version, since it has the correct time-stamp
+                    template = (T) storedTemplate;
+                }
+                getCache().put(template.getUnversionedId(), template);
                 return true;
             }
             else{

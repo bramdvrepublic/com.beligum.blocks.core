@@ -7,7 +7,7 @@ package com.beligum.blocks.core.config;
 public class DatabaseConstants
 {
     /**name of the scheme used for uri-identification of objects in the blocks-project*/
-    public static final String SCHEME_NAME = "AnTT";
+    public static final String SCHEME_NAME = "blocks";
     /**name of the application-version-field in db*/
     public final static String APP_VERSION = "appVersion";
     /**name of the creator-field in db*/

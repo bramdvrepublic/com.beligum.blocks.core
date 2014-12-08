@@ -9,6 +9,7 @@ import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.configuration.ConfigurationRuntimeException;
+import org.apache.commons.lang3.StringUtils;
 import org.atteo.evo.inflector.English;
 import redis.clients.jedis.Jedis;
 
@@ -287,6 +288,32 @@ public class RedisID extends ID
     }
 
     /**
+     * Method for getting a new property-id for a certain property (blocks://[db-alias]/[parent-typeof]#[property-name]_[optional-html-id-value]:[version]
+     * @param owningEntityClassName
+     * @param propertyName
+     * @return
+     * @throws IDException
+     */
+    public static RedisID renderNewPropertyId(String owningEntityClassName, String propertyName, String propertyId) throws IDException
+    {
+        try{
+            if(owningEntityClassName == null){
+                owningEntityClassName = "";
+            }
+            if(propertyName == null){
+                propertyName = "";
+            }
+            String url = BlocksConfig.getSiteDomain() + "/" + owningEntityClassName + "#" + propertyName;
+            if(!StringUtils.isEmpty(propertyId)){
+                url += "_" + propertyId;
+            }
+            return new RedisID(new URL(url));
+        }catch(MalformedURLException e){
+            throw new IDException("Couldn't construct proper id with '" + BlocksConfig.getSiteDomain() + "/" + owningEntityClassName + "#" + propertyName + "'", e);
+        }
+    }
+
+    /**
      * Returns the name of the set where all instance-ids of the same entity-template-class are stored, f.i. "blocks://[db-alias]/waterwells" for class typeof="waterwell".
      * @param entityTemplateClassName
      * @return An id of a set of entity-template-class-instances, which uses the plural form of the name of the entity-template-class.
@@ -302,6 +329,20 @@ public class RedisID extends ID
             return entityTemplateClassSetId.toString();
         }catch(URISyntaxException e){
             throw new ConfigurationRuntimeException("Cannot use entity-template class '" + entityTemplateClassName + "' for id-rendering.", e);
+        }
+    }
+
+    /**
+     *
+     * @param id
+     * @return whether or not the specified string is a reference to an entity or not
+     */
+    public static boolean isRedisId(String id){
+        try{
+            new RedisID(id);
+            return true;
+        }catch(Exception e){
+            return false;
         }
     }
 }

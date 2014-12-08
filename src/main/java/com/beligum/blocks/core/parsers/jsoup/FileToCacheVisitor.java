@@ -34,6 +34,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                 Element element = (Element) node;
                 EntityTemplateClass entityTemplateClass = cacheEntityTemplateClassFromNode(element);
                 node = replaceElementWithPropertyReference(element);
+                //TODO BAS: the replacementnode, should be cached as a DefaultPropertyTemplate or something of the sort? or is db-storage enough?
             }
             catch (Exception e) {
                 throw new ParseException("Could not parse an " + EntityTemplateClass.class.getSimpleName() + " from " + Node.class.getSimpleName() + " " + node, e);

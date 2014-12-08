@@ -2,8 +2,11 @@ package com.beligum.blocks.core.parsers.jsoup;
 
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
+import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
+import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
+import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 
@@ -47,7 +50,8 @@ public class AbstractVisitor
         }
     }
 
-    protected Element replaceElementWithPropertyReference(Element element) {
+    protected Element replaceElementWithPropertyReference(Element element) throws ParseException
+    {
         return replaceElementWithReference(element, getPropertyId(element));
     }
 
@@ -55,14 +59,26 @@ public class AbstractVisitor
         return replaceElementWithReference(element, entity.getUnversionedId());
     }
 
+    /**
+     *
+     * @param element
+     * @param referenceTo
+     * @return the replacement node, or the specified element if it could not be replaced
+     */
     protected Element replaceElementWithReference(Element element, String referenceTo)
     {
-        Element replacementNode = new Element(element.tag(), BlocksConfig.getSiteDomain());
-        replacementNode.attributes().addAll(element.attributes());
-        replacementNode.attr(ParserConstants.REFERENCE_TO, referenceTo);
-        element.replaceWith(replacementNode);
-        return replacementNode;
+        if(referenceTo != null && (referenceTo.contentEquals(ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME) || RedisID.isRedisId(referenceTo))) {
+            Element replacementNode = new Element(element.tag(), BlocksConfig.getSiteDomain());
+            replacementNode.attributes().addAll(element.attributes());
+            replacementNode.attr(ParserConstants.REFERENCE_TO, referenceTo);
+            element.replaceWith(replacementNode);
+            return replacementNode;
+        }
+        else{
+            return element;
+        }
     }
+
 
 
 
@@ -257,16 +273,17 @@ public class AbstractVisitor
         return retVal;
     }
 
-
-
-
-
+    /**
+     *
+     * @param node
+     * @return the value of the property-attribute of the given node, or empty string if no such value can be found
+     */
     public String getProperty(Node node) {
         if(isProperty(node)) {
             return node.attr("property");
         }
         else{
-            return null;
+            return "";
         }
     }
 
@@ -307,18 +324,28 @@ public class AbstractVisitor
 
 
     /**
-     * @return the property-id using the property-name of this entity-node and the last class-node visited, or null if no property-name can be found
+     * @return the property-id using the property-name of this entity-node and the last class-node visited (of the form "blocks://[db-alias]/[parent-typeof]#[property-name]_[optional-html-id-value]:[version]"), or null if no property-name can be found
      */
-    public String getPropertyId(Node node)
+    public String getPropertyId(Node node) throws ParseException
     {
-        if(isProperty(node)) {
+        if(isEntity(node)) {
             Node parentEntityNode = getParentTypeNode();
             String parentEntityClassName = getTypeOf(parentEntityNode);
             if(parentEntityClassName == null){
                 return null;
             }
             else {
-                return parentEntityClassName + "#" + getProperty(node);
+                String propertyName = getProperty(node);
+                String propertyHtmlId = node.attr("id");
+                if(StringUtils.isEmpty(propertyName) && StringUtils.isEmpty(propertyHtmlId)){
+                    throw new ParseException("Found property without a name or id at node: \n \n " + node.outerHtml());
+                }
+                try {
+                    return RedisID.renderNewPropertyId(parentEntityClassName, propertyName, propertyHtmlId).toString();
+
+                }catch(IDException e){
+                    throw new ParseException("Could not render new property-id.", e);
+                }
             }
         }
         else{
