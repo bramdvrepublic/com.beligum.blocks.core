@@ -28,11 +28,11 @@ public class ApplicationEndpoint
         return Response.ok(indexTemplate).build();
     }
 
-    @Path("/wetenschapper")
+    @Path("/mot/{name}")
     @GET
-    public Response wetenschapper()
+    public Response mot(@PathParam("name") String name)
     {
-        Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/wetenschapper.html");
+        Template indexTemplate = R.templateEngine().getEmptyTemplate("/templates/mot/"+name+".html");
         //        TypeCacher.instance().reset();
         return Response.ok(indexTemplate).build();
     }
