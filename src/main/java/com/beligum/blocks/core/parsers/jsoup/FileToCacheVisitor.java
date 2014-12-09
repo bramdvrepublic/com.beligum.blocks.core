@@ -37,7 +37,6 @@ public class FileToCacheVisitor extends AbstractVisitor
                 EntityTemplateClass entityTemplateClass = cacheEntityTemplateClassFromNode(element);
                 if(isProperty(node)) {
                     EntityTemplate propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element)), entityTemplateClass, element.outerHtml());
-                    //TODO BAS: the replacementnode, should be cached as a DefaultPropertyTemplate or something of the sort? or is db-storage enough?
                     //TODO BAS: only when the instance doesn't exist yet, the save should be performed!!!
                     Redis.getInstance().save(propertyInstance);
                     node = replaceElementWithPropertyReference(element);
@@ -50,6 +49,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                 }
                 else{
                     //do nothing, since we have found the ending of the outer-most typeof-tag
+                    //TODO BAS: should this mean we actually are starting to parse the page-template, so we don't have to do this weird construction?
                 }
             }
             catch (Exception e) {
@@ -73,8 +73,6 @@ public class FileToCacheVisitor extends AbstractVisitor
     {
         String entityClassName = "";
         try {
-            //TODO BAS SH: Je bent bezig met het vervolledigen van de parsers. Je hebt net de visitors in drie verschillende opgesplits: eentje voor het cachen van de classes, eentje voor het maken van nieuwe instances en eentje om van templates naar html-pagina's terug te keren. Ze moeten alledrie goed gedebugged worden, want er is aardig wat veranderd.
-            //TODO BAS SH: Default instances van een bepaalde klasse (bijvoorbeeld de locatie-instance die in de waterput-klasse zit) moeten in de database opgeslagen worden onder "blocks://MOT/waterput#adresLocatie_eenpropertyid:version"
             entityClassName = this.getTypeOf(node);
             if(entityClassName != null) {
                 EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, node.outerHtml(), null);

@@ -7,10 +7,12 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import org.apache.commons.lang3.StringUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
+import org.jsoup.parser.Parser;
 
-import java.lang.annotation.ElementType;
 import java.util.List;
 import java.util.Stack;
 
@@ -62,6 +64,7 @@ public class AbstractVisitor
     }
 
     protected Element replaceElementWithEntityReference(Element element, EntityTemplate entity){
+        //TODO: sometimes here an absolute (versioned) template should be saved, when we don't always want to show the last version of a referenced entity
         return replaceElementWithReference(element, entity.getUnversionedId());
     }
 
@@ -82,6 +85,25 @@ public class AbstractVisitor
         }
         else{
             return element;
+        }
+    }
+
+    /**
+     * Replace the specified node with the root-node of an entity-template
+     * @param node
+     * @param replacement
+     * @return the root-node of the replacement template, or the specified node itself when a null-replacement was specified
+     */
+    protected Node replaceReferenceWithEntity(Node node, EntityTemplate replacement)
+    {
+        if (replacement != null) {
+            Document templateDOM = Jsoup.parse(replacement.getTemplate(), BlocksConfig.getSiteDomain(), Parser.xmlParser());
+            Node replacementHtmlRoot = templateDOM.child(0);
+            node.replaceWith(replacementHtmlRoot);
+            return replacementHtmlRoot;
+        }
+        else{
+            return node;
         }
     }
 
@@ -342,7 +364,6 @@ public class AbstractVisitor
             else {
                 String propertyName = getProperty(node);
                 if(StringUtils.isEmpty(propertyName)){
-                    //TODO BAS SH: net gevonden dat dit voor een typeof-property zonder property-attribuut niet mag teruggeven, dat geeft een probleem bij SH2
                     return null;
                 }
                 try {
