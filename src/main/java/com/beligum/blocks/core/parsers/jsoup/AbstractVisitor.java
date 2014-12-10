@@ -7,10 +7,12 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import org.apache.commons.lang3.StringUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
+import org.jsoup.parser.Parser;
 
-import java.lang.annotation.ElementType;
 import java.util.List;
 import java.util.Stack;
 
@@ -19,7 +21,7 @@ import java.util.Stack;
  */
 public class AbstractVisitor
 {
-    private Stack<Node> typeOfStack = new Stack<>();
+    protected Stack<Node> typeOfStack = new Stack<>();
 
 
     public Node head(Node node, int depth) throws ParseException
@@ -42,20 +44,27 @@ public class AbstractVisitor
      *
      * @return the node containing the type of the last typed parent visited
      */
-    protected Node getParentTypeNode() {
+    protected String getParentType() {
         if (!this.typeOfStack.empty()) {
-            return this.typeOfStack.peek();
+            return getTypeOf(this.typeOfStack.peek());
         } else {
             return null;
         }
     }
 
+    /**
+     *
+     * @param element
+     * @return an entity-template wich is the property that was found in the specified element
+     * @throws ParseException
+     */
     protected Element replaceElementWithPropertyReference(Element element) throws ParseException
     {
         return replaceElementWithReference(element, getPropertyId(element));
     }
 
     protected Element replaceElementWithEntityReference(Element element, EntityTemplate entity){
+        //TODO: sometimes here an absolute (versioned) template should be saved, when we don't always want to show the last version of a referenced entity
         return replaceElementWithReference(element, entity.getUnversionedId());
     }
 
@@ -76,6 +85,25 @@ public class AbstractVisitor
         }
         else{
             return element;
+        }
+    }
+
+    /**
+     * Replace the specified node with the root-node of an entity-template
+     * @param node
+     * @param replacement
+     * @return the root-node of the replacement template, or the specified node itself when a null-replacement was specified
+     */
+    protected Node replaceReferenceWithEntity(Node node, EntityTemplate replacement)
+    {
+        if (replacement != null) {
+            Document templateDOM = Jsoup.parse(replacement.getTemplate(), BlocksConfig.getSiteDomain(), Parser.xmlParser());
+            Node replacementHtmlRoot = templateDOM.child(0);
+            node.replaceWith(replacementHtmlRoot);
+            return replacementHtmlRoot;
+        }
+        else{
+            return node;
         }
     }
 
@@ -329,19 +357,17 @@ public class AbstractVisitor
     public String getPropertyId(Node node) throws ParseException
     {
         if(isEntity(node)) {
-            Node parentEntityNode = getParentTypeNode();
-            String parentEntityClassName = getTypeOf(parentEntityNode);
+            String parentEntityClassName = this.getParentType();
             if(parentEntityClassName == null){
                 return null;
             }
             else {
                 String propertyName = getProperty(node);
-                String propertyHtmlId = node.attr("id");
-                if(StringUtils.isEmpty(propertyName) && StringUtils.isEmpty(propertyHtmlId)){
-                    throw new ParseException("Found property without a name or id at node: \n \n " + node.outerHtml());
+                if(StringUtils.isEmpty(propertyName)){
+                    return null;
                 }
                 try {
-                    return RedisID.renderNewPropertyId(parentEntityClassName, propertyName, propertyHtmlId).toString();
+                    return RedisID.renderNewPropertyId(parentEntityClassName, propertyName).getUnversionedId();
 
                 }catch(IDException e){
                     throw new ParseException("Could not render new property-id.", e);

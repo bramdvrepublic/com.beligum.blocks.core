@@ -2,7 +2,9 @@ package com.beligum.blocks.core.parsers;
 
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
+import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
+import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
@@ -45,16 +47,18 @@ public class TemplateParser
      */
     public URL saveNewEntityTemplateToDb(EntityTemplateClass entityTemplateClass) throws ParseException
     {
+        String pageStringId = "";
         try {
             Document doc = Jsoup.parse(entityTemplateClass.getTemplate(), BlocksConfig.getSiteDomain(), Parser.xmlParser());
             ClassToStoredInstanceVisitor visitor = new ClassToStoredInstanceVisitor();
             Traversor traversor = new Traversor(visitor);
             traversor.traverse(doc);
-            //TODO BAS SH2: must be checked properly for null-values and empty-strings
-            return new URL(visitor.getReferencedId(doc.child(0)));
+            pageStringId = visitor.getReferencedId(doc.child(0));
+            RedisID pageId = new RedisID(pageStringId, RedisID.NO_VERSION);
+            return pageId.getUrl();
         }
-        catch(MalformedURLException e){
-            throw new ParseException("Couldn't construct url for new " + EntityTemplate.class.getSimpleName() + "-instance.", e);
+        catch(IDException e){
+            throw new ParseException("Couldn't construct url for new " + EntityTemplate.class.getSimpleName() + "-instance: " + pageStringId, e);
         }
 
     }

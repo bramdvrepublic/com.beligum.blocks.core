@@ -34,13 +34,13 @@ public class Traversor
         int depth = 0;
 
         while (node != null) {
-            visitor.head(node, depth);
+            node = visitor.head(node, depth);
             if (node.childNodeSize() > 0) {
                 node = node.childNode(0);
                 depth++;
             } else {
                 while (node.nextSibling() == null && depth > 0) {
-                    visitor.tail(node, depth);
+                    node = visitor.tail(node, depth);
                     node = node.parentNode();
                     depth--;
                 }
