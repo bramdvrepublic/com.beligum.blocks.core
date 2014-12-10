@@ -10,11 +10,13 @@ import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.core.framework.utils.Logger;
+import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 
 /**
  * Created by wouter on 22/11/14.
+ * Visitor holding all functionalities to parse a html-file to entity-classes stored in cache
  */
 public class FileToCacheVisitor extends AbstractVisitor
 {
@@ -35,7 +37,7 @@ public class FileToCacheVisitor extends AbstractVisitor
             try {
                 Element element = (Element) node;
                 EntityTemplateClass entityTemplateClass = cacheEntityTemplateClassFromNode(element);
-                if(isProperty(node)) {
+                if(isProperty(element)) {
                     EntityTemplate propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element)), entityTemplateClass, element.outerHtml());
                     //TODO BAS: only when the instance doesn't exist yet, the save should be performed!!!
                     Redis.getInstance().save(propertyInstance);
@@ -74,7 +76,7 @@ public class FileToCacheVisitor extends AbstractVisitor
         String entityClassName = "";
         try {
             entityClassName = this.getTypeOf(node);
-            if(entityClassName != null) {
+            if(!StringUtils.isEmpty(entityClassName)) {
                 EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, node.outerHtml(), null);
                 boolean added = EntityTemplateClassCache.getInstance().add(entityTemplateClass);
                 //if the node is a bleuprint and the cache already had a template-class present, force replace the template

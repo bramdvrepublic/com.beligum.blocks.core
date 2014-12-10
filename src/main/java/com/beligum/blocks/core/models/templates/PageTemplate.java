@@ -75,7 +75,7 @@ public class PageTemplate extends AbstractTemplate
 
     public String renderContent(EntityTemplate entityTemplate) throws ParseException
     {
-        return new TemplateParser().renderEntityInsidePageTemplate(this, entityTemplate);
+        return TemplateParser.renderEntityInsidePageTemplate(this, entityTemplate);
     }
 
     /**

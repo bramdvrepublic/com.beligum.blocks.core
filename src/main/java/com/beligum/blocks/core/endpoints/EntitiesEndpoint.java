@@ -1,11 +1,14 @@
 package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
+import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.exceptions.RedisException;
+import com.beligum.blocks.core.models.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.parsers.TemplateParser;
@@ -16,6 +19,7 @@ import org.hibernate.validator.constraints.NotBlank;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -50,32 +54,14 @@ public class EntitiesEndpoint
 
     {
         EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(entityClassName);
-        URL entityUrl = new TemplateParser().saveNewEntityTemplateToDb(entityTemplateClass);
+        URL entityUrl = TemplateParser.saveNewEntityTemplateToDb(entityTemplateClass);
         /*
          * Redirect the client to the newly created entity's page
          */
         return Response.seeOther(entityUrl.toURI()).build();
     }
 
-//    @PUT
-//    @Path("/{entityId:.*}")
-//    @Consumes(MediaType.APPLICATION_JSON)
-//    /*
-//     * update a page-instance with id 'entityId' to be the html specified
-//     */
-//    public Response updateEntity(
-//                    @PathParam("entityId")
-//                    String entityId,
-//                    @NotBlank(message = "No page found to update to.")
-//                    String html) throws MalformedURLException, ParseException, RedisException, URISyntaxException
-//    {
-//        URL entityUrl = new URL(BlocksConfig.getSiteDomain() + "/" + entityId);
-//
-//        AbstractTemplate entityTemplate = new TemplateParser().parseEntityTemplate(entityUrl, html);
-//        Redis redis = Redis.getInstance();
-//        redis.save(entityTemplate);
-//        return Response.seeOther(entityTemplate.getUrl().toURI()).build();
-//    }
+
 
     @GET
     @Path("/list")
@@ -84,12 +70,30 @@ public class EntitiesEndpoint
         /*
          * update a page-instance with id 'entityId' to be the html specified
          */
-    public Response updateEntity() throws CacheException
+    public Response listEntities() throws CacheException
     {
         List<String> entityNames = new ArrayList<String>();
-        for (EntityTemplateClass e: EntityTemplateClassCache.getInstance().values()) {
+        for (EntityTemplateClass e : EntityTemplateClassCache.getInstance().values()) {
             entityNames.add(e.getName());
         }
         return Response.ok(entityNames).build();
+    }
+
+    @PUT
+    @Path("/{entityId:.*}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    /*
+     * update a page-instance with id 'entityId' to be the html specified
+     */
+    public Response updateEntity(
+                    @PathParam("entityId")
+                    String entityId,
+                    @NotBlank(message = "No page found to update to.")
+                    String html) throws MalformedURLException, ParseException, URISyntaxException
+    {
+        URL entityUrl = new URL(BlocksConfig.getSiteDomain() + "/" + entityId);
+
+        TemplateParser.updateEntity(entityUrl, html);
+        return Response.seeOther(entityUrl.toURI()).build();
     }
 }

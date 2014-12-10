@@ -180,6 +180,34 @@ public class AbstractVisitor
 
     /**
      *
+     * @param node
+     * @return true if the specified node ha a rdf-"resource" attribute, false otherwise
+     */
+    public boolean hasResource(Node node){
+        if(node == null){
+            return false;
+        }
+        else{
+            return node.hasAttr("resource");
+        }
+    }
+
+    /**
+     *
+     * @param node
+     * @return the value of the rdf-"resource" attribute, which can be empty, or null if no such attribute can be found
+     */
+    public String getResource(Node node){
+        if(hasResource(node)){
+            return node.attr("resource");
+        }
+        else{
+            return null;
+        }
+    }
+
+    /**
+     *
      * @param entityNode the root node of an entity
      * @return return the rdf "typeof" value of a node, the default "typeof" if it is a property-node or null if it is not an entity
      */
