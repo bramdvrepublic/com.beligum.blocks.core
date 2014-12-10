@@ -195,7 +195,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         layoutTree = [];
         //_this.cleanLayout();
         if (layoutParentElement == null) {
-            layoutParentElement = $("body");
+            layoutParentElement = $("body").find(".can-layout");
         }
 
         var findContainersInParent = function(parent) {
