@@ -69,6 +69,7 @@ public class TemplateParser
 
     public static String renderEntityInsidePageTemplate(PageTemplate pageTemplate, EntityTemplate entityTemplate) throws ParseException
     {
+        //TODO BAS SH: we need to let the parser start at the root of the page-template and find a generic way to replace entities into it. We need this because for the moment we get a nullpointerexception when we're parsing the template to html, since we replace the outer-most entity with it's class-template-nodes, whom don't have the correct parents (the ones of the page-template). If we have a generic way to parse the entities into a page-template, we won't be having this problem, plus it will more easily be possible to render multiple entities in 1 pagetemplate.
         Document DOM = parse(pageTemplate.getTemplate());
         Elements referenceBlocks = DOM.select("[" + ParserConstants.REFERENCE_TO + "]");
         for(Element reference : referenceBlocks){

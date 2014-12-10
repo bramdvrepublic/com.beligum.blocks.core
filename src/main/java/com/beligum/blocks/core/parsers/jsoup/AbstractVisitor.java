@@ -156,7 +156,7 @@ public class AbstractVisitor
             return false;
         }
         boolean retVal = false;
-        if (node.hasAttr("typeof")) {
+        if (node.hasAttr(ParserConstants.TYPE_OF)) {
             retVal = true;
         }
         return retVal;
@@ -172,7 +172,7 @@ public class AbstractVisitor
             return false;
         }
         boolean retVal = false;
-        if (node.hasAttr("property")) {
+        if (node.hasAttr(ParserConstants.PROPERTY)) {
             retVal = true;
         }
         return retVal;
@@ -188,7 +188,7 @@ public class AbstractVisitor
             return false;
         }
         else{
-            return node.hasAttr("resource");
+            return node.hasAttr(ParserConstants.RESOURCE);
         }
     }
 
@@ -199,7 +199,7 @@ public class AbstractVisitor
      */
     public String getResource(Node node){
         if(hasResource(node)){
-            return node.attr("resource");
+            return node.attr(ParserConstants.RESOURCE);
         }
         else{
             return null;
@@ -213,7 +213,7 @@ public class AbstractVisitor
      */
     public String getTypeOf(Node entityNode) {
         if (hasTypeOf(entityNode)) {
-            return entityNode.attr("typeof");
+            return entityNode.attr(ParserConstants.TYPE_OF);
         }
         else if(isProperty(entityNode)){
             return ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS;
@@ -245,7 +245,7 @@ public class AbstractVisitor
             return false;
         }
         boolean retVal = false;
-        if (element.hasAttr("resource")) {
+        if (element.hasAttr(ParserConstants.RESOURCE)) {
             retVal = true;
         }
         return retVal;
@@ -265,70 +265,6 @@ public class AbstractVisitor
         }
     }
 
-    public boolean isLayoutable(Element node) {
-        if(node == null){
-            return false;
-        }
-        boolean retVal = false;
-        if (node.hasAttr("can-layout")) {
-            retVal = true;
-        }
-        return retVal;
-    }
-
-    public boolean isReplaceable(Element node) {
-        if(node == null){
-            return false;
-        }
-        boolean retVal = false;
-        if (node.hasAttr("can-replace")) {
-            retVal = true;
-        }
-        return retVal;
-    }
-
-    public boolean isBootstrapContainer(Element node) {
-        if(node == null){
-            return false;
-        }
-        return node.hasClass("container");
-    }
-
-    public boolean isBootstrapRow(Element node) {
-        if(node == null){
-            return false;
-        }
-        return node.hasClass("row");
-    }
-
-    public boolean isBootstrapColumn(Element node) {
-        if(node == null){
-            return false;
-        }
-        boolean retVal = false;
-        for (String cName: node.classNames()) {
-            if (cName.startsWith("col-")) {
-                retVal = true;
-                break;
-            }
-        }
-        return retVal;
-    }
-
-    public boolean isBootstrapLayout(Element node) {
-        return isBootstrapRow(node) || isBootstrapContainer(node) || isBootstrapColumn(node);
-    }
-    public boolean isBootstrapLayout(List<Element> elements) {
-        boolean retVal = true;
-        for (Element el: elements) {
-            if (!isBootstrapLayout(el)) {
-                retVal = false;
-                break;
-            }
-        }
-        return retVal;
-    }
-
     /**
      *
      * @param node
@@ -336,10 +272,10 @@ public class AbstractVisitor
      */
     public String getProperty(Node node) {
         if(isProperty(node)) {
-            return node.attr("property");
+            return node.attr(ParserConstants.PROPERTY);
         }
         else{
-            return "";
+            return null;
         }
     }
 
@@ -356,23 +292,23 @@ public class AbstractVisitor
         return retVal;
     }
 
-    public boolean isEditable(Element node) {
+    public boolean isLayoutable(Element node) {
         if(node == null){
             return false;
         }
         boolean retVal = false;
-        if (node.hasAttr("can-edit")) {
+        if (node.hasAttr(ParserConstants.CAN_LAYOUT)) {
             retVal = true;
         }
         return retVal;
     }
 
-    public boolean isInlineEditable(Element node) {
+    public boolean isEditable(Element node) {
         if(node == null){
             return false;
         }
         boolean retVal = false;
-        if (node.hasAttr("can-edit-inline")) {
+        if (node.hasAttr(ParserConstants.CAN_EDIT)) {
             retVal = true;
         }
         return retVal;
@@ -408,9 +344,47 @@ public class AbstractVisitor
 
     }
 
-    public boolean isMutable(Element node) {
-        return isLayoutable(node) || isReplaceable(node) || isEditable(node) || isInlineEditable(node);
-    }
 
+//    public boolean isBootstrapContainer(Element node) {
+//        if(node == null){
+//            return false;
+//        }
+//        return node.hasClass("container");
+//    }
+//
+//    public boolean isBootstrapRow(Element node) {
+//        if(node == null){
+//            return false;
+//        }
+//        return node.hasClass("row");
+//    }
+//
+//    public boolean isBootstrapColumn(Element node) {
+//        if(node == null){
+//            return false;
+//        }
+//        boolean retVal = false;
+//        for (String cName: node.classNames()) {
+//            if (cName.startsWith("col-")) {
+//                retVal = true;
+//                break;
+//            }
+//        }
+//        return retVal;
+//    }
+//
+//    public boolean isBootstrapLayout(Element node) {
+//        return isBootstrapRow(node) || isBootstrapContainer(node) || isBootstrapColumn(node);
+//    }
+//    public boolean isBootstrapLayout(List<Element> elements) {
+//        boolean retVal = true;
+//        for (Element el: elements) {
+//            if (!isBootstrapLayout(el)) {
+//                retVal = false;
+//                break;
+//            }
+//        }
+//        return retVal;
+//    }
 
 }

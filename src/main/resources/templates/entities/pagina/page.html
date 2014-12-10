@@ -1,8 +1,6 @@
 <html>
 <head>
 <link href="/assets/stylesheets/styles.less" rel="stylesheet" />
-<!--TODO BAS SH: must be able to load page.js to be able to save changed page, but maybe for now we should just put it in main template, for debugging the save-button-->
-<script href="page.js"></script>
 </head>
 
 <body>
@@ -22,15 +20,16 @@
                 Hier zult u vanalles kunnen plaatsen...
             </div>
         </div>
-        <div class="col-md-6 column" property="veranderbaar-ding" typeof="onveranderbaar" id="toch_niet">
-            Hier kunt u niets veranderen...
-            <img>
-        </div>
-    </div>
-    <div class="row" id="knoprij">
-        <div class="col-md-12 column">
-            <div class="block" id="knopje">
-                <button type="button" class="btn btn-default" onclick="save()">Save</button>
+        <div class="col-md-6 column"  property="veranderbaar-ding" typeof="onveranderbaar">
+            <div id="toch_niet">
+                Hier kunt u niets veranderen...
+            </div>
+            <div class="row" id="knoprij">
+                <div class="col-md-12 column">
+                    <div class="block" id="knopje">
+                        <button type="button" class="btn btn-default" onclick="save()">Save</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
