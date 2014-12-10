@@ -3,7 +3,9 @@ package com.beligum.blocks.core.parsers.jsoup;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.ParserConstants;
+import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.ParseException;
+import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
@@ -33,11 +35,25 @@ public class FileToCacheVisitor extends AbstractVisitor
             try {
                 Element element = (Element) node;
                 EntityTemplateClass entityTemplateClass = cacheEntityTemplateClassFromNode(element);
-                node = replaceElementWithPropertyReference(element);
-                //TODO BAS: the replacementnode, should be cached as a DefaultPropertyTemplate or something of the sort? or is db-storage enough?
+                if(isProperty(node)) {
+                    EntityTemplate propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element)), entityTemplateClass, element.outerHtml());
+                    //TODO BAS: only when the instance doesn't exist yet, the save should be performed!!!
+                    Redis.getInstance().save(propertyInstance);
+                    node = replaceElementWithPropertyReference(element);
+                }
+                else if(this.typeOfStack.size()>0){
+                    EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass);
+                    //TODO BAS: only when the instance doesn't exist yet, the save should be performed!!!
+                    Redis.getInstance().save(instance);
+                    node = replaceElementWithEntityReference(element, instance);
+                }
+                else{
+                    //do nothing, since we have found the ending of the outer-most typeof-tag
+                    //TODO BAS: should this mean we actually are starting to parse the page-template, so we don't have to do this weird construction?
+                }
             }
             catch (Exception e) {
-                throw new ParseException("Could not parse an " + EntityTemplateClass.class.getSimpleName() + " from " + Node.class.getSimpleName() + " " + node, e);
+                throw new ParseException("Could not parse an " + EntityTemplateClass.class.getSimpleName() + " from " + Node.class.getSimpleName() + " \n \n:" + node, e);
             }
         }
         else if (node instanceof Element) {
@@ -57,8 +73,6 @@ public class FileToCacheVisitor extends AbstractVisitor
     {
         String entityClassName = "";
         try {
-            //TODO BAS SH: Je bent bezig met het vervolledigen van de parsers. Je hebt net de visitors in drie verschillende opgesplits: eentje voor het cachen van de classes, eentje voor het maken van nieuwe instances en eentje om van templates naar html-pagina's terug te keren. Ze moeten alledrie goed gedebugged worden, want er is aardig wat veranderd.
-            //TODO BAS SH: Default instances van een bepaalde klasse (bijvoorbeeld de locatie-instance die in de waterput-klasse zit) moeten in de database opgeslagen worden onder "blocks://MOT/waterput#adresLocatie_eenpropertyid:version"
             entityClassName = this.getTypeOf(node);
             if(entityClassName != null) {
                 EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, node.outerHtml(), null);

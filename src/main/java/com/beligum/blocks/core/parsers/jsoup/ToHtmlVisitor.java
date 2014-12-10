@@ -5,8 +5,6 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import org.apache.commons.lang3.StringUtils;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 
@@ -21,26 +19,20 @@ public class ToHtmlVisitor extends AbstractVisitor
     {
 
         if (node instanceof Element) {
-            Element element = (Element)node;
-            String unversionedResourceId = getReferencedId(element);
+            String unversionedResourceId = getReferencedId(node);
             if (!StringUtils.isEmpty(unversionedResourceId)) {
                 try {
                     RedisID id = new RedisID(unversionedResourceId, RedisID.LAST_VERSION);
                     EntityTemplate resource = Redis.getInstance().fetchEntityTemplate(id);
-                    if (resource != null) {
-                        Document resourceDOM = Jsoup.parse(resource.getTemplate());
-                        node.replaceWith(this.head(resourceDOM, depth + 1));
-                    }
-                }
-                catch(ParseException e){
-                    throw e;
+                    //TODO BAS: here choices need to be made about can-layout, can-edit, class-layout and instances
+                    node = replaceReferenceWithEntity(node, resource);
                 }
                 catch(Exception e){
                     throw new ParseException("Error while parsing node '" + node.nodeName() + "' at tree depth '" + depth + "'.", e);
                 }
             }
         }
-        super.head(node, depth);
+        node = super.head(node, depth);
         return node;
     }
 
