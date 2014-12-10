@@ -10,6 +10,7 @@ import org.jsoup.nodes.Node;
 
 /**
 * Created by wouter on 23/11/14.
+ * Visitor holding all functionalities to go from a stored entity-templates to a html-page
 */
 public class ToHtmlVisitor extends AbstractVisitor
 {

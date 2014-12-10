@@ -328,7 +328,8 @@ public class RedisID extends ID
      * @param entityTemplateClassName
      * @return An id of a set of entity-template-class-instances, which uses the plural form of the name of the entity-template-class.
      */
-    public static String getEntityTemplateClassSetId(String entityTemplateClassName){
+    public static String getEntityTemplateClassSetId(String entityTemplateClassName) throws IDException
+    {
         try {
             String entityTemplateClassSetName = English.plural(entityTemplateClassName);
             //for nouns having the same plural as singular form, we put an extra suffix to the entity-template-class-name
@@ -338,7 +339,7 @@ public class RedisID extends ID
             URI entityTemplateClassSetId = new URI(DatabaseConstants.SCHEME_NAME, BlocksConfig.getSiteDBAlias(), "/" + entityTemplateClassSetName, null);
             return entityTemplateClassSetId.toString();
         }catch(URISyntaxException e){
-            throw new ConfigurationRuntimeException("Cannot use entity-template class '" + entityTemplateClassName + "' for id-rendering.", e);
+            throw new IDException("Cannot use entity-template class '" + entityTemplateClassName + "' for id-rendering.", e);
         }
     }
 

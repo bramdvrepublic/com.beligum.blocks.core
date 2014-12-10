@@ -39,7 +39,7 @@ public class EntityTemplateClass extends AbstractTemplate
         this.docType = docType;
     }
 
-    public EntityTemplateClass(RedisID id, String template, String docType){
+    private EntityTemplateClass(RedisID id, String template, String docType){
         super(id, template);
         //the name of this entity-template-class doesn't start with a "/", so we split it of the given path
         String[] splitted = id.getUrl().getPath().split("/");

@@ -79,6 +79,7 @@ public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTempl
                     return entityTemplateClass;
                 }
                 else {
+                    //TODO BAS: if the specified template-class is not present, a trip to the db could possibly give us an old version
                     return applicationCache.get(CacheConstants.DEFAULT_ENTITY_CLASS_NAME);
                 }
             }
