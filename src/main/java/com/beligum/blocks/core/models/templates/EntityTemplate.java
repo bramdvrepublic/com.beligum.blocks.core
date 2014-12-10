@@ -27,20 +27,6 @@ public class EntityTemplate extends AbstractTemplate implements Storable
 
     /**
      *
-     * Constructor for a new entity-instance of a certain entity-class, who's template will be the default from the template-class.
-     * It's UID will be the of the form "[url]:[version]" and will be rendered by the Redis-singleton.
-     * It uses the current application version and the currently logged in user for field initialization.
-     * @param entityTemplateClass the class of which this entity is a entity-instance
-     * @throw IDException if no id could be constructed using the entity-template-class-name
-     */
-    public EntityTemplate(EntityTemplateClass entityTemplateClass) throws IDException
-    {
-        super(RedisID.renderNewEntityTemplateID(entityTemplateClass), entityTemplateClass.getTemplate());
-        this.entityTemplateClass = entityTemplateClass;
-    }
-
-    /**
-     *
      * Constructor for a new entity-instance of a certain entity-class, which will be filled with the default rows and blocks from the entity-class.
      * It's UID will be the of the form "[url]:[version]". It used the current application version and the currently logged in user for field initialization.
      * @param id the id of this entity

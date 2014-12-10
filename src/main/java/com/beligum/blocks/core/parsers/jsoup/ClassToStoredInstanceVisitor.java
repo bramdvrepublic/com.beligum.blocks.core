@@ -15,6 +15,7 @@ import java.util.Stack;
 
 /**
  * Created by bas on 03.12.14.
+ * Visitor holding all functionalities to go from a cached class-template to a new instance
  */
 public class ClassToStoredInstanceVisitor extends AbstractVisitor
 {
@@ -32,12 +33,12 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                 if (!StringUtils.isEmpty(unversionedResourceId) && !StringUtils.isEmpty(defaultPropertyId) && unversionedResourceId.contentEquals(defaultPropertyId)){
                     RedisID lastPropertyVersion = new RedisID(unversionedResourceId, RedisID.LAST_VERSION);
                     //TODO: the default property-template should probably be fetched from cache, instead of db
-                    EntityTemplate defaultPropertyTemplate = (EntityTemplate) Redis.getInstance().fetchTemplate(lastPropertyVersion, EntityTemplate.class);
+                    EntityTemplate defaultPropertyTemplate = Redis.getInstance().fetchEntityTemplate(lastPropertyVersion);
                     node = replaceReferenceWithEntity(node, defaultPropertyTemplate);
                 }
                 else if(!StringUtils.isEmpty(unversionedResourceId) && !StringUtils.isEmpty(typeOf)){
                     RedisID defaultEntityId = new RedisID(unversionedResourceId, RedisID.LAST_VERSION);
-                    EntityTemplate defaultEntityTemplate = (EntityTemplate) Redis.getInstance().fetchTemplate(defaultEntityId, EntityTemplate.class);
+                    EntityTemplate defaultEntityTemplate = Redis.getInstance().fetchEntityTemplate(defaultEntityId);
                     EntityTemplateClass entityClass = EntityTemplateClassCache.getInstance().get(typeOf);
                     EntityTemplate newEntityInstance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityClass), entityClass, defaultEntityTemplate.getTemplate());
                     node = replaceReferenceWithEntity(node, newEntityInstance);
@@ -62,7 +63,9 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
             Node lastInstanceNode = !newInstancesNodes.isEmpty() ? newInstancesNodes.peek() : null;
             if (node.equals(lastInstanceNode) && node instanceof Element) {
                 EntityTemplateClass entityClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
-                EntityTemplate newInstance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityClass), entityClass, node.outerHtml());
+                RedisID newEntityId = RedisID.renderNewEntityTemplateID(entityClass);
+                node.attr("resource", newEntityId.getUrl().toString());
+                EntityTemplate newInstance = new EntityTemplate(newEntityId, entityClass, node.outerHtml());
                 Redis.getInstance().save(newInstance);
                 node = replaceElementWithEntityReference((Element) node, newInstance);
                 newInstancesNodes.pop();

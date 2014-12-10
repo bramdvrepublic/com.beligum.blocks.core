@@ -154,7 +154,6 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
                 EqualsBuilder significantFieldsSet = new EqualsBuilder();
                 significantFieldsSet = significantFieldsSet.append(template, abstractTemplateObj.template)
                                 .append(this.getUnversionedId(), abstractTemplateObj.getUnversionedId())
-                                                //                                                           .append(this.getTemplateVariableName(), entityTemplateObj.getTemplateVariableName())
                                 .append(this.creator, abstractTemplateObj.creator)
                                 .append(this.applicationVersion, abstractTemplateObj.applicationVersion);
                 return significantFieldsSet.isEquals();

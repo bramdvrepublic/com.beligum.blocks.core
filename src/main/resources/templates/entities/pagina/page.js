@@ -3,10 +3,11 @@ function save() {
     $.ajax({
         type: "PUT",
         contentType: "application/json",
-        data: JSON.stringify({
-            html: html + "",
-            entityClassName: "default"
-        }),
+//        data: JSON.stringify({
+//            html: html + "",
+//            entityClassName: "default"
+//        }),
+        data: html,
         url: "/entities" + document.location.pathname
     });
 }

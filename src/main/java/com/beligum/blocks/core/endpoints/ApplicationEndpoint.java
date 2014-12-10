@@ -8,12 +8,14 @@ import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.base.RequestContext;
 import com.beligum.core.framework.templating.ifaces.Template;
+import org.apache.velocity.app.Velocity;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
+import java.io.StringWriter;
 import java.net.URL;
 
 @Path("/")

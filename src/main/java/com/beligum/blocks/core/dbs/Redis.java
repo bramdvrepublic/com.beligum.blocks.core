@@ -104,6 +104,9 @@ public class Redis implements Closeable
                 //do all the reads in this pipeline
                 pipelinedSaveTransaction.sync();
             }
+            catch(IDException e){
+                throw new RedisException("Could not save template '" + template.getId() + "' to db.", e);
+            }
             catch(Exception e){
                 //if an exception has been thrown while writing to, discard the transaction
                 pipelinedSaveTransaction.discard();

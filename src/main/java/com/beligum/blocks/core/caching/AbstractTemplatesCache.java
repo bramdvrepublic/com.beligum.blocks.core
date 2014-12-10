@@ -126,7 +126,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                     {
                         if (filePath.getFileName().toString().endsWith("html")) {
                             try {
-                                new TemplateParser().cacheTemplatesFromFile(new String(Files.readAllBytes(filePath)));
+                                TemplateParser.cacheTemplatesFromFile(new String(Files.readAllBytes(filePath)));
                             }
                             catch (ParseException e) {
                                 Logger.error("Parse error while parsing file '" + filePath + "'.", e);

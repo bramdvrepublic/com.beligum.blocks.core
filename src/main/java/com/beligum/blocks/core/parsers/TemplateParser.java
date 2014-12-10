@@ -8,15 +8,13 @@ import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
-import com.beligum.blocks.core.parsers.jsoup.ClassToStoredInstanceVisitor;
-import com.beligum.blocks.core.parsers.jsoup.FileToCacheVisitor;
-import com.beligum.blocks.core.parsers.jsoup.ToHtmlVisitor;
-import com.beligum.blocks.core.parsers.jsoup.Traversor;
+import com.beligum.blocks.core.parsers.jsoup.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Parser;
 import org.jsoup.select.Elements;
+import sun.org.mozilla.javascript.ast.Block;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -26,15 +24,21 @@ import java.net.URL;
 */
 public class TemplateParser
 {
+    //TODO BAS: use this enum
+    public enum Modes{
+        CACHE_CLASSES,
+        NEW_INSTANCE,
+        UPDATE_ENTITY
+    }
 
     /**
      * Parse all templates found in the specified html and cache them in the correct cacher. (PageTemplate in PageTemplateCache, EntityTemplateClass in EntityTemplateClassCache)
      * @param html the html to be parsed
      * @throws ParseException
      */
-    public void cacheTemplatesFromFile(String html) throws ParseException
+    public static void cacheTemplatesFromFile(String html) throws ParseException
     {
-        Document doc = Jsoup.parse(html);
+        Document doc = parse(html);
         Traversor traversor = new Traversor(new FileToCacheVisitor());
         traversor.traverse(doc);
 
@@ -45,11 +49,11 @@ public class TemplateParser
      * @param entityTemplateClass
      * @return true if save succeeded
      */
-    public URL saveNewEntityTemplateToDb(EntityTemplateClass entityTemplateClass) throws ParseException
+    public static URL saveNewEntityTemplateToDb(EntityTemplateClass entityTemplateClass) throws ParseException
     {
         String pageStringId = "";
         try {
-            Document doc = Jsoup.parse(entityTemplateClass.getTemplate(), BlocksConfig.getSiteDomain(), Parser.xmlParser());
+            Document doc = parse(entityTemplateClass.getTemplate());
             ClassToStoredInstanceVisitor visitor = new ClassToStoredInstanceVisitor();
             Traversor traversor = new Traversor(visitor);
             traversor.traverse(doc);
@@ -63,9 +67,9 @@ public class TemplateParser
 
     }
 
-    public String renderEntityInsidePageTemplate(PageTemplate pageTemplate, EntityTemplate entityTemplate) throws ParseException
+    public static String renderEntityInsidePageTemplate(PageTemplate pageTemplate, EntityTemplate entityTemplate) throws ParseException
     {
-        Document DOM = Jsoup.parse(pageTemplate.getTemplate(), BlocksConfig.getSiteDomain(), Parser.xmlParser());
+        Document DOM = parse(pageTemplate.getTemplate());
         Elements referenceBlocks = DOM.select("[" + ParserConstants.REFERENCE_TO + "]");
         for(Element reference : referenceBlocks){
             Document entityDOM = Jsoup.parse(entityTemplate.getTemplate(), BlocksConfig.getSiteDomain(), Parser.xmlParser());
@@ -78,16 +82,38 @@ public class TemplateParser
         return DOM.outerHtml();
     }
 
+    public static void updateEntity(URL url, String html) throws ParseException
+    {
+        try{
+            RedisID newVersion = new RedisID(url);
+            Document newDOM = parse(html);
+            //TODO BAS: this should be something of the form
+            Traversor traversor = new Traversor(new HtmlToStoreVisitor());
+            traversor.traverse(newDOM);
+        }
+        catch(IDException e){
+            throw new ParseException("Could not create a new version for '" + url + "'.", e);
+        }
+    }
+
     //    public Set<String> getChildIdsFromTemplate(String template)
     //    {
     //        Set<String> childIds = new HashSet<>();
     //        Document templateDOM = Jsoup.parse(template, BlocksConfig.getSiteDomain(), Parser.xmlParser());
-    //        //TODO: hier bezig
     //        Elements children = templateDOM.select("[" + ParserConstants.REFERENCE_TO + "]");
     //        for(Element child : children){
     //            childIds.add(child.attr(ParserConstants.REFERENCE_TO));
     //        }
     //        return childIds;
     //    }
+
+    /**
+     * Parse html to jsoup-document, using xml-parser
+     * @param html
+     * @return
+     */
+    private static Document parse(String html){
+        return Jsoup.parse(html, BlocksConfig.getSiteDomain(), Parser.xmlParser());
+    }
 
 }
