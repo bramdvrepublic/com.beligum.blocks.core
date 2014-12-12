@@ -1,11 +1,11 @@
 
 /*
-* Classes for all layout types and surface
-* Layouter builds a virtual tree from these objects for easy searching and triggering
-* and to take some load of the dom while calculating
-*
-*
-* */
+ * Classes for all layout types and surface
+ * Layouter builds a virtual tree from these objects for easy searching and triggering
+ * and to take some load of the dom while calculating
+ *
+ *
+ * */
 blocks
     .plugin("blocks.core.Elements", ["blocks.core.Class", "blocks.core.Constants", "blocks.core.DomManipulation", function (Class, Constants, DOM) {
 
@@ -45,30 +45,103 @@ blocks
         });
 
         /*
-        * Special element that indicates a trigger where a block could be dropped
-        * on an other block. the dropspot is located on a SIDE of the block and the
-        * MIN and MAX value that defines the area on that side
-        * e.g. side = TOP and min =0 and max= 10 then this dropspot will be triggered with an
-        * y coordinate of 6
-        *
-        * */
+         * Special element that indicates a trigger where a block could be dropped
+         * on an other block. the dropspot is located on a SIDE of the block and the
+         * MIN and MAX value that defines the area on that side
+         * e.g. side = TOP and min =0 and max= 10 then this dropspot will be triggered with an
+         * y coordinate of 6
+         *
+         * */
         var dropspot = Class.create({
 
-            constructor: function (side, anchor) {
+            constructor: function (side, anchor, index) {
+                this.block = null;
                 this.anchor = anchor;
+                this.index = index;
                 this.side = side;
+                this.other = this.setOther();
                 this.min = 0;
                 this.max = 0;
+                if (this.anchor.element.hasClass("column") && this.other != null) {
+                    Logger.debug(this);
+                }
             },
 
-            other: function() {
+            setOther: function() {
                 var retVal = null;
                 if (this.anchor != null) {
+                    Logger.debug("calculate other");
                     retVal = this.anchor.getElementAtSide(this.side);
                 }
                 return retVal;
             },
 
+            makeTriggers: function(x, y, direction) {
+                var BORDER_THRESHOLD = 15;
+                if (this.side != direction && this.side != Constants.OPPOSITE_DIRECTION[direction]) {
+                    Logger.debug("exit because drop[loc not on this side " + direction);
+                    return false;
+                }
+                var left = 0;
+                var right = 0;
+                var current = 0;
+                var prevLength = this.index - 1 < 0? 0 : this.index - 1;
+                var nrDropspots = 0;
+                var dropspots = []
+                if (direction == Constants.SIDE.TOP || direction == Constants.SIDE.BOTTOM) {
+                    left = this.block.top;
+                    right = this.block.bottom;
+                    current = y;
+//                    var prev = this.anchor.verticalDropspots.slice(0, this.index);
+//                    var next = this.anchor.verticalDropspots.slice(this.index + 1, this.anchor.verticalDropspots.length);
+                    nrDropspots = this.block.verticalDropspots.length;
+                    dropspots = this.block.verticalDropspots;
+
+                } else {
+                    left = this.block.left;
+                    right = this.block.right;
+                    current = x;
+//                    var prev = this.anchor.horizontalDropspots.slice(0, this.index);
+//                    var next = this.anchor.horizontalDropspots.slice(this.index + 1, this.anchor.horizontalDropspots.length);
+                    nrDropspots = this.block.horizontalDropspots.length;
+                    dropspots = this.block.horizontalDropspots;
+                }
+
+                var border_threshold = Math.round((right - left) / nrDropspots);
+                if (border_threshold > BORDER_THRESHOLD) border_threshold = BORDER_THRESHOLD;
+                var inner_threshold = (right - left) - (border_threshold * (nrDropspots - 1));
+
+//                var min = (current - ((threshold * prevLength) + (threshold/2)));
+//                if (min < left) min = left;
+//                if (right < (min + (threshold * nrDropspots))) {
+//                    min = right - (threshold * nrDropspots);
+//                }
+
+                var i = 0;
+                var min = left;
+                while ( i < nrDropspots) {
+                    var currentDP = dropspots[i];
+                    currentDP.setTrigger(min, min+border_threshold);
+
+                    if (i + 1 < nrDropspots && (dropspots[i+1].side != currentDP.side)) {
+                        if (currentDP.side == direction) {
+                            currentDP.setTrigger(min, min + inner_threshold);
+                        } else if (dropspots[i+1].side == direction) {
+                            min += border_threshold;
+                            dropspots[i+1].setTrigger(min, min+inner_threshold);
+                            i++;
+                        }
+                        min += inner_threshold
+                    } else {
+                        min += border_threshold
+                    }
+
+                    i++;
+                }
+                dropspots[0].min = left;
+                dropspots[dropspots.length -1].max = right;
+                return true;
+            },
 
             setTrigger: function(min, max) {
                 if (min < max) {
@@ -92,10 +165,10 @@ blocks
         });
 
         /*
-        * defines a resizehandle. The surface of the resizeHandle is the are that triggers when you hoover over it
-        * the draw-surface is the surface that will be drawn in the dom (can be bigger or smaller).
-        * left and rightcolumn are the columns that this handle will resize when dragged
-        */
+         * defines a resizehandle. The surface of the resizeHandle is the are that triggers when you hoover over it
+         * the draw-surface is the surface that will be drawn in the dom (can be bigger or smaller).
+         * left and rightcolumn are the columns that this handle will resize when dragged
+         */
         var resizeHandle = Class.create(surface, {
             STATIC: {
                 DRAW_WIDTH: 5,
@@ -127,9 +200,9 @@ blocks
         });
 
         /*
-        * Is the abstract class for DOM elements (row, container, block)
-        * contains some helperfunctions
-        * */
+         * Is the abstract class for DOM elements (row, container, block)
+         * contains some helperfunctions
+         * */
         var layoutElement = Class.create(surface, {
             calculateTop: function (element) {
                 return  element.offset().top
@@ -275,28 +348,17 @@ blocks
 
             // find all dropspots for an element
             // is called for a block and returns all dropspots for this block and his parents.
-            calculateDropspots: function(side, dropspots) {
-                if (this instanceof column) {
-                    var x = 0;
-                }
-
-                if (side == Constants.SIDE.LEFT || side == Constants.SIDE.RIGHT) {
-                    if (this instanceof column ||
-                        (this instanceof block &&
-                            (this.element.next().length > 0 || this.element.prev().length > 0))) {
-                        dropspots.push(new dropspot(side, this));
-                    }
-                } else { // TOP & BOTTOM
-                    if (this instanceof row || this instanceof block) {
-                        dropspots.push(new dropspot(side, this));
+            createAllDropspots: function() {
+                if (this instanceof block) {
+                    this.generateDropspots();
+                } else {
+                    if (this.children.length > 0) {
+                        for (var i=0; i < this.children.length; i++) {
+                            this.children[i].createAllDropspots();
+                        }
                     }
                 }
-                if (this.isOuter(side) && this.parent != null) {
-                    dropspots = this.parent.calculateDropspots(side, dropspots);
-                }
-                return dropspots;
             },
-
 
             generateChildrenForColumn: function () {
                 var childType = Constants.ROW_CLASS;
@@ -412,6 +474,18 @@ blocks
                 } else {
                     return null;
                 }
+            },
+
+            // find all dropspots for an element
+            // is called for a block and returns all dropspots for this block and his parents.
+            calculateDropspots: function(side, dropspots) {
+                var isOuter = this.isOuter(side);
+                if ((side == Constants.SIDE.TOP || side == Constants.SIDE.BOTTOM) && this.children.length > 1) {
+                    dropspots.push(new dropspot(side, this, dropspots.length));
+                }
+
+                if (this.isOuter(side) && this.parent != null) dropspots = this.parent.calculateDropspots(side, dropspots);
+                return dropspots;
             }
 
         });
@@ -443,18 +517,46 @@ blocks
                 } else {
                     return null;
                 }
+            },
+
+            // find all dropspots for an element
+            // is called for a block and returns all dropspots for this block and his parents.
+            calculateDropspots: function(side, dropspots) {
+                if ((side == Constants.SIDE.LEFT || side == Constants.SIDE.RIGHT) && this.children.length > 1) {
+                    dropspots.push(new dropspot(side, this, dropspots.length));
+                }
+
+                if (this.isOuter(side) && this.parent != null) {
+                    dropspots = this.parent.calculateDropspots(side, dropspots);
+                }
+                return dropspots;
             }
         });
 
         // special kind of row that defines the region where blocks can be dragged
-        var container = Class.create(row, {
+        var container = Class.create(layoutElement, {
             constructor: function (element) {
                 container.Super.call(this, this.calculateTop(element), this.calculateBottom(element), this.calculateLeft(element), this.calculateRight(element), element, null, 0);
                 if (DOM.isColumn(element) || DOM.isContainer(element)) {
                     this.generateChildrenForColumn();
                 } else if (DOM.isRow(element)) {
-                   this.generateChildrenForRow();
+                    this.generateChildrenForRow();
                 }
+            },
+
+            getElementAtSide: function(side) {
+                return null;
+            },
+
+            calculateDropspots: function(side, dropspots) {
+                if ((side == Constants.SIDE.LEFT || side == Constants.SIDE.RIGHT) && this.children.length > 1) {
+                    dropspots.push(new dropspot(side, this, dropspots.length));
+                }
+
+                if (this.isOuter(side) && this.parent != null) {
+                    dropspots = this.parent.calculateDropspots(side, dropspots);
+                }
+                return dropspots;
             }
         });
 
@@ -466,12 +568,11 @@ blocks
                 // if a block is editable does not depend on the parent
 
                 this.children = [];
-                // Only generate dropspots if one of parents is layoutable
                 this.dropspots = {};
                 if (this.canDrag) {
                     this.verticalMiddle = this.left + ((this.right - this.left) / 2);
                     this.horizontalMiddle = this.top + ((this.bottom - this.top) / 2);
-                    this.generateDropspots();
+
                 }
             },
 
@@ -537,11 +638,39 @@ blocks
 
             // calculates the triggers (surface where mouse coordinates trigger a dropspot)
             generateTriggers: function() {
-                this.generateTriggersForSide(Constants.SIDE.TOP);
-                this.generateTriggersForSide(Constants.SIDE.BOTTOM);
-                this.generateTriggersForSide(Constants.SIDE.LEFT);
-                this.generateTriggersForSide(Constants.SIDE.RIGHT);
+                this.horizontalDropspots = [];
+                this.verticalDropspots = [];
+//                this.generateTriggersForSide(Constants.SIDE.TOP);
+//                this.generateTriggersForSide(Constants.SIDE.BOTTOM);
+//                this.generateTriggersForSide(Constants.SIDE.LEFT);
+//                this.generateTriggersForSide(Constants.SIDE.RIGHT);
+
+                var i= 0;
+                for (i=this.dropspots[Constants.SIDE.TOP].length - 1; i >=0; i--) {
+                    this.verticalDropspots.push(this.dropspots[Constants.SIDE.TOP][i]);
+                }
+                for (i=0; i < this.dropspots[Constants.SIDE.BOTTOM].length; i++) {
+                    this.verticalDropspots.push(this.dropspots[Constants.SIDE.BOTTOM][i]);
+                }
+
+                for (i=this.dropspots[Constants.SIDE.LEFT].length - 1; i >=0; i--) {
+                    this.horizontalDropspots.push(this.dropspots[Constants.SIDE.LEFT][i]);
+                }
+                for (i=0; i < this.dropspots[Constants.SIDE.RIGHT].length; i++) {
+                    this.horizontalDropspots.push(this.dropspots[Constants.SIDE.RIGHT][i]);
+                }
+                for (i=0; i < this.horizontalDropspots.length; i++) {
+                    this.horizontalDropspots[i].index = i;
+                    this.horizontalDropspots[i].block = this;
+                }
+
+                for (i=0; i < this.verticalDropspots.length; i++) {
+                    this.verticalDropspots[i].index = i;
+                    this.verticalDropspots[i].block = this;
+                }
             },
+
+
 
             // generate the triggers for the dropspots
             // e.g. 3 dropspots left =  width of trigger = half width of block / 3
@@ -564,41 +693,76 @@ blocks
                 }
 
                 var t_right = left + (triggerWidth * this.dropspots[side].length);
-//                for (var i=0; i < this.dropspots[side].length ; i++) {
-                for (var i=this.dropspots[side].length - 1; i >= 0 ; i--) {
+                for (var i=0; i < this.dropspots[side].length ; i++) {
+//                for (var i=this.dropspots[side].length - 1; i >= 0 ; i--) {
                     // set min and max for trigger = trigger is zone between min x and max x (left/right) OR min y and max y (top/bottom)
                     this.dropspots[side][i].setTrigger(t_right, t_right -= triggerWidth);
+
                 }
             },
 
             // Find the dropspot that is triggered for x and y
             getTriggeredDropspot: function(direction, x, y) {
-                var side = null;
+                var side = direction;
                 var co = 0;
+                var dp = [];
                 if (direction == Constants.DIRECTION.UP || direction == Constants.DIRECTION.DOWN) {
                     co = y;
-                    if (y < this.horizontalMiddle) {
-                        side = Constants.SIDE.TOP;
-                    } else {
-                        side = Constants.SIDE.BOTTOM;
-                    }
+                    dp = this.verticalDropspots;
+//                    if (y < this.horizontalMiddle) {
+//                        side = Constants.SIDE.TOP;
+//                    } else {
+//                        side = Constants.SIDE.BOTTOM;
+//                    }
                 } else if (direction == Constants.DIRECTION.LEFT || direction == Constants.DIRECTION.RIGHT) {
                     co = x;
-                    if (x < this.verticalMiddle) {
-                        side = Constants.SIDE.LEFT;
-                    } else {
-                        side = Constants.SIDE.RIGHT;
-                    }
+                    dp = this.horizontalDropspots;
+//                    if (x < this.verticalMiddle) {
+//                        side = Constants.SIDE.LEFT;
+//                    } else {
+//                        side = Constants.SIDE.RIGHT;
+//                    }
                 }
-                if (side != null && this.dropspots[side] != null) {
-                    for (var i = 0; i < this.dropspots[side].length; i++) {
-                        if (this.dropspots[side][i].isTriggered(co)) {
-                            return this.dropspots[side][i];
+                if (dp != null) {
+                    for (var i = 0; i < dp.length; i++) {
+                        if (dp[i].isTriggered(co)) {
+//                            Logger.debug("find triggered hotspot: " + dp[i]["min"] + " - " + dp[i]["max"]);
+                            return dp[i];
                         }
                     }
                 }
                 return null;
+
+            },
+
+            recalculateTriggers: function(direction, x, y, currentDropspot) {
+                Logger.debug("Recalculate triggers");
+                if (currentDropspot == null || !currentDropspot.makeTriggers(x, y, direction)) {
+                    var newDropspot = currentDropspot;
+                    if (direction == Constants.DIRECTION.UP) {
+                        newDropspot = this.verticalDropspots[this.verticalDropspots.length - 1];
+                    } else if (direction == Constants.DIRECTION.DOWN) {
+                        newDropspot = this.verticalDropspots[0];
+                    } else if (direction == Constants.DIRECTION.LEFT) {
+                        newDropspot = this.horizontalDropspots[this.horizontalDropspots.length -1];
+                    } else if (direction == Constants.DIRECTION.RIGHT) {
+                        newDropspot = this.horizontalDropspots[0];
+                    }
+                    Logger.debug("Calculate at border");
+                    newDropspot.makeTriggers(x, y, direction);
+                }
+            },
+
+
+
+            calculateDropspots: function(side, dropspots) {
+                dropspots.push(new dropspot(side, this, dropspots.length));
+
+                if (this.isOuter(side) && this.parent != null) dropspots = this.parent.calculateDropspots(side, dropspots);
+                return dropspots;
             }
+
+
         });
 
 

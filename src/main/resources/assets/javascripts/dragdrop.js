@@ -16,14 +16,15 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.E
     var dropPointerElements = {};
     var lastDropLocation = null;
     var currentDraggedBlock = null;
-
+    var old_direction = Constants.DIRECTION.NONE;
     /*
     * METHODS CALLED WHILE DRAGGING
     **/
 
     var dragStarted = function (blockEvent) {
         Logger.debug("drag started");
-        currentDraggedBlock = Broadcaster.getHooveredBlockForPosition(blockEvent.pageX, blockEvent.pageY).current;
+        old_direction = Constants.DIRECTION.NONE;
+        currentDraggedBlock = Broadcaster.getHooveredBlockForPosition(blockEvent.custom.draggingStart.pageX, blockEvent.custom.draggingStart.pageY).current;
         if (draggingEnabled && currentDraggedBlock != null) {
             createDraggedOverlay(currentDraggedBlock);
             createDropPointerElement("anchor");
@@ -41,25 +42,46 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.E
         if (dragging && (blockEvent.block.current == null || !blockEvent.block.current.canDrag)) {
             hideDropPointerElement("anchor");
             hideDropPointerElement("other");
+            lastDropLocation = null;
+
         }
     };
 
+
+
+    var dragEnterBlock = function (blockEvent) {
+        if (blockEvent.block.current != null) {
+            Logger.debug("Recalculate triggers on enter");
+            blockEvent.block.current.recalculateTriggers(old_direction, blockEvent.pageX, blockEvent.pageY, null);
+        }
+    };
 
     var dragOverBlock = function(blockEvent) {
         if (dragging && blockEvent.block.current != null && blockEvent.block.current.canDrag) {
             // find the triggered dropspot
             // dropspot has an "anchor" block and sometimes "other" (when dropping between 2 columns, 2 rows, 2 blocks)
-            var dropSpot = blockEvent.block.current.getTriggeredDropspot(blockEvent.direction, blockEvent.pageX, blockEvent.pageY);
+            var direction = Broadcaster.mouseDirectionForBlock(blockEvent.block.current);
+            // && direction != Constants.OPPOSITE_DIRECTION[direction]
+            if (direction != old_direction) {
+                Logger.debug("Direction changed " + direction + " from "+ old_direction);
+                blockEvent.block.current.recalculateTriggers(direction, blockEvent.pageX, blockEvent.pageY, lastDropLocation);
+            }
+            old_direction = direction;
+            // Old code drop by triggered zone
+
+            var dropSpot = blockEvent.block.current.getTriggeredDropspot(direction, blockEvent.pageX, blockEvent.pageY);
+
             if (lastDropLocation != dropSpot) {
+
                 lastDropLocation = dropSpot;
                 // We can not drop on ourselves so skip
                 if (lastDropLocation != null) {
+                    Logger.debug("Drospot changed with min: " + dropSpot.min + " - " + dropSpot.max);
                     // show overlays for our droplocation(s)
                     drawDropPointerElement("anchor", lastDropLocation.anchor, lastDropLocation.side);
-                    drawDropPointerElement("other", lastDropLocation.other(), Constants.OPPOSITE_SIDE[lastDropLocation.side]);
+                    drawDropPointerElement("other", lastDropLocation.other, Constants.OPPOSITE_SIDE[lastDropLocation.side]);
                 }
             } else {
-                Logger.debug("Did not change droplocation");
             }
 
         }
@@ -76,10 +98,11 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.E
             // check for null (e.g during abort_drag)
             if (currentDraggedBlock != null && blockEvent.block.current != null && blockEvent.block.current.canDrag) {
                 Logger.debug("Drop block");
-                var dropSpot = blockEvent.block.current.getTriggeredDropspot(blockEvent.direction, blockEvent.pageX, blockEvent.pageY);
+                //var dropSpot = blockEvent.block.current.getTriggeredDropspot(direction, blockEvent.pageX, blockEvent.pageY);
+
                 // If we did not drop on ourself, change location
-                if (!dropSpotIsDraggedBlock(dropSpot, blockEvent)) {
-                    Layouter.changeBlockLocation(currentDraggedBlock, dropSpot.anchor, dropSpot.side);
+                if (!dropSpotIsDraggedBlock(lastDropLocation, blockEvent)) {
+                    Layouter.changeBlockLocation(currentDraggedBlock, lastDropLocation.anchor, lastDropLocation.side);
                 } else {
                     // do nothing. You can not drop on the block you're dragging
                 }
@@ -114,12 +137,12 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.E
         // TODO: How can this happen
         if (currentDraggedBlock == null || dropSpot == null) return true;
         // dragged block equals anchor or other
-        if ((currentDraggedBlock === dropSpot.anchor || currentDraggedBlock === dropSpot.other())) {
+        if ((currentDraggedBlock === dropSpot.anchor || currentDraggedBlock === dropSpot.other)) {
             retVal = true
         } else if (dropSpot.anchor != null && dropSpot.anchor.children.length == 1 && dropSpot.anchor.children[0] === currentDraggedBlock) {
             // We drop a
             retVal = true;
-        } else if (dropSpot.other() != null && dropSpot.other().children.length == 1 && dropSpot.other().children[0] === currentDraggedBlock) {
+        } else if (dropSpot.other != null && dropSpot.other.children.length == 1 && dropSpot.other.children[0] === currentDraggedBlock) {
             retVal = true;
         }
         return retVal;
@@ -264,25 +287,6 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.E
     cssArrowClass[Constants.SIDE.RIGHT] = "glyphicon-arrow-right";
 
 
-    // on hoover block, can start draggingOptions with priority
-    // on leave block, can_not_start draggingOptions
-//    var allowDrag = function(blockEvent) {
-//        if (currentDraggedBlockChanged(blockEvent)) {
-//            Logger.debug("Try to enable drag for blocks");
-//            if (!draggingEnabled && currentDraggedBlock != null && currentDraggedBlock.canLayout)  {
-//                Broadcaster.sendNoTimeout(new Broadcaster.EVENTS.ENABLE_DRAG(200, "blocks.core.DragDrop", dragEnabled));
-//            } else if (draggingEnabled && (currentDraggedBlock == null || !currentDraggedBlock.canLayout)) {
-//                Broadcaster.send(new Broadcaster.EVENTS.DISABLE_DRAG(200, "blocks.core.DragDrop", dragEnabled));
-//            }
-//        }
-//    };
-//
-//    // callback function after request for drag
-//    var dragEnabled = function(drag) {
-//        draggingEnabled = true
-//        $("body").css("cursor", "pointer");
-//    };
-
 
     $(document).on(Broadcaster.EVENTS.START_DRAG, function (event) {
         dragStarted(event)
@@ -313,6 +317,9 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.E
     });
     $(document).on(Broadcaster.EVENTS.DRAG_OVER_BLOCK, function (event) {
         dragOverBlock(event)
+    });
+    $(document).on(Broadcaster.EVENTS.DRAG_ENTER_BLOCK, function (event) {
+        dragEnterBlock(event)
     });
 
     $(document).on(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG, function (event) {
