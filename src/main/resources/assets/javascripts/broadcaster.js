@@ -30,67 +30,110 @@
 blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Elements", "blocks.core.DomManipulation", function (Constants, Elements, DOM) {
     var Broadcaster = this;
     var blocks = {current: null, previous: null};
-    var mediumPoints = {x: 0, y:0, sum: {x: 0, y:0}, total:0, points: []};
+    var directionVector = {x1: 0, y1: 0, x2: 0, y2: 0};
+    var lastPoints = [];
+    var resetDirectionHandler = null;
     var layoutTree = null;
     var layoutParentElement = null;
     var lastMoveEvent = $.Event("mousemove", {pageX:0, pageY:0});
 
+
     $(document).on("mousemove.blocks_broadcaster", function (event) {
+         var direction = calculateDirection(event);
         lastMoveEvent = event;
         lastMoveEvent.block = Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
-        lastMoveEvent.direction = calculateDirection(event);
+        lastMoveEvent.direction = direction;
     });
 
     this.block = function() {
         return blocks;
+    };
+
+    // http://stackoverflow.com/questions/9043805/test-if-two-lines-intersect-javascript-function
+    function intersects(a,b,c,d,p,q,r,s) {
+        var det, gamma, lambda;
+        det = (c - a) * (s - q) - (r - p) * (d - b);
+        if (det === 0) {
+            return false;
+        } else {
+            lambda = ((s - q) * (r - a) + (p - r) * (s - b)) / det;
+            gamma = ((b - d) * (r - a) + (c - a) * (s - b)) / det;
+            return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
+        }
+    }
+
+
+
+    this.mouseDirectionForBlock = function(block) {
+        if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.left, block.top, block.right, block.top)) {
+            return Constants.DIRECTION.UP;
+        } else if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.left, block.bottom, block.right, block.bottom)) {
+            return Constants.DIRECTION.DOWN;
+        } else if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.left, block.top, block.left, block.bottom)) {
+            return Constants.DIRECTION.LEFT;
+        } else if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.right, block.top, block.right, block.bottom)) {
+            return Constants.DIRECTION.RIGHT;
+        } else {
+            return Constants.DIRECTION.NONE;
+        }
     }
 
     // returns the current mouse direction
+    var old_direction = {x: false, y:false};
+    var prevX = -1;
+    var prevY = -1;
+    var distance = 0;
+    var direction = 0;
+    var sins = [];
+    var coss = [];
+    var lengths = [];
+    var times = [];
+    var index = 0;
+    var limit = 20;
+    var variance = 0;
+    var prevTime = new Date().getTime();
+    function updateDistanceAndDirection(curX, curY){
+        var angle = Math.atan2(prevY - curY, prevX - curX);
+        sins[index] = Math.sin(angle);
+        coss[index] = Math.cos(angle);
+        lengths[index] = Math.sqrt((curX-prevX)*(curX-prevX) + (curY-prevY)*(curY-prevY));
+        var time = new Date().getTime();
+        times[index] = time - prevTime;
+
+        variance = 1.0 - Math.sqrt(sum(coss)*sum(coss)+sum(sins)*sum(sins))/sins.length;
+
+        direction = Math.atan2(1/sins.length*sum(sins),1/coss.length*sum(coss));
+        var speed = sum(lengths)/(sum(times)/200);
+        distance = Math.min(Math.max(40, speed), 100);
+        prevTime = time;
+        index = (index+1)%limit;
+        prevX = curX;
+        prevY = curY;
+    }
+
+    var sum = function(array){
+        var s = 0.0;
+        for(var i=0; i<array.length; i++){
+            s += array[i];
+        }
+        return s;
+    }
+
     var calculateDirection = function(event) {
-        var REMEMBER_NR_OF_POINTS = 60;
-        var newPoint = {x: event.pageX, y: event.pageY};
-        if (mediumPoints.total == 0) {
-            mediumPoints.x = newPoint.x;
-            mediumPoints.y = newPoint.y;
-            mediumPoints.points.push(newPoint);
-            mediumPoints.total = 1;
-        }
-        var deltaX = newPoint.x - mediumPoints.x;
-        var deltaY = newPoint.y - mediumPoints.y;
-        var retVal;
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            if (deltaX < 0) {
-                retVal =  Constants.DIRECTION.LEFT;
-            } else {
-                retVal = Constants.DIRECTION.RIGHT;
-            }
-        } else if (Math.abs(deltaX) < Math.abs(deltaY)) {
-            if (deltaY < 0) {
-                retVal = Constants.DIRECTION.UP;
-            } else {
-                retVal = Constants.DIRECTION.DOWN;
-            }
-        } else {
-            retVal = Constants.DIRECTION.NONE;
-        }
+        updateDistanceAndDirection(event.pageX, event.pageY);
+        directionVector.x1 = event.pageX;
+        directionVector.y1 = event.pageY;
+        if (variance < 0.2) {
 
-        if (mediumPoints.total > REMEMBER_NR_OF_POINTS) {
-            var p = mediumPoints.points.shift();
-            mediumPoints.sum.x -= p.x;
-            mediumPoints.sum.y -= p.y;
-            mediumPoints.total -= 1;
+            var cos = (Math.cos(direction) * 10000);
+            var sin = (Math.sin(direction) * 10000);
+            directionVector.x2 = directionVector.x1 - cos;
+            directionVector.y2 = directionVector.y1 - sin;
         }
-        mediumPoints.points.push(newPoint);
-        mediumPoints.sum.x += newPoint.x;
-        mediumPoints.sum.y += newPoint.y;
-        mediumPoints.total += 1;
-
-//        mediumPoints.x = (mediumPoints.sum.x / mediumPoints.total);
-//        mediumPoints.y = (mediumPoints.sum.y / mediumPoints.total);
-        mediumPoints.x = (mediumPoints.x + newPoint.x) / 2;
-        mediumPoints.y = (mediumPoints.y + newPoint.y) / 2;
-
-        return retVal;
+//        Logger.debug(directionVector.x1 + ", "+directionVector.y1+ " - " +directionVector.x2 +", "+ directionVector.y2);
+        var angle = direction * (180/Math.PI);
+//        Logger.debug("Hoek: " + angle + " - variance: " + variance);
+        return direction;
     };
 
     // sets the current active block
@@ -123,12 +166,14 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     };
 
     this.sendNoTimeout = function(eventName, custom) {
+//        Logger.debug(eventName);
         var e = $.Event(eventName);
         e.pageX = lastMoveEvent.pageX;
         e.pageY = lastMoveEvent.pageY;
         e.direction = lastMoveEvent.direction;
         e.block = blocks;
         e.custom = custom;
+        // send the event with jquery
         $(document).triggerHandler(e);
     };
 
@@ -202,6 +247,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
 
             if (DOM.canLayout(parent) || DOM.canEdit(parent)) {
                 var container = new Elements.Container(parent);
+                container.createAllDropspots();
                 Logger.debug(container);
                 layoutTree.push(container);
             } else {
@@ -210,9 +256,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
                     findContainersInParent($(children[i]));
                 }
             }
-//            if (parent.next() != null) {
-//                findContainersInParent(parent.next());
-//            }
+
         };
         findContainersInParent(layoutParentElement);
         Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DID_REFRESH_LAYOUT);
