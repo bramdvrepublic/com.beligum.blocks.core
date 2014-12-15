@@ -11,6 +11,7 @@ import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tika.extractor.ParsingEmbeddedDocumentExtractor;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
@@ -28,8 +29,9 @@ public class ToHtmlVisitor extends AbstractVisitor
     public Node head(Node node, int depth) throws ParseException
     {
         try {
+            node = super.head(node, depth);
             if(isEntity(node) && node instanceof Element) {
-                //TODO BAS: here choices need to be made about can-layout, can-edit, class-layout and instances
+                //TODO BAS: here choices need to be made about can-layout, can-edit
                 Element element = (Element) node;
                 EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
                 Document entityClassDOM = Jsoup.parse(entityTemplateClass.getTemplate(), BlocksConfig.getSiteDomain(), Parser.xmlParser());
@@ -47,12 +49,16 @@ public class ToHtmlVisitor extends AbstractVisitor
                         for (Element classProperty : classProperties) {
                             if (getProperty(entityProperty).contentEquals(getProperty(classProperty))) {
                                 Element entityPropertyCopy = entityProperty.clone();
-                                entityPropertyCopy.removeAttr(ParserConstants.REFERENCE_TO);
                                 classProperty.replaceWith(entityPropertyCopy);
                             }
                         }
                     }
-                    node.replaceWith(entityClassDOM.child(0));
+                    Node classRoot = entityClassDOM.child(0);
+                    for(Attribute attribute : element.attributes()){
+                        classRoot.attr(attribute.getKey(), attribute.getValue());
+                    }
+                    node.replaceWith(classRoot);
+                    node = classRoot;
                 }
                 //if no referencing entities are present in the class-template or , we should just replace this tag with an entity-instance if it is a referencing-tag itself
                 else {
@@ -64,7 +70,7 @@ public class ToHtmlVisitor extends AbstractVisitor
                     }
                 }
             }
-            return super.head(node, depth);
+            return node;
         }
         catch(ParseException e){
             throw e;

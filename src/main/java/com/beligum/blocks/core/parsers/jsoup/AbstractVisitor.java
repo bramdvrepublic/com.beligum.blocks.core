@@ -13,6 +13,8 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.List;
 import java.util.Stack;
 
@@ -22,6 +24,7 @@ import java.util.Stack;
 public class AbstractVisitor
 {
     protected Stack<Node> typeOfStack = new Stack<>();
+    protected URL parentUrl = null;
 
 
     public Node head(Node node, int depth) throws ParseException
@@ -34,10 +37,25 @@ public class AbstractVisitor
 
     public Node tail(Node node, int depth) throws ParseException
     {
-        if (isEntity(node)) {
-            typeOfStack.pop();
+        try {
+            if (isEntity(node)) {
+                typeOfStack.pop();
+                if (parentUrl == null && typeOfStack.isEmpty() && hasResource(node)) {
+                    parentUrl = new URL(getResource(node));
+                }
+            }
+            return node;
+        }catch(MalformedURLException e){
+            throw new ParseException("Bad resource found: " + getResource(node), e);
         }
-        return node;
+    }
+
+    /**
+     *
+     * @return the resource-url of the first entity-parent which has a resource found in the html currently being parsed
+     */
+    public URL getParentUrl(){
+        return parentUrl;
     }
 
     /**
@@ -64,6 +82,9 @@ public class AbstractVisitor
     }
 
     protected Element replaceElementWithEntityReference(Element element, EntityTemplate entity){
+        if(isEntity(element) && StringUtils.isEmpty(getResource(element))){
+            element.attr(ParserConstants.RESOURCE, entity.getUrl().toString());
+        }
         //TODO: sometimes here an absolute (versioned) template should be saved, when we don't always want to show the last version of a referenced entity
         return replaceElementWithReference(element, entity.getUnversionedId());
     }

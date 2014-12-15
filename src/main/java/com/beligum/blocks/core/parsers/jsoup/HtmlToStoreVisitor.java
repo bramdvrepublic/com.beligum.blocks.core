@@ -1,6 +1,7 @@
 package com.beligum.blocks.core.parsers.jsoup;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
@@ -28,17 +29,25 @@ public class HtmlToStoreVisitor extends AbstractVisitor
     public Node tail(Node node, int depth) throws ParseException
     {
         try {
-            String resourceUrl = getResource(node);
-            if (!StringUtils.isEmpty(resourceUrl) && isEntity(node) && node instanceof Element) {
-                RedisID resourceId = new RedisID(new URL(resourceUrl), RedisID.LAST_VERSION);
-                EntityTemplate storedEntityTemplate = Redis.getInstance().fetchEntityTemplate(resourceId);
-                RedisID newVersionId = new RedisID(new URL(resourceUrl));
+            if (isEntity(node) && node instanceof Element) {
+                String resourceUrl = getResource(node);
                 EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
-                EntityTemplate currentEntityTemplate = new EntityTemplate(newVersionId, entityTemplateClass, node.outerHtml());
-                if(currentEntityTemplate.equals(storedEntityTemplate)){
-                    currentEntityTemplate = storedEntityTemplate;
+                RedisID resourceId;
+                if(StringUtils.isEmpty(resourceUrl)) {
+                    resourceId = RedisID.renderNewEntityTemplateID(entityTemplateClass);
+                    resourceUrl = resourceId.getUrl().toString();
+                    node.attr(ParserConstants.RESOURCE, resourceUrl);
                 }
                 else{
+                    resourceId = new RedisID(new URL(resourceUrl), RedisID.LAST_VERSION);
+                }
+                EntityTemplate storedEntityTemplate = Redis.getInstance().fetchEntityTemplate(resourceId);
+                RedisID newVersionId = new RedisID(new URL(resourceUrl));
+                EntityTemplate currentEntityTemplate = new EntityTemplate(newVersionId, entityTemplateClass, node.outerHtml());
+                if (currentEntityTemplate.equals(storedEntityTemplate)) {
+                    currentEntityTemplate = storedEntityTemplate;
+                }
+                else {
                     Redis.getInstance().save(currentEntityTemplate);
                 }
                 node = replaceElementWithEntityReference((Element) node, currentEntityTemplate);

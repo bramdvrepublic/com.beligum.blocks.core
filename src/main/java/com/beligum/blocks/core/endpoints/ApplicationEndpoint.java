@@ -69,6 +69,8 @@ public class ApplicationEndpoint
         return Response.ok("OK: all templates loaded").build();
     }
 
+
+
     //using regular expression to let all requests to undefined paths end up here
     @Path("/{randomPage:.+}")
     @GET
