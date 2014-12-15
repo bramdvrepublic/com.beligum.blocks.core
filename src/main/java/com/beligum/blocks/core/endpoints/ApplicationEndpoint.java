@@ -30,6 +30,15 @@ public class ApplicationEndpoint
         return Response.ok(indexTemplate).build();
     }
 
+    @Path("/finder")
+    @GET
+    public Response finder()
+    {
+        Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/finder.html");
+        //        TypeCacher.instance().reset();
+        return Response.ok(indexTemplate).build();
+    }
+
     @Path("/mot/{name}")
     @GET
     public Response mot(@PathParam("name") String name)

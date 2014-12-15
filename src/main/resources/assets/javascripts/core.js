@@ -13,6 +13,14 @@ blocks.plugin("blocks.core.Constants", function() {
         NONE: 0
     };
 
+    this.OPPOSITE_DIRECTION = {
+        1: 2,
+        2: 1,
+        4: 3,
+        3: 4,
+        0: 0
+    };
+
     this.DRAGGING = {
         WAITING: 1,
         YES: 2,

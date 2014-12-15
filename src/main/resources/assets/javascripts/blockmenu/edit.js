@@ -1,8 +1,6 @@
 blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overlay", "blocks.core.BlockMenu", function(Broadcaster, Overlay, Menu) {
-    var edit = this;
+    var Edit = this;
     var editor = null;
-
-    var button = $('<div type="button" class="btn btn-default"><i class="glyphicon glyphicon-pencil"></i></div>');
 
     var isIframe = function(currentBlock) {
         return currentBlock.element.find("iframe").length == 1;
@@ -16,19 +14,11 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
         return retVal;
     };
 
-    Menu.addButton({
-        element: button,
-        priority: 100,
-        enabled: enabled
-    });
 
-    button.click(function() {
-        edit.editBlock(Menu.currentBlock());
-    });
 
     // Double click is edit
-    $(document).on(Broadcaster.EVENTS.DOUBLE_CLICK_BLOCK, function(event) {
-        edit.editBlock(event.block.current);
+    $(document).on(Broadcaster.EVENTS.CLICK_BLOCK, function(event) {
+        Edit.editBlock(event.block.current);
     });
 
     this.editBlock = function(block) {

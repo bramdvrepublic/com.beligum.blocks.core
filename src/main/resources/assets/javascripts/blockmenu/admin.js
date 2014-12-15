@@ -4,7 +4,6 @@
 
 blocks.plugin("blocks.core.Admin", ["blocks.core.BlockMenu", "blocks.core.Overlay", "blocks.core.Broadcaster", function(Menu, Overlay, Broadcaster) {
 
-    var button = $('<div type="button" class="btn btn-default"><i class="glyphicon glyphicon-edit"></i></div>');
 
     var registeredPlugins = [];
     var selectedPlugin = null;
@@ -22,12 +21,6 @@ blocks.plugin("blocks.core.Admin", ["blocks.core.BlockMenu", "blocks.core.Overla
         if(!retVal) selectedPlugin = null;
         return retVal;
     };
-
-    Menu.addButton({
-        element: button,
-        priority: 100,
-        enabled: enabled
-    })
 
     var makeAbsolute = function(element, width, height) {
         element.css("width", width);
@@ -52,9 +45,16 @@ blocks.plugin("blocks.core.Admin", ["blocks.core.BlockMenu", "blocks.core.Overla
         element.css("transition", "");
         element.css("-webkit-transform-style", "");
         element.css("transform-style", "");
-    }
+    };
 
-    button.click(function() {
+    $(document).on(Broadcaster.EVENTS.DOUBLE_CLICK_BLOCK, function(blockEvent) {
+        if (blockEvent.block.current != null && enabled(blockEvent.block.current)) {
+            startAdmin(blockEvent.block.current);
+        }
+    });
+
+
+    var startAdmin = function(block) {
         // insert html
         // store the current block before we deactivate the mouse
         var block = Menu.currentBlock();
@@ -161,7 +161,7 @@ blocks.plugin("blocks.core.Admin", ["blocks.core.BlockMenu", "blocks.core.Overla
         // turn block around
         //
 
-    });
+    };
 
 
 

@@ -66,7 +66,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
     // dragging options, kept here for parsedContent while waiting for drag
     var draggingStatus = Constants.DRAGGING.NO;
     var draggingStart = null;
-    var clickStarted = false;
+    var dblClickFound = false;
     var currentBlock = null;
     // array of coordinates {x, y} from the last mouseEvents, used to calculate the direction
     var config = this.config;
@@ -74,7 +74,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
 
     var resetMouse = function () {
         windowFrame = {width: document.innerWidth, height: document.innerHeight};
-        clickStarted = false;
+        dblClickFound = false;
         draggingStart = null;
         draggingStatus = Constants.DRAGGING.NO;
         currentBlock = null;
@@ -93,10 +93,6 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
 
     var mouseDown = function (event) {
         if (active) {
-            clickStarted = true;
-            setTimeout(function() {
-                clickStarted = false;
-            }, config.CLICK_TIMEOUT);
 
             // check for left mouse click
             if (event.which == 1) {
@@ -137,7 +133,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
                     Broadcaster.sendNoTimeout(Broadcaster.EVENTS.END_DRAG);
                 }
             }
-            if (clickStarted) {
+            if (dblClickFound) {
 
             }
             resetMouse();
@@ -214,8 +210,6 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
         }
     };
 
-
-
     var disallowDrag = function() {
         Logger.debug("Dragging not allowed");
         draggingStatus = Constants.DRAGGING.NOT_ALLOWED;
@@ -248,8 +242,8 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
         $("html").css("-moz-user-select", "text");
         $("html").css("-ms-user-select", "text");
         $("html").css("user-select", "text");
-        $("html").attr("oncontextmenu", "");
-        $("html").attr("onselectstart", "return true;");
+        $("html").removeAttr("oncontextmenu", "");
+        $("html").removeAttr("onselectstart");
     }
 
     var registerMouseEvents = function () {
@@ -266,7 +260,21 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
             });
 
             $(document).on("dblclick.blocks_core", function(event) {
+                dblClickFound = true;
                 Broadcaster.send(Broadcaster.EVENTS.DOUBLE_CLICK_BLOCK);
+
+            });
+
+            $(document).on("click.blocks_core", function(event) {
+                if (active) {
+                    setTimeout(function () {
+                        if (!dblClickFound) {
+                            Broadcaster.send(Broadcaster.EVENTS.CLICK_BLOCK);
+                            dblClickFound = false;
+                        }
+                    }, 300);
+                }
+
             });
 
             $(document).mouseleave(function(){
@@ -284,6 +292,8 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
             $(document).off("mousedown.blocks_core");
             $(document).off("mouseup.blocks_core");
             $(document).off("mousemove.blocks_core");
+            $(document).off("dblclick.blocks_core");
+            $(document).off("click.blocks_core");
         }
     };
 

@@ -20,6 +20,7 @@ blocks.plugin("blocks.core.BlockMenu.delete", ["blocks.core.BlockMenu", "blocks.
     })
 
     button.on("click", function(event) {
+        event.stopPropagation();
         var currentBlock = Menu.currentBlock();
         Notification.alert("Delete", "<p>You will now delete this block!</p>", function() {
             Layouter.removeBlock(currentBlock);

@@ -19,6 +19,7 @@ blocks.plugin("blocks.core.BlockMenu.new", ["blocks.core.BlockMenu", "blocks.cor
     }
 
     button.on("click", function(event) {
+        event.stopPropagation();
         var currentBlock = Menu.currentBlock();
         $.getJSON("/entities/list").success(function(data) {
             var optionList = $('<select class="form-control" id="blocktypeselect"></div>');
