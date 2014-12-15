@@ -11,6 +11,7 @@ public class ParserConstants
     public final static String CAN_EDIT = "can-edit";
 
     public final static String DEFAULT_ENTITY_TEMPLATE_CLASS = "default";
+    public final static String DEFAULT_PAGE_TEMPLATE = "default";
 
 
     /**the attribute indicating a html-file defines a page-template*/

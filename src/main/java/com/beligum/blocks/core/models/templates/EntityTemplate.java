@@ -1,11 +1,11 @@
 package com.beligum.blocks.core.models.templates;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.DatabaseConstants;
-import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.DeserializationException;
-import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.ifaces.Storable;
 import com.beligum.core.framework.utils.Logger;
@@ -13,7 +13,6 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.net.URL;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -22,8 +21,9 @@ import java.util.Map;
 public class EntityTemplate extends AbstractTemplate implements Storable
 {
     /**the class of which this viewable is a viewable-instance*/
-    //TODO BAS: is this actually a class-object, or just a name?
     protected final EntityTemplateClass entityTemplateClass;
+
+    private PageTemplate pageTemplate;
 
     /**
      *
@@ -38,11 +38,13 @@ public class EntityTemplate extends AbstractTemplate implements Storable
         //a entity cannot be altered by the client, so it always is final
         super(id, entityTemplateClass.getTemplate());
         this.entityTemplateClass = entityTemplateClass;
+        this.pageTemplate = entityTemplateClass.getPageTemplate();
     }
 
     public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, String template){
         super(id, template);
         this.entityTemplateClass = entityTemplateClass;
+        this.pageTemplate = entityTemplateClass.getPageTemplate();
     }
 
     /**
@@ -58,6 +60,10 @@ public class EntityTemplate extends AbstractTemplate implements Storable
                 newInstance.template = hash.get(DatabaseConstants.TEMPLATE);
                 newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
                 newInstance.creator = hash.get(DatabaseConstants.CREATOR);
+                PageTemplate pageTemplate = PageTemplateCache.getInstance().get(hash.get(DatabaseConstants.PAGE_TEMPLATE));
+                if(pageTemplate.getName() != ParserConstants.DEFAULT_PAGE_TEMPLATE) {
+                    newInstance.pageTemplate = pageTemplate;
+                }
                 //TODO BAS: this should go to AbstractTemplate: here use Field.java or something of the sort, should make sure the rest of the hash (like application version and creator) is filled in, even if not all fields are present in the hash
 
                 return newInstance;
@@ -91,16 +97,13 @@ public class EntityTemplate extends AbstractTemplate implements Storable
         return this.getId().getUrl();
     }
 
-//    /**
-//     *
-//     * @return all non-final children of this entity that aren't present in it's viewable-class (and thus already in the application-cache)
-//     */
-//    public HashSet<Entity> getNotCachedNonFinalChildren(){
-//        HashSet<Entity> notCachedNonFinalChildren = this.getAllNonFinalChildren();
-//        Set<Entity> cachedNonFinalChildren = this.getViewableClass().getAllNonFinalChildren();
-//        notCachedNonFinalChildren.removeAll(cachedNonFinalChildren);
-//        return notCachedNonFinalChildren;
-//    }
+    /**
+     *
+     * @return the default page-template this entity-template should be rendered in
+     */
+    public PageTemplate getPageTemplate(){
+        return this.pageTemplate;
+    }
 
 
     /**
@@ -127,11 +130,20 @@ public class EntityTemplate extends AbstractTemplate implements Storable
     @Override
     public boolean equals(Object obj)
     {
-        if(obj instanceof EntityTemplate) {
-            return super.equals(obj);
+        if(!(obj instanceof EntityTemplate)) {
+            return false;
         }
         else{
-            return false;
+            boolean equals = super.equals(obj);
+            if(!equals){
+                return false;
+            }
+            else{
+                EntityTemplate templObj = (EntityTemplate) obj;
+                EqualsBuilder significantFieldsSet = new EqualsBuilder();
+                significantFieldsSet = significantFieldsSet.append(pageTemplate, templObj.pageTemplate);
+                return significantFieldsSet.isEquals();
+            }
         }
     }
 
@@ -143,6 +155,10 @@ public class EntityTemplate extends AbstractTemplate implements Storable
     @Override
     public int hashCode()
     {
-        return super.hashCode();
+        int hashCode = super.hashCode();
+        HashCodeBuilder significantFieldsSet = new HashCodeBuilder(3, 41);
+        significantFieldsSet = significantFieldsSet.appendSuper(hashCode)
+                                                   .append(this.pageTemplate);
+        return significantFieldsSet.toHashCode();
     }
 }

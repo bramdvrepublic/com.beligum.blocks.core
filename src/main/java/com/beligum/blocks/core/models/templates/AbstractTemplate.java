@@ -130,7 +130,6 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
         HashCodeBuilder significantFieldsSet = new HashCodeBuilder(7, 31);
         significantFieldsSet = significantFieldsSet.append(template)
                         .append(this.getUnversionedId())
-                                        //                                                   .append(this.getTemplateVariableName())
                         .append(this.creator)
                         .append(this.applicationVersion);
         return significantFieldsSet.toHashCode();

@@ -29,3 +29,14 @@ Is done in 4 visiting-lines:
  - The only exceptions TemplateParser.class throws (publicly) are ParseExceptions. Their cause can of course be all sorts of other exceptions.
  - The only exceptions AbstractTemplatesCache.class throws (publicly) are CacheExceptions. Their cause can of course be all sorts of other exceptions.
  - The only exceptions RedisID.class throws (publicly) are IDExceptions. Their cause can of course be all sorts of other exceptions.
+ 
+#Page-templates
+ - Should be defined using "template=..."- and "template-content"-attributes
+ - The last found "default"-template (a html-file starting with \<html template="default"\>) is used as the default-template. If no such html-file is found in the templates-directory, we use: 
+  \<!DOCTYPE\>
+  \<html\>
+  \<head\> \</head\>
+  \<body\>
+     \<div template-content reference-to="entity\> \</div\>
+  \</body\>
+  \</html\>
