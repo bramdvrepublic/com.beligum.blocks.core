@@ -18,6 +18,7 @@
     </div>
     <div class="row">
         <form method="POST" action="/entities">
+            <input type="hidden" name="page-url" value="$entityUrl"/>
             <div class="col-md-2">
                 <select name="page-class-name" id="class-selection" class="form-control">
                     #foreach($entityClass in $entityClasses)

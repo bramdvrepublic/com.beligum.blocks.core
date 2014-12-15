@@ -23,6 +23,10 @@ public class ParserConstants
 
     /**the name of the variable in the new-page template, containing all possible entity-classes*/
     public static final String ENTITY_CLASSES = "entityClasses";
+    /**the name of the variable in the new-page template, containing the url of the new Entity*/
+    public static final String ENTITY_URL = "entityUrl";
+
+
     /**the form a reference-node takes inside parsed templates*/
     public static final String REFERENCE_TO = "reference-to";
     /**the keyword (attribute) indicating a certain template-class should be used as bleuprint for all instances*/
