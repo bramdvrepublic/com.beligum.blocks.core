@@ -153,6 +153,9 @@ public class Redis implements Closeable
                 return null;
             }
             Map<String, String> entityHash = redisClient.hgetAll(id.getVersionedId());
+            if(entityHash.isEmpty()){
+                return null;
+            }
             if(type == EntityTemplate.class){
                 return EntityTemplate.createInstanceFromHash(id, entityHash);
             }

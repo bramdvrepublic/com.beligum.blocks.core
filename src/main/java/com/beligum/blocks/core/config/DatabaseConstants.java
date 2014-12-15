@@ -18,6 +18,6 @@ public class DatabaseConstants
     public final static String ENTITY_TEMPLATE_CLASS = "entityTemplateClass";
     /**the suffix used to indicate a entities meta-data-hash in db, it is the suffix used to distinguish the page-info from the page-template (it's rows and blocks)*/
     public final static String HASH_SUFFIX = "hash";
-    /**the doctype field-name*/
-    public final static String DOC_TYPE = "docType";
+    /**the default page-template field-name for an entity-class*/
+    public final static String PAGE_TEMPLATE = "pageTemplate";
 }

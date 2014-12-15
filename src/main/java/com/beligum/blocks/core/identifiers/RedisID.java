@@ -5,6 +5,7 @@ import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.IDException;
+import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.core.framework.utils.Logger;
@@ -294,9 +295,13 @@ public class RedisID extends ID
     public static RedisID renderNewPageTemplateID(String pageTemplateName) throws IDException
     {
         try{
-            return new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName));
-        }catch(MalformedURLException e){
-            throw new IDException("Specified site-domain doesn't seem to be a correct url: " + BlocksConfig.getSiteDomain(), e);
+            RedisID newId = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName));
+            while(Redis.getInstance().fetchPageTemplate(newId) != null){
+                newId = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName));
+            }
+            return newId;
+        }catch(MalformedURLException | RedisException e){
+            throw new IDException("Couldn't render new page-template-id.", e);
         }
     }
 
