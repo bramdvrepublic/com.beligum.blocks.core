@@ -4,6 +4,8 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.NodeVisitor;
 
+import java.net.URL;
+
 /**
  * Created by bas on 26.11.14.
  * Based on org.jsoup.select.NodeTraversor.
@@ -15,6 +17,8 @@ public class Traversor
 {
     private AbstractVisitor visitor;
 
+    private URL pageUrl = null;
+
     /**
      * Create a new traversor.
      * @param visitor a class implementing the {@link NodeVisitor} interface, to be called when visiting each node.
@@ -22,6 +26,14 @@ public class Traversor
     public Traversor(AbstractVisitor visitor)
     {
         this.visitor = visitor;
+    }
+
+    /**
+     *
+     * @return the url of the first entity encountered in te html, null if none is found or no traverse has been done yet
+     */
+    public URL getPageUrl(){
+        return pageUrl;
     }
 
     /**
@@ -46,8 +58,10 @@ public class Traversor
                 }
                 node = visitor.tail(node, depth);
 
-                if (node == root)
+                if (node == root) {
+                    pageUrl = visitor.getParentUrl();
                     break;
+                }
                 node = node.nextSibling();
             }
         }

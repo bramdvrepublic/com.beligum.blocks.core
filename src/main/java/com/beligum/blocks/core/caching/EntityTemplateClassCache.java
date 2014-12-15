@@ -57,6 +57,11 @@ public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTempl
         }
     }
 
+    public void reset() throws CacheException {
+        R.cacheManager().getApplicationCache().put(CacheKeys.ENTITY_CLASSES, new HashMap<String, EntityTemplateClass>());
+        this.fillCache();
+    }
+
     /**
      * Get the entity-template-class with a certain name from the application cache.
      * If that entity-template-class does not exist, return the default entity-class.

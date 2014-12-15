@@ -20,12 +20,21 @@ blocks.plugin("blocks.core.Notification", ["blocks.core.Broadcaster", function(B
         };
 
         if (cancelFunction != null) {
-            closeButton.on("click", function() {hideDialog(cancelFunction)});
-            closeIcon.on("click", function() {hideDialog(cancelFunction)});
+            closeButton.on("click", function(event) {
+                event.stopPropagation();
+                hideDialog(cancelFunction)});
+            closeIcon.on("click", function(event) {
+                event.stopPropagation();
+                hideDialog(cancelFunction)});
             modalFooter.append(closeButton)
         } else {
-            okButton.on("click", function() {hideDialog(okFunction)});
-            closeIcon.on("click", function() {hideDialog(okFunction)});
+            okButton.on("click", function() {
+                event.stopPropagation();
+                hideDialog(okFunction)});
+            closeIcon.on("click", function() {
+                event.stopPropagation();
+                hideDialog(function(){})}
+            );
         }
 
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);

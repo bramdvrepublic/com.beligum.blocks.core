@@ -24,16 +24,21 @@ blocks.plugin("blocks.core.BlockMenu.new", ["blocks.core.BlockMenu", "blocks.cor
         $.getJSON("/entities/list").success(function(data) {
             var optionList = $('<select class="form-control" id="blocktypeselect"></div>');
             var label = '<label for="inputPassword2" class="sr-only">Type block : </label>';
-            for(var key in blocks) {
-                optionList.append('<option value="'+key+'">'+key+'</option>');
+            for(var i=0; i< data.length; i++) {
+                optionList.append('<option value="'+data[i]+'">'+data[i]+'</option>');
             }
             var list = $(modalText);
             list.find(".form-group").empty().append(label).append(optionList);
             Notification.alert("Add new block", list.html(), function(content) {
                 var value = content.find("#blocktypeselect").val();
+                if (value != null && value != "") {
+                    $.getJSON("/entities/class/" + value).success(function(data) {
+                        //var newBlock = blocks[value];
+                        var x= 0;
+                        Layouter.addNewBlockAtLocation($(data.template), currentBlock);
+                    });
+                }
 
-                var newBlock = blocks[value];
-                Layouter.addNewBlockAtLocation($(newBlock[0].outerHTML), currentBlock);
             });
         });
 

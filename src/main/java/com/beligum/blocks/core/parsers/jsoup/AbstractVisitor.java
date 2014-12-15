@@ -13,6 +13,8 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.List;
 import java.util.Stack;
 
@@ -22,6 +24,7 @@ import java.util.Stack;
 public class AbstractVisitor
 {
     protected Stack<Node> typeOfStack = new Stack<>();
+    protected URL parentUrl = null;
 
 
     public Node head(Node node, int depth) throws ParseException
@@ -34,10 +37,25 @@ public class AbstractVisitor
 
     public Node tail(Node node, int depth) throws ParseException
     {
-        if (isEntity(node)) {
-            typeOfStack.pop();
+        try {
+            if (isEntity(node)) {
+                typeOfStack.pop();
+                if (parentUrl == null && typeOfStack.isEmpty() && hasResource(node)) {
+                    parentUrl = new URL(getResource(node));
+                }
+            }
+            return node;
+        }catch(MalformedURLException e){
+            throw new ParseException("Bad resource found: " + getResource(node), e);
         }
-        return node;
+    }
+
+    /**
+     *
+     * @return the resource-url of the first entity-parent which has a resource found in the html currently being parsed
+     */
+    public URL getParentUrl(){
+        return parentUrl;
     }
 
     /**
@@ -64,6 +82,9 @@ public class AbstractVisitor
     }
 
     protected Element replaceElementWithEntityReference(Element element, EntityTemplate entity){
+        if(isEntity(element) && StringUtils.isEmpty(getResource(element))){
+            element.attr(ParserConstants.RESOURCE, entity.getUrl().toString());
+        }
         //TODO: sometimes here an absolute (versioned) template should be saved, when we don't always want to show the last version of a referenced entity
         return replaceElementWithReference(element, entity.getUnversionedId());
     }
@@ -156,7 +177,7 @@ public class AbstractVisitor
             return false;
         }
         boolean retVal = false;
-        if (node.hasAttr("typeof")) {
+        if (node.hasAttr(ParserConstants.TYPE_OF)) {
             retVal = true;
         }
         return retVal;
@@ -172,7 +193,7 @@ public class AbstractVisitor
             return false;
         }
         boolean retVal = false;
-        if (node.hasAttr("property")) {
+        if (node.hasAttr(ParserConstants.PROPERTY)) {
             retVal = true;
         }
         return retVal;
@@ -188,7 +209,7 @@ public class AbstractVisitor
             return false;
         }
         else{
-            return node.hasAttr("resource");
+            return node.hasAttr(ParserConstants.RESOURCE);
         }
     }
 
@@ -199,7 +220,7 @@ public class AbstractVisitor
      */
     public String getResource(Node node){
         if(hasResource(node)){
-            return node.attr("resource");
+            return node.attr(ParserConstants.RESOURCE);
         }
         else{
             return null;
@@ -213,7 +234,7 @@ public class AbstractVisitor
      */
     public String getTypeOf(Node entityNode) {
         if (hasTypeOf(entityNode)) {
-            return entityNode.attr("typeof");
+            return entityNode.attr(ParserConstants.TYPE_OF);
         }
         else if(isProperty(entityNode)){
             return ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS;
@@ -245,7 +266,7 @@ public class AbstractVisitor
             return false;
         }
         boolean retVal = false;
-        if (element.hasAttr("resource")) {
+        if (element.hasAttr(ParserConstants.RESOURCE)) {
             retVal = true;
         }
         return retVal;
@@ -265,70 +286,6 @@ public class AbstractVisitor
         }
     }
 
-    public boolean isLayoutable(Element node) {
-        if(node == null){
-            return false;
-        }
-        boolean retVal = false;
-        if (node.hasAttr("can-layout")) {
-            retVal = true;
-        }
-        return retVal;
-    }
-
-    public boolean isReplaceable(Element node) {
-        if(node == null){
-            return false;
-        }
-        boolean retVal = false;
-        if (node.hasAttr("can-replace")) {
-            retVal = true;
-        }
-        return retVal;
-    }
-
-    public boolean isBootstrapContainer(Element node) {
-        if(node == null){
-            return false;
-        }
-        return node.hasClass("container");
-    }
-
-    public boolean isBootstrapRow(Element node) {
-        if(node == null){
-            return false;
-        }
-        return node.hasClass("row");
-    }
-
-    public boolean isBootstrapColumn(Element node) {
-        if(node == null){
-            return false;
-        }
-        boolean retVal = false;
-        for (String cName: node.classNames()) {
-            if (cName.startsWith("col-")) {
-                retVal = true;
-                break;
-            }
-        }
-        return retVal;
-    }
-
-    public boolean isBootstrapLayout(Element node) {
-        return isBootstrapRow(node) || isBootstrapContainer(node) || isBootstrapColumn(node);
-    }
-    public boolean isBootstrapLayout(List<Element> elements) {
-        boolean retVal = true;
-        for (Element el: elements) {
-            if (!isBootstrapLayout(el)) {
-                retVal = false;
-                break;
-            }
-        }
-        return retVal;
-    }
-
     /**
      *
      * @param node
@@ -336,10 +293,10 @@ public class AbstractVisitor
      */
     public String getProperty(Node node) {
         if(isProperty(node)) {
-            return node.attr("property");
+            return node.attr(ParserConstants.PROPERTY);
         }
         else{
-            return "";
+            return null;
         }
     }
 
@@ -356,23 +313,23 @@ public class AbstractVisitor
         return retVal;
     }
 
-    public boolean isEditable(Element node) {
+    public boolean isLayoutable(Element node) {
         if(node == null){
             return false;
         }
         boolean retVal = false;
-        if (node.hasAttr("can-edit")) {
+        if (node.hasAttr(ParserConstants.CAN_LAYOUT)) {
             retVal = true;
         }
         return retVal;
     }
 
-    public boolean isInlineEditable(Element node) {
+    public boolean isEditable(Element node) {
         if(node == null){
             return false;
         }
         boolean retVal = false;
-        if (node.hasAttr("can-edit-inline")) {
+        if (node.hasAttr(ParserConstants.CAN_EDIT)) {
             retVal = true;
         }
         return retVal;
@@ -408,9 +365,47 @@ public class AbstractVisitor
 
     }
 
-    public boolean isMutable(Element node) {
-        return isLayoutable(node) || isReplaceable(node) || isEditable(node) || isInlineEditable(node);
-    }
 
+//    public boolean isBootstrapContainer(Element node) {
+//        if(node == null){
+//            return false;
+//        }
+//        return node.hasClass("container");
+//    }
+//
+//    public boolean isBootstrapRow(Element node) {
+//        if(node == null){
+//            return false;
+//        }
+//        return node.hasClass("row");
+//    }
+//
+//    public boolean isBootstrapColumn(Element node) {
+//        if(node == null){
+//            return false;
+//        }
+//        boolean retVal = false;
+//        for (String cName: node.classNames()) {
+//            if (cName.startsWith("col-")) {
+//                retVal = true;
+//                break;
+//            }
+//        }
+//        return retVal;
+//    }
+//
+//    public boolean isBootstrapLayout(Element node) {
+//        return isBootstrapRow(node) || isBootstrapContainer(node) || isBootstrapColumn(node);
+//    }
+//    public boolean isBootstrapLayout(List<Element> elements) {
+//        boolean retVal = true;
+//        for (Element el: elements) {
+//            if (!isBootstrapLayout(el)) {
+//                retVal = false;
+//                break;
+//            }
+//        }
+//        return retVal;
+//    }
 
 }

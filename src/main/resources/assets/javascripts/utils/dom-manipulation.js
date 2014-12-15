@@ -31,7 +31,15 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
     }
 
     this.isColumn = function(element) {
-        return element.hasClass(Constants.COLUMN_CLASS);
+        var retVal = false
+        var classList = element[0].className.split(/\s+/);
+        for (var i = 0; i < classList.length; i++) {
+            if (classList[i].indexOf(Constants.COLUMN_WIDTH_CLASS) == 0) {
+                retVal = true;
+            }
+        }
+        //return element.hasClass(Constants.COLUMN_CLASS);
+        return retVal;
     }
 
     this.isContainer = function(element) {

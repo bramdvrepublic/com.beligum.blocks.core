@@ -9,5 +9,7 @@ function save() {
 //        }),
         data: html,
         url: "/entities" + document.location.pathname
+    }).success(function(data) {
+        location.href = data;
     });
 }
