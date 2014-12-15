@@ -12,6 +12,7 @@ import com.beligum.blocks.core.parsers.jsoup.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
 import org.jsoup.select.Elements;
 
@@ -46,7 +47,7 @@ public class TemplateParser
     /**
      * Save a new entity-template-instance of class 'entityTempalteClass' to db, and also all it's children.
      * @param entityTemplateClass
-     * @return true if save succeeded
+     * @return the url of the freshly saved template
      */
     public static URL saveNewEntityTemplateToDb(EntityTemplateClass entityTemplateClass) throws ParseException
     {
@@ -81,30 +82,22 @@ public class TemplateParser
         return DOM.outerHtml();
     }
 
-    public static void updateEntity(URL url, String html) throws ParseException
+    public static String renderEntityClass(EntityTemplateClass entityTemplateClass) throws ParseException
     {
-        try{
-            RedisID newVersion = new RedisID(url);
-            Document newDOM = parse(html);
-            //TODO BAS: this should be something of the form
-            Traversor traversor = new Traversor(new HtmlToStoreVisitor());
-            traversor.traverse(newDOM);
-        }
-        catch(IDException e){
-            throw new ParseException("Could not create a new version for '" + url + "'.", e);
-        }
+        Document classDOM = parse(entityTemplateClass.getTemplate());
+        Traversor traversor = new Traversor(new ToHtmlVisitor());
+        Node classRoot = classDOM.child(0);
+        traversor.traverse(classRoot);
+        return classDOM.outerHtml();
     }
 
-    //    public Set<String> getChildIdsFromTemplate(String template)
-    //    {
-    //        Set<String> childIds = new HashSet<>();
-    //        Document templateDOM = Jsoup.parse(template, BlocksConfig.getSiteDomain(), Parser.xmlParser());
-    //        Elements children = templateDOM.select("[" + ParserConstants.REFERENCE_TO + "]");
-    //        for(Element child : children){
-    //            childIds.add(child.attr(ParserConstants.REFERENCE_TO));
-    //        }
-    //        return childIds;
-    //    }
+    public static URL updateEntity(String html) throws ParseException
+    {
+        Document newDOM = parse(html);
+        Traversor traversor = new Traversor(new HtmlToStoreVisitor());
+        traversor.traverse(newDOM);
+        return traversor.getPageUrl();
+    }
 
     /**
      * Parse html to jsoup-document, using xml-parser

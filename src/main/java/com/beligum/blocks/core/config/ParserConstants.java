@@ -6,9 +6,9 @@ package com.beligum.blocks.core.config;
  */
 public class ParserConstants
 {
-    public final static String LAYOUTABLE = "can-layout";
-    public final static String CREATE_ENABLED = "can-create";
-    public final static String EDITABLE = "can-edit";
+    public final static String CAN_LAYOUT = "can-layout";
+    public final static String CAN_CREATE = "can-create";
+    public final static String CAN_EDIT = "can-edit";
 
     public final static String DEFAULT_ENTITY_TEMPLATE_CLASS = "default";
 
@@ -27,4 +27,12 @@ public class ParserConstants
     public static final String REFERENCE_TO = "reference-to";
     /**the keyword (attribute) indicating a certain template-class should be used as bleuprint for all instances*/
     public static final String BLEUPRINT = "bleuprint";
+
+    /**
+     * RDFa-constants
+     */
+    public static final String RESOURCE = "resource";
+    public static final String PROPERTY = "property";
+    public static final String TYPE_OF = "typeof";
+
 }

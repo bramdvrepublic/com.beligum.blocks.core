@@ -39,19 +39,18 @@ public class FileToCacheVisitor extends AbstractVisitor
                 EntityTemplateClass entityTemplateClass = cacheEntityTemplateClassFromNode(element);
                 if(isProperty(element)) {
                     EntityTemplate propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element)), entityTemplateClass, element.outerHtml());
-                    //TODO BAS: only when the instance doesn't exist yet, the save should be performed!!!
+                    //TODO BAS SH: only when the instance doesn't exist yet, the save should be performed!!!
                     Redis.getInstance().save(propertyInstance);
                     node = replaceElementWithPropertyReference(element);
                 }
                 else if(this.typeOfStack.size()>0){
                     EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass);
-                    //TODO BAS: only when the instance doesn't exist yet, the save should be performed!!!
+                    //TODO BAS SH: only when the instance doesn't exist yet, the save should be performed!!!
                     Redis.getInstance().save(instance);
                     node = replaceElementWithEntityReference(element, instance);
                 }
                 else{
                     //do nothing, since we have found the ending of the outer-most typeof-tag
-                    //TODO BAS: should this mean we actually are starting to parse the page-template, so we don't have to do this weird construction?
                 }
             }
             catch (Exception e) {

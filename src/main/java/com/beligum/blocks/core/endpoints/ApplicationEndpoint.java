@@ -78,8 +78,10 @@ public class ApplicationEndpoint
         return Response.ok("OK: all templates loaded").build();
     }
 
+
+
     //using regular expression to let all requests to undefined paths end up here
-    @Path("/test/{randomPage:.+}")
+    @Path("/{randomPage:.+}")
     @GET
     public Response getPageWithId(@PathParam("randomPage") String randomURLPath)
     {
