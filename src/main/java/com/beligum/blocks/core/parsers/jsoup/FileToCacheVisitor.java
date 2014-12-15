@@ -39,14 +39,22 @@ public class FileToCacheVisitor extends AbstractVisitor
                 EntityTemplateClass entityTemplateClass = cacheEntityTemplateClassFromNode(element);
                 if(isProperty(element)) {
                     EntityTemplate propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element)), entityTemplateClass, element.outerHtml());
-                    //TODO BAS SH: only when the instance doesn't exist yet, the save should be performed!!!
-                    Redis.getInstance().save(propertyInstance);
+                    RedisID lastVersion = new RedisID(propertyInstance.getUnversionedId(), RedisID.LAST_VERSION);
+                    EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
+                    //if no version is present in db, or this version is different, save to db
+                    if(storedInstance == null || !storedInstance.equals(propertyInstance)) {
+                        Redis.getInstance().save(propertyInstance);
+                    }
                     node = replaceElementWithPropertyReference(element);
                 }
                 else if(this.typeOfStack.size()>0){
                     EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass);
-                    //TODO BAS SH: only when the instance doesn't exist yet, the save should be performed!!!
-                    Redis.getInstance().save(instance);
+                    RedisID lastVersion = new RedisID(instance.getUnversionedId(), RedisID.LAST_VERSION);
+                    EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
+                    //if no version is present in db, or this version is different, save to db
+                    if(storedInstance == null || !storedInstance.equals(instance)) {
+                        Redis.getInstance().save(instance);
+                    }
                     node = replaceElementWithEntityReference(element, instance);
                 }
                 else{
