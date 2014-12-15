@@ -197,6 +197,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     this.EVENTS.HOOVER_OVER_BLOCK = "HOOVER_OVER_BLOCK";
     this.EVENTS.END_HOOVER = "END_HOOVER";
     this.EVENTS.DOUBLE_CLICK_BLOCK = "DOUBLE_CLICK_BLOCK";
+    this.EVENTS.CLICK_BLOCK = "CLICK_BLOCK";
 
     // Notifications
     this.EVENTS.DO_ALLOW_DRAG = "ALLOW_DRAG";

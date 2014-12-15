@@ -59,6 +59,7 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
         resizeHandleElement.css("top", surface.top + "px");
         resizeHandleElement.css("width", surface.right - surface.left + "px");
         resizeHandleElement.css("height", surface.bottom - surface.top + "px");
+        resizeHandleElement.css("cursor", "col-resize");
         $("body").css("cursor", "col-resize");
     };
 
@@ -120,7 +121,7 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
     var manageActiveResizeHandle = function (blocksEvent) {
         if (activeResizehandleChanged(blocksEvent)) {
             if (activeResizeHandle != null && !draggingEnabled) {
-                Broadcaster.send(Broadcaster.EVENTS.DISABLE_BLOCK_DRAG);
+                Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DISABLE_BLOCK_DRAG);
                 draggingEnabled = true;
                 showHandleElement(activeResizeHandle.drawSurface);
             }  else if (activeResizeHandle == null && draggingEnabled) {
