@@ -32,6 +32,15 @@ import java.util.List;
 @Path("/entities")
 public class EntitiesEndpoint
 {
+
+    @GET
+    @Path("/reset")
+    public Response resetCache() throws CacheException
+    {
+        EntityTemplateClassCache.getInstance().reset();
+        return Response.ok("Cache reset").build();
+    }
+
     @GET
     @Path("/new")
     public Response newPage() throws CacheException
@@ -62,23 +71,6 @@ public class EntitiesEndpoint
     }
 
 
-
-    @GET
-    @Path("/list")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-        /*
-         * update a page-instance with id 'entityId' to be the html specified
-         */
-    public Response listEntities() throws CacheException
-    {
-        List<String> entityNames = new ArrayList<String>();
-        for (EntityTemplateClass e : EntityTemplateClassCache.getInstance().values()) {
-            entityNames.add(e.getName());
-        }
-        return Response.ok(entityNames).build();
-    }
-
     @PUT
     @Path("/{entityId:.*}")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -95,5 +87,34 @@ public class EntitiesEndpoint
 
         TemplateParser.updateEntity(entityUrl, html);
         return Response.seeOther(entityUrl.toURI()).build();
+    }
+
+    @GET
+    @Path("/list")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+        /*
+         * Return a list of strings of all available entities
+         */
+    public Response listEntities() throws CacheException
+    {
+        List<String> entityNames = new ArrayList<String>();
+        for (EntityTemplateClass e : EntityTemplateClassCache.getInstance().values()) {
+            entityNames.add(e.getName());
+        }
+        return Response.ok(entityNames).build();
+    }
+
+    @GET
+    @Path("/class/{name}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+        /*
+         * Return a list of strings of all available entities
+         */
+    public Response listEntities(@PathParam("name") String name) throws CacheException
+    {
+        EntityTemplateClass entity = EntityTemplateClassCache.getInstance().get(name);
+        return Response.ok(entity).build();
     }
 }

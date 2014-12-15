@@ -105,6 +105,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
         }
     }
 
+
     /**
      * Fill up the page-cache with all template found in file-system
      * @return A full AbstractCachableClassCache
@@ -114,7 +115,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     {
         if(!runningTroughHtmlTemplates) {
             runningTroughHtmlTemplates = true;
-//            URI rootFolderUri = FileFunctions.searchClasspath(this.getClass(), BlocksConfig.getTemplateFolder());
+            URI rootFolderUri = FileFunctions.searchClasspath(this.getClass(), BlocksConfig.getTemplateFolder());
 //            Path rootFolder = Paths.get(rootFolderUri.getSchemeSpecificPart());
             Path rootFolder = Paths.get("/Users/wouter/git/com.beligum.blocks.core/src/main/resources/templates");
 

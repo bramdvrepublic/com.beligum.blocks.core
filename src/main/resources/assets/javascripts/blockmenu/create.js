@@ -31,9 +31,14 @@ blocks.plugin("blocks.core.BlockMenu.new", ["blocks.core.BlockMenu", "blocks.cor
             list.find(".form-group").empty().append(label).append(optionList);
             Notification.alert("Add new block", list.html(), function(content) {
                 var value = content.find("#blocktypeselect").val();
+                if (value != null && value != "") {
+                    $.getJSON("/entities/class/" + value).success(function(data) {
+                        //var newBlock = blocks[value];
+                        var x= 0;
+                        Layouter.addNewBlockAtLocation($(data.template), currentBlock);
+                    });
+                }
 
-                var newBlock = blocks[value];
-                Layouter.addNewBlockAtLocation($(newBlock[0].outerHTML), currentBlock);
             });
         });
 
