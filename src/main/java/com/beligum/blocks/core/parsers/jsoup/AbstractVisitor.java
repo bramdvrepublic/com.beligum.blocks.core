@@ -323,7 +323,6 @@ public class AbstractVisitor
     }
 
 
-
     public boolean isBlueprint(Node node) {
         if(node == null){
             return false;
@@ -335,7 +334,7 @@ public class AbstractVisitor
         return retVal;
     }
 
-    public boolean isLayoutable(Element node) {
+    public boolean isLayoutable(Node node) {
         if(node == null){
             return false;
         }
@@ -346,7 +345,7 @@ public class AbstractVisitor
         return retVal;
     }
 
-    public boolean isEditable(Element node) {
+    public boolean isEditable(Node node) {
         if(node == null){
             return false;
         }

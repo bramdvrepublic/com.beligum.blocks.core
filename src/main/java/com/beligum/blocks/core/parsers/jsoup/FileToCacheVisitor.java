@@ -93,7 +93,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                 EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, node.outerHtml(), this.pageTemplateName);
                 boolean added = EntityTemplateClassCache.getInstance().add(entityTemplateClass);
                 //if the node is a bleuprint and the cache already had a template-class present, force replace the template
-                if(!added && node.hasAttr(ParserConstants.BLEUPRINT)){
+                if(!added && isBlueprint(node)){
                     EntityTemplateClassCache.getInstance().replace(entityTemplateClass);
                 }
                 return EntityTemplateClassCache.getInstance().get(entityClassName);
