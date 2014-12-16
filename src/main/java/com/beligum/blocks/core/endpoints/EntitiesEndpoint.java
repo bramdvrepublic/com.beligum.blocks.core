@@ -16,7 +16,9 @@ import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.base.R;
+import com.beligum.core.framework.base.RequestContext;
 import com.beligum.core.framework.templating.ifaces.Template;
+import com.beligum.core.framework.utils.Logger;
 import org.hibernate.validator.constraints.NotBlank;
 
 import javax.ws.rs.*;
@@ -50,6 +52,7 @@ public class EntitiesEndpoint
     {
         Template template = R.templateEngine().getEmptyTemplate("/views/new-page.html");
         Collection<EntityTemplateClass> entityTemplateClasses = EntityTemplateClassCache.getInstance().values();
+        template.set(ParserConstants.ENTITY_URL, RequestContext.getRequest().getRequestURI());
         template.set(ParserConstants.ENTITY_CLASSES, entityTemplateClasses);
         return Response.ok(template).build();
     }
@@ -59,14 +62,19 @@ public class EntitiesEndpoint
      * Create a new page-instance of the page-class specified as a parameter
      */
     public Response createEntity(
+                    @FormParam("page-url")
+                    @NotBlank(message = "No url specified.")
+                    String url,
                     @FormParam("page-class-name")
                     @NotBlank(message = "No entity-class specified.")
                     String entityClassName)
-                    throws CacheException, RedisException, IDException, URISyntaxException, ParseException
+                    throws CacheException, RedisException, IDException, URISyntaxException, ParseException, MalformedURLException
 
     {
         EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(entityClassName);
-        URL entityUrl = TemplateParser.saveNewEntityTemplateToDb(entityTemplateClass);
+        URL pageUrl = new URL(url);
+        URL entityUrl = TemplateParser.saveNewEntityTemplateToDb(pageUrl, entityTemplateClass);
+
         /*
          * Redirect the client to the newly created entity's page
          */
@@ -121,5 +129,37 @@ public class EntitiesEndpoint
         return Response.ok(entityNames).build();
     }
 
-    
+    @GET
+    @Path("/template")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+        /*
+         * Return a list of strings of all available entities
+         */
+    public Response listTemplates() throws CacheException
+    {
+        List<String> templateNames = new ArrayList<String>();
+        for (PageTemplate e : PageTemplateCache.getInstance().values()) {
+            templateNames.add(e.getName());
+        }
+        return Response.ok(templateNames).build();
+    }
+
+    @PUT
+    @Path("/template")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+        /*
+         * Return a list of strings of all available entities
+         */
+    public Response changeTemplate(@FormParam("template") String template, @FormParam("id") String id) throws CacheException, MalformedURLException, IDException, RedisException
+    {
+        Redis redis = Redis.getInstance();
+        URL url = new URL(id);
+        RedisID lastVersionId = new RedisID(url, RedisID.LAST_VERSION);
+        EntityTemplate entityTemplate = redis.fetchEntityTemplate(lastVersionId);
+//        entityTemplate.setPageTemplate(template);
+        return Response.ok().build();
+
+    }
 }

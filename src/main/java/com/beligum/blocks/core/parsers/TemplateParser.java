@@ -43,12 +43,12 @@ public class TemplateParser
      * @param entityTemplateClass
      * @return the url of the freshly saved template
      */
-    public static URL saveNewEntityTemplateToDb(EntityTemplateClass entityTemplateClass) throws ParseException
+    public static URL saveNewEntityTemplateToDb(URL pageURL, EntityTemplateClass entityTemplateClass) throws ParseException
     {
         String pageStringId = "";
         try {
             Document doc = parse(entityTemplateClass.getTemplate());
-            ClassToStoredInstanceVisitor visitor = new ClassToStoredInstanceVisitor();
+            ClassToStoredInstanceVisitor visitor = new ClassToStoredInstanceVisitor(pageURL);
             Traversor traversor = new Traversor(visitor);
             traversor.traverse(doc);
             pageStringId = visitor.getReferencedId(doc.child(0));

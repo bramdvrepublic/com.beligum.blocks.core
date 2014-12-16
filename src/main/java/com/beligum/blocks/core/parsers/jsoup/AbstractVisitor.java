@@ -25,6 +25,7 @@ public class AbstractVisitor
 {
     protected Stack<Node> typeOfStack = new Stack<>();
     protected URL parentUrl = null;
+    protected URL pageUrl = null;
 
 
     public Node head(Node node, int depth) throws ParseException

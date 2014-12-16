@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="nl" template="MOT">
 <head>
     <title>MOT - museum</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -48,7 +48,7 @@
     <script src="/assets/javascripts/ckeditor/ckeditor.js" type="application/javascript" ></script>
     <script src="/assets/javascripts/ckeditor/adapters/jquery.js" type="application/javascript" ></script>
 </head>
-<body class="can-layout">
+<body template-content reference-to="entity">
     <header id="header">
         <div class="container">
             <div class="row">
@@ -116,16 +116,16 @@
                     <h3 class="red" can-edit>Onze tentoonstellingen</h3>
                 </header>
             </div>
-            <div class="row can-layout">
+            <div class="row can-layout"  typeof="exhibions" can-layout>
                 <div class="column col-md-12">
-                    <div class="exhibitions row" >
-                        <article id="houtbewerking" typeof="exhibition" class="column exhibition square col-md-4">
+                    <div class="exhibitions row">
+                        <article id="houtbewerking" typeof="exhibition" class="column exhibition square col-md-4 can-layout" blueprint>
                             <a href="" title="">
                         <span class="square-inner bgbrown ">
                             <header>
-                                <h3 property="exhibition-title">Houtbewerking</h3>
+                                <h3 property="exhibition-title" class="can-edit">Houtbewerking</h3>
                             </header>
-                            <img property="exhibition-image" alt="" src=""/>
+                            <img property="exhibition-image" class="can-edit" alt="" src=""/>
                         </span>
                             </a>
                         </article>

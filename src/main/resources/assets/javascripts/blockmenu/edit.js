@@ -18,7 +18,12 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
 
     // Double click is edit
     $(document).on(Broadcaster.EVENTS.CLICK_BLOCK, function(event) {
-        Edit.editBlock(event.block.current);
+        event.preventDefault();
+        event.stopPropagation();
+        if (block != null && enabled(event.block.current)) {
+
+            Edit.editBlock(event.block.current);
+        }
     });
 
     this.editBlock = function(block) {
