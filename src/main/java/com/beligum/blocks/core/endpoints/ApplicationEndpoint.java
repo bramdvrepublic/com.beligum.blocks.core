@@ -1,7 +1,13 @@
 package com.beligum.blocks.core.endpoints;
 
+import com.beligum.blocks.core.config.ParserConstants;
+import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.caching.PageTemplateCache;
+import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.models.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.base.RequestContext;
@@ -13,6 +19,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
 import java.net.URL;
+import java.util.Collection;
 
 @Path("/")
 public class ApplicationEndpoint
@@ -87,7 +94,12 @@ public class ApplicationEndpoint
             RedisID lastVersionId = new RedisID(url, RedisID.LAST_VERSION);
             EntityTemplate entityTemplate = redis.fetchEntityTemplate(lastVersionId);
             if(entityTemplate == null){
-                throw new NullPointerException("Could not find page " + randomURLPath + " in db, received null.");
+                Template template = R.templateEngine().getEmptyTemplate("/views/new-page.html");
+                Collection<EntityTemplateClass> entityTemplateClasses = EntityTemplateClassCache.getInstance().values();
+                template.set(ParserConstants.ENTITY_URL, RequestContext.getRequest().getRequestURL().toString());
+                template.set(ParserConstants.ENTITY_CLASSES, entityTemplateClasses);
+                return Response.ok(template).build();
+
             }
             String page = entityTemplate.renderEntityInPageTemplate();
             return Response.ok(page).build();

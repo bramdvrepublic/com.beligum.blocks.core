@@ -118,8 +118,11 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     {
         if(!runningTroughHtmlTemplates) {
             runningTroughHtmlTemplates = true;
-            URI rootFolderUri = FileFunctions.searchClasspath(this.getClass(), BlocksConfig.getTemplateFolder());
+            URI rootFolderUri = FileFunctions.getCurrentMavenSrcResourceFolder(this.getClass());
+
+//            URI rootFolderUri = FileFunctions.searchClasspath(this.getClass(), BlocksConfig.getTemplateFolder());
             Path rootFolder = Paths.get(rootFolderUri.getSchemeSpecificPart());
+            rootFolder = rootFolder.resolve(BlocksConfig.getTemplateFolder());
 //            Path rootFolder = Paths.get("/Users/wouter/git/com.beligum.blocks.core/src/main/resources/templates");
 
             try {

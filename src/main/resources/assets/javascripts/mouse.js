@@ -261,12 +261,14 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
 
             $(document).on("dblclick.blocks_core", function(event) {
                 dblClickFound = true;
+                event.preventDefault();
                 Broadcaster.send(Broadcaster.EVENTS.DOUBLE_CLICK_BLOCK);
 
             });
 
             $(document).on("click.blocks_core", function(event) {
                 if (active) {
+                    event.preventDefault();
                     setTimeout(function () {
                         if (!dblClickFound) {
                             Broadcaster.send(Broadcaster.EVENTS.CLICK_BLOCK);
