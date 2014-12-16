@@ -1,9 +1,7 @@
 package com.beligum.blocks.core.endpoints;
 
-import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.base.RequestContext;
@@ -91,7 +89,7 @@ public class ApplicationEndpoint
             if(entityTemplate == null){
                 throw new NullPointerException("Could not find page " + randomURLPath + " in db, received null.");
             }
-            String page = entityTemplate.render();
+            String page = entityTemplate.renderEntityInPageTemplate();
             return Response.ok(page).build();
         }
         catch(Exception e){

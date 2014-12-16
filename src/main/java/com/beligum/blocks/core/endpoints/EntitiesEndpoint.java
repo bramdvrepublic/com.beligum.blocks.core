@@ -77,7 +77,7 @@ public class EntitiesEndpoint
     @Path("/class/{entityTemplateClassName}")
     public Response getClassTemplate(@PathParam("entityTemplateClassName") String entityTemplateClasName) throws CacheException, ParseException
     {
-        String classHtml = TemplateParser.renderEntityClass(EntityTemplateClassCache.getInstance().get(entityTemplateClasName));
+        String classHtml = TemplateParser.renderTemplate(EntityTemplateClassCache.getInstance().get(entityTemplateClasName));
         return Response.ok(classHtml).build();
     }
 
