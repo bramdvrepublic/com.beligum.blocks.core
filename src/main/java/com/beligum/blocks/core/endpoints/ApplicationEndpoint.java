@@ -1,5 +1,6 @@
 package com.beligum.blocks.core.endpoints;
 
+import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.ParserConstants;
@@ -100,8 +101,7 @@ public class ApplicationEndpoint
                 return Response.ok(template).build();
 
             }
-            PageTemplate pageTemplate = entityTemplate.getPageTemplate();
-            String page = pageTemplate.renderContent(entityTemplate);
+            String page = entityTemplate.render();
             return Response.ok(page).build();
         }
         catch(Exception e){

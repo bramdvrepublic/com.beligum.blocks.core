@@ -21,7 +21,7 @@ import org.jsoup.nodes.Node;
 public class FileToCacheVisitor extends AbstractVisitor
 {
 
-    private String pageTemplateName = ParserConstants.DEFAULT_PAGE_TEMPLATE;
+    private String pageTemplateName = null;
     /**flag for indicating if the current traverse has encountered a tag indicating a page-template is being parsed*/
     private boolean parsingPageTemplate = false;
 
@@ -34,8 +34,6 @@ public class FileToCacheVisitor extends AbstractVisitor
         }
         else if(parsingPageTemplate && isPageTemplateContentNode(node) && node instanceof Element){
             this.createTemplate((Element) node);
-            this.parsingPageTemplate = false;
-            this.pageTemplateName = ParserConstants.DEFAULT_PAGE_TEMPLATE;
         }
         return node;
     }
