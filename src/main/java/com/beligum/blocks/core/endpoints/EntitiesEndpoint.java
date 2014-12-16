@@ -129,5 +129,37 @@ public class EntitiesEndpoint
         return Response.ok(entityNames).build();
     }
 
-    
+    @GET
+    @Path("/template")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+        /*
+         * Return a list of strings of all available entities
+         */
+    public Response listTemplates() throws CacheException
+    {
+        List<String> templateNames = new ArrayList<String>();
+        for (PageTemplate e : PageTemplateCache.getInstance().values()) {
+            templateNames.add(e.getName());
+        }
+        return Response.ok(templateNames).build();
+    }
+
+    @PUT
+    @Path("/template")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+        /*
+         * Return a list of strings of all available entities
+         */
+    public Response changeTemplate(@FormParam("template") String template, @FormParam("id") String id) throws CacheException, MalformedURLException, IDException, RedisException
+    {
+        Redis redis = Redis.getInstance();
+        URL url = new URL(id);
+        RedisID lastVersionId = new RedisID(url, RedisID.LAST_VERSION);
+        EntityTemplate entityTemplate = redis.fetchEntityTemplate(lastVersionId);
+//        entityTemplate.setPageTemplate(template);
+        return Response.ok().build();
+
+    }
 }
