@@ -1,18 +1,18 @@
 package com.beligum.blocks.core.models.templates;
 
-import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.config.DatabaseConstants;
-import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.core.framework.utils.Logger;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Map;
 
@@ -21,8 +21,8 @@ import java.util.Map;
  */
 public class EntityTemplateClass extends AbstractTemplate
 {
-    /**the doctype of this entityclass*/
-    private String docType;
+    /**the default page-template this class should be rendered in*/
+    private PageTemplate pageTemplate;
     /**string the name of this entity-class*/
     private String name;
 
@@ -30,26 +30,27 @@ public class EntityTemplateClass extends AbstractTemplate
      *
      * @param name the name of this entity-class
      * @param template the template-string corresponding to the most outer layer of the element-tree in this entity
-     * @param docType the doctype of this entity-class
+     * @param defaultPageTemplateName the default page-template this entity-class should be rendered in
      */
-    public EntityTemplateClass(String name, String template, String docType) throws IDException
+    public EntityTemplateClass(String name, String template, String defaultPageTemplateName) throws IDException, CacheException
     {
         super(RedisID.renderNewEntityTemplateClassID(name), template);
         this.name = name;
-        this.docType = docType;
+        this.pageTemplate = PageTemplateCache.getInstance().get(defaultPageTemplateName);
     }
 
-    private EntityTemplateClass(RedisID id, String template, String docType){
+    private EntityTemplateClass(RedisID id, String template, String defaultPageTemplateName) throws CacheException
+    {
         super(id, template);
         //the name of this entity-template-class doesn't start with a "/", so we split it of the given path
         String[] splitted = id.getUrl().getPath().split("/");
-        if(splitted.length>0) {
+        if (splitted.length > 0) {
             this.name = splitted[1];
         }
-        else{
+        else {
             this.name = null;
         }
-        this.docType = docType;
+        this.pageTemplate = PageTemplateCache.getInstance().get(defaultPageTemplateName);
     }
 
     /**
@@ -60,9 +61,13 @@ public class EntityTemplateClass extends AbstractTemplate
     {
         return name;
     }
-    public String getDocType()
+    /**
+     *
+     * @return the default page-template this entity-class should be rendered in
+     */
+    public PageTemplate getPageTemplate()
     {
-        return docType;
+        return pageTemplate;
     }
 
 
@@ -85,7 +90,7 @@ public class EntityTemplateClass extends AbstractTemplate
     {
         try {
             if (hash != null && !hash.isEmpty() && hash.containsKey(DatabaseConstants.TEMPLATE)) {
-                EntityTemplateClass newInstance = new EntityTemplateClass(id, hash.get(DatabaseConstants.TEMPLATE), hash.get(DatabaseConstants.DOC_TYPE));
+                EntityTemplateClass newInstance = new EntityTemplateClass(id, hash.get(DatabaseConstants.TEMPLATE), hash.get(DatabaseConstants.PAGE_TEMPLATE));
                 newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
                 newInstance.creator = hash.get(DatabaseConstants.CREATOR);
                 //TODO BAS: this should go to AbstractTemplate: use Field.java or something of the sort, should make sure the rest of the hash (like application version and creator) is filled in, even if not all fields are present in the hash
@@ -104,7 +109,18 @@ public class EntityTemplateClass extends AbstractTemplate
             throw new DeserializationException("Could not construct an object of class '" + EntityTemplateClass.class.getName() + "' from specified hash.", e);
         }
     }
-
+    /**
+     * Gives a hash-representation of this storable to save to the db. This method decides what information is stored in db, and what is not.
+     *
+     * @return a map representing the key-value structure of this element to be saved to db
+     */
+    @Override
+    public Map<String, String> toHash()
+    {
+        Map<String, String> hash = super.toHash();
+        hash.put(DatabaseConstants.PAGE_TEMPLATE, this.pageTemplate.getName());
+        return hash;
+    }
 
     //________________OVERRIDE OF OBJECT_______________//
 
@@ -116,7 +132,11 @@ public class EntityTemplateClass extends AbstractTemplate
     @Override
     public int hashCode()
     {
-        return super.hashCode();
+        int hashCode = super.hashCode();
+        HashCodeBuilder significantFieldsSet = new HashCodeBuilder(9, 17);
+        significantFieldsSet = significantFieldsSet.appendSuper(hashCode)
+                                                   .append(this.pageTemplate);
+        return significantFieldsSet.toHashCode();
     }
 
     /**
@@ -128,11 +148,20 @@ public class EntityTemplateClass extends AbstractTemplate
     @Override
     public boolean equals(Object obj)
     {
-        if(obj instanceof EntityTemplateClass) {
-            return super.equals(obj);
+        if(!(obj instanceof EntityTemplate)) {
+            return false;
         }
         else{
-            return false;
+            boolean equals = super.equals(obj);
+            if(!equals){
+                return false;
+            }
+            else{
+                EntityTemplateClass templObj = (EntityTemplateClass) obj;
+                EqualsBuilder significantFieldsSet = new EqualsBuilder();
+                significantFieldsSet = significantFieldsSet.append(pageTemplate, templObj.pageTemplate);
+                return significantFieldsSet.isEquals();
+            }
         }
     }
 }

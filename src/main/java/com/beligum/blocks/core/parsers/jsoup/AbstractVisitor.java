@@ -246,12 +246,6 @@ public class AbstractVisitor
     }
 
 
-    public boolean isPageTemplateRoot(Node root){
-        if(root == null){
-            return false;
-        }
-        return root.hasAttr(ParserConstants.PAGE_TEMPLATE_ATTR);
-    }
 
     /**
      *
@@ -278,12 +272,40 @@ public class AbstractVisitor
      * @param node
      * @return true if the specified element is "html" and has an attribute "template", false otherwise
      */
-    public boolean isPageTemplate(Node node) {
+    public boolean isPageTemplateRootNode(Node node) {
         if(node == null){
             return false;
         }
         else {
             return node.nodeName().equals("html") && node.hasAttr(ParserConstants.PAGE_TEMPLATE_ATTR);
+        }
+    }
+
+    /**
+     *
+     * @param node
+     * @return the page-template name specified in the node, an empty string if no name has been specified, or null if no "template"-attribute can be found
+     */
+    public String getPageTemplateName(Node node){
+        if(node == null){
+            return null;
+        }
+        else{
+            return node.attr(ParserConstants.PAGE_TEMPLATE_ATTR);
+        }
+    }
+
+    /**
+     *
+     * @param node
+     * @return true if the specified node has the attribute "template-content"
+     */
+    public boolean isPageTemplateContentNode(Node node){
+        if(node == null){
+            return false;
+        }
+        else{
+            return node.hasAttr(ParserConstants.PAGE_TEMPLATE_CONTENT_ATTR);
         }
     }
 

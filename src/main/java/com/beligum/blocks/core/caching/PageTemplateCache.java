@@ -1,11 +1,13 @@
 package com.beligum.blocks.core.caching;
 
+import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.core.framework.base.R;
+import org.apache.velocity.runtime.directive.Parse;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,10 +38,18 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
             if (instance == null) {
                 //if the application-cache doesn't exist, throw exception, else instantiate the application's page-cache with a new empty hashmap
                 if (R.cacheManager() != null && R.cacheManager().getApplicationCache() != null) {
-
                     if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.PAGE_TEMPLATES) || !R.cacheManager().getApplicationCache().containsKey(CacheKeys.PAGE_TEMPLATES)) {
                         R.cacheManager().getApplicationCache().put(CacheKeys.PAGE_TEMPLATES, new HashMap<String, PageTemplate>());
                         instance = new PageTemplateCache();
+                        PageTemplate pageTemplate = new PageTemplate(ParserConstants.DEFAULT_PAGE_TEMPLATE, "<!DOCTYPE html>" +
+                                                                                                            "<html>" +
+                                                                                                            "<head></head>" +
+                                                                                                            "<body>" +
+                                                                                                            //default referencing div
+                                                                                                            "<div " + ParserConstants.PAGE_TEMPLATE_CONTENT_ATTR + "=\"\" " + ParserConstants.REFERENCE_TO + "=\""+ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME + "\"></div>" +
+                                                                                                            "</body>" +
+                                                                                                            "</html>");
+                        instance.add(pageTemplate);
                         instance.fillCache();
                     }
                 }
@@ -49,8 +59,8 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
             }
             return instance;
         }
-        catch(CacheException e){
-            throw new CacheException("Couldn't initialize entity-class-cache.", e);
+        catch(Exception e){
+            throw new CacheException("Couldn't initialize page-template-cache.", e);
         }
     }
 
@@ -60,16 +70,25 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
      * If that entity-class does not exist, return the default entity-class.
      *
      * @param name the unique name of the entity-class to get
-     * @return an entity-class from the application cache
+     * @return an entity-class from the application cache, or the default-page-template if no page-template with the specified name can be found
      */
     @Override
     public PageTemplate get(String name) throws CacheException
     {
         try {
-            Map<String, PageTemplate> applicationCache = this.getCache();
-            PageTemplate pageTemplate = applicationCache.get(RedisID.renderNewPageTemplateID(name).getUnversionedId());
-            return pageTemplate;
-            //TODO BAS: This needs a default value to fall back to. How do we define a default? Do we use the framework-default or something?
+            if(name != null) {
+                Map<String, PageTemplate> applicationCache = this.getCache();
+                PageTemplate pageTemplate = applicationCache.get(RedisID.renderNewPageTemplateID(name).getUnversionedId());
+                if(pageTemplate != null) {
+                    return pageTemplate;
+                }
+                else{
+                    return applicationCache.get(ParserConstants.DEFAULT_PAGE_TEMPLATE);
+                }
+            }
+            else{
+                return this.getCache().get(RedisID.renderNewPageTemplateID(ParserConstants.DEFAULT_PAGE_TEMPLATE).getUnversionedId());
+            }
         }catch(IDException e){
             throw new CacheException("Could not get "+ PageTemplate.class.getSimpleName() + " '" + name + "' from cache.", e);
         }

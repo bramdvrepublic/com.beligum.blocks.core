@@ -20,12 +20,23 @@ import org.jsoup.nodes.Node;
  */
 public class FileToCacheVisitor extends AbstractVisitor
 {
-    Node template;
+
+    private String pageTemplateName = ParserConstants.DEFAULT_PAGE_TEMPLATE;
+    /**flag for indicating if the current traverse has encountered a tag indicating a page-template is being parsed*/
+    private boolean parsingPageTemplate = false;
 
     @Override
     public Node head(Node node, int depth) throws ParseException {
         node = super.head(node, depth);
-        this.prepareTemplate(node);
+        if(isPageTemplateRootNode(node)) {
+            this.pageTemplateName = getPageTemplateName(node);
+            this.parsingPageTemplate = true;
+        }
+        else if(parsingPageTemplate && isPageTemplateContentNode(node) && node instanceof Element){
+            this.createTemplate((Element) node);
+            this.parsingPageTemplate = false;
+            this.pageTemplateName = ParserConstants.DEFAULT_PAGE_TEMPLATE;
+        }
         return node;
     }
 
@@ -39,14 +50,22 @@ public class FileToCacheVisitor extends AbstractVisitor
                 EntityTemplateClass entityTemplateClass = cacheEntityTemplateClassFromNode(element);
                 if(isProperty(element)) {
                     EntityTemplate propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element)), entityTemplateClass, element.outerHtml());
-                    //TODO BAS SH: only when the instance doesn't exist yet, the save should be performed!!!
-                    Redis.getInstance().save(propertyInstance);
+                    RedisID lastVersion = new RedisID(propertyInstance.getUnversionedId(), RedisID.LAST_VERSION);
+                    EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
+                    //if no version is present in db, or this version is different, save to db
+                    if(storedInstance == null || !storedInstance.equals(propertyInstance)) {
+                        Redis.getInstance().save(propertyInstance);
+                    }
                     node = replaceElementWithPropertyReference(element);
                 }
                 else if(this.typeOfStack.size()>0){
                     EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass);
-                    //TODO BAS SH: only when the instance doesn't exist yet, the save should be performed!!!
-                    Redis.getInstance().save(instance);
+                    RedisID lastVersion = new RedisID(instance.getUnversionedId(), RedisID.LAST_VERSION);
+                    EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
+                    //if no version is present in db, or this version is different, save to db
+                    if(storedInstance == null || !storedInstance.equals(instance)) {
+                        Redis.getInstance().save(instance);
+                    }
                     node = replaceElementWithEntityReference(element, instance);
                 }
                 else{
@@ -56,9 +75,6 @@ public class FileToCacheVisitor extends AbstractVisitor
             catch (Exception e) {
                 throw new ParseException("Could not parse an " + EntityTemplateClass.class.getSimpleName() + " from " + Node.class.getSimpleName() + " \n \n:" + node, e);
             }
-        }
-        else if (node instanceof Element) {
-            this.createTemplate((Element) node);
         }
         return node;
 
@@ -76,7 +92,7 @@ public class FileToCacheVisitor extends AbstractVisitor
         try {
             entityClassName = this.getTypeOf(node);
             if(!StringUtils.isEmpty(entityClassName)) {
-                EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, node.outerHtml(), null);
+                EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, node.outerHtml(), this.pageTemplateName);
                 boolean added = EntityTemplateClassCache.getInstance().add(entityTemplateClass);
                 //if the node is a bleuprint and the cache already had a template-class present, force replace the template
                 if(!added && node.hasAttr(ParserConstants.BLEUPRINT)){
@@ -93,16 +109,11 @@ public class FileToCacheVisitor extends AbstractVisitor
         }
     }
 
-    protected void prepareTemplate(Node node) {
-        if (isPageTemplate(node)) {
-            this.template = node;
-        }
-    }
-
-    protected void createTemplate(Element element)
+    private Node createTemplate(Element element) throws ParseException
     {
-        if (element.hasAttr(ParserConstants.PAGE_TEMPLATE_CONTENT_ATTR)) {
-            try {
+        try {
+            //TODO BAS SH: trying to add page-templating to entity-templates and entity-template classes. For the moment it seems to use the use the default-page-template always.
+            if (element.hasAttr(ParserConstants.PAGE_TEMPLATE_CONTENT_ATTR)) {
                 Node parent = element.parent();
                 //initialize the page-template name by searching for the first template-attribute we find before the specified node and take the value of that attribute to be the name
                 String templateName = "";
@@ -110,18 +121,35 @@ public class FileToCacheVisitor extends AbstractVisitor
                     if (parent.nodeName().equals("html")) {
                         templateName = parent.attr(ParserConstants.PAGE_TEMPLATE_ATTR);
                     }
-                    parent = parent.parent();
+                    Node nextParent = parent.parent();
+                    if(nextParent != null) {
+                        parent = nextParent;
+                    }
                 }
-                this.replaceElementWithReference(element, ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME);
+                /**
+                 * Replace the content of the template temporarily to a reference-block, so we can distill the page-template in the tag-head.
+                 * Afterwards we want to return the html-tree to it's original form, without the reference-block.
+                 * All of this is done so we can give a page-template to the first entity encountered.
+                 */
+                Node replacement = this.replaceElementWithReference(element, ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME);
+                //we need to instanciate the cache first, so a default-template surely will be cached with an older version than the page-template we're about to make
+                PageTemplateCache cache = PageTemplateCache.getInstance();
                 PageTemplate pageTemplate = new PageTemplate(templateName, parent.outerHtml());
-                boolean added = PageTemplateCache.getInstance().add(pageTemplate);
-                if(!added){
-                    Logger.warn(PageTemplate.class.getName() + " '" + pageTemplate.getName() + "' was not added to the application-cache, since an other " + PageTemplate.class.getName() + " with the same id was already present.");
+                replacement.replaceWith(element);
+                boolean added = cache.add(pageTemplate);
+                //default page-templates should be added to the cache no matter what, so the last one encountered is kept
+                if (!added && this.pageTemplateName.contentEquals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
+                    PageTemplateCache.getInstance().replace(pageTemplate);
                 }
-            } catch (Exception e) {
-                Logger.error("Something went wrong while creating template.", e);
-                // TODO show error somewhere?
+                else if(!added){
+                    Logger.warn(PageTemplate.class.getName() + " '" + pageTemplate.getName() + "' was not added to the application-cache, since an other " + PageTemplate.class.getName() +
+                                " with the same name was already present.");
+                }
             }
+            return element;
+        }
+        catch (Exception e) {
+            throw new ParseException("Something went wrong while creating page-template.", e);
         }
     }
 }

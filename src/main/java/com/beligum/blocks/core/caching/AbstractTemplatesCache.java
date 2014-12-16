@@ -1,6 +1,8 @@
 package com.beligum.blocks.core.caching;
 
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.DatabaseConstants;
+import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.ParseException;
@@ -91,12 +93,13 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             else{
                 AbstractTemplate cachedTemplate = getCache().get(template.getUnversionedId());
                 if(!template.equals(cachedTemplate)){
-                    //TODO: last version should be fetched from db and when the template has changed a new version should be created and saved to db
+
                     RedisID lastVersion = new RedisID(template.getId().getUrl(), RedisID.LAST_VERSION);
                     AbstractTemplate storedTemplate = Redis.getInstance().fetchTemplate(lastVersion, this.getCachedClass());
                     if (!template.equals(storedTemplate)){
                         Redis.getInstance().save(template);
                     }
+                    getCache().put(template.getUnversionedId(), template);
                 }
                 return cachedTemplate;
             }
