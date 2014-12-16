@@ -24,12 +24,6 @@ import java.net.URL;
 */
 public class TemplateParser
 {
-    //TODO BAS: use this enum
-    public enum Modes{
-        CACHE_CLASSES,
-        NEW_INSTANCE,
-        UPDATE_ENTITY
-    }
 
     /**
      * Parse all templates found in the specified html and cache them in the correct cacher. (PageTemplate in PageTemplateCache, EntityTemplateClass in EntityTemplateClassCache)

@@ -4,6 +4,7 @@ import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.config.DatabaseConstants;
+import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
@@ -22,7 +23,7 @@ import java.util.Map;
 public class EntityTemplateClass extends AbstractTemplate
 {
     /**the default page-template this class should be rendered in*/
-    private PageTemplate pageTemplate;
+    private String pageTemplateName = ParserConstants.DEFAULT_PAGE_TEMPLATE;
     /**string the name of this entity-class*/
     private String name;
 
@@ -30,16 +31,18 @@ public class EntityTemplateClass extends AbstractTemplate
      *
      * @param name the name of this entity-class
      * @param template the template-string corresponding to the most outer layer of the element-tree in this entity
-     * @param defaultPageTemplateName the default page-template this entity-class should be rendered in
+     * @param pageTemplateName the default page-template this entity-class should be rendered in
      */
-    public EntityTemplateClass(String name, String template, String defaultPageTemplateName) throws IDException, CacheException
+    public EntityTemplateClass(String name, String template, String pageTemplateName) throws IDException, CacheException
     {
         super(RedisID.renderNewEntityTemplateClassID(name), template);
         this.name = name;
-        this.pageTemplate = PageTemplateCache.getInstance().get(defaultPageTemplateName);
+        if(pageTemplateName != null) {
+            this.pageTemplateName = pageTemplateName;
+        }
     }
 
-    private EntityTemplateClass(RedisID id, String template, String defaultPageTemplateName) throws CacheException
+    private EntityTemplateClass(RedisID id, String template, String pageTemplateName) throws CacheException
     {
         super(id, template);
         //the name of this entity-template-class doesn't start with a "/", so we split it of the given path
@@ -50,7 +53,9 @@ public class EntityTemplateClass extends AbstractTemplate
         else {
             this.name = null;
         }
-        this.pageTemplate = PageTemplateCache.getInstance().get(defaultPageTemplateName);
+        if(pageTemplateName != null) {
+            this.pageTemplateName = pageTemplateName;
+        }
     }
 
     /**
@@ -61,13 +66,22 @@ public class EntityTemplateClass extends AbstractTemplate
     {
         return name;
     }
+
     /**
      *
-     * @return the default page-template this entity-class should be rendered in
+     * @return the name of the page-template this entity-class should be rendered in
      */
-    public PageTemplate getPageTemplate()
+    public String getPageTemplateName()
     {
-        return pageTemplate;
+        return pageTemplateName;
+    }
+    /**
+     *
+     * @return the default page-template this entity-class should be rendered in, fetched from cache
+     */
+    public PageTemplate getPageTemplate() throws CacheException
+    {
+        return PageTemplateCache.getInstance().get(pageTemplateName);
     }
 
 
@@ -118,7 +132,7 @@ public class EntityTemplateClass extends AbstractTemplate
     public Map<String, String> toHash()
     {
         Map<String, String> hash = super.toHash();
-        hash.put(DatabaseConstants.PAGE_TEMPLATE, this.pageTemplate.getName());
+        hash.put(DatabaseConstants.PAGE_TEMPLATE, this.pageTemplateName);
         return hash;
     }
 
@@ -135,7 +149,7 @@ public class EntityTemplateClass extends AbstractTemplate
         int hashCode = super.hashCode();
         HashCodeBuilder significantFieldsSet = new HashCodeBuilder(9, 17);
         significantFieldsSet = significantFieldsSet.appendSuper(hashCode)
-                                                   .append(this.pageTemplate);
+                                                   .append(this.pageTemplateName);
         return significantFieldsSet.toHashCode();
     }
 
@@ -159,7 +173,7 @@ public class EntityTemplateClass extends AbstractTemplate
             else{
                 EntityTemplateClass templObj = (EntityTemplateClass) obj;
                 EqualsBuilder significantFieldsSet = new EqualsBuilder();
-                significantFieldsSet = significantFieldsSet.append(pageTemplate, templObj.pageTemplate);
+                significantFieldsSet = significantFieldsSet.append(pageTemplateName, templObj.pageTemplateName);
                 return significantFieldsSet.isEquals();
             }
         }
