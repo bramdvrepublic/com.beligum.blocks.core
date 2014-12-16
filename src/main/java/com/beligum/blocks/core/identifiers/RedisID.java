@@ -106,7 +106,6 @@ public class RedisID extends ID
              * Note: "objectId" could hold ":"-signs
              */
             String[] splitted = versionedDbId.split(":");
-            //        //TODO BAS: do we still need this? yes, if we use id's with ":hash" or something of the sort as a suffix
             //        if(splitted[splitted.length-1].contentEquals(DatabaseConstants.HASH_SUFFIX)){
             //            this.version = Long.parseLong(splitted[splitted.length - 2]);
             //            int lastDoublePoint = versionedDbId.lastIndexOf(':');
@@ -121,7 +120,6 @@ public class RedisID extends ID
             String unversionedId = "";
             //if only two parts have been splitted of, this is not a versioned id and we look for the last version
             if(splitted.length == 2){
-                //TODO BAS: do we want the default to be the LAST_VERSION, or NO_VERSION
                 version = LAST_VERSION;
                 unversionedId = versionedDbId;
             }
@@ -336,11 +334,7 @@ public class RedisID extends ID
     public static String getEntityTemplateClassSetId(String entityTemplateClassName) throws IDException
     {
         try {
-            String entityTemplateClassSetName = English.plural(entityTemplateClassName);
-            //for nouns having the same plural as singular form, we put an extra suffix to the entity-template-class-name
-            if(entityTemplateClassSetName.contentEquals(entityTemplateClassName)) {
-                entityTemplateClassSetName += ENTITY_TEMPLATE_CLASS_SET_SUFFIX;
-            }
+            String entityTemplateClassSetName = entityTemplateClassName + ENTITY_TEMPLATE_CLASS_SET_SUFFIX;
             URI entityTemplateClassSetId = new URI(DatabaseConstants.SCHEME_NAME, BlocksConfig.getSiteDBAlias(), "/" + entityTemplateClassSetName, null);
             return entityTemplateClassSetId.toString();
         }catch(URISyntaxException e){

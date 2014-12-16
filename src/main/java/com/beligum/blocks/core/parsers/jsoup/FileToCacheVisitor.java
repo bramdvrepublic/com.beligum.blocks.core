@@ -71,7 +71,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                 }
             }
             catch (Exception e) {
-                throw new ParseException("Could not parse an " + EntityTemplateClass.class.getSimpleName() + " from " + Node.class.getSimpleName() + " \n \n:" + node, e);
+                throw new ParseException("Could not parse an " + EntityTemplateClass.class.getSimpleName() + " from " + Node.class.getSimpleName() + ": \n \n" + node + "\n \n", e);
             }
         }
         return node;

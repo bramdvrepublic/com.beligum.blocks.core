@@ -72,15 +72,6 @@ public class ApplicationEndpoint
 //        return Response.ok(template.renderContent(element)).build();
 //    }
 
-    @Path("/reset")
-    @GET
-    public Response reset()
-    {
-//        TypeCacher.instance().reset();
-        // TODO BAS: enable reset of EntityClassCache
-        return Response.ok("OK: all templates loaded").build();
-    }
-
 
 
     //using regular expression to let all requests to undefined paths end up here

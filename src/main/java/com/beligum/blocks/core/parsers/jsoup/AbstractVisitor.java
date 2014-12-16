@@ -121,6 +121,9 @@ public class AbstractVisitor
         if (replacement != null) {
             Document templateDOM = Jsoup.parse(replacement.getTemplate(), BlocksConfig.getSiteDomain(), Parser.xmlParser());
             Node replacementHtmlRoot = templateDOM.child(0);
+//            if(StringUtils.isEmpty(replacementHtmlRoot.attr(ParserConstants.RESOURCE))){
+//                replacementHtmlRoot.attr(ParserConstants.RESOURCE, replacement.getUrl().toString());
+//            }
             node.replaceWith(replacementHtmlRoot);
             return replacementHtmlRoot;
         }

@@ -1,21 +1,21 @@
 package com.beligum.blocks.core.models.templates;
 
 import com.beligum.blocks.core.config.DatabaseConstants;
-import com.beligum.blocks.core.identifiers.ID;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.IdentifiableObject;
 import com.beligum.blocks.core.models.ifaces.Storable;
-import com.beligum.blocks.core.models.templates.EntityTemplate;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by bas on 05.11.14.
  */
 public abstract class AbstractTemplate extends IdentifiableObject implements Storable
 {
+    //TODO BAS!: internationalization should be added to a template (probably a map of languages on template-strings)
     /**string representing the html-template of this element, once the template has been set, it cannot be changed*/
     protected String template;
     /**the version of the application this row is supposed to interact with*/

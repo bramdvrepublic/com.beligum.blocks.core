@@ -1,6 +1,7 @@
 package com.beligum.blocks.core.parsers.jsoup;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.ParseException;
@@ -85,7 +86,7 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                 if (newInstancesNodes.size() == 1 && pageUrl != null) {
                     newEntityId = new RedisID(pageUrl);
                 }
-                node.attr("resource", newEntityId.getUrl().toString());
+                node.attr(ParserConstants.RESOURCE, newEntityId.getUrl().toString());
                 EntityTemplate newInstance = new EntityTemplate(newEntityId, entityClass, node.outerHtml());
                 Redis.getInstance().save(newInstance);
                 node = replaceElementWithEntityReference((Element) node, newInstance);
