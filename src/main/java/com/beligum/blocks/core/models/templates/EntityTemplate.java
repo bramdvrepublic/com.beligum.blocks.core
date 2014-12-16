@@ -23,7 +23,7 @@ public class EntityTemplate extends AbstractTemplate implements Storable
     /**the class of which this viewable is a viewable-instance*/
     protected final EntityTemplateClass entityTemplateClass;
 
-    private PageTemplate pageTemplate;
+    private String pageTemplateName = ParserConstants.DEFAULT_PAGE_TEMPLATE;
 
     /**
      *
@@ -38,13 +38,13 @@ public class EntityTemplate extends AbstractTemplate implements Storable
         //a entity cannot be altered by the client, so it always is final
         super(id, entityTemplateClass.getTemplate());
         this.entityTemplateClass = entityTemplateClass;
-        this.pageTemplate = entityTemplateClass.getPageTemplate();
+        this.pageTemplateName = entityTemplateClass.getPageTemplateName();
     }
 
     public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, String template){
         super(id, template);
         this.entityTemplateClass = entityTemplateClass;
-        this.pageTemplate = entityTemplateClass.getPageTemplate();
+        this.pageTemplateName = entityTemplateClass.getPageTemplateName();
     }
 
     /**
@@ -60,10 +60,7 @@ public class EntityTemplate extends AbstractTemplate implements Storable
                 newInstance.template = hash.get(DatabaseConstants.TEMPLATE);
                 newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
                 newInstance.creator = hash.get(DatabaseConstants.CREATOR);
-                PageTemplate pageTemplate = PageTemplateCache.getInstance().get(hash.get(DatabaseConstants.PAGE_TEMPLATE));
-                if(pageTemplate.getName() != ParserConstants.DEFAULT_PAGE_TEMPLATE) {
-                    newInstance.pageTemplate = pageTemplate;
-                }
+                newInstance.pageTemplateName = hash.get(DatabaseConstants.PAGE_TEMPLATE);
                 //TODO BAS: this should go to AbstractTemplate: here use Field.java or something of the sort, should make sure the rest of the hash (like application version and creator) is filled in, even if not all fields are present in the hash
 
                 return newInstance;
@@ -99,10 +96,16 @@ public class EntityTemplate extends AbstractTemplate implements Storable
 
     /**
      *
-     * @return the default page-template this entity-template should be rendered in
+     * @return the default page-template this entity-template should be rendered in, fetched from cache
      */
-    public PageTemplate getPageTemplate(){
-        return this.pageTemplate;
+    public PageTemplate getPageTemplate() throws CacheException
+    {
+        return PageTemplateCache.getInstance().get(pageTemplateName);
+    }
+
+
+    public void setPageTemplateName(String pageTemplateName){
+        this.pageTemplateName = pageTemplateName;
     }
 
 
@@ -116,6 +119,7 @@ public class EntityTemplate extends AbstractTemplate implements Storable
     {
         Map<String, String> hash = super.toHash();
         hash.put(DatabaseConstants.ENTITY_TEMPLATE_CLASS, this.getEntityTemplateClass().getName());
+        hash.put(DatabaseConstants.PAGE_TEMPLATE, this.pageTemplateName);
         return hash;
     }
 
@@ -141,7 +145,7 @@ public class EntityTemplate extends AbstractTemplate implements Storable
             else{
                 EntityTemplate templObj = (EntityTemplate) obj;
                 EqualsBuilder significantFieldsSet = new EqualsBuilder();
-                significantFieldsSet = significantFieldsSet.append(pageTemplate, templObj.pageTemplate);
+                significantFieldsSet = significantFieldsSet.append(pageTemplateName, templObj.pageTemplateName);
                 return significantFieldsSet.isEquals();
             }
         }
@@ -158,7 +162,7 @@ public class EntityTemplate extends AbstractTemplate implements Storable
         int hashCode = super.hashCode();
         HashCodeBuilder significantFieldsSet = new HashCodeBuilder(3, 41);
         significantFieldsSet = significantFieldsSet.appendSuper(hashCode)
-                                                   .append(this.pageTemplate);
+                                                   .append(this.pageTemplateName);
         return significantFieldsSet.toHashCode();
     }
 }
