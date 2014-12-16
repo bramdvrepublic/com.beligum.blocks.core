@@ -6,8 +6,10 @@ import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.DeserializationException;
+import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.ifaces.Storable;
+import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -106,6 +108,20 @@ public class EntityTemplate extends AbstractTemplate implements Storable
 
     public void setPageTemplateName(String pageTemplateName){
         this.pageTemplateName = pageTemplateName;
+    }
+
+    /**
+     * render the html of this entity-template, using it's page-template (or, if it is the default-page-template, use the page-template of the class) and class-template
+     * @return
+     */
+    public String render() throws CacheException, ParseException
+    {
+        PageTemplate pageTemplate = getPageTemplate();
+        PageTemplate classPageTemplate = this.getEntityTemplateClass().getPageTemplate();
+        if(pageTemplate.getName().equals(ParserConstants.DEFAULT_PAGE_TEMPLATE) && !classPageTemplate.getName().equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)){
+            pageTemplate = classPageTemplate;
+        }
+        return TemplateParser.renderEntityInsidePageTemplate(pageTemplate, this);
     }
 
 

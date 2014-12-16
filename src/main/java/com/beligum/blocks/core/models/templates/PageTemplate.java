@@ -71,11 +71,6 @@ public class PageTemplate extends AbstractTemplate
 //        }
 //    }
 
-    public String renderContent(EntityTemplate entityTemplate) throws ParseException
-    {
-        return TemplateParser.renderEntityInsidePageTemplate(this, entityTemplate);
-    }
-
     /**
      * The PageTemplate-class can be used as a factory, to construct page-templates from data found in a hash in the redis-db
      * @param hash a map, mapping field-names to field-values
