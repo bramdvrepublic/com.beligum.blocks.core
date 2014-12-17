@@ -59,6 +59,11 @@ public class Redis implements Closeable
         return instance;
     }
 
+    /**
+     * Save a new version of a template to db. This method does NOT check if the new version is actually different from the old one.
+     * @param template
+     * @throws RedisException
+     */
     public void save(AbstractTemplate template) throws RedisException
     {
         try (Jedis redisClient = pool.getResource()) {
@@ -250,7 +255,7 @@ public class Redis implements Closeable
      */
     public Long getLastVersion(URL entityUrl) throws IDException
     {
-        RedisID wrongVersionId = new RedisID(entityUrl);
+        RedisID wrongVersionId = new RedisID(entityUrl, RedisID.NO_VERSION);
         return getLastVersion(wrongVersionId.getUnversionedId());
     }
 
@@ -263,11 +268,11 @@ public class Redis implements Closeable
         try (Jedis redisClient = pool.getResource()){
             Random randomGenerator = new Random();
             int positiveNumber = Math.abs(randomGenerator.nextInt());
-            RedisID retVal = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClass.getName() + "/" + positiveNumber));
+            RedisID retVal = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClass.getName() + "/" + positiveNumber), RedisID.NEW_VERSION);
             //Check if this entity-id (url) is not already present in db, if so, re-render a random entity-id
             while (redisClient.get(retVal.getUnversionedId()) != null) {
                 positiveNumber = Math.abs(randomGenerator.nextInt());
-                retVal = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClass.getName() + "/" + positiveNumber));
+                retVal = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClass.getName() + "/" + positiveNumber), RedisID.NEW_VERSION);
             }
             return retVal;
         }catch(MalformedURLException e){

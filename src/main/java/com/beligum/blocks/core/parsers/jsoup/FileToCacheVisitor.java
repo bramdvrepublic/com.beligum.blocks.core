@@ -2,6 +2,7 @@ package com.beligum.blocks.core.parsers.jsoup;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
+import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.ParseException;
@@ -11,8 +12,10 @@ import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
+import org.jsoup.parser.Parser;
 
 /**
  * Created by wouter on 22/11/14.
@@ -47,6 +50,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                 Element element = (Element) node;
                 EntityTemplateClass entityTemplateClass = cacheEntityTemplateClassFromNode(element);
                 if(isProperty(element)) {
+                    element.removeAttr(ParserConstants.BLUEPRINT);
                     EntityTemplate propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element)), entityTemplateClass, element.outerHtml());
                     RedisID lastVersion = new RedisID(propertyInstance.getUnversionedId(), RedisID.LAST_VERSION);
                     EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
@@ -57,7 +61,9 @@ public class FileToCacheVisitor extends AbstractVisitor
                     node = replaceElementWithPropertyReference(element);
                 }
                 else if(this.typeOfStack.size()>0){
-                    EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass);
+                    Element entityTemplateClassRoot = Jsoup.parse(entityTemplateClass.getTemplate(), BlocksConfig.getSiteDomain(), Parser.xmlParser()).child(0);
+                    entityTemplateClassRoot.removeAttr(ParserConstants.BLUEPRINT);
+                    EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass, entityTemplateClassRoot.outerHtml());
                     RedisID lastVersion = new RedisID(instance.getUnversionedId(), RedisID.LAST_VERSION);
                     EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
                     //if no version is present in db, or this version is different, save to db
@@ -110,7 +116,6 @@ public class FileToCacheVisitor extends AbstractVisitor
     private Node createTemplate(Element element) throws ParseException
     {
         try {
-            //TODO BAS SH: trying to add page-templating to entity-templates and entity-template classes. For the moment it seems to use the use the default-page-template always.
             if (element.hasAttr(ParserConstants.PAGE_TEMPLATE_CONTENT_ATTR)) {
                 Node parent = element.parent();
                 //initialize the page-template name by searching for the first template-attribute we find before the specified node and take the value of that attribute to be the name

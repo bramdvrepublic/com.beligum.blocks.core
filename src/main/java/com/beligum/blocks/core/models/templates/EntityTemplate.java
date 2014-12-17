@@ -30,20 +30,12 @@ public class EntityTemplate extends AbstractTemplate implements Storable
 
     /**
      *
-     * Constructor for a new entity-instance of a certain entity-class, which will be filled with the default rows and blocks from the entity-class.
+     * Constructor for a new entity-instance of a certain entity-class.
      * It's UID will be the of the form "[url]:[version]". It used the current application version and the currently logged in user for field initialization.
      * @param id the id of this entity
      * @param entityTemplateClass the class of which this entity is a entity-instance
      * @throw URISyntaxException if a url is specified not formatted strictly according to to RFC2396
      */
-    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass)
-    {
-        //if null is found in the template-field, the getter will return the entity-template-class's template, which is what we want to accomplish with this constructor
-        super(id, entityTemplateClass.getTemplate());
-        this.entityTemplateClassName = entityTemplateClass.getName();
-        this.pageTemplateName = entityTemplateClass.getPageTemplateName();
-    }
-
     public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, String template){
         super(id, template);
         this.entityTemplateClassName = entityTemplateClass.getName();

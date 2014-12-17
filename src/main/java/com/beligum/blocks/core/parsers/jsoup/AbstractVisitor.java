@@ -15,7 +15,6 @@ import org.jsoup.parser.Parser;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.List;
 import java.util.Stack;
 
 /**
@@ -112,23 +111,23 @@ public class AbstractVisitor
 
     /**
      * Replace the specified node with the root-node of an entity-template
-     * @param node
+     * @param element
      * @param replacement
      * @return the root-node of the replacement template, or the specified node itself when a null-replacement was specified
      */
-    protected Node replaceReferenceWithEntity(Node node, EntityTemplate replacement)
+    protected Element replaceReferenceWithEntity(Element element, EntityTemplate replacement)
     {
         if (replacement != null) {
             Document templateDOM = Jsoup.parse(replacement.getTemplate(), BlocksConfig.getSiteDomain(), Parser.xmlParser());
-            Node replacementHtmlRoot = templateDOM.child(0);
+            Element replacementHtmlRoot = templateDOM.child(0);
 //            if(StringUtils.isEmpty(replacementHtmlRoot.attr(ParserConstants.RESOURCE))){
 //                replacementHtmlRoot.attr(ParserConstants.RESOURCE, replacement.getUrl().toString());
 //            }
-            node.replaceWith(replacementHtmlRoot);
+            element.replaceWith(replacementHtmlRoot);
             return replacementHtmlRoot;
         }
         else{
-            return node;
+            return element;
         }
     }
 
@@ -249,16 +248,6 @@ public class AbstractVisitor
     }
 
 
-
-    /**
-     *
-     * @param root
-     * @return true if the specified element has a rdf-"typeof" attribute, false otherwise
-     */
-    public boolean isEntityTemplateRoot(Node root){
-        return  isEntity(root);
-    }
-
     public boolean hasResource(Element element) {
         if(element == null){
             return false;
@@ -332,32 +321,36 @@ public class AbstractVisitor
             return false;
         }
         boolean retVal = false;
-        if (node.hasAttr(ParserConstants.BLEUPRINT)) {
+        if (node.hasAttr(ParserConstants.BLUEPRINT)) {
             retVal = true;
         }
         return retVal;
     }
 
-    public boolean isLayoutable(Node node) {
-        if(node == null){
+    public boolean isLayoutable(Element element) {
+        if(element == null){
             return false;
         }
         boolean retVal = false;
-        if (node.hasAttr(ParserConstants.CAN_LAYOUT)) {
+        if (element.classNames().contains(ParserConstants.CAN_LAYOUT)) {
             retVal = true;
         }
         return retVal;
     }
 
-    public boolean isEditable(Node node) {
-        if(node == null){
+    public boolean isEditable(Element element) {
+        if(element == null){
             return false;
         }
         boolean retVal = false;
-        if (node.hasAttr(ParserConstants.CAN_EDIT)) {
+        if (element.classNames().contains(ParserConstants.CAN_EDIT)) {
             retVal = true;
         }
         return retVal;
+    }
+
+    public boolean isModifiable(Element element) {
+        return isEditable(element) || isLayoutable(element);
     }
 
 
@@ -389,48 +382,5 @@ public class AbstractVisitor
         }
 
     }
-
-
-//    public boolean isBootstrapContainer(Element node) {
-//        if(node == null){
-//            return false;
-//        }
-//        return node.hasClass("container");
-//    }
-//
-//    public boolean isBootstrapRow(Element node) {
-//        if(node == null){
-//            return false;
-//        }
-//        return node.hasClass("row");
-//    }
-//
-//    public boolean isBootstrapColumn(Element node) {
-//        if(node == null){
-//            return false;
-//        }
-//        boolean retVal = false;
-//        for (String cName: node.classNames()) {
-//            if (cName.startsWith("col-")) {
-//                retVal = true;
-//                break;
-//            }
-//        }
-//        return retVal;
-//    }
-//
-//    public boolean isBootstrapLayout(Element node) {
-//        return isBootstrapRow(node) || isBootstrapContainer(node) || isBootstrapColumn(node);
-//    }
-//    public boolean isBootstrapLayout(List<Element> elements) {
-//        boolean retVal = true;
-//        for (Element el: elements) {
-//            if (!isBootstrapLayout(el)) {
-//                retVal = false;
-//                break;
-//            }
-//        }
-//        return retVal;
-//    }
 
 }

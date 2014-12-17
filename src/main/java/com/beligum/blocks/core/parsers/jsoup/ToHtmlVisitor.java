@@ -24,18 +24,7 @@ import java.util.Set;
 */
 public class ToHtmlVisitor extends AbstractVisitor
 {
-    private enum ModifiacationLevel
-    {
-        NONE(0),
-        FILLABLE(1),
-        LAYOUTABLE(1),
-        EDITABLE(2);
 
-        private int permissionLevel;
-        ModifiacationLevel(int permissionLevel){
-            this.permissionLevel = permissionLevel;
-        }
-    }
 
     @Override
     public Node head(Node node, int depth) throws ParseException
@@ -43,23 +32,15 @@ public class ToHtmlVisitor extends AbstractVisitor
         try {
             node = super.head(node, depth);
             if(isEntity(node) && node instanceof Element) {
-                Element element = (Element) node;
+                Element entityRoot = (Element) node;
                 EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
                 Element entityClassRoot = Jsoup.parse(entityTemplateClass.getTemplate(), BlocksConfig.getSiteDomain(), Parser.xmlParser()).child(0);
 
-                ModifiacationLevel modificationLevel = getModificationLevel(element, entityClassRoot);
-                switch(modificationLevel){
-                    case EDITABLE:
-                        node = replaceWithInstance(element);
-                        break;
-                    case LAYOUTABLE:
-                        node = replaceWithWithLayoutedClass(element, entityClassRoot);
-                    case FILLABLE:
-                        node = replaceWithFilledInClass(element, entityClassRoot);
-                        break;
-                    case NONE:
-                        node = replaceWithClassCopy(element, entityClassRoot);
+                if(!(isModifiable(entityRoot) && isModifiable(entityClassRoot))){
+                    node = copyProperties(entityRoot, entityClassRoot);
                 }
+                //if this is a referencing block, replace it
+                node = replaceWithReferencedInstance(entityRoot);
             }
             return node;
         }
@@ -77,81 +58,89 @@ public class ToHtmlVisitor extends AbstractVisitor
         return super.tail(node, depth);
     }
 
-    /**
-     * Inspects the css-classes of the entity-instance and entity-class and decides what level of modification is permitted
-     * @param enityInstanceRoot
-     * @param entityClassRoot
-     * @return
-     */
-    private ModifiacationLevel getModificationLevel(Element enityInstanceRoot, Element entityClassRoot){
-        Set<String> instanceCssClasses = enityInstanceRoot.classNames();
-        Set<String> classCssClasses = entityClassRoot.classNames();
-        if(classCssClasses.contains(ParserConstants.CAN_EDIT)){
-            if(instanceCssClasses.contains(ParserConstants.CAN_EDIT)){
-                return ModifiacationLevel.EDITABLE;
-            }
-            else if(instanceCssClasses.contains(ParserConstants.CAN_LAYOUT)){
-                return ModifiacationLevel.LAYOUTABLE;
-            }
-            else{
-                return ModifiacationLevel.NONE;
-            }
-        }
-        else if(classCssClasses.contains(ParserConstants.CAN_LAYOUT)){
-            if(instanceCssClasses.contains(ParserConstants.CAN_LAYOUT)){
-                return ModifiacationLevel.LAYOUTABLE;
-            }
-            else{
-                return ModifiacationLevel.NONE;
-            }
-        }
-        else{
-            return ModifiacationLevel.NONE;
-        }
-    }
+    private Node copyProperties(Element fromInstanceRoot, Element toClassRoot) throws ParseException
+    {
+        try {
+            Elements instanceProperties = fromInstanceRoot.select("[" + ParserConstants.REFERENCE_TO + "]" + "[" + ParserConstants.PROPERTY + "]");
+            Elements classProperties = toClassRoot.select("[" + ParserConstants.REFERENCE_TO + "]" + "[" + ParserConstants.PROPERTY + "]");
 
-    private Node replaceWithClassCopy(Node node, Element entityClassDOMRoot){
-        //TODO BAS!: een kopie van de klasse moet aangemaakt worden en geschreven naar db voor de instance met url de resource te vinden op de gespecifieerde node
-        node.replaceWith(entityClassDOMRoot);
-        return entityClassDOMRoot;
-    }
-
-    private Node replaceWithWithLayoutedClass(Element entityInstanceRoot, Element entityClassRoot){
-        //TODO BAS SH: de blokken in een klasse moeten kunnen verplaatst worden. Dat wil zeggen dat we de klasse-properties invullen in de instance. Hier moet zeker opgepast worden dat het hele "#propertyName"-systeem blijft werken!
-        return entityInstanceRoot;
-    }
-
-    private Node replaceWithFilledInClass(Element element, Element entityClassDOMRoot){
-        Elements referencingChildren = element.select("[" + ParserConstants.REFERENCE_TO + "]");
-        Elements classReferencingChildren = entityClassDOMRoot.select("[" + ParserConstants.REFERENCE_TO + "]");
-
-        Elements entityProperties = referencingChildren.select("[" + ParserConstants.PROPERTY + "]");
-        Elements classProperties = classReferencingChildren.select("[" + ParserConstants.PROPERTY + /*"][class*=" + ParserConstants.CAN_EDIT +*/ "]");
-
-
-        //if referencing, editable properties are present in the class-template, they are proper properties and they should be filled in from the entity-instance we are parsing now
-        if (!entityProperties.isEmpty() && !classProperties.isEmpty()) {
-            for (Element editableClassProperty : classProperties) {
-                for (Element entityProperty : entityProperties) {
-                    if (getProperty(entityProperty).contentEquals(getProperty(editableClassProperty))) {
-                        Element entityPropertyCopy = entityProperty.clone();
-                        editableClassProperty.replaceWith(entityPropertyCopy);
+            //if referencing, editable properties are present in the class-template, they are proper properties and they should be filled in from the entity-instance we are parsing now
+            if (!instanceProperties.isEmpty() && !classProperties.isEmpty()) {
+                for (Element classProperty : classProperties) {
+                    for (Element instanceProperty : instanceProperties) {
+                        if (getProperty(instanceProperty).contentEquals(getProperty(classProperty))) {
+                            if (isModifiable(classProperty)) {
+                                Element instancePropertyCopy = instanceProperty.clone();
+                                classProperty.replaceWith(instancePropertyCopy);
+                            }
+//                            else {
+//                            TODO BAS SH: how can we make copies of default values to be linked to a new instance, (This is relevant when a class-template has changed and now a certain property has been set to unmodifiable).
+//                                /*
+//                                 * If the class-defaults should be used for this entity-property, we check if the last stored version of the entity-property-instance is different from the class-default.
+//                                 * If so, we save en new version of the entity-property-instance to db and then we set that reference to this new version to be parsed in a later parsing-stadium.
+//                                 */
+//                                RedisID classPropertyId = new RedisID(getReferencedId(classProperty), RedisID.LAST_VERSION);
+//                                EntityTemplate classPropertyTemplate = Redis.getInstance().fetchEntityTemplate(classPropertyId);
+//                                if(classPropertyTemplate == null){
+//                                    throw new ParseException("Couldn't find last version of class-default property '" + classPropertyId + "' in db.");
+//                                }
+//
+//
+//                                RedisID referencedEntityPropertyId = new RedisID(getReferencedId(instanceProperty), RedisID.LAST_VERSION);
+//                                EntityTemplate referencedEntityPropertyTemplate = Redis.getInstance().fetchEntityTemplate(referencedEntityPropertyId);
+//                                //remove the resource-attribute from the referenced  entity-property, so we can compare it to the propertyDefault
+//                                Element referencedEntityPropertyTemplateRoot = Jsoup.parse(referencedEntityPropertyTemplate.getTemplate(), BlocksConfig.getSiteDomain(), Parser.xmlParser()).child(0);
+//                                String entityPropertyResource = referencedEntityPropertyTemplateRoot.attr(ParserConstants.RESOURCE);
+//                                referencedEntityPropertyTemplateRoot.removeAttr(ParserConstants.RESOURCE);
+//                                referencedEntityPropertyTemplate = new EntityTemplate(referencedEntityPropertyId, referencedEntityPropertyTemplate.getEntityTemplateClass(), referencedEntityPropertyTemplateRoot.outerHtml());
+//
+//
+//                                RedisID lastStoredEntityPropertyId = new RedisID(getReferencedId(instanceProperty), RedisID.LAST_VERSION);
+//                                EntityTemplate lastStoredEntityProperty = Redis.getInstance().fetchEntityTemplate(lastStoredEntityPropertyId);
+//                                if(lastStoredEntityProperty == null){
+//                                    throw new ParseException("Couldn't find last version of template '" + lastStoredEntityPropertyId + "' in db.");
+//                                }
+//
+//
+//                                if(!referencedEntityPropertyTemplate.equals(classPropertyTemplate)) {
+//                                    EntityTemplateClass entityPropertyClass = EntityTemplateClassCache.getInstance().get(getTypeOf(instanceProperty));
+//                                    RedisID newVersionOfEntityPropertyId = new RedisID(referencedEntityPropertyId.getUnversionedId(), RedisID.NEW_VERSION);
+//                                    EntityTemplate classPropertyTemplateCopy = new EntityTemplate(newVersionOfEntityPropertyId, entityPropertyClass, classPropertyTemplate.getTemplate());
+//                                    if(!lastStoredEntityProperty.equals(referencedEntityPropertyTemplate)) {
+//                                        Redis.getInstance().save(classPropertyTemplateCopy);
+//                                    }
+//                                }
+//                                classProperty.attr(ParserConstants.RESOURCE, entityPropertyResource);
+//                                classProperty.attr(ParserConstants.REFERENCE_TO, referencedEntityPropertyId.getUnversionedId());
+//                            }
+                        }
                     }
                 }
+                Node returnRoot = toClassRoot;
+                for (Attribute attribute : fromInstanceRoot.attributes()) {
+                    returnRoot.attr(attribute.getKey(), attribute.getValue());
+                }
+                returnRoot.removeAttr(ParserConstants.BLUEPRINT);
+                fromInstanceRoot.replaceWith(returnRoot);
+                return returnRoot;
             }
-            Node classRoot = entityClassDOMRoot;
-            for (Attribute attribute : element.attributes()) {
-                classRoot.attr(attribute.getKey(), attribute.getValue());
+            else {
+                //TODO BAS SH: what should happen when a block has no properties, but is a reference to a default-block? Is het een oplossing om 2x de "head"-methode op te roepen na elkaar, vooraleer verder te gaan?
+                return fromInstanceRoot;
             }
-            element.replaceWith(classRoot);
-            return classRoot;
-        }
-        else{
-            return element;
+        }catch(Exception e){
+            throw new ParseException("Couldn't deduce an entity-instance from it's entity-class at:" + fromInstanceRoot);
         }
     }
 
-    private Node replaceWithInstance(Node instanceRootNode) throws ParseException
+    /**
+     * If the specified node is a referencing node, replace it with the root-node of the template corresponding to that referencing node.
+     * If it is not a referencing node, return the specified node.
+     * @param instanceRootNode
+     * @return
+     * @throws ParseException
+     */
+    private Element replaceWithReferencedInstance(Element instanceRootNode) throws ParseException
     {
         try {
             String referencedId = getReferencedId(instanceRootNode);
@@ -160,8 +149,8 @@ public class ToHtmlVisitor extends AbstractVisitor
                 EntityTemplate referencedEntityTemplate = Redis.getInstance().fetchEntityTemplate(id);
                 return replaceReferenceWithEntity(instanceRootNode, referencedEntityTemplate);
             }
-            else {
-                throw new ParseException("Found not-referencing entity, this shouldn't happen: \n \n" + instanceRootNode + "\n \n");
+            else{
+                return instanceRootNode;
             }
         }catch(Exception e){
             if(e instanceof ParseException){
