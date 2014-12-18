@@ -115,13 +115,13 @@ public class AbstractVisitor
      * @param replacement
      * @return the root-node of the replacement template, or the specified node itself when a null-replacement was specified
      */
-    protected Node replaceReferenceWithEntity(Node node, EntityTemplate replacement)
+    protected Node replaceNodeWithEntity(Node node, EntityTemplate replacement)
     {
-        if (replacement != null) {
+        if (node!= null && replacement != null) {
             Element replacementHtmlRoot= TemplateParser.parse(replacement.getTemplate()).child(0);
-//            if(StringUtils.isEmpty(replacementHtmlRoot.attr(ParserConstants.RESOURCE))){
-//                replacementHtmlRoot.attr(ParserConstants.RESOURCE, replacement.getUrl().toString());
-//            }
+            if(StringUtils.isEmpty(replacementHtmlRoot.attr(ParserConstants.RESOURCE))){
+                replacementHtmlRoot.attr(ParserConstants.RESOURCE, replacement.getUrl().toString());
+            }
             node.replaceWith(replacementHtmlRoot);
             return replacementHtmlRoot;
         }
@@ -129,6 +129,8 @@ public class AbstractVisitor
             return node;
         }
     }
+
+
 
 
 

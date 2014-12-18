@@ -17,6 +17,10 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
+import org.jsoup.select.Elements;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by wouter on 22/11/14.
@@ -87,26 +91,36 @@ public class FileToCacheVisitor extends AbstractVisitor
 
     /**
      *
-     * @param node node defining an entity-template-class
+     * @param element node defining an entity-template-class
      * @return the entity-template-class defined by the node
      * @throws ParseException
      */
-    private EntityTemplateClass cacheEntityTemplateClassFromNode(Node node) throws ParseException
+    private EntityTemplateClass cacheEntityTemplateClassFromNode(Element element) throws ParseException
     {
         String entityClassName = "";
         try {
-            entityClassName = this.getTypeOf(node);
+            entityClassName = this.getTypeOf(element);
             if(!StringUtils.isEmpty(entityClassName)) {
-                EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, node.outerHtml(), this.pageTemplateName);
+                EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, element.outerHtml(), this.pageTemplateName);
+                Elements classProperties = element.select("[" + ParserConstants.PROPERTY + "]");
+                Set<String> propertyNames = new HashSet<>();
+                for(Element classProperty : classProperties){
+                    String propertyName = getProperty(classProperty);
+                    if(!StringUtils.isEmpty(propertyName)) {
+                        if(!propertyNames.add(propertyName)){
+                            throw new ParseException("Cannot add two properties with the same name '"+propertyName+"'to one class ('" + entityClassName + "')for now. This will be possible in a later version. Found at \n \n " + element);
+                        }
+                    }
+                }
                 boolean added = EntityTemplateClassCache.getInstance().add(entityTemplateClass);
                 //if the node is a bleuprint and the cache already had a template-class present, force replace the template
-                if(!added && isBlueprint(node)){
+                if(!added && isBlueprint(element)){
                     EntityTemplateClassCache.getInstance().replace(entityTemplateClass);
                 }
                 return EntityTemplateClassCache.getInstance().get(entityClassName);
             }
             else{
-                throw new Exception(Node.class.getSimpleName() + " '" + node + "' does not define an entity.");
+                throw new Exception(Node.class.getSimpleName() + " '" + element + "' does not define an entity.");
             }
         }
         catch(Exception e){

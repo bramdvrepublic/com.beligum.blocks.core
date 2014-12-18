@@ -57,8 +57,10 @@ public class ToHtmlVisitor extends AbstractVisitor
     private Node copyProperties(Element fromInstanceRoot, Element toClassRoot) throws ParseException
     {
         try {
-            Elements instanceProperties = fromInstanceRoot.select("[" + ParserConstants.REFERENCE_TO + "]" + "[" + ParserConstants.PROPERTY + "]");
-            Elements classProperties = toClassRoot.select("[" + ParserConstants.REFERENCE_TO + "]" + "[" + ParserConstants.PROPERTY + "]");
+            Elements instanceReferencingElements = fromInstanceRoot.select("[" + ParserConstants.REFERENCE_TO + "]");
+            Elements instanceProperties =  instanceReferencingElements.select("[" + ParserConstants.PROPERTY + "]");
+            Elements classReferencingElements = toClassRoot.select("[" + ParserConstants.REFERENCE_TO + "]");
+            Elements classProperties = classReferencingElements.select("[" + ParserConstants.PROPERTY + "]");
 
             //if referencing, editable properties are present in the class-template, they are proper properties and they should be filled in from the entity-instance we are parsing now
             if (!instanceProperties.isEmpty() && !classProperties.isEmpty()) {
@@ -72,18 +74,18 @@ public class ToHtmlVisitor extends AbstractVisitor
                             }
                             //If the class-defaults should be used for this class-property, we fetch the default from db and add it, using the original instance's property's resource-id.
                             else {
-                                RedisID defaultClassPropertyId = new RedisID(getReferencedId(classProperty), RedisID.LAST_VERSION);
-                                EntityTemplate defaultClassPropertyTemplate = Redis.getInstance().fetchEntityTemplate(defaultClassPropertyId);
-                                if(defaultClassPropertyTemplate == null){
-                                    throw new ParseException("Couldn't find last version of class-default property '" + defaultClassPropertyId + "' in db.");
-                                }
-                                Element defaultClassPropertyRoot = TemplateParser.parse(defaultClassPropertyTemplate.getTemplate()).child(0);
-                                String referencedInstanceId = getReferencedId(instanceProperty);
-                                defaultClassPropertyRoot.attr(ParserConstants.RESOURCE, referencedInstanceId);
-                                classProperty.replaceWith(defaultClassPropertyRoot);
+                                replaceWithNewDefaultCopy(classProperty, getReferencedId(instanceProperty));
                             }
+                            instanceReferencingElements.remove(instanceProperty);
+                            classReferencingElements.remove(classProperty);
                         }
                     }
+                }
+                for(Element remainingClassReferencingElement : classReferencingElements){
+                    //when a typeof-child without a property is encountered, we can only render the default value, without showing it's resource, so it is not overwritten later
+                    EntityTemplate classDefault = Redis.getInstance().fetchEntityTemplate(new RedisID(getReferencedId(remainingClassReferencingElement), RedisID.LAST_VERSION));
+                    Node classDefaultRoot = TemplateParser.parse(classDefault.getTemplate()).child(0);
+                    remainingClassReferencingElement.replaceWith(classDefaultRoot);
                 }
                 Node returnRoot = toClassRoot;
                 for (Attribute attribute : fromInstanceRoot.attributes()) {
@@ -97,9 +99,29 @@ public class ToHtmlVisitor extends AbstractVisitor
                 return fromInstanceRoot;
             }
         }catch(Exception e){
-            throw new ParseException("Couldn't deduce an entity-instance from it's entity-class at:" + fromInstanceRoot);
+            throw new ParseException("Couldn't deduce an entity-instance from it's entity-class at:" + fromInstanceRoot, e);
         }
     }
+
+    /**
+     * Replace the class-property with a new copy of the default-value's of the class, referencing to the specified entity
+     * @param classProperty
+     * @param referenceId entity-id this default-copy should be a new version of
+     * @throws Exception
+     */
+    private void replaceWithNewDefaultCopy(Node classProperty, String referenceId) throws Exception
+    {
+        RedisID defaultClassPropertyId = new RedisID(getReferencedId(classProperty), RedisID.LAST_VERSION);
+        EntityTemplate defaultClassPropertyTemplate = Redis.getInstance().fetchEntityTemplate(defaultClassPropertyId);
+        if(defaultClassPropertyTemplate == null){
+            throw new ParseException("Couldn't find last version of class-default property '" + defaultClassPropertyId + "' in db.");
+        }
+        Element defaultClassPropertyRoot = TemplateParser.parse(defaultClassPropertyTemplate.getTemplate()).child(0);
+        String referencedInstanceId = referenceId;
+        defaultClassPropertyRoot.attr(ParserConstants.RESOURCE, referencedInstanceId);
+        classProperty.replaceWith(defaultClassPropertyRoot);
+    }
+
 
     /**
      * If the specified node is a referencing node, replace it with the root-node of the template corresponding to that referencing node.
@@ -111,11 +133,19 @@ public class ToHtmlVisitor extends AbstractVisitor
     private Node replaceWithReferencedInstance(Node instanceRootNode) throws ParseException
     {
         try {
-            String referencedId = getReferencedId(instanceRootNode);
-            if (!StringUtils.isEmpty(referencedId)) {
-                RedisID id = new RedisID(referencedId, RedisID.LAST_VERSION);
-                EntityTemplate referencedEntityTemplate = Redis.getInstance().fetchEntityTemplate(id);
-                return replaceReferenceWithEntity(instanceRootNode, referencedEntityTemplate);
+            String id = getReferencedId(instanceRootNode);
+            if (!StringUtils.isEmpty(id)) {
+                RedisID referencedId = new RedisID(id, RedisID.LAST_VERSION);
+                EntityTemplate instanceTemplate = Redis.getInstance().fetchEntityTemplate(referencedId);
+                Element instanceTemplateRoot = TemplateParser.parse(instanceTemplate.getTemplate()).child(0);
+                if(StringUtils.isEmpty(getResource(instanceTemplateRoot)) &&
+                   //when referencing to a class-default, we don't want the resource to show up in the browser
+                   StringUtils.isEmpty(referencedId.getUrl().toURI().getFragment())){
+                    instanceTemplateRoot.attr(ParserConstants.RESOURCE, referencedId.getUrl().toString());
+                }
+                instanceRootNode.replaceWith(instanceTemplateRoot);
+                instanceRootNode.removeAttr(ParserConstants.REFERENCE_TO);
+                return instanceTemplateRoot;
             }
             else{
                 return instanceRootNode;
