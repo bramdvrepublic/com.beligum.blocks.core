@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.parsers.jsoup;
+package com.beligum.blocks.core.parsers;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
@@ -6,6 +6,7 @@ import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.ParseException;
+import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
@@ -61,7 +62,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                     node = replaceElementWithPropertyReference(element);
                 }
                 else if(this.typeOfStack.size()>0){
-                    Element entityTemplateClassRoot = Jsoup.parse(entityTemplateClass.getTemplate(), BlocksConfig.getSiteDomain(), Parser.xmlParser()).child(0);
+                    Element entityTemplateClassRoot = TemplateParser.parse(entityTemplateClass.getTemplate()).child(0);
                     entityTemplateClassRoot.removeAttr(ParserConstants.BLUEPRINT);
                     EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass, entityTemplateClassRoot.outerHtml());
                     RedisID lastVersion = new RedisID(instance.getUnversionedId(), RedisID.LAST_VERSION);

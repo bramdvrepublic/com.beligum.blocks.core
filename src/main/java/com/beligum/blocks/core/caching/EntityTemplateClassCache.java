@@ -44,9 +44,8 @@ public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTempl
                         R.cacheManager().getApplicationCache().put(CacheKeys.ENTITY_CLASSES, new HashMap<String, EntityTemplateClass>());
                         instance = new EntityTemplateClassCache();
                         //insert most basic possible entity-template-class, it is not saved to db
-                        //TODO BAS!: does this entity-template-class-default do what we expect it to?
                         EntityTemplateClass entityTemplateClass = new EntityTemplateClass(instance.getDefaultTemplateName(), "<div " + ParserConstants.TYPE_OF + "=\"" + ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS + "\" class=\""+ ParserConstants.CAN_EDIT +"\"></div>", ParserConstants.DEFAULT_PAGE_TEMPLATE);
-                        instance.getCache().put(instance.getDefaultTemplateName(), entityTemplateClass);
+                        instance.getCache().put(instance.getTemplateKey(instance.getDefaultTemplateName()), entityTemplateClass);
                         instance.fillCache();
                     }
                 }

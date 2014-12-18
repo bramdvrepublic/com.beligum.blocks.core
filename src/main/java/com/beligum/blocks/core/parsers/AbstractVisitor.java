@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.parsers.jsoup;
+package com.beligum.blocks.core.parsers;
 
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
@@ -111,23 +111,22 @@ public class AbstractVisitor
 
     /**
      * Replace the specified node with the root-node of an entity-template
-     * @param element
+     * @param node
      * @param replacement
      * @return the root-node of the replacement template, or the specified node itself when a null-replacement was specified
      */
-    protected Element replaceReferenceWithEntity(Element element, EntityTemplate replacement)
+    protected Node replaceReferenceWithEntity(Node node, EntityTemplate replacement)
     {
         if (replacement != null) {
-            Document templateDOM = Jsoup.parse(replacement.getTemplate(), BlocksConfig.getSiteDomain(), Parser.xmlParser());
-            Element replacementHtmlRoot = templateDOM.child(0);
+            Element replacementHtmlRoot= TemplateParser.parse(replacement.getTemplate()).child(0);
 //            if(StringUtils.isEmpty(replacementHtmlRoot.attr(ParserConstants.RESOURCE))){
 //                replacementHtmlRoot.attr(ParserConstants.RESOURCE, replacement.getUrl().toString());
 //            }
-            element.replaceWith(replacementHtmlRoot);
+            node.replaceWith(replacementHtmlRoot);
             return replacementHtmlRoot;
         }
         else{
-            return element;
+            return node;
         }
     }
 

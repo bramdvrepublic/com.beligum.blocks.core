@@ -26,6 +26,14 @@ public class BlocksConfig
         return getConfiguration("blocks.site.domain");
     }
 
+    public static String getRedisMasterHost()
+    {
+        return getConfiguration("blocks.redis.master-host");
+    }
+    public static String getRedisMasterPort()
+    {
+        return getConfiguration("blocks.redis.master-port");
+    }
     public static String getSiteDBAlias()
     {
         return getConfiguration("blocks.site.db-alias");

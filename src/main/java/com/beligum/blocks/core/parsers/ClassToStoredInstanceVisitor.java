@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.parsers.jsoup;
+package com.beligum.blocks.core.parsers;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;

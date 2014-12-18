@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.parsers.jsoup;
+package com.beligum.blocks.core.parsers;
 
 import com.beligum.blocks.core.exceptions.ParseException;
 import org.jsoup.nodes.Node;
