@@ -5,18 +5,15 @@ import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.AbstractTemplate;
-import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
+import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
-import com.beligum.core.framework.utils.Logger;
-import org.apache.commons.configuration.ConfigurationRuntimeException;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisSentinelPool;
 import redis.clients.jedis.Pipeline;
 
 import java.io.Closeable;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
 
@@ -62,6 +59,11 @@ public class Redis implements Closeable
         return instance;
     }
 
+    /**
+     * Save a new version of a template to db. This method does NOT check if the new version is actually different from the old one.
+     * @param template
+     * @throws RedisException
+     */
     public void save(AbstractTemplate template) throws RedisException
     {
         try (Jedis redisClient = pool.getResource()) {
@@ -104,15 +106,12 @@ public class Redis implements Closeable
                 //do all the reads in this pipeline
                 pipelinedSaveTransaction.sync();
             }
-            catch(IDException e){
-                throw new RedisException("Could not save template '" + template.getId() + "' to db.", e);
-            }
             catch(Exception e){
                 //if an exception has been thrown while writing to, discard the transaction
                 pipelinedSaveTransaction.discard();
                 //do all the reads in this pipeline (not sure if this actually is necessary)
                 pipelinedSaveTransaction.sync();
-                throw e;
+                throw new RedisException("Could not save template '" + template.getId() + "' to db.", e);
             }
         }
     }
@@ -256,7 +255,7 @@ public class Redis implements Closeable
      */
     public Long getLastVersion(URL entityUrl) throws IDException
     {
-        RedisID wrongVersionId = new RedisID(entityUrl);
+        RedisID wrongVersionId = new RedisID(entityUrl, RedisID.NO_VERSION);
         return getLastVersion(wrongVersionId.getUnversionedId());
     }
 
@@ -269,11 +268,11 @@ public class Redis implements Closeable
         try (Jedis redisClient = pool.getResource()){
             Random randomGenerator = new Random();
             int positiveNumber = Math.abs(randomGenerator.nextInt());
-            RedisID retVal = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClass.getName() + "/" + positiveNumber));
+            RedisID retVal = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClass.getName() + "/" + positiveNumber), RedisID.NEW_VERSION);
             //Check if this entity-id (url) is not already present in db, if so, re-render a random entity-id
             while (redisClient.get(retVal.getUnversionedId()) != null) {
                 positiveNumber = Math.abs(randomGenerator.nextInt());
-                retVal = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClass.getName() + "/" + positiveNumber));
+                retVal = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClass.getName() + "/" + positiveNumber), RedisID.NEW_VERSION);
             }
             return retVal;
         }catch(MalformedURLException e){

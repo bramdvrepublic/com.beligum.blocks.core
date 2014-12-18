@@ -143,14 +143,20 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         // First search for active element
         // If an element is active, we have a big chance the next event is in the same element, so we start our search here
         if (currentBlock != null) {
-            blocks.current = currentBlock.findActiveElement(x, y);
+            var bb = currentBlock.findActiveElement(x, y);
+            if (bb instanceof Elements.Block) {
+                blocks.current = bb;
+            }
         }
         // Our shortcut failed so search the full page
         // we loop the trees of elements to find the smallest active element
         if (blocks.current == null) {
             var i = 0;
             while (i < Broadcaster.getLayoutTree().length && blocks.current == null) {
-                blocks.current = Broadcaster.getLayoutTree()[i].findActiveElement(x, y);
+                var bb = Broadcaster.getLayoutTree()[i].findActiveElement(x, y);
+                if (bb instanceof Elements.Block) {
+                    blocks.current = bb;
+                }
                 i++;
             }
         }
@@ -162,7 +168,8 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     };
 
     this.send = function (eventName, custom) {
-        setTimeout(function() {Broadcaster.sendNoTimeout(eventName, custom)}, 0);
+//        setTimeout(function() {Broadcaster.sendNoTimeout(eventName, custom)}, 0);
+        Broadcaster.sendNoTimeout(eventName, custom);
     };
 
     this.sendNoTimeout = function(eventName, custom) {
@@ -241,7 +248,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         layoutTree = [];
         //_this.cleanLayout();
         if (layoutParentElement == null) {
-            layoutParentElement = $("body").find(".can-layout");
+            layoutParentElement = $($("body").find(".can-layout")[0]);
         }
 
         var findContainersInParent = function(parent) {

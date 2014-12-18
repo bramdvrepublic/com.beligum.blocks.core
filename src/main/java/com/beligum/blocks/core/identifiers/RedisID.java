@@ -6,19 +6,12 @@ import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.RedisException;
-import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
-import com.beligum.core.framework.utils.Logger;
-import org.apache.commons.configuration.ConfigurationRuntimeException;
-import org.apache.commons.lang3.StringUtils;
-import org.atteo.evo.inflector.English;
-import redis.clients.jedis.Jedis;
 
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Random;
 
 /**
  * Created by bas on 13.10.14.
@@ -34,7 +27,7 @@ public class RedisID extends ID
     private String language;
 
 
-    private static final String ENTITY_TEMPLATE_CLASS_SET_SUFFIX = "Set";
+
 
 
 
@@ -42,23 +35,12 @@ public class RedisID extends ID
     public static final long NO_VERSION = -1;
     /**constant that can be given to RedisID-constructors, indicating the RedisID should point to the last version of an storable object saved in redis-db*/
     public static final long LAST_VERSION = -2;
+    /**constant used to indicate a new verion should be made for a RedisID, using the current system's time*/
+    public static final long NEW_VERSION = -3;
 
 
 
 
-
-    /**
-     * Constructor taking a URL. De version of this ID will be constructed using the current system's time.
-     * @param url a url representing the unique id of an object that can be versioned
-     * @throws URISyntaxException if the given url cannot be properly used as an ID, when the url is not properly formatted according to RFC 2396 standard
-     */
-    public RedisID(URL url) throws IDException
-    {
-        super(url);
-        this.idUri = initializeLanguage(url);
-        this.url = url;
-        this.version = System.currentTimeMillis();
-    }
 
     /**
      * Constructor taking a URL and a version.
@@ -72,6 +54,9 @@ public class RedisID extends ID
         this.url = url;
         if(version == LAST_VERSION){
             this.version = Redis.getInstance().getLastVersion(url);
+        }
+        else if(version == NEW_VERSION){
+            this.version = System.currentTimeMillis();
         }
         else {
             this.version = version;
@@ -106,7 +91,6 @@ public class RedisID extends ID
              * Note: "objectId" could hold ":"-signs
              */
             String[] splitted = versionedDbId.split(":");
-            //        //TODO BAS: do we still need this? yes, if we use id's with ":hash" or something of the sort as a suffix
             //        if(splitted[splitted.length-1].contentEquals(DatabaseConstants.HASH_SUFFIX)){
             //            this.version = Long.parseLong(splitted[splitted.length - 2]);
             //            int lastDoublePoint = versionedDbId.lastIndexOf(':');
@@ -121,7 +105,6 @@ public class RedisID extends ID
             String unversionedId = "";
             //if only two parts have been splitted of, this is not a versioned id and we look for the last version
             if(splitted.length == 2){
-                //TODO BAS: do we want the default to be the LAST_VERSION, or NO_VERSION
                 version = LAST_VERSION;
                 unversionedId = versionedDbId;
             }
@@ -133,6 +116,9 @@ public class RedisID extends ID
             this.idUri = new URI(unversionedId);
             if (version == LAST_VERSION) {
                 this.version = Redis.getInstance().getLastVersion(unversionedId);
+            }
+            else if(version == NEW_VERSION) {
+                this.version = System.currentTimeMillis();
             }
             else {
                 this.version = version;
@@ -281,7 +267,7 @@ public class RedisID extends ID
     {
         //we're not actually going to the db to determine a new redis-id for a class, it will use a new versioning (current time millis) to get a new version, so we don't actually need to check for that version in db
         try{
-            return new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClassName));
+            return new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClassName), NEW_VERSION);
         }catch(MalformedURLException e){
             throw new IDException("Specified site-domain doesn't seem to be a correct url: " + BlocksConfig.getSiteDomain(), e);
         }
@@ -295,9 +281,9 @@ public class RedisID extends ID
     public static RedisID renderNewPageTemplateID(String pageTemplateName) throws IDException
     {
         try{
-            RedisID newId = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName));
+            RedisID newId = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName), NEW_VERSION);
             while(Redis.getInstance().fetchPageTemplate(newId) != null){
-                newId = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName));
+                newId = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName), NEW_VERSION);
             }
             return newId;
         }catch(MalformedURLException | RedisException e){
@@ -322,7 +308,7 @@ public class RedisID extends ID
                 propertyName = "";
             }
             String url = BlocksConfig.getSiteDomain() + "/" + owningEntityClassName + "#" + propertyName;
-            return new RedisID(new URL(url));
+            return new RedisID(new URL(url), NEW_VERSION);
         }catch(MalformedURLException e){
             throw new IDException("Couldn't construct proper id with '" + BlocksConfig.getSiteDomain() + "/" + owningEntityClassName + "#" + propertyName + "'", e);
         }
@@ -336,11 +322,7 @@ public class RedisID extends ID
     public static String getEntityTemplateClassSetId(String entityTemplateClassName) throws IDException
     {
         try {
-            String entityTemplateClassSetName = English.plural(entityTemplateClassName);
-            //for nouns having the same plural as singular form, we put an extra suffix to the entity-template-class-name
-            if(entityTemplateClassSetName.contentEquals(entityTemplateClassName)) {
-                entityTemplateClassSetName += ENTITY_TEMPLATE_CLASS_SET_SUFFIX;
-            }
+            String entityTemplateClassSetName = entityTemplateClassName + DatabaseConstants.ENTITY_TEMPLATE_CLASS_SET_SUFFIX;
             URI entityTemplateClassSetId = new URI(DatabaseConstants.SCHEME_NAME, BlocksConfig.getSiteDBAlias(), "/" + entityTemplateClassSetName, null);
             return entityTemplateClassSetId.toString();
         }catch(URISyntaxException e){

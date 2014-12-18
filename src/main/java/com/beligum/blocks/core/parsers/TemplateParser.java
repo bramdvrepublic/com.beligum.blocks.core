@@ -5,6 +5,7 @@ import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.models.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
@@ -76,9 +77,9 @@ public class TemplateParser
         return DOM.outerHtml();
     }
 
-    public static String renderEntityClass(EntityTemplateClass entityTemplateClass) throws ParseException
+    public static String renderTemplate(AbstractTemplate template) throws ParseException
     {
-        Document classDOM = parse(entityTemplateClass.getTemplate());
+        Document classDOM = parse(template.getTemplate());
         Traversor traversor = new Traversor(new ToHtmlVisitor());
         Node classRoot = classDOM.child(0);
         traversor.traverse(classRoot);

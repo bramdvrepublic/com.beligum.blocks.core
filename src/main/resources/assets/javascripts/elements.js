@@ -18,6 +18,22 @@ blocks
         // smallest elemet with 4 corner
         // and a function to check if x,y is inside the surface
         var surface = Class.create({
+            calculateTop: function (element) {
+                return  element.offset().top
+            },
+
+            calculateBottom: function (element) {
+                return element.offset().top + element.outerHeight()
+            },
+
+            calculateLeft: function (element) {
+                return element.offset().left
+            },
+
+            calculateRight: function (element) {
+                return element.offset().left + element.outerWidth()
+            },
+
             constructor: function (top, bottom, left, right) {
                 if (top <= bottom) {
                     this.top = top;
@@ -42,6 +58,16 @@ blocks
                 }
                 return retVal;
             }
+        });
+
+        // smallest elemet with 4 corner
+        // and a function to check if x,y is inside the surface
+        var property = Class.create(surface, {
+            constructor: function (element) {
+                layoutElement.Super.call(this, this.calculateTop(element), this.calculateBottom(element), this.calculateLeft(element), this.calculateRight(element));
+                this.element = element;
+            }
+
         });
 
         /*
@@ -204,21 +230,7 @@ blocks
          * contains some helperfunctions
          * */
         var layoutElement = Class.create(surface, {
-            calculateTop: function (element) {
-                return  element.offset().top
-            },
 
-            calculateBottom: function (element) {
-                return element.offset().top + element.outerHeight()
-            },
-
-            calculateLeft: function (element) {
-                return element.offset().left
-            },
-
-            calculateRight: function (element) {
-                return element.offset().left + element.outerWidth()
-            },
 
             top: 0,
             bottom: 0,
@@ -410,38 +422,77 @@ blocks
 
             generateChildrenForRow: function () {
                 // check only for columns
-                var columns = this.element.children("." + Constants.COLUMN_CLASS);
+//                var columns = this.element.children("." + Constants.COLUMN_CLASS);
+                var tColumns = this.element.children();
+                var columns = [];
+
+                for (var i=0; i < tColumns.length; i++ ) {
+                    if (DOM.isColumn($(tColumns[i]))) {
+                        columns.push($(tColumns[i]));
+                    }
+                }
                 var innerZone = new layoutElement(this.top, this.bottom, this.left, this.right, null);
 
                 if (columns.length > 0) {
+                    var rowWidth = 0;
+                    for (var x=0; x < columns.length; x++) {
+                        rowWidth += DOM.getColumnWidth($(columns[x]));
+                    }
+
+                    // Variables to keep track when columns stack vertical
+                    var prevColsWidth = 0;
+                    var prevColBottom = innerZone.top;
+                    var prevColMaxBottom = 0;
+
                     var columnCount = columns.length;
                     var oldColumn = null;
                     for (var i = 0; i < columnCount; i++) {
                         // create zone for child
                         var currentColumn = $(columns[i]);
-                        var zoneLeft = innerZone.left;
-                        var zoneRight = innerZone.right;
-                        if (i > 0) { // Not first column
-                            // left side is between previous column and this column
-                            var previousColumn = $(columns[i - 1]);
-                            zoneLeft = (this.calculateRight(previousColumn) + this.calculateLeft(currentColumn)) / 2;
+                        var newColumn = null;
+                        if (rowWidth <= 12) {
+                            var zoneLeft = innerZone.left;
+                            var zoneRight = innerZone.right;
+                            if (i > 0) { // Not first column
+                                // left side is between previous column and this column
+                                var previousColumn = $(columns[i - 1]);
+                                zoneLeft = (this.calculateRight(previousColumn) + this.calculateLeft(currentColumn)) / 2;
+                            }
+                            if (i < columnCount - 1) { // not last column
+                                // right side is between next column and this column
+                                var nextColumn = $(columns[i + 1]);
+                                zoneRight = (this.calculateRight(currentColumn) + this.calculateLeft(nextColumn)) / 2;
+                            }
+
+
+                            newColumn = new column(innerZone.top, innerZone.bottom, zoneLeft, zoneRight, currentColumn, this, i);
+                            if (oldColumn != null) {
+                                // add resizeHandle
+                                this.resizeHandles.push(new resizeHandle(oldColumn, newColumn));
+                            }
+                        } else {
+                            var colWidth = DOM.getColumnWidth(currentColumn);
+                            prevColsWidth += colWidth;
+                            if (prevColsWidth > 12) {
+                                prevColsWidth = colWidth;
+                                prevColBottom += prevColMaxBottom;
+                                prevColMaxBottom = 0;
+                            }
+                            var curBottom = this.calculateBottom(currentColumn);
+                            prevColMaxBottom = prevColMaxBottom < curBottom ? curBottom : prevColMaxBottom;
+
+                            newColumn = new column(this.calculateTop(currentColumn), this.calculateBottom(currentColumn), this.calculateLeft(currentColumn), this.calculateRight(currentColumn), currentColumn, this, i);
                         }
-                        if (i < columnCount - 1) { // not last column
-                            // right side is between next column and this column
-                            var nextColumn = $(columns[i + 1]);
-                            zoneRight = (this.calculateRight(currentColumn) + this.calculateLeft(nextColumn)) / 2;
-                        }
-                        var newColumn = new column(innerZone.top, innerZone.bottom, zoneLeft, zoneRight, currentColumn, this, i);
-                        if (oldColumn != null) {
-                            // add resizeHandle
-                            this.resizeHandles.push(new resizeHandle(oldColumn, newColumn));
-                        }
+
+
 
                         this.children.push(newColumn);
                         oldColumn = newColumn;
                     }
                 }
             }
+
+
 
         });
 
@@ -573,6 +624,11 @@ blocks
                     this.verticalMiddle = this.left + ((this.right - this.left) / 2);
                     this.horizontalMiddle = this.top + ((this.bottom - this.top) / 2);
 
+                }
+                this.properties = [];
+                if ((!DOM.canLayout(element) && !DOM.canEdit(element)) ||
+                    (this.parent instanceof container && this.parent.element == element)) {
+                    this.getProperties();
                 }
             },
 
@@ -749,7 +805,9 @@ blocks
                         newDropspot = this.horizontalDropspots[0];
                     }
                     Logger.debug("Calculate at border");
-                    newDropspot.makeTriggers(x, y, direction);
+                    if (newDropspot != null) {
+                        newDropspot.makeTriggers(x, y, direction);
+                    }
                 }
             },
 
@@ -760,8 +818,34 @@ blocks
 
                 if (this.isOuter(side) && this.parent != null) dropspots = this.parent.calculateDropspots(side, dropspots);
                 return dropspots;
-            }
+            },
 
+            getProperty: function(x, y) {
+                for(var i=0; i< this.properties.length; i++) {
+                    if (this.properties[i].isTriggered(x, y)) {
+                        return this.properties[i];
+                    }
+                }
+                return null;
+            },
+
+            getProperties: function() {
+                this.properties = [];
+                var children = this.element.children();
+                for (var i=0; i < children.length; i++) {
+                     this.generateProperties($(children[i]));
+                }
+            },
+
+            generateProperties: function(element) {
+                if (DOM.canEdit(element) || DOM.canLayout(element)) {
+                    this.properties.push(new property(element));
+                } else if (element.children().length > 0) {
+                    for(var i=0; i < element.children().length; i++) {
+                        this.generateProperties($(element.children()[i]));
+                    }
+                }
+            }
 
         });
 

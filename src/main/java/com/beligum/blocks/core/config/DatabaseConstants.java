@@ -20,4 +20,6 @@ public class DatabaseConstants
     public final static String HASH_SUFFIX = "hash";
     /**the default page-template field-name for an entity-class*/
     public final static String PAGE_TEMPLATE = "pageTemplate";
+    /**the suffix for the set of all entity-templates of a certain class*/
+    public static final String ENTITY_TEMPLATE_CLASS_SET_SUFFIX = "Set";
 }

@@ -1,5 +1,6 @@
 #ID
 The ID-class is a wrapper around a URI. This allows us to make subclasses of an ID. (URI is a final class and cannot be extended.)
+
 One subclass is the RedisID, which holds functionalities for communication with the Redis-server:
 
  - It holds a version-field, constructed using the current time of the System. Redis.LAST_VERSION or Redis.NO_VERSION should be used form last version or unversioned id.
@@ -7,6 +8,18 @@ One subclass is the RedisID, which holds functionalities for communication with 
  - It can transform a URL into an id suited for actually saving an object to the db
  
 Two ID's are **equal** when their string-representation is equal (for RedisID's this includes timestamp-versioning)
+
+
+All ID's used in Redis, are URI's mapping one-to-one on the object in question:
+
+ - The ID of the redis-hash representing an EntityTemplate looks like this: "blocks://[db-site-alias]/[entityId]:[version]"
+ - The list of all versions of a certain EntityTemplate has an id looking like this: "blocks://[db-site-alias]/[entityId]"
+ - The ID of the redis-hash representing an EntityTemplateClass looks like this= "blocks://[db-site-alias]/[entityClassName]:[version]"
+ - The list of all versions of a certain EntityTemplateClass has an id looking like this: "blocks://[db-site-alias]/[entityClassName]"
+ - The default property of a certain EntityTemplateClass is an EntityTemplate (instance), represented by a redis-hash and has an id looking like this: "blocks://[db-site-alias]/[entityClassName]#[propertyName]:[version]"
+ - the list of all versions of a property of a certain EntityTemplateClass has an id lookin like this: "blocks://[db-site-alias]/[entityClassName]#[propertyName]"
+ - The set with all instances of a certain EntityTemplateClass has an id looking like this: "blocks://[db-site-allias]/[entityClassName]Set"
+
  
 #Elements
  - Template is a super-name for entity-templates, entity-class-templates and page-templates. 
