@@ -10,7 +10,6 @@ import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.models.HtmlData;
 import com.beligum.blocks.core.models.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
@@ -19,7 +18,6 @@ import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.base.RequestContext;
 import com.beligum.core.framework.templating.ifaces.Template;
-import com.beligum.core.framework.utils.Logger;
 import org.hibernate.validator.constraints.NotBlank;
 
 import javax.ws.rs.*;
