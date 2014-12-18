@@ -84,10 +84,13 @@ public class EntitiesEndpoint
 
     @GET
     @Path("/class/{entityTemplateClassName}")
+    @Produces(MediaType.APPLICATION_JSON)
     public Response getClassTemplate(@PathParam("entityTemplateClassName") String entityTemplateClasName) throws CacheException, ParseException
     {
         String classHtml = TemplateParser.renderTemplate(EntityTemplateClassCache.getInstance().get(entityTemplateClasName));
-        return Response.ok(classHtml).build();
+        HashMap<String, String> json = new HashMap<String, String>();
+        json.put("template", classHtml);
+        return Response.ok(json).build();
     }
 
 
