@@ -15,6 +15,7 @@ import org.jsoup.parser.Parser;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Set;
 import java.util.Stack;
 
 /**
@@ -115,13 +116,13 @@ public class AbstractVisitor
      * @param replacement
      * @return the root-node of the replacement template, or the specified node itself when a null-replacement was specified
      */
-    protected Node replaceReferenceWithEntity(Node node, EntityTemplate replacement)
+    protected Node replaceNodeWithEntity(Node node, EntityTemplate replacement)
     {
-        if (replacement != null) {
+        if (node!= null && replacement != null) {
             Element replacementHtmlRoot= TemplateParser.parse(replacement.getTemplate()).child(0);
-//            if(StringUtils.isEmpty(replacementHtmlRoot.attr(ParserConstants.RESOURCE))){
-//                replacementHtmlRoot.attr(ParserConstants.RESOURCE, replacement.getUrl().toString());
-//            }
+            if(StringUtils.isEmpty(replacementHtmlRoot.attr(ParserConstants.RESOURCE))){
+                replacementHtmlRoot.attr(ParserConstants.RESOURCE, replacement.getUrl().toString());
+            }
             node.replaceWith(replacementHtmlRoot);
             return replacementHtmlRoot;
         }
@@ -129,6 +130,8 @@ public class AbstractVisitor
             return node;
         }
     }
+
+
 
 
 
@@ -352,6 +355,18 @@ public class AbstractVisitor
         return isEditable(element) || isLayoutable(element);
     }
 
+    public ParserConstants.ModificationLevel getModificationLevel(Element element){
+        if(isEditable(element)){
+            return ParserConstants.ModificationLevel.CAN_EDIT;
+        }
+        else if(isLayoutable(element)){
+            return ParserConstants.ModificationLevel.CAN_LAYOUT;
+        }
+        else{
+            return ParserConstants.ModificationLevel.NONE;
+        }
+    }
+
 
     /**
      * @return the property-id using the property-name of this entity-node and the last class-node visited (of the form "blocks://[db-alias]/[parent-typeof]#[property-name]_[optional-html-id-value]:[version]"), or null if no property-name can be found
@@ -380,6 +395,16 @@ public class AbstractVisitor
             return null;
         }
 
+    }
+
+    public Node copyModificationLevel(Element from, Element to){
+        ParserConstants.ModificationLevel modificationLevel = getModificationLevel(from);
+        String previousLevel = getModificationLevel(to).toString();
+        if(!StringUtils.isEmpty(previousLevel)) {
+            to.removeClass(previousLevel);
+        }
+        to.addClass(modificationLevel.toString());
+        return to;
     }
 
 }

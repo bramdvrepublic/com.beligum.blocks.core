@@ -46,7 +46,7 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                     RedisID lastPropertyVersion = new RedisID(unversionedResourceId, RedisID.LAST_VERSION);
                     //TODO: the default property-template should probably be fetched from cache, instead of db
                     EntityTemplate defaultPropertyTemplate = Redis.getInstance().fetchEntityTemplate(lastPropertyVersion);
-                    node = replaceReferenceWithEntity((Element) node, defaultPropertyTemplate);
+                    node = replaceNodeWithEntity((Element) node, defaultPropertyTemplate);
                 }
                 // this is not a property but an entity and has an id
                 else if(!StringUtils.isEmpty(unversionedResourceId) && !StringUtils.isEmpty(typeOf)){
@@ -59,7 +59,7 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                     // First entity gets the pageUrl. Set PageUrl to null when used
                     EntityTemplate newEntityInstance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityClass), entityClass, defaultEntityTemplate.getTemplate());
 
-                    node = replaceReferenceWithEntity((Element) node, newEntityInstance);
+                    node = replaceNodeWithEntity((Element) node, newEntityInstance);
                 }
                 newInstancesNodes.push(node);
             }
