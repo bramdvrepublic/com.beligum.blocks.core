@@ -16,13 +16,13 @@ public class RedisServerLifecycleListener implements ServerLifecycleListener
     public void onServerStarted(Server server, ServletContextEvent event)
     {
         //initialize the Redis-singleton on server start-up
-        // Redis.getInstance();
+        Redis.getInstance();
     }
     @Override
     public void onServerStopped(Server server, ServletContextEvent event)
     {
         //close the Redis-singleton on server-end (this destroys the Jedis-pool)
         //TODO: when does server pass here?
-        // Redis.getInstance().close();
+        Redis.getInstance().close();
     }
 }

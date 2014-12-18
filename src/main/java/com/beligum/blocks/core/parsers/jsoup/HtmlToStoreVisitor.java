@@ -42,7 +42,7 @@ public class HtmlToStoreVisitor extends AbstractVisitor
                     resourceId = new RedisID(new URL(resourceUrl), RedisID.LAST_VERSION);
                 }
                 EntityTemplate storedEntityTemplate = Redis.getInstance().fetchEntityTemplate(resourceId);
-                RedisID newVersionId = new RedisID(new URL(resourceUrl));
+                RedisID newVersionId = new RedisID(new URL(resourceUrl), RedisID.NEW_VERSION);
                 EntityTemplate currentEntityTemplate = new EntityTemplate(newVersionId, entityTemplateClass, node.outerHtml());
                 if (currentEntityTemplate.equals(storedEntityTemplate)) {
                     currentEntityTemplate = storedEntityTemplate;

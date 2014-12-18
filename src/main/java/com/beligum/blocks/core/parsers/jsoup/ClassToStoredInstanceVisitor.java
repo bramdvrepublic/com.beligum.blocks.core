@@ -1,6 +1,7 @@
 package com.beligum.blocks.core.parsers.jsoup;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.ParseException;
@@ -45,7 +46,7 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                     RedisID lastPropertyVersion = new RedisID(unversionedResourceId, RedisID.LAST_VERSION);
                     //TODO: the default property-template should probably be fetched from cache, instead of db
                     EntityTemplate defaultPropertyTemplate = Redis.getInstance().fetchEntityTemplate(lastPropertyVersion);
-                    node = replaceReferenceWithEntity(node, defaultPropertyTemplate);
+                    node = replaceReferenceWithEntity((Element) node, defaultPropertyTemplate);
                 }
                 // this is not a property but an entity and has an id
                 else if(!StringUtils.isEmpty(unversionedResourceId) && !StringUtils.isEmpty(typeOf)){
@@ -58,7 +59,7 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                     // First entity gets the pageUrl. Set PageUrl to null when used
                     EntityTemplate newEntityInstance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityClass), entityClass, defaultEntityTemplate.getTemplate());
 
-                    node = replaceReferenceWithEntity(node, newEntityInstance);
+                    node = replaceReferenceWithEntity((Element) node, newEntityInstance);
                 }
                 newInstancesNodes.push(node);
             }
@@ -83,9 +84,10 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                 RedisID newEntityId = RedisID.renderNewEntityTemplateID(entityClass);
                 // For the first root entity use pageUrl if available
                 if (newInstancesNodes.size() == 1 && pageUrl != null) {
-                    newEntityId = new RedisID(pageUrl);
+                    newEntityId = new RedisID(pageUrl, RedisID.NEW_VERSION);
                 }
-                node.attr("resource", newEntityId.getUrl().toString());
+                node.removeAttr(ParserConstants.BLUEPRINT);
+                node.attr(ParserConstants.RESOURCE, newEntityId.getUrl().toString());
                 EntityTemplate newInstance = new EntityTemplate(newEntityId, entityClass, node.outerHtml());
                 Redis.getInstance().save(newInstance);
                 node = replaceElementWithEntityReference((Element) node, newInstance);
