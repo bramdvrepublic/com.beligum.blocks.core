@@ -9,6 +9,7 @@ import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisSentinelPool;
 import redis.clients.jedis.Pipeline;
 
@@ -29,7 +30,9 @@ public class Redis implements Closeable
 
 
     //a thread-save pool for connection to the redis-master-server
-    private final JedisSentinelPool pool;
+    //        TODO: put Redis back to Sentinel-state
+    // private final JedisSentinelPool pool;
+    private final JedisPool pool;
 
     //the instance of this singleton
     private static Redis instance = null;
@@ -39,12 +42,14 @@ public class Redis implements Closeable
      */
     private Redis(){
         //create a thread-save pool of Jedis-instances, using default configuration
-        String[] sentinelHostsAndPorts = BlocksConfig.getRedisSentinels();
-        Set<String> sentinels = new HashSet<>();
-        for(int i = 0; i<sentinelHostsAndPorts.length; i++){
-            sentinels.add(sentinelHostsAndPorts[i]);
-        }
-        pool = new JedisSentinelPool(BlocksConfig.getRedisMasterName(), sentinels);
+//        TODO: put Redis back to Sentinel-state
+//        String[] sentinelHostsAndPorts = BlocksConfig.getRedisSentinels();
+//        Set<String> sentinels = new HashSet<>();
+//        for(int i = 0; i<sentinelHostsAndPorts.length; i++){
+//            sentinels.add(sentinelHostsAndPorts[i]);
+//        }
+//        pool = new JedisSentinelPool(BlocksConfig.getRedisMasterName(), sentinels);
+        pool = new JedisPool(BlocksConfig.getRedisMasterHost(), Integer.parseInt(BlocksConfig.getRedisMasterPort()));
     }
 
     /**

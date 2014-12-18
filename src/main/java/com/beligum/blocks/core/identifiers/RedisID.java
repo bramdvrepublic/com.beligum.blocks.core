@@ -267,8 +267,12 @@ public class RedisID extends ID
     {
         //we're not actually going to the db to determine a new redis-id for a class, it will use a new versioning (current time millis) to get a new version, so we don't actually need to check for that version in db
         try{
-            return new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClassName), NEW_VERSION);
-        }catch(MalformedURLException e){
+            RedisID newID = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClassName), NEW_VERSION);
+            while(Redis.getInstance().fetchEntityTemplateClass(newID) != null){
+                newID = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClassName), NEW_VERSION);
+            }
+            return newID;
+        }catch(MalformedURLException |RedisException e){
             throw new IDException("Specified site-domain doesn't seem to be a correct url: " + BlocksConfig.getSiteDomain(), e);
         }
     }
@@ -308,8 +312,12 @@ public class RedisID extends ID
                 propertyName = "";
             }
             String url = BlocksConfig.getSiteDomain() + "/" + owningEntityClassName + "#" + propertyName;
-            return new RedisID(new URL(url), NEW_VERSION);
-        }catch(MalformedURLException e){
+            RedisID newID = new RedisID(new URL(url), NEW_VERSION);
+            while(Redis.getInstance().fetchEntityTemplate(newID) != null){
+                newID = new RedisID(new URL(url), NEW_VERSION);
+            }
+            return newID;
+        }catch(MalformedURLException |RedisException e){
             throw new IDException("Couldn't construct proper id with '" + BlocksConfig.getSiteDomain() + "/" + owningEntityClassName + "#" + propertyName + "'", e);
         }
     }

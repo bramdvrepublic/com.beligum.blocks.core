@@ -9,7 +9,6 @@ import com.beligum.blocks.core.models.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
-import com.beligum.blocks.core.parsers.jsoup.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -17,7 +16,6 @@ import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
 import org.jsoup.select.Elements;
 
-import java.net.MalformedURLException;
 import java.net.URL;
 
 /**
@@ -48,7 +46,7 @@ public class TemplateParser
     {
         String pageStringId = "";
         try {
-            Document doc = parse(entityTemplateClass.getTemplate());
+            Element doc = parse(entityTemplateClass.getTemplate());
             ClassToStoredInstanceVisitor visitor = new ClassToStoredInstanceVisitor(pageURL);
             Traversor traversor = new Traversor(visitor);
             traversor.traverse(doc);
@@ -64,12 +62,10 @@ public class TemplateParser
 
     public static String renderEntityInsidePageTemplate(PageTemplate pageTemplate, EntityTemplate entityTemplate) throws ParseException
     {
-        Document DOM = parse(pageTemplate.getTemplate());
+        Element DOM = parse(pageTemplate.getTemplate());
         Elements referenceBlocks = DOM.select("[" + ParserConstants.REFERENCE_TO + "]");
         for(Element reference : referenceBlocks){
-            Document entityDOM = Jsoup.parse(entityTemplate.getTemplate(), BlocksConfig.getSiteDomain(), Parser.xmlParser());
-            //a Document has a <#root>-tag indicating the fact that it is indeed a Document, we only want the actual html to be put into the reference-element
-            Element entityRoot = entityDOM.child(0);
+            Element entityRoot = TemplateParser.parse(entityTemplate.getTemplate()).child(0);
             reference.replaceWith(entityRoot);
         }
         Traversor traversor = new Traversor(new ToHtmlVisitor());
@@ -79,7 +75,7 @@ public class TemplateParser
 
     public static String renderTemplate(AbstractTemplate template) throws ParseException
     {
-        Document classDOM = parse(template.getTemplate());
+        Element classDOM = parse(template.getTemplate());
         Traversor traversor = new Traversor(new ToHtmlVisitor());
         Node classRoot = classDOM.child(0);
         traversor.traverse(classRoot);
@@ -99,7 +95,9 @@ public class TemplateParser
      * @param html
      * @return
      */
-    private static Document parse(String html){
+    //this method is protected, so all classes in this package can access it!
+    protected static Document parse(String html){
+        //a Document has a <#root>-tag indicating the fact that it is indeed a Document, we only want the actual html to be put into the reference-element
         return Jsoup.parse(html, BlocksConfig.getSiteDomain(), Parser.xmlParser());
     }
 
