@@ -592,6 +592,9 @@ blocks
                     this.generateChildrenForColumn();
                 } else if (DOM.isRow(element)) {
                     this.generateChildrenForRow();
+                } else {
+                    var b = new block(this.calculateTop(element), this.calculateBottom(element), this.calculateLeft(element), this.calculateRight(element), element, this, 0);
+                    this.children.push(b);
                 }
             },
 
@@ -838,7 +841,11 @@ blocks
             },
 
             generateProperties: function(element) {
-                if (DOM.canEdit(element) || DOM.canLayout(element)) {
+                if (DOM.canLayout(element)) {
+                    this.properties.push(new property(element));
+                } else if (DOM.canEdit(element)) {
+                    this.properties.push(new property(element));
+                } else if (DOM.isProperty(element) && DOM.isEntity(element)) {
                     this.properties.push(new property(element));
                 } else if (element.children().length > 0) {
                     for(var i=0; i < element.children().length; i++) {

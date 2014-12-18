@@ -242,18 +242,42 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
      if row has +1 colunms, we can add also to bottom of columns
      except if column has +1 rows
      */
+
+    var isContainer = function(element) {
+        return DOM.isProperty(element) || DOM.canLayout(element) || DOM.canEdit(element);
+    }
+
+    var findContainers = function(element) {
+      var retVal = [];
+      if (isContainer(element)) {
+          retVal.push(element);
+      } else {
+          var children = element.children();
+        for(var i=0; i < children.length; i++) {
+            var block = $(children[i]);
+            if (isContainer(block)) {
+                retVal.push(block)
+            } else {
+                retval.push.apply(retval, findContainers(block));
+            }
+        }
+      }
+        return retVal;
+    };
+
+
     var buildLayoutTree = function () {
         blocks.previous = null;
         blocks.current = null;
         layoutTree = [];
         //_this.cleanLayout();
         if (layoutParentElement == null) {
-            layoutParentElement = $($("body").find(".can-layout")[0]);
+            layoutParentElement = $("body");
         }
 
         var findContainersInParent = function(parent) {
 
-            if (DOM.canLayout(parent) || DOM.canEdit(parent)) {
+            if (parent != null && parent.length > 0 && isContainer(parent)) {
                 var container = new Elements.Container(parent);
                 container.createAllDropspots();
                 Logger.debug(container);

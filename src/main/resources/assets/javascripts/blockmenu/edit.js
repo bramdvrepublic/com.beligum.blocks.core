@@ -26,13 +26,20 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
             var property = block.getProperty(event.pageX, event.pageY);
             if (DOM.canLayout(block.element)) {
                 doZoom(block);
+            } else if (DOM.isProperty(block.element) && DOM.canEdit(block.element)) {
+                if (block.getProperties() > 0) {
+                    doZoom(block);
+                } else {
+                    // edit based in html tag
+                    doEditTextInline(event);
+                }
             } else if (DOM.canEdit(block.element)) {
                 doEditText(block);
             } else if (property != null) {
                 if (property.element.prop("tagName") == 'IFRAME') {
                     doEditIframe(property.element);
                 } else {
-                    doEditTextInline(property.element);
+                    doEditTextInline(event);
                 }
             }
         }
@@ -58,7 +65,8 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
     };
 
 
-    var doEditTextInline = function(element) {
+    var doEditTextInline = function(event) {
+        var element = event.block.current.element;
 
         Overlay.createForElement(element, function () {
             element.off("click.blocks-edit");
@@ -76,6 +84,7 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
             e.stopPropagation();
         });
         element.focus();
+        getMouseEventCaretRange(event.pageX, event.pageY);
     };
 
     var doEditIframe = function(element) {
@@ -107,6 +116,57 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
         if (editor != null) {
             editor.destroy();
             editor = null;
+        }
+    }
+
+
+    // http://stackoverflow.com/questions/18643515/how-to-create-a-range-object-from-a-point-x-and-y-coordinates
+    function getMouseEventCaretRange(evt) {
+        var range, x = evt.clientX, y = evt.clientY;
+
+        // Try the simple IE way first
+        if (document.body.createTextRange) {
+            range = document.body.createTextRange();
+            range.moveToPoint(x, y);
+        }
+
+        else if (typeof document.createRange != "undefined") {
+            // Try Mozilla's rangeOffset and rangeParent properties,
+            // which are exactly what we want
+            if (typeof evt.rangeParent != "undefined") {
+                range = document.createRange();
+                range.setStart(evt.rangeParent, evt.rangeOffset);
+                range.collapse(true);
+            }
+
+            // Try the standards-based way next
+            else if (document.caretPositionFromPoint) {
+                var pos = document.caretPositionFromPoint(x, y);
+                range = document.createRange();
+                range.setStart(pos.offsetNode, pos.offset);
+                range.collapse(true);
+            }
+
+            // Next, the WebKit way
+            else if (document.caretRangeFromPoint) {
+                range = document.caretRangeFromPoint(x, y);
+            }
+        }
+
+        window.setTimeout(function() {
+            selectRange(range);
+        }, 10);
+    }
+
+    var selectRange = function(range) {
+        if (range) {
+            if (typeof range.select != "undefined") {
+                range.select();
+            } else if (typeof window.getSelection != "undefined") {
+                var sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
         }
     }
 

@@ -26,6 +26,7 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
         return element.hasClass(Constants.CAN_LAYOUT_ROW_CLASS);
     };
 
+
     this.isRow = function(element) {
         return element.hasClass(Constants.ROW_CLASS);
     }
@@ -48,11 +49,11 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
     };
 
     this.isBlock = function(element) {
-        return element.hasAttribute(Constants.IS_TYPE) || element.hasAttribute(Constants.IS_PROPERTY) || !(_thisService.isColumn(element) && _thisService.isRow(element));
+        return element.hasAttribute(Constants.IS_ENTITY) || element.hasAttribute(Constants.IS_PROPERTY) || !(_thisService.isColumn(element) && _thisService.isRow(element));
     };
 
     this.isEntity = function(element) {
-        return element.hasAttribute(Constants.IS_TYPE);
+        return element.hasAttribute(Constants.IS_ENTITY);
     };
 
     this.isProperty = function(element) {
@@ -241,14 +242,15 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
     // if: 1 column(A) in 1 row(B) in 1 column(C),
     // then we can put template of column A in Column C and delete A & B
     var simplifyColumnInColumn = function (element, callback) {
-        if (element.parent().children().length == 1 && // 1 column in row
-            element.parent().parent().children().length == 1 &&  // 1 row in column
+        var parentRow = element.parent();
+        var parentColumn = element.parent().parent();
+        if (parentRow.children().length == 1 && // 1 column in row
+            parentColumn.children().length == 1 &&  // 1 row in column
             !element.parent().hasClass(Constants.CAN_LAYOUT_ROW_CLASS)) { // do not delete can_layout elements
-            var parentColumn = element.parent().parent();
-            var children = element.children().remove();
-            parentColumn.children().remove();
-            parentColumn.append(children); // column with new template
-            elementChanged(parentColumn, callback)
+//            var children = element.children().remove();
+            parentColumn.replaceWith(element);
+//            parentColumn.append(children); // column with new template
+            elementChanged(element, callback)
         } else {
 //            callback();
             elementChanged(element.parent(), callback);
