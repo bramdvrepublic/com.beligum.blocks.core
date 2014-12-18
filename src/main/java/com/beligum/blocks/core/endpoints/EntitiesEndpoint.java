@@ -10,6 +10,7 @@ import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.models.HtmlData;
 import com.beligum.blocks.core.models.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
@@ -27,10 +28,7 @@ import javax.ws.rs.core.Response;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by bas on 07.10.14.
@@ -94,19 +92,17 @@ public class EntitiesEndpoint
     }
 
 
-    @PUT
-    @Path("/{entityId:.*}")
+    @POST
+    @Path("/save")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     /*
      * update a page-instance with id 'entityId' to be the html specified
      */
-    public Response updateEntity(@PathParam("entityId") String entityId,
-                    @NotBlank(message = "No page found to update to.")
-                    String html) throws MalformedURLException, ParseException, URISyntaxException, IDException, RedisException
+    public Response updateEntity(Map<String, String> data) throws MalformedURLException, ParseException, URISyntaxException, IDException, RedisException
     {
 
-        URL entityUrl = TemplateParser.updateEntity(html);
+        URL entityUrl = TemplateParser.updateEntity(data.get("page"));
         //        EntityTemplate storedTemplate = Redis.getInstance().fetchEntityTemplate(new RedisID(entityUrl, RedisID.LAST_VERSION));
         //        if(storedTemplate == null){
         //            RedisID newInstanceID = new RedisID(entityUrl);
