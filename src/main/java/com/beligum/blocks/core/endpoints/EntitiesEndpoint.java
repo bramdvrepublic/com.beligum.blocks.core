@@ -29,6 +29,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -97,12 +98,11 @@ public class EntitiesEndpoint
     /*
      * update a page-instance with id 'entityId' to be the html specified
      */
-    public Response updateEntity(
-                    @PathParam("entityId")
-                    String entityId,
+    public Response updateEntity(@PathParam("entityId") String entityId,
                     @NotBlank(message = "No page found to update to.")
                     String html) throws MalformedURLException, ParseException, URISyntaxException, IDException, RedisException
     {
+
         URL entityUrl = TemplateParser.updateEntity(html);
         //        EntityTemplate storedTemplate = Redis.getInstance().fetchEntityTemplate(new RedisID(entityUrl, RedisID.LAST_VERSION));
         //        if(storedTemplate == null){

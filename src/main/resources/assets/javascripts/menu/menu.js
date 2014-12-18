@@ -15,12 +15,12 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     menuElement.on("mouseenter", function(event) {
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         menuElement.addClass("open");
-    })
+    });
 
     menuElement.on("mouseleave", function(event) {
         Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
         menuElement.removeClass("open");
-    })
+    });
 
     menuElement.on("click", function(event) {
         if (menuElement.hasClass("open")) {
@@ -28,7 +28,7 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
         } else {
             menuElement.addClass("open");
         }
-    })
+    });
 
     saveBtn.on("click", function() {
         menuElement.removeClass("open");

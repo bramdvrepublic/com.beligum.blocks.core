@@ -274,7 +274,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
                             Broadcaster.send(Broadcaster.EVENTS.CLICK_BLOCK);
                             dblClickFound = false;
                         }
-                    }, 300);
+                    }, 0);
                 }
 
             });
