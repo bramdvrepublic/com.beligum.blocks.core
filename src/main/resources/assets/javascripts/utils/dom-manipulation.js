@@ -31,41 +31,83 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
     }
 
     this.isColumn = function(element) {
-        var retVal = false
+        var retVal = false;
         var classList = element[0].className.split(/\s+/);
         for (var i = 0; i < classList.length; i++) {
-            if (classList[i].indexOf(Constants.COLUMN_WIDTH_CLASS) == 0) {
-                retVal = true;
+            for (var j = 0; j < Constants.COLUMN_WIDTH_CLASS.length; j++) {
+                if (classList[i].indexOf(Constants.COLUMN_WIDTH_CLASS[j].name) == 0) {
+                    return true;
+                }
             }
         }
-        //return element.hasClass(Constants.COLUMN_CLASS);
         return retVal;
-    }
+    };
 
     this.isContainer = function(element) {
         return element.hasClass(Constants.CONTAINER_CLASS);
-    }
+    };
 
     this.isBlock = function(element) {
         return element.hasAttribute(Constants.IS_TYPE) || element.hasAttribute(Constants.IS_PROPERTY) || !(_thisService.isColumn(element) && _thisService.isRow(element));
-    }
-
-
-    this.getColumnWidth = function (element) {
-        var widths = element[0].className.match(/\bcol-md-\d+/g, '');
-        if (widths != null && widths.length > 0) {
-            var nr = widths[0].substring(7, widths[0].length);
-            return parseInt(nr);
-        } else {
-            Logger.error("Column. Could not get width of column");
-            return 0;
-        }
     };
 
+    this.isEntity = function(element) {
+        return element.hasAttribute(Constants.IS_TYPE);
+    };
+
+    this.isProperty = function(element) {
+        return element.hasAttribute(Constants.IS_PROPERTY);
+    };
+
+    this.getColumnWidth = function (element) {
+        var getClazz = function(clazz) {
+            var regex = new RegExp('\\b' + clazz + '\\d+');
+            regex.global = true;
+            regex.ignoreCase = true;
+            var widths = element[0].className.match(regex, '');
+            if (widths != null && widths.length > 0) {
+                var nr = widths[0].substring(7, widths[0].length);
+                return parseInt(nr);
+            } else {
+                return null;
+            }
+        };
+        var currentWidth = null;
+        var docWidth = $(document).width();
+        for (var i=0; i < Constants.COLUMN_WIDTH_CLASS.length; i++) {
+            var colWidth =  Constants.COLUMN_WIDTH_CLASS[i];
+            var newWidth = getClazz(colWidth.name);
+            if (docWidth > colWidth.max && newWidth != null) {
+                currentWidth = newWidth;
+            } else if (docWidth >= colWidth.min &&  docWidth < colWidth.max) {
+                if (newWidth != null) {
+                    currentWidth = newWidth;
+                } else if (currentWidth == null){
+                    currentWidth = 12;
+                }
+            }
+        }
+        return currentWidth;
+    };
+
+    this.getColumnClass = function() {
+        var colClass = null;
+        var docWidth = $(document).width();
+        for (var i=0; i < Constants.COLUMN_WIDTH_CLASS.length; i++ ) {
+            if ((docWidth >= Constants.COLUMN_WIDTH_CLASS[i].min &&  docWidth < Constants.COLUMN_WIDTH_CLASS[i].max)) {
+                colClass = Constants.COLUMN_WIDTH_CLASS[i].name;
+                break;
+            } else if (docWidth > Constants.COLUMN_WIDTH_CLASS[i].max) {
+                colClass = Constants.COLUMN_WIDTH_CLASS[i].name;
+            }
+        }
+        return colClass;
+    }
     // Sets the column width in grid-units, not pixels
     this.setColumnWidth = function (element, newWidth, animationTime, callback) {
-        var currentClass = Constants.COLUMN_WIDTH_CLASS + this.getColumnWidth(element);
-        var newClass = Constants.COLUMN_WIDTH_CLASS + newWidth;
+        var colClass = this.getColumnClass();
+        var currentClass = colClass + this.getColumnWidth(element);
+        var newClass = colClass + newWidth;
         if (callback == null) {
             element.removeClass(currentClass);
             element.addClass(newClass);
@@ -87,12 +129,18 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
 
     // distributes the width of the columns in a row so they take the max nr of grid-units
     var distributeColumnsInRow = function (element, callback) {
-        var columns = element.children("." + Constants.COLUMN_CLASS);
+        var tcolumns = element.children();
+        var columns = [];
+
         // Check if current distribution of columns is incorrect
         // Total width of all columns must be 12
         var totalWidth = 0;
-        for (var i=0; i < columns.length; i++) {
-            totalWidth += _thisService.getColumnWidth($(columns[i]));
+        for (var i=0; i < tcolumns.length; i++) {
+            var col = $(tcolumns[i]);
+            if (DOM.isColumn(col)) {
+                totalWidth += _thisService.getColumnWidth($(tcolumns[i]));
+                columns.push(col);
+            }
         }
         if (totalWidth == Constants.MAX_COLUMNS) return;
 
@@ -152,7 +200,7 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
     // if Column or row is empty then delete
     // when not deleting, try simplifying
     var deleteEmptyElement = function (element, callback) {
-        if (((element.hasClass(Constants.COLUMN_CLASS) || element.hasClass(Constants.ROW_CLASS))) &&
+        if (((DOM.isColumn(element) || element.hasClass(Constants.ROW_CLASS))) &&
             element.children().length == 0) {
             var parent = element.parent();
             element.remove();
@@ -169,7 +217,7 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
 
     // generic method to simplify columns and rows.
     var simplifyElement = function(element, callback) {
-        if (element.hasClass(Constants.COLUMN_CLASS)) {
+        if (DOM.isColumn(element)) {
             simplifyColumnInColumn(element, callback);
         } else if (element.hasClass(Constants.ROW_CLASS)) {
             simplifyRowInRow(element, callback);
@@ -249,7 +297,7 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
     };
 
     this.createColumn = function (columnWidth) {
-        return $("<div class='" + Constants.COLUMN_CLASS + " " + Constants.COLUMN_WIDTH_CLASS + columnWidth +"'></div>");
+        return $("<div class='" + this.getColumnClass() + columnWidth +"'></div>");
     };
 
     this.wrapBlockInColumn = function (blockElement, columnWidth) {
@@ -310,7 +358,7 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
     * */
     this.wrapSiblingBlocksInRows = function (blockElement) {
         var parentColumnElement = blockElement.parent();
-        if (parentColumnElement.hasClass(Constants.COLUMN_CLASS)) {
+        if (DOM.isColumn(parentColumnElement)) {
             var before = [];
             var current = null;
             var after = [];

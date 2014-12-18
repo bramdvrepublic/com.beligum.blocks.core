@@ -15,12 +15,12 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     menuElement.on("mouseenter", function(event) {
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         menuElement.addClass("open");
-    })
+    });
 
     menuElement.on("mouseleave", function(event) {
         Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
         menuElement.removeClass("open");
-    })
+    });
 
     menuElement.on("click", function(event) {
         if (menuElement.hasClass("open")) {
@@ -28,21 +28,22 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
         } else {
             menuElement.addClass("open");
         }
-    })
+    });
 
     saveBtn.on("click", function() {
         menuElement.removeClass("open");
-        var page = $("html").html();
-
-        $.ajax({
-            url: "/entities/test",
-            type: "PUT",
-            contentType: "application/json",
-            data: {html: page},
-            success: function() {
-                Logger.debug("Saved data!");
-            }
-        })
+        var page = $("html")[0].outerHTML;
+        var o = JSON.stringify({"page": page});
+        var test = JSON.stringify({t: [{x: 1, y:2}, {x: 1}]});
+        $.ajax({type: 'POST',
+                url: "/entities/save",
+                data: o,
+                contentType: 'application/json; charset=UTF-8',
+                success: function() {
+                    Logger.debug("Saved data!");
+                },
+                dataType: 'json'}
+        )
     });
 
     var modalText = '<div class="form-inline" role="form"><div class="form-group"></div></div>';
