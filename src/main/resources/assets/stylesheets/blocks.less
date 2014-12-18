@@ -117,8 +117,20 @@ iframe.cke_panel_frame  {
 
 .blocks-main-menu {
   position: absolute;
+  font-size: 35px;
   right: 10px;
   top: 10px;
+  text-align: right;
+  z-index: 9999;
+
+  .main-menu-items {
+    display: none;
+    font-size: 20px;
+  }
+
+  &:hover .main-menu-items {
+    display: block;
+  }
 }
 
 

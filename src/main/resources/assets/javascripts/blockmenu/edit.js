@@ -34,7 +34,6 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
                 } else {
                     doEditTextInline(property.element);
                 }
-
             }
         }
     };
@@ -46,15 +45,16 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
             removeEditor();
             Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-            editor.destroy();
-            editor = null;
+            removeEditor();
             $(element).removeAttr("contenteditable");
         });
 
         Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         $(element).attr("contenteditable", true);
         $(element).focus();
+        var zindex = $(element).css("z-index");
         editor = $(element).ckeditor().editor;
+        $(element).css("z-index", zindex);
     };
 
 

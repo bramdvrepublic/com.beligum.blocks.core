@@ -91,6 +91,8 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
     };
 
     this.getColumnClass = function() {
+        // TODO Wouter: This should change with screen width
+        return "col-md-";
         var colClass = null;
         var docWidth = $(document).width();
         for (var i=0; i < Constants.COLUMN_WIDTH_CLASS.length; i++ ) {
@@ -142,7 +144,10 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
                 columns.push(col);
             }
         }
-        if (totalWidth == Constants.MAX_COLUMNS) return;
+        if (totalWidth == Constants.MAX_COLUMNS) {
+            callback();
+            return;
+        }
 
         var columnCount = columns.length;
         var columnsWidth = {};
@@ -182,16 +187,19 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
     };
 
     /*
-    * METHODS TO CLEAN THE DOM (REMOVE COLUMNS WITHOUT BLOCKS, ROWS WITHOUT COLUMNS, ...)
-    * usefull after manipulating the layout
-    * */
+     * METHODS TO CLEAN THE DOM (REMOVE COLUMNS WITHOUT BLOCKS, ROWS WITHOUT COLUMNS, ...)
+     * usefull after manipulating the layout
+     * */
 
     // generic method that starts the chain of cleaning.
     // first delete empty elements
     var elementChanged = function (element, callback) {
-        Logger.debug("Element Changed")
+        Logger.debug("Element Changed");
         if (element == null) {
+            callback();
+        } else if (!(DOM.isColumn(element) || DOM.isRow(element))) {
             // What to do???
+            callback();
         } else {
             deleteEmptyElement(element, callback);
         }
@@ -200,17 +208,20 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
     // if Column or row is empty then delete
     // when not deleting, try simplifying
     var deleteEmptyElement = function (element, callback) {
-        if (((DOM.isColumn(element) || element.hasClass(Constants.ROW_CLASS))) &&
-            element.children().length == 0) {
+        var isLayout = (DOM.isColumn(element) || DOM.isRow(element));
+        if (isLayout && element.children().length == 0) {
             var parent = element.parent();
             element.remove();
 
-            if (parent == null) {
-                // do nothing, this should not happen
-            } else {
-                elementChanged(parent, callback);
+            if (parent != null) {
+                if (parent.children().length == 1) {
+                    elementChanged(findHighestLayoutElement(parent), callback);
+                } else {
+                    elementChanged(parent, callback);
+                }
             }
         } else {
+//            simplifyElement(element, callback);
             simplifyElement(element, callback);
         }
     };
@@ -222,7 +233,8 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
         } else if (element.hasClass(Constants.ROW_CLASS)) {
             simplifyRowInRow(element, callback);
         } else {
-            callback();
+//            callback();
+            elementChanged(element, callback);
         }
     }
 
@@ -238,7 +250,8 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
             parentColumn.append(children); // column with new template
             elementChanged(parentColumn, callback)
         } else {
-            callback();
+//            callback();
+            elementChanged(element.parent(), callback);
         }
     };
 
@@ -254,10 +267,33 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
             parentRow.append(children); // column with new template
             elementChanged(parentRow, callback);
         } else {
-            distributeColumnsInRow(element, callback);
+            distributeColumnsInRow(element, function(){
+                elementChanged(element.parent(), callback);
+            })
         }
     };
 
+
+    var findFirstHighestBlock = function(parentBlock) {
+        var retVal = null;
+        if (parentBlock.children().length == 0) return parentBlock;
+
+        for (var i = 0; i < parentBlock.children().length; i++) {
+            var block = $(parentBlock.children()[i]);
+            if (DOM.isColumn(block) || DOM.isRow(block)) {
+                return findFirstHighestBlock(block);
+            } else if (retVal == null) {
+                retVal = block;
+            }
+        }
+        return retVal;
+    };
+
+    var findHighestLayoutElement = function(element) {
+        var retVal = findFirstHighestBlock(element).parent();
+        if (retVal == null) {retVal = element;}
+        return retVal;
+    }
 
     // function to insert a block and clean up
     this.appendElement = function (blockElement, dropLocationElement, side, callback) {
@@ -267,8 +303,14 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
         } else if (side == Constants.SIDE.TOP || side == Constants.SIDE.LEFT) {
             dropLocationElement.before(blockElement)
         }
+        var cleanBlock = findHighestLayoutElement(blockElement);
 
-        elementChanged(dropLocationElement.parent(), function() {
+//        var cleanBlock = blockElement.parent();
+//        if (blocks) {
+//            cleanBlock = blocks[0].parent();
+//        }
+
+        elementChanged(cleanBlock, function() {
             blockElement.toggle(300, function() {
                 callback();
             });

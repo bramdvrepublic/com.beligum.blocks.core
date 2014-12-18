@@ -76,10 +76,15 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
         windowFrame = {width: document.innerWidth, height: document.innerHeight};
         dblClickFound = false;
         draggingStart = null;
-        draggingStatus = Constants.DRAGGING.NO;
-        currentBlock = null;
-        Broadcaster.send(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG);
 
+        currentBlock = null;
+        var docWidth = $(document).width();
+        if (docWidth > 920) {
+            Broadcaster.send(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG);
+            draggingStatus = Constants.DRAGGING.NO;
+        } else {
+            draggingStatus = Constants.DRAGGING.NOT_ALLOWED;
+        }
     };
 
 

@@ -1,14 +1,13 @@
 blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notification", function(Broadcaster, Notification) {
 
-    var menuElement = $('<div class="btn-group" role="group"><button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">Dropdown<span class="caret"></span></button><ul class="dropdown-menu" role="menu"></ul></div>')
-    var btnList = menuElement.find(".dropdown-menu");
+    var menuElement = $('<div class="blocks-main-menu"><div class"main-menu-button"><i class="glyphicon glyphicon-cog"></i></div><div class="main-menu-items"></div></div>')
+    var btnList = menuElement.find(".main-menu-items");
 
-    var templateBtn = $('<li><a href="#">Change template</a></li>');
+    var templateBtn = $('<div class="main-menu-item"><a href="#">Change template</a></div>');
     btnList.append(templateBtn);
-    var saveBtn = $('<li><a href="#">Save</a></li>');
+    var saveBtn = $('<div class="main-menu-item"><a href="#">Save</a></div>');
     btnList.append(saveBtn);
 
-    menuElement.addClass("blocks-main-menu");
 
     $("body").append(menuElement);
 
