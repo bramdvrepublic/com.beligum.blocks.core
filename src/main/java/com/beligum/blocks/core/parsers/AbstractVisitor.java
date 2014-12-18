@@ -15,6 +15,7 @@ import org.jsoup.parser.Parser;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Set;
 import java.util.Stack;
 
 /**
@@ -354,6 +355,18 @@ public class AbstractVisitor
         return isEditable(element) || isLayoutable(element);
     }
 
+    public ParserConstants.ModificationLevel getModificationLevel(Element element){
+        if(isEditable(element)){
+            return ParserConstants.ModificationLevel.CAN_EDIT;
+        }
+        else if(isLayoutable(element)){
+            return ParserConstants.ModificationLevel.CAN_LAYOUT;
+        }
+        else{
+            return ParserConstants.ModificationLevel.NONE;
+        }
+    }
+
 
     /**
      * @return the property-id using the property-name of this entity-node and the last class-node visited (of the form "blocks://[db-alias]/[parent-typeof]#[property-name]_[optional-html-id-value]:[version]"), or null if no property-name can be found
@@ -382,6 +395,16 @@ public class AbstractVisitor
             return null;
         }
 
+    }
+
+    public Node copyModificationLevel(Element from, Element to){
+        ParserConstants.ModificationLevel modificationLevel = getModificationLevel(from);
+        String previousLevel = getModificationLevel(to).toString();
+        if(!StringUtils.isEmpty(previousLevel)) {
+            to.removeClass(previousLevel);
+        }
+        to.addClass(modificationLevel.toString());
+        return to;
     }
 
 }

@@ -67,15 +67,18 @@ public class ToHtmlVisitor extends AbstractVisitor
                 for (Element classProperty : classProperties) {
                     for (Element instanceProperty : instanceProperties) {
                         if (getProperty(instanceProperty).contentEquals(getProperty(classProperty))) {
+                            Element element = null;
                             //If the classproperty is modifiable, we replace it with the instance's property
                             if (isModifiable(classProperty)) {
                                 Element instancePropertyCopy = instanceProperty.clone();
                                 classProperty.replaceWith(instancePropertyCopy);
+                                element = instancePropertyCopy;
                             }
                             //If the class-defaults should be used for this class-property, we fetch the default from db and add it, using the original instance's property's resource-id.
                             else {
-                                replaceWithNewDefaultCopy(classProperty, getReferencedId(instanceProperty));
+                                element = replaceWithNewDefaultCopy(classProperty, getReferencedId(instanceProperty));
                             }
+                            copyModificationLevel(classProperty, element);
                             instanceReferencingElements.remove(instanceProperty);
                             classReferencingElements.remove(classProperty);
                         }
@@ -109,7 +112,7 @@ public class ToHtmlVisitor extends AbstractVisitor
      * @param referenceId entity-id this default-copy should be a new version of
      * @throws Exception
      */
-    private void replaceWithNewDefaultCopy(Node classProperty, String referenceId) throws Exception
+    private Element replaceWithNewDefaultCopy(Node classProperty, String referenceId) throws Exception
     {
         RedisID defaultClassPropertyId = new RedisID(getReferencedId(classProperty), RedisID.LAST_VERSION);
         EntityTemplate defaultClassPropertyTemplate = Redis.getInstance().fetchEntityTemplate(defaultClassPropertyId);
@@ -120,6 +123,7 @@ public class ToHtmlVisitor extends AbstractVisitor
         String referencedInstanceId = referenceId;
         defaultClassPropertyRoot.attr(ParserConstants.RESOURCE, referencedInstanceId);
         classProperty.replaceWith(defaultClassPropertyRoot);
+        return defaultClassPropertyRoot;
     }
 
 
