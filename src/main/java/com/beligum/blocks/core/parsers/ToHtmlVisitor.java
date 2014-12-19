@@ -32,9 +32,9 @@ public class ToHtmlVisitor extends AbstractVisitor
                 Element entityClassRoot = TemplateParser.parse(entityTemplateClass.getTemplate()).child(0);
 
                 //if no modifacations can be done, first we fill in the correct property-references, coming from the class
-//                if(!(isModifiable(entityRoot) && isModifiable(entityClassRoot))){
-//                    node = copyProperties(entityRoot, entityClassRoot);
-//                }
+                if(!(isModifiable(entityRoot) && isModifiable(entityClassRoot))){
+                    node = copyProperties(entityRoot, entityClassRoot);
+                }
                 //if this is a referencing block, replace it
                 node = replaceWithReferencedInstance(node);
             }
