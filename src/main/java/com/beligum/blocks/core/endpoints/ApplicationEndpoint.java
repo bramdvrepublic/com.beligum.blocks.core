@@ -2,12 +2,9 @@ package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
-import com.beligum.blocks.core.caching.PageTemplateCache;
-import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
-import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.base.RequestContext;
@@ -18,20 +15,22 @@ import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Collection;
 
 @Path("/")
 public class ApplicationEndpoint
 {
-    @Path("/index")
-    @GET
-    public Response index()
-    {
-        Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/index.html");
-//        TypeCacher.instance().reset();
-        return Response.ok(indexTemplate).build();
-    }
+//    @Path("/ind")
+//    @GET
+//    public Response index()
+//    {
+//        Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/index.html");
+////        TypeCacher.instance().reset();
+//        return Response.ok(indexTemplate).build();
+//    }
 
     @Path("/finder")
     @GET
@@ -53,11 +52,11 @@ public class ApplicationEndpoint
 
     @Path("/")
     @GET
-    public Response overzicht()
+    public Response overzicht() throws URISyntaxException
     {
-        Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/overzicht.html");
+//        Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/overzicht.html");
         //        TypeCacher.instance().reset();
-        return Response.ok(indexTemplate).build();
+        return Response.seeOther(new URI("/index")).build();
     }
 
 //    @Path("/show")

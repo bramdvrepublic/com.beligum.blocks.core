@@ -249,6 +249,7 @@ blocks
                 this.element = element;
                 this.children = [];
                 this.resizeHandles = [];
+                this.totalBlocks = null;
                 this.canDrag = false;
                 if (element != null) {
                     this.canEdit = DOM.canEdit(element);
@@ -490,6 +491,19 @@ blocks
                         oldColumn = newColumn;
                     }
                 }
+            },
+
+            getBlocks: function() {
+                if (this.totalBlocks != null) return this.totalBlocks;
+                this.totalBlocks = 0;
+                for (var i=0; i < this.children.length; i++) {
+                    if (this.children[i] instanceof  block) {
+                        this.totalBlocks += 1;
+                    } else {
+                        this.totalBlocks += this.children[i].getBlocks();
+                    }
+                }
+                return this.totalBlocks;
             }
 
 
@@ -852,6 +866,19 @@ blocks
                         this.generateProperties($(element.children()[i]));
                     }
                 }
+            },
+
+            getContainer: function() {
+                var parent = this.parent;
+                while (parent.parent != null) {
+                    parent = parent.parent;
+                }
+                return parent;
+            },
+
+            getTotalBlocks: function() {
+                var c = this.getContainer();
+                return c.getBlocks();
             }
 
         });

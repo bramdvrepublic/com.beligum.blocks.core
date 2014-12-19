@@ -47,7 +47,7 @@ blocks.plugin("blocks.core.LayoutAid", ["blocks.core.Layouter", "blocks.core.Bro
     var enterBlockHoover = function(blockEvent) {
         if (blockEvent.block.current != null && !BlockMenu.mouseOverMenu()) {
 //            showLayoutFrame();
-            Overlay.highlightBlock(blockEvent.block.current);Overlay.highlightBlock(blockEvent.block.current);
+            Overlay.highlightBlock(blockEvent.block.current);
             currentBlock = blockEvent.block.current;
             BlockMenu.showMenuElement(blockEvent);
         }

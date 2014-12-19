@@ -15,8 +15,9 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", function(Constant
 
     this.highlightBlock = function(block) {
         if (highlightBackground != null) highlightBackground.remove();
-        highlightBackground = addBlockBackground(block);
-        highlightBackground.addClass(Constants.BLOCK_HOVER_CLASS);
+//        highlightBackground = addBlockBackground(block);
+//        highlightBackground.addClass(Constants.BLOCK_HOVER_CLASS);
+        block.element.addClass(Constants.BLOCK_HOVER_CLASS);
         var zindex = maxIndex() + 1;
         block.element.css("position", "relative");
         block.element.css("z-index", zindex);
@@ -29,18 +30,18 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", function(Constant
         block.element.css("z-index", "");
     };
 
-    var addBlockBackground = function(block) {
-        var overlaybackground = $("<div>").addClass(Constants.OVERLAY_BACKGROUND_CLASS);
-        var zindex = maxIndex() + 1;
-        overlaybackground.css("width", (block.right - block.left));
-        overlaybackground.css("height", (block.bottom - block.top));
-        overlaybackground.css("position", "absolute");
-        overlaybackground.css("top", block.top);
-        overlaybackground.css("left", block.left);
-
-        $("body").append(overlaybackground);
-        return overlaybackground;
-    }
+//    var addBlockBackground = function(block) {
+//        var overlaybackground = $("<div>").addClass(Constants.OVERLAY_BACKGROUND_CLASS);
+//        var zindex = maxIndex() + 1;
+//        overlaybackground.css("width", (block.right - block.left));
+//        overlaybackground.css("height", (block.bottom - block.top));
+//        overlaybackground.css("position", "absolute");
+//        overlaybackground.css("top", block.top);
+//        overlaybackground.css("left", block.left);
+//
+//        $("body").append(overlaybackground);
+//        return overlaybackground;
+//    };
 
     this.createForBlock = function (block, callback) {
         var overlayElement = $("<div>").addClass(Constants.OVERLAY_CLASS);
@@ -73,30 +74,51 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", function(Constant
     }
 
     this.createForElement = function (element, callback) {
-        var overlay = $("<div>").addClass(Constants.OVERLAY_CLASS);
-        var zindex = maxIndex() + 1;
-        element = $(element);
-        overlay.css("z-index", zindex + 1);
-        element.css("z-index", zindex + 3);
-        $(element).css("position", "relative");
-        element.css("box-shadow", "-1000px -1000px 5000px 5000px rgba(255,255,255, 0.7)");
-        $(element).before(overlay);
+//        var overlay = $("<div>").addClass(Constants.OVERLAY_CLASS);
+//        var zindex = maxIndex() + 1;
+//        element = $(element);
+//        overlay.css("z-index", zindex + 1);
+//        element.css("z-index", zindex + 3);
+//        $(element).css("position", "relative");
+//        element.css("box-shadow", "-1000px -1000px 5000px 5000px rgba(255,255,255, 0.7)");
+//        $(element).before(overlay);
 
+        var undoOverlay = function(event) {
+            var e = element;
+            var x1 = e.offset().left;
+            var x2 = x1 + e.width();
+            var y1 = e.offset().top;
+            var y2 = y1 + e.height();
+
+            var cke = $(".cke");
+            var a1 = 0; var a2 = 0; var b1 = 0; var b2 = 0;
+            if (cke.length > 0) {
+                var a1 = cke.offset().left;
+                var a2 = a1 + e.width();
+                var b1 = cke.offset().top;
+                var b2 = b1 + e.height();
+            }
+
+            if (!((a1 < event.pageX && event.pageX < a2 && b1 < event.pageY && event.pageY < b2) ||
+                (x1 < event.pageX && event.pageX < x2 && y1 < event.pageY && event.pageY < y2))) {
+                event.preventDefault();
+                event.stopPropagation();
+                removeOverlay();
+            }
+        }
 
         var removeOverlay = function() {
-            $(element).css("z-index", "");
-            $(element).css("position", "");
-            $(element).css("box-shadow", "none");
-            overlay.remove();
+//            $(element).css("z-index", "");
+//            $(element).css("position", "");
+//            $(element).css("box-shadow", "none");
+//            overlay.remove();
+            $(document).unbind("click", undoOverlay)
             if (callback!= null) callback();
         };
-        this.removeOverlay = removeOverlay;
+//        this.removeOverlay = removeOverlay;
 
-        overlay.on("click", function(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            removeOverlay();
-        })
+
+        $(document).bind("click", undoOverlay)
     }
 
 

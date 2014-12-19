@@ -32,8 +32,9 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
     }
 
     this.isColumn = function(element) {
+        var el = $(element);
         var retVal = false;
-        var classList = element[0].className.split(/\s+/);
+        var classList = el[0].className.split(/\s+/);
         for (var i = 0; i < classList.length; i++) {
             for (var j = 0; j < Constants.COLUMN_WIDTH_CLASS.length; j++) {
                 if (classList[i].indexOf(Constants.COLUMN_WIDTH_CLASS[j].name) == 0) {

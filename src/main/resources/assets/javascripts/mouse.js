@@ -273,13 +273,15 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
 
             $(document).on("click.blocks_core", function(event) {
                 if (active) {
-                    event.preventDefault();
-                    setTimeout(function () {
-                        if (!dblClickFound) {
-                            Broadcaster.send(Broadcaster.EVENTS.CLICK_BLOCK);
-                            dblClickFound = false;
-                        }
-                    }, 0);
+                    if (!event.shiftKey) {
+                        event.preventDefault();
+                        setTimeout(function () {
+                            if (!dblClickFound) {
+                                Broadcaster.send(Broadcaster.EVENTS.CLICK_BLOCK);
+                                dblClickFound = false;
+                            }
+                        }, 0);
+                    }
                 }
 
             });

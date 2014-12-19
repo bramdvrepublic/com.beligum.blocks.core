@@ -24,31 +24,27 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
         } else if (block != null) {
             // find property with can-edit
             var property = block.getProperty(event.pageX, event.pageY);
+            var doEdit = null;
+            var editableElement = null;
             if (DOM.canLayout(block.element)) {
-                doZoom(block);
-            } else if (DOM.isProperty(block.element) && DOM.canEdit(block.element)) {
-                if (block.getProperties() > 0) {
-                    doZoom(block);
-                } else {
-                    // edit based in html tag
-                    doEditTextInline(event);
-                }
-            } else if (DOM.canEdit(block.element)) {
-                doEditText(block);
-            } else if (property != null) {
-                if (property.element.prop("tagName") == 'IFRAME') {
-                    doEditIframe(property.element);
-                } else {
-                    doEditTextInline(event);
-                }
+                doEdit = doZoom;
+                editableElement = block.element;
+            } else if (DOM.canEdit(block.element) && property == null) {
+                doEdit = editFunction(block.element);
+                editableElement = block.element;
+            } else if (property != null && DOM.canEdit(property.element)) {
+                doEdit = editFunction(property.element);
+                editableElement = property.element;
+            }
+            if (doEdit != null) {
+                doEdit(editableElement);
             }
         }
     };
 
-    var doEditText = function(block) {
+    var doEditText = function(element) {
 
-        var element = block.element;
-        Overlay.createForBlock(block, function () {
+        Overlay.createForElement(element, function () {
             removeEditor();
             Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
@@ -59,14 +55,15 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
         Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         $(element).attr("contenteditable", true);
         $(element).focus();
+
         var zindex = $(element).css("z-index");
         editor = $(element).ckeditor().editor;
         $(element).css("z-index", zindex);
     };
 
 
-    var doEditTextInline = function(event) {
-        var element = event.block.current.element;
+    var doEditTextInline = function(element) {
+        //var element = event.block.current.element;
 
         Overlay.createForElement(element, function () {
             element.off("click.blocks-edit");
@@ -84,7 +81,6 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
             e.stopPropagation();
         });
         element.focus();
-        getMouseEventCaretRange(event.pageX, event.pageY);
     };
 
     var doEditIframe = function(element) {
@@ -99,15 +95,16 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
         $(iframe.addClass("edit"));
     };
 
-    var doZoom = function(block) {
+    var doZoom = function(element) {
         removeEditor();
+        var lastParent = Broadcaster.layoutParentElement;
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
-        Broadcaster.setLayoutParent($(block.element));
+        Broadcaster.setLayoutParent($(element));
         Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
 
-        Overlay.createForBlock(block, function () {
+        Overlay.createForElement(element, function () {
             Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
-            Broadcaster.setLayoutParent(null);
+            Broadcaster.setLayoutParent(lastParent);
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
         });
     }
@@ -119,57 +116,39 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
         }
     }
 
-
-    // http://stackoverflow.com/questions/18643515/how-to-create-a-range-object-from-a-point-x-and-y-coordinates
-    function getMouseEventCaretRange(evt) {
-        var range, x = evt.clientX, y = evt.clientY;
-
-        // Try the simple IE way first
-        if (document.body.createTextRange) {
-            range = document.body.createTextRange();
-            range.moveToPoint(x, y);
-        }
-
-        else if (typeof document.createRange != "undefined") {
-            // Try Mozilla's rangeOffset and rangeParent properties,
-            // which are exactly what we want
-            if (typeof evt.rangeParent != "undefined") {
-                range = document.createRange();
-                range.setStart(evt.rangeParent, evt.rangeOffset);
-                range.collapse(true);
-            }
-
-            // Try the standards-based way next
-            else if (document.caretPositionFromPoint) {
-                var pos = document.caretPositionFromPoint(x, y);
-                range = document.createRange();
-                range.setStart(pos.offsetNode, pos.offset);
-                range.collapse(true);
-            }
-
-            // Next, the WebKit way
-            else if (document.caretRangeFromPoint) {
-                range = document.caretRangeFromPoint(x, y);
-            }
-        }
-
-        window.setTimeout(function() {
-            selectRange(range);
-        }, 10);
+    var registeredByType = {};
+    this.registerByType = function(type, callback) {
+        registeredByType[type] = callback;
     }
 
-    var selectRange = function(range) {
-        if (range) {
-            if (typeof range.select != "undefined") {
-                range.select();
-            } else if (typeof window.getSelection != "undefined") {
-                var sel = window.getSelection();
-                sel.removeAllRanges();
-                sel.addRange(range);
-            }
-        }
+    var registeredByTag = {};
+    this.registerByTag = function(tag, callback) {
+        registeredByTag[tag] = callback;
     }
 
+    var editFunction = function(element) {
+        var retVal = null
+        if (DOM.isEntity(element)) {
+            var t = element.attr(Constants.IS_ENTITY);
+            retVal = registeredByType[t];
+        }
 
+        if (retVal == null) {
+            retVal = registeredByTag[element.prop("tagName")];
+        }
+        return retVal;
+    }
+
+    Edit.registerByTag("IFRAME", doEditIframe);
+    Edit.registerByTag("DIV", doEditText);
+    Edit.registerByTag("P", doEditText);
+
+    Edit.registerByTag("H1", doEditTextInline);
+    Edit.registerByTag("H2", doEditTextInline);
+    Edit.registerByTag("H3", doEditTextInline);
+    Edit.registerByTag("H4", doEditTextInline);
+    Edit.registerByTag("H5", doEditTextInline);
+    Edit.registerByTag("H6", doEditTextInline);
+    Edit.registerByTag("A", doEditTextInline);
 
 }]);
