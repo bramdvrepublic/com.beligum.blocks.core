@@ -3,6 +3,7 @@ package com.beligum.blocks.core.parsers;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.ParseException;
@@ -53,7 +54,21 @@ public class FileToCacheVisitor extends AbstractVisitor
         if (node instanceof Element && isEntity(node)) {
             try {
                 Element element = (Element) node;
-                EntityTemplateClass entityTemplateClass = cacheEntityTemplateClassFromNode(element);
+                EntityTemplateClass entityTemplateClass;
+                //if this element is a class-bleuprint, it must be added to the cache (even if a class with this name was cached before)
+                if(isBlueprint(element)) {
+                     entityTemplateClass = cacheEntityTemplateClassFromNode(element);
+                }
+                else{
+                    String typeOf = getTypeOf(element);
+                    //if no class of this type can be found, we use the found html as blueprint
+                    if(!typeOf.equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS) && !EntityTemplateClassCache.getInstance().contains(typeOf)){
+                        entityTemplateClass = cacheEntityTemplateClassFromNode(element);
+                    }
+                    else{
+                        entityTemplateClass = EntityTemplateClassCache.getInstance().get(typeOf);
+                    }
+                }
                 if(isProperty(element)) {
                     element.removeAttr(ParserConstants.BLUEPRINT);
                     EntityTemplate propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element)), entityTemplateClass, element.outerHtml());
@@ -90,37 +105,33 @@ public class FileToCacheVisitor extends AbstractVisitor
     }
 
     /**
-     *
-     * @param element node defining an entity-template-class
+     * Caches the entity-template parsed from the root-element specified. If a certain implementation of this entity-class is already present in cache, it is replaced.
+     * @param classRoot node defining an entity-template-class
      * @return the entity-template-class defined by the node
      * @throws ParseException
      */
-    private EntityTemplateClass cacheEntityTemplateClassFromNode(Element element) throws ParseException
+    private EntityTemplateClass cacheEntityTemplateClassFromNode(Element classRoot) throws ParseException
     {
         String entityClassName = "";
         try {
-            entityClassName = this.getTypeOf(element);
+            entityClassName = this.getTypeOf(classRoot);
             if(!StringUtils.isEmpty(entityClassName)) {
-                EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, element.outerHtml(), this.pageTemplateName);
-                Elements classProperties = element.select("[" + ParserConstants.PROPERTY + "]");
+                EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, classRoot.outerHtml(), this.pageTemplateName);
+                Elements classProperties = classRoot.select("[" + ParserConstants.PROPERTY + "]");
                 Set<String> propertyNames = new HashSet<>();
                 for(Element classProperty : classProperties){
                     String propertyName = getProperty(classProperty);
                     if(!StringUtils.isEmpty(propertyName)) {
                         if(!propertyNames.add(propertyName)){
-                            throw new ParseException("Cannot add two properties with the same name '"+propertyName+"'to one class ('" + entityClassName + "')for now. This will be possible in a later version. Found at \n \n " + element);
+                            throw new ParseException("Cannot add two properties with the same name '"+propertyName+"'to one class ('" + entityClassName + "')for now. This will be possible in a later version. Found at \n \n " + classRoot);
                         }
                     }
                 }
-                boolean added = EntityTemplateClassCache.getInstance().add(entityTemplateClass);
-                //if the node is a bleuprint and the cache already had a template-class present, force replace the template
-                if(!added && isBlueprint(element)){
-                    EntityTemplateClassCache.getInstance().replace(entityTemplateClass);
-                }
+                EntityTemplateClassCache.getInstance().replace(entityTemplateClass);
                 return EntityTemplateClassCache.getInstance().get(entityClassName);
             }
             else{
-                throw new Exception(Node.class.getSimpleName() + " '" + element + "' does not define an entity.");
+                throw new Exception(Node.class.getSimpleName() + " '" + classRoot + "' does not define an entity.");
             }
         }
         catch(Exception e){

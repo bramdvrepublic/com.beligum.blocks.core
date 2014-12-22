@@ -36,22 +36,19 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
         try {
             if (instance == null) {
                 //if the application-cache doesn't exist, throw exception, else instantiate the application's page-cache with a new empty hashmap
-                if (R.cacheManager() != null && R.cacheManager().getApplicationCache() != null) {
-                    if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.PAGE_TEMPLATES) || !R.cacheManager().getApplicationCache().containsKey(CacheKeys.PAGE_TEMPLATES)) {
-                        R.cacheManager().getApplicationCache().put(CacheKeys.PAGE_TEMPLATES, new HashMap<String, PageTemplate>());
-                        instance = new PageTemplateCache();
-                        //insert the most basic possible page-template, for fall-back reasons
-                        PageTemplate pageTemplate = new PageTemplate(instance.getDefaultTemplateName(), "<!DOCTYPE html>" +
-                                                                                                            "<html>" +
-                                                                                                            "<head></head>" +
-                                                                                                            "<body>" +
-                                                                                                            //default referencing div
-                                                                                                            "<div " + ParserConstants.PAGE_TEMPLATE_CONTENT_ATTR + "=\"\" " + ParserConstants.REFERENCE_TO + "=\""+ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME + "\"></div>" +
-                                                                                                            "</body>" +
-                                                                                                            "</html>");
-                        instance.getCache().put(instance.getTemplateKey(instance.getDefaultTemplateName()), pageTemplate);
-                        instance.fillCache();
-                    }
+                if (R.cacheManager() != null && R.cacheManager().getApplicationCache() != null) {R.cacheManager().getApplicationCache().put(CacheKeys.PAGE_TEMPLATES, new HashMap<String, PageTemplate>());
+                    instance = new PageTemplateCache();
+                    //insert the most basic possible page-template, for fall-back reasons
+                    PageTemplate pageTemplate = new PageTemplate(instance.getDefaultTemplateName(), "<!DOCTYPE html>" +
+                                                                                                    "<html>" +
+                                                                                                    "<head></head>" +
+                                                                                                    "<body>" +
+                                                                                                    //default referencing div
+                                                                                                    "<div " + ParserConstants.PAGE_TEMPLATE_CONTENT_ATTR + "=\"\" " + ParserConstants.REFERENCE_TO + "=\""+ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME + "\"></div>" +
+                                                                                                    "</body>" +
+                                                                                                    "</html>");
+                    instance.getCache().put(instance.getTemplateKey(instance.getDefaultTemplateName()), pageTemplate);
+                    instance.fillCache();
                 }
                 else {
                     throw new NullPointerException("No application-cache found.");
@@ -62,6 +59,15 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
         catch(Exception e){
             throw new CacheException("Couldn't initialize page-template-cache.", e);
         }
+    }
+
+    /**
+     * reset this application-cache, trashing all it's content
+     */
+    @Override
+    public void reset()
+    {
+        this.instance = null;
     }
 
     /**

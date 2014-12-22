@@ -130,6 +130,21 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
         }
     }
 
+    /**
+     *
+     * @param templateName
+     * @return true if the cache contains a mapping for the specified template-name, false otherwise
+     */
+    public boolean contains(String templateName) throws IDException
+    {
+        return getCache().containsKey(getTemplateKey(templateName));
+    }
+
+    /**
+     * reset this application-cache, trashing all it's content
+     */
+    abstract public void reset();
+
 
     /**
      * Fill up the page-cache with all template found in file-system

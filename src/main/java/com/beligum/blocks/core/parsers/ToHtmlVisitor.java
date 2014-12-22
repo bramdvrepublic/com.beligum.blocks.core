@@ -121,7 +121,8 @@ public class ToHtmlVisitor extends AbstractVisitor
         }
         Element defaultClassPropertyRoot = TemplateParser.parse(defaultClassPropertyTemplate.getTemplate()).child(0);
         String referencedInstanceId = referenceId;
-        defaultClassPropertyRoot.attr(ParserConstants.RESOURCE, referencedInstanceId);
+        RedisID id = new RedisID(referencedInstanceId, RedisID.LAST_VERSION);
+        defaultClassPropertyRoot.attr(ParserConstants.RESOURCE, id.getUrl().toString());
         classProperty.replaceWith(defaultClassPropertyRoot);
         return defaultClassPropertyRoot;
     }

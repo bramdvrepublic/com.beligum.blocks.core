@@ -39,15 +39,12 @@ public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTempl
             if (instance == null) {
                 //if the application-cache doesn't exist, throw exception, else instantiate the application's page-cache with a new empty hashmap
                 if (R.cacheManager() != null && R.cacheManager().getApplicationCache() != null) {
-
-                    if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.ENTITY_CLASSES) || !R.cacheManager().getApplicationCache().containsKey(CacheKeys.PAGE_TEMPLATES)) {
-                        R.cacheManager().getApplicationCache().put(CacheKeys.ENTITY_CLASSES, new HashMap<String, EntityTemplateClass>());
-                        instance = new EntityTemplateClassCache();
-                        //insert most basic possible entity-template-class, it is not saved to db
-                        EntityTemplateClass entityTemplateClass = new EntityTemplateClass(instance.getDefaultTemplateName(), "<div " + ParserConstants.TYPE_OF + "=\"" + ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS + "\" class=\""+ ParserConstants.CAN_EDIT +"\"></div>", ParserConstants.DEFAULT_PAGE_TEMPLATE);
-                        instance.getCache().put(instance.getTemplateKey(instance.getDefaultTemplateName()), entityTemplateClass);
-                        instance.fillCache();
-                    }
+                    R.cacheManager().getApplicationCache().put(CacheKeys.ENTITY_CLASSES, new HashMap<String, EntityTemplateClass>());
+                    instance = new EntityTemplateClassCache();
+                    //insert most basic possible entity-template-class, it is not saved to db
+                    EntityTemplateClass entityTemplateClass = new EntityTemplateClass(instance.getDefaultTemplateName(), "<div " + ParserConstants.TYPE_OF + "=\"" + ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS + "\" class=\""+ ParserConstants.CAN_EDIT +"\"></div>", ParserConstants.DEFAULT_PAGE_TEMPLATE);
+                    instance.getCache().put(instance.getTemplateKey(instance.getDefaultTemplateName()), entityTemplateClass);
+                    instance.fillCache();
                 }
                 else {
                     throw new NullPointerException("No application-cache found.");
@@ -60,9 +57,13 @@ public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTempl
         }
     }
 
-    public void reset() throws CacheException {
-        R.cacheManager().getApplicationCache().put(CacheKeys.ENTITY_CLASSES, new HashMap<String, EntityTemplateClass>());
-        this.fillCache();
+    /**
+     * reset this application-cache, trashing all it's content
+     */
+    @Override
+    public void reset()
+    {
+        this.instance = null;
     }
 
     /**
