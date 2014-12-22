@@ -227,6 +227,16 @@ public class Redis implements Closeable
         }
     }
 
+    /**
+     * Empty database completely. ALL DATA WILL BE LOST!!! Use with care!
+     * @return
+     */
+    public void flushDB(){
+        try(Jedis redisClient = pool.getResource()){
+            redisClient.flushDB();
+        }
+    }
+
 
     @Override
     public void close()

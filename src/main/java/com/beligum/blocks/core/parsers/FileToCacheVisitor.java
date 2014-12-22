@@ -2,22 +2,19 @@ package com.beligum.blocks.core.parsers;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
-import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
-import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
-import org.jsoup.parser.Parser;
 import org.jsoup.select.Elements;
 
 import java.util.HashSet;
@@ -33,18 +30,28 @@ public class FileToCacheVisitor extends AbstractVisitor
     private String pageTemplateName = null;
     /**flag for indicating if the current traverse has encountered a tag indicating a page-template is being parsed*/
     private boolean parsingPageTemplate = false;
+    /**flag for indicating if the current traverse has encountered a tag holding a new class to be cached*/
+    private boolean parsingClassToBeCached = false;
 
     @Override
     public Node head(Node node, int depth) throws ParseException {
-        node = super.head(node, depth);
-        if(isPageTemplateRootNode(node)) {
-            this.pageTemplateName = getPageTemplateName(node);
-            this.parsingPageTemplate = true;
+        try {
+            node = super.head(node, depth);
+            if (isPageTemplateRootNode(node)) {
+                this.pageTemplateName = getPageTemplateName(node);
+                this.parsingPageTemplate = true;
+            }
+            else if (parsingPageTemplate && isPageTemplateContentNode(node) && node instanceof Element) {
+                this.createTemplate((Element) node);
+            }
+            if(isEntity(node)) {
+                parsingClassToBeCached = containsClassToBeCached(node);
+            }
+            return node;
         }
-        else if(parsingPageTemplate && isPageTemplateContentNode(node) && node instanceof Element){
-            this.createTemplate((Element) node);
+        catch (Exception e){
+            throw new ParseException("Could not parse tag-head while caching at " + node, e);
         }
-        return node;
     }
 
     @Override
@@ -56,18 +63,13 @@ public class FileToCacheVisitor extends AbstractVisitor
                 Element element = (Element) node;
                 EntityTemplateClass entityTemplateClass;
                 //if this element is a class-bleuprint, it must be added to the cache (even if a class with this name was cached before)
-                if(isBlueprint(element)) {
-                     entityTemplateClass = cacheEntityTemplateClassFromNode(element);
+                if(containsClassToBeCached(element)){
+                    entityTemplateClass = cacheEntityTemplateClassFromNode(element);
+                    //we reached the tail of the last class to be cached we encountered in the head, so we reset parsingClassToBeCached to false
+                    parsingClassToBeCached = false;
                 }
                 else{
-                    String typeOf = getTypeOf(element);
-                    //if no class of this type can be found, we use the found html as blueprint
-                    if(!typeOf.equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS) && !EntityTemplateClassCache.getInstance().contains(typeOf)){
-                        entityTemplateClass = cacheEntityTemplateClassFromNode(element);
-                    }
-                    else{
-                        entityTemplateClass = EntityTemplateClassCache.getInstance().get(typeOf);
-                    }
+                    entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(element));
                 }
                 if(isProperty(element)) {
                     element.removeAttr(ParserConstants.BLUEPRINT);
@@ -75,7 +77,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                     RedisID lastVersion = new RedisID(propertyInstance.getUnversionedId(), RedisID.LAST_VERSION);
                     EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
                     //if no version is present in db, or this version is different, save to db
-                    if(storedInstance == null || !storedInstance.equals(propertyInstance)) {
+                    if(storedInstance == null || (this.parsingClassToBeCached && !storedInstance.equals(propertyInstance))) {
                         Redis.getInstance().save(propertyInstance);
                     }
                     node = replaceElementWithPropertyReference(element);
@@ -102,6 +104,31 @@ public class FileToCacheVisitor extends AbstractVisitor
         }
         return node;
 
+    }
+
+    /**
+     *
+     * @param node
+     * @return true if the node is the root-node of a class that should be cached (that is, when it is a blueprint, or when no class with that name is present in cache yet), false otherwise
+     */
+    private boolean containsClassToBeCached(Node node) throws CacheException, IDException
+    {
+        if(!isEntity(node)){
+            return false;
+        }
+        if(isBlueprint(node)) {
+            return true;
+        }
+        else{
+            String typeOf = getTypeOf(node);
+            //if no class of this type can be found, we use the found html as blueprint
+            if(!typeOf.equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS) && !EntityTemplateClassCache.getInstance().contains(typeOf)){
+                return true;
+            }
+            else{
+                return false;
+            }
+        }
     }
 
     /**

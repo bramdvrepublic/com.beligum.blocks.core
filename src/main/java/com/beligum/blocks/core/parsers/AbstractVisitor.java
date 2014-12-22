@@ -73,6 +73,19 @@ public class AbstractVisitor
 
     /**
      *
+     * @return the last (grand)parent-node that is a (typed) entity
+     */
+    protected Node getTypedParent() {
+        if(!this.typeOfStack.empty()){
+            return this.typeOfStack.peek();
+        }
+        else{
+            return null;
+        }
+    }
+
+    /**
+     *
      * @param element
      * @return an entity-template wich is the property that was found in the specified element
      * @throws ParseException

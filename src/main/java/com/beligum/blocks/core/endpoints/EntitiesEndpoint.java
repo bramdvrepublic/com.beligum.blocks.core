@@ -42,6 +42,16 @@ public class EntitiesEndpoint
     }
 
     @GET
+    @Path("/flush")
+    //TODO BAS: this method should not be accessible in production-fase!
+    public Response flushEntities() throws CacheException
+    {
+        this.resetCache();
+        Redis.getInstance().flushDB();
+        return Response.ok("<ul><li>Cache reset</li><li>Database emptied</li></ul>").build();
+    }
+
+    @GET
     @Path("/new")
     public Response newPage() throws CacheException
     {
