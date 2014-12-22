@@ -143,7 +143,12 @@ public class FileToCacheVisitor extends AbstractVisitor
         try {
             entityClassName = this.getTypeOf(classRoot);
             if(!StringUtils.isEmpty(entityClassName)) {
-                EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, classRoot.outerHtml(), this.pageTemplateName);
+                //if a template is explicitly mentioned, that one is used, otherwise we use the page-template from the file we are parsing (specified at <html tempalte="name">), or the default if no page-template is currently being parsed
+                String pageTemplateName = getPageTemplateName(classRoot);
+                if(StringUtils.isEmpty(pageTemplateName)){
+                    pageTemplateName = this.pageTemplateName;
+                }
+                EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, classRoot.outerHtml(), pageTemplateName);
                 Elements classProperties = classRoot.select("[" + ParserConstants.PROPERTY + "]");
                 Set<String> propertyNames = new HashSet<>();
                 for(Element classProperty : classProperties){
