@@ -19,6 +19,7 @@ import org.jsoup.select.Elements;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Stack;
 
 /**
  * Created by wouter on 22/11/14.
@@ -31,7 +32,23 @@ public class FileToCacheVisitor extends AbstractVisitor
     /**flag for indicating if the current traverse has encountered a tag indicating a page-template is being parsed*/
     private boolean parsingPageTemplate = false;
     /**flag for indicating if the current traverse has encountered a tag holding a new class to be cached*/
-    private boolean parsingClassToBeCached = false;
+    private Stack<Boolean> parsingClassToBeCached = new Stack<>();
+    /**the node of the page-template currently being parsed which has to be replaced with an entity*/
+    private Element pageTemplateContentNode = null;
+
+    public FileToCacheVisitor()
+    {
+        parsingClassToBeCached.push(false);
+    }
+
+    public boolean isParsingClassToBeCached(){
+        if(!parsingClassToBeCached.empty()){
+            return parsingClassToBeCached.peek();
+        }
+        else{
+            return false;
+        }
+    }
 
     @Override
     public Node head(Node node, int depth) throws ParseException {
@@ -42,10 +59,10 @@ public class FileToCacheVisitor extends AbstractVisitor
                 this.parsingPageTemplate = true;
             }
             else if (parsingPageTemplate && isPageTemplateContentNode(node) && node instanceof Element) {
-                this.createTemplate((Element) node);
+                pageTemplateContentNode = (Element) node;
             }
             if(isEntity(node)) {
-                parsingClassToBeCached = containsClassToBeCached(node);
+                parsingClassToBeCached.push(containsClassToBeCached(node));
             }
             return node;
         }
@@ -57,7 +74,16 @@ public class FileToCacheVisitor extends AbstractVisitor
     @Override
     public Node tail(Node node, int depth) throws ParseException
     {
-        node = super.tail(node, depth);
+        //if we reached the end of a new page-template, cache it
+        if(isPageTemplateRootNode(node)){
+            if(this.pageTemplateContentNode != null) {
+                this.cachePageTemplate(this.pageTemplateContentNode);
+            }
+            else{
+                throw new ParseException("Haven't found a content-node for page-template '" + getPageTemplateName(node) + "'.");
+            }
+        }
+        //if we reached an entity-node, determine it's entity-class and if needed, create a new entity-instance
         if (node instanceof Element && isEntity(node)) {
             try {
                 Element element = (Element) node;
@@ -66,26 +92,37 @@ public class FileToCacheVisitor extends AbstractVisitor
                 if(containsClassToBeCached(element)){
                     entityTemplateClass = cacheEntityTemplateClassFromNode(element);
                     //we reached the tail of the last class to be cached we encountered in the head, so we reset parsingClassToBeCached to false
-                    parsingClassToBeCached = false;
+                    this.parsingClassToBeCached.pop();
                 }
                 else{
                     entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(element));
                 }
                 if(isProperty(element)) {
-                    element.removeAttr(ParserConstants.BLUEPRINT);
-                    EntityTemplate propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element)), entityTemplateClass, element.outerHtml());
-                    RedisID lastVersion = new RedisID(propertyInstance.getUnversionedId(), RedisID.LAST_VERSION);
-                    EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
-                    //if no version is present in db, or this version is different, save to db
-                    if(storedInstance == null || (this.parsingClassToBeCached && !storedInstance.equals(propertyInstance))) {
-                        Redis.getInstance().save(propertyInstance);
+                    //if we are parsing a new class to be cached, we should also make new default-properties
+                    if(this.isParsingClassToBeCached()) {
+                        element.removeAttr(ParserConstants.BLUEPRINT);
+                        EntityTemplate propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element)), entityTemplateClass, element.outerHtml());
+                        RedisID lastVersion = new RedisID(propertyInstance.getUnversionedId(), RedisID.LAST_VERSION);
+                        EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
+                        //if no version is present in db, or this version is different, save to db
+                        if (storedInstance == null || !storedInstance.equals(propertyInstance)) {
+                            Redis.getInstance().save(propertyInstance);
+                        }
+                        node = replaceElementWithPropertyReference(element);
                     }
-                    node = replaceElementWithPropertyReference(element);
+                    //if no new class is being parsed, we are parsing a default-instance of a certain type
+                    else{
+                        EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass), entityTemplateClass, element.outerHtml());
+                        Redis.getInstance().save(defaultEntity);
+                        node = replaceElementWithEntityReference(element, defaultEntity);
+                    }
                 }
                 else if(this.typeOfStack.size()>0){
                     Element entityTemplateClassRoot = TemplateParser.parse(entityTemplateClass.getTemplate()).child(0);
                     entityTemplateClassRoot.removeAttr(ParserConstants.BLUEPRINT);
                     EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass, entityTemplateClassRoot.outerHtml());
+                    //TODO BAS: what to do with typeof's who are not properties of the parent-typeof? Always take class or always take instance or throw error, since no rdf-meaning can be found for that situation?
+//                    EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass, element.outerHtml());
                     RedisID lastVersion = new RedisID(instance.getUnversionedId(), RedisID.LAST_VERSION);
                     EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
                     //if no version is present in db, or this version is different, save to db
@@ -102,7 +139,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                 throw new ParseException("Could not parse an " + EntityTemplateClass.class.getSimpleName() + " from " + Node.class.getSimpleName() + ": \n \n" + node + "\n \n", e);
             }
         }
-        return node;
+        return super.tail(node, depth);
 
     }
 
@@ -171,11 +208,11 @@ public class FileToCacheVisitor extends AbstractVisitor
         }
     }
 
-    private Node createTemplate(Element element) throws ParseException
+    private Node cachePageTemplate(Element contentNode) throws ParseException
     {
         try {
-            if (element.hasAttr(ParserConstants.PAGE_TEMPLATE_CONTENT_ATTR)) {
-                Node parent = element.parent();
+            if (isPageTemplateContentNode(contentNode)) {
+                Node parent = contentNode.parent();
                 //initialize the page-template name by searching for the first template-attribute we find before the specified node and take the value of that attribute to be the name
                 String templateName = "";
                 while (parent.parent() != null) {
@@ -192,11 +229,11 @@ public class FileToCacheVisitor extends AbstractVisitor
                  * Afterwards we want to return the html-tree to it's original form, without the reference-block.
                  * All of this is done so we can give a page-template to the first entity encountered.
                  */
-                Node replacement = this.replaceElementWithReference(element, ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME);
+                Node replacement = this.replaceElementWithReference(contentNode, ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME);
                 //we need to instanciate the cache first, so a default-template surely will be cached with an older version than the page-template we're about to make
                 PageTemplateCache cache = PageTemplateCache.getInstance();
                 PageTemplate pageTemplate = new PageTemplate(templateName, parent.outerHtml());
-                replacement.replaceWith(element);
+                replacement.replaceWith(contentNode);
                 boolean added = cache.add(pageTemplate);
                 //default page-templates should be added to the cache no matter what, so the last one encountered is kept
                 if (!added && this.pageTemplateName.contentEquals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
@@ -207,7 +244,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                                 " with the same name was already present.");
                 }
             }
-            return element;
+            return contentNode;
         }
         catch (Exception e) {
             throw new ParseException("Something went wrong while creating page-template.", e);

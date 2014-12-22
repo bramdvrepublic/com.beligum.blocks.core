@@ -38,6 +38,7 @@ public class EntitiesEndpoint
     public Response resetCache() throws CacheException
     {
         EntityTemplateClassCache.getInstance().reset();
+        PageTemplateCache.getInstance().reset();
         return Response.ok("Cache reset").build();
     }
 

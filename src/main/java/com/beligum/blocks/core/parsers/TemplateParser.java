@@ -63,7 +63,7 @@ public class TemplateParser
     public static String renderEntityInsidePageTemplate(PageTemplate pageTemplate, EntityTemplate entityTemplate) throws ParseException
     {
         Element DOM = parse(pageTemplate.getTemplate());
-        Elements referenceBlocks = DOM.select("[" + ParserConstants.REFERENCE_TO + "]");
+        Elements referenceBlocks = DOM.select("[" + ParserConstants.REFERENCE_TO + "=" + ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME +"]");
         for(Element reference : referenceBlocks){
             Element entityRoot = TemplateParser.parse(entityTemplate.getTemplate()).child(0);
             reference.replaceWith(entityRoot);

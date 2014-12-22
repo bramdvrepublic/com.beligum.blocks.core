@@ -31,6 +31,7 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
     @Override
     public Node head(Node node, int depth) throws ParseException
     {
+        node = super.head(node, depth);
         // node is TypeOf or Property
         if(node instanceof Element && isEntity(node)){
             try {
@@ -44,8 +45,10 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                 // => this is the default value of the property, not an instance
                 if (!StringUtils.isEmpty(unversionedResourceId) && !StringUtils.isEmpty(defaultPropertyId) && unversionedResourceId.equals(defaultPropertyId)){
                     RedisID lastPropertyVersion = new RedisID(unversionedResourceId, RedisID.LAST_VERSION);
-                    //TODO: the default property-template should probably be fetched from cache, instead of db
                     EntityTemplate defaultPropertyTemplate = Redis.getInstance().fetchEntityTemplate(lastPropertyVersion);
+                    if(defaultPropertyTemplate == null){
+                        throw new ParseException("Found bad reference. Not present in db: " + unversionedResourceId);
+                    }
                     node = replaceNodeWithEntity((Element) node, defaultPropertyTemplate);
                 }
                 // this is not a property but an entity and has an id
@@ -53,10 +56,12 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                     RedisID defaultEntityId = new RedisID(unversionedResourceId, RedisID.LAST_VERSION);
                     // Fetch the default value in the db for this resource
                     EntityTemplate defaultEntityTemplate = Redis.getInstance().fetchEntityTemplate(defaultEntityId);
+                    if(defaultEntityTemplate == null){
+                        throw new ParseException("Found bad reference. Not present in db: " + defaultEntityId);
+                    }
                     // Fetch the class for this resource
                     EntityTemplateClass entityClass = EntityTemplateClassCache.getInstance().get(typeOf);
                     // get new instance
-                    // First entity gets the pageUrl. Set PageUrl to null when used
                     EntityTemplate newEntityInstance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityClass), entityClass, defaultEntityTemplate.getTemplate());
 
                     node = replaceNodeWithEntity((Element) node, newEntityInstance);
@@ -70,7 +75,6 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                 throw new ParseException("Could not parse an " + EntityTemplate.class.getSimpleName() + " from " + Node.class.getSimpleName() + " " + node, e);
             }
         }
-        node = super.head(node, depth);
         return node;
     }
 
@@ -81,10 +85,14 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
             Node lastInstanceNode = !newInstancesNodes.isEmpty() ? newInstancesNodes.peek() : null;
             if (node.equals(lastInstanceNode) && node instanceof Element) {
                 EntityTemplateClass entityClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
-                RedisID newEntityId = RedisID.renderNewEntityTemplateID(entityClass);
+                RedisID newEntityId;
                 // For the first root entity use pageUrl if available
                 if (newInstancesNodes.size() == 1 && pageUrl != null) {
                     newEntityId = new RedisID(pageUrl, RedisID.NEW_VERSION);
+                }
+                //else render a new entity-template-id
+                else{
+                    newEntityId = RedisID.renderNewEntityTemplateID(entityClass);
                 }
                 node.removeAttr(ParserConstants.BLUEPRINT);
                 node.attr(ParserConstants.RESOURCE, newEntityId.getUrl().toString());
@@ -93,8 +101,7 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                 node = replaceElementWithEntityReference((Element) node, newInstance);
                 newInstancesNodes.pop();
             }
-            node = super.tail(node, depth);
-            return node;
+            return super.tail(node, depth);
         }
         catch (ParseException e){
             throw e;

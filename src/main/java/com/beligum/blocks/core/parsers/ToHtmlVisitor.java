@@ -87,6 +87,9 @@ public class ToHtmlVisitor extends AbstractVisitor
                 for(Element remainingClassReferencingElement : classReferencingElements){
                     //when a typeof-child without a property is encountered, we can only render the default value, without showing it's resource, so it is not overwritten later
                     EntityTemplate classDefault = Redis.getInstance().fetchEntityTemplate(new RedisID(getReferencedId(remainingClassReferencingElement), RedisID.LAST_VERSION));
+                    if(classDefault == null){
+                        throw new ParseException("Found bad reference. Not present in db: " + getReferencedId(remainingClassReferencingElement));
+                    }
                     Node classDefaultRoot = TemplateParser.parse(classDefault.getTemplate()).child(0);
                     remainingClassReferencingElement.replaceWith(classDefaultRoot);
                 }
@@ -101,7 +104,11 @@ public class ToHtmlVisitor extends AbstractVisitor
             else {
                 return fromInstanceRoot;
             }
-        }catch(Exception e){
+        }
+        catch(ParseException e){
+            throw e;
+        }
+        catch(Exception e){
             throw new ParseException("Couldn't deduce an entity-instance from it's entity-class at:" + fromInstanceRoot, e);
         }
     }
@@ -142,6 +149,9 @@ public class ToHtmlVisitor extends AbstractVisitor
             if (!StringUtils.isEmpty(id)) {
                 RedisID referencedId = new RedisID(id, RedisID.LAST_VERSION);
                 EntityTemplate instanceTemplate = Redis.getInstance().fetchEntityTemplate(referencedId);
+                if(instanceTemplate == null){
+                    throw new ParseException("Found bad reference. Not found in db: " + referencedId);
+                }
                 Element instanceTemplateRoot = TemplateParser.parse(instanceTemplate.getTemplate()).child(0);
                 if(StringUtils.isEmpty(getResource(instanceTemplateRoot)) &&
                    //when referencing to a class-default, we don't want the resource to show up in the browser
@@ -160,7 +170,7 @@ public class ToHtmlVisitor extends AbstractVisitor
                 throw (ParseException) e;
             }
             else{
-                throw new ParseException("Could not replace node by referenced entity-instance: \n \n" + instanceRootNode + "\n\n");
+                throw new ParseException("Could not replace node by referenced entity-instance: \n \n" + instanceRootNode + "\n\n", e);
             }
         }
     }
