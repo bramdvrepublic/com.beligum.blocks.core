@@ -15,12 +15,13 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Comparator;
 import java.util.Map;
 
 /**
  * Created by bas on 05.11.14.
  */
-public class EntityTemplateClass extends AbstractTemplate
+public class EntityTemplateClass extends AbstractTemplate implements Comparable<EntityTemplateClass>
 {
     /**the default page-template this class should be rendered in*/
     private String pageTemplateName = ParserConstants.DEFAULT_PAGE_TEMPLATE;
@@ -134,6 +135,17 @@ public class EntityTemplateClass extends AbstractTemplate
         Map<String, String> hash = super.toHash();
         hash.put(DatabaseConstants.PAGE_TEMPLATE, this.pageTemplateName);
         return hash;
+    }
+
+    //__________IMPLEMENTATION OF COMPARABLE_______________//
+
+    @Override
+    /**
+     * Comparison of entity-template-classes is done by using the string-comparison of their names.
+     */
+    public int compareTo(EntityTemplateClass entityTemplateClass)
+    {
+        return this.getName().compareToIgnoreCase(entityTemplateClass.getName());
     }
 
     //________________OVERRIDE OF OBJECT_______________//

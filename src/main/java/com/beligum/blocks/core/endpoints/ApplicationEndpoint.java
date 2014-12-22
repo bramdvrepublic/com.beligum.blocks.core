@@ -19,6 +19,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 
 @Path("/")
 public class ApplicationEndpoint
@@ -86,8 +89,13 @@ public class ApplicationEndpoint
             if(entityTemplate == null){
                 Template template = R.templateEngine().getEmptyTemplate("/views/new-page.html");
                 Collection<EntityTemplateClass> entityTemplateClasses = EntityTemplateClassCache.getInstance().values();
+                List<EntityTemplateClass> entityTemplateClassList = new LinkedList<>();
+                for(EntityTemplateClass entityTemplateClass : entityTemplateClasses){
+                    entityTemplateClassList.add(entityTemplateClass);
+                }
+                Collections.sort(entityTemplateClassList);
                 template.set(ParserConstants.ENTITY_URL, RequestContext.getRequest().getRequestURL().toString());
-                template.set(ParserConstants.ENTITY_CLASSES, entityTemplateClasses);
+                template.set(ParserConstants.ENTITY_CLASSES, entityTemplateClassList);
                 return Response.ok(template).build();
 
             }

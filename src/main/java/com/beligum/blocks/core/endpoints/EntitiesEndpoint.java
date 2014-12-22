@@ -52,17 +52,6 @@ public class EntitiesEndpoint
         return Response.ok("<ul><li>Cache reset</li><li>Database emptied</li></ul>").build();
     }
 
-    @GET
-    @Path("/new")
-    public Response newPage() throws CacheException
-    {
-        Template template = R.templateEngine().getEmptyTemplate("/views/new-page.html");
-        Collection<EntityTemplateClass> entityTemplateClasses = EntityTemplateClassCache.getInstance().values();
-        template.set(ParserConstants.ENTITY_URL, RequestContext.getRequest().getRequestURI());
-        template.set(ParserConstants.ENTITY_CLASSES, entityTemplateClasses);
-        return Response.ok(template).build();
-    }
-
     @POST
     /**
      * Create a new page-instance of the page-class specified as a parameter
