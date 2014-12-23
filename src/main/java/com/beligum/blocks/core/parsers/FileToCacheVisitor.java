@@ -17,9 +17,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * Created by wouter on 22/11/14.
@@ -105,10 +103,10 @@ public class FileToCacheVisitor extends AbstractVisitor
                         element.removeAttr(ParserConstants.BLUEPRINT);
                         EntityTemplate propertyInstance;
                         if(needsBlueprint(element)) {
-                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element)), entityTemplateClass, entityTemplateClass.getTemplate());
+                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element)), entityTemplateClass, entityTemplateClass.getTemplate());
                         }
                         else{
-                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element)), entityTemplateClass, element.outerHtml());
+                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element)), entityTemplateClass, element.outerHtml());
                         }
                         RedisID lastVersion = new RedisID(propertyInstance.getUnversionedId(), RedisID.LAST_VERSION);
                         EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
@@ -200,17 +198,31 @@ public class FileToCacheVisitor extends AbstractVisitor
                 if(StringUtils.isEmpty(pageTemplateName)){
                     pageTemplateName = this.pageTemplateName;
                 }
-                EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, classRoot.outerHtml(), pageTemplateName);
                 Elements classProperties = classRoot.select("[" + ParserConstants.PROPERTY + "]");
-                Set<String> propertyNames = new HashSet<>();
-                for(Element classProperty : classProperties){
-                    String propertyName = getProperty(classProperty);
-                    if(!StringUtils.isEmpty(propertyName)) {
-                        if(!propertyNames.add(propertyName)){
-                            throw new ParseException("Cannot add two properties with the same name '"+propertyName+"'to one class ('" + entityClassName + "')for now. This will be possible in a later version. Found at \n \n " + classRoot);
+                //since we are sure to be working with class-properties, we now all of them will hold an attribute "property", so we can use this in a comparator to sort all elements according to the property-value
+                Collections.sort(classProperties, new Comparator<Element>()
+                {
+                    @Override
+                    public int compare(Element classProperty1, Element classProperty2)
+                    {
+                        return getProperty(classProperty1).compareTo(getProperty(classProperty2));
+                    }
+                });
+                for(int i = 1; i<classProperties.size(); i++){
+                    Element previousClassProperty = classProperties.get(i-1);
+                    String previousClassPropertyValue = getProperty(previousClassProperty);
+                    Element classProperty = classProperties.get(i);
+                    String classPropertyValue = getProperty(classProperty);
+                    if(previousClassPropertyValue.equals(classPropertyValue)){
+                        //check if properties with the same attribute-value, have a different name (<div property="something" name="some_thing"></div> and <div property="something"  name="so_me_th_ing"></div> is a correct situation)
+                        String previousClassPropertyName = getPropertyName(previousClassProperty);
+                        String classPropertyName = getPropertyName(classProperty);
+                        if(StringUtils.isEmpty(previousClassPropertyName) || StringUtils.isEmpty(classPropertyName)){
+                            throw new ParseException("Found two class-properties with same property-value '\" + previousClassPropertyValue + \"' and no name-attribute to distinguish them at \n \n" + classRoot + "\n \n");
                         }
                     }
                 }
+                EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, classRoot.outerHtml(), pageTemplateName);
                 EntityTemplateClassCache.getInstance().replace(entityTemplateClass);
                 return EntityTemplateClassCache.getInstance().get(entityClassName);
             }

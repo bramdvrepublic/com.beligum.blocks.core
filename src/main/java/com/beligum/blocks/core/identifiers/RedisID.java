@@ -7,6 +7,7 @@ import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
+import org.apache.commons.lang3.StringUtils;
 
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -298,27 +299,31 @@ public class RedisID extends ID
     /**
      * Method for getting a new property-id for a certain property (blocks://[db-alias]/[parent-typeof]#[property-name]:[version]
      * @param owningEntityClassName
-     * @param propertyName
-     * @return
+     * @param property the value of the property-attribute (for <div property="something" name="some_thing"></div> this is "something")
+     * @param propertyName the name of the property, used to guarantee it's uniqueness on class-level (for <div property="something" name="some_thing"></div> this is "some_thing")
+     * @return a new property-id to be used as a reference in a entity-class
      * @throws IDException
      */
-    public static RedisID renderNewPropertyId(String owningEntityClassName, String propertyName) throws IDException
+    public static RedisID renderNewPropertyId(String owningEntityClassName, String property, String propertyName) throws IDException
     {
         try{
             if(owningEntityClassName == null){
                 owningEntityClassName = "";
             }
-            if(propertyName == null){
-                propertyName = "";
+            if(property == null){
+                property = "";
             }
-            String url = BlocksConfig.getSiteDomain() + "/" + owningEntityClassName + "#" + propertyName;
+            String url = BlocksConfig.getSiteDomain() + "/" + owningEntityClassName + "#" + property;
+            if(!StringUtils.isEmpty(propertyName)){
+                url += "/" + propertyName;
+            }
             RedisID newID = new RedisID(new URL(url), NEW_VERSION);
             while(Redis.getInstance().fetchEntityTemplate(newID) != null){
                 newID = new RedisID(new URL(url), NEW_VERSION);
             }
             return newID;
         }catch(MalformedURLException |RedisException e){
-            throw new IDException("Couldn't construct proper id with '" + BlocksConfig.getSiteDomain() + "/" + owningEntityClassName + "#" + propertyName + "'", e);
+            throw new IDException("Couldn't construct proper id with '" + BlocksConfig.getSiteDomain() + "/" + owningEntityClassName + "#" + property + "/" + propertyName + "'", e);
         }
     }
 

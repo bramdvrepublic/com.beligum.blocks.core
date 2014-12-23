@@ -392,12 +392,12 @@ public class AbstractVisitor
                 return null;
             }
             else {
-                String propertyName = getProperty(node);
-                if(StringUtils.isEmpty(propertyName)){
+                String propertyValue = getProperty(node);
+                if(StringUtils.isEmpty(propertyValue)){
                     return null;
                 }
                 try {
-                    return RedisID.renderNewPropertyId(parentEntityClassName, propertyName).getUnversionedId();
+                    return RedisID.renderNewPropertyId(parentEntityClassName, propertyValue, getPropertyName(node)).getUnversionedId();
 
                 }catch(IDException e){
                     throw new ParseException("Could not render new property-id.", e);
@@ -408,6 +408,20 @@ public class AbstractVisitor
             return null;
         }
 
+    }
+
+    /**
+     * Get the "name" attribute of a property-tag. Used for guaranteeing the uniqueness of a class-property-id
+     * @param node
+     * @return
+     */
+    public String getPropertyName(Node node){
+        if(isProperty(node)){
+            return node.attr(ParserConstants.PROPERTY_NAME);
+        }
+        else{
+            return null;
+        }
     }
 
     public Node copyModificationLevel(Element from, Element to){

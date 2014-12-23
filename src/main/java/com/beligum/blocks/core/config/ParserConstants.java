@@ -59,6 +59,7 @@ public class ParserConstants
      */
     public static final String RESOURCE = "resource";
     public static final String PROPERTY = "property";
+    public static final String PROPERTY_NAME = "name";
     public static final String TYPE_OF = "typeof";
 
 }
