@@ -347,7 +347,7 @@ public class AbstractVisitor
             return false;
         }
         boolean retVal = false;
-        if (element.classNames().contains(ParserConstants.CAN_LAYOUT)) {
+        if (element.hasAttr(ParserConstants.CAN_LAYOUT)) {
             retVal = true;
         }
         return retVal;
@@ -358,7 +358,7 @@ public class AbstractVisitor
             return false;
         }
         boolean retVal = false;
-        if (element.classNames().contains(ParserConstants.CAN_EDIT)) {
+        if (element.hasAttr(ParserConstants.CAN_EDIT)) {
             retVal = true;
         }
         return retVal;
@@ -418,6 +418,15 @@ public class AbstractVisitor
         }
         to.addClass(modificationLevel.toString());
         return to;
+    }
+
+    public boolean needsBlueprint(Node node){
+        if(node == null){
+            return false;
+        }
+        else{
+            return node.hasAttr(ParserConstants.USE_BLUEPRINT);
+        }
     }
 
 }
