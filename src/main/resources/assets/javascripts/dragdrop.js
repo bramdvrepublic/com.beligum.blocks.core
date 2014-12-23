@@ -25,7 +25,7 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.E
         Logger.debug("drag started");
         old_direction = Constants.DIRECTION.NONE;
         currentDraggedBlock = Broadcaster.getHooveredBlockForPosition(blockEvent.custom.draggingStart.pageX, blockEvent.custom.draggingStart.pageY).current;
-        if (draggingEnabled && currentDraggedBlock != null) {
+        if (draggingEnabled && currentDraggedBlock != null && currentDraggedBlock.canDrag) {
             createDraggedOverlay(currentDraggedBlock);
             createDropPointerElement("anchor");
             createDropPointerElement("other");

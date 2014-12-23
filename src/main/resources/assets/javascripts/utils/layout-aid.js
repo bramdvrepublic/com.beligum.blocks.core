@@ -45,7 +45,7 @@ blocks.plugin("blocks.core.LayoutAid", ["blocks.core.Layouter", "blocks.core.Bro
     var currentBlock = null;
 
     var enterBlockHoover = function(blockEvent) {
-        if (blockEvent.block.current != null && !BlockMenu.mouseOverMenu()) {
+        if (blockEvent.block.current != null && blockEvent.block.current.canDrag && !BlockMenu.mouseOverMenu()) {
 //            showLayoutFrame();
             Overlay.highlightBlock(blockEvent.block.current);
             currentBlock = blockEvent.block.current;
@@ -62,6 +62,23 @@ blocks.plugin("blocks.core.LayoutAid", ["blocks.core.Layouter", "blocks.core.Bro
         }
     };
 
+    var currentProperty = null;
+    var enterPropertyHoover = function(blockEvent) {
+        if (blockEvent.property.current != null) {
+//            showLayoutFrame();
+            Overlay.highlightProperty(blockEvent.property.current);
+            currentProperty = blockEvent.property.current;
+        }
+    };
+
+    var leavePropertyHoover = function(blockEvent) {
+        if (currentProperty != null) {
+//            hideLayoutFrame();
+            Overlay.unhighlightProperty(currentProperty);
+            currentProperty = null;
+        }
+    };
+
     $(document).on(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, function (event) {
         Logger.debug("changed blocks enter");
         enterBlockHoover(event);
@@ -73,6 +90,18 @@ blocks.plugin("blocks.core.LayoutAid", ["blocks.core.Layouter", "blocks.core.Bro
             leaveBlockHoover(event);
         }
     });
+
+    $(document).on(Broadcaster.EVENTS.HOOVER_ENTER_PROPERTY, function (event) {
+        Logger.debug("changed property highlight enter");
+        enterPropertyHoover(event);
+
+    });
+    $(document).on(Broadcaster.EVENTS.HOOVER_LEAVE_PROPERTY, function (event) {
+        Logger.debug("changed property highlight leave");
+        leavePropertyHoover(event);
+
+    });
+
     $(document).on(Broadcaster.EVENTS.START_DRAG, function (event) {
         leaveBlockHoover(event);
     });

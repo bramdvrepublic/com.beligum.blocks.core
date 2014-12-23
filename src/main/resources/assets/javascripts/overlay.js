@@ -18,16 +18,24 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", function(Constant
 //        highlightBackground = addBlockBackground(block);
 //        highlightBackground.addClass(Constants.BLOCK_HOVER_CLASS);
         block.element.addClass(Constants.BLOCK_HOVER_CLASS);
-        var zindex = maxIndex() + 1;
-        block.element.css("position", "relative");
-        block.element.css("z-index", zindex);
+//        var zindex = maxIndex() + 1;
+//        block.element.css("position", "relative");
+//        block.element.css("z-index", zindex);
     };
 
     this.unhighlightBlock = function(block) {
         if (highlightBackground != null) highlightBackground.remove();
         block.element.removeClass(Constants.BLOCK_HOVER_CLASS)
-        block.element.css("position", "");
-        block.element.css("z-index", "");
+//        block.element.css("position", "");
+//        block.element.css("z-index", "");
+    };
+
+    this.highlightProperty = function(property) {
+        property.element.addClass(Constants.PROPERTY_HOVER_CLASS);
+    };
+
+    this.unhighlightProperty = function(property) {
+        property.element.removeClass(Constants.PROPERTY_HOVER_CLASS);
     };
 
 //    var addBlockBackground = function(block) {

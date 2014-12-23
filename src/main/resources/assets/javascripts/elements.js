@@ -646,6 +646,8 @@ blocks
                 if ((!DOM.canLayout(element) && !DOM.canEdit(element)) ||
                     (this.parent instanceof container && this.parent.element == element)) {
                     this.getProperties();
+                } else if ((this.canLayout || this.canEdit) && DOM.isProperty(this.element)) {
+                    this.properties.push(new property(this.element));
                 }
             },
 
@@ -849,9 +851,12 @@ blocks
             getProperties: function() {
                 this.properties = [];
                 var children = this.element.children();
-                for (var i=0; i < children.length; i++) {
-                     this.generateProperties($(children[i]));
-                }
+
+                    for (var i = 0; i < children.length; i++) {
+                        this.generateProperties($(children[i]));
+                    }
+
+
             },
 
             generateProperties: function(element) {

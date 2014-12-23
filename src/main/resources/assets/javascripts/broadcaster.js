@@ -30,6 +30,7 @@
 blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Elements", "blocks.core.DomManipulation", function (Constants, Elements, DOM) {
     var Broadcaster = this;
     var blocks = {current: null, previous: null};
+    var properties = {current: null, previous: null};
     var directionVector = {x1: 0, y1: 0, x2: 0, y2: 0};
     var lastPoints = [];
     var resetDirectionHandler = null;
@@ -47,6 +48,10 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
 
     this.block = function() {
         return blocks;
+    };
+
+    this.property = function() {
+        return properties;
     };
 
     // http://stackoverflow.com/questions/9043805/test-if-two-lines-intersect-javascript-function
@@ -164,6 +169,17 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         if (blocks.current != currentBlock) {
             blocks.previous = currentBlock;
         }
+
+        // Set Property
+        var currentProperty = properties.current
+        properties.current = null;
+        if (blocks.current != null) {
+            properties.current = blocks.current.getProperty(x, y);
+        }
+        if (properties.current != currentProperty) {
+            properties.previous = currentProperty;
+        }
+
         return blocks;
     };
 
@@ -179,6 +195,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         e.pageY = lastMoveEvent.pageY;
         e.direction = lastMoveEvent.direction;
         e.block = blocks;
+        e.property = properties;
         e.custom = custom;
         // send the event with jquery
         $(document).triggerHandler(e);
@@ -202,6 +219,11 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     this.EVENTS.HOOVER_LEAVE_BLOCK = "HOOVER_LEAVE_BLOCK";
     this.EVENTS.HOOVER_ENTER_BLOCK = "HOOVER_ENTER_BLOCK";
     this.EVENTS.HOOVER_OVER_BLOCK = "HOOVER_OVER_BLOCK";
+
+    this.EVENTS.HOOVER_LEAVE_PROPERTY = "HOOVER_LEAVE_PROPERTY";
+    this.EVENTS.HOOVER_ENTER_PROPERTY = "HOOVER_ENTER_PROPERTY";
+    this.EVENTS.HOOVER_OVER_PROPERTY = "HOOVER_OVER_PROPERTY";
+
     this.EVENTS.END_HOOVER = "END_HOOVER";
     this.EVENTS.DOUBLE_CLICK_BLOCK = "DOUBLE_CLICK_BLOCK";
     this.EVENTS.CLICK_BLOCK = "CLICK_BLOCK";

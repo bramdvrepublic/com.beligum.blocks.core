@@ -68,6 +68,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
     var draggingStart = null;
     var dblClickFound = false;
     var currentBlock = null;
+    var currentProperty = null;
     // array of coordinates {x, y} from the last mouseEvents, used to calculate the direction
     var config = this.config;
     var windowFrame = {width: 0, height: 0};
@@ -78,6 +79,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
         draggingStart = null;
 
         currentBlock = null;
+        currentProperty = null;
         var docWidth = $(document).width();
         if (docWidth > 920) {
             Broadcaster.send(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG);
@@ -156,40 +158,67 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
         }
     };
 
-
-    var blockChanged = function(block) {
-        var retVal = false;
-        if (block.current != currentBlock) {
-            retVal= true;
-            currentBlock = block.current();
-        }
-        return retVal;
-    };
+//
+//    var blockChanged = function(block) {
+//        var retVal = false;
+//        if (block.current != currentBlock) {
+//            retVal= true;
+//            currentBlock = block.current();
+//        }
+//        return retVal;
+//    };
 
     /*
      *
      * */
     var mouseMove = function (event) {
         if (active) {
-            var changed = false;
+            var changedBlock = false;
             var block = Broadcaster.block();
             // check if block changed since last mouse move
             if (block.current !== currentBlock) {
                 Logger.debug("New block");
-                changed = true;
+                changedBlock = true;
                 currentBlock = block.current;
             }
+
+            var changedProperty = false;
+            var property = Broadcaster.property();
+            // check if property changed since last mouse move
+            if (property.current !== currentProperty) {
+                Logger.debug("New property");
+                changedProperty = true;
+                currentProperty = property.current;
+            }
+
             if (draggingStatus == Constants.DRAGGING.WAITING) {
                 enableDragAfterTreshold(event);
             } else if (draggingStatus != Constants.DRAGGING.YES) {
-                if (changed) {
+                if (changedProperty) {
+                    if (property.current == null) {
+                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_PROPERTY);
+                    } else if (property.previous == null) {
+                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_PROPERTY);
+                    } else {
+                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_PROPERTY);
+                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_PROPERTY);
+                    }
+                } else if (property.current != null) {
+                    Broadcaster.send(Broadcaster.EVENTS.HOOVER_OVER_PROPERTY);
+                }
+
+                if (changedBlock) {
                     if (block.current == null) {
                         Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK);
+                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_PROPERTY);
                     } else if (block.previous == null) {
                         Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK);
+                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_PROPERTY);
                     } else {
                         Broadcaster.sendNoTimeout(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK);
+                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_PROPERTY);
                         Broadcaster.sendNoTimeout(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK);
+                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_PROPERTY);
 
                         //Logger.debug("changed blocks");
                     }
@@ -198,7 +227,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
                 }
 
             } else if (draggingStatus == Constants.DRAGGING.YES) {
-                if (changed) {
+                if (changedBlock) {
                     if (block.current == null) {
                         Broadcaster.send(Broadcaster.EVENTS.DRAG_LEAVE_BLOCK);
                     } else if (block.previous == null) {
