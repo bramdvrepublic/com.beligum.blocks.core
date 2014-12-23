@@ -49,8 +49,10 @@ public class ParserConstants
 
     /**the form a reference-node takes inside parsed templates*/
     public static final String REFERENCE_TO = "reference-to";
-    /**the keyword (attribute) indicating a certain template-class should be used as bleuprint for all instances*/
+    /**the keyword (attribute) indicating a certain template-class should be used as blueprint for all instances*/
     public static final String BLUEPRINT = "blueprint";
+    /**the keyword indicating a certain entity is a copy of the entity-class (blueprint)*/
+    public static final String USE_BLUEPRINT = "use-blueprint";
 
     /**
      * RDFa-constants

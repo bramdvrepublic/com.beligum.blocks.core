@@ -20,6 +20,10 @@ public class BlocksConfig
     {
         return getConfiguration("blocks.template-folder");
     }
+    public static String getBlueprintsFolder()
+    {
+        return getConfiguration("blocks.blueprints-folder");
+    }
 
     public static String getSiteDomain()
     {

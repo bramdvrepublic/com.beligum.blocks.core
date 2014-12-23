@@ -156,14 +156,12 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
         if(!runningTroughHtmlTemplates) {
             runningTroughHtmlTemplates = true;
             URI rootFolderUri = FileFunctions.getCurrentMavenSrcResourceFolder(this.getClass());
-
-//            URI rootFolderUri = FileFunctions.searchClasspath(this.getClass(), BlocksConfig.getTemplateFolder());
             Path rootFolder = Paths.get(rootFolderUri.getSchemeSpecificPart());
-            rootFolder = rootFolder.resolve(BlocksConfig.getTemplateFolder());
-//            Path rootFolder = Paths.get("/Users/wouter/git/com.beligum.blocks.core/src/main/resources/templates");
+            Path templatesFolder = rootFolder.resolve(BlocksConfig.getTemplateFolder());
+            Path blueprintsFolder = rootFolder.resolve(BlocksConfig.getBlueprintsFolder());
 
             try {
-                Files.walkFileTree(rootFolder, new SimpleFileVisitor<Path>()
+                FileVisitor<Path> visitor = new SimpleFileVisitor<Path>()
                 {
                     @Override
                     public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs)
@@ -179,7 +177,9 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                         }
                         return FileVisitResult.CONTINUE;
                     }
-                });
+                };
+                Files.walkFileTree(blueprintsFolder, visitor);
+                Files.walkFileTree(templatesFolder, visitor);
             }
             catch (Exception e) {
                 Logger.error("Error while filling cache: " + this, e);

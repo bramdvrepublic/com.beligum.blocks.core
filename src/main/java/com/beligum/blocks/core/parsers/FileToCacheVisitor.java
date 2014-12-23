@@ -28,6 +28,8 @@ import java.util.Stack;
 public class FileToCacheVisitor extends AbstractVisitor
 {
 
+    //TODO BAS: split file-to-cache visitor into two visitors, one for extracting the blueprints and cache corresponding classes to cache, a second to instantiate the defaults afterwards
+
     private String pageTemplateName = null;
     /**flag for indicating if the current traverse has encountered a tag indicating a page-template is being parsed*/
     private boolean parsingPageTemplate = false;
@@ -101,7 +103,13 @@ public class FileToCacheVisitor extends AbstractVisitor
                     //if we are parsing a new class to be cached, we should also make new default-properties
                     if(this.isParsingClassToBeCached()) {
                         element.removeAttr(ParserConstants.BLUEPRINT);
-                        EntityTemplate propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element)), entityTemplateClass, element.outerHtml());
+                        EntityTemplate propertyInstance;
+                        if(needsBlueprint(element)) {
+                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element)), entityTemplateClass, entityTemplateClass.getTemplate());
+                        }
+                        else{
+                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element)), entityTemplateClass, element.outerHtml());
+                        }
                         RedisID lastVersion = new RedisID(propertyInstance.getUnversionedId(), RedisID.LAST_VERSION);
                         EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
                         //if no version is present in db, or this version is different, save to db
@@ -109,6 +117,11 @@ public class FileToCacheVisitor extends AbstractVisitor
                             Redis.getInstance().save(propertyInstance);
                         }
                         node = replaceElementWithPropertyReference(element);
+                    }
+                    else if(needsBlueprint(element)){
+                        EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass), entityTemplateClass, entityTemplateClass.getTemplate());
+                        Redis.getInstance().save(defaultEntity);
+                        node = replaceElementWithEntityReference(element, defaultEntity);
                     }
                     //if no new class is being parsed, we are parsing a default-instance of a certain type
                     else{
@@ -121,7 +134,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                     Element entityTemplateClassRoot = TemplateParser.parse(entityTemplateClass.getTemplate()).child(0);
                     entityTemplateClassRoot.removeAttr(ParserConstants.BLUEPRINT);
                     EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass, entityTemplateClassRoot.outerHtml());
-                    //TODO BAS: what to do with typeof's who are not properties of the parent-typeof? Always take class or always take instance or throw error, since no rdf-meaning can be found for that situation?
+
 //                    EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass, element.outerHtml());
                     RedisID lastVersion = new RedisID(instance.getUnversionedId(), RedisID.LAST_VERSION);
                     EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
@@ -130,6 +143,8 @@ public class FileToCacheVisitor extends AbstractVisitor
                         Redis.getInstance().save(instance);
                     }
                     node = replaceElementWithEntityReference(element, instance);
+                    //TODO BAS: throw exception in this case, since it makes no rdf-sense!, change this for all visitors!
+//                    throw new ParseException("Found entity-child with typeof-attribute, but no property-attribute at \n \n " + element + "\n \n");
                 }
                 else{
                     //do nothing, since we have found the ending of the outer-most typeof-tag
