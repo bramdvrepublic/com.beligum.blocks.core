@@ -61,7 +61,7 @@ public class FileToCacheVisitor extends AbstractVisitor
             else if (parsingPageTemplate && isPageTemplateContentNode(node) && node instanceof Element) {
                 pageTemplateContentNode = (Element) node;
             }
-            if(isEntity(node)) {
+            if(hasTypeOf(node)) {
                 parsingClassToBeCached.push(containsClassToBeCached(node));
             }
             return node;
@@ -114,6 +114,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                         if (storedInstance == null || !storedInstance.equals(propertyInstance)) {
                             Redis.getInstance().save(propertyInstance);
                         }
+                        //TODO BAS SH: blijkbaar passeren we hier nooit!?! Dat zou niet mogen, want anders worden er nergen id's van de vorm blocks://LOC/waterput#location/locationName aangemaakt!!!
                         node = replaceElementWithPropertyReference(element);
                     }
                     else if(needsBlueprint(element)){
