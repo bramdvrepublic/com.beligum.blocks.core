@@ -18,10 +18,7 @@ import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 @Path("/")
 public class ApplicationEndpoint
@@ -88,16 +85,17 @@ public class ApplicationEndpoint
             EntityTemplate entityTemplate = redis.fetchEntityTemplate(lastVersionId);
             if(entityTemplate == null){
                 Template template = R.templateEngine().getEmptyTemplate("/views/new-page.html");
-                Collection<EntityTemplateClass> entityTemplateClasses = EntityTemplateClassCache.getInstance().values();
-                List<EntityTemplateClass> entityTemplateClassList = new LinkedList<>();
+                List<EntityTemplateClass> entityTemplateClasses = EntityTemplateClassCache.getInstance().values();
+                //TODO BAS: find general way to split entity-classes to be shown when creating a new page and when creating a new block in frontend
+                List<EntityTemplateClass> pageClasses = new ArrayList<>();
                 for(EntityTemplateClass entityTemplateClass : entityTemplateClasses){
-                    entityTemplateClassList.add(entityTemplateClass);
+                    if(entityTemplateClass.getName().contains("-page")){
+                        pageClasses.add(entityTemplateClass);
+                    }
                 }
-                Collections.sort(entityTemplateClassList);
                 template.set(ParserConstants.ENTITY_URL, RequestContext.getRequest().getRequestURL().toString());
-                template.set(ParserConstants.ENTITY_CLASSES, entityTemplateClassList);
+                template.set(ParserConstants.ENTITY_CLASSES, pageClasses);
                 return Response.ok(template).build();
-
             }
             String page = entityTemplate.renderEntityInPageTemplate();
             return Response.ok(page).build();

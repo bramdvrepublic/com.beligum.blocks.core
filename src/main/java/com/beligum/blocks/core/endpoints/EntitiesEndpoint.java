@@ -119,7 +119,9 @@ public class EntitiesEndpoint
     {
         List<String> entityNames = new ArrayList<String>();
         for (EntityTemplateClass e : EntityTemplateClassCache.getInstance().values()) {
-            entityNames.add(e.getName());
+            if(!e.getName().equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS)){
+                entityNames.add(e.getName());
+            }
         }
         return Response.ok(entityNames).build();
     }
@@ -135,7 +137,9 @@ public class EntitiesEndpoint
     {
         List<String> templateNames = new ArrayList<String>();
         for (PageTemplate e : PageTemplateCache.getInstance().values()) {
-            templateNames.add(e.getName());
+            if(!e.getName().equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS)){
+                templateNames.add(e.getName());
+            }
         }
         return Response.ok(templateNames).build();
     }

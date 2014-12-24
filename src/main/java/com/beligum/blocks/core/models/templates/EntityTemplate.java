@@ -108,6 +108,15 @@ public class EntityTemplate extends AbstractTemplate implements Storable
     }
 
     /**
+     *
+     * @return the url of this entity
+     */
+    @Override
+    public String getName()
+    {
+        return this.getUrl().toString();
+    }
+    /**
      * render the html of this entity-template, using it's page-template (or, if it is the default-page-template, use the page-template of the class) and class-template
      * @return
      */

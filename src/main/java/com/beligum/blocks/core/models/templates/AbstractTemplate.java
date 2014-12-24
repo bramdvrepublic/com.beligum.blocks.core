@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * Created by bas on 05.11.14.
  */
-public abstract class AbstractTemplate extends IdentifiableObject implements Storable
+public abstract class AbstractTemplate extends IdentifiableObject implements Storable, Comparable<AbstractTemplate>
 {
     //TODO BAS!: internationalization should be added to a template (probably a map of languages on template-strings)
     /**string representing the html-template of this element, once the template has been set, it cannot be changed*/
@@ -46,6 +46,8 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     {
         return template;
     }
+
+    abstract public String getName();
 
     //________________IMPLEMENTATION OF STORABLE_____________
     /**
@@ -114,6 +116,17 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
         hash.put(DatabaseConstants.APP_VERSION, this.applicationVersion);
         hash.put(DatabaseConstants.CREATOR, this.creator);
         return hash;
+    }
+
+    //__________IMPLEMENTATION OF COMPARABLE_______________//
+
+    @Override
+    /**
+     * Comparison of templates is done by using the string-comparison of their names.
+     */
+    public int compareTo(AbstractTemplate abstractTemplate)
+    {
+        return this.getName().compareToIgnoreCase(abstractTemplate.getName());
     }
 
     //________________OVERRIDE OF OBJECT_______________//

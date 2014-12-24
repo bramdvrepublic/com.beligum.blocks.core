@@ -66,7 +66,7 @@ public class ToHtmlVisitor extends AbstractVisitor
             if (!instanceProperties.isEmpty() && !classProperties.isEmpty()) {
                 for (Element classProperty : classProperties) {
                     for (Element instanceProperty : instanceProperties) {
-                        if (getProperty(instanceProperty).contentEquals(getProperty(classProperty))) {
+                        if (getPropertyId(instanceProperty).contentEquals(getPropertyId(classProperty))) {
                             Element element = null;
                             //If the classproperty is modifiable, we replace it with the instance's property
                             if (isModifiable(classProperty)) {
@@ -109,7 +109,7 @@ public class ToHtmlVisitor extends AbstractVisitor
             throw e;
         }
         catch(Exception e){
-            throw new ParseException("Couldn't deduce an entity-instance from it's entity-class at:" + fromInstanceRoot, e);
+            throw new ParseException("Couldn't deduce an entity-instance from it's entity-class at \n \n" + fromInstanceRoot + "\n \n", e);
         }
     }
 

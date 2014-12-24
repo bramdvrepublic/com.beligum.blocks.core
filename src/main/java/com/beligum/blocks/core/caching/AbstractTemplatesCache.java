@@ -9,6 +9,7 @@ import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.AbstractTemplate;
+import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.utils.Logger;
@@ -18,8 +19,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 
 /**
 * Created by bas on 03.11.14.
@@ -167,7 +167,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                     public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs)
                                     throws IOException
                     {
-                        if (filePath.getFileName().toString().endsWith("html")) {
+                        if (filePath.getFileName().toString().endsWith("html") || filePath.getFileName().toString().endsWith("htm")) {
                             try {
                                 TemplateParser.cacheTemplatesFromFile(new String(Files.readAllBytes(filePath)));
                             }
@@ -192,11 +192,18 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     }
 
     /**
-     * Gets all  values of the cache's map
+     * Gets all  values of the cache's map, sorted by name
      * @return
      */
-    public Collection<T> values(){
-        return this.getCache().values();
+    public List<T> values()
+    {
+        Collection<T> templates = this.getCache().values();
+        List<T> templateList = new LinkedList<>();
+        for(T template : templates){
+            templateList.add(template);
+        }
+        Collections.sort(templateList);
+        return templateList;
     }
 
     /**
