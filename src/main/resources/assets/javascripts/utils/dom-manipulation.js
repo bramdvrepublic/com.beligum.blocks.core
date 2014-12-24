@@ -245,9 +245,10 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
     var simplifyColumnInColumn = function (element, callback) {
         var parentRow = element.parent();
         var parentColumn = element.parent().parent();
-        if (parentRow.children().length == 1 && // 1 column in row
+        if (DOM.isRow(parentRow) && DOM.isColumn(parentColumn) &&
+            parentRow.children().length == 1 && // 1 column in row
             parentColumn.children().length == 1 &&  // 1 row in column
-            !element.parent().hasClass(Constants.CAN_LAYOUT_ROW_CLASS)) { // do not delete can_layout elements
+            !DOM.canLayout(element.parent()) && !DOM.canLayout(element)) { // do not delete can_layout elements
 //            var children = element.children().remove();
             parentColumn.replaceWith(element);
 //            parentColumn.append(children); // column with new template
@@ -261,14 +262,17 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
     // if: 1 Row(A) in 1 Column(B) in 1 Row(C),
     // then we can put template of Row A in Row C and delete A & B
     var simplifyRowInRow = function (element, callback) {
-        if (element.parent().children().length == 1 && // 1 row (A) in column (B)
-            element.parent().parent().children().length == 1 &&  // 1 column(B) in row (C)
-            !(element.hasClass(Constants.CAN_LAYOUT_ROW_CLASS))) { // do not delete can_layout elements
-            var parentRow = element.parent().parent(); // Row C
-            var children = element.children().remove();
-            parentRow.children().remove();
-            parentRow.append(children); // column with new template
-            elementChanged(parentRow, callback);
+        var parentColumn = element.parent();
+        var parentRow = parentColumn.parent();
+        if (DOM.isRow(parentRow) && DOM.isColumn(parentColumn) &&
+            parentColumn.children().length == 1 && // 1 row (A) in column (B)
+            parentRow.children().length == 1 &&  // 1 column(B) in row (C)
+            !DOM.canLayout(parentRow) && !DOM.canLayout(element)) { // do not delete can_layout elements
+//            var parentRow = element.parent().parent(); // Row C
+//            var children = element.children().remove();
+//            parentRow.children().remove();
+            parentRow.replaceWith(element); // column with new template
+            elementChanged(element, callback);
         } else {
             distributeColumnsInRow(element, function(){
                 elementChanged(element.parent(), callback);
