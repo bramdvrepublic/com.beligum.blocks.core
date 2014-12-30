@@ -199,7 +199,9 @@ public class FileToCacheVisitor extends AbstractVisitor
                 if(StringUtils.isEmpty(pageTemplateName)){
                     pageTemplateName = this.pageTemplateName;
                 }
-                Elements classProperties = classRoot.select("[" + ParserConstants.PROPERTY + "]");
+                Elements classProperties = classRoot.select("["+ParserConstants.PROPERTY+"]");
+                //the class-root is not a property of this class, so if it contains the "property"-attribute, it is removed from the list
+                classProperties.remove(classRoot);
                 //since we are sure to be working with class-properties, we now all of them will hold an attribute "property", so we can use this in a comparator to sort all elements according to the property-value
                 Collections.sort(classProperties, new Comparator<Element>()
                 {
@@ -219,7 +221,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                         String previousClassPropertyName = getPropertyName(previousClassProperty);
                         String classPropertyName = getPropertyName(classProperty);
                         if(StringUtils.isEmpty(previousClassPropertyName) || StringUtils.isEmpty(classPropertyName)){
-                            throw new ParseException("Found two class-properties with same property-value '\" + previousClassPropertyValue + \"' and no name-attribute to distinguish them at \n \n" + classRoot + "\n \n");
+                            throw new ParseException("Found two class-properties with same property-value '" + previousClassPropertyValue + "' and no name-attribute to distinguish them at \n \n" + classRoot + "\n \n");
                         }
                     }
                 }
