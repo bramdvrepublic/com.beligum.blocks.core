@@ -91,14 +91,26 @@ public class TemplateParser
     }
 
     /**
-     * Parse html to jsoup-document, using xml-parser
+     * Parse html to jsoup-document.
+     * Note: if the html received contains an empty head, only the body-html is returned.
      * @param html
      * @return
      */
     //this method is protected, so all classes in this package can access it!
     protected static Document parse(String html){
-        //a Document has a <#root>-tag indicating the fact that it is indeed a Document, we only want the actual html to be put into the reference-element
-        return Jsoup.parse(html, BlocksConfig.getSiteDomain(), Parser.xmlParser());
+        Document retVal = new Document(BlocksConfig.getSiteDomain());
+        Document parsed = Jsoup.parse(html, BlocksConfig.getSiteDomain(), Parser.htmlParser());
+        /*
+         * If only part of a html-file is being parsed (which starts f.i. with a <div>-tag), Jsoup will add <html>-, <head>- and <body>-tags, which is not what we want
+         * Thus if the head is empty, but the body is not, we only want the info in the body.
+         */
+        if(parsed.head().children().isEmpty() && !parsed.body().children().isEmpty()){
+            retVal.appendChild(parsed.body().child(0));
+        }
+        else{
+            retVal = parsed;
+        }
+        return retVal;
     }
 
 }

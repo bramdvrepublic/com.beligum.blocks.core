@@ -8,16 +8,18 @@ import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.models.templates.PageTemplate;
-import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
+import com.beligum.blocks.core.models.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Stack;
 
 /**
  * Created by wouter on 22/11/14.
@@ -114,7 +116,6 @@ public class FileToCacheVisitor extends AbstractVisitor
                         if (storedInstance == null || !storedInstance.equals(propertyInstance)) {
                             Redis.getInstance().save(propertyInstance);
                         }
-                        //TODO BAS SH: blijkbaar passeren we hier nooit!?! Dat zou niet mogen, want anders worden er nergen id's van de vorm blocks://LOC/waterput#location/locationName aangemaakt!!!
                         node = replaceElementWithPropertyReference(element);
                     }
                     else if(needsBlueprint(element)){
@@ -199,15 +200,13 @@ public class FileToCacheVisitor extends AbstractVisitor
                 if(StringUtils.isEmpty(pageTemplateName)){
                     pageTemplateName = this.pageTemplateName;
                 }
-                Elements classProperties = classRoot.select("["+ParserConstants.PROPERTY+"]");
+                Elements classProperties = classRoot.select("[" + ParserConstants.PROPERTY + "]");
                 //the class-root is not a property of this class, so if it contains the "property"-attribute, it is removed from the list
                 classProperties.remove(classRoot);
                 //since we are sure to be working with class-properties, we now all of them will hold an attribute "property", so we can use this in a comparator to sort all elements according to the property-value
-                Collections.sort(classProperties, new Comparator<Element>()
-                {
+                Collections.sort(classProperties, new Comparator<Element>() {
                     @Override
-                    public int compare(Element classProperty1, Element classProperty2)
-                    {
+                    public int compare(Element classProperty1, Element classProperty2) {
                         return getProperty(classProperty1).compareTo(getProperty(classProperty2));
                     }
                 });
