@@ -130,21 +130,27 @@ public class FileToCacheVisitor extends AbstractVisitor
                         node = replaceElementWithEntityReference(element, defaultEntity);
                     }
                 }
-                else if(this.typeOfStack.size()>0){
-                    Element entityTemplateClassRoot = TemplateParser.parse(entityTemplateClass.getTemplate()).child(0);
-                    entityTemplateClassRoot.removeAttr(ParserConstants.BLUEPRINT);
-                    EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass, entityTemplateClassRoot.outerHtml());
+                else if(this.typeOfStack.size()>0) {
+//                    Element entityTemplateClassRoot = TemplateParser.parse(entityTemplateClass.getTemplate()).child(0);
+//                    entityTemplateClassRoot.removeAttr(ParserConstants.BLUEPRINT);
+//                    EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass, entityTemplateClassRoot.outerHtml());
+//
+////                    EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass, element.outerHtml());
+//                    RedisID lastVersion = new RedisID(instance.getUnversionedId(), RedisID.LAST_VERSION);
+//                    EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
+//                    //if no version is present in db, or this version is different, save to db
+//                    if(storedInstance == null || !storedInstance.equals(instance)) {
+//                        Redis.getInstance().save(instance);
+//                    }
+//                    node = replaceElementWithEntityReference(element, instance);
 
-//                    EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass, element.outerHtml());
-                    RedisID lastVersion = new RedisID(instance.getUnversionedId(), RedisID.LAST_VERSION);
-                    EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
-                    //if no version is present in db, or this version is different, save to db
-                    if(storedInstance == null || !storedInstance.equals(instance)) {
-                        Redis.getInstance().save(instance);
+                    /*
+                     * If we find an entity which is not a property, we throw an exception, since this makes no rdf-sense.
+                     * However, if the node is the head-node of a class-blueprint, no property-attribute is expected, and so then no error is thrown
+                     */
+                    if (!(this.typeOfStack.size() == 1 && isBlueprint(this.typeOfStack.peek()))) {
+                        throw new ParseException("Found entity-child with typeof-attribute, but no property-attribute at \n \n " + element + "\n \n");
                     }
-                    node = replaceElementWithEntityReference(element, instance);
-                    //TODO BAS: throw exception in this case, since it makes no rdf-sense!, change this for all visitors!
-//                    throw new ParseException("Found entity-child with typeof-attribute, but no property-attribute at \n \n " + element + "\n \n");
                 }
                 else{
                     //do nothing, since we have found the ending of the outer-most typeof-tag

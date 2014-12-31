@@ -131,13 +131,13 @@ public class EntitiesEndpoint
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
         /*
-         * Return a list of strings of all available entities
+         * Return a list of strings of all available page-templates
          */
     public Response listTemplates() throws CacheException
     {
         List<String> templateNames = new ArrayList<String>();
         for (PageTemplate e : PageTemplateCache.getInstance().values()) {
-            if(!e.getName().equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS)){
+            if(!e.getName().equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)){
                 templateNames.add(e.getName());
             }
         }
@@ -148,9 +148,6 @@ public class EntitiesEndpoint
     @Path("/template")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-        /*
-         * Return a list of strings of all available entities
-         */
     public Response changeTemplate(@FormParam("template") String template, @FormParam("id") String id) throws CacheException, MalformedURLException, IDException, RedisException
     {
         Redis redis = Redis.getInstance();

@@ -32,6 +32,15 @@ Is done in 4 visiting-lines:
  - From stored entity-templates in db to html (ON READ)
  - From html received from client to updated instances in db (ON UPDATE)
 
+##Html- and CSS-'rules'
+ - Only page-templates can hold bootstrap-containers (entities should never be containers, and no containers should ever be used in entities)
+ - No bootstrap-layout should be added to a typeof- or property-tag (= entity-tag)
+ - The content of an entity-blueprint should start with a bootstrap-row and then a bootstrap-column, if this is not the case (eventually) the parser will add those.
+ - CSS-id's should only be used in page-templates, never inside entities. All css-styling should be achieved without use of id's
+ - The css-rules for a certain entity will probably be grouped inside a class with the same name as the entity-class. These rules should be able to properly render the entity independently of any other css-rules.
+ - TODO BAS SH: bootstrap-structure needs to be decided for front-end and back-end to communicate well
+
+
 #Redis
  - Only Storables can be saved to db
  - The method 'toHash()' in Storable decides which info is saved to db in hash-form. This method should be overwritten manually. (It is saved under "[templateId]:[version]")

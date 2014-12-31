@@ -66,8 +66,6 @@ public class EntityTemplate extends AbstractTemplate implements Storable
             EntityTemplate newInstance = new EntityTemplate(id, hash.get(DatabaseConstants.ENTITY_TEMPLATE_CLASS), hash.get(DatabaseConstants.TEMPLATE), hash.get(DatabaseConstants.PAGE_TEMPLATE));
             newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
             newInstance.creator = hash.get(DatabaseConstants.CREATOR);
-            //TODO BAS: this should go to AbstractTemplate: here use Field.java or something of the sort, should make sure the rest of the hash (like application version and creator) is filled in, even if not all fields are present in the hash
-
             return newInstance;
         }
         else{

@@ -85,8 +85,6 @@ public class PageTemplate extends AbstractTemplate
                 newInstance.creator = hash.get(DatabaseConstants.CREATOR);
                 String[] splitted = id.getUnversionedId().split("/");
                 newInstance.name = splitted[splitted.length-1];
-                //TODO BAS: this should go to AbstractTemplate: here use Field.java or something of the sort, should make sure the rest of the hash (like application version and creator) is filled in, even if not all fields are present in the hash
-
                 return newInstance;
             }
             else{

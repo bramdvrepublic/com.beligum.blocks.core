@@ -11,7 +11,7 @@
     <!--<link href="/assets/stylesheets/styles.less" rel="stylesheet" />-->
     <link href="/assets/stylesheets/blocks.less" rel="stylesheet" />
 
-    <link href="../../assets/media/css/screen.css" rel="stylesheet" media="screen">
+    <link href="../../assets/media/css/screen2.css" rel="stylesheet" media="screen">
     <link href="../../assets/media/css/responsive.css" rel="stylesheet" media="screen">
     <script src="../../assets/media/js/jquery-1.11.0.min.js"></script>
     <script src="../../assets/media/js/modernizr.js"></script>
@@ -62,13 +62,14 @@
         <div template-content></div>
     </div>
 </section>
-<footer id="footer">
-    <!--TODO BAS SH: je ben bezig met het goed zetten van de footer: problemen met de "lastline"-id die je graag in een typeof wil, maar die wel buiten een container moet staan-->
+<footer>
     <div class="container">
-        <div property="footer" typeof="mot-footer" use-blueprint></div>
+        <div property="footer" typeof="sponsors" use-blueprint></div>
     </div>
-    <div class="container">
-        <div property="lastline"></div>
+    <div id="lastline">
+        <div class="container">
+            <div property="lastline-content" typeof="lastline-content" use-blueprint></div>
+        </div>
     </div>
 </footer>
 
