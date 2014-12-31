@@ -74,6 +74,14 @@ public class BlocksConfig
     }
 
     /**
+     *
+     * @return The first languages in the languages-list, or the default-language if no such list is present in the configuration-xml.
+     */
+    public static String getDefaultLanguage(){
+        return getLanguages()[0];
+    }
+
+    /**
      * return the text from the applications configuration file in specified tag
      * @param configTag the configuration-tag
      * @return the value present in the configuration-tag, if '/' is the last character, it is removed

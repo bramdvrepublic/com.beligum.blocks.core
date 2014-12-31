@@ -6,10 +6,12 @@ import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
+import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 
+import javax.swing.text.html.parser.Parser;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Stack;
@@ -437,6 +439,19 @@ public class AbstractVisitor
         else{
             return node.hasAttr(ParserConstants.USE_BLUEPRINT);
         }
+    }
+
+    /**
+     *
+     * @param node
+     * @return the value of the lang-attribute of the node, or the language of the specified entityTemplateClass if no lang-attribute is present
+     */
+    public String getLanguage(Node node, EntityTemplateClass entityTemplateClass){
+        String language = node.attr(ParserConstants.LANGUAGE);
+        if(StringUtils.isEmpty(language)){
+            language = entityTemplateClass.getLanguage();
+        }
+        return language;
     }
 
 }

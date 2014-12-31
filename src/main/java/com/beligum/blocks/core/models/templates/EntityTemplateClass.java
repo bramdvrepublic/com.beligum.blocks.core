@@ -31,21 +31,21 @@ public class EntityTemplateClass extends AbstractTemplate
     /**
      *
      * @param name the name of this entity-class
-     * @param template the template-string corresponding to the most outer layer of the element-tree in this entity
+     * @param templates a map relating languages to template-strings corresponding to the most outer layer of the element-tree in this entity
      * @param pageTemplateName the default page-template this entity-class should be rendered in
      */
-    public EntityTemplateClass(String name, String template, String pageTemplateName) throws IDException, CacheException
+    public EntityTemplateClass(String name, Map<String, String> templates, String pageTemplateName) throws IDException, CacheException
     {
-        super(RedisID.renderNewEntityTemplateClassID(name), template);
+        super(RedisID.renderNewEntityTemplateClassID(name), templates);
         this.name = name;
         if(pageTemplateName != null) {
             this.pageTemplateName = pageTemplateName;
         }
     }
 
-    private EntityTemplateClass(RedisID id, String template, String pageTemplateName) throws CacheException
+    private EntityTemplateClass(RedisID id, Map<String, String> templates, String pageTemplateName) throws CacheException
     {
-        super(id, template);
+        super(id, templates);
         //the name of this entity-template-class doesn't start with a "/", so we split it of the given path
         String[] splitted = id.getUrl().getPath().split("/");
         if (splitted.length > 0) {

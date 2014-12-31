@@ -36,8 +36,8 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      * @param entityTemplateClass the class of which this entity is a entity-instance
      * @throw URISyntaxException if a url is specified not formatted strictly according to to RFC2396
      */
-    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, String template){
-        super(id, template);
+    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, Map<String, String> templates){
+        super(id, templates);
         this.entityTemplateClassName = entityTemplateClass.getName();
         this.pageTemplateName = entityTemplateClass.getPageTemplateName();
     }
@@ -46,11 +46,11 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      * Constructor used by static create-from-hash-function.
      * @param id
      * @param entityTemplateClassName
-     * @param template
+     * @param templates
      * @param pageTemplateName
      */
-    private EntityTemplate(RedisID id, String entityTemplateClassName, String template, String pageTemplateName){
-        super(id, template);
+    private EntityTemplate(RedisID id, String entityTemplateClassName, Map<String, String> templates, String pageTemplateName){
+        super(id, templates);
         this.entityTemplateClassName = entityTemplateClassName;
         this.pageTemplateName = pageTemplateName;
     }

@@ -1,5 +1,6 @@
 package com.beligum.blocks.core.identifiers;
 
+import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.config.DatabaseConstants;
@@ -9,6 +10,7 @@ import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.swing.text.html.parser.Entity;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -157,6 +159,16 @@ public class RedisID extends ID
     {
         return language;
     }
+
+    /**
+     * Private setter for the language-field. Used by ID-factory.
+     * @param language
+     */
+    private void setLanguage(String language)
+    {
+        this.language = language;
+    }
+
     public URL getUrl(){
         return url;
     }
@@ -220,7 +232,7 @@ public class RedisID extends ID
             String foundLanguage = splitted[1];
             boolean urlHasKnownLanguage = false;
             int i = 0;
-            while (i < languages.length) {
+            while (!urlHasKnownLanguage && i < languages.length) {
                 if (languages[i].contentEquals(foundLanguage)) {
                     urlHasKnownLanguage = true;
                 }
@@ -268,7 +280,7 @@ public class RedisID extends ID
     {
         //we're not actually going to the db to determine a new redis-id for a class, it will use a new versioning (current time millis) to get a new version, so we don't actually need to check for that version in db
         try{
-            RedisID newID = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClassName), NEW_VERSION);
+            RedisID newID = new RedisID(new URL(BlocksConfig.getSiteDomain() +  "/" + entityTemplateClassName), NEW_VERSION);
             while(Redis.getInstance().fetchEntityTemplateClass(newID) != null){
                 newID = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClassName), NEW_VERSION);
             }
@@ -321,8 +333,10 @@ public class RedisID extends ID
             while(Redis.getInstance().fetchEntityTemplate(newID) != null){
                 newID = new RedisID(new URL(url), NEW_VERSION);
             }
+            EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(owningEntityClassName);
+            newID.setLanguage(entityTemplateClass.getLanguage());
             return newID;
-        }catch(MalformedURLException |RedisException e){
+        }catch(Exception  e){
             throw new IDException("Couldn't construct proper id with '" + BlocksConfig.getSiteDomain() + "/" + owningEntityClassName + "#" + property + "/" + propertyName + "'", e);
         }
     }

@@ -95,7 +95,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                 return false;
             }
         }catch (Exception e){
-            throw new CacheException("Error while trying to add template with id '" + template.getId() + "'.", e);
+            throw new CacheException("Error while trying to add emplate with id '" + template.getId() + "'.", e);
         }
     }
 

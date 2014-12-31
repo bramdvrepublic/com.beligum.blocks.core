@@ -17,7 +17,7 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
 {
     //TODO BAS!: internationalization should be added to a template (probably a map of languages on template-strings)
     /**string representing the html-template of this element, once the template has been set, it cannot be changed*/
-    protected String template;
+    protected Map<String, String> templates;
     /**the version of the application this row is supposed to interact with*/
     protected String applicationVersion;
     /**the creator of this row*/
@@ -26,12 +26,12 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     /**
      * Constructor taking a unique id.
      * @param id id for this template
-     * @param template the template-string which represents the content of this viewable
+     * @param templates the map of templates (language -> template) which represent the content of this template
      */
-    protected AbstractTemplate(RedisID id, String template)
+    protected AbstractTemplate(RedisID id, Map<String, String> templates)
     {
         super(id);
-        this.template = template;
+        this.templates = templates;
         //TODO: this version should be fetched from pom.xml
         this.applicationVersion = "test";
         //TODO: logged in user should be added here
@@ -42,10 +42,40 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
      *
      * @return the template of this viewable
      */
-    public String getTemplate()
+    public Map<String, String> getTemplates()
     {
-        return template;
+        return templates;
     }
+
+    /**
+     *
+     * @return the template in the specified language, or null otherwise
+     * @throws NullPointerException if language is null
+     */
+    public String getTemplate(String language){
+        return templates.get(language);
+    }
+
+    /**
+     *
+     * @return the template in the language specified by this template's id
+     */
+    public String getTemplate(){
+        return templates.get(this.getLanguage());
+    }
+
+    /**
+     *
+     * @return the language stored inside this template's id
+     */
+    public String getLanguage(){
+        return this.getId().getLanguage();
+    }
+
+    /**
+     *
+     * @return the language stored in the id of this template
+     */
 
     abstract public String getName();
 
@@ -112,7 +142,7 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     @Override
     public Map<String, String> toHash(){
         Map<String, String> hash = new HashMap<>();
-        hash.put(DatabaseConstants.TEMPLATE, this.getTemplate());
+        hash.put(DatabaseConstants.TEMPLATE, this.getTemplates());
         hash.put(DatabaseConstants.APP_VERSION, this.applicationVersion);
         hash.put(DatabaseConstants.CREATOR, this.creator);
         return hash;
@@ -141,7 +171,7 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     {
         //7 and 31 are two randomly chosen prime numbers, needed for building hashcodes, ideally, these are different for each class
         HashCodeBuilder significantFieldsSet = new HashCodeBuilder(7, 31);
-        significantFieldsSet = significantFieldsSet.append(template)
+        significantFieldsSet = significantFieldsSet.append(templates)
                         .append(this.getUnversionedId())
                         .append(this.creator)
                         .append(this.applicationVersion);
@@ -164,7 +194,7 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
             else {
                 AbstractTemplate abstractTemplateObj = (AbstractTemplate) obj;
                 EqualsBuilder significantFieldsSet = new EqualsBuilder();
-                significantFieldsSet = significantFieldsSet.append(template, abstractTemplateObj.template)
+                significantFieldsSet = significantFieldsSet.append(templates, abstractTemplateObj.templates)
                                 .append(this.getUnversionedId(), abstractTemplateObj.getUnversionedId())
                                 .append(this.creator, abstractTemplateObj.creator)
                                 .append(this.applicationVersion, abstractTemplateObj.applicationVersion);

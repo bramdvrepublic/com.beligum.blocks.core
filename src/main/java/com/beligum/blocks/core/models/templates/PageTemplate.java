@@ -20,15 +20,15 @@ public class PageTemplate extends AbstractTemplate
 {
     private String name;
 
-    public PageTemplate(String name, String template) throws IDException
+    public PageTemplate(String name, Map<String, String> templates) throws IDException
     {
-        super(RedisID.renderNewPageTemplateID(name), template);
+        super(RedisID.renderNewPageTemplateID(name), templates);
         this.name = name;
         //TODO: should the creator of a page-template be the <author>-tag of the html file?, or else "server-start" or something?
     }
 
-    private PageTemplate(RedisID id, String template){
-        super(id, template);
+    private PageTemplate(RedisID id, Map<String, String> templates){
+        super(id, templates);
     }
 
     public String getName() {

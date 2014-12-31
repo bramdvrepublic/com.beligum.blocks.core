@@ -8,11 +8,14 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
+import com.beligum.core.framework.cache.HashMapCache;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Stack;
 
 /**
@@ -62,7 +65,7 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                     // Fetch the class for this resource
                     EntityTemplateClass entityClass = EntityTemplateClassCache.getInstance().get(typeOf);
                     // get new instance
-                    EntityTemplate newEntityInstance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityClass), entityClass, defaultEntityTemplate.getTemplate());
+                    EntityTemplate newEntityInstance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityClass), entityClass, defaultEntityTemplate.getTemplates());
 
                     node = replaceNodeWithEntity((Element) node, newEntityInstance);
                 }
@@ -96,7 +99,11 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                 }
                 node.removeAttr(ParserConstants.BLUEPRINT);
                 node.attr(ParserConstants.RESOURCE, newEntityId.getUrl().toString());
-                EntityTemplate newInstance = new EntityTemplate(newEntityId, entityClass, node.outerHtml());
+                //TODO BAS SH: started big refactor for internationalisation, RedisID is already doing the big work, we should follow the example following for all visitors
+                Map<String, String> templates = new HashMap<>();
+                String language = getLanguage(node, entityClass);
+                templates.put(language, node.outerHtml());
+                EntityTemplate newInstance = new EntityTemplate(newEntityId, entityClass, templates);
                 Redis.getInstance().save(newInstance);
                 node = replaceElementWithEntityReference((Element) node, newInstance);
                 newInstancesNodes.pop();

@@ -46,7 +46,7 @@ public class TemplateParser
     {
         String pageStringId = "";
         try {
-            Element doc = parse(entityTemplateClass.getTemplate());
+            Element doc = parse(entityTemplateClass.getTemplates());
             ClassToStoredInstanceVisitor visitor = new ClassToStoredInstanceVisitor(pageURL);
             Traversor traversor = new Traversor(visitor);
             traversor.traverse(doc);
@@ -62,10 +62,11 @@ public class TemplateParser
 
     public static String renderEntityInsidePageTemplate(PageTemplate pageTemplate, EntityTemplate entityTemplate) throws ParseException
     {
-        Element DOM = parse(pageTemplate.getTemplate());
+        String language = entityTemplate.getLanguage();
+        Element DOM = parse(pageTemplate.getTemplate(language));
         Elements referenceBlocks = DOM.select("[" + ParserConstants.REFERENCE_TO + "=" + ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME +"]");
         for(Element reference : referenceBlocks){
-            Element entityRoot = TemplateParser.parse(entityTemplate.getTemplate()).child(0);
+            Element entityRoot = TemplateParser.parse(entityTemplate.getTemplate(language)).child(0);
             reference.replaceWith(entityRoot);
         }
         Traversor traversor = new Traversor(new ToHtmlVisitor());
@@ -75,7 +76,7 @@ public class TemplateParser
 
     public static String renderTemplate(AbstractTemplate template) throws ParseException
     {
-        Element classDOM = parse(template.getTemplate());
+        Element classDOM = parse(template.getTemplates());
         Traversor traversor = new Traversor(new ToHtmlVisitor());
         Node classRoot = classDOM.child(0);
         traversor.traverse(classRoot);
