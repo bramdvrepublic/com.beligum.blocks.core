@@ -5,9 +5,6 @@
   right: 0px;
   bottom: 0px;
   position: fixed;
-
-  opacity: 0.9;
-  background-color: #000000;
 }
 
 // Handle to resize columns
@@ -19,6 +16,11 @@
 .block-hover {
   -webkit-box-shadow: 0 5px 20px rgba(51, 102, 146, 0.70), 0 0 8px 5px rgba(111, 199, 223, 0.90) ;
   box-shadow: 0 5px 20px rgba(51, 102, 146, 0.70), 0 0 8px 5px rgba(111, 199, 223, 0.90) ;
+}
+
+.property-hover {
+  -webkit-box-shadow: 0 1px 1px black, 0 0 1px 1px black ;
+  box-shadow: 0 1px 1px black, 0 0 1px 1px black ;
 }
 
 iframe {
@@ -65,9 +67,6 @@ iframe.cke_panel_frame  {
 
 }
 
-.block-overlay-background {
-  background-color: white;
-}
 
 .modal-centered {
   position: fixed;
@@ -118,6 +117,24 @@ iframe.cke_panel_frame  {
   }
   .btn.diabled {
 
+  }
+}
+
+.blocks-main-menu {
+  position: absolute;
+  font-size: 35px;
+  right: 10px;
+  top: 10px;
+  text-align: right;
+  z-index: 9999;
+
+  .main-menu-items {
+    display: none;
+    font-size: 20px;
+  }
+
+  &:hover .main-menu-items {
+    display: block;
   }
 }
 

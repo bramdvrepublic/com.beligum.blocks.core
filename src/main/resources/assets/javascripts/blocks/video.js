@@ -17,8 +17,8 @@ blocks.plugin("blocks.core.video", ["blocks.core.Admin", function(Admin) {
 
     Admin.register(
         {
-            enabled: function(block) {
-                return block.element.attr("typeof") == "video";
+            enabled: function(element) {
+                return element.attr("typeof") == "video";
             },
             callback: function(block, content) {
                 var imageElement = block.element.find("iframe");

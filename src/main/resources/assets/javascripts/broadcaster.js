@@ -30,6 +30,7 @@
 blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Elements", "blocks.core.DomManipulation", function (Constants, Elements, DOM) {
     var Broadcaster = this;
     var blocks = {current: null, previous: null};
+    var properties = {current: null, previous: null};
     var directionVector = {x1: 0, y1: 0, x2: 0, y2: 0};
     var lastPoints = [];
     var resetDirectionHandler = null;
@@ -47,6 +48,10 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
 
     this.block = function() {
         return blocks;
+    };
+
+    this.property = function() {
+        return properties;
     };
 
     // http://stackoverflow.com/questions/9043805/test-if-two-lines-intersect-javascript-function
@@ -143,14 +148,20 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         // First search for active element
         // If an element is active, we have a big chance the next event is in the same element, so we start our search here
         if (currentBlock != null) {
-            blocks.current = currentBlock.findActiveElement(x, y);
+            var bb = currentBlock.findActiveElement(x, y);
+            if (bb instanceof Elements.Block) {
+                blocks.current = bb;
+            }
         }
         // Our shortcut failed so search the full page
         // we loop the trees of elements to find the smallest active element
         if (blocks.current == null) {
             var i = 0;
             while (i < Broadcaster.getLayoutTree().length && blocks.current == null) {
-                blocks.current = Broadcaster.getLayoutTree()[i].findActiveElement(x, y);
+                var bb = Broadcaster.getLayoutTree()[i].findActiveElement(x, y);
+                if (bb instanceof Elements.Block) {
+                    blocks.current = bb;
+                }
                 i++;
             }
         }
@@ -158,11 +169,23 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         if (blocks.current != currentBlock) {
             blocks.previous = currentBlock;
         }
+
+        // Set Property
+        var currentProperty = properties.current
+        properties.current = null;
+        if (blocks.current != null) {
+            properties.current = blocks.current.getProperty(x, y);
+        }
+        if (properties.current != currentProperty) {
+            properties.previous = currentProperty;
+        }
+
         return blocks;
     };
 
     this.send = function (eventName, custom) {
-        setTimeout(function() {Broadcaster.sendNoTimeout(eventName, custom)}, 0);
+//        setTimeout(function() {Broadcaster.sendNoTimeout(eventName, custom)}, 0);
+        Broadcaster.sendNoTimeout(eventName, custom);
     };
 
     this.sendNoTimeout = function(eventName, custom) {
@@ -172,6 +195,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         e.pageY = lastMoveEvent.pageY;
         e.direction = lastMoveEvent.direction;
         e.block = blocks;
+        e.property = properties;
         e.custom = custom;
         // send the event with jquery
         $(document).triggerHandler(e);
@@ -195,6 +219,11 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     this.EVENTS.HOOVER_LEAVE_BLOCK = "HOOVER_LEAVE_BLOCK";
     this.EVENTS.HOOVER_ENTER_BLOCK = "HOOVER_ENTER_BLOCK";
     this.EVENTS.HOOVER_OVER_BLOCK = "HOOVER_OVER_BLOCK";
+
+    this.EVENTS.HOOVER_LEAVE_PROPERTY = "HOOVER_LEAVE_PROPERTY";
+    this.EVENTS.HOOVER_ENTER_PROPERTY = "HOOVER_ENTER_PROPERTY";
+    this.EVENTS.HOOVER_OVER_PROPERTY = "HOOVER_OVER_PROPERTY";
+
     this.EVENTS.END_HOOVER = "END_HOOVER";
     this.EVENTS.DOUBLE_CLICK_BLOCK = "DOUBLE_CLICK_BLOCK";
     this.EVENTS.CLICK_BLOCK = "CLICK_BLOCK";
@@ -235,18 +264,42 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
      if row has +1 colunms, we can add also to bottom of columns
      except if column has +1 rows
      */
+
+    var isContainer = function(element) {
+        return DOM.isProperty(element) || DOM.canLayout(element) || DOM.canEdit(element);
+    }
+
+    var findContainers = function(element) {
+      var retVal = [];
+      if (isContainer(element)) {
+          retVal.push(element);
+      } else {
+          var children = element.children();
+        for(var i=0; i < children.length; i++) {
+            var block = $(children[i]);
+            if (isContainer(block)) {
+                retVal.push(block)
+            } else {
+                retval.push.apply(retval, findContainers(block));
+            }
+        }
+      }
+        return retVal;
+    };
+
+
     var buildLayoutTree = function () {
         blocks.previous = null;
         blocks.current = null;
         layoutTree = [];
         //_this.cleanLayout();
         if (layoutParentElement == null) {
-            layoutParentElement = $("body").find(".can-layout");
+            layoutParentElement = $("body");
         }
 
         var findContainersInParent = function(parent) {
 
-            if (DOM.canLayout(parent) || DOM.canEdit(parent)) {
+            if (parent != null && parent.length > 0 && isContainer(parent)) {
                 var container = new Elements.Container(parent);
                 container.createAllDropspots();
                 Logger.debug(container);

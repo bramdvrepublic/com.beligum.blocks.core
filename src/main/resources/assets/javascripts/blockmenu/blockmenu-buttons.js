@@ -16,8 +16,19 @@ blocks.plugin("blocks.core.BlockMenu.delete", ["blocks.core.BlockMenu", "blocks.
     var button = $('<div type="button" class="btn btn-default"><i class="glyphicon glyphicon-trash"></i></div>')
     Menu.addButton({
         element: button,
-        priority: 105
-    })
+        priority: 105,
+        enabled : function(block) {
+            var total = block.getTotalBlocks();
+            Logger.debug("Total: " + total);
+            if (total == 1) {
+                return false;
+            } else {
+                return true;
+            }
+        }
+    });
+
+
 
     button.on("click", function(event) {
         event.stopPropagation();
@@ -27,67 +38,3 @@ blocks.plugin("blocks.core.BlockMenu.delete", ["blocks.core.BlockMenu", "blocks.
         });
     })
 }]);
-
-//blocks.plugin("blocks.core.BlockMenu.edit", ["blocks.core.BlockMenu", "blocks.core.Broadcaster", function(Menu, Broadcaster) {
-
-
-    // TODO: On resize we should stop the editing
-//    button.on("click", function(event) {
-//        // go into edit mode
-//        var blockElement = Menu.currentBlock().element;
-//        var blockBackground =  $("<div />");
-//        blockBackground.css("background-color", "#FFFFFF");
-//        blockBackground.css("position", "absolute");
-//        blockBackground.css("top", Menu.currentBlock().top +"px");
-//        blockBackground.css("left", Menu.currentBlock().left +"px");
-//        blockBackground.css("width", (Menu.currentBlock().right - Menu.currentBlock().left) +"px");
-//        blockBackground.css("height", (Menu.currentBlock().bottom - Menu.currentBlock().top) +"px");
-//        blockBackground.css("z-index", 2000);
-//
-//
-//        var overlayElement = $("<div />");
-//        overlayElement.addClass("blocks-edit-overlay");
-//        overlayElement.css("position", "absolute");
-//        overlayElement.css("opacity", "0.9");
-//        overlayElement.css("background-color", "#424242");
-//        overlayElement.css("top", "0px");
-//        overlayElement.css("left", "0px");
-//        overlayElement.css("width", $(document).width() + "px");
-//        overlayElement.css("height", $(document).height() + "px");
-//        overlayElement.css("z-index", "1000");
-//
-//        overlayElement.click(function() {
-//            blockBackground.remove();
-//            overlayElement.remove();
-//            blockElement.css("position", "");
-//            blockElement.css("z-index", "");
-//            if (blockElement.children().length > 0) {
-//                var p = blockElement.children().first();
-//                p.removeAttr("contenteditable", "");
-//                // use native javascript focus. otherwise focus
-//                // won't work on contenteditable element
-//                // TODO: try http://stackoverflow.com/questions/2388164/set-focus-on-div-contenteditable-element#16863913
-//                p.get(0).focus();
-//            } else {
-//                blockElement.removeAttr("contenteditable", "");
-//            }
-//            Broadcaster.send(new Broadcaster.EVENTS.ACTIVATE_MOUSE());
-//        });
-//
-//        blockElement.css("position", "relative");
-//        blockElement.css("z-index", "2001");
-//        if (blockElement.children().length > 0) {
-//            var p = blockElement.children().first();
-//            p.attr("contenteditable", "true");
-//            //p.focus();
-//        } else {
-//            blockElement.attr("contenteditable", "true");
-//        }
-//        Broadcaster.send(new Broadcaster.EVENTS.DEACTIVATE_MOUSE());
-//
-//
-//        $("body").append(overlayElement);
-//        $("body").append(blockBackground);
-
-//    })
-//}]);

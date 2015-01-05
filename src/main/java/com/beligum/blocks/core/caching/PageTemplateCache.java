@@ -36,22 +36,19 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
         try {
             if (instance == null) {
                 //if the application-cache doesn't exist, throw exception, else instantiate the application's page-cache with a new empty hashmap
-                if (R.cacheManager() != null && R.cacheManager().getApplicationCache() != null) {
-                    if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.PAGE_TEMPLATES) || !R.cacheManager().getApplicationCache().containsKey(CacheKeys.PAGE_TEMPLATES)) {
-                        R.cacheManager().getApplicationCache().put(CacheKeys.PAGE_TEMPLATES, new HashMap<String, PageTemplate>());
-                        instance = new PageTemplateCache();
-                        //insert the most basic possible page-template, for fall-back reasons
-                        PageTemplate pageTemplate = new PageTemplate(ParserConstants.DEFAULT_PAGE_TEMPLATE, "<!DOCTYPE html>" +
-                                                                                                            "<html>" +
-                                                                                                            "<head></head>" +
-                                                                                                            "<body>" +
-                                                                                                            //default referencing div
-                                                                                                            "<div " + ParserConstants.PAGE_TEMPLATE_CONTENT_ATTR + "=\"\" " + ParserConstants.REFERENCE_TO + "=\""+ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME + "\"></div>" +
-                                                                                                            "</body>" +
-                                                                                                            "</html>");
-                        instance.getCache().put(getDefaultPageKey(), pageTemplate);
-                        instance.fillCache();
-                    }
+                if (R.cacheManager() != null && R.cacheManager().getApplicationCache() != null) {R.cacheManager().getApplicationCache().put(CacheKeys.PAGE_TEMPLATES, new HashMap<String, PageTemplate>());
+                    instance = new PageTemplateCache();
+                    //insert the most basic possible page-template, for fall-back reasons
+                    PageTemplate pageTemplate = new PageTemplate(instance.getDefaultTemplateName(), "<!DOCTYPE html>" +
+                                                                                                    "<html>" +
+                                                                                                    "<head></head>" +
+                                                                                                    "<body>" +
+                                                                                                    //default referencing div
+                                                                                                    "<div " + ParserConstants.PAGE_TEMPLATE_CONTENT_ATTR + "=\"\" " + ParserConstants.REFERENCE_TO + "=\""+ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME + "\"></div>" +
+                                                                                                    "</body>" +
+                                                                                                    "</html>");
+                    instance.getCache().put(instance.getTemplateKey(instance.getDefaultTemplateName()), pageTemplate);
+                    instance.fillCache();
                 }
                 else {
                     throw new NullPointerException("No application-cache found.");
@@ -64,34 +61,13 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
         }
     }
 
-
     /**
-     * Get the entity-class with a certain name from the application cache.
-     * If that entity-class does not exist, return the default entity-class.
-     *
-     * @param name the unique name of the entity-class to get
-     * @return an entity-class from the application cache, or the default-page-template if no page-template with the specified name can be found
+     * reset this application-cache, trashing all it's content
      */
     @Override
-    public PageTemplate get(String name) throws CacheException
+    public void reset()
     {
-        try {
-            if(name != null) {
-                Map<String, PageTemplate> applicationCache = this.getCache();
-                PageTemplate pageTemplate = applicationCache.get(RedisID.renderNewPageTemplateID(name).getUnversionedId());
-                if(pageTemplate != null) {
-                    return pageTemplate;
-                }
-                else{
-                    return applicationCache.get(getDefaultPageKey());
-                }
-            }
-            else{
-                return this.getCache().get(getDefaultPageKey());
-            }
-        }catch(IDException e){
-            throw new CacheException("Could not get "+ PageTemplate.class.getSimpleName() + " '" + name + "' from cache.", e);
-        }
+        this.instance = null;
     }
 
     /**
@@ -111,8 +87,15 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
         return PageTemplate.class;
     }
 
-    private static String getDefaultPageKey() throws IDException
+    @Override
+    protected String getTemplateKey(String templateName) throws IDException
     {
-        return RedisID.renderNewPageTemplateID(ParserConstants.DEFAULT_PAGE_TEMPLATE).getUnversionedId();
+        return RedisID.renderNewPageTemplateID(templateName).getUnversionedId();
+    }
+
+    @Override
+    protected String getDefaultTemplateName()
+    {
+        return ParserConstants.DEFAULT_PAGE_TEMPLATE;
     }
 }

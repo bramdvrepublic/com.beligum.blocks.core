@@ -38,9 +38,9 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
         activeBlock = blockEvent.block.current;
         for (var i = 0; i < buttons.length; i++) {
             if (buttons[i].enabled != null && !buttons[i].enabled(activeBlock)) {
-                $(buttons[i].element).addClass("disabled");
+                $(buttons[i].element).hide();
             } else {
-                $(buttons[i].element).removeClass("disabled");
+                $(buttons[i].element).show();
             }
         }
         menuElement.css("position", "absolute");

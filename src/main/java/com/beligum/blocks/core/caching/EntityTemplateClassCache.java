@@ -1,6 +1,7 @@
 package com.beligum.blocks.core.caching;
 
 import com.beligum.blocks.core.config.CacheConstants;
+import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
@@ -38,13 +39,12 @@ public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTempl
             if (instance == null) {
                 //if the application-cache doesn't exist, throw exception, else instantiate the application's page-cache with a new empty hashmap
                 if (R.cacheManager() != null && R.cacheManager().getApplicationCache() != null) {
-
-                    if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.ENTITY_CLASSES) || !R.cacheManager().getApplicationCache().containsKey(CacheKeys.PAGE_TEMPLATES)) {
-                        R.cacheManager().getApplicationCache().put(CacheKeys.ENTITY_CLASSES, new HashMap<String, EntityTemplateClass>());
-                        instance = new EntityTemplateClassCache();
-                        //TODO save a default instance of all entity-classes to db (under blocks://LOC/entityClassName#propertyName), for remebering history of classes (check if class has changed before saving new instance to db)
-                        instance.fillCache();
-                    }
+                    R.cacheManager().getApplicationCache().put(CacheKeys.ENTITY_CLASSES, new HashMap<String, EntityTemplateClass>());
+                    instance = new EntityTemplateClassCache();
+                    //insert most basic possible entity-template-class, it is not saved to db
+                    EntityTemplateClass entityTemplateClass = new EntityTemplateClass(instance.getDefaultTemplateName(), "<div " + ParserConstants.TYPE_OF + "=\"" + ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS + "\" "+ ParserConstants.CAN_EDIT +"></div>", ParserConstants.DEFAULT_PAGE_TEMPLATE);
+                    instance.getCache().put(instance.getTemplateKey(instance.getDefaultTemplateName()), entityTemplateClass);
+                    instance.fillCache();
                 }
                 else {
                     throw new NullPointerException("No application-cache found.");
@@ -52,47 +52,20 @@ public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTempl
             }
             return instance;
         }
-        catch(CacheException e){
+        catch(Exception e){
             throw new CacheException("Couldn't initialize entity-class-cache.", e);
         }
     }
 
-    public void reset() throws CacheException {
-        R.cacheManager().getApplicationCache().put(CacheKeys.ENTITY_CLASSES, new HashMap<String, EntityTemplateClass>());
-        this.fillCache();
-    }
-
     /**
-     * Get the entity-template-class with a certain name from the application cache.
-     * If that entity-template-class does not exist, return the default entity-class.
-     *
-     * @param name the unique name of the entity-class to get
-     * @return an entity-class from the application cache
+     * reset this application-cache, trashing all it's content
      */
     @Override
-    public EntityTemplateClass get(String name) throws CacheException
+    public void reset()
     {
-        Map<String, EntityTemplateClass> applicationCache = this.getCache();
-        if(name == null) {
-            //TODO BAS: when is the default-class added and how does it look like? this should be implemented!
-            return applicationCache.get(CacheConstants.DEFAULT_ENTITY_CLASS_NAME);
-        }
-        else {
-            try {
-                EntityTemplateClass entityTemplateClass = applicationCache.get(RedisID.renderNewEntityTemplateClassID(name).getUnversionedId());
-                if (entityTemplateClass != null) {
-                    return entityTemplateClass;
-                }
-                else {
-                    //TODO BAS: if the specified template-class is not present, a trip to the db could possibly give us an old version
-                    return applicationCache.get(CacheConstants.DEFAULT_ENTITY_CLASS_NAME);
-                }
-            }
-            catch (IDException e) {
-                throw new CacheException("Could not get " + EntityTemplateClass.class.getSimpleName() + "' from cache.", e);
-            }
-        }
+        this.instance = null;
     }
+
     /**
      * This method returns a map with all default page-instances (value) of all present pageClasses (key)
      * @returns a map of all the currently cached page-classes from the application cache
@@ -109,5 +82,17 @@ public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTempl
     public Class<? extends AbstractTemplate> getCachedClass()
     {
         return EntityTemplateClass.class;
+    }
+
+    @Override
+    protected String getTemplateKey(String templateName) throws IDException
+    {
+        return RedisID.renderNewEntityTemplateClassID(templateName).getUnversionedId();
+    }
+
+    @Override
+    protected String getDefaultTemplateName()
+    {
+        return ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS;
     }
 }

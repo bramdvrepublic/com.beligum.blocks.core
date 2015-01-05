@@ -19,53 +19,99 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
     // Get column width (in grid units 1-12, not pixels)
 
     this.canEdit = function(element) {
-        return element.hasClass(Constants.CAN_EDIT_BLOCK_CLASS);
+        return element.hasAttribute(Constants.CAN_EDIT_BLOCK_CLASS);
     };
 
     this.canLayout = function(element) {
-        return element.hasClass(Constants.CAN_LAYOUT_ROW_CLASS);
+        return element.hasAttribute(Constants.CAN_LAYOUT_ROW_CLASS);
     };
+
 
     this.isRow = function(element) {
         return element.hasClass(Constants.ROW_CLASS);
     }
 
     this.isColumn = function(element) {
-        var retVal = false
-        var classList = element[0].className.split(/\s+/);
+        var el = $(element);
+        var retVal = false;
+        var classList = el[0].className.split(/\s+/);
         for (var i = 0; i < classList.length; i++) {
-            if (classList[i].indexOf(Constants.COLUMN_WIDTH_CLASS) == 0) {
-                retVal = true;
+            for (var j = 0; j < Constants.COLUMN_WIDTH_CLASS.length; j++) {
+                if (classList[i].indexOf(Constants.COLUMN_WIDTH_CLASS[j].name) == 0) {
+                    return true;
+                }
             }
         }
-        //return element.hasClass(Constants.COLUMN_CLASS);
         return retVal;
-    }
+    };
 
     this.isContainer = function(element) {
         return element.hasClass(Constants.CONTAINER_CLASS);
-    }
-
-    this.isBlock = function(element) {
-        return element.hasAttribute(Constants.IS_TYPE) || element.hasAttribute(Constants.IS_PROPERTY) || !(_thisService.isColumn(element) && _thisService.isRow(element));
-    }
-
-
-    this.getColumnWidth = function (element) {
-        var widths = element[0].className.match(/\bcol-md-\d+/g, '');
-        if (widths != null && widths.length > 0) {
-            var nr = widths[0].substring(7, widths[0].length);
-            return parseInt(nr);
-        } else {
-            Logger.error("Column. Could not get width of column");
-            return 0;
-        }
     };
 
+    this.isBlock = function(element) {
+        return element.hasAttribute(Constants.IS_ENTITY) || element.hasAttribute(Constants.IS_PROPERTY) || !(_thisService.isColumn(element) && _thisService.isRow(element));
+    };
+
+    this.isEntity = function(element) {
+        return element.hasAttribute(Constants.IS_ENTITY);
+    };
+
+    this.isProperty = function(element) {
+        return element.hasAttribute(Constants.IS_PROPERTY);
+    };
+
+    this.getColumnWidth = function (element) {
+        var getClazz = function(clazz) {
+            var regex = new RegExp('\\b' + clazz + '\\d+');
+            regex.global = true;
+            regex.ignoreCase = true;
+            var widths = element[0].className.match(regex, '');
+            if (widths != null && widths.length > 0) {
+                var nr = widths[0].substring(7, widths[0].length);
+                return parseInt(nr);
+            } else {
+                return null;
+            }
+        };
+        var currentWidth = null;
+        var docWidth = $(document).width();
+        for (var i=0; i < Constants.COLUMN_WIDTH_CLASS.length; i++) {
+            var colWidth =  Constants.COLUMN_WIDTH_CLASS[i];
+            var newWidth = getClazz(colWidth.name);
+            if (docWidth > colWidth.max && newWidth != null) {
+                currentWidth = newWidth;
+            } else if (docWidth >= colWidth.min &&  docWidth < colWidth.max) {
+                if (newWidth != null) {
+                    currentWidth = newWidth;
+                } else if (currentWidth == null){
+                    currentWidth = 12;
+                }
+            }
+        }
+        return currentWidth;
+    };
+
+    this.getColumnClass = function() {
+        // TODO Wouter: This should change with screen width
+        return "col-md-";
+        var colClass = null;
+        var docWidth = $(document).width();
+        for (var i=0; i < Constants.COLUMN_WIDTH_CLASS.length; i++ ) {
+            if ((docWidth >= Constants.COLUMN_WIDTH_CLASS[i].min &&  docWidth < Constants.COLUMN_WIDTH_CLASS[i].max)) {
+                colClass = Constants.COLUMN_WIDTH_CLASS[i].name;
+                break;
+            } else if (docWidth > Constants.COLUMN_WIDTH_CLASS[i].max) {
+                colClass = Constants.COLUMN_WIDTH_CLASS[i].name;
+            }
+        }
+        return colClass;
+    }
     // Sets the column width in grid-units, not pixels
     this.setColumnWidth = function (element, newWidth, animationTime, callback) {
-        var currentClass = Constants.COLUMN_WIDTH_CLASS + this.getColumnWidth(element);
-        var newClass = Constants.COLUMN_WIDTH_CLASS + newWidth;
+        var colClass = this.getColumnClass();
+        var currentClass = colClass + this.getColumnWidth(element);
+        var newClass = colClass + newWidth;
         if (callback == null) {
             element.removeClass(currentClass);
             element.addClass(newClass);
@@ -87,14 +133,23 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
 
     // distributes the width of the columns in a row so they take the max nr of grid-units
     var distributeColumnsInRow = function (element, callback) {
-        var columns = element.children("." + Constants.COLUMN_CLASS);
+        var tcolumns = element.children();
+        var columns = [];
+
         // Check if current distribution of columns is incorrect
         // Total width of all columns must be 12
         var totalWidth = 0;
-        for (var i=0; i < columns.length; i++) {
-            totalWidth += _thisService.getColumnWidth($(columns[i]));
+        for (var i=0; i < tcolumns.length; i++) {
+            var col = $(tcolumns[i]);
+            if (DOM.isColumn(col)) {
+                totalWidth += _thisService.getColumnWidth($(tcolumns[i]));
+                columns.push(col);
+            }
         }
-        if (totalWidth == Constants.MAX_COLUMNS) return;
+        if (totalWidth == Constants.MAX_COLUMNS) {
+            callback();
+            return;
+        }
 
         var columnCount = columns.length;
         var columnsWidth = {};
@@ -134,16 +189,19 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
     };
 
     /*
-    * METHODS TO CLEAN THE DOM (REMOVE COLUMNS WITHOUT BLOCKS, ROWS WITHOUT COLUMNS, ...)
-    * usefull after manipulating the layout
-    * */
+     * METHODS TO CLEAN THE DOM (REMOVE COLUMNS WITHOUT BLOCKS, ROWS WITHOUT COLUMNS, ...)
+     * usefull after manipulating the layout
+     * */
 
     // generic method that starts the chain of cleaning.
     // first delete empty elements
     var elementChanged = function (element, callback) {
-        Logger.debug("Element Changed")
+        Logger.debug("Element Changed");
         if (element == null) {
+            callback();
+        } else if (!(DOM.isColumn(element) || DOM.isRow(element))) {
             // What to do???
+            callback();
         } else {
             deleteEmptyElement(element, callback);
         }
@@ -152,64 +210,97 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
     // if Column or row is empty then delete
     // when not deleting, try simplifying
     var deleteEmptyElement = function (element, callback) {
-        if (((element.hasClass(Constants.COLUMN_CLASS) || element.hasClass(Constants.ROW_CLASS))) &&
-            element.children().length == 0) {
+        var isLayout = (DOM.isColumn(element) || DOM.isRow(element));
+        if (isLayout && element.children().length == 0) {
             var parent = element.parent();
             element.remove();
 
-            if (parent == null) {
-                // do nothing, this should not happen
-            } else {
-                elementChanged(parent, callback);
+            if (parent != null) {
+                if (parent.children().length == 1) {
+                    elementChanged(findHighestLayoutElement(parent), callback);
+                } else {
+                    elementChanged(parent, callback);
+                }
             }
         } else {
+//            simplifyElement(element, callback);
             simplifyElement(element, callback);
         }
     };
 
     // generic method to simplify columns and rows.
     var simplifyElement = function(element, callback) {
-        if (element.hasClass(Constants.COLUMN_CLASS)) {
+        if (DOM.isColumn(element)) {
             simplifyColumnInColumn(element, callback);
         } else if (element.hasClass(Constants.ROW_CLASS)) {
             simplifyRowInRow(element, callback);
         } else {
-            callback();
+//            callback();
+            elementChanged(element, callback);
         }
     }
 
     // if: 1 column(A) in 1 row(B) in 1 column(C),
     // then we can put template of column A in Column C and delete A & B
     var simplifyColumnInColumn = function (element, callback) {
-        if (element.parent().children().length == 1 && // 1 column in row
-            element.parent().parent().children().length == 1 &&  // 1 row in column
-            !element.parent().hasClass(Constants.CAN_LAYOUT_ROW_CLASS)) { // do not delete can_layout elements
-            var parentColumn = element.parent().parent();
-            var children = element.children().remove();
-            parentColumn.children().remove();
-            parentColumn.append(children); // column with new template
-            elementChanged(parentColumn, callback)
+        var parentRow = element.parent();
+        var parentColumn = element.parent().parent();
+        if (DOM.isRow(parentRow) && DOM.isColumn(parentColumn) &&
+            parentRow.children().length == 1 && // 1 column in row
+            parentColumn.children().length == 1 &&  // 1 row in column
+            !DOM.canLayout(element.parent()) && !DOM.canLayout(element)) { // do not delete can_layout elements
+//            var children = element.children().remove();
+            parentColumn.replaceWith(element);
+//            parentColumn.append(children); // column with new template
+            elementChanged(element, callback)
         } else {
-            callback();
+//            callback();
+            elementChanged(element.parent(), callback);
         }
     };
 
     // if: 1 Row(A) in 1 Column(B) in 1 Row(C),
     // then we can put template of Row A in Row C and delete A & B
     var simplifyRowInRow = function (element, callback) {
-        if (element.parent().children().length == 1 && // 1 row (A) in column (B)
-            element.parent().parent().children().length == 1 &&  // 1 column(B) in row (C)
-            !(element.hasClass(Constants.CAN_LAYOUT_ROW_CLASS))) { // do not delete can_layout elements
-            var parentRow = element.parent().parent(); // Row C
-            var children = element.children().remove();
-            parentRow.children().remove();
-            parentRow.append(children); // column with new template
-            elementChanged(parentRow, callback);
+        var parentColumn = element.parent();
+        var parentRow = parentColumn.parent();
+        if (DOM.isRow(parentRow) && DOM.isColumn(parentColumn) &&
+            parentColumn.children().length == 1 && // 1 row (A) in column (B)
+            parentRow.children().length == 1 &&  // 1 column(B) in row (C)
+            !DOM.canLayout(parentRow) && !DOM.canLayout(element)) { // do not delete can_layout elements
+//            var parentRow = element.parent().parent(); // Row C
+//            var children = element.children().remove();
+//            parentRow.children().remove();
+            parentRow.replaceWith(element); // column with new template
+            elementChanged(element, callback);
         } else {
-            distributeColumnsInRow(element, callback);
+            distributeColumnsInRow(element, function(){
+                elementChanged(element.parent(), callback);
+            })
         }
     };
 
+
+    var findFirstHighestBlock = function(parentBlock) {
+        var retVal = null;
+        if (parentBlock.children().length == 0) return parentBlock;
+
+        for (var i = 0; i < parentBlock.children().length; i++) {
+            var block = $(parentBlock.children()[i]);
+            if (DOM.isColumn(block) || DOM.isRow(block)) {
+                return findFirstHighestBlock(block);
+            } else if (retVal == null) {
+                retVal = block;
+            }
+        }
+        return retVal;
+    };
+
+    var findHighestLayoutElement = function(element) {
+        var retVal = findFirstHighestBlock(element).parent();
+        if (retVal == null) {retVal = element;}
+        return retVal;
+    }
 
     // function to insert a block and clean up
     this.appendElement = function (blockElement, dropLocationElement, side, callback) {
@@ -219,8 +310,14 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
         } else if (side == Constants.SIDE.TOP || side == Constants.SIDE.LEFT) {
             dropLocationElement.before(blockElement)
         }
+        var cleanBlock = findHighestLayoutElement(blockElement);
 
-        elementChanged(dropLocationElement.parent(), function() {
+//        var cleanBlock = blockElement.parent();
+//        if (blocks) {
+//            cleanBlock = blocks[0].parent();
+//        }
+
+        elementChanged(cleanBlock, function() {
             blockElement.toggle(300, function() {
                 callback();
             });
@@ -249,7 +346,7 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
     };
 
     this.createColumn = function (columnWidth) {
-        return $("<div class='" + Constants.COLUMN_CLASS + " " + Constants.COLUMN_WIDTH_CLASS + columnWidth +"'></div>");
+        return $("<div class='" + this.getColumnClass() + columnWidth +"'></div>");
     };
 
     this.wrapBlockInColumn = function (blockElement, columnWidth) {
@@ -310,7 +407,7 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
     * */
     this.wrapSiblingBlocksInRows = function (blockElement) {
         var parentColumnElement = blockElement.parent();
-        if (parentColumnElement.hasClass(Constants.COLUMN_CLASS)) {
+        if (DOM.isColumn(parentColumnElement)) {
             var before = [];
             var current = null;
             var after = [];

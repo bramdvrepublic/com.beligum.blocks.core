@@ -46,12 +46,17 @@ blocks.plugin("blocks.core.Constants", function() {
     };
 
     this.CONTAINER_CLASS = "container"
-    this.COLUMN_CLASS = "column";
     this.ROW_CLASS = "row";
     this.BLOCK_CLASS = "block";
     this.FAKE_BLOCK = "fake-block";
 
-    this.COLUMN_WIDTH_CLASS = "col-md-";
+    // Must be ordered from small to big
+    this.COLUMN_WIDTH_CLASS = [
+        {name: "col-xs-", min: 0, max: 767},
+        {name: "col-sm-", min: 768, max: 991},
+        {name: "col-md-", min: 992, max: 1199},
+        {name: "col-lg-", min: 120, max: 10000}
+    ];
     this.CAN_LAYOUT_ROW_CLASS = "can-layout"; // can layout row and add and delete blocks
     this.CAN_EDIT_BLOCK_CLASS = "can-edit"; // specifies edit and delete
     this.CAN_CAST_BLOCK_CLASS = "can-cast-block";
@@ -65,6 +70,7 @@ blocks.plugin("blocks.core.Constants", function() {
     this.OVERLAY_BACKGROUND_CLASS = "block-hover";
     this.COLUMN_RESIZER_CLASS = "column-resize-handle";
     this.BLOCK_HOVER_CLASS = "block-hover";
+    this.PROPERTY_HOVER_CLASS = "property-hover";
     this.OVERLAY_BACKGROUND_CLASS = "block-overlay-background";
     this.ADMIN_ANIMATION_FRONT = "admin-animation-front";
     this.ADMIN_ANIMATION_BACK = "admin-animation-back";

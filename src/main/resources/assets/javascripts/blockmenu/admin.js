@@ -2,7 +2,7 @@
  * Created by wouter on 26/11/14.
  */
 
-blocks.plugin("blocks.core.Admin", ["blocks.core.BlockMenu", "blocks.core.Overlay", "blocks.core.Broadcaster", function(Menu, Overlay, Broadcaster) {
+blocks.plugin("blocks.core.Admin", ["blocks.core.DomManipulation", "blocks.core.Overlay", "blocks.core.Notification", "blocks.core.Broadcaster", function(DOM, Overlay, Notification, Broadcaster) {
 
 
     var registeredPlugins = [];
@@ -48,16 +48,25 @@ blocks.plugin("blocks.core.Admin", ["blocks.core.BlockMenu", "blocks.core.Overla
     };
 
     $(document).on(Broadcaster.EVENTS.DOUBLE_CLICK_BLOCK, function(blockEvent) {
-        if (blockEvent.block.current != null && enabled(blockEvent.block.current)) {
-            startAdmin(blockEvent.block.current);
+        var block = blockEvent.block.current;
+        if (block != null) {
+            var property = blockEvent.block.current.getProperty(blockEvent.pageX, blockEvent.pageY);
+
+//            if (DOM.canEdit(block.element) && enabled(block.element)) {
+            if (enabled(block.element)) {
+                startAdmin(blockEvent.block.current, block.element);
+//            } else if (property != null && DOM.canEdit(property.element) && enabled(property.element)) {
+            } else if (property != null && enabled(property.element)) {
+                startAdmin(blockEvent.block.current, property.element);
+            }
         }
     });
 
 
-    var startAdmin = function(block) {
+    var startAdmin = function(block, el) {
         // insert html
         // store the current block before we deactivate the mouse
-        var block = Menu.currentBlock();
+
         Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         var element = block.element;
         var front = $("<div />");
@@ -82,31 +91,34 @@ blocks.plugin("blocks.core.Admin", ["blocks.core.BlockMenu", "blocks.core.Overla
 //        back.css("-webkit-transform", "rotateY(-180deg) translateZ("+2+"px)");
 //        back.css("transform", "rotateY(-180deg) translateZ("+(2)+"px);");
         back.css("background-color", "white");
-        back.append($("<div/>").append(selectedPlugin.element));
-        var okBtn = $('<button class="btn btn-default pull-right" >Ok</button>');
-        back.append($("<div />").append(okBtn));
+
+//        back.append($("<div/>").append(selectedPlugin.element));
+//        var okBtn = $('<button class="btn btn-default pull-right" >Ok</button>');
+//        back.append($("<div />").append(okBtn));
+
+
         back.addClass("admin-backend");
         makeAbsolute(back, width, height);
 
-        okBtn.click(function() {
-            selectedPlugin.callback(block, back);
-            Overlay.removeOverlay();
-        });
+//        okBtn.click(function() {
+//
+////            Overlay.removeOverlay();
+//        });
 
         side.css("-webkit-transform", "rotateY(-90deg) translateZ("+(width/2)+"px)");
         side.css("transform", "rotateY(-90deg) translateZ("+(width/2)+"px);");
         side.css("background-color", "#EEEEEE");
         makeAbsolute(side, width, height);
-        var bear = $("<h1><center>Please wait ...</center></h1>")
+        var bear = $("<h1><center>Please wait ...</center></h1>");
         side.append(bear);
 
 //        front.css("-webkit-transform", "translateZ("+(width/2)+"px);");
 //        front.css("transform", "translateZ("+(width/2)+"px)");
-        var frontback = Overlay.addBlockBackground(block).remove();
-        frontback.css("-webkit-transform", "translateZ("+(0)+"px);");
-        frontback.css("transform", "translateZ("+(0)+"px)");
-        frontback.css("top", 0);
-        frontback.css("left", 0);
+//        var frontback = Overlay.addBlockBackground(block).remove();
+//        frontback.css("-webkit-transform", "translateZ("+(0)+"px);");
+//        frontback.css("transform", "translateZ("+(0)+"px)");
+//        frontback.css("top", 0);
+//        frontback.css("left", 0);
 
         front.css("-webkit-transform", "translateZ("+(0)+"px);");
         front.css("transform", "translateZ("+(0)+"px)");
@@ -120,7 +132,7 @@ blocks.plugin("blocks.core.Admin", ["blocks.core.BlockMenu", "blocks.core.Overla
         master.css("height", height);
         master.css("position", "relative");
 
-        Overlay.createForBlock(block, function() {
+        var turnBack = function() {
             master.removeClass("flip");
             setTimeout(function() {
                 makeNotAbsolute(front);
@@ -131,32 +143,49 @@ blocks.plugin("blocks.core.Admin", ["blocks.core.BlockMenu", "blocks.core.Overla
                 front.css("z-index", "");
                 back.remove();
                 side.remove();
-                frontback.remove();
+//                frontback.remove();
                 Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
                 Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
             }, 600);
-        });
+        };
 
         var zindex = Overlay.maxIndex() + 1;
         master.css("z-index", (zindex + 2));
-        frontback.css("z-index", (zindex + 3));
+//        frontback.css("z-index", (zindex + 3));
         front.css("z-index", (zindex + 4));
         side.css("z-index", (zindex + 5));
         back.css("z-index", (zindex + 6));
         if (doCopy) {
             var children = block.element.children().remove();
             front.append(children);
-            master.append(front).append(frontback).append(side).append(back);
+//            master.append(front).append(frontback).append(side).append(back);
+            master.append(front).append(side).append(back);
             parent.append(master);
         } else {
-            master.append(frontback);
+//            master.append(frontback);
             master.append(side);
             master.append(back);
         }
 //
 //        parent.css("-webkit-perspective", "1400px;");
 //        parent.css("-webkit-perspective-origin", "50% 200px;");
-        setTimeout(function() {master.addClass("flip");}, 100);
+        setTimeout(function() {
+            master.addClass("flip");
+            setTimeout(function() {
+                var content = $("<div/>").append(selectedPlugin.element);
+                content.addClass("admin-dialog-content");
+                Notification.dialog(selectedPlugin.title, content.html(),
+                    function (body) {
+                        selectedPlugin.callback(block, el, body);
+                        turnBack();
+                },
+                    function () {
+
+                        turnBack();
+                });
+            }, 600);
+
+        }, 10);
 
         // turn block around
         //

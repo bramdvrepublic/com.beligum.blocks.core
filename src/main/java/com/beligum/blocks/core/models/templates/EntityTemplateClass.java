@@ -15,6 +15,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Comparator;
 import java.util.Map;
 
 /**
@@ -30,21 +31,21 @@ public class EntityTemplateClass extends AbstractTemplate
     /**
      *
      * @param name the name of this entity-class
-     * @param template the template-string corresponding to the most outer layer of the element-tree in this entity
+     * @param templates a map relating languages to template-strings corresponding to the most outer layer of the element-tree in this entity
      * @param pageTemplateName the default page-template this entity-class should be rendered in
      */
-    public EntityTemplateClass(String name, String template, String pageTemplateName) throws IDException, CacheException
+    public EntityTemplateClass(String name, Map<String, String> templates, String pageTemplateName) throws IDException, CacheException
     {
-        super(RedisID.renderNewEntityTemplateClassID(name), template);
+        super(RedisID.renderNewEntityTemplateClassID(name), templates);
         this.name = name;
         if(pageTemplateName != null) {
             this.pageTemplateName = pageTemplateName;
         }
     }
 
-    private EntityTemplateClass(RedisID id, String template, String pageTemplateName) throws CacheException
+    private EntityTemplateClass(RedisID id, Map<String, String> templates, String pageTemplateName) throws CacheException
     {
-        super(id, template);
+        super(id, templates);
         //the name of this entity-template-class doesn't start with a "/", so we split it of the given path
         String[] splitted = id.getUrl().getPath().split("/");
         if (splitted.length > 0) {
@@ -107,8 +108,6 @@ public class EntityTemplateClass extends AbstractTemplate
                 EntityTemplateClass newInstance = new EntityTemplateClass(id, hash.get(DatabaseConstants.TEMPLATE), hash.get(DatabaseConstants.PAGE_TEMPLATE));
                 newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
                 newInstance.creator = hash.get(DatabaseConstants.CREATOR);
-                //TODO BAS: this should go to AbstractTemplate: use Field.java or something of the sort, should make sure the rest of the hash (like application version and creator) is filled in, even if not all fields are present in the hash
-
                 return newInstance;
             }
             else {

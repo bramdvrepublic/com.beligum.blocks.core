@@ -92,7 +92,7 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
         } else if (blockEvent.block.current != null) {
             // find the first parent that is a row (but not a block)
             var activeRow = blockEvent.block.current.parent;
-            while (!(activeRow instanceof Elements.Row || activeRow == null)) {
+            while (!(activeRow instanceof Elements.Row || activeRow instanceof Elements.Container ||activeRow == null)) {
                 activeRow = activeRow.parent
             }
 

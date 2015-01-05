@@ -1,5 +1,13 @@
 blocks.plugin("blocks.core.Notification", ["blocks.core.Broadcaster", function(Broadcaster) {
     // Todo show/hide overlay
+    var maxIndex = function() {
+        return Math.max.apply(null,$.map($('body  *'), function(e,n){
+                if($(e).css('position')=='absolute' || $(e).css('position')=='relative')
+                    return parseInt($(e).css('z-index'))||1 ;
+            })
+        );
+    };
+
     this.dialog = function(title, message, okFunction, cancelFunction) {
         var modal = $("<div class='modal'></div>").css("background-color", "#ffffff");
         var modalDialog = $("<div class='modal-dialog'></div>");
@@ -10,7 +18,10 @@ blocks.plugin("blocks.core.Notification", ["blocks.core.Broadcaster", function(B
         var modalFooter = $("<div class='modal-footer'></div>");
         var closeButton = $('<button type="button" class="btn btn-default" >Cancel</button>');
         var okButton = $('<button type="button" class="btn btn-primary">Ok</button>');
-
+        modal.css("z-index", (maxIndex() + 2));
+//        modal.css("top", "10%");
+        modal.css("height", "60%");
+        modalBody.css("overflow", "scroll");
         var hideDialog = function(callback) {
             modal.fadeOut(200, function() {
                 modal.remove();
@@ -26,6 +37,10 @@ blocks.plugin("blocks.core.Notification", ["blocks.core.Broadcaster", function(B
             closeIcon.on("click", function(event) {
                 event.stopPropagation();
                 hideDialog(cancelFunction)});
+            okButton.on("click", function() {
+                event.stopPropagation();
+                hideDialog(okFunction)}
+            );
             modalFooter.append(closeButton)
         } else {
             okButton.on("click", function() {
@@ -52,6 +67,7 @@ blocks.plugin("blocks.core.Notification", ["blocks.core.Broadcaster", function(B
     this.alert = function(title, message, okFunction) {
         this.dialog(title, message, okFunction);
     };
+
 
 
 }]);

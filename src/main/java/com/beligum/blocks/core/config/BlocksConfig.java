@@ -20,12 +20,24 @@ public class BlocksConfig
     {
         return getConfiguration("blocks.template-folder");
     }
+    public static String getBlueprintsFolder()
+    {
+        return getConfiguration("blocks.blueprints-folder");
+    }
 
     public static String getSiteDomain()
     {
         return getConfiguration("blocks.site.domain");
     }
 
+    public static String getRedisMasterHost()
+    {
+        return getConfiguration("blocks.redis.master-host");
+    }
+    public static String getRedisMasterPort()
+    {
+        return getConfiguration("blocks.redis.master-port");
+    }
     public static String getSiteDBAlias()
     {
         return getConfiguration("blocks.site.db-alias");
@@ -59,6 +71,14 @@ public class BlocksConfig
             }
         }
         return cachedLanguages;
+    }
+
+    /**
+     *
+     * @return The first languages in the languages-list, or the default-language if no such list is present in the configuration-xml.
+     */
+    public static String getDefaultLanguage(){
+        return getLanguages()[0];
     }
 
     /**

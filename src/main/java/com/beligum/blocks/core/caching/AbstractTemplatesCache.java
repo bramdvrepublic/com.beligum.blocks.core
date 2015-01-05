@@ -5,9 +5,12 @@ import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.AbstractTemplate;
+import com.beligum.blocks.core.models.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.utils.Logger;
 import com.beligum.core.framework.utils.toolkit.FileFunctions;
@@ -16,8 +19,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 
 /**
 * Created by bas on 03.11.14.
@@ -41,11 +43,31 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     abstract protected Map<String, T> getCache();
 
     /**
-     * Get the template with a certain name from the application cache
+     * Get the template with a certain name from the application cache.$
+     * If that template is not present, return the default template
      * @param name the unique name of the template to get
-     * @return a template from the application cache
+     * @return a template from the application cache, or the default-template if no template with the specified name can be found
      */
-     abstract public T get(String name) throws CacheException;
+    public T get(String name) throws CacheException
+    {
+        try {
+            if(name != null) {
+                Map<String, T> applicationCache = this.getCache();
+                T template = applicationCache.get(getTemplateKey(name));
+                if(template != null) {
+                    return template;
+                }
+                else{
+                    return applicationCache.get(getTemplateKey(getDefaultTemplateName()));
+                }
+            }
+            else{
+                return this.getCache().get(getTemplateKey(getDefaultTemplateName()));
+            }
+        }catch(IDException e){
+            throw new CacheException("Could not get "+ PageTemplate.class.getSimpleName() + " '" + name + "' from cache.", e);
+        }
+    }
 
     /**
      * Try to add this template to the cache. If a template with the same id is present, the template will not be added and false will be returned.
@@ -73,7 +95,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                 return false;
             }
         }catch (Exception e){
-            throw new CacheException("Error while trying to add template with id '" + template.getId() + "'.", e);
+            throw new CacheException("Error while trying to add emplate with id '" + template.getId() + "'.", e);
         }
     }
 
@@ -108,6 +130,21 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
         }
     }
 
+    /**
+     *
+     * @param templateName
+     * @return true if the cache contains a mapping for the specified template-name, false otherwise
+     */
+    public boolean contains(String templateName) throws IDException
+    {
+        return getCache().containsKey(getTemplateKey(templateName));
+    }
+
+    /**
+     * reset this application-cache, trashing all it's content
+     */
+    abstract public void reset();
+
 
     /**
      * Fill up the page-cache with all template found in file-system
@@ -118,18 +155,19 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     {
         if(!runningTroughHtmlTemplates) {
             runningTroughHtmlTemplates = true;
-            URI rootFolderUri = FileFunctions.searchClasspath(this.getClass(), BlocksConfig.getTemplateFolder());
+            URI rootFolderUri = FileFunctions.getCurrentMavenSrcResourceFolder(this.getClass());
             Path rootFolder = Paths.get(rootFolderUri.getSchemeSpecificPart());
-//            Path rootFolder = Paths.get("/Users/wouter/git/com.beligum.blocks.core/src/main/resources/templates");
+            Path templatesFolder = rootFolder.resolve(BlocksConfig.getTemplateFolder());
+            Path blueprintsFolder = rootFolder.resolve(BlocksConfig.getBlueprintsFolder());
 
             try {
-                Files.walkFileTree(rootFolder, new SimpleFileVisitor<Path>()
+                FileVisitor<Path> visitor = new SimpleFileVisitor<Path>()
                 {
                     @Override
                     public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs)
                                     throws IOException
                     {
-                        if (filePath.getFileName().toString().endsWith("html")) {
+                        if (filePath.getFileName().toString().endsWith("html") || filePath.getFileName().toString().endsWith("htm")) {
                             try {
                                 TemplateParser.cacheTemplatesFromFile(new String(Files.readAllBytes(filePath)));
                             }
@@ -139,7 +177,9 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                         }
                         return FileVisitResult.CONTINUE;
                     }
-                });
+                };
+                Files.walkFileTree(blueprintsFolder, visitor);
+                Files.walkFileTree(templatesFolder, visitor);
             }
             catch (Exception e) {
                 Logger.error("Error while filling cache: " + this, e);
@@ -152,11 +192,18 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     }
 
     /**
-     * Gets all  values of the cache's map
+     * Gets all  values of the cache's map, sorted by name
      * @return
      */
-    public Collection<T> values(){
-        return this.getCache().values();
+    public List<T> values()
+    {
+        Collection<T> templates = this.getCache().values();
+        List<T> templateList = new LinkedList<>();
+        for(T template : templates){
+            templateList.add(template);
+        }
+        Collections.sort(templateList);
+        return templateList;
     }
 
     /**
@@ -164,5 +211,9 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
      * @return the object-class being stored in this cache
      */
     abstract public Class<? extends AbstractTemplate> getCachedClass();
+
+    abstract protected String getTemplateKey(String templateName) throws IDException;
+
+    abstract protected String getDefaultTemplateName();
 
 }

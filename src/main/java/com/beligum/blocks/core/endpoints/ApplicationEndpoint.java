@@ -1,8 +1,10 @@
 package com.beligum.blocks.core.endpoints;
 
+import com.beligum.blocks.core.config.ParserConstants;
+import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.models.templates.PageTemplate;
+import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.base.RequestContext;
@@ -13,19 +15,22 @@ import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.*;
 
 @Path("/")
 public class ApplicationEndpoint
 {
-    @Path("/index")
-    @GET
-    public Response index()
-    {
-        Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/index.html");
-//        TypeCacher.instance().reset();
-        return Response.ok(indexTemplate).build();
-    }
+//    @Path("/ind")
+//    @GET
+//    public Response index()
+//    {
+//        Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/index.html");
+////        TypeCacher.instance().reset();
+//        return Response.ok(indexTemplate).build();
+//    }
 
     @Path("/finder")
     @GET
@@ -47,11 +52,11 @@ public class ApplicationEndpoint
 
     @Path("/")
     @GET
-    public Response overzicht()
+    public Response overzicht() throws URISyntaxException
     {
-        Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/overzicht.html");
+//        Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/overzicht.html");
         //        TypeCacher.instance().reset();
-        return Response.ok(indexTemplate).build();
+        return Response.seeOther(new URI("/index")).build();
     }
 
 //    @Path("/show")
@@ -66,15 +71,6 @@ public class ApplicationEndpoint
 //        return Response.ok(template.renderContent(element)).build();
 //    }
 
-    @Path("/reset")
-    @GET
-    public Response reset()
-    {
-//        TypeCacher.instance().reset();
-        // TODO BAS: enable reset of EntityClassCache
-        return Response.ok("OK: all templates loaded").build();
-    }
-
 
 
     //using regular expression to let all requests to undefined paths end up here
@@ -88,10 +84,20 @@ public class ApplicationEndpoint
             RedisID lastVersionId = new RedisID(url, RedisID.LAST_VERSION);
             EntityTemplate entityTemplate = redis.fetchEntityTemplate(lastVersionId);
             if(entityTemplate == null){
-                throw new NullPointerException("Could not find page " + randomURLPath + " in db, received null.");
+                Template template = R.templateEngine().getEmptyTemplate("/views/new-page.html");
+                List<EntityTemplateClass> entityTemplateClasses = EntityTemplateClassCache.getInstance().values();
+                //TODO BAS: find general way to split entity-classes to be shown when creating a new page and when creating a new block in frontend
+                List<EntityTemplateClass> pageClasses = new ArrayList<>();
+                for(EntityTemplateClass entityTemplateClass : entityTemplateClasses){
+                    if(entityTemplateClass.getName().contains("-page")){
+                        pageClasses.add(entityTemplateClass);
+                    }
+                }
+                template.set(ParserConstants.ENTITY_URL, RequestContext.getRequest().getRequestURL().toString());
+                template.set(ParserConstants.ENTITY_CLASSES, pageClasses);
+                return Response.ok(template).build();
             }
-            PageTemplate pageTemplate = entityTemplate.getPageTemplate();
-            String page = pageTemplate.renderContent(entityTemplate);
+            String page = entityTemplate.renderEntityInPageTemplate();
             return Response.ok(page).build();
         }
         catch(Exception e){

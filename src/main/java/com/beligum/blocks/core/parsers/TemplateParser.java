@@ -5,10 +5,10 @@ import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.models.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
-import com.beligum.blocks.core.parsers.jsoup.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -16,7 +16,6 @@ import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
 import org.jsoup.select.Elements;
 
-import java.net.MalformedURLException;
 import java.net.URL;
 
 /**
@@ -43,12 +42,12 @@ public class TemplateParser
      * @param entityTemplateClass
      * @return the url of the freshly saved template
      */
-    public static URL saveNewEntityTemplateToDb(EntityTemplateClass entityTemplateClass) throws ParseException
+    public static URL saveNewEntityTemplateToDb(URL pageURL, EntityTemplateClass entityTemplateClass) throws ParseException
     {
         String pageStringId = "";
         try {
-            Document doc = parse(entityTemplateClass.getTemplate());
-            ClassToStoredInstanceVisitor visitor = new ClassToStoredInstanceVisitor();
+            Element doc = parse(entityTemplateClass.getTemplates());
+            ClassToStoredInstanceVisitor visitor = new ClassToStoredInstanceVisitor(pageURL);
             Traversor traversor = new Traversor(visitor);
             traversor.traverse(doc);
             pageStringId = visitor.getReferencedId(doc.child(0));
@@ -63,12 +62,11 @@ public class TemplateParser
 
     public static String renderEntityInsidePageTemplate(PageTemplate pageTemplate, EntityTemplate entityTemplate) throws ParseException
     {
-        Document DOM = parse(pageTemplate.getTemplate());
-        Elements referenceBlocks = DOM.select("[" + ParserConstants.REFERENCE_TO + "]");
+        String language = entityTemplate.getLanguage();
+        Element DOM = parse(pageTemplate.getTemplate(language));
+        Elements referenceBlocks = DOM.select("[" + ParserConstants.REFERENCE_TO + "=" + ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME +"]");
         for(Element reference : referenceBlocks){
-            Document entityDOM = Jsoup.parse(entityTemplate.getTemplate(), BlocksConfig.getSiteDomain(), Parser.xmlParser());
-            //a Document has a <#root>-tag indicating the fact that it is indeed a Document, we only want the actual html to be put into the reference-element
-            Element entityRoot = entityDOM.child(0);
+            Element entityRoot = TemplateParser.parse(entityTemplate.getTemplate(language)).child(0);
             reference.replaceWith(entityRoot);
         }
         Traversor traversor = new Traversor(new ToHtmlVisitor());
@@ -76,9 +74,9 @@ public class TemplateParser
         return DOM.outerHtml();
     }
 
-    public static String renderEntityClass(EntityTemplateClass entityTemplateClass) throws ParseException
+    public static String renderTemplate(AbstractTemplate template) throws ParseException
     {
-        Document classDOM = parse(entityTemplateClass.getTemplate());
+        Element classDOM = parse(template.getTemplates());
         Traversor traversor = new Traversor(new ToHtmlVisitor());
         Node classRoot = classDOM.child(0);
         traversor.traverse(classRoot);
@@ -94,12 +92,26 @@ public class TemplateParser
     }
 
     /**
-     * Parse html to jsoup-document, using xml-parser
+     * Parse html to jsoup-document.
+     * Note: if the html received contains an empty head, only the body-html is returned.
      * @param html
      * @return
      */
-    private static Document parse(String html){
-        return Jsoup.parse(html, BlocksConfig.getSiteDomain(), Parser.xmlParser());
+    //this method is protected, so all classes in this package can access it!
+    protected static Document parse(String html){
+        Document retVal = new Document(BlocksConfig.getSiteDomain());
+        Document parsed = Jsoup.parse(html, BlocksConfig.getSiteDomain(), Parser.htmlParser());
+        /*
+         * If only part of a html-file is being parsed (which starts f.i. with a <div>-tag), Jsoup will add <html>-, <head>- and <body>-tags, which is not what we want
+         * Thus if the head is empty, but the body is not, we only want the info in the body.
+         */
+        if(parsed.head().children().isEmpty() && !parsed.body().children().isEmpty()){
+            retVal.appendChild(parsed.body().child(0));
+        }
+        else{
+            retVal = parsed;
+        }
+        return retVal;
     }
 
 }

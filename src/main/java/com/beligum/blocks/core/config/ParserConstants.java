@@ -6,6 +6,25 @@ package com.beligum.blocks.core.config;
  */
 public class ParserConstants
 {
+    public enum ModificationLevel
+    {
+        NONE(0, ""),
+        CAN_LAYOUT(1, ParserConstants.CAN_LAYOUT),
+        CAN_EDIT(2, ParserConstants.CAN_EDIT);
+
+        private int permissionLevel;
+        private String cssClass;
+        ModificationLevel(int permissionLevel, String cssClass){
+            this.permissionLevel = permissionLevel;
+            this.cssClass = cssClass;
+        }
+        @Override
+        public String toString(){
+            return cssClass;
+        }
+    }
+
+
     public final static String CAN_LAYOUT = "can-layout";
     public final static String CAN_CREATE = "can-create";
     public final static String CAN_EDIT = "can-edit";
@@ -24,16 +43,26 @@ public class ParserConstants
 
     /**the name of the variable in the new-page template, containing all possible entity-classes*/
     public static final String ENTITY_CLASSES = "entityClasses";
+    /**the name of the variable in the new-page template, containing the url of the new Entity*/
+    public static final String ENTITY_URL = "entityUrl";
+
+
+    /**the html-language attribute*/
+    public static final String LANGUAGE = "lang";
+
     /**the form a reference-node takes inside parsed templates*/
     public static final String REFERENCE_TO = "reference-to";
-    /**the keyword (attribute) indicating a certain template-class should be used as bleuprint for all instances*/
-    public static final String BLEUPRINT = "bleuprint";
+    /**the keyword (attribute) indicating a certain template-class should be used as blueprint for all instances*/
+    public static final String BLUEPRINT = "blueprint";
+    /**the keyword indicating a certain entity is a copy of the entity-class (blueprint)*/
+    public static final String USE_BLUEPRINT = "use-blueprint";
 
     /**
      * RDFa-constants
      */
     public static final String RESOURCE = "resource";
     public static final String PROPERTY = "property";
+    public static final String PROPERTY_NAME = "name";
     public static final String TYPE_OF = "typeof";
 
 }

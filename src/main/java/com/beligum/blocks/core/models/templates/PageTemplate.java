@@ -20,15 +20,15 @@ public class PageTemplate extends AbstractTemplate
 {
     private String name;
 
-    public PageTemplate(String name, String template) throws IDException
+    public PageTemplate(String name, Map<String, String> templates) throws IDException
     {
-        super(RedisID.renderNewPageTemplateID(name), template);
+        super(RedisID.renderNewPageTemplateID(name), templates);
         this.name = name;
         //TODO: should the creator of a page-template be the <author>-tag of the html file?, or else "server-start" or something?
     }
 
-    private PageTemplate(RedisID id, String template){
-        super(id, template);
+    private PageTemplate(RedisID id, Map<String, String> templates){
+        super(id, templates);
     }
 
     public String getName() {
@@ -71,11 +71,6 @@ public class PageTemplate extends AbstractTemplate
 //        }
 //    }
 
-    public String renderContent(EntityTemplate entityTemplate) throws ParseException
-    {
-        return TemplateParser.renderEntityInsidePageTemplate(this, entityTemplate);
-    }
-
     /**
      * The PageTemplate-class can be used as a factory, to construct page-templates from data found in a hash in the redis-db
      * @param hash a map, mapping field-names to field-values
@@ -90,8 +85,6 @@ public class PageTemplate extends AbstractTemplate
                 newInstance.creator = hash.get(DatabaseConstants.CREATOR);
                 String[] splitted = id.getUnversionedId().split("/");
                 newInstance.name = splitted[splitted.length-1];
-                //TODO BAS: this should go to AbstractTemplate: here use Field.java or something of the sort, should make sure the rest of the hash (like application version and creator) is filled in, even if not all fields are present in the hash
-
                 return newInstance;
             }
             else{

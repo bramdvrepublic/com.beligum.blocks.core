@@ -6,8 +6,10 @@ import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.DeserializationException;
+import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.ifaces.Storable;
+import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -21,30 +23,36 @@ import java.util.Map;
 public class EntityTemplate extends AbstractTemplate implements Storable
 {
     /**the class of which this viewable is a viewable-instance*/
-    protected final EntityTemplateClass entityTemplateClass;
+    protected String entityTemplateClassName = ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS;
 
     private String pageTemplateName = ParserConstants.DEFAULT_PAGE_TEMPLATE;
 
+
     /**
      *
-     * Constructor for a new entity-instance of a certain entity-class, which will be filled with the default rows and blocks from the entity-class.
+     * Constructor for a new entity-instance of a certain entity-class.
      * It's UID will be the of the form "[url]:[version]". It used the current application version and the currently logged in user for field initialization.
      * @param id the id of this entity
      * @param entityTemplateClass the class of which this entity is a entity-instance
      * @throw URISyntaxException if a url is specified not formatted strictly according to to RFC2396
      */
-    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass)
-    {
-        //a entity cannot be altered by the client, so it always is final
-        super(id, entityTemplateClass.getTemplate());
-        this.entityTemplateClass = entityTemplateClass;
+    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, Map<String, String> templates){
+        super(id, templates);
+        this.entityTemplateClassName = entityTemplateClass.getName();
         this.pageTemplateName = entityTemplateClass.getPageTemplateName();
     }
 
-    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, String template){
-        super(id, template);
-        this.entityTemplateClass = entityTemplateClass;
-        this.pageTemplateName = entityTemplateClass.getPageTemplateName();
+    /**
+     * Constructor used by static create-from-hash-function.
+     * @param id
+     * @param entityTemplateClassName
+     * @param templates
+     * @param pageTemplateName
+     */
+    private EntityTemplate(RedisID id, String entityTemplateClassName, Map<String, String> templates, String pageTemplateName){
+        super(id, templates);
+        this.entityTemplateClassName = entityTemplateClassName;
+        this.pageTemplateName = pageTemplateName;
     }
 
     /**
@@ -54,27 +62,15 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      */
     public static EntityTemplate createInstanceFromHash(RedisID id, Map<String, String> hash) throws DeserializationException
     {
-        try{
-            if(hash != null && !hash.isEmpty() && hash.containsKey(DatabaseConstants.TEMPLATE) && hash.containsKey(DatabaseConstants.ENTITY_TEMPLATE_CLASS)) {
-                EntityTemplate newInstance = new EntityTemplate(id, EntityTemplateClassCache.getInstance().get(hash.get(DatabaseConstants.ENTITY_TEMPLATE_CLASS)));
-                newInstance.template = hash.get(DatabaseConstants.TEMPLATE);
-                newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
-                newInstance.creator = hash.get(DatabaseConstants.CREATOR);
-                newInstance.pageTemplateName = hash.get(DatabaseConstants.PAGE_TEMPLATE);
-                //TODO BAS: this should go to AbstractTemplate: here use Field.java or something of the sort, should make sure the rest of the hash (like application version and creator) is filled in, even if not all fields are present in the hash
-
-                return newInstance;
-            }
-            else{
-                Logger.error("Could not construct an entity-template from the specified hash: " + hash);
-                throw new DeserializationException("Could not construct an entity-template from the specified hash: " + hash);
-            }
+        if(hash != null && !hash.isEmpty() && hash.containsKey(DatabaseConstants.TEMPLATE) && hash.containsKey(DatabaseConstants.ENTITY_TEMPLATE_CLASS)) {
+            EntityTemplate newInstance = new EntityTemplate(id, hash.get(DatabaseConstants.ENTITY_TEMPLATE_CLASS), hash.get(DatabaseConstants.TEMPLATE), hash.get(DatabaseConstants.PAGE_TEMPLATE));
+            newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
+            newInstance.creator = hash.get(DatabaseConstants.CREATOR);
+            return newInstance;
         }
-        catch(DeserializationException e){
-            throw e;
-        }
-        catch(CacheException e){
-            throw new DeserializationException("Could not construct an object of class '" + EntityTemplate.class.getName() + "' from specified hash.", e);
+        else{
+            Logger.error("Could not construct an entity-template from the specified hash: " + hash);
+            throw new DeserializationException("Could not construct an entity-template from the specified hash: " + hash);
         }
     }
 
@@ -82,8 +78,9 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      *
      * @return the entity-class of this entity-instance
      */
-    public EntityTemplateClass getEntityTemplateClass(){
-        return this.entityTemplateClass;
+    public EntityTemplateClass getEntityTemplateClass() throws CacheException
+    {
+        return EntityTemplateClassCache.getInstance().get(this.entityTemplateClassName);
     }
 
     /**
@@ -108,6 +105,38 @@ public class EntityTemplate extends AbstractTemplate implements Storable
         this.pageTemplateName = pageTemplateName;
     }
 
+    /**
+     *
+     * @return the url of this entity
+     */
+    @Override
+    public String getName()
+    {
+        return this.getUrl().toString();
+    }
+    /**
+     * render the html of this entity-template, using it's page-template (or, if it is the default-page-template, use the page-template of the class) and class-template
+     * @return
+     */
+    public String renderEntityInPageTemplate() throws CacheException, ParseException
+    {
+        PageTemplate pageTemplate = getPageTemplate();
+        PageTemplate classPageTemplate = this.getEntityTemplateClass().getPageTemplate();
+        if(pageTemplate.getName().equals(ParserConstants.DEFAULT_PAGE_TEMPLATE) && !classPageTemplate.getName().equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)){
+            pageTemplate = classPageTemplate;
+        }
+        return TemplateParser.renderEntityInsidePageTemplate(pageTemplate, this);
+    }
+
+    /**
+     * render the html of this entity-template, without using a page-template
+     * @return
+     * @throws ParseException
+     */
+    public String renderEntity() throws ParseException
+    {
+        return TemplateParser.renderTemplate(this);
+    }
 
     /**
      * Gives a hash-representation of this storable to save to the db. This method decides what information is stored in db, and what is not.
@@ -118,7 +147,7 @@ public class EntityTemplate extends AbstractTemplate implements Storable
     public Map<String, String> toHash()
     {
         Map<String, String> hash = super.toHash();
-        hash.put(DatabaseConstants.ENTITY_TEMPLATE_CLASS, this.getEntityTemplateClass().getName());
+        hash.put(DatabaseConstants.ENTITY_TEMPLATE_CLASS, this.entityTemplateClassName);
         hash.put(DatabaseConstants.PAGE_TEMPLATE, this.pageTemplateName);
         return hash;
     }
