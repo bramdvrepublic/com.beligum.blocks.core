@@ -43,7 +43,8 @@ public class HtmlToStoreVisitor extends AbstractVisitor
                 }
                 EntityTemplate storedEntityTemplate = Redis.getInstance().fetchEntityTemplate(resourceId);
                 RedisID newVersionId = new RedisID(new URL(resourceUrl), RedisID.NEW_VERSION);
-                EntityTemplate currentEntityTemplate = new EntityTemplate(newVersionId, entityTemplateClass, node.outerHtml());
+                String language = getLanguage(node, entityTemplateClass);
+                EntityTemplate currentEntityTemplate = new EntityTemplate(newVersionId, entityTemplateClass, language, node.outerHtml());
                 if (currentEntityTemplate.equals(storedEntityTemplate)) {
                     currentEntityTemplate = storedEntityTemplate;
                 }

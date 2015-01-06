@@ -2,6 +2,8 @@ package com.beligum.blocks.core.config;
 
 import com.beligum.core.framework.base.R;
 
+import java.util.Locale;
+
 /**
  * Created by bas on 08.10.14.
  */
@@ -68,6 +70,12 @@ public class BlocksConfig
             if(cachedLanguages.length == 0){
                 cachedLanguages = new String[1];
                 cachedLanguages[0] = DEFAULT_LANGUAGE;
+            }
+            else{
+                for(int i=0; i<cachedLanguages.length; i++){
+                    Locale locale = new Locale(cachedLanguages[i]);
+                    cachedLanguages[i] = locale.getLanguage();
+                }
             }
         }
         return cachedLanguages;

@@ -31,13 +31,29 @@ public class EntityTemplate extends AbstractTemplate implements Storable
     /**
      *
      * Constructor for a new entity-instance of a certain entity-class.
-     * It's UID will be the of the form "[url]:[version]". It used the current application version and the currently logged in user for field initialization.
+     * It's UID will be the of the form "[url]:[version]". It uses the current application version and the currently logged in user for field initialization.
      * @param id the id of this entity
+     * @param templates the map of templates (language -> template) which represent the content of this template
      * @param entityTemplateClass the class of which this entity is a entity-instance
      * @throw URISyntaxException if a url is specified not formatted strictly according to to RFC2396
      */
     public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, Map<String, String> templates){
         super(id, templates);
+        this.entityTemplateClassName = entityTemplateClass.getName();
+        this.pageTemplateName = entityTemplateClass.getPageTemplateName();
+    }
+
+    /**
+     * Constructor for template with one language and a html-template in that language. (Other language-templates could be added later if wanted.)
+     *
+     * @param id       id for this template
+     * @param entityTemplateClass the class of which this entity is a entity-instance
+     * @param language the language of this template
+     * @param template the html-template of this template
+     */
+    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, String language, String template)
+    {
+        super(id, language, template);
         this.entityTemplateClassName = entityTemplateClass.getName();
         this.pageTemplateName = entityTemplateClass.getPageTemplateName();
     }

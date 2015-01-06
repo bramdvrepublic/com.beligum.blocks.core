@@ -99,11 +99,8 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                 }
                 node.removeAttr(ParserConstants.BLUEPRINT);
                 node.attr(ParserConstants.RESOURCE, newEntityId.getUrl().toString());
-                //TODO BAS SH: started big refactor for internationalisation, RedisID is already doing the big work, we should follow the example following for all visitors
-                Map<String, String> templates = new HashMap<>();
                 String language = getLanguage(node, entityClass);
-                templates.put(language, node.outerHtml());
-                EntityTemplate newInstance = new EntityTemplate(newEntityId, entityClass, templates);
+                EntityTemplate newInstance = new EntityTemplate(newEntityId, entityClass, language, node.outerHtml());
                 Redis.getInstance().save(newInstance);
                 node = replaceElementWithEntityReference((Element) node, newInstance);
                 newInstancesNodes.pop();

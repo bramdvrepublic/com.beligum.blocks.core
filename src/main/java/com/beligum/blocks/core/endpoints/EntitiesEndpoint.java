@@ -68,7 +68,8 @@ public class EntitiesEndpoint
     {
         EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(entityClassName);
         URL pageUrl = new URL(url);
-        URL entityUrl = TemplateParser.saveNewEntityTemplateToDb(pageUrl, entityTemplateClass);
+        RedisID id = new RedisID(pageUrl, RedisID.NO_VERSION);
+        URL entityUrl = TemplateParser.saveNewEntityTemplateToDb(pageUrl, id.getLanguage(), entityTemplateClass);
 
         /*
          * Redirect the client to the newly created entity's page

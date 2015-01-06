@@ -16,6 +16,8 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -33,8 +35,9 @@ public class EntityTemplateClass extends AbstractTemplate
      * @param name the name of this entity-class
      * @param templates a map relating languages to template-strings corresponding to the most outer layer of the element-tree in this entity
      * @param pageTemplateName the default page-template this entity-class should be rendered in
+     * @throws IDException if no new id could be rendered using the specified name
      */
-    public EntityTemplateClass(String name, Map<String, String> templates, String pageTemplateName) throws IDException, CacheException
+    public EntityTemplateClass(String name, Map<String, String> templates, String pageTemplateName) throws IDException
     {
         super(RedisID.renderNewEntityTemplateClassID(name), templates);
         this.name = name;
@@ -43,7 +46,24 @@ public class EntityTemplateClass extends AbstractTemplate
         }
     }
 
-    private EntityTemplateClass(RedisID id, Map<String, String> templates, String pageTemplateName) throws CacheException
+    /**
+     * Constructor for an entity-template-class with one language and a template in that language. (Other language-templates could be added later if wanted.)
+     * @param name the name of this entity-class
+     * @param language the language of this class
+     * @param template the html-template of this class
+     * @param pageTemplateName the default page-template this entity-class should be rendered in
+     * @throws IDException if no new id could be rendered using the specified name
+     */
+    public EntityTemplateClass(String name, String language, String template, String pageTemplateName) throws IDException
+    {
+        super(RedisID.renderNewEntityTemplateClassID(name), language, template);
+        this.name = name;
+        if(pageTemplateName != null) {
+            this.pageTemplateName = pageTemplateName;
+        }
+    }
+
+    private EntityTemplateClass(RedisID id, Map<String, String> templates, String pageTemplateName)
     {
         super(id, templates);
         //the name of this entity-template-class doesn't start with a "/", so we split it of the given path

@@ -2,6 +2,7 @@ package com.beligum.blocks.core.models.templates;
 
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.IdentifiableObject;
 import com.beligum.blocks.core.models.ifaces.Storable;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -36,6 +37,19 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
         this.applicationVersion = "test";
         //TODO: logged in user should be added here
         this.creator = "me";
+    }
+
+    /**
+     * Constructor for template with one language and a html-template in that language. (Other language-templates could be added later if wanted.)
+     * @param id id for this template
+     * @param language the language of this template
+     * @param template the html-template of this template
+     */
+    protected AbstractTemplate(RedisID id, String language, String template){
+        this(id, null);
+        this.templates = new HashMap<>();
+        language = Languages.getStandardizedLanguage(language);
+        this.templates.put(language, template);
     }
 
     /**

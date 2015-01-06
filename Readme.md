@@ -35,10 +35,9 @@ Is done in 4 visiting-lines:
 ##Html- and CSS-'rules'
  - Only page-templates can hold bootstrap-containers (entities should never be containers, and no containers should ever be used in entities)
  - No bootstrap-layout should be added to a typeof- or property-tag (= entity-tag)
- - The content of an entity-blueprint should start with a bootstrap-row and then a bootstrap-column, if this is not the case (eventually) the parser will add those.
+ - If a entity-tag has can-layout, then the first elementy inside the entity must be a row
  - CSS-id's should only be used in page-templates, never inside entities. All css-styling should be achieved without use of id's
  - The css-rules for a certain entity will probably be grouped inside a class with the same name as the entity-class. These rules should be able to properly render the entity independently of any other css-rules.
- - TODO BAS SH: bootstrap-structure needs to be decided for front-end and back-end to communicate well
 
 
 #Redis

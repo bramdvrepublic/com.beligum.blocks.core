@@ -261,7 +261,9 @@ public class RedisID extends ID
         }
     }
 
-    //__________________STATIC METHODS FOR ID-RENDERING______________________
+
+    //___________________________STATIC METHODS FOR ID-RENDERING_______________________________
+
     /**
      * Method for getting a new randomly determined entity-uid (with versioning) for a entityTemplate-instance of an entityTemplateClass
      * @return a randomly generated entity-id of the form "[site-domain]/[entityTemplateClassName]/[randomInt]"

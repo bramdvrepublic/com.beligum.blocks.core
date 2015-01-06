@@ -20,11 +20,30 @@ public class PageTemplate extends AbstractTemplate
 {
     private String name;
 
+    /**
+     *
+     * @param name the name of this template
+     * @param templates the map of templates (language -> template) which represent the content of this template
+     * @throws IDException if no new id could be rendered using the specified name@throws IDException
+     */
     public PageTemplate(String name, Map<String, String> templates) throws IDException
     {
         super(RedisID.renderNewPageTemplateID(name), templates);
         this.name = name;
-        //TODO: should the creator of a page-template be the <author>-tag of the html file?, or else "server-start" or something?
+        //TODO: should the creator of a page-template be the <author>-tag of the html file?, or else "server-start" or appVersion or something?
+    }
+
+    /**
+     * Constructor for template with one language and a html-template in that language. (Other language-templates could be added later if wanted.)
+     *
+     * @param name the name of this template
+     * @param language the language of this template
+     * @param template the html-template of this template
+     */
+    public PageTemplate(String name,  String language, String template) throws IDException
+    {
+        super(RedisID.renderNewPageTemplateID(name), language, template);
+        this.name = name;
     }
 
     private PageTemplate(RedisID id, Map<String, String> templates){

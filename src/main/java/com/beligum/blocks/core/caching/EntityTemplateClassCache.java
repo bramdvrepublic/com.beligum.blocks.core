@@ -11,6 +11,7 @@ import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.core.framework.base.R;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
