@@ -43,11 +43,12 @@ public class Languages
             return false;
         }
         else{
+            s = new Locale(s).getLanguage();
             boolean foundLanguage = false;
             String[] preferredLanguages = BlocksConfig.getLanguages();
             int i = 0;
             while(!foundLanguage && i<preferredLanguages.length){
-                foundLanguage = s.equals(preferredLanguages[i]);
+                foundLanguage = s.equals(new Locale(preferredLanguages[i]).getLanguage());
                 i++;
             }
             if(!foundLanguage) {

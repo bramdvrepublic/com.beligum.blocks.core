@@ -97,7 +97,7 @@ public class RedisID extends ID
             if(versionedDbUri.getScheme() == null || !versionedDbUri.getScheme().equals(DatabaseConstants.SCHEME_NAME)){
                 throw new IDException("Uncorrect db-id (uncorrect scheme) '" + versionedDbId + "'.");
             }
-            if(versionedDbUri.getAuthority() == null || !versionedDbUri.getAuthority().equals(BlocksConfig.getSiteDBAlias())){
+            if(!versionedDbUri.getSchemeSpecificPart().contains(BlocksConfig.getSiteDBAlias())){
                 throw new IDException("Uncorrect db-id (uncorrect site-alias) '" + versionedDbId + "'.");
             }
             if(!versionedDbUri.getSchemeSpecificPart().contains(":")){
@@ -267,16 +267,9 @@ public class RedisID extends ID
             /*
              * Construct the url for this id, using the site-domain specified in the configuration-xml and the previously parsed path (no more language-info is present in it)
              */
-            URI urlUri = url.toURI();
             URL siteDomain = new URL(BlocksConfig.getSiteDomain());
-            if (urlUri.getFragment() != null) {
-                urlPath += "#" + urlUri.getFragment();
-            }
-            if (urlUri.getQuery() != null) {
-                urlPath += "?" + urlUri.getQuery();
-            }
-            this.url = new URI(siteDomain.getProtocol(), siteDomain.getAuthority(), urlPath).toURL();
-            return new URI(DatabaseConstants.SCHEME_NAME, BlocksConfig.getSiteDBAlias(), urlPath);
+            this.url = new URL(siteDomain.getProtocol(), siteDomain.getHost(), siteDomain.getPort(), urlPath);
+            return new URI(DatabaseConstants.SCHEME_NAME, BlocksConfig.getSiteDBAlias() + urlPath, null);
         }catch(Exception e){
             throw new IDException("Could not initialize language and url while constructing a '" + RedisID.class.getSimpleName() +"'.", e);
         }

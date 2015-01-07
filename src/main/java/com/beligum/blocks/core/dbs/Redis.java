@@ -80,7 +80,7 @@ public class Redis implements Closeable
                 pipelinedSaveTransaction.multi();
                 try {
                     /*
-                     * Save this entity-version's id ("[entityId]:[version]") to the db in the list named "<entityId>"
+                     * Save this entity-version's id ("[entityId]:[version]") to the db in the list named "[entityId]"
                      * holding all the different versions of this entity-instance.
                      */
                     //if another version is present in db, check if this entity is more recent
