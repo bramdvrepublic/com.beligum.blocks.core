@@ -32,8 +32,8 @@ public class ToHtmlVisitor extends AbstractVisitor
                 Element entityClassRoot = TemplateParser.parse(entityTemplateClass.getTemplate()).child(0);
 
                 //if no modifacations can be done, first we fill in the correct property-references, coming from the class
-                if(!(isModifiable(entityRoot) && isModifiable(entityClassRoot))){
-                    node = copyProperties(entityRoot, entityClassRoot);
+                if(useClass(entityRoot, entityClassRoot)){
+                    node = copyPropertiesToClassTemplate(entityRoot, entityClassRoot);
                 }
                 //if this is a referencing block, replace it
                 node = replaceWithReferencedInstance(node);
@@ -48,13 +48,42 @@ public class ToHtmlVisitor extends AbstractVisitor
         }
     }
 
+    /**
+     * Determines wether or not the class-template should be used, or rather the instance itself. This is done using isModifiable(entityRoot) and isModifiable(entityClassRoot)
+     * @param entityRoot
+     * @param entityClassRoot
+     * @return
+     */
+    private boolean useClass(Element entityRoot, Element entityClassRoot){
+        boolean entityIsModifiable = isModifiable(entityRoot);
+        boolean entityClassIsModifiable = isModifiable(entityClassRoot);
+        if(entityClassIsModifiable){
+            return false;
+        }
+        else{
+            if(entityIsModifiable){
+                return false;
+            }
+            else{
+                return true;
+            }
+        }
+    }
+
     @Override
     public Node tail(Node node, int depth) throws ParseException
     {
         return super.tail(node, depth);
     }
 
-    private Node copyProperties(Element fromInstanceRoot, Element toClassRoot) throws ParseException
+    /**
+     * Copy the (editable) properties from the instance-template to the class-template
+     * @param fromInstanceRoot
+     * @param toClassRoot
+     * @return
+     * @throws ParseException
+     */
+    private Node copyPropertiesToClassTemplate(Element fromInstanceRoot, Element toClassRoot) throws ParseException
     {
         try {
             Elements instanceReferencingElements = fromInstanceRoot.select("[" + ParserConstants.REFERENCE_TO + "]");
@@ -135,13 +164,6 @@ public class ToHtmlVisitor extends AbstractVisitor
     }
 
 
-    /**
-     * If the specified node is a referencing node, replace it with the root-node of the template corresponding to that referencing node.
-     * If it is not a referencing node, return the specified node.
-     * @param instanceRootNode
-     * @return
-     * @throws ParseException
-     */
     private Node replaceWithReferencedInstance(Node instanceRootNode) throws ParseException
     {
         try {

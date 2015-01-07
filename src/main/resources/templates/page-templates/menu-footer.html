@@ -11,7 +11,7 @@
     <!--<link href="/assets/stylesheets/styles.less" rel="stylesheet" />-->
     <link href="/assets/stylesheets/blocks.less" rel="stylesheet" />
 
-    <link href="../../assets/media/css/screen.css" rel="stylesheet" media="screen">
+    <link href="../../assets/media/css/screen2.css" rel="stylesheet" media="screen">
     <link href="../../assets/media/css/responsive.css" rel="stylesheet" media="screen">
     <script src="../../assets/media/js/jquery-1.11.0.min.js"></script>
     <script src="../../assets/media/js/modernizr.js"></script>
@@ -51,10 +51,27 @@
     <script src="/assets/javascripts/ckeditor/adapters/jquery.js" type="application/javascript" ></script>
 </head>
 <body>
-    <div property="menu" typeof="mot-menu" use-blueprint></div>
-    <div class="page">
+
+<header id="header">
+    <div class="container">
+        <div property="menu" typeof="mot-menu" use-blueprint></div>
+    </div>
+</header>
+<section class="page">
+    <div class="container">
         <div template-content></div>
     </div>
-    <div property="footer" typeof="mot-footer" use-blueprint></div>
+</section>
+<footer>
+    <div class="container">
+        <div property="footer" typeof="sponsors" use-blueprint></div>
+    </div>
+    <div id="lastline">
+        <div class="container">
+            <div property="lastline-content" typeof="lastline-content" use-blueprint></div>
+        </div>
+    </div>
+</footer>
+
 </body>
 </html>

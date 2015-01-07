@@ -8,16 +8,18 @@ import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.models.templates.PageTemplate;
-import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
+import com.beligum.blocks.core.models.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Stack;
 
 /**
  * Created by wouter on 22/11/14.
@@ -114,7 +116,6 @@ public class FileToCacheVisitor extends AbstractVisitor
                         if (storedInstance == null || !storedInstance.equals(propertyInstance)) {
                             Redis.getInstance().save(propertyInstance);
                         }
-                        //TODO BAS SH: blijkbaar passeren we hier nooit!?! Dat zou niet mogen, want anders worden er nergen id's van de vorm blocks://LOC/waterput#location/locationName aangemaakt!!!
                         node = replaceElementWithPropertyReference(element);
                     }
                     else if(needsBlueprint(element)){
@@ -129,21 +130,27 @@ public class FileToCacheVisitor extends AbstractVisitor
                         node = replaceElementWithEntityReference(element, defaultEntity);
                     }
                 }
-                else if(this.typeOfStack.size()>0){
-                    Element entityTemplateClassRoot = TemplateParser.parse(entityTemplateClass.getTemplate()).child(0);
-                    entityTemplateClassRoot.removeAttr(ParserConstants.BLUEPRINT);
-                    EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass, entityTemplateClassRoot.outerHtml());
+                else if(this.typeOfStack.size()>0) {
+//                    Element entityTemplateClassRoot = TemplateParser.parse(entityTemplateClass.getTemplate()).child(0);
+//                    entityTemplateClassRoot.removeAttr(ParserConstants.BLUEPRINT);
+//                    EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass, entityTemplateClassRoot.outerHtml());
+//
+////                    EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass, element.outerHtml());
+//                    RedisID lastVersion = new RedisID(instance.getUnversionedId(), RedisID.LAST_VERSION);
+//                    EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
+//                    //if no version is present in db, or this version is different, save to db
+//                    if(storedInstance == null || !storedInstance.equals(instance)) {
+//                        Redis.getInstance().save(instance);
+//                    }
+//                    node = replaceElementWithEntityReference(element, instance);
 
-//                    EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass, element.outerHtml());
-                    RedisID lastVersion = new RedisID(instance.getUnversionedId(), RedisID.LAST_VERSION);
-                    EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
-                    //if no version is present in db, or this version is different, save to db
-                    if(storedInstance == null || !storedInstance.equals(instance)) {
-                        Redis.getInstance().save(instance);
+                    /*
+                     * If we find an entity which is not a property, we throw an exception, since this makes no rdf-sense.
+                     * However, if the node is the head-node of a class-blueprint, no property-attribute is expected, and so then no error is thrown
+                     */
+                    if (!(this.typeOfStack.size() == 1 && isBlueprint(this.typeOfStack.peek()))) {
+                        throw new ParseException("Found entity-child with typeof-attribute, but no property-attribute at \n \n " + element + "\n \n");
                     }
-                    node = replaceElementWithEntityReference(element, instance);
-                    //TODO BAS: throw exception in this case, since it makes no rdf-sense!, change this for all visitors!
-//                    throw new ParseException("Found entity-child with typeof-attribute, but no property-attribute at \n \n " + element + "\n \n");
                 }
                 else{
                     //do nothing, since we have found the ending of the outer-most typeof-tag
@@ -200,12 +207,12 @@ public class FileToCacheVisitor extends AbstractVisitor
                     pageTemplateName = this.pageTemplateName;
                 }
                 Elements classProperties = classRoot.select("[" + ParserConstants.PROPERTY + "]");
+                //the class-root is not a property of this class, so if it contains the "property"-attribute, it is removed from the list
+                classProperties.remove(classRoot);
                 //since we are sure to be working with class-properties, we now all of them will hold an attribute "property", so we can use this in a comparator to sort all elements according to the property-value
-                Collections.sort(classProperties, new Comparator<Element>()
-                {
+                Collections.sort(classProperties, new Comparator<Element>() {
                     @Override
-                    public int compare(Element classProperty1, Element classProperty2)
-                    {
+                    public int compare(Element classProperty1, Element classProperty2) {
                         return getProperty(classProperty1).compareTo(getProperty(classProperty2));
                     }
                 });
@@ -219,7 +226,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                         String previousClassPropertyName = getPropertyName(previousClassProperty);
                         String classPropertyName = getPropertyName(classProperty);
                         if(StringUtils.isEmpty(previousClassPropertyName) || StringUtils.isEmpty(classPropertyName)){
-                            throw new ParseException("Found two class-properties with same property-value '\" + previousClassPropertyValue + \"' and no name-attribute to distinguish them at \n \n" + classRoot + "\n \n");
+                            throw new ParseException("Found two class-properties with same property-value '" + previousClassPropertyValue + "' and no name-attribute to distinguish them at \n \n" + classRoot + "\n \n");
                         }
                     }
                 }

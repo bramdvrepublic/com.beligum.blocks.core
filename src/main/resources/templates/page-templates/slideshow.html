@@ -1,30 +1,21 @@
 <!DOCTYPE html>
-<html lang="nl" template="default">
+<html lang="nl" template="slideshow">
 <head>
-    <title>MOT - museum</title>
+    <title>MOT - home</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" >
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
-    <link rel="icon" type="image/x-icon" href="/assets/images/favicon.ico" />
-
-    <link href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
-    <!--<link href="/assets/stylesheets/styles.less" rel="stylesheet" />-->
-    <link href="/assets/stylesheets/blocks.less" rel="stylesheet" />
-
-    <link href="../../assets/media/css/screen2.css" rel="stylesheet" media="screen">
-    <link href="../../assets/media/css/responsive.css" rel="stylesheet" media="screen">
-    <script src="../../assets/media/js/jquery-1.11.0.min.js"></script>
-    <script src="../../assets/media/js/modernizr.js"></script>
-    <script src="../../assets/media/js/less.js"></script>
+    <link rel="icon" href="favicon.ico">
+    <link href="/assets/media/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="/assets/media/css/bootstrap-theme.min.css" rel="stylesheet" media="screen">
+    <link href="/assets/media/css/screen2.css" rel="stylesheet" media="screen">
+    <link href="/assets/media/css/responsive.css" rel="stylesheet" media="screen">
+    <script src="/assets/media/js/jquery-1.11.0.min.js"></script>
+    <script src="/assets/media/js/modernizr.js"></script>
+    <script src="/assets/media/js/less.js"></script>
     <script src="//use.typekit.net/mvl7xyt.js"></script>
-    <script src="../../assets/media/js/bootstrap.min.js"></script>
-    <script>try{Typekit.load();}catch(e){}</script>
-    <!--[if lt IE 9]>
-    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-    <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
-    <![endif]-->
 
-    <script src="/assets/javascripts/medium/medium.js" type="application/javascript" ></script>
+
     <script src="/assets/javascripts/blocks.js" type="application/javascript" ></script>
     <script src="/assets/javascripts/core.js" type="application/javascript" ></script>
     <script src="/assets/javascripts/broadcaster.js" type="application/javascript" ></script>
@@ -44,15 +35,40 @@
     <script src="/assets/javascripts/overlay.js" type="application/javascript" ></script>
     <script src="/assets/javascripts/blocks/image.js" type="application/javascript" ></script>
     <script src="/assets/javascripts/blocks/video.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/blocks/blok-link.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/menu/menu.js" type="application/javascript"></script>
 
     <script src="/assets/javascripts/ckeditor/ckeditor.js" type="application/javascript" ></script>
     <script src="/assets/javascripts/ckeditor/adapters/jquery.js" type="application/javascript" ></script>
+    <script>try{Typekit.load();}catch(e){}</script>
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
 </head>
 <body>
-<div class="container">
-    <div template-content></div>
-</div>
+<header id="header">
+    <div class="container">
+        <div property="menu" typeof="mot-menu" use-blueprint></div>
+    </div>
+</header>
+<section>
+    <div class="container">
+        <div property="slideshow" typeof="mot-slideshow" use-blueprint></div>
+    </div>
+</section>
+<section class="page">
+    <div class="container">
+        <div template-content></div>
+    </div>
+</section>
+<footer>
+    <div class="container">
+        <div property="footer" typeof="sponsors" use-blueprint></div>
+    </div>
+    <div id="lastline">
+        <div class="container">
+            <div property="lastline-content" typeof="lastline-content" use-blueprint></div>
+        </div>
+    </div>
+</footer>
 </body>
 </html>
