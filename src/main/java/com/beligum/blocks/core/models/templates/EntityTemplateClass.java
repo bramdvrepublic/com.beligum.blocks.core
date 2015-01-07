@@ -5,20 +5,22 @@ import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.config.ParserConstants;
+import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
+import com.beligum.blocks.core.exceptions.SerializationException;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by bas on 05.11.14.
@@ -33,16 +35,20 @@ public class EntityTemplateClass extends AbstractTemplate
     /**
      *
      * @param name the name of this entity-class
-     * @param templates a map relating languages to template-strings corresponding to the most outer layer of the element-tree in this entity
+     * @param primaryLanguage the language this entity-template-class will always fall back to if needed
+     * @param templates A map relating languages to template-strings corresponding to the most outer layer of the element-tree in this entity. At least one template in the primary-language should be present.
      * @param pageTemplateName the default page-template this entity-class should be rendered in
-     * @throws IDException if no new id could be rendered using the specified name
+     * @throws IDException if no new id could be rendered using the specified name and language, or if no template of that language is present in the specified map of templates
      */
-    public EntityTemplateClass(String name, Map<String, String> templates, String pageTemplateName) throws IDException
+    public EntityTemplateClass(String name, String primaryLanguage, Map<String, String> templates, String pageTemplateName) throws IDException
     {
-        super(RedisID.renderNewEntityTemplateClassID(name), templates);
+        super(RedisID.renderNewEntityTemplateClassID(name, primaryLanguage), templates);
         this.name = name;
         if(pageTemplateName != null) {
             this.pageTemplateName = pageTemplateName;
+        }
+        if(!templates.containsKey(primaryLanguage)){
+            throw new IDException("No html-template in language '" + primaryLanguage + "' found between templates.");
         }
     }
 
@@ -56,14 +62,21 @@ public class EntityTemplateClass extends AbstractTemplate
      */
     public EntityTemplateClass(String name, String language, String template, String pageTemplateName) throws IDException
     {
-        super(RedisID.renderNewEntityTemplateClassID(name), language, template);
+        super(RedisID.renderNewEntityTemplateClassID(name, language), template);
         this.name = name;
         if(pageTemplateName != null) {
             this.pageTemplateName = pageTemplateName;
         }
     }
 
-    private EntityTemplateClass(RedisID id, Map<String, String> templates, String pageTemplateName)
+    /**
+     * Constructor used for turning a redis-hash into an entity-template.
+     * @param id
+     * @param templates
+     * @param pageTemplateName
+     * @throws IDException
+     */
+    private EntityTemplateClass(RedisID id, Map<String, String> templates, String pageTemplateName) throws IDException
     {
         super(id, templates);
         //the name of this entity-template-class doesn't start with a "/", so we split it of the given path
@@ -76,6 +89,9 @@ public class EntityTemplateClass extends AbstractTemplate
         }
         if(pageTemplateName != null) {
             this.pageTemplateName = pageTemplateName;
+        }
+        if(!templates.containsKey(id.getLanguage())){
+            throw new IDException("No html-template in language '" + id.getLanguage() + "' found between templates.");
         }
     }
 
@@ -120,23 +136,22 @@ public class EntityTemplateClass extends AbstractTemplate
      * The EntityTemplateClass-class can be used as a factory, to construct entity-template-classes from data found in a hash in the redis-db
      * @param hash a map, mapping field-names to field-values
      * @return an entity-template-class or throws an exception if no entity-template-class could be constructed from the specified hash
+     * @throws DeserializationException when a bad hash is found
      */
-    public static EntityTemplateClass createInstanceFromHash(RedisID id, Map<String, String> hash) throws DeserializationException
+    //is protected so that all classes in package can access this method
+    protected static EntityTemplateClass createInstanceFromHash(RedisID id, Map<String, String> hash) throws DeserializationException
     {
         try {
-            if (hash != null && !hash.isEmpty() && hash.containsKey(DatabaseConstants.TEMPLATE)) {
-                EntityTemplateClass newInstance = new EntityTemplateClass(id, hash.get(DatabaseConstants.TEMPLATE), hash.get(DatabaseConstants.PAGE_TEMPLATE));
+            if (hash == null || hash.isEmpty()) {
+                throw new DeserializationException("Found empty hash");
+            }
+            else{
+                Map<String, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
+                EntityTemplateClass newInstance = new EntityTemplateClass(id, templates, hash.get(DatabaseConstants.PAGE_TEMPLATE));
                 newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
                 newInstance.creator = hash.get(DatabaseConstants.CREATOR);
                 return newInstance;
             }
-            else {
-                Logger.error("Could not construct an entity-template-class from the specified hash: " + hash);
-                throw new DeserializationException("Could not construct an entity-template-class from the specified hash: " + hash);
-            }
-        }
-        catch(DeserializationException e){
-            throw e;
         }
         catch(Exception e){
             throw new DeserializationException("Could not construct an object of class '" + EntityTemplateClass.class.getName() + "' from specified hash.", e);
@@ -148,7 +163,7 @@ public class EntityTemplateClass extends AbstractTemplate
      * @return a map representing the key-value structure of this element to be saved to db
      */
     @Override
-    public Map<String, String> toHash()
+    public Map<String, String> toHash() throws SerializationException
     {
         Map<String, String> hash = super.toHash();
         hash.put(DatabaseConstants.PAGE_TEMPLATE, this.pageTemplateName);

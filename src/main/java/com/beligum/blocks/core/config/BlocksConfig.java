@@ -1,6 +1,8 @@
 package com.beligum.blocks.core.config;
 
+import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.core.framework.base.R;
+import org.apache.commons.configuration.ConfigurationRuntimeException;
 
 import java.util.Locale;
 
@@ -9,8 +11,8 @@ import java.util.Locale;
  */
 public class BlocksConfig
 {
-    /**the default language for this site, if no language is specified in the configuration-xml*/
-    public static final String DEFAULT_LANGUAGE = "language_default";
+    /**the path to the location of bootstrap*/
+    public static final String BOOTSTRAP_FILEPATH = "assets/media/js/bootstrap.min.js";
 
     /**the languages this site can work with, ordered from most preferred languages, to less preferred*/
     public static String[] cachedLanguages;
@@ -69,12 +71,16 @@ public class BlocksConfig
             cachedLanguages = R.configuration().getStringArray("blocks.site.languages");
             if(cachedLanguages.length == 0){
                 cachedLanguages = new String[1];
-                cachedLanguages[0] = DEFAULT_LANGUAGE;
+                cachedLanguages[0] = Languages.NO_LANGUAGE;
             }
             else{
                 for(int i=0; i<cachedLanguages.length; i++){
                     Locale locale = new Locale(cachedLanguages[i]);
-                    cachedLanguages[i] = locale.getLanguage();
+                    String language = locale.getLanguage();
+                    if(!Languages.containsLanguageCode(language)){
+                        throw new ConfigurationRuntimeException("Found language-code which doesn't follow the proper standard (ISO 639).");
+                    }
+                    cachedLanguages[i] = language;
                 }
             }
         }
@@ -83,7 +89,7 @@ public class BlocksConfig
 
     /**
      *
-     * @return The first languages in the languages-list, or the default-language if no such list is present in the configuration-xml.
+     * @return The first languages in the languages-list, or the no-language-constant if no such list is present in the configuration-xml.
      */
     public static String getDefaultLanguage(){
         return getLanguages()[0];

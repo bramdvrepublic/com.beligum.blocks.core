@@ -7,14 +7,17 @@ import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.RedisException;
+import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import org.apache.commons.lang3.StringUtils;
+import sun.org.mozilla.javascript.ast.Block;
 
-import javax.swing.text.html.parser.Entity;
+import javax.print.URIException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Set;
 
 /**
  * Created by bas on 13.10.14.
@@ -53,8 +56,7 @@ public class RedisID extends ID
     public RedisID(URL url, long version) throws IDException
     {
         super(url);
-        this.idUri = initializeLanguage(url);
-        this.url = url;
+        this.idUri = initializeLanguageAndUrl(url, true);
         if(version == LAST_VERSION){
             this.version = Redis.getInstance().getLastVersion(url);
         }
@@ -82,29 +84,33 @@ public class RedisID extends ID
      * If no version is present in the specified id, the last version is returned.
      * @param versionedDbId the id retrieved form db (must be of the form "blocks://[siteDomainAlias]/[objectName]:[version]"
      * @throws URISyntaxException when the id cannot properly be transformed into a URI, since this class is actually a wrapper around a URI
-     * @throws IDException when the id cannot properly be generated from the specified string
+     * @throws IDException when no versioned id is specified or when the id cannot properly be generated from the specified string
      */
     public RedisID(String versionedDbId) throws IDException
     {
-        //TODO BAS: this should check the form of the string to be a redis-id
         super((URI) null);
         try {
+            /*
+             * Check if the specified string has a good redis-id form
+             */
+            URI versionedDbUri = new URI(versionedDbId);
+            if(versionedDbUri.getScheme() == null || !versionedDbUri.getScheme().equals(DatabaseConstants.SCHEME_NAME)){
+                throw new IDException("Uncorrect db-id (uncorrect scheme) '" + versionedDbId + "'.");
+            }
+            if(versionedDbUri.getAuthority() == null || !versionedDbUri.getAuthority().equals(BlocksConfig.getSiteDBAlias())){
+                throw new IDException("Uncorrect db-id (uncorrect site-alias) '" + versionedDbId + "'.");
+            }
+            if(!versionedDbUri.getSchemeSpecificPart().contains(":")){
+                throw new IDException("Found unversioned id '" + versionedDbId + "', but I need a versioned one.");
+            }
+
             /*
              * Split the string into "objectId" and "version"
              * Note: "objectId" could hold ":"-signs
              */
             String[] splitted = versionedDbId.split(":");
-            //        if(splitted[splitted.length-1].contentEquals(DatabaseConstants.HASH_SUFFIX)){
-            //            this.version = Long.parseLong(splitted[splitted.length - 2]);
-            //            int lastDoublePoint = versionedDbId.lastIndexOf(':');
-            //            String versionedId = versionedDbId.substring(0, lastDoublePoint);
-            //            int oneButLastDoublePoint = versionedId.lastIndexOf(':');
-            //            String id = versionedId.substring(0, oneButLastDoublePoint);
-            //            this.idUri = new URI(id);
-            //        }
-            //        else {
-
             long version = NO_VERSION;
+            String language = Languages.NO_LANGUAGE;
             String unversionedId = "";
             //if only two parts have been splitted of, this is not a versioned id and we look for the last version
             if(splitted.length == 2){
@@ -112,11 +118,21 @@ public class RedisID extends ID
                 unversionedId = versionedDbId;
             }
             else {
-                version = Long.parseLong(splitted[splitted.length - 1]);
+                String[] splitted2 = splitted[splitted.length - 1].split("/");
+                //if two parts have been splitted off of the information after the last ":", we're dealing with a languaged id
+                if(splitted2.length == 2){
+                    version = Long.parseLong(splitted2[0]);
+                    language = splitted2[1];
+                }
+                else{
+                    version = Long.parseLong(splitted2[0]);
+                }
                 int lastDoublePoint = versionedDbId.lastIndexOf(':');
                 unversionedId = versionedDbId.substring(0, lastDoublePoint);
             }
-            this.idUri = new URI(unversionedId);
+            /*
+             * Initialize version
+             */
             if (version == LAST_VERSION) {
                 this.version = Redis.getInstance().getLastVersion(unversionedId);
             }
@@ -126,25 +142,30 @@ public class RedisID extends ID
             else {
                 this.version = version;
             }
-            //        }
-
-        /*
-         * Construct the url for this id, using the site-domain specified in the configuration-xml and the path specified by the database-id
-         */
-            URL siteDomain = new URL(BlocksConfig.getSiteDomain());
-            String urlPath = this.idUri.getPath();
-            if (this.idUri.getFragment() != null) {
-                urlPath += "#" + this.idUri.getFragment();
-            }
-            if (this.idUri.getQuery() != null) {
-                urlPath += "?" + this.idUri.getQuery();
-            }
-            this.url = new URL(siteDomain.getProtocol(), siteDomain.getHost(), siteDomain.getPort(), urlPath);
-
-            initializeLanguage(this.url);
-        }catch(URISyntaxException | MalformedURLException e){
-            throw new IDException("Bad id. Only id's coming from db should be used.", e);
+            /*
+             * Construct a url from the db-id and use it to initialize language, url and id-uri fields
+             */
+            URI urlUri = new URI(unversionedId);
+            String urlPath = urlUri.getPath();
+            //remove the beginning-"/" from the path
+            String relativePath = urlPath.substring(1);
+            URL url = new URL(new URL(BlocksConfig.getSiteDomain()), relativePath);
+            this.idUri = initializeLanguageAndUrl(url, false);
+        }catch(Exception e){
+            throw new IDException("Bad id found. Only id's coming from db should be used.", e);
         }
+    }
+
+    /**
+     * Constructor copying the baseId, but taking another language
+     * @param baseId
+     * @param language
+     * @throws IDException
+     */
+    public RedisID(RedisID baseId, String language) throws IDException
+    {
+        this(baseId.getVersionedId());
+        this.language = language;
     }
 
     public long getVersion()
@@ -158,15 +179,6 @@ public class RedisID extends ID
     public String getLanguage()
     {
         return language;
-    }
-
-    /**
-     * Private setter for the language-field. Used by ID-factory.
-     * @param language
-     */
-    private void setLanguage(String language)
-    {
-        this.language = language;
     }
 
     public URL getUrl(){
@@ -195,7 +207,7 @@ public class RedisID extends ID
      * @return a string-representation of this id, versioning included (of the form "[site-db-alias]/[object-path]:[version]")
      */
     public String getVersionedId(){
-        return toString();
+        return getUnversionedId() + ":" + this.version;
     }
 
     /**
@@ -213,51 +225,60 @@ public class RedisID extends ID
      * @return a string-representation of this id, of the form "[site-db-alias]/[object-path]:[version>"
      */
     public String toString(){
-        return getUnversionedId() + ":" + this.version;
+        return getVersionedId() + "/" + this.language;
     }
 
     /**
-     * Initialize the language-field of this object, parsed from the url. If no language is present, use the site's preferred language.
+     * Initialize the language-field of this object, parsed from the url. If no language is present, this method can use the site's preferred language.
      * Also change the site-domain of the url to the site-alias specified in the configuration-file.
      * @param url the url to be parsed
+     * @param useSitesPreferredLanguage set to true if you want this method to use the site's preferred languages if no language can be parsed from the url
      * @return a uri corresponding to the specified url, with the language-information removed, or null if something went wrong
      */
-    private URI initializeLanguage(URL url)
+    private URI initializeLanguageAndUrl(URL url, boolean useSitesPreferredLanguage) throws IDException
     {
-        String[] languages = BlocksConfig.getLanguages();
-        String uriPath = idUri.getPath();
-        String[] splitted = uriPath.split("/");
-        //the uri-path always starts with "/", so the first index in the splitted-array always will be empty ""
-        if(splitted.length > 1) {
-            String foundLanguage = splitted[1];
-            boolean urlHasKnownLanguage = false;
-            int i = 0;
-            while (!urlHasKnownLanguage && i < languages.length) {
-                if (languages[i].contentEquals(foundLanguage)) {
-                    urlHasKnownLanguage = true;
-                }
-                i++;
-            }
-            if (urlHasKnownLanguage) {
-                this.language = foundLanguage;
-                //remove the language-information from the middle of the id
-                uriPath = "";
-                for (int j = 2; j < splitted.length; j++) {
-                    uriPath += splitted[j];
-                }
-            }
-            else {
-                this.language = languages[0];
-            }
-        }
-        else{
-            this.language = languages[0];
-        }
-        //change the site-domain in the id-uri to it's shorter aliasString[] languages = BlocksConfig.getLanguages();
         try{
-            return new URI(DatabaseConstants.SCHEME_NAME, BlocksConfig.getSiteDBAlias(), uriPath, idUri.getQuery(), idUri.getFragment());
-        }catch(URISyntaxException e){
-            throw new RuntimeException("Bad uri while initializing languages.", e);
+            this.language = null;
+            Set<String> permittedLanguages = Languages.getPermittedLanguageCodes();
+            String urlPath = url.getPath();
+            String[] splitted = urlPath.split("/");
+            //the uri-path always starts with "/", so the first index in the splitted-array always will be empty ""
+            if(splitted.length > 1) {
+                String foundLanguage = splitted[1];
+                if (permittedLanguages.contains(foundLanguage)) {
+                    this.language = foundLanguage;
+                    //remove the language-information from the middle of the id
+                    urlPath = "";
+                    for (int j = 2; j < splitted.length; j++) {
+                        urlPath += splitted[j];
+                    }
+                }
+            }
+            //if no language could be successfully parsed from the url, we use the site's preferred languages
+            if(this.language == null) {
+                if (useSitesPreferredLanguage) {
+                    String[] preferredLanguages = BlocksConfig.getLanguages();
+                    this.language = preferredLanguages[0];
+                }
+                else {
+                    this.language = Languages.NO_LANGUAGE;
+                }
+            }
+            /*
+             * Construct the url for this id, using the site-domain specified in the configuration-xml and the previously parsed path (no more language-info is present in it)
+             */
+            URI urlUri = url.toURI();
+            URL siteDomain = new URL(BlocksConfig.getSiteDomain());
+            if (urlUri.getFragment() != null) {
+                urlPath += "#" + urlUri.getFragment();
+            }
+            if (urlUri.getQuery() != null) {
+                urlPath += "?" + urlUri.getQuery();
+            }
+            this.url = new URI(siteDomain.getProtocol(), siteDomain.getAuthority(), urlPath).toURL();
+            return new URI(DatabaseConstants.SCHEME_NAME, BlocksConfig.getSiteDBAlias(), urlPath);
+        }catch(Exception e){
+            throw new IDException("Could not initialize language and url while constructing a '" + RedisID.class.getSimpleName() +"'.", e);
         }
     }
 
@@ -275,10 +296,11 @@ public class RedisID extends ID
 
     /**
      * Method for getting a new template-class uid for a certain class.
-     * @param entityTemplateClassName
+     * @param entityTemplateClassName the name for this entity-class
+     * @param language the language this entity-class is written in
      * @return A versioned id of the form "blocks://[db-alias]/[entityTemplateClassName]"
      */
-    public static RedisID renderNewEntityTemplateClassID(String entityTemplateClassName) throws IDException
+    public static RedisID renderNewEntityTemplateClassID(String entityTemplateClassName, String language) throws IDException
     {
         //we're not actually going to the db to determine a new redis-id for a class, it will use a new versioning (current time millis) to get a new version, so we don't actually need to check for that version in db
         try{
@@ -286,9 +308,25 @@ public class RedisID extends ID
             while(Redis.getInstance().fetchEntityTemplateClass(newID) != null){
                 newID = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClassName), NEW_VERSION);
             }
+            newID.language = language;
             return newID;
         }catch(MalformedURLException |RedisException e){
-            throw new IDException("Specified site-domain doesn't seem to be a correct url: " + BlocksConfig.getSiteDomain(), e);
+            throw new IDException("Could not construct id from site-domain '" + BlocksConfig.getSiteDomain() + "', name '" + entityTemplateClassName + "' and language '" + language + "'.", e);
+        }
+    }
+
+    /**
+     *
+     * @param entityTemplateClassName
+     * @return an unversioned id for an entity-class
+     * @throws IDException
+     */
+    public static String renderUnversionedEntityTemplateClassID(String entityTemplateClassName) throws IDException
+    {
+        try{
+            return new RedisID(new URL(BlocksConfig.getSiteDomain() +  "/" + entityTemplateClassName), NO_VERSION).getUnversionedId();
+        }catch(MalformedURLException e){
+            throw new IDException("Could not construct id from site-domain '" + BlocksConfig.getSiteDomain() + "' and name '" + entityTemplateClassName + "'.", e);
         }
     }
 
@@ -297,16 +335,32 @@ public class RedisID extends ID
      * @param pageTemplateName
      * @return A versioned id of the form "blocks://[db-alias]/pageTemplates/[pageTemplateName]"
      */
-    public static RedisID renderNewPageTemplateID(String pageTemplateName) throws IDException
+    public static RedisID renderNewPageTemplateID(String pageTemplateName, String language) throws IDException
     {
         try{
             RedisID newId = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName), NEW_VERSION);
             while(Redis.getInstance().fetchPageTemplate(newId) != null){
                 newId = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName), NEW_VERSION);
             }
+            newId.language = language;
             return newId;
         }catch(MalformedURLException | RedisException e){
-            throw new IDException("Couldn't render new page-template-id.", e);
+            throw new IDException("Could not construct id from site-domain '" + BlocksConfig.getSiteDomain() + "' and name '" + pageTemplateName + "'.", e);
+        }
+    }
+
+    /**
+     *
+     * @param pageTemplateName
+     * @return an unversioned id for an page-template
+     * @throws IDException
+     */
+    public static String renderUnversionedPageTemplateID(String pageTemplateName) throws IDException
+    {
+        try{
+            return new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName), NO_VERSION).getUnversionedId();
+        }catch(MalformedURLException e){
+            throw new IDException("Could not construct id from site-domain '" + BlocksConfig.getSiteDomain() + "' and name '" + pageTemplateName + "'.", e);
         }
     }
 
@@ -336,7 +390,7 @@ public class RedisID extends ID
                 newID = new RedisID(new URL(url), NEW_VERSION);
             }
             EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(owningEntityClassName);
-            newID.setLanguage(entityTemplateClass.getLanguage());
+            newID.language = entityTemplateClass.getLanguage();
             return newID;
         }catch(Exception  e){
             throw new IDException("Couldn't construct proper id with '" + BlocksConfig.getSiteDomain() + "/" + owningEntityClassName + "#" + property + "/" + propertyName + "'", e);

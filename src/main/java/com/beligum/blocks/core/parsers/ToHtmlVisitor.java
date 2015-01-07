@@ -5,6 +5,7 @@ import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import org.apache.commons.lang3.StringUtils;
@@ -19,7 +20,17 @@ import org.jsoup.select.Elements;
 */
 public class ToHtmlVisitor extends AbstractVisitor
 {
+    /**the preferred language we want to render html in*/
+    private String language;
 
+    /**
+     *
+     * @param language the preferred language we want to render html in
+     */
+    public ToHtmlVisitor(String language)
+    {
+        this.language = Languages.getStandardizedLanguage(language);
+    }
 
     @Override
     public Node head(Node node, int depth) throws ParseException
@@ -29,7 +40,7 @@ public class ToHtmlVisitor extends AbstractVisitor
             if(isEntity(node) && node instanceof Element) {
                 Element entityRoot = (Element) node;
                 EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
-                Element entityClassRoot = TemplateParser.parse(entityTemplateClass.getTemplates()).child(0);
+                Element entityClassRoot = TemplateParser.parse(entityTemplateClass.getTemplate(language)).child(0);
 
                 //if no modifacations can be done, first we fill in the correct property-references, coming from the class
                 if(useClass(entityRoot, entityClassRoot)){
@@ -119,7 +130,7 @@ public class ToHtmlVisitor extends AbstractVisitor
                     if(classDefault == null){
                         throw new ParseException("Found bad reference. Not present in db: " + getReferencedId(remainingClassReferencingElement));
                     }
-                    Node classDefaultRoot = TemplateParser.parse(classDefault.getTemplates()).child(0);
+                    Node classDefaultRoot = TemplateParser.parse(classDefault.getTemplate(language)).child(0);
                     remainingClassReferencingElement.replaceWith(classDefaultRoot);
                 }
                 Node returnRoot = toClassRoot;
@@ -155,7 +166,7 @@ public class ToHtmlVisitor extends AbstractVisitor
         if(defaultClassPropertyTemplate == null){
             throw new ParseException("Couldn't find last version of class-default property '" + defaultClassPropertyId + "' in db.");
         }
-        Element defaultClassPropertyRoot = TemplateParser.parse(defaultClassPropertyTemplate.getTemplates()).child(0);
+        Element defaultClassPropertyRoot = TemplateParser.parse(defaultClassPropertyTemplate.getTemplate(language)).child(0);
         String referencedInstanceId = referenceId;
         RedisID id = new RedisID(referencedInstanceId, RedisID.LAST_VERSION);
         defaultClassPropertyRoot.attr(ParserConstants.RESOURCE, id.getUrl().toString());
@@ -174,7 +185,7 @@ public class ToHtmlVisitor extends AbstractVisitor
                 if(instanceTemplate == null){
                     throw new ParseException("Found bad reference. Not found in db: " + referencedId);
                 }
-                Element instanceTemplateRoot = TemplateParser.parse(instanceTemplate.getTemplates()).child(0);
+                Element instanceTemplateRoot = TemplateParser.parse(instanceTemplate.getTemplate(language)).child(0);
                 if(StringUtils.isEmpty(getResource(instanceTemplateRoot)) &&
                    //when referencing to a class-default, we don't want the resource to show up in the browser
                    StringUtils.isEmpty(referencedId.getUrl().toURI().getFragment())){

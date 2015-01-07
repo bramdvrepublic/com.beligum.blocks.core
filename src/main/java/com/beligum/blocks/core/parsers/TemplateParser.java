@@ -5,10 +5,12 @@ import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
+import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -48,7 +50,10 @@ public class TemplateParser
         String pageStringId = "";
         try {
             //TODO BAS SH: just added language-parameter here, so we can decide which template to use out of all the templates from the class (if the specified language is the default language, we first look to the class for more info)
-            Element doc = parse(entityTemplateClass.getTemplates());
+            if(!Languages.containsLanguageCode(language)){
+                language = entityTemplateClass.getLanguage();
+            }
+            Element doc = parse(entityTemplateClass.getTemplate(language));
             ClassToStoredInstanceVisitor visitor = new ClassToStoredInstanceVisitor(pageURL);
             Traversor traversor = new Traversor(visitor);
             traversor.traverse(doc);
@@ -94,15 +99,21 @@ public class TemplateParser
             Element entityRoot = TemplateParser.parse(entityTemplate.getTemplate(language)).child(0);
             reference.replaceWith(entityRoot);
         }
-        Traversor traversor = new Traversor(new ToHtmlVisitor());
+        Traversor traversor = new Traversor(new ToHtmlVisitor(language));
         traversor.traverse(DOM);
         return DOM.outerHtml();
     }
 
+    /**
+     * Renders the template in the primary language of the specified template
+     * @param template
+     * @return
+     * @throws ParseException
+     */
     public static String renderTemplate(AbstractTemplate template) throws ParseException
     {
-        Element classDOM = parse(template.getTemplates());
-        Traversor traversor = new Traversor(new ToHtmlVisitor());
+        Element classDOM = parse(template.getTemplate());
+        Traversor traversor = new Traversor(new ToHtmlVisitor(template.getLanguage()));
         Node classRoot = classDOM.child(0);
         traversor.traverse(classRoot);
         return classDOM.outerHtml();

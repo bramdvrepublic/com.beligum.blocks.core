@@ -107,7 +107,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                         }
                         else{
                             String language = getLanguage(element, entityTemplateClass);
-                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element)), entityTemplateClass, language, element.outerHtml());
+                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element)), entityTemplateClass, element.outerHtml());
                         }
                         RedisID lastVersion = new RedisID(propertyInstance.getUnversionedId(), RedisID.LAST_VERSION);
                         EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
@@ -125,7 +125,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                     //if no new class is being parsed, we are parsing a default-instance of a certain type
                     else{
                         String language = getLanguage(node, entityTemplateClass);
-                        EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass), entityTemplateClass, language, element.outerHtml());
+                        EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass), entityTemplateClass, element.outerHtml());
                         Redis.getInstance().save(defaultEntity);
                         node = replaceElementWithEntityReference(element, defaultEntity);
                     }

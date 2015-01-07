@@ -4,13 +4,10 @@ import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.config.ParserConstants;
-import com.beligum.blocks.core.exceptions.CacheException;
-import com.beligum.blocks.core.exceptions.DeserializationException;
-import com.beligum.blocks.core.exceptions.ParseException;
+import com.beligum.blocks.core.exceptions.*;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.ifaces.Storable;
 import com.beligum.blocks.core.parsers.TemplateParser;
-import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -33,27 +30,29 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      * Constructor for a new entity-instance of a certain entity-class.
      * It's UID will be the of the form "[url]:[version]". It uses the current application version and the currently logged in user for field initialization.
      * @param id the id of this entity
-     * @param templates the map of templates (language -> template) which represent the content of this template
+     * @param templates the map of templates (language -> template) which represent the content of this template, it should at least contain a pair from the language present in the id to a html-template
      * @param entityTemplateClass the class of which this entity is a entity-instance
-     * @throw URISyntaxException if a url is specified not formatted strictly according to to RFC2396
+     * @throw IDException if no template in the language specified by the id could be found in the templates-map
      */
-    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, Map<String, String> templates){
+    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, Map<String, String> templates) throws IDException
+    {
         super(id, templates);
         this.entityTemplateClassName = entityTemplateClass.getName();
         this.pageTemplateName = entityTemplateClass.getPageTemplateName();
+        if(!templates.containsKey(id.getLanguage())){
+            throw new IDException("No html-template in language '" + id.getLanguage() + "' found between templates.");
+        }
     }
 
     /**
-     * Constructor for template with one language and a html-template in that language. (Other language-templates could be added later if wanted.)
-     *
+     * Constructor for template with one language: the one precent in the id. (Other language-templates could be added later if wanted.)
      * @param id       id for this template
      * @param entityTemplateClass the class of which this entity is a entity-instance
-     * @param language the language of this template
      * @param template the html-template of this template
      */
-    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, String language, String template)
+    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, String template)
     {
-        super(id, language, template);
+        super(id, template);
         this.entityTemplateClassName = entityTemplateClass.getName();
         this.pageTemplateName = entityTemplateClass.getPageTemplateName();
     }
@@ -64,29 +63,40 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      * @param entityTemplateClassName
      * @param templates
      * @param pageTemplateName
+     * @throw IDException if no template in the language specified by the id could be found in the templates-map
      */
-    private EntityTemplate(RedisID id, String entityTemplateClassName, Map<String, String> templates, String pageTemplateName){
+    private EntityTemplate(RedisID id, String entityTemplateClassName, Map<String, String> templates, String pageTemplateName) throws IDException
+    {
         super(id, templates);
         this.entityTemplateClassName = entityTemplateClassName;
         this.pageTemplateName = pageTemplateName;
+        if(!templates.containsKey(id.getLanguage())){
+            throw new IDException("No html-template in language '" + id.getLanguage() + "' found between templates.");
+        }
     }
 
     /**
      * The EntityTemplate-class can be used as a factory, to construct entity-templates from data found in a hash in the redis-db
      * @param hash a map, mapping field-names to field-values
      * @return an entity-template or throws an exception if no entity-template could be constructed from the specified hash
+     * @throws DeserializationException when a bad hash is found
      */
-    public static EntityTemplate createInstanceFromHash(RedisID id, Map<String, String> hash) throws DeserializationException
+    //is protected so that all classes in package can access this method
+    protected static EntityTemplate createInstanceFromHash(RedisID id, Map<String, String> hash) throws DeserializationException
     {
-        if(hash != null && !hash.isEmpty() && hash.containsKey(DatabaseConstants.TEMPLATE) && hash.containsKey(DatabaseConstants.ENTITY_TEMPLATE_CLASS)) {
-            EntityTemplate newInstance = new EntityTemplate(id, hash.get(DatabaseConstants.ENTITY_TEMPLATE_CLASS), hash.get(DatabaseConstants.TEMPLATE), hash.get(DatabaseConstants.PAGE_TEMPLATE));
-            newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
-            newInstance.creator = hash.get(DatabaseConstants.CREATOR);
-            return newInstance;
-        }
-        else{
-            Logger.error("Could not construct an entity-template from the specified hash: " + hash);
-            throw new DeserializationException("Could not construct an entity-template from the specified hash: " + hash);
+        try{
+            if(hash != null && !hash.isEmpty() && hash.containsKey(DatabaseConstants.ENTITY_TEMPLATE_CLASS)) {
+                Map<String, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
+                EntityTemplate newInstance = new EntityTemplate(id, hash.get(DatabaseConstants.ENTITY_TEMPLATE_CLASS), templates, hash.get(DatabaseConstants.TEMPLATE));
+                newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
+                newInstance.creator = hash.get(DatabaseConstants.CREATOR);
+                return newInstance;
+            }
+            else{
+                throw new DeserializationException("Hash doesn't contain key '" + DatabaseConstants.ENTITY_TEMPLATE_CLASS + "'."  + hash);
+            }
+        }catch (Exception e){
+            throw new DeserializationException("Could not construct an entity-template from the specified hash");
         }
     }
 
@@ -160,7 +170,7 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      * @return a map representing the key-value structure of this element to be saved to db
      */
     @Override
-    public Map<String, String> toHash()
+    public Map<String, String> toHash() throws SerializationException
     {
         Map<String, String> hash = super.toHash();
         hash.put(DatabaseConstants.ENTITY_TEMPLATE_CLASS, this.entityTemplateClassName);

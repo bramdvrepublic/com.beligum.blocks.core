@@ -1,6 +1,11 @@
 package com.beligum.blocks.core.models.templates;
 
+import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.DatabaseConstants;
+import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.exceptions.DeserializationException;
+import com.beligum.blocks.core.exceptions.IDException;
+import com.beligum.blocks.core.exceptions.SerializationException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.IdentifiableObject;
@@ -8,15 +13,13 @@ import com.beligum.blocks.core.models.ifaces.Storable;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by bas on 05.11.14.
  */
 public abstract class AbstractTemplate extends IdentifiableObject implements Storable, Comparable<AbstractTemplate>
 {
-    //TODO BAS!: internationalization should be added to a template (probably a map of languages on template-strings)
     /**string representing the html-template of this element, once the template has been set, it cannot be changed*/
     protected Map<String, String> templates;
     /**the version of the application this row is supposed to interact with*/
@@ -40,16 +43,18 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     }
 
     /**
-     * Constructor for template with one language and a html-template in that language. (Other language-templates could be added later if wanted.)
+     * Constructor for template with one language: the one precent in the id. (Other language-templates could be added later if wanted.)
      * @param id id for this template
-     * @param language the language of this template
      * @param template the html-template of this template
+     * @throws NullPointerException if the template is null
      */
-    protected AbstractTemplate(RedisID id, String language, String template){
-        this(id, null);
+    protected AbstractTemplate(RedisID id, String template){
+        this(id, (Map) null);
         this.templates = new HashMap<>();
-        language = Languages.getStandardizedLanguage(language);
-        this.templates.put(language, template);
+        if(template == null){
+            throw new NullPointerException("Null-template found while constructing a template with id '" + id + "'.");
+        }
+        this.templates.put(id.getLanguage(), template);
     }
 
     /**
@@ -63,19 +68,42 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
 
     /**
      *
-     * @return the template in the specified language, or null otherwise
+     * @return the template in the specified language, or if this language is not present, the first preferred language is returned
      * @throws NullPointerException if language is null
      */
     public String getTemplate(String language){
-        return templates.get(language);
+        String template = templates.get(language);
+        if(template == null){
+            template = this.getTemplate();
+        }
+        return template;
     }
 
     /**
-     *
-     * @return the template in the language specified by this template's id
+     * Looks for the best fitting template to be returned. First this method looks if a template in the language carried inside this template's id is present to return.
+     * If not it looks if one of the site's preferred languages is present (in order of appearance).
+     * If still no template is found, it returns a random template present. (Their is always at least one template present, since it is added while constructing the template and that cannot be changed later.)
+     * @return the template in the language specified by this template's id, or if this language is not present, the first preferred language is returned
      */
     public String getTemplate(){
-        return templates.get(this.getLanguage());
+        String template = this.templates.get(this.getLanguage());
+        if(template == null){
+            String[] preferredLanguages = BlocksConfig.getLanguages();
+            int i = 0;
+            while(template == null && i < preferredLanguages.length){
+                template = this.templates.get(preferredLanguages[i]);
+                i++;
+            }
+            if(template == null){
+                Collection<String> templates = this.templates.values();
+                Iterator<String> it = templates.iterator();
+                if(!it.hasNext()){
+                    throw new RuntimeException("Could not find ANY html-templates inside the " + AbstractTemplate.class.getSimpleName() + " '" + this.getId() + "'. This should NEVER happen: did someone add a setter-method for templates in this class? That is not expected.");
+                }
+                template = it.next();
+            }
+        }
+        return template;
     }
 
     /**
@@ -154,12 +182,45 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
      * @return a map representing the key-value structure of this element to be saved to db
      */
     @Override
-    public Map<String, String> toHash(){
-        Map<String, String> hash = new HashMap<>();
-        hash.put(DatabaseConstants.TEMPLATE, this.getTemplates());
-        hash.put(DatabaseConstants.APP_VERSION, this.applicationVersion);
-        hash.put(DatabaseConstants.CREATOR, this.creator);
-        return hash;
+    public Map<String, String> toHash() throws SerializationException{
+        try {
+            Map<String, String> hash = new HashMap<>();
+            for (String language : this.templates.keySet()) {
+                RedisID languagedId = new RedisID(this.getId(), language);
+                hash.put(language, languagedId.toString());
+            }
+            hash.put(DatabaseConstants.APP_VERSION, this.applicationVersion);
+            hash.put(DatabaseConstants.CREATOR, this.creator);
+            return hash;
+        }catch(Exception e){
+            throw new SerializationException("Could not construct a proper hash from " + AbstractTemplate.class.getSimpleName() + ": " + this, e);
+        }
+    }
+
+    /**
+     * Method fetching all templates in different languages, found as keys in the specified hash.
+     * @param hash
+     * @return
+     * @throws IDException if a bad id is found in the specified hash
+     */
+    static protected Map<String, String> fetchLanguageTemplatesFromHash(Map<String, String> hash) throws DeserializationException
+    {
+        try {
+            Set<String> keys = hash.keySet();
+            Set<String> permittedLanguages = Languages.getPermittedLanguageCodes();
+            Map<String, String> templates = new HashMap<>();
+            for (String key : keys) {
+                if (permittedLanguages.contains(key)) {
+                    templates.put(key, Redis.getInstance().fetchStringForId(new RedisID(hash.get(key))));
+                }
+            }
+            if(templates.isEmpty()){
+                throw new DeserializationException("No html-template found for any language in hash: \n \n " + hash + "\n \n");
+            }
+            return templates;
+        }catch (Exception e){
+            throw new DeserializationException("Could not fetch a language-templates from db.", e);
+        }
     }
 
     //__________IMPLEMENTATION OF COMPARABLE_______________//

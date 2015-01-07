@@ -1,17 +1,16 @@
 package com.beligum.blocks.core.models.templates;
 
-import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.DatabaseConstants;
-import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
-import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.core.framework.utils.Logger;
 
-import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by wouter on 20/11/14.
@@ -23,31 +22,44 @@ public class PageTemplate extends AbstractTemplate
     /**
      *
      * @param name the name of this template
-     * @param templates the map of templates (language -> template) which represent the content of this template
-     * @throws IDException if no new id could be rendered using the specified name@throws IDException
+     * @param primaryLanguage
+     * @param templates the map of templates (language -> template) which represent the content of this template  @throws IDException if no new id could be rendered using the specified name@throws IDException
+     * @throws IDException if no new id could be rendered using the specified name and language, or if no template of that language is present in the specified map of templates
      */
-    public PageTemplate(String name, Map<String, String> templates) throws IDException
+    public PageTemplate(String name, String primaryLanguage, Map<String, String> templates) throws IDException
     {
-        super(RedisID.renderNewPageTemplateID(name), templates);
+        super(RedisID.renderNewPageTemplateID(name, primaryLanguage), templates);
         this.name = name;
+        if(!templates.containsKey(primaryLanguage)){
+            throw new IDException("No html-template in language '" + primaryLanguage + "' found between templates.");
+        }
         //TODO: should the creator of a page-template be the <author>-tag of the html file?, or else "server-start" or appVersion or something?
     }
 
     /**
-     * Constructor for template with one language and a html-template in that language. (Other language-templates could be added later if wanted.)
-     *
+     * Constructor for template with one language: the one precent in the id. (Other language-templates could be added later if wanted.)
      * @param name the name of this template
-     * @param language the language of this template
+     * @param language the language this template is written in
      * @param template the html-template of this template
      */
-    public PageTemplate(String name,  String language, String template) throws IDException
+    public PageTemplate(String name, String language, String template) throws IDException
     {
-        super(RedisID.renderNewPageTemplateID(name), language, template);
+        super(RedisID.renderNewPageTemplateID(name, language), template);
         this.name = name;
     }
 
-    private PageTemplate(RedisID id, Map<String, String> templates){
+    /**
+     * Constructor used for turning a redis-hash into a page-template.
+     * @param id the id of this, containing language-information
+     * @param templates the map of templates (language -> template) which represent the content of this template  @throws IDException if no new id could be rendered using the specified name@throws IDException
+     * @throws IDException if no new id could be rendered using the specified name, or if no template of the language specified by the id is present in the map of templates
+     */
+    private PageTemplate(RedisID id, Map<String, String> templates) throws IDException
+    {
         super(id, templates);
+        if(!templates.containsKey(id.getLanguage())){
+            throw new IDException("No html-template in language '" + id.getLanguage() + "' found between templates.");
+        }
     }
 
     public String getName() {
@@ -58,57 +70,27 @@ public class PageTemplate extends AbstractTemplate
         return this.getName() != null && !this.getName().isEmpty();
     }
 
-//    public String renderContent(Entity entity) throws Exception
-//    {
-//        /*
-//         * Use the default template-engine of the application and the default template-context of this page-template for template-rendering
-//         */
-//        TemplateEngine templateEngine = R.templateEngine();
-//        if(templateEngine instanceof VelocityTemplateEngine) {
-//            /*
-//             * Add all specific velocity-variables fetched from database to the context.
-//             */
-//            VelocityContext context = new VelocityContext();
-//            context.put(ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME, entity.getTemplate());
-//            for(Entity child : entity.getChildren()){
-//                context.put(child.getTemplateVariableName(), child.getTemplate());
-//            }
-//
-//            /*
-//             * Parse the velocity template recursively using the correct engine and context and return a string with all variables in the velocityContext rendered
-//             * Note: parse depth is default set to 20
-//             * Note 2: renderTools.recurse() stops when encountering numbers, so no element's-id may consist of only a number (this should not happen since element-ids are of the form "[db-alias]:///[pagePath]#[elementId]"
-//             */
-//            RenderTool renderTool = new RenderTool();
-//            renderTool.setVelocityEngine(((VelocityTemplateEngine) templateEngine).getDelegateEngine());
-//            renderTool.setVelocityContext(context);
-//            String pageHtml = renderTool.recurse(this.template);
-//            return pageHtml;
-//        }
-//        else{
-//            throw new Exception("The only template engine supported is Velocity. No other template-structure can be used for now, so for now you cannot use '" + templateEngine.getClass().getName() + "'");
-//        }
-//    }
-
     /**
      * The PageTemplate-class can be used as a factory, to construct page-templates from data found in a hash in the redis-db
      * @param hash a map, mapping field-names to field-values
      * @return an page-template or null if no page-template could be constructed from the specified hash
+     * @throws DeserializationException when a bad hash is found
      */
-    public static PageTemplate createInstanceFromHash(RedisID id, Map<String, String> hash) throws DeserializationException
+    //is protected so that all classes in package can access this method
+    protected static PageTemplate createInstanceFromHash(RedisID id, Map<String, String> hash) throws DeserializationException
     {
         try{
-            if(hash != null && !hash.isEmpty() && hash.containsKey(DatabaseConstants.TEMPLATE)) {
-                PageTemplate newInstance = new PageTemplate(id, hash.get(DatabaseConstants.TEMPLATE));
+            if(hash == null || hash.isEmpty()) {
+                throw new DeserializationException("Found empty hash.");
+            }
+            else{
+                Map<String, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
+                PageTemplate newInstance = new PageTemplate(id, templates);
                 newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
                 newInstance.creator = hash.get(DatabaseConstants.CREATOR);
                 String[] splitted = id.getUnversionedId().split("/");
                 newInstance.name = splitted[splitted.length-1];
                 return newInstance;
-            }
-            else{
-                Logger.error("Could not construct a page-template from the specified hash: " + hash);
-                throw new DeserializationException("Could not construct a page-template from the specified hash: " + hash);
             }
         }
         catch(DeserializationException e){

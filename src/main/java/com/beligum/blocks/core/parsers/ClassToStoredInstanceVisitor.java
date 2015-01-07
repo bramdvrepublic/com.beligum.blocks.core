@@ -8,14 +8,11 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
-import com.beligum.core.framework.cache.HashMapCache;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Stack;
 
 /**
@@ -56,6 +53,7 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                 }
                 // this is not a property but an entity and has an id
                 else if(!StringUtils.isEmpty(unversionedResourceId) && !StringUtils.isEmpty(typeOf)){
+                    //TODO BAS!: is this part still used (except for rendering an entity inside a page-template? If not, we should scratch this, since it could render problems with languages
                     RedisID defaultEntityId = new RedisID(unversionedResourceId, RedisID.LAST_VERSION);
                     // Fetch the default value in the db for this resource
                     EntityTemplate defaultEntityTemplate = Redis.getInstance().fetchEntityTemplate(defaultEntityId);
@@ -100,7 +98,7 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                 node.removeAttr(ParserConstants.BLUEPRINT);
                 node.attr(ParserConstants.RESOURCE, newEntityId.getUrl().toString());
                 String language = getLanguage(node, entityClass);
-                EntityTemplate newInstance = new EntityTemplate(newEntityId, entityClass, language, node.outerHtml());
+                EntityTemplate newInstance = new EntityTemplate(newEntityId, entityClass, node.outerHtml());
                 Redis.getInstance().save(newInstance);
                 node = replaceElementWithEntityReference((Element) node, newInstance);
                 newInstancesNodes.pop();
