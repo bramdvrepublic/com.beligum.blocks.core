@@ -45,6 +45,7 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
     var doEditText = function(element) {
 
         Overlay.createForElement(element, function () {
+            element.off("click.blocks-edit");
             removeEditor();
             Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
@@ -55,6 +56,11 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
         Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         $(element).attr("contenteditable", true);
         $(element).focus();
+
+        element.on("click.blocks-edit", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        });
 
         var zindex = $(element).css("z-index");
         editor = $(element).ckeditor().editor;
@@ -67,6 +73,7 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
 
         Overlay.createForElement(element, function () {
             element.off("click.blocks-edit");
+            Overlay.unhighlightElementAsProperty(element);
             Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
             element.removeAttr("contenteditable");
@@ -75,6 +82,7 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
 
         Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         element.attr("contenteditable", true);
+        Overlay.highlightElementAsProperty(element);
         editor = new Medium({element: element[0], mode: Medium.inlineMode});
         element.on("click.blocks-edit", function(e) {
             e.preventDefault();

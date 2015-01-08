@@ -38,6 +38,14 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", function(Constant
         property.element.removeClass(Constants.PROPERTY_HOVER_CLASS);
     };
 
+    this.highlightElementAsProperty = function(element) {
+        element.addClass(Constants.PROPERTY_HOVER_CLASS);
+    };
+
+    this.unhighlightElementAsProperty = function(element) {
+        element.removeClass(Constants.PROPERTY_HOVER_CLASS);
+    };
+
 //    var addBlockBackground = function(block) {
 //        var overlaybackground = $("<div>").addClass(Constants.OVERLAY_BACKGROUND_CLASS);
 //        var zindex = maxIndex() + 1;
