@@ -1,11 +1,14 @@
 package com.beligum.blocks.core.parsers;
 
+import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
+import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
@@ -88,7 +91,7 @@ public class AbstractVisitor
      */
     protected Element replaceElementWithPropertyReference(Element element) throws ParseException
     {
-        return replaceElementWithReference(element, getPropertyId(element));
+        return replaceElementWithReference(element, getPropertyId(element, null));
     }
 
     protected Element replaceElementWithEntityReference(Element element, EntityTemplate entity){
@@ -378,9 +381,9 @@ public class AbstractVisitor
 
 
     /**
-     * @return the property-id using the property-name of this entity-node and the last class-node visited (of the form "blocks://[db-alias]/[parent-typeof]#[property-name]_[optional-html-id-value]:[version]"), or null if no property-name can be found
+     * @return the property-id using the property-name of this entity-node and the last class-node visited (of the form "blocks://[db-alias]/[parent-typeof]#[property-name]:[version]"), or null if no property-name can be found
      */
-    public String getPropertyId(Node node) throws ParseException
+    public String getPropertyId(Node node, String language) throws ParseException
     {
         if(isEntity(node)) {
             String parentEntityClassName = this.getParentType();
@@ -393,9 +396,9 @@ public class AbstractVisitor
                     return null;
                 }
                 try {
-                    return RedisID.renderNewPropertyId(parentEntityClassName, propertyValue, getPropertyName(node)).getUnversionedId();
+                    return RedisID.renderNewPropertyId(parentEntityClassName, propertyValue, getPropertyName(node), language).getUnversionedId();
 
-                }catch(IDException e){
+                }catch(Exception e){
                     throw new ParseException("Could not render new property-id.", e);
                 }
             }
@@ -437,6 +440,24 @@ public class AbstractVisitor
         else{
             return node.hasAttr(ParserConstants.USE_BLUEPRINT);
         }
+    }
+
+    /**
+     *
+     * @param node
+     * @return the value of the lang-attribute of the node, or the language of the specified entityTemplateClass if no lang-attribute is present,
+     * or the default-language if the entity-template-class doesn't have a language
+     */
+    public String getLanguage(Node node, EntityTemplateClass entityTemplateClass){
+        String language = node.attr(ParserConstants.LANGUAGE);
+        if(StringUtils.isEmpty(language)){
+            language = entityTemplateClass != null ? entityTemplateClass.getLanguage() : BlocksConfig.getDefaultLanguage();
+        }
+        if(StringUtils.isEmpty(language)){
+            language = BlocksConfig.getDefaultLanguage();
+        }
+        language = Languages.getStandardizedLanguage(language);
+        return language;
     }
 
 }

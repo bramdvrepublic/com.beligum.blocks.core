@@ -4,6 +4,7 @@ import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
@@ -24,8 +25,17 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
     //the parent-nodes of the entity-template instances to be created
     private Stack<Node> newInstancesNodes = new Stack<>();
 
-    public ClassToStoredInstanceVisitor(URL pageUrl) {
+    private String language;
+
+    /**
+     *
+     * @param pageUrl
+     * @throws IDException if the specified page-url cannot be used as an id
+     */
+    public ClassToStoredInstanceVisitor(URL pageUrl) throws IDException
+    {
         this.pageUrl = pageUrl;
+        this.language = new RedisID(pageUrl, RedisID.LAST_VERSION).getLanguage();
     }
 
     @Override
@@ -38,22 +48,28 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                 // Reference-to
                 String unversionedResourceId = getReferencedId(node);
                 // Field in class
-                String defaultPropertyId = getPropertyId(node);
+                String defaultPropertyId = getPropertyId(node, language);
                 String typeOf = getTypeOf(node);
                 // this element has a reference to an instance/class(in cache) and it is a property of an entity
                 // and it's reference equals it's propertyname
                 // => this is the default value of the property, not an instance
                 if (!StringUtils.isEmpty(unversionedResourceId) && !StringUtils.isEmpty(defaultPropertyId) && unversionedResourceId.equals(defaultPropertyId)){
-                    RedisID lastPropertyVersion = new RedisID(unversionedResourceId, RedisID.LAST_VERSION);
+                    if(StringUtils.isEmpty(language)){
+                        language = RedisID.PRIMARY_LANGUAGE;
+                    }
+                    RedisID lastPropertyVersion = new RedisID(unversionedResourceId, RedisID.LAST_VERSION, language);
                     EntityTemplate defaultPropertyTemplate = Redis.getInstance().fetchEntityTemplate(lastPropertyVersion);
                     if(defaultPropertyTemplate == null){
                         throw new ParseException("Found bad reference. Not present in db: " + unversionedResourceId);
                     }
                     node = replaceNodeWithEntity((Element) node, defaultPropertyTemplate);
                 }
-                // this is not a property but an entity and has an id
+                // this is not a default property but still an entity and has an id
                 else if(!StringUtils.isEmpty(unversionedResourceId) && !StringUtils.isEmpty(typeOf)){
-                    RedisID defaultEntityId = new RedisID(unversionedResourceId, RedisID.LAST_VERSION);
+                    if(StringUtils.isEmpty(language)){
+                        language = RedisID.PRIMARY_LANGUAGE;
+                    }
+                    RedisID defaultEntityId = new RedisID(unversionedResourceId, RedisID.LAST_VERSION, language);
                     // Fetch the default value in the db for this resource
                     EntityTemplate defaultEntityTemplate = Redis.getInstance().fetchEntityTemplate(defaultEntityId);
                     if(defaultEntityTemplate == null){
@@ -62,7 +78,7 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                     // Fetch the class for this resource
                     EntityTemplateClass entityClass = EntityTemplateClassCache.getInstance().get(typeOf);
                     // get new instance
-                    EntityTemplate newEntityInstance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityClass), entityClass, defaultEntityTemplate.getTemplate());
+                    EntityTemplate newEntityInstance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityClass), entityClass, defaultEntityTemplate.getTemplates());
 
                     node = replaceNodeWithEntity((Element) node, newEntityInstance);
                 }
@@ -96,6 +112,7 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                 }
                 node.removeAttr(ParserConstants.BLUEPRINT);
                 node.attr(ParserConstants.RESOURCE, newEntityId.getUrl().toString());
+                String language = getLanguage(node, entityClass);
                 EntityTemplate newInstance = new EntityTemplate(newEntityId, entityClass, node.outerHtml());
                 Redis.getInstance().save(newInstance);
                 node = replaceElementWithEntityReference((Element) node, newInstance);

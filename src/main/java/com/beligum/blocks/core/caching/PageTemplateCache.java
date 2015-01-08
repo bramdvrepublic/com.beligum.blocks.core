@@ -1,5 +1,6 @@
 package com.beligum.blocks.core.caching;
 
+import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
@@ -39,12 +40,19 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
                 if (R.cacheManager() != null && R.cacheManager().getApplicationCache() != null) {R.cacheManager().getApplicationCache().put(CacheKeys.PAGE_TEMPLATES, new HashMap<String, PageTemplate>());
                     instance = new PageTemplateCache();
                     //insert the most basic possible page-template, for fall-back reasons
-                    PageTemplate pageTemplate = new PageTemplate(instance.getDefaultTemplateName(), "<!DOCTYPE html>" +
+                    //TODO BAS!: does this kind of default-template (with only one language) give us all we need for later rendering of any languaged entity?
+                    //TODO BAS!2: need to re-test this default-template (when no page-templates are defined at all), since we added bootstrap in it's definition
+                    PageTemplate pageTemplate = new PageTemplate(instance.getDefaultTemplateName(), BlocksConfig.getDefaultLanguage(), "<!DOCTYPE html>" +
                                                                                                     "<html>" +
-                                                                                                    "<head></head>" +
+                                                                                                    "<head>" +
+                                                                                                    "<script src=\"" + BlocksConfig.BOOTSTRAP_FILEPATH + "\"></script>" +
+                                                                                                    "</head>" +
+
                                                                                                     "<body>" +
+                                                                                                    "<div class=\"container>\"" +
                                                                                                     //default referencing div
                                                                                                     "<div " + ParserConstants.PAGE_TEMPLATE_CONTENT_ATTR + "=\"\" " + ParserConstants.REFERENCE_TO + "=\""+ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME + "\"></div>" +
+                                                                                                    "</div>" +
                                                                                                     "</body>" +
                                                                                                     "</html>");
                     instance.getCache().put(instance.getTemplateKey(instance.getDefaultTemplateName()), pageTemplate);
@@ -90,7 +98,7 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
     @Override
     protected String getTemplateKey(String templateName) throws IDException
     {
-        return RedisID.renderNewPageTemplateID(templateName).getUnversionedId();
+        return RedisID.renderUnversionedPageTemplateID(templateName);
     }
 
     @Override

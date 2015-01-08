@@ -17,9 +17,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * Created by wouter on 22/11/14.
@@ -104,13 +102,14 @@ public class FileToCacheVisitor extends AbstractVisitor
                     if(this.isParsingClassToBeCached()) {
                         element.removeAttr(ParserConstants.BLUEPRINT);
                         EntityTemplate propertyInstance;
+                        String language = getLanguage(element, entityTemplateClass);
                         if(needsBlueprint(element)) {
-                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element)), entityTemplateClass, entityTemplateClass.getTemplate());
+                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language), entityTemplateClass, entityTemplateClass.getTemplates());
                         }
                         else{
-                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element)), entityTemplateClass, element.outerHtml());
+                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language), entityTemplateClass, element.outerHtml());
                         }
-                        RedisID lastVersion = new RedisID(propertyInstance.getUnversionedId(), RedisID.LAST_VERSION);
+                        RedisID lastVersion = new RedisID(propertyInstance.getUnversionedId(), RedisID.LAST_VERSION, propertyInstance.getLanguage());
                         EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
                         //if no version is present in db, or this version is different, save to db
                         if (storedInstance == null || !storedInstance.equals(propertyInstance)) {
@@ -119,31 +118,19 @@ public class FileToCacheVisitor extends AbstractVisitor
                         node = replaceElementWithPropertyReference(element);
                     }
                     else if(needsBlueprint(element)){
-                        EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass), entityTemplateClass, entityTemplateClass.getTemplate());
+                        EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass), entityTemplateClass, entityTemplateClass.getTemplates());
                         Redis.getInstance().save(defaultEntity);
                         node = replaceElementWithEntityReference(element, defaultEntity);
                     }
                     //if no new class is being parsed, we are parsing a default-instance of a certain type
                     else{
+                        String language = getLanguage(node, entityTemplateClass);
                         EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass), entityTemplateClass, element.outerHtml());
                         Redis.getInstance().save(defaultEntity);
                         node = replaceElementWithEntityReference(element, defaultEntity);
                     }
                 }
                 else if(this.typeOfStack.size()>0) {
-//                    Element entityTemplateClassRoot = TemplateParser.parse(entityTemplateClass.getTemplate()).child(0);
-//                    entityTemplateClassRoot.removeAttr(ParserConstants.BLUEPRINT);
-//                    EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass, entityTemplateClassRoot.outerHtml());
-//
-////                    EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass, element.outerHtml());
-//                    RedisID lastVersion = new RedisID(instance.getUnversionedId(), RedisID.LAST_VERSION);
-//                    EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
-//                    //if no version is present in db, or this version is different, save to db
-//                    if(storedInstance == null || !storedInstance.equals(instance)) {
-//                        Redis.getInstance().save(instance);
-//                    }
-//                    node = replaceElementWithEntityReference(element, instance);
-
                     /*
                      * If we find an entity which is not a property, we throw an exception, since this makes no rdf-sense.
                      * However, if the node is the head-node of a class-blueprint, no property-attribute is expected, and so then no error is thrown
@@ -230,7 +217,8 @@ public class FileToCacheVisitor extends AbstractVisitor
                         }
                     }
                 }
-                EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, classRoot.outerHtml(), pageTemplateName);
+                String language = getLanguage(classRoot, null);
+                EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, language, classRoot.outerHtml(), pageTemplateName);
                 EntityTemplateClassCache.getInstance().replace(entityTemplateClass);
                 return EntityTemplateClassCache.getInstance().get(entityClassName);
             }
@@ -267,7 +255,8 @@ public class FileToCacheVisitor extends AbstractVisitor
                 Node replacement = this.replaceElementWithReference(contentNode, ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME);
                 //we need to instanciate the cache first, so a default-template surely will be cached with an older version than the page-template we're about to make
                 PageTemplateCache cache = PageTemplateCache.getInstance();
-                PageTemplate pageTemplate = new PageTemplate(templateName, parent.outerHtml());
+                String language = getLanguage(parent, null);
+                PageTemplate pageTemplate = new PageTemplate(templateName, language, parent.outerHtml());
                 replacement.replaceWith(contentNode);
                 boolean added = cache.add(pageTemplate);
                 //default page-templates should be added to the cache no matter what, so the last one encountered is kept

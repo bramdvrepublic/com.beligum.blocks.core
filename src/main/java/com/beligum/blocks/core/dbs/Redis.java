@@ -4,13 +4,10 @@ import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.models.templates.AbstractTemplate;
-import com.beligum.blocks.core.models.templates.EntityTemplate;
-import com.beligum.blocks.core.models.templates.EntityTemplateClass;
-import com.beligum.blocks.core.models.templates.PageTemplate;
+import com.beligum.blocks.core.internationalization.Languages;
+import com.beligum.blocks.core.models.templates.*;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisSentinelPool;
 import redis.clients.jedis.Pipeline;
 
 import java.io.Closeable;
@@ -81,39 +78,50 @@ public class Redis implements Closeable
             try{
                 //use the redis 'MULTI'-command to start using a transaction (which is atomic)
                 pipelinedSaveTransaction.multi();
-                /*
-                 * Save this entity-version's id ("[entityId]:[version]") to the db in the list named "<entityId>"
-                 * holding all the different versions of this entity-instance.
-                 */
-                //if another version is present in db, check if this entity is more recent
-                Long lastVersion = this.getLastVersion(template.getUnversionedId());
-                if (lastVersion == RedisID.NO_VERSION || template.getVersion() > lastVersion) {
-                    pipelinedSaveTransaction.lpush(template.getUnversionedId(), template.getVersionedId());
-                    //an EntityTemplate should also be saved in a set named after it's entityTemplateClassName
-                    if (template instanceof EntityTemplate) {
-                        String entityTemplateClassName = ((EntityTemplate) template).getEntityTemplateClass().getName();
-                        pipelinedSaveTransaction.sadd(RedisID.getEntityTemplateClassSetId(entityTemplateClassName), template.getUnversionedId());
+                try {
+                    /*
+                     * Save this entity-version's id ("[entityId]:[version]") to the db in the list named "[entityId]"
+                     * holding all the different versions of this entity-instance.
+                     */
+                    //if another version is present in db, check if this entity is more recent
+                    Long lastVersion = this.getLastVersion(template.getUnversionedId());
+                    if (lastVersion == RedisID.NO_VERSION || template.getVersion() > lastVersion) {
+                        pipelinedSaveTransaction.lpush(template.getUnversionedId(), template.getVersionedId());
+                        //an EntityTemplate should also be saved in a set named after it's entityTemplateClassName
+                        if (template instanceof EntityTemplate) {
+                            String entityTemplateClassName = ((EntityTemplate) template).getEntityTemplateClass().getName();
+                            pipelinedSaveTransaction.sadd(RedisID.getEntityTemplateClassSetId(entityTemplateClassName), template.getUnversionedId());
+                        }
                     }
-                }
-                else {
-                    throw new RedisException(
-                                    "The entity-template '" + template.getUnversionedId() + "' with version '" + template.getVersion() + "' already has a more recent version '" + lastVersion +
-                                    "' present in db.");
-                }
+                    else {
+                        throw new RedisException(
+                                        "The entity-template '" + template.getUnversionedId() + "' with version '" + template.getVersion() + "' already has a more recent version '" + lastVersion +
+                                        "' present in db.");
+                    }
 
-                /*
-                 * Save the entity's template and other info (like it's entity-class) in a hash named "[entityId]:[version]"
-                 */
-                pipelinedSaveTransaction.hmset(template.getVersionedId(), template.toHash());
+                    /*
+                     * Save the entity's languaged-template-ids and other info (like it's entity-class) in a hash named "[entityId]:[version]"
+                     */
+                    Map<String, String> templateHash = template.toHash();
+                    Map<String, String> languageTemplates = template.getTemplates();
+                    Set<String> languages = languageTemplates.keySet();
+                    for(String language : languages){
+                        pipelinedSaveTransaction.set(templateHash.get(language), languageTemplates.get(language));
+                    }
+                    pipelinedSaveTransaction.hmset(template.getVersionedId(), templateHash);
 
-                //execute the transaction
-                pipelinedSaveTransaction.exec();
+                    //execute the transaction
+                    pipelinedSaveTransaction.exec();
+                }
+                catch(Exception e){
+                    //if an exception has been thrown while writing transaction, discard the transaction
+                    pipelinedSaveTransaction.discard();
+                    throw e;
+                }
                 //do all the reads in this pipeline
                 pipelinedSaveTransaction.sync();
             }
             catch(Exception e){
-                //if an exception has been thrown while writing to, discard the transaction
-                pipelinedSaveTransaction.discard();
                 //do all the reads in this pipeline (not sure if this actually is necessary)
                 pipelinedSaveTransaction.sync();
                 throw new RedisException("Could not save template '" + template.getId() + "' to db.", e);
@@ -134,7 +142,7 @@ public class Redis implements Closeable
             Set<EntityTemplate> entities = new HashSet<>();
             //TODO BAS: can we use pipelines (or transactions) here?
             for(String entityId : entityIds){
-                EntityTemplate entityTemplate = this.fetchEntityTemplate(new RedisID(entityId, this.getLastVersion(entityId)));
+                EntityTemplate entityTemplate = this.fetchEntityTemplate(new RedisID(entityId, this.getLastVersion(entityId), RedisID.PRIMARY_LANGUAGE));
                 entities.add(entityTemplate);
             }
             return entities;
@@ -160,21 +168,7 @@ public class Redis implements Closeable
             if(entityHash.isEmpty()){
                 return null;
             }
-            if(type == EntityTemplate.class){
-                return EntityTemplate.createInstanceFromHash(id, entityHash);
-            }
-            else if(type == EntityTemplateClass.class){
-                return EntityTemplateClass.createInstanceFromHash(id, entityHash);
-            }
-            else if(type == PageTemplate.class){
-                return PageTemplate.createInstanceFromHash(id, entityHash);
-            }
-            else{
-                throw new RedisException("Unsupported template-type: " + type.getName() + "'.");
-            }
-        }
-        catch(RedisException e){
-            throw e;
+            return TemplateFactory.createInstanceFromHash(id, entityHash, type);
         }
         catch(Exception e){
             throw new RedisException("Could not fetch entity-template with id '" + id + "' from db.", e);
@@ -209,6 +203,38 @@ public class Redis implements Closeable
     public PageTemplate fetchPageTemplate(RedisID id) throws RedisException
     {
         return (PageTemplate) fetchTemplate(id, PageTemplate.class);
+    }
+
+    /**
+     * Method for fetching exactly the string corresponding with the specified id from db.
+     * Note: This method will throw Jedis-related exceptions, if no string-value is stored at that id.
+     * @param id
+     * @return The string stored in Redis with key the specified id, or null if no such key exists.
+     */
+    public String fetchStringForId(RedisID id){
+        try(Jedis redisClient = pool.getResource()){
+            return redisClient.get(id.toString());
+        }
+    }
+
+    /**
+     * Fetch all language alternatives present in db for a template with a certain id.
+     * This looks for alternative languages within the same version of the template.
+     * @param id
+     * @return
+     */
+    public Set<String> fetchLanguageAlternatives(RedisID id){
+        try(Jedis redisClient = pool.getResource()){
+            Map<String, String> hash = redisClient.hgetAll(id.getVersionedId());
+            Set<String> permittedLanguages = Languages.getPermittedLanguageCodes();
+            Set<String> alternativeLangugaes = new HashSet<>();
+            for(String key : hash.keySet()){
+                if(permittedLanguages.contains(key)){
+                    alternativeLangugaes.add(key);
+                }
+            }
+            return alternativeLangugaes;
+        }
     }
 
     /**
@@ -283,11 +309,11 @@ public class Redis implements Closeable
         try (Jedis redisClient = pool.getResource()){
             Random randomGenerator = new Random();
             int positiveNumber = Math.abs(randomGenerator.nextInt());
-            RedisID retVal = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClass.getName() + "/" + positiveNumber), RedisID.NEW_VERSION);
+            RedisID retVal = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClass.getLanguage() + "/" + entityTemplateClass.getName() + "/" + positiveNumber), RedisID.NEW_VERSION);
             //Check if this entity-id (url) is not already present in db, if so, re-render a random entity-id
             while (redisClient.get(retVal.getUnversionedId()) != null) {
                 positiveNumber = Math.abs(randomGenerator.nextInt());
-                retVal = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClass.getName() + "/" + positiveNumber), RedisID.NEW_VERSION);
+                retVal = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClass.getLanguage() + "/" + entityTemplateClass.getName() + "/" + positiveNumber), RedisID.NEW_VERSION);
             }
             return retVal;
         }catch(MalformedURLException e){

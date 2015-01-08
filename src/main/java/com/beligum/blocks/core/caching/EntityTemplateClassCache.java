@@ -1,16 +1,19 @@
 package com.beligum.blocks.core.caching;
 
+import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.core.framework.base.R;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -41,8 +44,9 @@ public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTempl
                 if (R.cacheManager() != null && R.cacheManager().getApplicationCache() != null) {
                     R.cacheManager().getApplicationCache().put(CacheKeys.ENTITY_CLASSES, new HashMap<String, EntityTemplateClass>());
                     instance = new EntityTemplateClassCache();
+                    //TODO BAS!: does this kind of default-template (with only one language) give us all we need for later rendering of any languaged entity?
                     //insert most basic possible entity-template-class, it is not saved to db
-                    EntityTemplateClass entityTemplateClass = new EntityTemplateClass(instance.getDefaultTemplateName(), "<div " + ParserConstants.TYPE_OF + "=\"" + ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS + "\" "+ ParserConstants.CAN_EDIT +"></div>", ParserConstants.DEFAULT_PAGE_TEMPLATE);
+                    EntityTemplateClass entityTemplateClass = new EntityTemplateClass(instance.getDefaultTemplateName(), BlocksConfig.getDefaultLanguage(), "<div " + ParserConstants.TYPE_OF + "=\"" + ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS + "\" "+ ParserConstants.CAN_EDIT +"></div>", ParserConstants.DEFAULT_PAGE_TEMPLATE);
                     instance.getCache().put(instance.getTemplateKey(instance.getDefaultTemplateName()), entityTemplateClass);
                     instance.fillCache();
                 }
@@ -87,7 +91,7 @@ public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTempl
     @Override
     protected String getTemplateKey(String templateName) throws IDException
     {
-        return RedisID.renderNewEntityTemplateClassID(templateName).getUnversionedId();
+        return RedisID.renderUnversionedEntityTemplateClassID(templateName);
     }
 
     @Override
