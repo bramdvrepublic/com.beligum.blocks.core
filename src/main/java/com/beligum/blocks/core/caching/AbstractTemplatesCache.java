@@ -78,6 +78,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     public boolean add(T template) throws CacheException
     {
         try{
+            //TODO BAS!: this should check for other languages!?!
             if(!getCache().containsKey(template.getUnversionedId())) {
                 RedisID lastVersion = new RedisID(template.getId().getUrl(), RedisID.LAST_VERSION);
                 AbstractTemplate storedTemplate = Redis.getInstance().fetchTemplate(lastVersion, this.getCachedClass());
@@ -95,7 +96,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                 return false;
             }
         }catch (Exception e){
-            throw new CacheException("Error while trying to add emplate with id '" + template.getId() + "'.", e);
+            throw new CacheException("Error while trying to add template with id '" + template.getId() + "'.", e);
         }
     }
 

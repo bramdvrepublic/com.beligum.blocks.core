@@ -1,5 +1,6 @@
 package com.beligum.blocks.core.parsers;
 
+import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.IDException;
@@ -90,7 +91,7 @@ public class AbstractVisitor
      */
     protected Element replaceElementWithPropertyReference(Element element) throws ParseException
     {
-        return replaceElementWithReference(element, getPropertyId(element));
+        return replaceElementWithReference(element, getPropertyId(element, null));
     }
 
     protected Element replaceElementWithEntityReference(Element element, EntityTemplate entity){
@@ -380,9 +381,9 @@ public class AbstractVisitor
 
 
     /**
-     * @return the property-id using the property-name of this entity-node and the last class-node visited (of the form "blocks://[db-alias]/[parent-typeof]#[property-name]_[optional-html-id-value]:[version]"), or null if no property-name can be found
+     * @return the property-id using the property-name of this entity-node and the last class-node visited (of the form "blocks://[db-alias]/[parent-typeof]#[property-name]:[version]"), or null if no property-name can be found
      */
-    public String getPropertyId(Node node) throws ParseException
+    public String getPropertyId(Node node, String language) throws ParseException
     {
         if(isEntity(node)) {
             String parentEntityClassName = this.getParentType();
@@ -395,9 +396,9 @@ public class AbstractVisitor
                     return null;
                 }
                 try {
-                    return RedisID.renderNewPropertyId(parentEntityClassName, propertyValue, getPropertyName(node)).getUnversionedId();
+                    return RedisID.renderNewPropertyId(parentEntityClassName, propertyValue, getPropertyName(node), language).getUnversionedId();
 
-                }catch(IDException e){
+                }catch(Exception e){
                     throw new ParseException("Could not render new property-id.", e);
                 }
             }

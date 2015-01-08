@@ -246,10 +246,13 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     {
         //7 and 31 are two randomly chosen prime numbers, needed for building hashcodes, ideally, these are different for each class
         HashCodeBuilder significantFieldsSet = new HashCodeBuilder(7, 31);
-        significantFieldsSet = significantFieldsSet.append(templates)
-                        .append(this.getUnversionedId())
-                        .append(this.creator)
-                        .append(this.applicationVersion);
+        significantFieldsSet = significantFieldsSet.append(this.getUnversionedId())
+                                                   .append(this.creator)
+                                                   .append(this.applicationVersion);
+        //all map-pairs "language -> template" must be added to the hashcode, we do this by customly specifying a string containing both
+        for(String language : templates.keySet()){
+            significantFieldsSet = significantFieldsSet.append(language + "->" + templates.get(language));
+        }
         return significantFieldsSet.toHashCode();
     }
 
@@ -269,10 +272,14 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
             else {
                 AbstractTemplate abstractTemplateObj = (AbstractTemplate) obj;
                 EqualsBuilder significantFieldsSet = new EqualsBuilder();
-                significantFieldsSet = significantFieldsSet.append(templates, abstractTemplateObj.templates)
-                                .append(this.getUnversionedId(), abstractTemplateObj.getUnversionedId())
-                                .append(this.creator, abstractTemplateObj.creator)
-                                .append(this.applicationVersion, abstractTemplateObj.applicationVersion);
+                significantFieldsSet = significantFieldsSet.append(this.getUnversionedId(), abstractTemplateObj.getUnversionedId())
+                                                           .append(this.creator, abstractTemplateObj.creator)
+                                                           .append(this.applicationVersion, abstractTemplateObj.applicationVersion);
+                //check if all templates in different languages are equal and that exactly the same languages are present in both objects
+                significantFieldsSet = significantFieldsSet.append(templates.size(), abstractTemplateObj.templates.size());
+                for(String language : templates.keySet()){
+                    significantFieldsSet = significantFieldsSet.append(templates.get(language), abstractTemplateObj.templates.get(language));
+                }
                 return significantFieldsSet.isEquals();
             }
         }

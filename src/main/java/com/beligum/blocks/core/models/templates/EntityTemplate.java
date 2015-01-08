@@ -6,6 +6,7 @@ import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.*;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.ifaces.Storable;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -87,6 +88,7 @@ public class EntityTemplate extends AbstractTemplate implements Storable
         try{
             if(hash != null && !hash.isEmpty() && hash.containsKey(DatabaseConstants.ENTITY_TEMPLATE_CLASS)) {
                 Map<String, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
+                id = RedisID.renderLanguagedId(id, templates.keySet());
                 EntityTemplate newInstance = new EntityTemplate(id, hash.get(DatabaseConstants.ENTITY_TEMPLATE_CLASS), templates, hash.get(DatabaseConstants.TEMPLATE));
                 newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
                 newInstance.creator = hash.get(DatabaseConstants.CREATOR);
@@ -96,7 +98,7 @@ public class EntityTemplate extends AbstractTemplate implements Storable
                 throw new DeserializationException("Hash doesn't contain key '" + DatabaseConstants.ENTITY_TEMPLATE_CLASS + "'."  + hash);
             }
         }catch (Exception e){
-            throw new DeserializationException("Could not construct an entity-template from the specified hash");
+            throw new DeserializationException("Could not construct an entity-template from the specified hash", e);
         }
     }
 

@@ -85,6 +85,7 @@ public class PageTemplate extends AbstractTemplate
             }
             else{
                 Map<String, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
+                id = RedisID.renderLanguagedId(id, templates.keySet());
                 PageTemplate newInstance = new PageTemplate(id, templates);
                 newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
                 newInstance.creator = hash.get(DatabaseConstants.CREATOR);

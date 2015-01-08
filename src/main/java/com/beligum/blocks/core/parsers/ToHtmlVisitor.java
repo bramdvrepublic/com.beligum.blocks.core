@@ -51,9 +51,6 @@ public class ToHtmlVisitor extends AbstractVisitor
             }
             return node;
         }
-        catch(ParseException e){
-            throw e;
-        }
         catch(Exception e){
             throw new ParseException("Error while parsing node '" + node.nodeName() + "' at tree depth '" + depth + "' to html.", e);
         }
@@ -106,7 +103,7 @@ public class ToHtmlVisitor extends AbstractVisitor
             if (!instanceProperties.isEmpty() && !classProperties.isEmpty()) {
                 for (Element classProperty : classProperties) {
                     for (Element instanceProperty : instanceProperties) {
-                        if (getPropertyId(instanceProperty).contentEquals(getPropertyId(classProperty))) {
+                        if (getPropertyId(instanceProperty, language).contentEquals(getPropertyId(classProperty, language))) {
                             Element element = null;
                             //If the classproperty is modifiable, we replace it with the instance's property
                             if (isModifiable(classProperty)) {
@@ -126,7 +123,7 @@ public class ToHtmlVisitor extends AbstractVisitor
                 }
                 for(Element remainingClassReferencingElement : classReferencingElements){
                     //when a typeof-child without a property is encountered, we can only render the default value, without showing it's resource, so it is not overwritten later
-                    EntityTemplate classDefault = Redis.getInstance().fetchEntityTemplate(new RedisID(getReferencedId(remainingClassReferencingElement), RedisID.LAST_VERSION));
+                    EntityTemplate classDefault = Redis.getInstance().fetchEntityTemplate(new RedisID(getReferencedId(remainingClassReferencingElement), RedisID.LAST_VERSION, language));
                     if(classDefault == null){
                         throw new ParseException("Found bad reference. Not present in db: " + getReferencedId(remainingClassReferencingElement));
                     }
@@ -161,14 +158,14 @@ public class ToHtmlVisitor extends AbstractVisitor
      */
     private Element replaceWithNewDefaultCopy(Node classProperty, String referenceId) throws Exception
     {
-        RedisID defaultClassPropertyId = new RedisID(getReferencedId(classProperty), RedisID.LAST_VERSION);
+        RedisID defaultClassPropertyId = new RedisID(getReferencedId(classProperty), RedisID.LAST_VERSION, language);
         EntityTemplate defaultClassPropertyTemplate = Redis.getInstance().fetchEntityTemplate(defaultClassPropertyId);
         if(defaultClassPropertyTemplate == null){
             throw new ParseException("Couldn't find last version of class-default property '" + defaultClassPropertyId + "' in db.");
         }
         Element defaultClassPropertyRoot = TemplateParser.parse(defaultClassPropertyTemplate.getTemplate(language)).child(0);
         String referencedInstanceId = referenceId;
-        RedisID id = new RedisID(referencedInstanceId, RedisID.LAST_VERSION);
+        RedisID id = new RedisID(referencedInstanceId, RedisID.LAST_VERSION, language);
         defaultClassPropertyRoot.attr(ParserConstants.RESOURCE, id.getUrl().toString());
         classProperty.replaceWith(defaultClassPropertyRoot);
         return defaultClassPropertyRoot;
@@ -180,7 +177,7 @@ public class ToHtmlVisitor extends AbstractVisitor
         try {
             String id = getReferencedId(instanceRootNode);
             if (!StringUtils.isEmpty(id)) {
-                RedisID referencedId = new RedisID(id, RedisID.LAST_VERSION);
+                RedisID referencedId = new RedisID(id, RedisID.LAST_VERSION, language);
                 EntityTemplate instanceTemplate = Redis.getInstance().fetchEntityTemplate(referencedId);
                 if(instanceTemplate == null){
                     throw new ParseException("Found bad reference. Not found in db: " + referencedId);

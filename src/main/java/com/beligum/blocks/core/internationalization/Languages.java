@@ -68,10 +68,38 @@ public class Languages
      * @return all language-codes that are permitted (ISO 639) and a constant representing the absence of a language
      */
     static public Set<String> getPermittedLanguageCodes(){
-        String[] isoLanguages = Locale.getISOLanguages();
-        Set<String> permittedLanguages = new HashSet(Arrays.asList(isoLanguages));
-        permittedLanguages.add(NO_LANGUAGE);
-        return permittedLanguages;
+        if(cachedPermittedLanguages.isEmpty()) {
+            String[] isoLanguages = Locale.getISOLanguages();
+            Set<String> permittedLanguages = new HashSet(Arrays.asList(isoLanguages));
+            permittedLanguages.add(NO_LANGUAGE);
+            cachedPermittedLanguages = permittedLanguages;
+        }
+        return cachedPermittedLanguages;
+    }
+
+    /**
+     * Determines which language is the preferred language starting from a set of languages.
+     * Uses the site's preferred languages, and if none of the languages can be found, it returns a random one.
+     * If an empty set is specified, the constant Languages.NO_LANGUAGE is returned.
+     * @param languages
+     * @return
+     */
+    static public String determinePrimaryLanguage(Set<String> languages){
+        String[] preferredLanguages = BlocksConfig.getLanguages();
+        String primaryLanguage = null;
+        if(languages == null || languages.isEmpty()){
+            primaryLanguage = NO_LANGUAGE;
+        }
+        int i = 0;
+        while(primaryLanguage == null && i<preferredLanguages.length){
+            if(languages.contains(preferredLanguages[i])){
+                primaryLanguage = preferredLanguages[i];
+            }
+        }
+        if(primaryLanguage == null){
+            primaryLanguage = languages.iterator().next();
+        }
+        return primaryLanguage;
     }
 
 }

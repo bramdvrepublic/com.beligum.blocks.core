@@ -102,14 +102,14 @@ public class FileToCacheVisitor extends AbstractVisitor
                     if(this.isParsingClassToBeCached()) {
                         element.removeAttr(ParserConstants.BLUEPRINT);
                         EntityTemplate propertyInstance;
+                        String language = getLanguage(element, entityTemplateClass);
                         if(needsBlueprint(element)) {
-                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element)), entityTemplateClass, entityTemplateClass.getTemplates());
+                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language), entityTemplateClass, entityTemplateClass.getTemplates());
                         }
                         else{
-                            String language = getLanguage(element, entityTemplateClass);
-                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element)), entityTemplateClass, element.outerHtml());
+                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language), entityTemplateClass, element.outerHtml());
                         }
-                        RedisID lastVersion = new RedisID(propertyInstance.getUnversionedId(), RedisID.LAST_VERSION);
+                        RedisID lastVersion = new RedisID(propertyInstance.getUnversionedId(), RedisID.LAST_VERSION, propertyInstance.getLanguage());
                         EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
                         //if no version is present in db, or this version is different, save to db
                         if (storedInstance == null || !storedInstance.equals(propertyInstance)) {

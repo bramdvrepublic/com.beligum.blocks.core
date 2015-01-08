@@ -98,7 +98,7 @@ public class EntitiesEndpoint
      */
     public Response updateEntity(Map<String, String> data) throws MalformedURLException, ParseException, URISyntaxException, IDException, RedisException
     {
-
+        //TODO BAS: after server re-start, a saved museum-page with a change in one of the buildings-titles is not shown changed anymore. Something to do with parsing default property-entities, which have other id's when server is restarted?
         URL entityUrl = TemplateParser.updateEntity(data.get("page"));
         //        EntityTemplate storedTemplate = Redis.getInstance().fetchEntityTemplate(new RedisID(entityUrl, RedisID.LAST_VERSION));
         //        if(storedTemplate == null){

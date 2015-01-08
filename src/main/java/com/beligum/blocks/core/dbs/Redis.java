@@ -4,10 +4,10 @@ import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.templates.*;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisSentinelPool;
 import redis.clients.jedis.Pipeline;
 
 import java.io.Closeable;
@@ -106,7 +106,7 @@ public class Redis implements Closeable
                     Map<String, String> languageTemplates = template.getTemplates();
                     Set<String> languages = languageTemplates.keySet();
                     for(String language : languages){
-                        pipelinedSaveTransaction.set(language, templateHash.get(language));
+                        pipelinedSaveTransaction.set(templateHash.get(language), languageTemplates.get(language));
                     }
                     pipelinedSaveTransaction.hmset(template.getVersionedId(), templateHash);
 
@@ -142,7 +142,7 @@ public class Redis implements Closeable
             Set<EntityTemplate> entities = new HashSet<>();
             //TODO BAS: can we use pipelines (or transactions) here?
             for(String entityId : entityIds){
-                EntityTemplate entityTemplate = this.fetchEntityTemplate(new RedisID(entityId, this.getLastVersion(entityId)));
+                EntityTemplate entityTemplate = this.fetchEntityTemplate(new RedisID(entityId, this.getLastVersion(entityId), RedisID.PRIMARY_LANGUAGE));
                 entities.add(entityTemplate);
             }
             return entities;
@@ -214,6 +214,26 @@ public class Redis implements Closeable
     public String fetchStringForId(RedisID id){
         try(Jedis redisClient = pool.getResource()){
             return redisClient.get(id.toString());
+        }
+    }
+
+    /**
+     * Fetch all language alternatives present in db for a template with a certain id.
+     * This looks for alternative languages within the same version of the template.
+     * @param id
+     * @return
+     */
+    public Set<String> fetchLanguageAlternatives(RedisID id){
+        try(Jedis redisClient = pool.getResource()){
+            Map<String, String> hash = redisClient.hgetAll(id.getVersionedId());
+            Set<String> permittedLanguages = Languages.getPermittedLanguageCodes();
+            Set<String> alternativeLangugaes = new HashSet<>();
+            for(String key : hash.keySet()){
+                if(permittedLanguages.contains(key)){
+                    alternativeLangugaes.add(key);
+                }
+            }
+            return alternativeLangugaes;
         }
     }
 

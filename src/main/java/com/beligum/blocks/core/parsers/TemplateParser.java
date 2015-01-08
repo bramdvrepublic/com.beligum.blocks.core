@@ -49,7 +49,6 @@ public class TemplateParser
     {
         String pageStringId = "";
         try {
-            //TODO BAS SH: just added language-parameter here, so we can decide which template to use out of all the templates from the class (if the specified language is the default language, we first look to the class for more info)
             if(!Languages.containsLanguageCode(language)){
                 language = entityTemplateClass.getLanguage();
             }
@@ -58,7 +57,7 @@ public class TemplateParser
             Traversor traversor = new Traversor(visitor);
             traversor.traverse(doc);
             pageStringId = visitor.getReferencedId(doc.child(0));
-            RedisID pageId = new RedisID(pageStringId, RedisID.NO_VERSION);
+            RedisID pageId = new RedisID(pageStringId, RedisID.NO_VERSION, language);
             return pageId.getUrl();
         }
         catch(IDException e){

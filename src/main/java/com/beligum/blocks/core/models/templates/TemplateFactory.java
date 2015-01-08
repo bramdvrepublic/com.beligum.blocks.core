@@ -19,13 +19,13 @@ public class TemplateFactory
      */
     public static AbstractTemplate createInstanceFromHash(RedisID id, Map<String, String> hash, Class<? extends AbstractTemplate> type) throws DeserializationException
     {
-        if(type.isInstance(EntityTemplate.class)){
+        if(type.equals(EntityTemplate.class)){
             return EntityTemplate.createInstanceFromHash(id, hash);
         }
-        else if(type.isInstance(EntityTemplateClass.class)){
+        else if(type.equals(EntityTemplateClass.class)){
             return EntityTemplateClass.createInstanceFromHash(id, hash);
         }
-        else if(type.isInstance(PageTemplate.class)){
+        else if(type.equals(PageTemplate.class)){
             return PageTemplate.createInstanceFromHash(id, hash);
         }
         else{
