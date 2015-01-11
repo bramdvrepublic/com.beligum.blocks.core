@@ -118,7 +118,8 @@ public class EntitiesEndpoint
         if(url.endsWith("#")){
             url = url.substring(0, url.length()-1);
         }
-        URL entityUrl = TemplateParser.updateEntity(new URL(url), data.get("page"));
+        URL entityUrl = new URL(url);
+        TemplateParser.updateEntity(entityUrl, data.get("page"));
         return Response.ok(entityUrl.toURI()).build();
     }
 
@@ -170,7 +171,7 @@ public class EntitiesEndpoint
         EntityTemplate entityTemplate = redis.fetchEntityTemplate(lastVersionId);
         //TODO BAS: must make BeanValidation checking that PageTemplateCache.getInstance().contains(templateName)
         entityTemplate.setPageTemplateName(templateName);
-        String entity = entityTemplate.renderEntityInPageTemplate();
+        String entity = entityTemplate.renderEntityInPageTemplate(entityTemplate.getLanguage());
         return Response.ok(entity).build();
 
     }

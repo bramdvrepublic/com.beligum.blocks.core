@@ -172,14 +172,14 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      * render the html of this entity-template, using it's page-template (or, if it is the default-page-template, use the page-template of the class) and class-template
      * @return
      */
-    public String renderEntityInPageTemplate() throws CacheException, ParseException
+    public String renderEntityInPageTemplate(String language) throws CacheException, ParseException
     {
         PageTemplate pageTemplate = getPageTemplate();
         PageTemplate classPageTemplate = this.getEntityTemplateClass().getPageTemplate();
         if(pageTemplate.getName().equals(ParserConstants.DEFAULT_PAGE_TEMPLATE) && !classPageTemplate.getName().equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)){
             pageTemplate = classPageTemplate;
         }
-        return TemplateParser.renderEntityInsidePageTemplate(pageTemplate, this);
+        return TemplateParser.renderEntityInsidePageTemplate(pageTemplate, this, language);
     }
 
     /**

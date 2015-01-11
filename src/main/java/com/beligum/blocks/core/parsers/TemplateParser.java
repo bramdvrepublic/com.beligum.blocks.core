@@ -47,7 +47,7 @@ public class TemplateParser
      * @param entityTemplateClass
      * @return the url of the freshly saved template
      */
-    public static URL saveNewEntityTemplateToDb(URL pageURL, String language, EntityTemplateClass entityTemplateClass) throws ParseException
+    public static URL saveNewEntityTemplateToDb(URL pageURL, String language, AbstractTemplate entityTemplateClass) throws ParseException
     {
         String pageStringId = "";
         try {
@@ -91,7 +91,7 @@ public class TemplateParser
      */
     public static String renderEntityInsidePageTemplate(PageTemplate pageTemplate, EntityTemplate entityTemplate, String language) throws ParseException
     {
-        if(language == null){
+        if(!Languages.isNonEmptyLanguageCode(language)){
             throw new ParseException("No language specified!");
         }
         Element DOM = parse(pageTemplate.getTemplate(language));
@@ -120,12 +120,12 @@ public class TemplateParser
         return classDOM.outerHtml();
     }
 
-    public static URL updateEntity(URL entityUrl, String html) throws ParseException
+    public static void updateEntity(URL entityUrl, String html) throws ParseException
     {
         Document newDOM = parse(html);
         Traversor traversor = new Traversor(new HtmlToStoreVisitor(entityUrl));
         traversor.traverse(newDOM);
-        return traversor.getPageUrl();
+//        return traversor.getPageUrl();
     }
 
     /**
