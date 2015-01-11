@@ -16,6 +16,7 @@ import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.base.RequestContext;
 import com.beligum.core.framework.templating.ifaces.Template;
+import org.apache.poi.hssf.util.HSSFColor;
 import org.hibernate.validator.constraints.NotBlank;
 
 import javax.ws.rs.*;
@@ -59,22 +60,37 @@ public class EntitiesEndpoint
     public Response createEntity(
                     @FormParam("page-url")
                     @NotBlank(message = "No url specified.")
-                    String url,
+                    String pageUrl,
                     @FormParam("page-class-name")
                     @NotBlank(message = "No entity-class specified.")
                     String entityClassName)
-                    throws CacheException, RedisException, IDException, URISyntaxException, ParseException, MalformedURLException
+                    throws Exception
 
     {
         EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(entityClassName);
-        URL pageUrl = new URL(url);
-        RedisID id = new RedisID(pageUrl, RedisID.NO_VERSION);
-        URL entityUrl = TemplateParser.saveNewEntityTemplateToDb(pageUrl, id.getLanguage(), entityTemplateClass);
+        URL entityUrl = new URL(pageUrl);
+        RedisID id = new RedisID(entityUrl, RedisID.LAST_VERSION, false);
+        EntityTemplate lastVersion = Redis.getInstance().fetchEntityTemplate(id);
+        URL newEntityUrl = null;
+        /*
+         * if no version was already present in db or if the url did not hold language-information,
+         * render the language-information using the site's default values
+         */
+        if(lastVersion == null || !id.hasLanguage()) {
+            id = new RedisID(entityUrl, RedisID.LAST_VERSION, true);
+        }
+        else if(lastVersion.getLanguages().contains(id.getLanguage())){
+            throw new Exception("Cannot create an entity-language which already exists! This should not happen.");
+        }
+        else{
+            //do nothing, since this just means we're adding a new language to an entity
+        }
+        newEntityUrl = TemplateParser.saveNewEntityTemplateToDb(entityUrl, id.getLanguage(), entityTemplateClass);
 
         /*
          * Redirect the client to the newly created entity's page
          */
-        return Response.seeOther(entityUrl.toURI()).build();
+        return Response.seeOther(newEntityUrl.toURI()).build();
     }
 
     @GET
@@ -100,11 +116,6 @@ public class EntitiesEndpoint
     {
         //TODO BAS: after server re-start, a saved museum-page with a change in one of the buildings-titles is not shown changed anymore. Something to do with parsing default property-entities, which have other id's when server is restarted?
         URL entityUrl = TemplateParser.updateEntity(data.get("page"));
-        //        EntityTemplate storedTemplate = Redis.getInstance().fetchEntityTemplate(new RedisID(entityUrl, RedisID.LAST_VERSION));
-        //        if(storedTemplate == null){
-        //            RedisID newInstanceID = new RedisID(entityUrl);
-        //            EntityTemplate newInstance = new EntityTemplate()
-        //        }
         return Response.ok(entityUrl.toURI()).build();
     }
 
@@ -149,14 +160,15 @@ public class EntitiesEndpoint
     @Path("/template")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response changeTemplate(@FormParam("template") String template, @FormParam("id") String id) throws CacheException, MalformedURLException, IDException, RedisException
-    {
+    public Response changeTemplate(@FormParam("template") String templateName, @FormParam("id") String id) throws CacheException, MalformedURLException, IDException, RedisException, ParseException {
         Redis redis = Redis.getInstance();
         URL url = new URL(id);
-        RedisID lastVersionId = new RedisID(url, RedisID.LAST_VERSION);
+        RedisID lastVersionId = new RedisID(url, RedisID.LAST_VERSION, false);
         EntityTemplate entityTemplate = redis.fetchEntityTemplate(lastVersionId);
-//        entityTemplate.setPageTemplate(template);
-        return Response.ok().build();
+        //TODO BAS: must make BeanValidation checking that PageTemplateCache.getInstance().contains(templateName)
+        entityTemplate.setPageTemplateName(templateName);
+        String entity = entityTemplate.renderEntityInPageTemplate();
+        return Response.ok(entity).build();
 
     }
 }

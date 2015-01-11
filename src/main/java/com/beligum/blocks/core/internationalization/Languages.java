@@ -1,6 +1,9 @@
 package com.beligum.blocks.core.internationalization;
 
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.exceptions.IDException;
+import com.beligum.blocks.core.identifiers.RedisID;
 import org.apache.commons.beanutils.converters.ArrayConverter;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.SetUtils;
@@ -65,6 +68,15 @@ public class Languages
 
     /**
      *
+     * @param s
+     * @return true if the specified string is a language-code
+     */
+    static public boolean isNonEmptyLanguageCode(String s){
+        return !StringUtils.isEmpty(s) && !s.equals(NO_LANGUAGE) && getPermittedLanguageCodes().contains(s);
+    }
+
+    /**
+     *
      * @return all language-codes that are permitted (ISO 639) and a constant representing the absence of a language
      */
     static public Set<String> getPermittedLanguageCodes(){
@@ -100,6 +112,22 @@ public class Languages
             primaryLanguage = languages.iterator().next();
         }
         return primaryLanguage;
+    }
+
+    /**
+     * Determine which of the language-ids is the site's preferred one (primary)
+     * This method uses the preferred order of languages specified in the configuration-xml.
+     * @param languageIds a set of languages to choose from, if this set is empty, null will be returned
+     * @return
+     */
+    public static RedisID determinePrimaryLanguageId(Set<RedisID> languageIds)
+    {
+        Map<String, RedisID> languages = new HashMap();
+        for(RedisID languageId : languageIds){
+            languages.put(languageId.getLanguage(), languageId);
+        }
+        String primaryLanguage = Languages.determinePrimaryLanguage(languages.keySet());
+        return languages.get(primaryLanguage);
     }
 
 }

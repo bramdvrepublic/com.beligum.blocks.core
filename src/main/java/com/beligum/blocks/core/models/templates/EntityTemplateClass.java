@@ -5,22 +5,18 @@ import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.config.ParserConstants;
-import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.SerializationException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
-import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by bas on 05.11.14.
@@ -40,7 +36,7 @@ public class EntityTemplateClass extends AbstractTemplate
      * @param pageTemplateName the default page-template this entity-class should be rendered in
      * @throws IDException if no new id could be rendered using the specified name and language, or if no template of that language is present in the specified map of templates
      */
-    public EntityTemplateClass(String name, String primaryLanguage, Map<String, String> templates, String pageTemplateName) throws IDException
+    public EntityTemplateClass(String name, String primaryLanguage, Map<RedisID, String> templates, String pageTemplateName) throws IDException
     {
         super(RedisID.renderNewEntityTemplateClassID(name, primaryLanguage), templates);
         this.name = name;
@@ -76,7 +72,7 @@ public class EntityTemplateClass extends AbstractTemplate
      * @param pageTemplateName
      * @throws IDException
      */
-    private EntityTemplateClass(RedisID id, Map<String, String> templates, String pageTemplateName) throws IDException
+    private EntityTemplateClass(RedisID id, Map<RedisID, String> templates, String pageTemplateName) throws IDException
     {
         super(id, templates);
         //the name of this entity-template-class doesn't start with a "/", so we split it of the given path
@@ -90,7 +86,7 @@ public class EntityTemplateClass extends AbstractTemplate
         if(pageTemplateName != null) {
             this.pageTemplateName = pageTemplateName;
         }
-        if(!templates.containsKey(id.getLanguage())){
+        if(!this.getLanguages().contains(id.getLanguage())){
             throw new IDException("No html-template in language '" + id.getLanguage() + "' found between templates.");
         }
     }
@@ -146,8 +142,7 @@ public class EntityTemplateClass extends AbstractTemplate
                 throw new DeserializationException("Found empty hash");
             }
             else{
-                Map<String, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
-                id = RedisID.renderLanguagedId(id, templates.keySet());
+                Map<RedisID, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
                 EntityTemplateClass newInstance = new EntityTemplateClass(id, templates, hash.get(DatabaseConstants.PAGE_TEMPLATE));
                 newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
                 newInstance.creator = hash.get(DatabaseConstants.CREATOR);

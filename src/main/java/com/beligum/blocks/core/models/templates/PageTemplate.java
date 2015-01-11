@@ -1,16 +1,12 @@
 package com.beligum.blocks.core.models.templates;
 
 import com.beligum.blocks.core.config.DatabaseConstants;
-import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
-import com.beligum.core.framework.utils.Logger;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by wouter on 20/11/14.
@@ -26,11 +22,11 @@ public class PageTemplate extends AbstractTemplate
      * @param templates the map of templates (language -> template) which represent the content of this template  @throws IDException if no new id could be rendered using the specified name@throws IDException
      * @throws IDException if no new id could be rendered using the specified name and language, or if no template of that language is present in the specified map of templates
      */
-    public PageTemplate(String name, String primaryLanguage, Map<String, String> templates) throws IDException
+    public PageTemplate(String name, String primaryLanguage, Map<RedisID, String> templates) throws IDException
     {
         super(RedisID.renderNewPageTemplateID(name, primaryLanguage), templates);
         this.name = name;
-        if(!templates.containsKey(primaryLanguage)){
+        if(!this.getLanguages().contains(this.getId().getLanguage())){
             throw new IDException("No html-template in language '" + primaryLanguage + "' found between templates.");
         }
         //TODO: should the creator of a page-template be the <author>-tag of the html file?, or else "server-start" or appVersion or something?
@@ -54,10 +50,10 @@ public class PageTemplate extends AbstractTemplate
      * @param templates the map of templates (language -> template) which represent the content of this template  @throws IDException if no new id could be rendered using the specified name@throws IDException
      * @throws IDException if no new id could be rendered using the specified name, or if no template of the language specified by the id is present in the map of templates
      */
-    private PageTemplate(RedisID id, Map<String, String> templates) throws IDException
+    private PageTemplate(RedisID id, Map<RedisID, String> templates) throws IDException
     {
         super(id, templates);
-        if(!templates.containsKey(id.getLanguage())){
+        if(!this.getLanguages().contains(id.getLanguage())){
             throw new IDException("No html-template in language '" + id.getLanguage() + "' found between templates.");
         }
     }
@@ -84,8 +80,7 @@ public class PageTemplate extends AbstractTemplate
                 throw new DeserializationException("Found empty hash.");
             }
             else{
-                Map<String, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
-                id = RedisID.renderLanguagedId(id, templates.keySet());
+                Map<RedisID, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
                 PageTemplate newInstance = new PageTemplate(id, templates);
                 newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
                 newInstance.creator = hash.get(DatabaseConstants.CREATOR);

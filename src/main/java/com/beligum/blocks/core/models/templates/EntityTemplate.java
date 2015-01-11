@@ -31,16 +31,16 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      * Constructor for a new entity-instance of a certain entity-class.
      * It's UID will be the of the form "[url]:[version]". It uses the current application version and the currently logged in user for field initialization.
      * @param id the id of this entity
-     * @param templates the map of templates (language -> template) which represent the content of this template, it should at least contain a pair from the language present in the id to a html-template
+     * @param templates the map of templates (languageId -> template) which represent the content of this template, it should at least contain a pair from the language present in the id to a html-template
      * @param entityTemplateClass the class of which this entity is a entity-instance
      * @throw IDException if no template in the language specified by the id could be found in the templates-map
      */
-    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, Map<String, String> templates) throws IDException
+    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, Map<RedisID, String> templates) throws IDException
     {
         super(id, templates);
         this.entityTemplateClassName = entityTemplateClass.getName();
         this.pageTemplateName = entityTemplateClass.getPageTemplateName();
-        if(!templates.containsKey(id.getLanguage())){
+        if(!this.getLanguages().contains(id.getLanguage())){
             throw new IDException("No html-template in language '" + id.getLanguage() + "' found between templates.");
         }
     }
@@ -66,12 +66,12 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      * @param pageTemplateName
      * @throw IDException if no template in the language specified by the id could be found in the templates-map
      */
-    private EntityTemplate(RedisID id, String entityTemplateClassName, Map<String, String> templates, String pageTemplateName) throws IDException
+    private EntityTemplate(RedisID id, String entityTemplateClassName, Map<RedisID, String> templates, String pageTemplateName) throws IDException
     {
         super(id, templates);
         this.entityTemplateClassName = entityTemplateClassName;
         this.pageTemplateName = pageTemplateName;
-        if(!templates.containsKey(id.getLanguage())){
+        if(!this.getLanguages().contains(id.getLanguage())){
             throw new IDException("No html-template in language '" + id.getLanguage() + "' found between templates.");
         }
     }
@@ -87,9 +87,8 @@ public class EntityTemplate extends AbstractTemplate implements Storable
     {
         try{
             if(hash != null && !hash.isEmpty() && hash.containsKey(DatabaseConstants.ENTITY_TEMPLATE_CLASS)) {
-                Map<String, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
-                id = RedisID.renderLanguagedId(id, templates.keySet());
-                EntityTemplate newInstance = new EntityTemplate(id, hash.get(DatabaseConstants.ENTITY_TEMPLATE_CLASS), templates, hash.get(DatabaseConstants.TEMPLATE));
+                Map<RedisID, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
+                EntityTemplate newInstance = new EntityTemplate(id, hash.get(DatabaseConstants.ENTITY_TEMPLATE_CLASS), templates, hash.get(DatabaseConstants.PAGE_TEMPLATE));
                 newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
                 newInstance.creator = hash.get(DatabaseConstants.CREATOR);
                 return newInstance;

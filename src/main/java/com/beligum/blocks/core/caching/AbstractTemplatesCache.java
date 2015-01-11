@@ -78,9 +78,12 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     public boolean add(T template) throws CacheException
     {
         try{
-            //TODO BAS!: this should check for other languages!?!
+            if(template == null){
+                return false;
+            }
+            //TODO BAS!: hier moeten verschillende talen in opgeslaan kunnen worden
             if(!getCache().containsKey(template.getUnversionedId())) {
-                RedisID lastVersion = new RedisID(template.getId().getUrl(), RedisID.LAST_VERSION);
+                RedisID lastVersion = new RedisID(template.getId().getUrl(), RedisID.LAST_VERSION, false);
                 AbstractTemplate storedTemplate = Redis.getInstance().fetchTemplate(lastVersion, this.getCachedClass());
                 if(!template.equals(storedTemplate)){
                     Redis.getInstance().save(template);
@@ -92,6 +95,9 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                 getCache().put(template.getUnversionedId(), template);
                 return true;
             }
+//            else if(getCache().get(template.getUnversionedId()).getLanguages().contains(template.getLanguages())) {
+//
+//            }
             else{
                 return false;
             }
@@ -115,9 +121,9 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             }
             else{
                 AbstractTemplate cachedTemplate = getCache().get(template.getUnversionedId());
+                //TODO BAS!: need to check languages too
                 if(!template.equals(cachedTemplate)){
-
-                    RedisID lastVersion = new RedisID(template.getId().getUrl(), RedisID.LAST_VERSION);
+                    RedisID lastVersion = new RedisID(template.getId().getUrl(), RedisID.LAST_VERSION, false);
                     AbstractTemplate storedTemplate = Redis.getInstance().fetchTemplate(lastVersion, this.getCachedClass());
                     if (!template.equals(storedTemplate)){
                         Redis.getInstance().save(template);

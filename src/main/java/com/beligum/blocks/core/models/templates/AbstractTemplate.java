@@ -10,6 +10,7 @@ import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.IdentifiableObject;
 import com.beligum.blocks.core.models.ifaces.Storable;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -21,7 +22,7 @@ import java.util.*;
 public abstract class AbstractTemplate extends IdentifiableObject implements Storable, Comparable<AbstractTemplate>
 {
     /**string representing the html-template of this element, once the template has been set, it cannot be changed*/
-    protected Map<String, String> templates;
+    protected Map<RedisID, String> templates;
     /**the version of the application this row is supposed to interact with*/
     protected String applicationVersion;
     /**the creator of this row*/
@@ -32,7 +33,7 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
      * @param id id for this template
      * @param templates the map of templates (language -> template) which represent the content of this template
      */
-    protected AbstractTemplate(RedisID id, Map<String, String> templates)
+    protected AbstractTemplate(RedisID id, Map<RedisID, String> templates)
     {
         super(id);
         this.templates = templates;
@@ -54,16 +55,28 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
         if(template == null){
             throw new NullPointerException("Null-template found while constructing a template with id '" + id + "'.");
         }
-        this.templates.put(id.getLanguage(), template);
+        this.templates.put(id, template);
     }
 
     /**
      *
      * @return the template of this viewable
      */
-    public Map<String, String> getTemplates()
+    public Map<RedisID, String> getTemplates()
     {
         return templates;
+    }
+
+    /**
+     *
+     * @return all languages this template possesses
+     */
+    public Set<String> getLanguages(){
+        Set<String> languages = new HashSet<>();
+        for(RedisID languageId : this.templates.keySet()){
+            languages.add(languageId.getLanguage());
+        }
+        return languages;
     }
 
     /**
@@ -72,6 +85,10 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
      * @throws NullPointerException if language is null
      */
     public String getTemplate(String language){
+        Map<String, String> templates = new HashMap<>();
+        for(RedisID languageID : this.templates.keySet()){
+            templates.put(languageID.getLanguage(), this.templates.get(languageID));
+        }
         String template = templates.get(language);
         if(template == null){
             template = this.getTemplate();
@@ -105,6 +122,24 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
         }
         return template;
     }
+
+    /**
+     * Tries to add a new html-template for a certain language.
+     * @param languageID a redis-id holding a language
+     * @param html a html-string
+     * @return false if the language-code is not correct, if the html-string is empty or if a template of that language is already present;
+     * true otherwise, which means the template has been added
+     */
+    public boolean add(RedisID languageID, String html){
+        if(!StringUtils.isEmpty(html) && !this.getLanguages().contains(languageID.getLanguage())){
+            templates.put(languageID, html);
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
 
     /**
      *
@@ -185,9 +220,8 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     public Map<String, String> toHash() throws SerializationException{
         try {
             Map<String, String> hash = new HashMap<>();
-            for (String language : this.templates.keySet()) {
-                RedisID languagedId = new RedisID(this.getId(), language);
-                hash.put(language, languagedId.toString());
+            for (RedisID languageId : this.templates.keySet()) {
+                hash.put(languageId.getLanguage(), languageId.toString());
             }
             hash.put(DatabaseConstants.APP_VERSION, this.applicationVersion);
             hash.put(DatabaseConstants.CREATOR, this.creator);
@@ -203,15 +237,16 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
      * @return
      * @throws IDException if a bad id is found in the specified hash
      */
-    static protected Map<String, String> fetchLanguageTemplatesFromHash(Map<String, String> hash) throws DeserializationException
+    static protected Map<RedisID, String> fetchLanguageTemplatesFromHash(Map<String, String> hash) throws DeserializationException
     {
         try {
             Set<String> keys = hash.keySet();
             Set<String> permittedLanguages = Languages.getPermittedLanguageCodes();
-            Map<String, String> templates = new HashMap<>();
+            Map<RedisID, String> templates = new HashMap<>();
             for (String key : keys) {
                 if (permittedLanguages.contains(key)) {
-                    templates.put(key, Redis.getInstance().fetchStringForId(new RedisID(hash.get(key))));
+                    RedisID languageId = new RedisID(hash.get(key));
+                    templates.put(languageId, Redis.getInstance().fetchStringForId(languageId));
                 }
             }
             if(templates.isEmpty()){
@@ -250,8 +285,9 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
                                                    .append(this.creator)
                                                    .append(this.applicationVersion);
         //all map-pairs "language -> template" must be added to the hashcode, we do this by customly specifying a string containing both
-        for(String language : templates.keySet()){
-            significantFieldsSet = significantFieldsSet.append(language + "->" + templates.get(language));
+        for(RedisID languageId : templates.keySet()){
+            String language = languageId.getLanguage();
+            significantFieldsSet = significantFieldsSet.append(language + "->" + templates.get(languageId));
         }
         return significantFieldsSet.toHashCode();
     }
@@ -277,8 +313,9 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
                                                            .append(this.applicationVersion, abstractTemplateObj.applicationVersion);
                 //check if all templates in different languages are equal and that exactly the same languages are present in both objects
                 significantFieldsSet = significantFieldsSet.append(templates.size(), abstractTemplateObj.templates.size());
-                for(String language : templates.keySet()){
-                    significantFieldsSet = significantFieldsSet.append(templates.get(language), abstractTemplateObj.templates.get(language));
+                for(RedisID languageId : templates.keySet()){
+                    String language = languageId.getLanguage();
+                    significantFieldsSet = significantFieldsSet.append(this.getTemplate(language), abstractTemplateObj.getTemplate(language));
                 }
                 return significantFieldsSet.isEquals();
             }

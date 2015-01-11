@@ -81,7 +81,8 @@ public class ApplicationEndpoint
         try{
             Redis redis = Redis.getInstance();
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
-            RedisID lastVersionId = new RedisID(url, RedisID.LAST_VERSION);
+            //if no language info is specified in the url, or if the specified language doesn't exist, the default language will still be shown
+            RedisID lastVersionId = new RedisID(url, RedisID.LAST_VERSION, true);
             EntityTemplate entityTemplate = redis.fetchEntityTemplate(lastVersionId);
             if(entityTemplate == null){
                 Template template = R.templateEngine().getEmptyTemplate("/views/new-page.html");

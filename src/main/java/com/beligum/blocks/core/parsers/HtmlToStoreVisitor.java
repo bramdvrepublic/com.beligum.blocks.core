@@ -3,6 +3,7 @@ package com.beligum.blocks.core.parsers;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
@@ -19,6 +20,16 @@ import java.net.URL;
  */
 public class HtmlToStoreVisitor extends AbstractVisitor
 {
+    private String language;
+
+    public HtmlToStoreVisitor() throws ParseException {
+        try {
+            this.language = new RedisID(this.pageUrl, RedisID.NO_VERSION, false).getLanguage();
+        }catch (IDException e){
+            throw new ParseException("Could not parse language from page-url '" + this.pageUrl + "'.");
+        }
+    }
+
     @Override
     public Node head(Node node, int depth) throws ParseException
     {
@@ -39,11 +50,10 @@ public class HtmlToStoreVisitor extends AbstractVisitor
                     node.attr(ParserConstants.RESOURCE, resourceUrl);
                 }
                 else{
-                    resourceId = new RedisID(new URL(resourceUrl), RedisID.LAST_VERSION);
+                    resourceId = RedisID.renderLanguagedId(new URL(resourceUrl), RedisID.LAST_VERSION, this.language);
                 }
                 EntityTemplate storedEntityTemplate = Redis.getInstance().fetchEntityTemplate(resourceId);
-                RedisID newVersionId = new RedisID(new URL(resourceUrl), RedisID.NEW_VERSION);
-                String language = getLanguage(node, entityTemplateClass);
+                RedisID newVersionId = RedisID.renderLanguagedId(new URL(resourceUrl), RedisID.NEW_VERSION, this.language);
                 EntityTemplate currentEntityTemplate = new EntityTemplate(newVersionId, entityTemplateClass, node.outerHtml());
                 if (currentEntityTemplate.equals(storedEntityTemplate)) {
                     currentEntityTemplate = storedEntityTemplate;

@@ -15,7 +15,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -55,12 +54,13 @@ public class RedisID extends ID
     /**
      * Constructor taking a URL and a version.
      * @param url a url representing the unique id of an object that can be versioned
+     * @param useDefaultLanguage true if this id should use the default language if no language can be found in the specified url
      * @throws URISyntaxException if the given url cannot be properly used as an ID
      */
-    public RedisID(URL url, long version) throws IDException
+    public RedisID(URL url, long version, boolean useDefaultLanguage) throws IDException
     {
         super(url);
-        this.idUri = initializeLanguageAndUrl(url, true);
+        this.idUri = initializeLanguageAndUrl(url, useDefaultLanguage);
         if(version == LAST_VERSION){
             this.version = Redis.getInstance().getLastVersion(url);
         }
@@ -173,7 +173,10 @@ public class RedisID extends ID
              * Initialize language
              */
             if(language.equals(PRIMARY_LANGUAGE)){
-                this.language = Languages.determinePrimaryLanguage(Redis.getInstance().fetchLanguageAlternatives(new RedisID(this.url, this.version)));
+                this.language = Languages.determinePrimaryLanguage(Redis.getInstance().fetchLanguageAlternatives(new RedisID(this.url, this.version, false)));
+                if(this.language.equals(NO_LANGUAGE)){
+                    this.idUri = initializeLanguageAndUrl(this.url, false);
+                }
             }
             else if(language.equals(NO_LANGUAGE)){
                 this.idUri = initializeLanguageAndUrl(this.url, false);
@@ -181,7 +184,7 @@ public class RedisID extends ID
             else{
                 this.language = language;
             }
-            if(!Languages.getPermittedLanguageCodes().contains(new Locale(this.language).getLanguage())){
+            if(!Languages.isNonEmptyLanguageCode(language) && !language.equals(RedisID.NO_LANGUAGE) && !language.equals(RedisID.PRIMARY_LANGUAGE)){
                 throw new IDException("Found unkown language '" + language + "' while parsing '" + versionedDbId + "'.");
             }
         }catch(Exception e){
@@ -198,6 +201,9 @@ public class RedisID extends ID
     public RedisID(RedisID baseId, String language) throws IDException
     {
         this(baseId.getVersionedId());
+        if(!Languages.isNonEmptyLanguageCode(language) && !language.equals(RedisID.NO_LANGUAGE)){
+            throw new IDException("Cannot add unkown language '" + language + "' to base-id '" + baseId + "'.");
+        }
         this.language = language;
     }
 
@@ -216,6 +222,33 @@ public class RedisID extends ID
 
     public URL getUrl(){
         return url;
+    }
+
+    /**
+     *
+     * @return true if the id has a language-code, false otherwise
+     */
+    public boolean hasLanguage(){
+        if(Languages.isNonEmptyLanguageCode(this.language)){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
+    /**
+     *
+     * @return a url with the id's language incorporated (f.i. http://www.mot.be/en/home)
+     */
+    public URL getLanguagedUrl() throws IDException {
+        try {
+            String newPath = this.url.getPath();
+            newPath = "/" + this.language + newPath;
+            return new URL(this.url.getProtocol(), this.url.getHost(), this.url.getPort(), newPath);
+        }catch (Exception e){
+            throw new IDException("Could not generate url with proper language-references using url '" + this.url + "' and language '" + this.language + "'.");
+        }
     }
 
     /**
@@ -300,6 +333,9 @@ public class RedisID extends ID
                     this.language = Languages.NO_LANGUAGE;
                 }
             }
+            if(!Languages.isNonEmptyLanguageCode(language) && !language.equals(RedisID.NO_LANGUAGE)){
+                throw new IDException("Parsed unkown language '" + language + "' from url '" + url + "'. Cannot add this to a redis-id.");
+            }
             /*
              * Construct the url for this id, using the site-domain specified in the configuration-xml and the previously parsed path (no more language-info is present in it)
              */
@@ -338,9 +374,9 @@ public class RedisID extends ID
     {
         //we're not actually going to the db to determine a new redis-id for a class, it will use a new versioning (current time millis) to get a new version, so we don't actually need to check for that version in db
         try{
-            RedisID newID = new RedisID(new URL(BlocksConfig.getSiteDomain() +  "/" + entityTemplateClassName), NEW_VERSION);
+            RedisID newID = new RedisID(new URL(BlocksConfig.getSiteDomain() +  "/" + entityTemplateClassName), NEW_VERSION, true);
             while(Redis.getInstance().fetchEntityTemplateClass(newID) != null){
-                newID = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClassName), NEW_VERSION);
+                newID = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClassName), NEW_VERSION, true);
             }
             newID.language = language;
             return newID;
@@ -358,7 +394,7 @@ public class RedisID extends ID
     public static String renderUnversionedEntityTemplateClassID(String entityTemplateClassName) throws IDException
     {
         try{
-            return new RedisID(new URL(BlocksConfig.getSiteDomain() +  "/" + entityTemplateClassName), NO_VERSION).getUnversionedId();
+            return new RedisID(new URL(BlocksConfig.getSiteDomain() +  "/" + entityTemplateClassName), NO_VERSION, true).getUnversionedId();
         }catch(MalformedURLException e){
             throw new IDException("Could not construct id from site-domain '" + BlocksConfig.getSiteDomain() + "' and name '" + entityTemplateClassName + "'.", e);
         }
@@ -372,9 +408,9 @@ public class RedisID extends ID
     public static RedisID renderNewPageTemplateID(String pageTemplateName, String language) throws IDException
     {
         try{
-            RedisID newId = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName), NEW_VERSION);
+            RedisID newId = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName), NEW_VERSION, true);
             while(Redis.getInstance().fetchPageTemplate(newId) != null){
-                newId = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName), NEW_VERSION);
+                newId = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName), NEW_VERSION, true);
             }
             newId.language = language;
             return newId;
@@ -392,7 +428,7 @@ public class RedisID extends ID
     public static String renderUnversionedPageTemplateID(String pageTemplateName) throws IDException
     {
         try{
-            return new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName), NO_VERSION).getUnversionedId();
+            return new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName), NO_VERSION, false).getUnversionedId();
         }catch(MalformedURLException e){
             throw new IDException("Could not construct id from site-domain '" + BlocksConfig.getSiteDomain() + "' and name '" + pageTemplateName + "'.", e);
         }
@@ -423,35 +459,32 @@ public class RedisID extends ID
             if(!StringUtils.isEmpty(propertyName)){
                 url += "/" + propertyName;
             }
-            RedisID newID = new RedisID(new URL(url), NEW_VERSION);
+            RedisID newID = new RedisID(new URL(url), NEW_VERSION, false);
             while(Redis.getInstance().fetchEntityTemplate(newID) != null){
-                newID = new RedisID(new URL(url), NEW_VERSION);
+                newID = new RedisID(new URL(url), NEW_VERSION, false);
             }
-            EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(owningEntityClassName);
-            newID.language = entityTemplateClass.getLanguage();
+            if(!newID.hasLanguage()) {
+                EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(owningEntityClassName);
+                newID.language = entityTemplateClass.getLanguage();
+            }
             return newID;
         }catch(Exception  e){
             throw new IDException("Couldn't construct proper id with '" + BlocksConfig.getSiteDomain() + "/" + owningEntityClassName + "#" + property + "/" + propertyName + "'", e);
         }
     }
 
+
+
     /**
-     * Use the specified languages to turn an id without a language into one holding a primary language.
-     * This method uses the preferred order of languages specified in the configuration-xml
-     * @param id id to be copied to one with a correct language
-     * @param languages a set of languages to choose from, if this set is empty, the constant Languages.NO_LANGUAGE will be the language of the returned id
-     * @return
-     * @throws IDException
+     *
+     * @param url
+     * @param version
+     * @param language
+     * @return an id with the specified base-url (without language-information), version and language
      */
-    public static RedisID renderLanguagedId(RedisID id, Set<String> languages) throws IDException
-    {
-        if(id.getLanguage() == null || id.getLanguage().equals(Languages.NO_LANGUAGE)){
-            String primaryLanguage = Languages.determinePrimaryLanguage(languages);
-            return new RedisID(id, primaryLanguage);
-        }
-        else{
-            return id;
-        }
+    public static RedisID renderLanguagedId(URL url, long version, String language) throws IDException {
+        RedisID languagedId = new RedisID(url, version, false);
+        return new RedisID(languagedId, language);
     }
 
     /**

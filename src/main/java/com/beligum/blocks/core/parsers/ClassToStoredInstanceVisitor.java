@@ -30,12 +30,17 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
     /**
      *
      * @param pageUrl
+     * @param language the language the new instance will have
      * @throws IDException if the specified page-url cannot be used as an id
      */
-    public ClassToStoredInstanceVisitor(URL pageUrl) throws IDException
+    public ClassToStoredInstanceVisitor(URL pageUrl, String language) throws ParseException
     {
-        this.pageUrl = pageUrl;
-        this.language = new RedisID(pageUrl, RedisID.LAST_VERSION).getLanguage();
+        try{
+            this.pageUrl = new RedisID(pageUrl, RedisID.LAST_VERSION, false).getUrl();
+            this.language = language;
+        }catch(Exception e){
+            throw new ParseException("Could not initialize " + ClassToStoredInstanceVisitor.class.getSimpleName() + ".", e);
+        }
     }
 
     @Override
@@ -72,8 +77,12 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                     RedisID defaultEntityId = new RedisID(unversionedResourceId, RedisID.LAST_VERSION, language);
                     // Fetch the default value in the db for this resource
                     EntityTemplate defaultEntityTemplate = Redis.getInstance().fetchEntityTemplate(defaultEntityId);
+                    //if no such default-entity exists, we're probably dealing with a new language, so we need to return a copy of primary language
                     if(defaultEntityTemplate == null){
-                        throw new ParseException("Found bad reference. Not present in db: " + defaultEntityId);
+                        defaultEntityTemplate = Redis.getInstance().fetchEntityTemplate(new RedisID(unversionedResourceId, RedisID.LAST_VERSION, RedisID.PRIMARY_LANGUAGE));
+                        if(defaultEntityTemplate == null){
+                            throw new ParseException("Found bad reference. No primary language present in db: " + defaultEntityId);
+                        }
                     }
                     // Fetch the class for this resource
                     EntityTemplateClass entityClass = EntityTemplateClassCache.getInstance().get(typeOf);
@@ -88,7 +97,8 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                 throw e;
             }
             catch (Exception e) {
-                throw new ParseException("Could not parse an " + EntityTemplate.class.getSimpleName() + " from " + Node.class.getSimpleName() + " " + node, e);
+                throw new ParseException("Could not parse an " + EntityTemplate.class.getSimpleName() + " from " + Node.class.getSimpleName() + " ÷" +
+                        "\n \n " + node + "\n \n ", e);
             }
         }
         return node;
@@ -104,7 +114,7 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                 RedisID newEntityId;
                 // For the first root entity use pageUrl if available
                 if (newInstancesNodes.size() == 1 && pageUrl != null) {
-                    newEntityId = new RedisID(pageUrl, RedisID.NEW_VERSION);
+                    newEntityId = RedisID.renderLanguagedId(pageUrl, RedisID.NEW_VERSION, this.language);
                 }
                 //else render a new entity-template-id
                 else{

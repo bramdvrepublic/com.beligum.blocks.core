@@ -41,7 +41,9 @@ public class TemplateParser
 
     /**
      * Save a new entity-template-instance of class 'entityTemplateClass' to db, and also all it's children.
-     * @param language the language the new entity is written in, if no such language is specified the primary language of the entity-class is used
+     * @param language the language the new entity is written in (must be the same as specified in pageUrl-parameter,
+     *                 if one is present there), if no such language is specified the primary language
+     *                 of the entity-class is used
      * @param entityTemplateClass
      * @return the url of the freshly saved template
      */
@@ -53,12 +55,12 @@ public class TemplateParser
                 language = entityTemplateClass.getLanguage();
             }
             Element doc = parse(entityTemplateClass.getTemplate(language));
-            ClassToStoredInstanceVisitor visitor = new ClassToStoredInstanceVisitor(pageURL);
+            ClassToStoredInstanceVisitor visitor = new ClassToStoredInstanceVisitor(pageURL, language);
             Traversor traversor = new Traversor(visitor);
             traversor.traverse(doc);
             pageStringId = visitor.getReferencedId(doc.child(0));
             RedisID pageId = new RedisID(pageStringId, RedisID.NO_VERSION, language);
-            return pageId.getUrl();
+            return pageId.getLanguagedUrl();
         }
         catch(IDException e){
             throw new ParseException("Couldn't construct url for new " + EntityTemplate.class.getSimpleName() + "-instance: " + pageStringId, e);
