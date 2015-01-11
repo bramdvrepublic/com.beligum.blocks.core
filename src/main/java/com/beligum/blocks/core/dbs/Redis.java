@@ -118,9 +118,8 @@ public class Redis implements Closeable
                     }
                     Map<String, String> templateHash = template.toHash();
                     Map<RedisID, String> languageTemplates = template.getTemplates();
-                    Set<RedisID> languageIds = languageTemplates.keySet();
-                    for(RedisID languageId : languageIds){
-                        pipelinedSaveTransaction.set(languageId.getLanguage(), languageId.toString());
+                    for(RedisID languageId : languageTemplates.keySet()){
+                        pipelinedSaveTransaction.set(languageId.toString(), languageTemplates.get(languageId));
                     }
                     pipelinedSaveTransaction.hmset(template.getVersionedId(), templateHash);
 
@@ -171,7 +170,7 @@ public class Redis implements Closeable
      * Get the specified version of a template.
      * @param id the id of the template in db
      * @param type The sort of template to be fetched
-     * @return a template of the specified type
+     * @return a template of the specified type, or null if no such template is present in db, or if no language information is present in the id
      * @throws RedisException
      */
     public AbstractTemplate fetchTemplate(RedisID id, Class<? extends AbstractTemplate> type) throws RedisException

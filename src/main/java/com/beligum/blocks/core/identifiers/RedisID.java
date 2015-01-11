@@ -54,7 +54,8 @@ public class RedisID extends ID
     /**
      * Constructor taking a URL and a version.
      * @param url a url representing the unique id of an object that can be versioned
-     * @param useDefaultLanguage true if this id should use the default language if no language can be found in the specified url
+     * @param useDefaultLanguage true if this id should use the default language if no language can be found in the specified url, if this is set to false,
+     *                           RedisID.NO_LANGAUAGE will be returned if no language-info is found the specified url
      * @throws URISyntaxException if the given url cannot be properly used as an ID
      */
     public RedisID(URL url, long version, boolean useDefaultLanguage) throws IDException
@@ -175,7 +176,8 @@ public class RedisID extends ID
             if(language.equals(PRIMARY_LANGUAGE)){
                 this.language = Languages.determinePrimaryLanguage(Redis.getInstance().fetchLanguageAlternatives(new RedisID(this.url, this.version, false)));
                 if(this.language.equals(NO_LANGUAGE)){
-                    this.idUri = initializeLanguageAndUrl(this.url, false);
+                    //TODO BAS!: need to check this behaviour
+                    this.idUri = initializeLanguageAndUrl(this.url, true);
                 }
             }
             else if(language.equals(NO_LANGUAGE)){
@@ -201,6 +203,10 @@ public class RedisID extends ID
     public RedisID(RedisID baseId, String language) throws IDException
     {
         this(baseId.getVersionedId());
+        if(language.equals(RedisID.PRIMARY_LANGUAGE)){
+            Set<String> languageAlternatives = Redis.getInstance().fetchLanguageAlternatives(baseId);
+            language = Languages.determinePrimaryLanguage(languageAlternatives);
+        }
         if(!Languages.isNonEmptyLanguageCode(language) && !language.equals(RedisID.NO_LANGUAGE)){
             throw new IDException("Cannot add unkown language '" + language + "' to base-id '" + baseId + "'.");
         }
@@ -299,6 +305,7 @@ public class RedisID extends ID
      * Also change the site-domain of the url to the site-alias specified in the configuration-file.
      * @param url the url to be parsed
      * @param useSitesPreferredLanguage set to true if you want this method to use the site's preferred languages if no language can be parsed from the url
+     *                                  when this is set to false, the constant RedisID.NO_LANGUAGE could be found in this ID
      * @return a uri corresponding to the specified url, with the language-information removed, or null if something went wrong
      */
     private URI initializeLanguageAndUrl(URL url, boolean useSitesPreferredLanguage) throws IDException

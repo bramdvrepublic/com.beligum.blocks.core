@@ -107,6 +107,7 @@ public class Languages
             if(languages.contains(preferredLanguages[i])){
                 primaryLanguage = preferredLanguages[i];
             }
+            i++;
         }
         if(primaryLanguage == null){
             primaryLanguage = languages.iterator().next();

@@ -7,6 +7,7 @@ import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import org.apache.commons.lang3.StringUtils;
@@ -30,14 +31,20 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
     /**
      *
      * @param pageUrl
-     * @param language the language the new instance will have
+     * @param language the language the new instance will have, if this is not a correct language, the default language will be used
      * @throws IDException if the specified page-url cannot be used as an id
      */
     public ClassToStoredInstanceVisitor(URL pageUrl, String language) throws ParseException
     {
         try{
-            this.pageUrl = new RedisID(pageUrl, RedisID.LAST_VERSION, false).getUrl();
-            this.language = language;
+            RedisID temp = new RedisID(pageUrl, RedisID.LAST_VERSION, true);
+            this.pageUrl = temp.getUrl();
+            if(Languages.isNonEmptyLanguageCode(language)) {
+                this.language = language;
+            }
+            else{
+                this.language = temp.getLanguage();
+            }
         }catch(Exception e){
             throw new ParseException("Could not initialize " + ClassToStoredInstanceVisitor.class.getSimpleName() + ".", e);
         }
@@ -77,12 +84,8 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                     RedisID defaultEntityId = new RedisID(unversionedResourceId, RedisID.LAST_VERSION, language);
                     // Fetch the default value in the db for this resource
                     EntityTemplate defaultEntityTemplate = Redis.getInstance().fetchEntityTemplate(defaultEntityId);
-                    //if no such default-entity exists, we're probably dealing with a new language, so we need to return a copy of primary language
                     if(defaultEntityTemplate == null){
-                        defaultEntityTemplate = Redis.getInstance().fetchEntityTemplate(new RedisID(unversionedResourceId, RedisID.LAST_VERSION, RedisID.PRIMARY_LANGUAGE));
-                        if(defaultEntityTemplate == null){
-                            throw new ParseException("Found bad reference. No primary language present in db: " + defaultEntityId);
-                        }
+                        throw new ParseException("Found bad reference. Not present in db: " + defaultEntityId);
                     }
                     // Fetch the class for this resource
                     EntityTemplateClass entityClass = EntityTemplateClassCache.getInstance().get(typeOf);

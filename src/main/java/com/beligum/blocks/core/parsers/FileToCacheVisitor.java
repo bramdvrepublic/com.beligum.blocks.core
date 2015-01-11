@@ -104,7 +104,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                         EntityTemplate propertyInstance;
                         String language = getLanguage(element, entityTemplateClass);
                         if(needsBlueprint(element)) {
-                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language), entityTemplateClass, entityTemplateClass.getTemplates());
+                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language), entityTemplateClass);
                         }
                         else{
                             propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language), entityTemplateClass, element.outerHtml());
@@ -118,7 +118,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                         node = replaceElementWithPropertyReference(element);
                     }
                     else if(needsBlueprint(element)){
-                        EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass), entityTemplateClass, entityTemplateClass.getTemplates());
+                        EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass), entityTemplateClass);
                         Redis.getInstance().save(defaultEntity);
                         node = replaceElementWithEntityReference(element, defaultEntity);
                     }
@@ -222,7 +222,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                 return EntityTemplateClassCache.getInstance().get(entityClassName);
             }
             else{
-                throw new Exception(Node.class.getSimpleName() + " '" + classRoot + "' does not define an entity.");
+                throw new ParseException(Node.class.getSimpleName() + " '" + classRoot + "' does not define an entity.");
             }
         }
         catch(Exception e){

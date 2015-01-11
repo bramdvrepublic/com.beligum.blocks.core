@@ -22,8 +22,9 @@ public class HtmlToStoreVisitor extends AbstractVisitor
 {
     private String language;
 
-    public HtmlToStoreVisitor() throws ParseException {
+    public HtmlToStoreVisitor(URL pageUrl) throws ParseException {
         try {
+            this.pageUrl = pageUrl;
             this.language = new RedisID(this.pageUrl, RedisID.NO_VERSION, false).getLanguage();
         }catch (IDException e){
             throw new ParseException("Could not parse language from page-url '" + this.pageUrl + "'.");

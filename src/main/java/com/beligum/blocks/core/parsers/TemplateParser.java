@@ -120,10 +120,10 @@ public class TemplateParser
         return classDOM.outerHtml();
     }
 
-    public static URL updateEntity(String html) throws ParseException
+    public static URL updateEntity(URL entityUrl, String html) throws ParseException
     {
         Document newDOM = parse(html);
-        Traversor traversor = new Traversor(new HtmlToStoreVisitor());
+        Traversor traversor = new Traversor(new HtmlToStoreVisitor(entityUrl));
         traversor.traverse(newDOM);
         return traversor.getPageUrl();
     }

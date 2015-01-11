@@ -13,6 +13,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -28,19 +29,45 @@ public class EntityTemplate extends AbstractTemplate implements Storable
 
     /**
      *
-     * Constructor for a new entity-instance of a certain entity-class.
+     * Constructor for a new entity-instance of a certain entity-class. It will uses copies of the templates of the entity-class.
      * It's UID will be the of the form "[url]:[version]". It uses the current application version and the currently logged in user for field initialization.
-     * @param id the id of this entity
-     * @param templates the map of templates (languageId -> template) which represent the content of this template, it should at least contain a pair from the language present in the id to a html-template
-     * @param entityTemplateClass the class of which this entity is a entity-instance
+     * @param id the id of this entity* @param entityTemplateClass the class of which this entity is a entity-instance
      * @throw IDException if no template in the language specified by the id could be found in the templates-map
      */
-    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, Map<RedisID, String> templates) throws IDException
+    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass) throws IDException
     {
-        super(id, templates);
+        super(id, (Map) null);
+        this.templates = new HashMap<>();
+        Map<RedisID, String> classTemplates = entityTemplateClass.getTemplates();
+        for(RedisID classTemplateId : classTemplates.keySet()){
+            this.templates.put(new RedisID(id, classTemplateId.getLanguage()), classTemplates.get(classTemplateId));
+        }
         this.entityTemplateClassName = entityTemplateClass.getName();
         this.pageTemplateName = entityTemplateClass.getPageTemplateName();
         if(!this.getLanguages().contains(id.getLanguage())){
+            throw new IDException("No html-template in language '" + id.getLanguage() + "' found between templates.");
+        }
+    }
+
+    /**
+     *
+     * Constructor for a new entity-instance of a certain entity-class. It will uses copies of the templates of the entity-class.
+     * It's UID will be the of the form "[url]:[version]". It uses the current application version and the currently logged in user for field initialization.
+     * @param id the id of this entity* @param entityTemplateClass the class of which this entity is a entity-instance
+     * @param templatesToBeCopied a map (languageId -> html-template) with all language-templates, only the language present in the keys of the map will be used to put into this maps templates
+     *                  this can be used to copy one template's language-templates to another one
+     * @throw IDException if no template in the language specified by the id could be found in the templates-map, or if that map was empty
+     */
+    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, Map<RedisID, String> templatesToBeCopied) throws IDException
+    {
+        super(id, (Map) null);
+        this.templates = new HashMap<>();
+        for(RedisID classTemplateId : templatesToBeCopied.keySet()){
+            this.templates.put(new RedisID(id, classTemplateId.getLanguage()), templatesToBeCopied.get(classTemplateId));
+        }
+        this.entityTemplateClassName = entityTemplateClass.getName();
+        this.pageTemplateName = entityTemplateClass.getPageTemplateName();
+        if(!this.getLanguages().contains(id.getLanguage()) || templatesToBeCopied.isEmpty()){
             throw new IDException("No html-template in language '" + id.getLanguage() + "' found between templates.");
         }
     }

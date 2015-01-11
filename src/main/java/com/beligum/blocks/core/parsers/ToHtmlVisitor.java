@@ -14,6 +14,8 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
+import java.util.Set;
+
 /**
 * Created by wouter on 23/11/14.
  * Visitor holding all functionalities to go from a stored entity-templates to a html-page
@@ -180,7 +182,12 @@ public class ToHtmlVisitor extends AbstractVisitor
                 RedisID referencedId = new RedisID(id, RedisID.LAST_VERSION, language);
                 EntityTemplate instanceTemplate = Redis.getInstance().fetchEntityTemplate(referencedId);
                 if(instanceTemplate == null){
-                    throw new ParseException("Found bad reference. Not found in db: " + referencedId);
+                    //the specified language could not be found in db, fetch primary language
+                    referencedId = new RedisID(referencedId, RedisID.PRIMARY_LANGUAGE);
+                    instanceTemplate = Redis.getInstance().fetchEntityTemplate(referencedId);
+                    if(instanceTemplate == null) {
+                        throw new ParseException("Found bad reference. Not found in db: " + referencedId);
+                    }
                 }
                 Element instanceTemplateRoot = TemplateParser.parse(instanceTemplate.getTemplate(language)).child(0);
                 if(StringUtils.isEmpty(getResource(instanceTemplateRoot)) &&

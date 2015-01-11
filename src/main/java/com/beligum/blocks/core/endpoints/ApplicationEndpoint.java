@@ -82,24 +82,34 @@ public class ApplicationEndpoint
             Redis redis = Redis.getInstance();
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
             //if no language info is specified in the url, or if the specified language doesn't exist, the default language will still be shown
-            RedisID lastVersionId = new RedisID(url, RedisID.LAST_VERSION, true);
-            EntityTemplate entityTemplate = redis.fetchEntityTemplate(lastVersionId);
-            if(entityTemplate == null){
-                Template template = R.templateEngine().getEmptyTemplate("/views/new-page.html");
-                List<EntityTemplateClass> entityTemplateClasses = EntityTemplateClassCache.getInstance().values();
-                //TODO BAS: find general way to split entity-classes to be shown when creating a new page and when creating a new block in frontend
-                List<EntityTemplateClass> pageClasses = new ArrayList<>();
-                for(EntityTemplateClass entityTemplateClass : entityTemplateClasses){
-                    if(entityTemplateClass.getName().contains("-page")){
-                        pageClasses.add(entityTemplateClass);
+            RedisID lastVersionId = new RedisID(url, RedisID.LAST_VERSION, false);
+            if(lastVersionId.getVersion() == RedisID.NO_VERSION || lastVersionId.hasLanguage()) {
+                EntityTemplate entityTemplate = redis.fetchEntityTemplate(lastVersionId);
+                if (entityTemplate == null) {
+                    Template template = R.templateEngine().getEmptyTemplate("/views/new-page.html");
+                    List<EntityTemplateClass> entityTemplateClasses = EntityTemplateClassCache.getInstance().values();
+                    //TODO BAS: find general way to split entity-classes to be shown when creating a new page and when creating a new block in frontend
+                    List<EntityTemplateClass> pageClasses = new ArrayList<>();
+                    for (EntityTemplateClass entityTemplateClass : entityTemplateClasses) {
+                        if (entityTemplateClass.getName().contains("-page")) {
+                            pageClasses.add(entityTemplateClass);
+                        }
                     }
+                    template.set(ParserConstants.ENTITY_URL, RequestContext.getRequest().getRequestURL().toString());
+                    template.set(ParserConstants.ENTITY_CLASSES, pageClasses);
+                    return Response.ok(template).build();
                 }
-                template.set(ParserConstants.ENTITY_URL, RequestContext.getRequest().getRequestURL().toString());
-                template.set(ParserConstants.ENTITY_CLASSES, pageClasses);
-                return Response.ok(template).build();
+                String page = entityTemplate.renderEntityInPageTemplate();
+                return Response.ok(page).build();
             }
-            String page = entityTemplate.renderEntityInPageTemplate();
-            return Response.ok(page).build();
+            else{
+                RedisID pageId = new RedisID(lastVersionId, RedisID.PRIMARY_LANGUAGE);
+                //if no primary language can be found in db, it means the page is not present in db
+                if(!pageId.hasLanguage()){
+                    throw new NotFoundException("Couldn't find " + pageId.getUrl());
+                }
+                return Response.seeOther(pageId.getLanguagedUrl().toURI()).build();
+            }
         }
         catch(Exception e){
             throw new NotFoundException("The page '" + randomURLPath + "' could not be found.", e);
