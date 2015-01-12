@@ -32,6 +32,14 @@ Is done in 4 visiting-lines:
  - From stored entity-templates in db to html (ON READ)
  - From html received from client to updated instances in db (ON UPDATE)
 
+##Html- and CSS-'rules'
+ - Only page-templates can hold bootstrap-containers (entities should never be containers, and no containers should ever be used in entities)
+ - No bootstrap-layout should be added to a typeof- or property-tag (= entity-tag)
+ - If a entity-tag has can-layout, then the first elementy inside the entity must be a row
+ - CSS-id's should only be used in page-templates, never inside entities. All css-styling should be achieved without use of id's
+ - The css-rules for a certain entity will probably be grouped inside a class with the same name as the entity-class. These rules should be able to properly render the entity independently of any other css-rules.
+
+
 #Redis
  - Only Storables can be saved to db
  - The method 'toHash()' in Storable decides which info is saved to db in hash-form. This method should be overwritten manually. (It is saved under "[templateId]:[version]")
@@ -42,6 +50,7 @@ Is done in 4 visiting-lines:
  - The only exceptions TemplateParser.class throws (publicly) are ParseExceptions. Their cause can of course be all sorts of other exceptions.
  - The only exceptions AbstractTemplatesCache.class throws (publicly) are CacheExceptions. Their cause can of course be all sorts of other exceptions.
  - The only exceptions RedisID.class throws (publicly) are IDExceptions. Their cause can of course be all sorts of other exceptions.
+ - The toHash()-method in all Storables can throw SerializationExceptions, the createInstanceFromHash()-methods in all templates can throw DeserializationExceptions.
  
 #Page-templates
  - Should be defined using "template=..."- and "template-content"-attributes
@@ -53,3 +62,7 @@ Is done in 4 visiting-lines:
      \<div template-content reference-to="entity\> \</div\>
   \</body\>
   \</html\>
+
+  #Internationalization
+   - Preferred languages can be specified in the configuration-xml under "blocks.site.languages", as a list, in order from most preferred language to least preferred language.
+   - Languages should always be represented as a (2 letter) ISO 639 language-code.

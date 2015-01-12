@@ -8,9 +8,9 @@ import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.models.templates.PageTemplate;
-import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
+import com.beligum.blocks.core.models.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
@@ -102,48 +102,41 @@ public class FileToCacheVisitor extends AbstractVisitor
                     if(this.isParsingClassToBeCached()) {
                         element.removeAttr(ParserConstants.BLUEPRINT);
                         EntityTemplate propertyInstance;
+                        String language = getLanguage(element, entityTemplateClass);
                         if(needsBlueprint(element)) {
-                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element)), entityTemplateClass, entityTemplateClass.getTemplate());
+                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language), entityTemplateClass);
                         }
                         else{
-                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element)), entityTemplateClass, element.outerHtml());
+                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language), entityTemplateClass, element.outerHtml());
                         }
-                        RedisID lastVersion = new RedisID(propertyInstance.getUnversionedId(), RedisID.LAST_VERSION);
+                        RedisID lastVersion = new RedisID(propertyInstance.getUnversionedId(), RedisID.LAST_VERSION, language);
                         EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
                         //if no version is present in db, or this version is different, save to db
                         if (storedInstance == null || !storedInstance.equals(propertyInstance)) {
                             Redis.getInstance().save(propertyInstance);
                         }
-                        //TODO BAS SH: blijkbaar passeren we hier nooit!?! Dat zou niet mogen, want anders worden er nergen id's van de vorm blocks://LOC/waterput#location/locationName aangemaakt!!!
                         node = replaceElementWithPropertyReference(element);
                     }
                     else if(needsBlueprint(element)){
-                        EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass), entityTemplateClass, entityTemplateClass.getTemplate());
+                        EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass, entityTemplateClass.getLanguage()), entityTemplateClass);
                         Redis.getInstance().save(defaultEntity);
                         node = replaceElementWithEntityReference(element, defaultEntity);
                     }
                     //if no new class is being parsed, we are parsing a default-instance of a certain type
                     else{
-                        EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass), entityTemplateClass, element.outerHtml());
+                        EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass, entityTemplateClass.getLanguage()), entityTemplateClass, element.outerHtml());
                         Redis.getInstance().save(defaultEntity);
                         node = replaceElementWithEntityReference(element, defaultEntity);
                     }
                 }
-                else if(this.typeOfStack.size()>0){
-                    Element entityTemplateClassRoot = TemplateParser.parse(entityTemplateClass.getTemplate()).child(0);
-                    entityTemplateClassRoot.removeAttr(ParserConstants.BLUEPRINT);
-                    EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass, entityTemplateClassRoot.outerHtml());
-
-//                    EntityTemplate instance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass),entityTemplateClass, element.outerHtml());
-                    RedisID lastVersion = new RedisID(instance.getUnversionedId(), RedisID.LAST_VERSION);
-                    EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
-                    //if no version is present in db, or this version is different, save to db
-                    if(storedInstance == null || !storedInstance.equals(instance)) {
-                        Redis.getInstance().save(instance);
+                else if(this.typeOfStack.size()>0) {
+                    /*
+                     * If we find an entity which is not a property, we throw an exception, since this makes no rdf-sense.
+                     * However, if the node is the head-node of a class-blueprint, no property-attribute is expected, and so then no error is thrown
+                     */
+                    if (!(this.typeOfStack.size() == 1 && isBlueprint(this.typeOfStack.peek()))) {
+                        throw new ParseException("Found entity-child with typeof-attribute, but no property-attribute at \n \n " + element + "\n \n");
                     }
-                    node = replaceElementWithEntityReference(element, instance);
-                    //TODO BAS: throw exception in this case, since it makes no rdf-sense!, change this for all visitors!
-//                    throw new ParseException("Found entity-child with typeof-attribute, but no property-attribute at \n \n " + element + "\n \n");
                 }
                 else{
                     //do nothing, since we have found the ending of the outer-most typeof-tag
@@ -200,12 +193,12 @@ public class FileToCacheVisitor extends AbstractVisitor
                     pageTemplateName = this.pageTemplateName;
                 }
                 Elements classProperties = classRoot.select("[" + ParserConstants.PROPERTY + "]");
+                //the class-root is not a property of this class, so if it contains the "property"-attribute, it is removed from the list
+                classProperties.remove(classRoot);
                 //since we are sure to be working with class-properties, we now all of them will hold an attribute "property", so we can use this in a comparator to sort all elements according to the property-value
-                Collections.sort(classProperties, new Comparator<Element>()
-                {
+                Collections.sort(classProperties, new Comparator<Element>() {
                     @Override
-                    public int compare(Element classProperty1, Element classProperty2)
-                    {
+                    public int compare(Element classProperty1, Element classProperty2) {
                         return getProperty(classProperty1).compareTo(getProperty(classProperty2));
                     }
                 });
@@ -219,16 +212,17 @@ public class FileToCacheVisitor extends AbstractVisitor
                         String previousClassPropertyName = getPropertyName(previousClassProperty);
                         String classPropertyName = getPropertyName(classProperty);
                         if(StringUtils.isEmpty(previousClassPropertyName) || StringUtils.isEmpty(classPropertyName)){
-                            throw new ParseException("Found two class-properties with same property-value '\" + previousClassPropertyValue + \"' and no name-attribute to distinguish them at \n \n" + classRoot + "\n \n");
+                            throw new ParseException("Found two class-properties with same property-value '" + previousClassPropertyValue + "' and no name-attribute to distinguish them at \n \n" + classRoot + "\n \n");
                         }
                     }
                 }
-                EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, classRoot.outerHtml(), pageTemplateName);
+                String language = getLanguage(classRoot, null);
+                EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, language, classRoot.outerHtml(), pageTemplateName);
                 EntityTemplateClassCache.getInstance().replace(entityTemplateClass);
                 return EntityTemplateClassCache.getInstance().get(entityClassName);
             }
             else{
-                throw new Exception(Node.class.getSimpleName() + " '" + classRoot + "' does not define an entity.");
+                throw new ParseException(Node.class.getSimpleName() + " '" + classRoot + "' does not define an entity.");
             }
         }
         catch(Exception e){
@@ -260,7 +254,8 @@ public class FileToCacheVisitor extends AbstractVisitor
                 Node replacement = this.replaceElementWithReference(contentNode, ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME);
                 //we need to instanciate the cache first, so a default-template surely will be cached with an older version than the page-template we're about to make
                 PageTemplateCache cache = PageTemplateCache.getInstance();
-                PageTemplate pageTemplate = new PageTemplate(templateName, parent.outerHtml());
+                String language = getLanguage(parent, null);
+                PageTemplate pageTemplate = new PageTemplate(templateName, language, parent.outerHtml());
                 replacement.replaceWith(contentNode);
                 boolean added = cache.add(pageTemplate);
                 //default page-templates should be added to the cache no matter what, so the last one encountered is kept

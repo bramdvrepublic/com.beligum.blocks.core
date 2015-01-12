@@ -1,6 +1,7 @@
 blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overlay", "blocks.core.DomManipulation", function(Broadcaster, Overlay, DOM) {
     var Edit = this;
     var editor = null;
+    var lastPoint = {x:0, y:0};
 
     var isIframe = function(currentBlock) {
         return currentBlock.element.find("iframe").length == 1;
@@ -10,10 +11,9 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
     $(document).on(Broadcaster.EVENTS.CLICK_BLOCK, function(event) {
         event.preventDefault();
         event.stopPropagation();
-//        if (event.block != null && event.block.current != null && enabled(event.block.current)) {
-
-            Edit.editBlock(event);
-//        }
+        lastPoint.x = event.pageX;
+        lastPoint.y = event.pageY;
+        Edit.editBlock(event);
     });
 
     this.editBlock = function(event) {
@@ -45,6 +45,7 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
     var doEditText = function(element) {
 
         Overlay.createForElement(element, function () {
+            element.off("click.blocks-edit");
             removeEditor();
             Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
@@ -55,6 +56,11 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
         Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         $(element).attr("contenteditable", true);
         $(element).focus();
+
+        element.on("click.blocks-edit", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        });
 
         var zindex = $(element).css("z-index");
         editor = $(element).ckeditor().editor;
@@ -67,6 +73,7 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
 
         Overlay.createForElement(element, function () {
             element.off("click.blocks-edit");
+            Overlay.unhighlightElementAsProperty(element);
             Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
             element.removeAttr("contenteditable");
@@ -75,11 +82,16 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
 
         Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         element.attr("contenteditable", true);
+        Overlay.highlightElementAsProperty(element);
         editor = new Medium({element: element[0], mode: Medium.inlineMode});
         element.on("click.blocks-edit", function(e) {
             e.preventDefault();
             e.stopPropagation();
         });
+//        var sel = window.getSelection();
+//        sel.removeAllRanges();
+//        var clickRange = document.caretRangeFromPoint(lastPoint.x - element.offset().x, lastPoint.y - element.offset().y);
+//        sel.addRange(clickRange);
         element.focus();
     };
 

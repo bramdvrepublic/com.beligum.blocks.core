@@ -5,6 +5,7 @@ import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import org.apache.commons.lang3.StringUtils;
@@ -13,13 +14,29 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
+import javax.swing.text.html.parser.Entity;
+import java.util.Set;
+
 /**
 * Created by wouter on 23/11/14.
  * Visitor holding all functionalities to go from a stored entity-templates to a html-page
 */
 public class ToHtmlVisitor extends AbstractVisitor
 {
+    /**the preferred language we want to render html in*/
+    private final String language;
 
+    /**
+     *
+     * @param language the preferred language we want to render html in
+     * @throws ParseException if no known language was specified
+     */
+    public ToHtmlVisitor(String language) throws ParseException {
+        this.language = Languages.getStandardizedLanguage(language);
+        if(!Languages.isNonEmptyLanguageCode(this.language)){
+            throw new ParseException("Found unknown language '" + this.language + "'.");
+        }
+    }
 
     @Override
     public Node head(Node node, int depth) throws ParseException
@@ -29,22 +46,41 @@ public class ToHtmlVisitor extends AbstractVisitor
             if(isEntity(node) && node instanceof Element) {
                 Element entityRoot = (Element) node;
                 EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
-                Element entityClassRoot = TemplateParser.parse(entityTemplateClass.getTemplate()).child(0);
+                Element entityClassRoot = TemplateParser.parse(entityTemplateClass.getTemplate(language)).child(0);
 
                 //if no modifacations can be done, first we fill in the correct property-references, coming from the class
-                if(!(isModifiable(entityRoot) && isModifiable(entityClassRoot))){
-                    node = copyProperties(entityRoot, entityClassRoot);
+                if(useClass(entityRoot, entityClassRoot)){
+                    node = copyPropertiesToClassTemplate(entityRoot, entityClassRoot);
                 }
                 //if this is a referencing block, replace it
                 node = replaceWithReferencedInstance(node);
             }
             return node;
         }
-        catch(ParseException e){
-            throw e;
-        }
         catch(Exception e){
             throw new ParseException("Error while parsing node '" + node.nodeName() + "' at tree depth '" + depth + "' to html.", e);
+        }
+    }
+
+    /**
+     * Determines wether or not the class-template should be used, or rather the instance itself. This is done using isModifiable(entityRoot) and isModifiable(entityClassRoot)
+     * @param entityRoot
+     * @param entityClassRoot
+     * @return
+     */
+    private boolean useClass(Element entityRoot, Element entityClassRoot){
+        boolean entityIsModifiable = isModifiable(entityRoot);
+        boolean entityClassIsModifiable = isModifiable(entityClassRoot);
+        if(entityClassIsModifiable){
+            return false;
+        }
+        else{
+            if(entityIsModifiable){
+                return false;
+            }
+            else{
+                return true;
+            }
         }
     }
 
@@ -54,7 +90,14 @@ public class ToHtmlVisitor extends AbstractVisitor
         return super.tail(node, depth);
     }
 
-    private Node copyProperties(Element fromInstanceRoot, Element toClassRoot) throws ParseException
+    /**
+     * Copy the (editable) properties from the instance-template to the class-template
+     * @param fromInstanceRoot
+     * @param toClassRoot
+     * @return
+     * @throws ParseException
+     */
+    private Node copyPropertiesToClassTemplate(Element fromInstanceRoot, Element toClassRoot) throws ParseException
     {
         try {
             Elements instanceReferencingElements = fromInstanceRoot.select("[" + ParserConstants.REFERENCE_TO + "]");
@@ -86,11 +129,15 @@ public class ToHtmlVisitor extends AbstractVisitor
                 }
                 for(Element remainingClassReferencingElement : classReferencingElements){
                     //when a typeof-child without a property is encountered, we can only render the default value, without showing it's resource, so it is not overwritten later
-                    EntityTemplate classDefault = Redis.getInstance().fetchEntityTemplate(new RedisID(getReferencedId(remainingClassReferencingElement), RedisID.LAST_VERSION));
+                    RedisID classDefaultId = new RedisID(getReferencedId(remainingClassReferencingElement), RedisID.LAST_VERSION, language);
+                    EntityTemplate classDefault = Redis.getInstance().fetchEntityTemplate(classDefaultId);
                     if(classDefault == null){
-                        throw new ParseException("Found bad reference. Not present in db: " + getReferencedId(remainingClassReferencingElement));
+                        classDefault = (EntityTemplate) Redis.getInstance().fetchLastVersion(classDefaultId, EntityTemplate.class);
+                        if(classDefault == null) {
+                            throw new ParseException("Found bad reference. Not present in db: " + getReferencedId(remainingClassReferencingElement));
+                        }
                     }
-                    Node classDefaultRoot = TemplateParser.parse(classDefault.getTemplate()).child(0);
+                    Node classDefaultRoot = TemplateParser.parse(classDefault.getTemplate(language)).child(0);
                     remainingClassReferencingElement.replaceWith(classDefaultRoot);
                 }
                 Node returnRoot = toClassRoot;
@@ -121,38 +168,38 @@ public class ToHtmlVisitor extends AbstractVisitor
      */
     private Element replaceWithNewDefaultCopy(Node classProperty, String referenceId) throws Exception
     {
-        RedisID defaultClassPropertyId = new RedisID(getReferencedId(classProperty), RedisID.LAST_VERSION);
+        RedisID defaultClassPropertyId = new RedisID(getReferencedId(classProperty), RedisID.LAST_VERSION, language);
         EntityTemplate defaultClassPropertyTemplate = Redis.getInstance().fetchEntityTemplate(defaultClassPropertyId);
         if(defaultClassPropertyTemplate == null){
-            throw new ParseException("Couldn't find last version of class-default property '" + defaultClassPropertyId + "' in db.");
+            defaultClassPropertyTemplate = (EntityTemplate) Redis.getInstance().fetchLastVersion(defaultClassPropertyId, EntityTemplate.class);
+            if(defaultClassPropertyTemplate == null) {
+                throw new ParseException("Couldn't find last version of class-default property '" + defaultClassPropertyId + "' in db.");
+            }
         }
-        Element defaultClassPropertyRoot = TemplateParser.parse(defaultClassPropertyTemplate.getTemplate()).child(0);
+        Element defaultClassPropertyRoot = TemplateParser.parse(defaultClassPropertyTemplate.getTemplate(language)).child(0);
         String referencedInstanceId = referenceId;
-        RedisID id = new RedisID(referencedInstanceId, RedisID.LAST_VERSION);
+        RedisID id = new RedisID(referencedInstanceId, RedisID.LAST_VERSION, language);
         defaultClassPropertyRoot.attr(ParserConstants.RESOURCE, id.getUrl().toString());
         classProperty.replaceWith(defaultClassPropertyRoot);
         return defaultClassPropertyRoot;
     }
 
 
-    /**
-     * If the specified node is a referencing node, replace it with the root-node of the template corresponding to that referencing node.
-     * If it is not a referencing node, return the specified node.
-     * @param instanceRootNode
-     * @return
-     * @throws ParseException
-     */
     private Node replaceWithReferencedInstance(Node instanceRootNode) throws ParseException
     {
         try {
             String id = getReferencedId(instanceRootNode);
             if (!StringUtils.isEmpty(id)) {
-                RedisID referencedId = new RedisID(id, RedisID.LAST_VERSION);
+                RedisID referencedId = new RedisID(id, RedisID.LAST_VERSION, language);
                 EntityTemplate instanceTemplate = Redis.getInstance().fetchEntityTemplate(referencedId);
                 if(instanceTemplate == null){
-                    throw new ParseException("Found bad reference. Not found in db: " + referencedId);
+                    //the specified language could not be found in db, fetch last version in primary langugae
+                    instanceTemplate = (EntityTemplate) Redis.getInstance().fetchLastVersion(referencedId, EntityTemplate.class);
+                    if(instanceTemplate == null) {
+                        throw new ParseException("Found bad reference. Not found in db: " + referencedId);
+                    }
                 }
-                Element instanceTemplateRoot = TemplateParser.parse(instanceTemplate.getTemplate()).child(0);
+                Element instanceTemplateRoot = TemplateParser.parse(instanceTemplate.getTemplate(language)).child(0);
                 if(StringUtils.isEmpty(getResource(instanceTemplateRoot)) &&
                    //when referencing to a class-default, we don't want the resource to show up in the browser
                    StringUtils.isEmpty(referencedId.getUrl().toURI().getFragment())){

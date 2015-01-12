@@ -301,7 +301,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
             });
 
             $(document).on("click.blocks_core", function(event) {
-                if (active) {
+                if (true) {
                     if (!event.shiftKey) {
                         event.preventDefault();
                         setTimeout(function () {
@@ -331,7 +331,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
             $(document).off("mouseup.blocks_core");
             $(document).off("mousemove.blocks_core");
             $(document).off("dblclick.blocks_core");
-            $(document).off("click.blocks_core");
+            //$(document).off("click.blocks_core");
         }
     };
 

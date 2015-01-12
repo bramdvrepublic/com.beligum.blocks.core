@@ -1,38 +1,39 @@
 blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notification", function(Broadcaster, Notification) {
+    var menuBtn = $('<div class"main-menu-button"></div>');
 
-    var menuElement = $('<div class="blocks-main-menu"><div class"main-menu-button"><i class="glyphicon glyphicon-cog"></i></div><div class="main-menu-items"></div></div>')
-    var btnList = menuElement.find(".main-menu-items");
+    var menuBar = $('<div class="blocks-main-menu"><div class="main-menu-items"></div><div class="main-menu-button"><i class="glyphicon glyphicon-cog"></i></div></div>');
+    var btnList = menuBar;
 
-    var templateBtn = $('<div class="main-menu-item"><a href="#">Change template</a></div>');
+    var templateBtn = $('<a class="btn  btn-default" href="#">Change template</a>');
     btnList.append(templateBtn);
-    var saveBtn = $('<div class="main-menu-item"><a href="#">Save</a></div>');
+    var saveBtn = $('<a class="btn  btn-default" href="#">Save</a>');
     btnList.append(saveBtn);
 
+    $("body").prepend(menuBar);
+    $("body").append(menuBtn);
 
-    $("body").append(menuElement);
-
-    menuElement.on("mouseenter", function(event) {
+    menuBar.on("mouseenter", function(event) {
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
-        menuElement.addClass("open");
+        menuBar.addClass("open");
     });
 
-    menuElement.on("mouseleave", function(event) {
+    menuBar.on("mouseleave", function(event) {
         Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-        menuElement.removeClass("open");
+        menuBar.removeClass("open");
     });
 
-    menuElement.on("click", function(event) {
-        if (menuElement.hasClass("open")) {
-            menuElement.removeClass("open");
+    menuBtn.on("click", function(event) {
+        if (menuBar.hasClass("open")) {
+            menuBar.removeClass("open");
         } else {
-            menuElement.addClass("open");
+            menuBar.addClass("open");
         }
     });
 
     saveBtn.on("click", function() {
-        menuElement.removeClass("open");
+        menuBar.removeClass("open");
         var page = $("html")[0].outerHTML;
-        var o = JSON.stringify({"page": page});
+        var o = JSON.stringify({"url": document.URL, "page": page});
         var test = JSON.stringify({t: [{x: 1, y:2}, {x: 1}]});
         $.ajax({type: 'POST',
                 url: "/entities/save",

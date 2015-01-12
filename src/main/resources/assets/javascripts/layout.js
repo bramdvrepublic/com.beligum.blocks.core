@@ -160,6 +160,7 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
             columnWidthDroppedElement = DOM.getColumnWidth(block.element.parent().parent());
         }
         DOM.removeBlock(block, 200, function() {
+
             var dropLocationElement = findDropLocationElement(dropLocation, side);
             drop(block.element, dropLocationElement, side);
         });
@@ -175,7 +176,6 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
         Broadcaster.send(Broadcaster.EVENTS.DOM_WILL_CHANGE);
 
         drop(blockElement, dropLocationElement, Constants.SIDE.BOTTOM);
-
 
         // TODO return false if invalid so we can cancel everything
     };

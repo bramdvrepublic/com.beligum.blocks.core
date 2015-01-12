@@ -38,6 +38,14 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", function(Constant
         property.element.removeClass(Constants.PROPERTY_HOVER_CLASS);
     };
 
+    this.highlightElementAsProperty = function(element) {
+        element.addClass(Constants.PROPERTY_HOVER_CLASS);
+    };
+
+    this.unhighlightElementAsProperty = function(element) {
+        element.removeClass(Constants.PROPERTY_HOVER_CLASS);
+    };
+
 //    var addBlockBackground = function(block) {
 //        var overlaybackground = $("<div>").addClass(Constants.OVERLAY_BACKGROUND_CLASS);
 //        var zindex = maxIndex() + 1;
@@ -109,6 +117,13 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", function(Constant
 
             if (!((a1 < event.pageX && event.pageX < a2 && b1 < event.pageY && event.pageY < b2) ||
                 (x1 < event.pageX && event.pageX < x2 && y1 < event.pageY && event.pageY < y2))) {
+                var parent = $(event.target);
+
+                while (parent.length > 0) {
+                    if (parent.hasClass("cke")) return;
+                    parent = $(parent[0].parentElement);
+                }
+
                 event.preventDefault();
                 event.stopPropagation();
                 removeOverlay();

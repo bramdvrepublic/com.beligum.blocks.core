@@ -204,23 +204,32 @@ blocks
             constructor: function (leftColumn, rightColumn) {
                 this.leftColumn = leftColumn;
                 this.rightColumn = rightColumn;
-                this.calculateSurface();
+                this.updateSurface();
+
             },
 
             // calculate location by location of left and right column
-            calculateSurface: function () {
-                var middle = (this.leftColumn.calculateRight(this.leftColumn.element) + this.leftColumn.calculateLeft(this.rightColumn.element)) / 2;
-                this.leftColumn.right = middle;
-                this.rightColumn.left = middle;
-                var t = Math.min(this.leftColumn.top, this.rightColumn.top);
-                var b = Math.max(this.leftColumn.bottom, this.rightColumn.bottom);
-                var l = ((this.leftColumn.right + this.rightColumn.left) / 2) - (resizeHandle.TRIGGER_WIDTH / 2);
-                var r = ((this.leftColumn.right + this.rightColumn.left) / 2) + (resizeHandle.TRIGGER_WIDTH / 2);
+            calculateSurface: function (t, b, left, right) {
+                var l = left - resizeHandle.TRIGGER_WIDTH;
+                var r = right + resizeHandle.TRIGGER_WIDTH;
                 resizeHandle.Super.call(this, t, b, l, r);
+//                var l = (middle) - (resizeHandle.DRAW_WIDTH / 2);
+//                var r = (middle) + (resizeHandle.DRAW_WIDTH / 2);
 
-                var l = ((this.leftColumn.right + this.rightColumn.left) / 2) - (resizeHandle.DRAW_WIDTH / 2);
-                var r = ((this.leftColumn.right + this.rightColumn.left) / 2) + (resizeHandle.DRAW_WIDTH / 2);
                 this.drawSurface = new surface(t, b, l, r);
+            },
+
+            updateSurface: function() {
+                if (this.leftColumn == null) {
+                    this.calculateSurface(this.rightColumn.top, this.rightColumn.bottom, this.rightColumn.left, this.rightColumn.left);
+                }
+                else if (this.rightColumn == null) {
+                    this.calculateSurface(this.leftColumn.top, this.leftColumn.bottom, this.leftColumn.right, this.leftColumn.right);
+                }
+                else {
+
+                    this.calculateSurface(Math.min(this.leftColumn.top, this.rightColumn.top),  Math.max(this.leftColumn.bottom, this.rightColumn.bottom), this.leftColumn.calculateRight(this.leftColumn.element), this.leftColumn.calculateLeft(this.rightColumn.element));
+                }
             }
 
         });
@@ -229,7 +238,7 @@ blocks
          * Is the abstract class for DOM elements (row, container, block)
          * contains some helperfunctions
          * */
-        var layoutElement = Class.create(surface, {
+            var layoutElement = Class.create(surface, {
 
 
             top: 0,
@@ -467,10 +476,12 @@ blocks
 
 
                             newColumn = new column(innerZone.top, innerZone.bottom, zoneLeft, zoneRight, currentColumn, this, i);
-                            if (oldColumn != null) {
-                                // add resizeHandle
-                                this.resizeHandles.push(new resizeHandle(oldColumn, newColumn));
+
+                            this.resizeHandles.push(new resizeHandle(oldColumn, newColumn));
+                            if (i == columnCount - 1) {
+                                this.resizeHandles.push(new resizeHandle(newColumn, null));
                             }
+//
                         } else {
                             var colWidth = DOM.getColumnWidth(currentColumn);
                             prevColsWidth += colWidth;
@@ -483,6 +494,7 @@ blocks
                             prevColMaxBottom = prevColMaxBottom < curBottom ? curBottom : prevColMaxBottom;
 
                             newColumn = new column(this.calculateTop(currentColumn), this.calculateBottom(currentColumn), this.calculateLeft(currentColumn), this.calculateRight(currentColumn), currentColumn, this, i);
+
                         }
 
 
@@ -516,14 +528,7 @@ blocks
 
             constructor: function (top, bottom, left, right, element, parent, index) {
                 row.Super.call(this, top, bottom, left, right, element, parent, index);
-
-                if (!(this instanceof container) && (element.hasAttribute(Constants.IS_ENTITY) || element.hasAttribute(Constants.IS_PROPERTY)) && !element.hasAttribute(Constants.FAKE_BLOCK)) {
-                    element.attr(Constants.FAKE_BLOCK, "");
-                    var newBlock = new block(top, bottom, left, right, element, this.parent, 0);
-                    this.children.push(newBlock);
-                } else {
-                    this.generateChildrenForRow();
-                }
+                this.generateChildrenForRow();
             },
 
 
@@ -559,15 +564,8 @@ blocks
         var column = Class.create(layoutElement, {
             constructor: function (top, bottom, left, right, element, parent, index) {
                 column.Super.call(this, top, bottom, left, right, element, parent, index);
-                // will be set to true if parent is true
 
-                if (!(this instanceof container) && (element.hasAttribute(Constants.IS_ENTITY) || element.hasAttribute(Constants.IS_PROPERTY)) && !element.hasAttribute(Constants.FAKE_BLOCK)) {
-                    element.attr(Constants.FAKE_BLOCK, "");
-                    var newBlock = new block(top, bottom, left, right, element, this.parent, 0);
-                    this.children.push(newBlock);
-                } else {
-                    this.generateChildrenForColumn();
-                }
+                this.generateChildrenForColumn();
             },
 
             isOuterLeft: function () { return this.element.prev().length == 0 },
@@ -587,7 +585,7 @@ blocks
             // find all dropspots for an element
             // is called for a block and returns all dropspots for this block and his parents.
             calculateDropspots: function(side, dropspots) {
-                if ((side == Constants.SIDE.LEFT || side == Constants.SIDE.RIGHT) && this.children.length > 1) {
+                if ((side == Constants.SIDE.LEFT || side == Constants.SIDE.RIGHT)) {
                     dropspots.push(new dropspot(side, this, dropspots.length));
                 }
 
@@ -602,14 +600,16 @@ blocks
         var container = Class.create(layoutElement, {
             constructor: function (element) {
                 container.Super.call(this, this.calculateTop(element), this.calculateBottom(element), this.calculateLeft(element), this.calculateRight(element), element, null, 0);
-                if (DOM.isColumn(element) || DOM.isContainer(element)) {
-                    this.generateChildrenForColumn();
-                } else if (DOM.isRow(element)) {
-                    this.generateChildrenForRow();
-                } else {
-                    var b = new block(this.calculateTop(element), this.calculateBottom(element), this.calculateLeft(element), this.calculateRight(element), element, this, 0);
-                    this.children.push(b);
-                }
+                this.generateChildrenForColumn();
+// if (DOM.isColumn(element) || DOM.isContainer(element)) {
+//
+//                } else {
+//                    this.generateChildrenForRow();
+//                }
+//                else {
+//                    var b = new block(this.calculateTop(element), this.calculateBottom(element), this.calculateLeft(element), this.calculateRight(element), element, this, 0);
+//                    this.children.push(b);
+//                }
             },
 
             getElementAtSide: function(side) {
@@ -830,10 +830,12 @@ blocks
                 }
             },
 
-
-
             calculateDropspots: function(side, dropspots) {
-                dropspots.push(new dropspot(side, this, dropspots.length));
+                if (side == Constants.SIDE.TOP || side == Constants.SIDE.BOTTOM) {
+                    dropspots.push(new dropspot(side, this, dropspots.length));
+                } else if (this.element.siblings().length > 0) {
+                    dropspots.push(new dropspot(side, this, dropspots.length));
+                }
 
                 if (this.isOuter(side) && this.parent != null) dropspots = this.parent.calculateDropspots(side, dropspots);
                 return dropspots;

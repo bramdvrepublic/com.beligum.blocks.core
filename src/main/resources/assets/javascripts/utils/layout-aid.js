@@ -104,13 +104,16 @@ blocks.plugin("blocks.core.LayoutAid", ["blocks.core.Layouter", "blocks.core.Bro
 
     $(document).on(Broadcaster.EVENTS.START_DRAG, function (event) {
         leaveBlockHoover(event);
+        leavePropertyHoover(event);
     });
     $(document).on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, function (event) {
         leaveBlockHoover(event);
+        leavePropertyHoover(event);
     });
 
     $(document).on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, function() {
         leaveBlockHoover(event);
+        leavePropertyHoover(event);
     })
 //    $(document).on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, function() {
 //        createLayoutFrame();
