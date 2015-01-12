@@ -14,6 +14,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
+import javax.swing.text.html.parser.Entity;
 import java.util.Set;
 
 /**
@@ -131,8 +132,7 @@ public class ToHtmlVisitor extends AbstractVisitor
                     RedisID classDefaultId = new RedisID(getReferencedId(remainingClassReferencingElement), RedisID.LAST_VERSION, language);
                     EntityTemplate classDefault = Redis.getInstance().fetchEntityTemplate(classDefaultId);
                     if(classDefault == null){
-                        RedisID primaryLanguageId = new RedisID(classDefaultId, RedisID.PRIMARY_LANGUAGE);
-                        classDefault = Redis.getInstance().fetchEntityTemplate(primaryLanguageId);
+                        classDefault = (EntityTemplate) Redis.getInstance().fetchLastVersion(classDefaultId, EntityTemplate.class);
                         if(classDefault == null) {
                             throw new ParseException("Found bad reference. Not present in db: " + getReferencedId(remainingClassReferencingElement));
                         }
@@ -171,8 +171,7 @@ public class ToHtmlVisitor extends AbstractVisitor
         RedisID defaultClassPropertyId = new RedisID(getReferencedId(classProperty), RedisID.LAST_VERSION, language);
         EntityTemplate defaultClassPropertyTemplate = Redis.getInstance().fetchEntityTemplate(defaultClassPropertyId);
         if(defaultClassPropertyTemplate == null){
-            RedisID primaryLanguageId = new RedisID(defaultClassPropertyId, RedisID.PRIMARY_LANGUAGE);
-            defaultClassPropertyTemplate = Redis.getInstance().fetchEntityTemplate(primaryLanguageId);
+            defaultClassPropertyTemplate = (EntityTemplate) Redis.getInstance().fetchLastVersion(defaultClassPropertyId, EntityTemplate.class);
             if(defaultClassPropertyTemplate == null) {
                 throw new ParseException("Couldn't find last version of class-default property '" + defaultClassPropertyId + "' in db.");
             }
@@ -194,9 +193,8 @@ public class ToHtmlVisitor extends AbstractVisitor
                 RedisID referencedId = new RedisID(id, RedisID.LAST_VERSION, language);
                 EntityTemplate instanceTemplate = Redis.getInstance().fetchEntityTemplate(referencedId);
                 if(instanceTemplate == null){
-                    //the specified language could not be found in db, fetch primary language
-                    referencedId = new RedisID(referencedId, RedisID.PRIMARY_LANGUAGE);
-                    instanceTemplate = Redis.getInstance().fetchEntityTemplate(referencedId);
+                    //the specified language could not be found in db, fetch last version in primary langugae
+                    instanceTemplate = (EntityTemplate) Redis.getInstance().fetchLastVersion(referencedId, EntityTemplate.class);
                     if(instanceTemplate == null) {
                         throw new ParseException("Found bad reference. Not found in db: " + referencedId);
                     }

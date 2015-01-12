@@ -143,14 +143,9 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
         EntityTemplate defaultEntityTemplate = Redis.getInstance().fetchEntityTemplate(defaultEntityId);
         // If no such default template could be found, we're probably dealing with another language, which needs to be a copy of the primary-language
         if(defaultEntityTemplate == null){
-            RedisID primaryLanguageId = new RedisID(defaultEntityId, RedisID.PRIMARY_LANGUAGE);
-            EntityTemplate primaryLanguageTemplate = Redis.getInstance().fetchEntityTemplate(primaryLanguageId);
-            if(primaryLanguageTemplate == null) {
-                throw new ParseException("Found bad reference. No languages present in db: " + defaultEntityId);
-            }
-            else{
-                //the default-entity-template is the template in the primary language, to which we add a copy of that language as value for the new language
-                defaultEntityTemplate = primaryLanguageTemplate;
+            defaultEntityTemplate = (EntityTemplate) Redis.getInstance().fetchLastVersion(defaultEntityId, EntityTemplate.class);
+            if(defaultEntityTemplate == null) {
+                throw new ParseException("Found bad reference. Not present in db: " + defaultEntityId);
             }
         }
         return defaultEntityTemplate;

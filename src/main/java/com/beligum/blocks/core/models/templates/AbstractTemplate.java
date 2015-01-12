@@ -124,19 +124,36 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     }
 
     /**
-     * Tries to add a new html-template for a certain language.
+     * Tries to add a new html-template for a certain language. If this html-template has a language which is already present in db, but differs from the html-template already present, the most recent one will be kept.
      * @param languageID a redis-id holding a language
      * @param html a html-string
-     * @return false if the language-code is not correct, if the html-string is empty or if a template of that language is already present;
+     * @return false if the language-code is not correct, if the html-string is empty or if the same template is already present in the same language
      * true otherwise, which means the template has been added
      */
     public boolean add(RedisID languageID, String html){
-        if(!StringUtils.isEmpty(html) && !this.getLanguages().contains(languageID.getLanguage())){
+        if(StringUtils.isEmpty(html)){
+            return false;
+        }
+        if(!this.getLanguages().contains(languageID.getLanguage())){
             templates.put(languageID, html);
             return true;
         }
         else{
-            return false;
+            String oldHtml = this.getTemplate(languageID.getLanguage());
+            if(html.equals(oldHtml)){
+                return false;
+            }
+            else{
+                boolean added = false;
+                for(RedisID languageIdIntern : templates.keySet()){
+                    if(languageIdIntern.getLanguage().equals(languageID.getLanguage()) && languageID.getVersion() >= languageIdIntern.getVersion()){
+                        templates.remove(languageIdIntern);
+                        templates.put(languageID, html);
+                        added = true;
+                    }
+                }
+                return added;
+            }
         }
     }
 
