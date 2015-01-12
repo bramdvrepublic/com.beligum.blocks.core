@@ -63,7 +63,7 @@ public class RedisID extends ID
         super(url);
         this.idUri = initializeLanguageAndUrl(url, useDefaultLanguage);
         if(version == LAST_VERSION){
-            this.version = Redis.getInstance().getLastVersion(url);
+            this.version = Redis.getInstance().getLastVersion(this.url);
         }
         else if(version == NEW_VERSION){
             this.version = System.currentTimeMillis();
@@ -364,11 +364,12 @@ public class RedisID extends ID
 
     /**
      * Method for getting a new randomly determined entity-uid (with versioning) for a entityTemplate-instance of an entityTemplateClass
+     * @param language the language this new id should use
      * @return a randomly generated entity-id of the form "[site-domain]/[entityTemplateClassName]/[randomInt]"
      */
-    public static RedisID renderNewEntityTemplateID(EntityTemplateClass entityTemplateClass) throws IDException
+    public static RedisID renderNewEntityTemplateID(EntityTemplateClass entityTemplateClass, String language) throws IDException
     {
-        return Redis.getInstance().renderNewEntityTemplateID(entityTemplateClass);
+        return Redis.getInstance().renderNewEntityTemplateID(entityTemplateClass, language);
     }
 
     /**
@@ -459,7 +460,7 @@ public class RedisID extends ID
                 property = "";
             }
             String url = BlocksConfig.getSiteDomain();
-            if(!StringUtils.isEmpty(language)){
+            if(Languages.isNonEmptyLanguageCode(language)){
                 url += "/" + language;
             }
             url +=  "/" + owningEntityClassName + "#" + property;

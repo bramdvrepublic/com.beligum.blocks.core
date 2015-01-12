@@ -23,15 +23,18 @@ import java.util.Set;
 public class ToHtmlVisitor extends AbstractVisitor
 {
     /**the preferred language we want to render html in*/
-    private String language;
+    private final String language;
 
     /**
      *
      * @param language the preferred language we want to render html in
+     * @throws ParseException if no known language was specified
      */
-    public ToHtmlVisitor(String language)
-    {
+    public ToHtmlVisitor(String language) throws ParseException {
         this.language = Languages.getStandardizedLanguage(language);
+        if(!Languages.isNonEmptyLanguageCode(this.language)){
+            throw new ParseException("Found unknown language '" + this.language + "'.");
+        }
     }
 
     @Override
@@ -105,7 +108,7 @@ public class ToHtmlVisitor extends AbstractVisitor
             if (!instanceProperties.isEmpty() && !classProperties.isEmpty()) {
                 for (Element classProperty : classProperties) {
                     for (Element instanceProperty : instanceProperties) {
-                        if (getPropertyId(instanceProperty, language).contentEquals(getPropertyId(classProperty, language))) {
+                        if (getPropertyId(instanceProperty).contentEquals(getPropertyId(classProperty))) {
                             Element element = null;
                             //If the classproperty is modifiable, we replace it with the instance's property
                             if (isModifiable(classProperty)) {
@@ -125,9 +128,14 @@ public class ToHtmlVisitor extends AbstractVisitor
                 }
                 for(Element remainingClassReferencingElement : classReferencingElements){
                     //when a typeof-child without a property is encountered, we can only render the default value, without showing it's resource, so it is not overwritten later
-                    EntityTemplate classDefault = Redis.getInstance().fetchEntityTemplate(new RedisID(getReferencedId(remainingClassReferencingElement), RedisID.LAST_VERSION, language));
+                    RedisID classDefaultId = new RedisID(getReferencedId(remainingClassReferencingElement), RedisID.LAST_VERSION, language);
+                    EntityTemplate classDefault = Redis.getInstance().fetchEntityTemplate(classDefaultId);
                     if(classDefault == null){
-                        throw new ParseException("Found bad reference. Not present in db: " + getReferencedId(remainingClassReferencingElement));
+                        RedisID primaryLanguageId = new RedisID(classDefaultId, RedisID.PRIMARY_LANGUAGE);
+                        classDefault = Redis.getInstance().fetchEntityTemplate(primaryLanguageId);
+                        if(classDefault == null) {
+                            throw new ParseException("Found bad reference. Not present in db: " + getReferencedId(remainingClassReferencingElement));
+                        }
                     }
                     Node classDefaultRoot = TemplateParser.parse(classDefault.getTemplate(language)).child(0);
                     remainingClassReferencingElement.replaceWith(classDefaultRoot);
@@ -163,7 +171,11 @@ public class ToHtmlVisitor extends AbstractVisitor
         RedisID defaultClassPropertyId = new RedisID(getReferencedId(classProperty), RedisID.LAST_VERSION, language);
         EntityTemplate defaultClassPropertyTemplate = Redis.getInstance().fetchEntityTemplate(defaultClassPropertyId);
         if(defaultClassPropertyTemplate == null){
-            throw new ParseException("Couldn't find last version of class-default property '" + defaultClassPropertyId + "' in db.");
+            RedisID primaryLanguageId = new RedisID(defaultClassPropertyId, RedisID.PRIMARY_LANGUAGE);
+            defaultClassPropertyTemplate = Redis.getInstance().fetchEntityTemplate(primaryLanguageId);
+            if(defaultClassPropertyTemplate == null) {
+                throw new ParseException("Couldn't find last version of class-default property '" + defaultClassPropertyId + "' in db.");
+            }
         }
         Element defaultClassPropertyRoot = TemplateParser.parse(defaultClassPropertyTemplate.getTemplate(language)).child(0);
         String referencedInstanceId = referenceId;

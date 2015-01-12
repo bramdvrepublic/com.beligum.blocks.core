@@ -91,7 +91,7 @@ public class AbstractVisitor
      */
     protected Element replaceElementWithPropertyReference(Element element) throws ParseException
     {
-        return replaceElementWithReference(element, getPropertyId(element, null));
+        return replaceElementWithReference(element, getPropertyId(element));
     }
 
     protected Element replaceElementWithEntityReference(Element element, EntityTemplate entity){
@@ -383,7 +383,7 @@ public class AbstractVisitor
     /**
      * @return the property-id using the property-name of this entity-node and the last class-node visited (of the form "blocks://[db-alias]/[parent-typeof]#[property-name]:[version]"), or null if no property-name can be found
      */
-    public String getPropertyId(Node node, String language) throws ParseException
+    public String getPropertyId(Node node) throws ParseException
     {
         if(isEntity(node)) {
             String parentEntityClassName = this.getParentType();
@@ -396,7 +396,7 @@ public class AbstractVisitor
                     return null;
                 }
                 try {
-                    return RedisID.renderNewPropertyId(parentEntityClassName, propertyValue, getPropertyName(node), language).getUnversionedId();
+                    return RedisID.renderNewPropertyId(parentEntityClassName, propertyValue, getPropertyName(node), RedisID.NO_LANGUAGE).getUnversionedId();
 
                 }catch(Exception e){
                     throw new ParseException("Could not render new property-id.", e);

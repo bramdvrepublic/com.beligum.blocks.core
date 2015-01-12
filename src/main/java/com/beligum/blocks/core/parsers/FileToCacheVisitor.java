@@ -118,13 +118,13 @@ public class FileToCacheVisitor extends AbstractVisitor
                         node = replaceElementWithPropertyReference(element);
                     }
                     else if(needsBlueprint(element)){
-                        EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass), entityTemplateClass);
+                        EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass, entityTemplateClass.getLanguage()), entityTemplateClass);
                         Redis.getInstance().save(defaultEntity);
                         node = replaceElementWithEntityReference(element, defaultEntity);
                     }
                     //if no new class is being parsed, we are parsing a default-instance of a certain type
                     else{
-                        EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass), entityTemplateClass, element.outerHtml());
+                        EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass, entityTemplateClass.getLanguage()), entityTemplateClass, element.outerHtml());
                         Redis.getInstance().save(defaultEntity);
                         node = replaceElementWithEntityReference(element, defaultEntity);
                     }

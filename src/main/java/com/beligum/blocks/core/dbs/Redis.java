@@ -78,7 +78,7 @@ public class Redis implements Closeable
              * Save this entity-version's id ("[entityId]:[version]") to the db in the list named "[entityId]"
              * holding all the different versions of this entity-instance.
              */
-            AbstractTemplate storedTemplate = this.fetchTemplate(new RedisID(template.getId().getUrl(), RedisID.LAST_VERSION, false), template.getClass());
+            AbstractTemplate storedTemplate = this.fetchLastVersion(template.getId(), template.getClass());
             long lastVersion;
             if(storedTemplate != null) {
                 lastVersion = storedTemplate.getVersion();
@@ -258,6 +258,19 @@ public class Redis implements Closeable
 
     /**
      *
+     * @return the last version of an entity-template, or null if not present
+     */
+    public AbstractTemplate fetchLastVersion(RedisID id, Class<? extends AbstractTemplate> type) throws RedisException {
+        try {
+            RedisID lastVersion = RedisID.renderLanguagedId(id.getUrl(), RedisID.LAST_VERSION, RedisID.PRIMARY_LANGUAGE);
+            return this.fetchTemplate(lastVersion, type);
+        }catch (Exception e){
+            throw new RedisException("Could not fetch last version from db: " + id, e);
+        }
+    }
+
+    /**
+     *
      * @param id
      * @return the version from an id, or -1 if no version could be found in the id
      */
@@ -321,18 +334,35 @@ public class Redis implements Closeable
 
     /**
      * Method for getting a new randomly determined entity-uid (with versioning) for a entityInstance of an entityClass, used by RedisID to render a new, random and unique id.
+     * @param language the language this new id should use
      * @return a randomly generated entity-id of the form "[site-domain]/[entityClassName]/[randomInt]"
      */
-    public RedisID renderNewEntityTemplateID(EntityTemplateClass entityTemplateClass) throws IDException
+    public RedisID renderNewEntityTemplateID(EntityTemplateClass entityTemplateClass, String language) throws IDException
     {
         try (Jedis redisClient = pool.getResource()){
             Random randomGenerator = new Random();
             int positiveNumber = Math.abs(randomGenerator.nextInt());
-            RedisID retVal = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClass.getLanguage() + "/" + entityTemplateClass.getName() + "/" + positiveNumber), RedisID.NEW_VERSION, false);
+            String url = BlocksConfig.getSiteDomain();
+            if(Languages.isNonEmptyLanguageCode(language)){
+                url += "/" + language;
+            }
+            else{
+                url += "/" + entityTemplateClass.getLanguage();
+            }
+            url += "/" + entityTemplateClass.getName() + "/" + positiveNumber;
+            RedisID retVal = new RedisID(new URL(url), RedisID.NEW_VERSION, false);
             //Check if this entity-id (url) is not already present in db, if so, re-render a random entity-id
             while (redisClient.get(retVal.getUnversionedId()) != null) {
                 positiveNumber = Math.abs(randomGenerator.nextInt());
-                retVal = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClass.getLanguage() + "/" + entityTemplateClass.getName() + "/" + positiveNumber), RedisID.NEW_VERSION, false);
+                url = BlocksConfig.getSiteDomain();
+                if(Languages.isNonEmptyLanguageCode(language)){
+                    url += "/" + language;
+                }
+                else{
+                    url += "/" + entityTemplateClass.getLanguage();
+                }
+                url += "/" + entityTemplateClass.getName() + "/" + positiveNumber;
+                retVal = new RedisID(new URL(url), RedisID.NEW_VERSION, false);
             }
             if(!retVal.hasLanguage()){
                 retVal = new RedisID(retVal, entityTemplateClass.getLanguage());

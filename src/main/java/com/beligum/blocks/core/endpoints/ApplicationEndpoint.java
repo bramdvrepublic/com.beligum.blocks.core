@@ -109,20 +109,28 @@ public class ApplicationEndpoint
                 return Response.seeOther(primaryLanguageId.getLanguagedUrl().toURI()).build();
 
             }
-            //if we have both version and language-information, try to render the entity
+            //if the url contains both version and language-information, try to render the entity
             else {
                 EntityTemplate entityTemplate = Redis.getInstance().fetchEntityTemplate(id);
-                //if the no entity-template is returned from db, the specified language doesn't exist, but since a version was found, a primary language must be present
+                //if no entity-template is returned from db, the specified language doesn't exist
                 if(entityTemplate == null){
-                    //TODO BAS SH: check if this does what is expected if a french museum-page is requested
-                    RedisID primaryLanguageId = new RedisID(id, RedisID.PRIMARY_LANGUAGE);
-                    EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(primaryLanguageId);
-                    RedisID newVersionId = new RedisID(url, RedisID.NEW_VERSION, false);
-                    TemplateParser.saveNewEntityTemplateToDb(newVersionId.getUrl(), newVersionId.getLanguage(), storedInstance.getEntityTemplateClass());
-                    EntityTemplate newEntityTemplate = new EntityTemplate(newVersionId, storedInstance.getEntityTemplateClass(), storedInstance.getTemplates());
-                    String html = TemplateParser.renderEntityInsidePageTemplate(newEntityTemplate.getPageTemplate(), newEntityTemplate, newEntityTemplate.getLanguage());
-                    TemplateParser.updateEntity(newVersionId.getUrl(), html);
-                    return Response.seeOther(newVersionId.getLanguagedUrl().toURI()).build();
+                    //since a last version was found, it must be present in db
+                    EntityTemplate storedInstance = (EntityTemplate) Redis.getInstance().fetchLastVersion(id, EntityTemplate.class);
+                    //TODO BAS SH: can't seem to get this work properly, since the version I expect to be saved to db are not present their... Showing en/museum after fr/museum has been made, is not possible for now...
+                    if(storedInstance == null){
+                        throw new Exception("Received null from db, after asking for last version of '" + id +"'. This should not happen!");
+                    }
+                    //if the requested language already exists in db, render and show it
+                    if(storedInstance.getLanguages().contains(id.getLanguage())){
+                        String page = storedInstance.renderEntityInPageTemplate(id.getLanguage());
+                        return Response.ok(page).build();
+                    }
+                    //save a new language (from url) to db, which is a copy of the last stored version
+                    else {
+                        String lastVersionHtml = TemplateParser.renderEntityInsidePageTemplate(storedInstance.getPageTemplate(), storedInstance);
+                        TemplateParser.updateEntity(url, lastVersionHtml);
+                        return Response.seeOther(url.toURI()).build();
+                    }
                 }
                 else {
                     String page = entityTemplate.renderEntityInPageTemplate(entityTemplate.getLanguage());
