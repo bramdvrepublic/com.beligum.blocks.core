@@ -120,6 +120,7 @@ public class EntitiesEndpoint
         }
         URL entityUrl = new URL(url);
         TemplateParser.updateEntity(entityUrl, data.get("page"));
+        //shouldn't do a redirect here, since the read of the entity could be done from a redis-slave, which would give the impression nothing was saved yet
         return Response.ok(entityUrl.toURI()).build();
     }
 

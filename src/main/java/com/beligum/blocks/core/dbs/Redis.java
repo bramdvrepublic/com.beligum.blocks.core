@@ -6,6 +6,7 @@ import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.templates.*;
+import org.apache.commons.collections.SetUtils;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Pipeline;
@@ -240,10 +241,13 @@ public class Redis implements Closeable
      * Fetch all language alternatives present in db for a template with a certain id.
      * This looks for alternative languages within the same version of the template.
      * @param id
-     * @return
+     * @return a set with all language alternatives, or an empty one if no alternatives were found
      */
     public Set<String> fetchLanguageAlternatives(RedisID id){
         try(Jedis redisClient = pool.getResource()){
+            if(!redisClient.exists(id.getUnversionedId()) || !redisClient.exists(id.getVersionedId())){
+                return new HashSet<>();
+            }
             Map<String, String> hash = redisClient.hgetAll(id.getVersionedId());
             Set<String> permittedLanguages = Languages.getPermittedLanguageCodes();
             Set<String> alternativeLangugaes = new HashSet<>();
@@ -261,9 +265,19 @@ public class Redis implements Closeable
      * @return the last version of an entity-template, or null if not present
      */
     public AbstractTemplate fetchLastVersion(RedisID id, Class<? extends AbstractTemplate> type) throws RedisException {
-        try {
+        try(Jedis redisClient = pool.getResource()) {
+            if (!redisClient.exists(id.getUnversionedId())) {
+                return null;
+            }
             RedisID lastVersion = RedisID.renderLanguagedId(id.getUrl(), RedisID.LAST_VERSION, RedisID.PRIMARY_LANGUAGE);
-            return this.fetchTemplate(lastVersion, type);
+            if(!redisClient.exists(lastVersion.getVersionedId())){
+                return null;
+            }
+            Map<String, String> entityHash = redisClient.hgetAll(lastVersion.getVersionedId());
+            if(entityHash.isEmpty()){
+                return null;
+            }
+            return TemplateFactory.createInstanceFromHash(lastVersion, entityHash, type);
         }catch (Exception e){
             throw new RedisException("Could not fetch last version from db: " + id, e);
         }
@@ -309,6 +323,9 @@ public class Redis implements Closeable
      */
     public Long getLastVersion(String unversionedId){
         try(Jedis redisClient = pool.getResource()) {
+            if(!redisClient.exists(unversionedId)){
+                return new Long(RedisID.NO_VERSION);
+            }
             //get last saved version from db
             List<String> versions = redisClient.lrange(unversionedId, 0, 0);
             if (!versions.isEmpty()) {
