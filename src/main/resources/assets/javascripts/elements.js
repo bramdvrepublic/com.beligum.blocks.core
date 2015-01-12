@@ -209,27 +209,26 @@ blocks
             },
 
             // calculate location by location of left and right column
-            calculateSurface: function (t, b, middle) {
-                var l = (middle) - (resizeHandle.TRIGGER_WIDTH / 2);
-                var r = (middle) + (resizeHandle.TRIGGER_WIDTH / 2);
+            calculateSurface: function (t, b, left, right) {
+                var l = left - resizeHandle.TRIGGER_WIDTH;
+                var r = right + resizeHandle.TRIGGER_WIDTH;
                 resizeHandle.Super.call(this, t, b, l, r);
+//                var l = (middle) - (resizeHandle.DRAW_WIDTH / 2);
+//                var r = (middle) + (resizeHandle.DRAW_WIDTH / 2);
 
-                var l = (middle) - (resizeHandle.DRAW_WIDTH / 2);
-                var r = (middle) + (resizeHandle.DRAW_WIDTH / 2);
                 this.drawSurface = new surface(t, b, l, r);
             },
 
             updateSurface: function() {
                 if (this.leftColumn == null) {
-                    this.calculateSurface(this.rightColumn.top, this.rightColumn.bottom, this.rightColumn.left);
+                    this.calculateSurface(this.rightColumn.top, this.rightColumn.bottom, this.rightColumn.left, this.rightColumn.left);
                 }
                 else if (this.rightColumn == null) {
-                    this.calculateSurface(this.leftColumn.top, this.leftColumn.bottom, this.leftColumn.right);
+                    this.calculateSurface(this.leftColumn.top, this.leftColumn.bottom, this.leftColumn.right, this.leftColumn.right);
                 }
                 else {
 
-                    var middle = (this.leftColumn.calculateRight(this.leftColumn.element) + this.leftColumn.calculateLeft(this.rightColumn.element)) / 2;
-                    this.calculateSurface(Math.min(this.leftColumn.top, this.rightColumn.top),  Math.max(this.leftColumn.bottom, this.rightColumn.bottom), middle);
+                    this.calculateSurface(Math.min(this.leftColumn.top, this.rightColumn.top),  Math.max(this.leftColumn.bottom, this.rightColumn.bottom), this.leftColumn.calculateRight(this.leftColumn.element), this.leftColumn.calculateLeft(this.rightColumn.element));
                 }
             }
 
@@ -239,7 +238,7 @@ blocks
          * Is the abstract class for DOM elements (row, container, block)
          * contains some helperfunctions
          * */
-        var layoutElement = Class.create(surface, {
+            var layoutElement = Class.create(surface, {
 
 
             top: 0,

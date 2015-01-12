@@ -1,6 +1,7 @@
 blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overlay", "blocks.core.DomManipulation", function(Broadcaster, Overlay, DOM) {
     var Edit = this;
     var editor = null;
+    var lastPoint = {x:0, y:0};
 
     var isIframe = function(currentBlock) {
         return currentBlock.element.find("iframe").length == 1;
@@ -10,10 +11,9 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
     $(document).on(Broadcaster.EVENTS.CLICK_BLOCK, function(event) {
         event.preventDefault();
         event.stopPropagation();
-//        if (event.block != null && event.block.current != null && enabled(event.block.current)) {
-
-            Edit.editBlock(event);
-//        }
+        lastPoint.x = event.pageX;
+        lastPoint.y = event.pageY;
+        Edit.editBlock(event);
     });
 
     this.editBlock = function(event) {
@@ -88,6 +88,10 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
             e.preventDefault();
             e.stopPropagation();
         });
+//        var sel = window.getSelection();
+//        sel.removeAllRanges();
+//        var clickRange = document.caretRangeFromPoint(lastPoint.x - element.offset().x, lastPoint.y - element.offset().y);
+//        sel.addRange(clickRange);
         element.focus();
     };
 

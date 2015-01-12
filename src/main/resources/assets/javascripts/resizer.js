@@ -53,21 +53,21 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
 
     // show the handle at the correct position
     var showHandleElement = function (surface) {
-        checkIfHandleElementExists();
-        resizeHandleElement.css('position', 'absolute');
-        resizeHandleElement.css("left", surface.left + "px");
-        resizeHandleElement.css("top", surface.top + "px");
-        resizeHandleElement.css("width", surface.right - surface.left + "px");
-        resizeHandleElement.css("height", surface.bottom - surface.top + "px");
-        resizeHandleElement.css("cursor", "col-resize");
+//        checkIfHandleElementExists();
+//        resizeHandleElement.css('position', 'absolute');
+//        resizeHandleElement.css("left", surface.left + "px");
+//        resizeHandleElement.css("top", surface.top + "px");
+//        resizeHandleElement.css("width", surface.right - surface.left + "px");
+//        resizeHandleElement.css("height", surface.bottom - surface.top + "px");
+//        resizeHandleElement.css("cursor", "col-resize");
         $("body").css("cursor", "col-resize");
     };
 
     // update the position of the handle element in the dom
     var moveHandleElement = function () {
-        checkIfHandleElementExists();
-        activeResizeHandle.updateSurface();
-        resizeHandleElement.css('left', activeResizeHandle.drawSurface.left);
+//        checkIfHandleElementExists();
+//        activeResizeHandle.updateSurface();
+//        resizeHandleElement.css('left', activeResizeHandle.drawSurface.left);
     };
 
     // remove the handle from the dom
