@@ -32,7 +32,7 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     saveBtn.on("click", function() {
         menuElement.removeClass("open");
         var page = $("html")[0].outerHTML;
-        var o = JSON.stringify({"page": page});
+        var o = JSON.stringify({"url": document.URL, "page": page});
         var test = JSON.stringify({t: [{x: 1, y:2}, {x: 1}]});
         $.ajax({type: 'POST',
                 url: "/entities/save",

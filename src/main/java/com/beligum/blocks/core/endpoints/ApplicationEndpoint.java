@@ -6,6 +6,7 @@ import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
+import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.base.RequestContext;
 import com.beligum.core.framework.templating.ifaces.Template;
@@ -81,15 +82,16 @@ public class ApplicationEndpoint
         try{
             Redis redis = Redis.getInstance();
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
-            RedisID lastVersionId = new RedisID(url, RedisID.LAST_VERSION);
-            EntityTemplate entityTemplate = redis.fetchEntityTemplate(lastVersionId);
-            if(entityTemplate == null){
+            //if no language info is specified in the url, or if the specified language doesn't exist, the default language will still be shown
+            RedisID id = new RedisID(url, RedisID.LAST_VERSION, false);
+            //if no such page is present in db, ask if user wants to create a new page
+            if(id.getVersion() == RedisID.NO_VERSION) {
                 Template template = R.templateEngine().getEmptyTemplate("/views/new-page.html");
                 List<EntityTemplateClass> entityTemplateClasses = EntityTemplateClassCache.getInstance().values();
                 //TODO BAS: find general way to split entity-classes to be shown when creating a new page and when creating a new block in frontend
                 List<EntityTemplateClass> pageClasses = new ArrayList<>();
-                for(EntityTemplateClass entityTemplateClass : entityTemplateClasses){
-                    if(entityTemplateClass.getName().contains("-page")){
+                for (EntityTemplateClass entityTemplateClass : entityTemplateClasses) {
+                    if (entityTemplateClass.getName().contains("-page")) {
                         pageClasses.add(entityTemplateClass);
                     }
                 }
@@ -97,8 +99,44 @@ public class ApplicationEndpoint
                 template.set(ParserConstants.ENTITY_CLASSES, pageClasses);
                 return Response.ok(template).build();
             }
-            String page = entityTemplate.renderEntityInPageTemplate();
-            return Response.ok(page).build();
+            //if a version is present in db, try to fetch the page from db
+            else if(!id.hasLanguage()) {
+                RedisID primaryLanguageId = new RedisID(id, RedisID.PRIMARY_LANGUAGE);
+                //if no primary language can be found in db, it means the page is not present in db
+                if (!primaryLanguageId.hasLanguage()) {
+                    throw new NotFoundException("Couldn't find " + primaryLanguageId.getUrl());
+                }
+                return Response.seeOther(primaryLanguageId.getLanguagedUrl().toURI()).build();
+
+            }
+            //if the url contains both version and language-information, try to render the entity
+            else {
+                EntityTemplate entityTemplate = Redis.getInstance().fetchEntityTemplate(id);
+                //if no entity-template is returned from db, the specified language doesn't exist
+                if(entityTemplate == null){
+                    //since a last version was found, it must be present in db
+                    EntityTemplate storedInstance = (EntityTemplate) Redis.getInstance().fetchLastVersion(id, EntityTemplate.class);
+                    //TODO BAS SH: can't seem to get this work properly, since the version I expect to be saved to db are not present their... Showing en/museum after fr/museum has been made, is not possible for now...
+                    if(storedInstance == null){
+                        throw new Exception("Received null from db, after asking for last version of '" + id +"'. This should not happen!");
+                    }
+                    //if the requested language already exists in db, render and show it
+                    if(storedInstance.getLanguages().contains(id.getLanguage())){
+                        String page = storedInstance.renderEntityInPageTemplate(id.getLanguage());
+                        return Response.ok(page).build();
+                    }
+                    //save a new language (from url) to db, which is a copy of the last stored version
+                    else {
+                        String lastVersionHtml = TemplateParser.renderEntityInsidePageTemplate(storedInstance.getPageTemplate(), storedInstance);
+                        TemplateParser.updateEntity(url, lastVersionHtml);
+                        return Response.seeOther(url.toURI()).build();
+                    }
+                }
+                else {
+                    String page = entityTemplate.renderEntityInPageTemplate(entityTemplate.getLanguage());
+                    return Response.ok(page).build();
+                }
+            }
         }
         catch(Exception e){
             throw new NotFoundException("The page '" + randomURLPath + "' could not be found.", e);

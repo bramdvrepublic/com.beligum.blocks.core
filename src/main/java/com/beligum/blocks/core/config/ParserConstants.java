@@ -47,6 +47,9 @@ public class ParserConstants
     public static final String ENTITY_URL = "entityUrl";
 
 
+    /**the html-language attribute*/
+    public static final String LANGUAGE = "lang";
+
     /**the form a reference-node takes inside parsed templates*/
     public static final String REFERENCE_TO = "reference-to";
     /**the keyword (attribute) indicating a certain template-class should be used as blueprint for all instances*/

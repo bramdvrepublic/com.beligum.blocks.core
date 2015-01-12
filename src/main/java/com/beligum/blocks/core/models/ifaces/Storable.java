@@ -1,5 +1,6 @@
 package com.beligum.blocks.core.models.ifaces;
 
+import com.beligum.blocks.core.exceptions.SerializationException;
 import com.beligum.blocks.core.identifiers.RedisID;
 
 import java.util.Map;
@@ -46,5 +47,5 @@ public interface Storable extends Identifiable
      * Gives a hash-representation of this storable to save to the db. This method decides what information is stored in db, and what is not.
      * @return a map representing the key-value structure of this element to be saved to db
      */
-    public Map<String, String> toHash();
+    public Map<String, String> toHash() throws SerializationException;
 }
