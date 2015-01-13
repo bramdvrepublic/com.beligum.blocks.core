@@ -1,4 +1,4 @@
-<div typeof="museum-page" blueprint template="menu-footer">
+<div typeof="museum-page" blueprint template="menu-footer" can-layout>
     <div property="title" name="museum-title" typeof="pagetitle" class="pagetitle">
         <div class="row">
             <header class="col-md-12">
@@ -12,12 +12,14 @@
             </header>
         </div>
     </div>
-    <div class="sectiontitle row">
-        <header property="section-title" name="tentoonstellingen" typeof="sectiontitle" class="col-md-12">
-            <h3 class="red" can-edit>Onze tentoonstellingen</h3>
-        </header>
+    <div property="sectiontitle" name="tentoonstellingen" typeof="sectiontitle" class="sectiontitle" bleuprint>
+        <div class="row">
+            <header class="col-md-12">
+                <h3 class="red" property="title" can-edit>Onze tentoonstellingen</h3>
+            </header>
+        </div>
     </div>
-    <div property="exhibitions"  class="exhibitions" typeof="exhibitions" can-layout>
+    <div property="exhibitions" class="link-container" typeof="link-container" can-layout>
         <div class="row">
             <div class="column col-md-12">
                 <div class="row">
@@ -99,13 +101,20 @@
             </div>
         </div>
     </div>
-    <div class="sectiontitle row">
-        <header property="sectiontitle" name="gebouwen" typeof="sectiontitle" class="col-md-12">
-            <h3 class="red">Onze gebouwen</h3>
-        </header>
+    <div property="layout" typeof="whitespace" class="whitespace">
+        <div class="row">
+            <div class="col-md-12">
+            </div>
+        </div>
     </div>
-
-    <div property="buildings" class="buildings" can-layout>
+    <div property="sectiontitle" name="gebouwen" typeof="sectiontitle" class="sectiontitle">
+        <div class="row">
+            <header class="col-md-12">
+                <h3 class="red" property="title" can-edit>Onze gebouwen</h3>
+            </header>
+        </div>
+    </div>
+    <div property="buildings" class="link-container" typeof="link-container" can-layout>
         <div class="row">
             <div class="col-md-3">
                 <article property="building" name="guldenhal" typeof="building" class="building">

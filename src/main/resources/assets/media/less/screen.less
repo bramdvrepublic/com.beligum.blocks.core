@@ -229,7 +229,7 @@ a {
 
 .slideshow {
   //TODO BAS SH: ask Bram about not-compiling less
-  //	background: url('../images/slideshow01.jpg') no-repeat center center / cover;
+//  	background: url('../images/slideshow01.jpg') no-repeat center center / cover;
   background-color: darkgray;
   padding-top: 60px;
   padding-bottom: 60px;
@@ -442,7 +442,7 @@ footer {
   }
   .square-inner {
 	border: 3px solid @red;
-	//		background: url('../images/wat.png') no-repeat center 80% transparent;
+	background: url('../images/wat.png') no-repeat center 80% transparent;
 	display: block;
 	height:270px;
 	padding: 30px 20px;
@@ -474,9 +474,13 @@ footer {
   }
 }
 
-.exhibitions {
+
+.whitespace{
   margin-top: 30px;
-  margin-bottom: 30px;
+}
+
+.link-container {
+  margin-top: 30px;
   #houtbewerking .square-inner {
 	background-image: url('../images/houtbewerking.svg');
   }
@@ -494,57 +498,54 @@ footer {
   }
 }
 
-.buildings {
-  margin-top: 30px;
-  .building {
-	text-align: center;
-	margin-bottom: 50px;
-	a {
-	  display: block;
-	  &:hover {
-		text-decoration: none;
-		header {
-		  h3 {
-			text-decoration: underline;
-		  }
-		}
-		img {
-		  -webkit-filter: grayscale(0%);
-		  -moz-filter: grayscale(0%);
-		  -ms-filter: grayscale(0%);
-		  -o-filter: grayscale(0%);
-		  filter: grayscale(0%);
-		  filter: none;
+.building {
+  text-align: center;
+  margin-bottom: 50px;
+  a {
+	display: block;
+	&:hover {
+	  text-decoration: none;
+	  header {
+		h3 {
+		  text-decoration: underline;
 		}
 	  }
 	  img {
-		display: block;
-		border-radius: 100%;
-		width: 100%;
-		height: auto;
-		margin-bottom: 20px;
-		-webkit-filter: grayscale(100%);
-		-moz-filter: grayscale(100%);
-		-ms-filter: grayscale(100%);
-		-o-filter: grayscale(100%);
-		filter: grayscale(100%);
-		filter: url('../images/grayscale.svg#greyscale');
-		filter: gray;
+		-webkit-filter: grayscale(0%);
+		-moz-filter: grayscale(0%);
+		-ms-filter: grayscale(0%);
+		-o-filter: grayscale(0%);
+		filter: grayscale(0%);
+		filter: none;
 	  }
-	  header {
-		h3 {
-		  font-size: 3.6em;
-		  font-weight: 700;
-		}
-		p {
-		  font-size: 2.4em;
-		  color: @red;
-		}
+	}
+	img {
+	  display: block;
+	  border-radius: 100%;
+	  width: 100%;
+	  height: auto;
+	  margin-bottom: 20px;
+	  -webkit-filter: grayscale(100%);
+	  -moz-filter: grayscale(100%);
+	  -ms-filter: grayscale(100%);
+	  -o-filter: grayscale(100%);
+	  filter: grayscale(100%);
+	  filter: url('../images/grayscale.svg#greyscale');
+	  filter: gray;
+	}
+	header {
+	  h3 {
+		font-size: 3.6em;
+		font-weight: 700;
 	  }
 	  p {
-		font-size: 1.8em;
-		color: #7e7e7e;
+		font-size: 2.4em;
+		color: @red;
 	  }
+	}
+	p {
+	  font-size: 1.8em;
+	  color: #7e7e7e;
 	}
   }
 }
@@ -560,11 +561,6 @@ footer {
   a {
 	color: @red;
   }
-}
-
-.experiences {
-  margin-top: 30px;
-  margin-bottom: 30px;
 }
 
 .textpage-content {
