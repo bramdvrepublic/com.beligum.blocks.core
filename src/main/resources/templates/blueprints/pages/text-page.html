@@ -1,4 +1,4 @@
-<div typeof="text-page" class="textpage" blueprint template="menu-footer">
+<div typeof="text-page" class="textpage" blueprint template="menu-footer" can-layout>
     <div property="title" typeof="pagetitle" class="pagetitle">
         <div class="row">
             <header class="col-md-12">
@@ -13,11 +13,12 @@
         </div>
     </div>
 
-    <div property="content" typeof="textpage-content" class="textpage-content" can-layout>
+
         <div class="row">
             <div class="col-md-2 icon">
                 <img property="textpage-icon" src="/assets/media/images/smidicon.jpg" alt="" can-edit/>
             </div>
+            <div property="content" typeof="text-block" class="text-block" can-layout>
             <div property="textpage-text" class="text col-md-6" can-edit>
                 <h3 class="red">Metaal maakt al sinds de Prehistorie deel uit van onze geschiedenis. Maar wie kon dat ijzer en vuur de baas? Wie maakte zwaarden en bijlen? Wie zorgde voor sloten aan deuren en hendels aan ramen?</h3>
                 <p>Deze tentoonstelling schetst een beeld van het leven en werk van de dorpssmid, een beroep dat vandaag de dag bijna volledig verdwenen is.</p>
@@ -33,11 +34,11 @@
                     <p>Tel. 02 270 81 11 – <a class="red" href="mailto:info@mot.be" title="">info@mot.be</a></p>
                 </div>
             </div>
+            </div>
             <div class="col-md-4 images">
                 <div class="image">
                     <img property="textpage-image" src="/assets/media/images/smidimg.jpg" alt="" can-edit/>
                 </div>
             </div>
-        </div>
     </div>
 </div>
