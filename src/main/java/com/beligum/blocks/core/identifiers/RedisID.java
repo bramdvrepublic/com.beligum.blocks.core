@@ -15,6 +15,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -176,7 +177,6 @@ public class RedisID extends ID
             if(language.equals(PRIMARY_LANGUAGE)){
                 this.language = Languages.determinePrimaryLanguage(Redis.getInstance().fetchLanguageAlternatives(new RedisID(this.url, this.version, false)));
                 if(this.language.equals(NO_LANGUAGE)){
-                    //TODO BAS!: need to check this behaviour
                     this.idUri = initializeLanguageAndUrl(this.url, true);
                 }
             }

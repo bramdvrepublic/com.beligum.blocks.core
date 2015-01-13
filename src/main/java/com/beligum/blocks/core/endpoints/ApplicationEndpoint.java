@@ -116,7 +116,6 @@ public class ApplicationEndpoint
                 if(entityTemplate == null){
                     //since a last version was found, it must be present in db
                     EntityTemplate storedInstance = (EntityTemplate) Redis.getInstance().fetchLastVersion(id, EntityTemplate.class);
-                    //TODO BAS SH: can't seem to get this work properly, since the version I expect to be saved to db are not present their... Showing en/museum after fr/museum has been made, is not possible for now...
                     if(storedInstance == null){
                         throw new Exception("Received null from db, after asking for last version of '" + id +"'. This should not happen!");
                     }

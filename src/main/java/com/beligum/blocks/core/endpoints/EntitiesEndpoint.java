@@ -174,6 +174,5 @@ public class EntitiesEndpoint
         entityTemplate.setPageTemplateName(templateName);
         String entity = entityTemplate.renderEntityInPageTemplate(entityTemplate.getLanguage());
         return Response.ok(entity).build();
-
     }
 }

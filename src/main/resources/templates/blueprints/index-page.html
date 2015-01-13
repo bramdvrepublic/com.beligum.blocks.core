@@ -1,35 +1,35 @@
 <!--TODO BAS: op deze index-pagina wordt geen tandwieltje getoond om te kunnen saven -> hoe komt dat?-->
-<div typeof="index-page" blueprint template="slideshow">
-    <div property="welcome" typeof="welcome" class="welcome">
+<div typeof="index-page" blueprint template="slideshow" can-layout>
+    <div property="welcome" typeof="index-row" class="welcome" blueprint>
         <div class="row">
             <div class="col-md-4 image">
-                <img property="welcome-image" src="assets/media/images/maalsteen.jpg" alt="" can-edit/>
+                <img property="image" src="/assets/media/images/maalsteen.jpg" alt="" can-edit/>
             </div>
             <div class="text col-md-8">
                 <header>
-                    <h2 property="welcome-title" can-edit><span class="red">Welkom in het MOT</span>, de perfecte uitstap voor het hele gezin.</h2>
+                    <h2 property="title" can-edit><span class="red">Welkom in het MOT</span>, de perfecte uitstap voor het hele gezin.</h2>
                 </header>
-                <p property="welcome-text" can-edit>Vier historische gebouwen in Grimbergen, omgeven door een prachtig natuurdomein, nodigen je uit voor een dagje leerrijke ontspanning. Want er valt heel wat te beleven in het MOT, zowel binnen als buiten.</p>
-                <ul class="button-list">
-                    <li><a property="welcome-button1" class="button red" href="museum" title="" can-edit>over het museum</a></li>
-                    <li><a property="welcome-button2" class="button red" href="beleving" title="" can-edit>beleving in het MOT</a></li>
+                <p property="text" can-edit>Vier historische gebouwen in Grimbergen, omgeven door een prachtig natuurdomein, nodigen je uit voor een dagje leerrijke ontspanning. Want er valt heel wat te beleven in het MOT, zowel binnen als buiten.</p>
+                <ul property="button-list" typeof="button-list" class="button-list" can-layout blueprint>
+                    <li><a property="welcome-button" typeof="button" name="museum" class="button red" href="museum" title="" can-edit>over het museum</a></li>
+                    <li><a property="welcome-button" typeof="button" name="beleving" class="button red" href="beleving" title="" can-edit>beleving in het MOT</a></li>
                 </ul>
             </div>
         </div>
     </div>
-    <div property="search" typeof="search" class="search">
+    <div property="search" typeof="index-row" class="search">
         <div class="row">
             <div class="col-md-4 image">
-                <img property="search-image" src="assets/media/images/search.png" alt=""/>
+                <img property="image" src="/assets/media/images/search.png" alt=""/>
             </div>
             <div class="text col-md-8">
                 <header>
-                    <h2 property="search-title" class="red" can-edit>Online Opzoeken</h2>
-                    <p property="search-subtitle" class="red" can-edit>Het MOT beschikt over verschillende online databanken. Zoeken maar!</p>
+                    <h2 property="title" class="red" can-edit>Online Opzoeken</h2>
+                    <p property="subtitle" class="red" can-edit>Het MOT beschikt over verschillende online databanken. Zoeken maar!</p>
                 </header>
-                <p property="search-text" can-edit>Onze data is vrij toegankelijk te raadplegen. Ontdek waarvoor gevonden gereedschap dient of b.v. van welke smid het komt.</p>
-                <ul class="button-list">
-                    <li><a property="search-button" class="button red" href="opzoeken" title="" can-edit>zoeken maar</a></li>
+                <p property="text" can-edit>Onze data is vrij toegankelijk te raadplegen. Ontdek waarvoor gevonden gereedschap dient of b.v. van welke smid het komt.</p>
+                <ul property="button-list" typeof="button-list" class="button-list" can-layout>
+                    <li><a property="search-button" class="button red" typeof="button" href="opzoeken" title="" can-edit>zoeken maar</a></li>
                 </ul>
             </div>
         </div>

@@ -1,1 +1,142 @@
-*{padding:0;margin:0;font-family:"museo-sans";font-weight:300;font-size:7px}ul{list-style:none}h1,h1 *,h2,h3,h4{margin:0;font-weight:normal}a{text-decoration:none}.container,section{position:relative}.button:hover{background-color:#ce0538;color:#fff;text-decoration:none}.red{color:#ce0538}.bgblue{background-color:#0094d2 !important}.bgbrown{background-color:#8d402d !important}.bgdarkblue{background-color:#363558 !important}.bggreen{background-color:#3fa535 !important}.bgorange{background-color:#f39200 !important}.bgred{background-color:#ce0538 !important}#header{box-shadow:0 6px 12px rgba(0,0,0,0.1);position:relative;padding:0}#header .contact,#header #menu,#header .search-button,#header #accessibility{display:block}#header #logo{background-color:#fff;position:relative;z-index:1;padding-top:10px;padding-bottom:10px}#header #logo a{width:170px;height:37px;display:block;background:url('../images/MOT-logo-mobile.svg') no-repeat left top;text-indent:-9999px}#header #logo a img{display:block;width:100%;height:auto}#header #mobilebutton{position:absolute;right:15px;bottom:10px;cursor:pointer;z-index:5}#header #mobilebutton img{border-radius:3px}#header #navigation{position:absolute;top:55px;background-color:#fff;padding:10px 0;width:100%;z-index:10}#header #navigation #menu{margin-top:10px;text-align:center}#header #navigation #menu li{display:inline-block;margin-left:10px}#header #navigation #menu li:first-child{margin-left:0}#header #navigation #menu li a{color:#fff;font-size:2em;font-weight:700;display:block;padding:5px 10px;background-color:#ccc;border-radius:5px}#header #navigation #menu li .active{background-color:#ce0538}#header #navigation .contact{text-align:center}#header #navigation .contact ul{width:100%;background-color:#e5e5e5;display:inline-block;padding:10px 20px}#header #navigation .contact ul li{font-size:1.8em;color:#aaa;display:inline-block;margin-left:15px}#header #navigation .contact ul li:first-child{margin-left:0}#header #navigation .contact ul li a{font-size:1em;color:#aaa;display:block;text-decoration:underline}#header #navigation #accessibility{border-bottom:1px dashed #ccc;margin:0;text-align:right;margin-top:6px;text-align:center}#header #navigation #accessibility .col-md-12>*{float:none;display:inline-block}#header #navigation #accessibility .languages li{display:inline-block}#header #navigation #accessibility .languages li a{display:block;padding:5px 10px;color:#999;font-size:2.4em;font-weight:700}#header #navigation #accessibility .languages li .active{color:#ce0538}#header #navigation #accessibility .fontsize ul{padding-left:5px;margin-left:5px;border-left:none;display:inline-block}#header #navigation #accessibility .fontsize ul .smaller a{font-size:1.1em}#header #navigation #accessibility .fontsize ul .larger a{font-size:1.8em}#header #navigation #accessibility .fontsize ul li{vertical-align:bottom;display:inline-block;margin-left:10px}#header #navigation #accessibility .fontsize ul li a{display:block;background-color:#999;color:#fff;width:26px;height:26px;line-height:26px;text-align:center}#header #navigation #accessibility .fontsize ul li a:hover{background-color:#222;text-decoration:none}#header #navigation .search-button{text-align:center;margin:10px 15px 0;border-top:1px dashed #ccc;padding-top:10px}#header #navigation .search-button a{background-color:#ce0538;padding:5px 15px;border-radius:5px;font-size:2em;color:#fff;font-weight:700;display:inline-block;text-align:center;border:3px solid #ce0538}.slideshow article{background:url('../images/slideshow01.jpg') no-repeat center center / cover}.slideshow .container{padding-top:60px;padding-bottom:60px}.slideshow header .announcement{font-size:4.5em;font-weight:700}.slideshow header .slideshow-title{font-size:8em;font-weight:700;color:#fff}.slideshow header .slideshow-subtitle{font-size:3.5em;color:#fff}.welcome{text-align:center;background:url('../images/border.svg') no-repeat center bottom #fff}.welcome header h2{margin-bottom:30px;font-size:3.6em;color:#757575}.welcome header h2 span{font-size:1em;font-weight:700}.welcome p{color:#757575;font-size:2.4em}.welcome .image{margin-bottom:30px}.search{background-color:#efefef;text-align:center}.search header{margin-bottom:30px}.search header h2{font-size:6.5em;font-weight:700;margin-bottom:15px}.search header p{color:#ce0538;font-size:3.6em}.search p{font-size:2.4em;color:#222}footer .sponsor-list{text-align:center;padding:30px 0;margin:0}footer .sponsor-list li{display:inline-block;margin:0 0 30px 30px}footer .sponsor-list li:first-child{margin-left:0}footer .sponsor-list p{display:block;color:#bebebe;font-size:1.4em}footer #lastline{text-align:center;background-color:#ce0538;padding:15px 0}footer #lastline p{font-size:1.6em;color:#fff}footer #lastline p img{margin-right:15px}footer #lastline p a{font-size:1em;color:#fff;text-decoration:underline}.image{display:block;margin-bottom:30px}.image img{width:100%;height:auto;display:block}.button-list{margin:30px 0 0 -30px}.button-list li{display:inline-block;margin:0 0 30px 30px}.button-list li a{color:#ce0538;font-size:2.4em;font-weight:700;display:block;padding:10px 20px;border:3px solid #ce0538;text-decoration:none}.breadcrumb{margin:0 0 20px;background:none}.breadcrumb li{font-size:1.8em;font-weight:700;color:#777;display:inline-block;margin-left:5px}.breadcrumb li:first-child{margin-left:0}.breadcrumb li>*{font-size:inherit;color:inherit}.breadcrumb li a{margin-right:5px;font-weight:700}.page{background-color:#efefef}.page .pagetitle{text-align:center;margin-bottom:0 !important;margin-top:0 !important;padding-top:30px}.page .pagetitle h2{font-size:6.5em;font-weight:700}.page .sectiontitle{text-align:center;margin-top:0 !important}.page .sectiontitle h3{font-size:4em}.page>.container>.row{margin-top:30px}.what-button.square{text-align:center}.what-button.square a{display:block;width:100%;color:#ce0538}.what-button.square .square-inner h3{color:#ce0538;font-size:4.8em;font-weight:700}.what-button.square .square-inner{border:3px solid #ce0538;background:url('../images/wat.png') no-repeat center 80% transparent;display:block;height:270px;padding:30px 20px;background-repeat:no-repeat;background-position:center 80%}.square{text-align:center;margin-bottom:15px}.square a{display:block;width:100%;color:#fff}.square .square-inner{display:block;height:270px;padding:50px 20px;background-repeat:no-repeat;background-position:center 80%;background-color:#ce0538}.square .square-inner h3{font-size:3.6em;font-weight:700;color:#fff}.exhibitions{margin-bottom:30px}.exhibitions #houtbewerking .square-inner{background-image:url('../images/houtbewerking.svg')}.exhibitions #was .square-inner{background-image:url('../images/was.svg')}.exhibitions #smid .square-inner{background-image:url('../images/smid.svg')}.exhibitions #rijstteelt .square-inner{background-image:url('../images/rijstteelt.svg')}.exhibitions #molen .square-inner{background-image:url('../images/molen.svg')}.buildings .building{text-align:center;margin-bottom:50px}.buildings .building a{display:block}.buildings .building a:hover{text-decoration:none}.buildings .building a:hover header h3{text-decoration:underline}.buildings .building a:hover img{-webkit-filter:grayscale(0);-moz-filter:grayscale(0);-ms-filter:grayscale(0);-o-filter:grayscale(0);filter:grayscale(0);filter:none}.buildings .building a img{display:block;border-radius:100%;width:100%;height:auto;margin-bottom:20px;-webkit-filter:grayscale(100%);-moz-filter:grayscale(100%);-ms-filter:grayscale(100%);-o-filter:grayscale(100%);filter:grayscale(100%);filter:url('../images/grayscale.svg#greyscale');filter:gray}.buildings .building a header h3{font-size:3.6em;font-weight:700}.buildings .building a header p{font-size:2.4em;color:#ce0538}.buildings .building a p{font-size:1.8em;color:#7e7e7e}.info .square-inner{background-color:transparent;border:3px solid #ce0538}.info .square-inner h3{color:#ce0538}.info a{color:#ce0538}.experiences{margin-bottom:30px}.textpage-content{margin-top:0 !important;margin-bottom:60px}.textpage-content h3{font-size:3.6em;color:#ce0538;margin:30px 0 10px}.textpage-content p{color:#666;font-size:1.8em}.textpage-content p *{font-size:inherit}.textpage-content a{color:#ce0538;text-decoration:underline}.textpage-content .image{margin-top:30px}.textpage-content ul{margin-bottom:30px;list-style:disc outside;padding-left:10px}.textpage-content ul li{padding-left:2px;margin-bottom:5px}.textpage-content ul li p{margin-bottom:0}.textpage-content .info{margin:30px 0;padding:20px;border:2px solid #ce0538}.textpage-content .info h3{margin-top:0}.databases{margin:30px 0}.unidentified{background-color:#efefef;padding:30px 0}.unidentified header{margin-bottom:30px}.unidentified header h2{font-size:6.5em;font-weight:700;margin-bottom:10px}.unidentified header h3{font-size:4em;margin-bottom:10px}.unidentified header p{font-size:2.4em;color:#222}.unidentified .image{border:3px solid #fff}.research #header{background-color:#ce0538}.research #header #logo{background-color:#ce0538;position:relative;z-index:1}.research #header #logo a{width:170px;height:37px;display:block;background:url('../images/MOT-logo-mobile-white.svg') no-repeat left top;text-indent:-9999px}.research #header #logo a img{display:block;width:100%;height:auto}.research .page{background-color:#fff}.textpage{padding-bottom:60px}.textpage .pagetitle{padding-top:0;background:url('../images/smidbg.jpg') no-repeat center center / cover}.textpage .pagetitle .container{padding-top:100px;padding-bottom:100px}.textpage .pagetitle .container .breadcrumb li{color:#fff}.textpage .pagetitle .container .breadcrumb li a{color:inherit}.textpage .pagetitle .container h2{color:#fff}.textpage .icon{margin-top:30px}.textpage .icon img{width:100%;height:auto;display:block}
+*{padding:0;margin:0;font-family:"museo-sans";font-weight:300;font-size:7px}
+ul{list-style:none}
+h1,h1 *,h2,h3,h4{margin:0;font-weight:normal}
+a{text-decoration:none}
+.container,section{position:relative}
+.button:hover{background-color:#ce0538;color:#fff;text-decoration:none}
+.red{color:#ce0538}
+.bgblue{background-color:#0094d2 !important}
+.bgbrown{background-color:#8d402d !important}
+.bgdarkblue{background-color:#363558 !important}
+.bggreen{background-color:#3fa535 !important}
+.bgorange{background-color:#f39200 !important}
+.bgred{background-color:#ce0538 !important}
+#header{box-shadow:0 6px 12px rgba(0,0,0,0.1);position:relative;padding:0}
+#header .contact,#header #menu,#header .search-button,#header #accessibility{display:block}
+#header #logo{background-color:#fff;position:relative;z-index:1;padding-top:10px;padding-bottom:10px}
+#header #logo a{width:170px;height:37px;display:block;background:url('../images/MOT-logo-mobile.svg') no-repeat left top;text-indent:-9999px}
+#header #logo a img{display:block;width:100%;height:auto}
+#header #mobilebutton{position:absolute;right:15px;bottom:10px;cursor:pointer;z-index:5}
+#header #mobilebutton img{border-radius:3px}
+#header #navigation{position:absolute;top:55px;background-color:#fff;padding:10px 0;width:100%;z-index:10}
+#header #navigation #menu{margin-top:10px;text-align:center}
+#header #navigation #menu li{display:inline-block;margin-left:10px}
+#header #navigation #menu li:first-child{margin-left:0}
+#header #navigation #menu li a{color:#fff;font-size:2em;font-weight:700;display:block;padding:5px 10px;background-color:#ccc;border-radius:5px}
+#header #navigation #menu li .active{background-color:#ce0538}
+#header #navigation .contact{text-align:center}
+#header #navigation .contact ul{width:100%;background-color:#e5e5e5;display:inline-block;padding:10px 20px}
+#header #navigation .contact ul li{font-size:1.8em;color:#aaa;display:inline-block;margin-left:15px}
+#header #navigation .contact ul li:first-child{margin-left:0}
+#header #navigation .contact ul li a{font-size:1em;color:#aaa;display:block;text-decoration:underline}
+#header #navigation #accessibility{border-bottom:1px dashed #ccc;margin:0;text-align:right;margin-top:6px;text-align:center}
+#header #navigation #accessibility .col-md-12>*{float:none;display:inline-block}
+#header #navigation #accessibility .languages li{display:inline-block}
+#header #navigation #accessibility .languages li a{display:block;padding:5px 10px;color:#999;font-size:2.4em;font-weight:700}
+#header #navigation #accessibility .languages li .active{color:#ce0538}
+#header #navigation #accessibility .fontsize ul{padding-left:5px;margin-left:5px;border-left:none;display:inline-block}
+#header #navigation #accessibility .fontsize ul .smaller a{font-size:1.1em}
+#header #navigation #accessibility .fontsize ul .larger a{font-size:1.8em}
+#header #navigation #accessibility .fontsize ul li{vertical-align:bottom;display:inline-block;margin-left:10px}
+#header #navigation #accessibility .fontsize ul li a{display:block;background-color:#999;color:#fff;width:26px;height:26px;line-height:26px;text-align:center}
+#header #navigation #accessibility .fontsize ul li a:hover{background-color:#222;text-decoration:none}
+#header #navigation .search-button{text-align:center;margin:10px 15px 0;border-top:1px dashed #ccc;padding-top:10px}
+#header #navigation .search-button a{background-color:#ce0538;padding:5px 15px;border-radius:5px;font-size:2em;color:#fff;font-weight:700;display:inline-block;text-align:center;border:3px solid #ce0538}
+.slideshow {background:url('../images/slideshow01.jpg') no-repeat center center / cover}
+.slideshow .container{padding-top:60px;padding-bottom:60px}
+.slideshow header .announcement{font-size:4.5em;font-weight:700}
+.slideshow header .slideshow-title{font-size:8em;font-weight:700;color:#fff}
+.slideshow header .slideshow-subtitle{font-size:3.5em;color:#fff}
+.welcome{text-align:center;background:url('../images/border.svg') no-repeat center bottom #fff}
+.welcome header h2{margin-bottom:30px;font-size:3.6em;color:#757575}
+.welcome header h2 span{font-size:1em;font-weight:700}
+.welcome p{color:#757575;font-size:2.4em}
+.welcome .image{margin-bottom:30px}
+.search{background-color:#efefef;text-align:center}
+.search header{margin-bottom:30px}
+.search header h2{font-size:6.5em;font-weight:700;margin-bottom:15px}
+.search header p{color:#ce0538;font-size:3.6em}
+.search p{font-size:2.4em;color:#222}
+footer .sponsor-list{text-align:center;padding:30px 0;margin:0}
+footer .sponsor-list li{display:inline-block;margin:0 0 30px 30px}
+footer .sponsor-list li:first-child{margin-left:0}
+footer .sponsor-list p{display:block;color:#bebebe;font-size:1.4em}
+footer #lastline{text-align:center;background-color:#ce0538;padding:15px 0}
+footer #lastline p{font-size:1.6em;color:#fff}
+footer #lastline p img{margin-right:15px}
+footer #lastline p a{font-size:1em;color:#fff;text-decoration:underline}
+.image{display:block;margin-bottom:30px}
+.image img{width:100%;height:auto;display:block}
+.button-list{margin:30px 0 0 -30px}
+.button-list li{display:inline-block;margin:0 0 30px 30px}
+.button-list li a{color:#ce0538;font-size:2.4em;font-weight:700;display:block;padding:10px 20px;border:3px solid #ce0538;text-decoration:none}
+.breadcrumb{margin:0 0 20px;background:none}
+.breadcrumb li{font-size:1.8em;font-weight:700;color:#777;display:inline-block;margin-left:5px}
+.breadcrumb li:first-child{margin-left:0}
+.breadcrumb li>*{font-size:inherit;color:inherit}
+.breadcrumb li a{margin-right:5px;font-weight:700}
+.page{background-color:#efefef}
+.page .pagetitle{text-align:center;margin-bottom:0 !important;margin-top:0 !important;padding-top:30px}
+.page .pagetitle h2{font-size:6.5em;font-weight:700}
+.page .sectiontitle{text-align:center;margin-top:0 !important}
+.page .sectiontitle h3{font-size:4em}
+.page>.container>.row{margin-top:30px}
+.what-button.square{text-align:center}
+.what-button.square a{display:block;width:100%;color:#ce0538}
+.what-button.square .square-inner h3{color:#ce0538;font-size:4.8em;font-weight:700}
+.what-button.square .square-inner{border:3px solid #ce0538;background:url('../images/wat.png') no-repeat center 80% transparent;display:block;height:270px;padding:30px 20px;background-repeat:no-repeat;background-position:center 80%}
+.square{text-align:center;margin-bottom:15px}
+.square a{display:block;width:100%;color:#fff}
+.square .square-inner{display:block;height:270px;padding:50px 20px;background-repeat:no-repeat;background-position:center 80%;background-color:#ce0538}
+.square .square-inner h3{font-size:3.6em;font-weight:700;color:#fff}
+.exhibitions{margin-top:30px; margin-bottom:30px}
+.exhibitions #houtbewerking .square-inner{background-image:url('../images/houtbewerking.svg')}
+.exhibitions #was .square-inner{background-image:url('../images/was.svg')}
+.exhibitions #smid .square-inner{background-image:url('../images/smid.svg')}
+.exhibitions #rijstteelt .square-inner{background-image:url('../images/rijstteelt.svg')}
+.exhibitions #molen .square-inner{background-image:url('../images/molen.svg')}
+.buildings{margin-top:30px}
+.building{text-align:center;margin-bottom:50px}
+.building a{display:block}
+.building a:hover{text-decoration:none}
+.building a:hover header h3{text-decoration:underline}
+.building a:hover img{-webkit-filter:grayscale(0);-moz-filter:grayscale(0);-ms-filter:grayscale(0);-o-filter:grayscale(0);filter:grayscale(0);filter:none}
+.building a img{display:block;border-radius:100%;width:100%;height:auto;margin-bottom:20px;-webkit-filter:grayscale(100%);-moz-filter:grayscale(100%);-ms-filter:grayscale(100%);-o-filter:grayscale(100%);filter:grayscale(100%);filter:url('../images/grayscale.svg#greyscale');filter:gray}
+.building a header h3{font-size:3.6em;font-weight:700}
+.building a header p{font-size:2.4em;color:#ce0538}
+.building a p{font-size:1.8em;color:#7e7e7e}
+.info .square-inner{background-color:transparent;border:3px solid #ce0538}
+.info .square-inner h3{color:#ce0538}
+.info a{color:#ce0538}
+.experiences{margin-top: 30px; margin-bottom:30px}
+.textpage-content{margin-top:0 !important;margin-bottom:60px}
+.textpage-content h3{font-size:3.6em;color:#ce0538;margin:30px 0 10px}
+.textpage-content p{color:#666;font-size:1.8em}
+.textpage-content p *{font-size:inherit}
+.textpage-content a{color:#ce0538;text-decoration:underline}
+.textpage-content .image{margin-top:30px}
+.textpage-content ul{margin-bottom:30px;list-style:disc outside;padding-left:10px}
+.textpage-content ul li{padding-left:2px;margin-bottom:5px}
+.textpage-content ul li p{margin-bottom:0}
+.textpage-content .info{margin:30px 0;padding:20px;border:2px solid #ce0538}
+.textpage-content .info h3{margin-top:0}
+.databases{margin:30px 0}
+.unidentified{background-color:#efefef;padding:30px 0}
+.unidentified header{margin-bottom:30px}
+.unidentified header h2{font-size:6.5em;font-weight:700;margin-bottom:10px}
+.unidentified header h3{font-size:4em;margin-bottom:10px}
+.unidentified header p{font-size:2.4em;color:#222}
+.unidentified .image{border:3px solid #fff}
+.research #header{background-color:#ce0538}
+.research #header #logo{background-color:#ce0538;position:relative;z-index:1}
+.research #header #logo a{width:170px;height:37px;display:block;background:url('../images/MOT-logo-mobile-white.svg') no-repeat left top;text-indent:-9999px}
+.research #header #logo a img{display:block;width:100%;height:auto}
+.research .page{background-color:#fff}
+.textpage{padding-bottom:60px}
+.textpage .pagetitle{padding-top:0;background:url('../images/smidbg.jpg') no-repeat center center / cover}
+.textpage .pagetitle .container{padding-top:100px;padding-bottom:100px}
+.textpage .pagetitle .container .breadcrumb li{color:#fff}
+.textpage .pagetitle .container .breadcrumb li a{color:inherit}
+.textpage .pagetitle .container h2{color:#fff}
+.textpage .icon{margin-top:30px}
+.textpage .icon img{width:100%;height:auto;display:block}
