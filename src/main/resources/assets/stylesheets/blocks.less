@@ -18,14 +18,18 @@
   box-shadow: 0 5px 20px rgba(51, 102, 146, 0.70), 0 0 8px 5px rgba(111, 199, 223, 0.90) ;
 }
 
-.property-hover {
-  border: 1px dashed rgba(0, 0, 0, 0.8);
-//  -webkit-box-shadow: 0 1px 1px black, 0 0 1px 1px black ;
-//  box-shadow: 0 1px 1px black, 0 0 1px 1px black ;
+.blocks-property {
+
+}
+
+
+
+.property-hover, .property-hover:hover {
+  outline: 1px dashed rgba(0, 0, 0, 0.8);
 }
 
 .property-hover:focus {
-  outline:none;
+  outline: 1px dashed rgba(0, 0, 0, 0.8);
 }
 
 iframe {
@@ -117,12 +121,43 @@ iframe.cke_panel_frame  {
 // container type btn-group-xs waar alle knopjes inzitten.
 // Wordt gecentreerd
 .block-menu {
-  // alle knoppen
-  .btn {
-  }
-  .btn.diabled {
+  right: 100%;
+  max-width: 100%;
 
+  .block-menu-handle {
+    font-size: 20px;
+    padding: 8px 5px;
+    border: 2px solid deepskyblue;
+    background-color: dodgerblue;
+    float: right;
+    clear: both;
   }
+
+  .block-menu-item {
+    background-color: black;
+    color: white;
+    border: 1px solid white;
+    padding: 7px 5px 7px 5px;
+    float: right;
+    clear: both;
+    display: none;
+  }
+
+  .block-menu-item {
+    background-color: black;
+    color: white;
+    border: 1px solid white;
+    padding: 7px 5px 7px 5px;
+    float: right;
+    clear: both;
+    display: none;
+  }
+
+  &:hover .block-menu-item  {
+    display: block;
+  }
+
+
 }
 
 .blocks-main-menu {

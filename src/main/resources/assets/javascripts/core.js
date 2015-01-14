@@ -87,7 +87,6 @@ blocks.plugin("blocks.core.Constants", function() {
 
 });
 
-
 blocks.plugin("blocks.core.Class", [function () {
 
     //============================================================================

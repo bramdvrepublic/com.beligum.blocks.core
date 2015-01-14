@@ -92,12 +92,12 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
         } else if (blockEvent.block.current != null) {
             // find the first parent that is a row (but not a block)
             var activeRow = blockEvent.block.current.parent;
-            while (!(activeRow instanceof Elements.Row || activeRow instanceof Elements.Container ||activeRow == null)) {
+            while (!(activeRow instanceof blocks.elements.Row || activeRow instanceof blocks.elements.Container ||activeRow == null)) {
                 activeRow = activeRow.parent
             }
 
-            if (activeRow != null && activeRow instanceof Elements.Row) {
-                retVal = activeRow.findTriggeredResizeHandle(blockEvent.pageX, blockEvent.pageY, Elements.ResizeHandle);
+            if (activeRow != null && activeRow instanceof blocks.elements.Row) {
+                retVal = activeRow.findTriggeredResizeHandle(blockEvent.pageX, blockEvent.pageY, blocks.elements.ResizeHandle);
             }
         }
         return retVal;
@@ -260,7 +260,7 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
                 if (activeResizeHandle.leftColumn == null) {
                     var element = $('<div class="col-md-1"><div></div></div>');
                     activeResizeHandle.rightColumn.element.before(element);
-                    activeResizeHandle.leftColumn = new Elements.Column(0, 0, 0, 0, element, null, 0);
+                    activeResizeHandle.leftColumn = new blocks.elements.Column(0, 0, 0, 0, element, null, 0);
                     DOM.setColumnWidth(activeResizeHandle.rightColumn.element, DOM.getColumnWidth(activeResizeHandle.rightColumn.element) - diff);
 
                 } else if (activeResizeHandle.rightColumn == null) {

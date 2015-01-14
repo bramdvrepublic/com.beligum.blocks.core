@@ -8,7 +8,7 @@
  *
  */
 
-blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Elements", "blocks.core.Layouter", "blocks.core.Constants", "blocks.core.Overlay", function (Broadcaster, Elements, Layouter, Constants, Overlay) {
+blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Layouter", "blocks.core.Constants", "blocks.core.Overlay", function (Broadcaster, Layouter, Constants, Overlay) {
 
     var draggingEnabled = false;
     var dragging = false;

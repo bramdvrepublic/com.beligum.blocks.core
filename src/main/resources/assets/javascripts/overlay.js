@@ -46,18 +46,18 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", function(Constant
         element.removeClass(Constants.PROPERTY_HOVER_CLASS);
     };
 
-//    var addBlockBackground = function(block) {
-//        var overlaybackground = $("<div>").addClass(Constants.OVERLAY_BACKGROUND_CLASS);
-//        var zindex = maxIndex() + 1;
-//        overlaybackground.css("width", (block.right - block.left));
-//        overlaybackground.css("height", (block.bottom - block.top));
-//        overlaybackground.css("position", "absolute");
-//        overlaybackground.css("top", block.top);
-//        overlaybackground.css("left", block.left);
-//
-//        $("body").append(overlaybackground);
-//        return overlaybackground;
-//    };
+    var addBlockBackground = function(block) {
+        var overlaybackground = $("<div>").addClass(Constants.OVERLAY_BACKGROUND_CLASS);
+        var zindex = maxIndex() + 1;
+        overlaybackground.css("width", (block.right - block.left));
+        overlaybackground.css("height", (block.bottom - block.top));
+        overlaybackground.css("position", "absolute");
+        overlaybackground.css("top", block.top);
+        overlaybackground.css("left", block.left);
+
+        $("body").append(overlaybackground);
+        return overlaybackground;
+    };
 
     this.createForBlock = function (block, callback) {
         var overlayElement = $("<div>").addClass(Constants.OVERLAY_CLASS);

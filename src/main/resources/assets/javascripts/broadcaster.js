@@ -27,9 +27,10 @@
  * Using Broadcaster.sendNoTimeout("lookup") has the same effect as Broadcaster.send("lookup", null, -1);
  *
  * */
-blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Elements", "blocks.core.DomManipulation", function (Constants, Elements, DOM) {
+
+ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core.DomManipulation", function (Constants, DOM) {
     var Broadcaster = this;
-    var blocks = {current: null, previous: null};
+    var hoveredBlocks = {current: null, previous: null};
     var properties = {current: null, previous: null};
     var directionVector = {x1: 0, y1: 0, x2: 0, y2: 0};
     var lastPoints = [];
@@ -37,6 +38,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     var layoutTree = null;
     var layoutParentElement = null;
     var lastMoveEvent = $.Event("mousemove", {pageX:0, pageY:0});
+
 
 
     $(document).on("mousemove.blocks_broadcaster", function (event) {
@@ -47,7 +49,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     });
 
     this.block = function() {
-        return blocks;
+        return hoveredBlocks;
     };
 
     this.property = function() {
@@ -143,44 +145,44 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
 
     // sets the current active block
     this.getHooveredBlockForPosition = function (x, y) {
-        var currentBlock = blocks.current;
-        blocks.current = null;
+        var currentBlock = hoveredBlocks.current;
+        hoveredBlocks.current = null;
         // First search for active element
         // If an element is active, we have a big chance the next event is in the same element, so we start our search here
         if (currentBlock != null) {
             var bb = currentBlock.findActiveElement(x, y);
-            if (bb instanceof Elements.Block) {
-                blocks.current = bb;
+            if (bb instanceof blocks.elements.Block) {
+                hoveredBlocks.current = bb;
             }
         }
         // Our shortcut failed so search the full page
         // we loop the trees of elements to find the smallest active element
-        if (blocks.current == null) {
+        if (hoveredBlocks.current == null) {
             var i = 0;
-            while (i < Broadcaster.getLayoutTree().length && blocks.current == null) {
+            while (i < Broadcaster.getLayoutTree().length && hoveredBlocks.current == null) {
                 var bb = Broadcaster.getLayoutTree()[i].findActiveElement(x, y);
-                if (bb instanceof Elements.Block) {
-                    blocks.current = bb;
+                if (bb instanceof blocks.elements.Block) {
+                    hoveredBlocks.current = bb;
                 }
                 i++;
             }
         }
 
-        if (blocks.current != currentBlock) {
-            blocks.previous = currentBlock;
+        if (hoveredBlocks.current != currentBlock) {
+            hoveredBlocks.previous = currentBlock;
         }
 
         // Set Property
         var currentProperty = properties.current
         properties.current = null;
-        if (blocks.current != null) {
-            properties.current = blocks.current.getProperty(x, y);
+        if (hoveredBlocks.current != null) {
+            properties.current = hoveredBlocks.current.getProperty(x, y);
         }
         if (properties.current != currentProperty) {
             properties.previous = currentProperty;
         }
 
-        return blocks;
+        return hoveredBlocks;
     };
 
     this.send = function (eventName, custom) {
@@ -194,7 +196,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         e.pageX = lastMoveEvent.pageX;
         e.pageY = lastMoveEvent.pageY;
         e.direction = lastMoveEvent.direction;
-        e.block = blocks;
+        e.block = hoveredBlocks;
         e.property = properties;
         e.custom = custom;
         // send the event with jquery
@@ -234,6 +236,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     this.EVENTS.ACTIVATE_MOUSE = "ACTIVATE_MOUSE";
     this.EVENTS.DEACTIVATE_MOUSE = "DEACTIVATE_MOUSE";
     this.EVENTS.DO_REFRESH_LAYOUT = "DO_REFRESH_LAYOUT";
+    this.EVENTS.WILL_REFRESH_LAYOUT = "WILL_REFRESH_LAYOUT";
     this.EVENTS.DID_REFRESH_LAYOUT = "DID_REFRESH_LAYOUT";
     this.EVENTS.DOM_WILL_CHANGE = "DOM_WILL_CHANGE";
     this.EVENTS.DOM_DID_CHANGE = "DOM_DID_CHANGE";
@@ -289,8 +292,8 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
 
 
     var buildLayoutTree = function () {
-        blocks.previous = null;
-        blocks.current = null;
+        hoveredBlocks.previous = null;
+        hoveredBlocks.current = null;
         layoutTree = [];
         //_this.cleanLayout();
         if (layoutParentElement == null) {
@@ -300,7 +303,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         var findContainersInParent = function(parent) {
 
             if (parent != null && parent.length > 0 && isContainer(parent)) {
-                var container = new Elements.Container(parent);
+                var container = new blocks.elements.Container(parent);
                 container.createAllDropspots();
                 Logger.debug(container);
                 layoutTree.push(container);
@@ -312,7 +315,10 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
             }
 
         };
+
         findContainersInParent(layoutParentElement);
+
+
         Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DID_REFRESH_LAYOUT);
     };
 
@@ -320,7 +326,9 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         buildLayoutTree();
     });
 
+
     $(document).on(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, function() {
+        Broadcaster.sendNoTimeout(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT);
         buildLayoutTree();
     })
 
@@ -331,8 +339,14 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
 
 
     // On Boot
+     var resizeTimeout = null
     $(window).on("resize.blocks_broadcaster", function () {
-        Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);
+        if (resizeTimeout != null) {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = null;
+        }
+         resizeTimeout = setTimeout(function(){ Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);}, 200);
+
     });
 
 }])

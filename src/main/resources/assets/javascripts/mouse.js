@@ -60,7 +60,7 @@
  *
  */
 
-blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elements", "blocks.core.Layouter", "blocks.core.Constants", function (Broadcaster, Elements, Layouter, Constants) {
+blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "blocks.core.Constants", function (Broadcaster, Layouter, Constants) {
     // flag if this module is active
     var active = false;
     // dragging options, kept here for parsedContent while waiting for drag
@@ -109,7 +109,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
 
                     draggingStatus = Constants.DRAGGING.WAITING;
                     draggingStart = event;
-                    disableSelection();
+//                    disableSelection();
                 } else {
                     Logger.debug("We can not start because dragging is already in place or not allowed. " + draggingStatus);
                     resetMouse();
@@ -304,12 +304,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Elem
                 if (true) {
                     if (!event.shiftKey) {
                         event.preventDefault();
-                        setTimeout(function () {
-                            if (!dblClickFound) {
-                                Broadcaster.send(Broadcaster.EVENTS.CLICK_BLOCK);
-                                dblClickFound = false;
-                            }
-                        }, 0);
+
                     }
                 }
 

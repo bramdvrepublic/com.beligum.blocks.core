@@ -7,12 +7,15 @@
  *
  * */
 blocks
-    .plugin("blocks.core.Elements", ["blocks.core.Class", "blocks.core.Constants", "blocks.core.DomManipulation", function (Class, Constants, DOM) {
+    .plugin("blocks.core.Elements", ["blocks.core.Class", "blocks.core.Constants", "blocks.core.DomManipulation", "blocks.core.Edit", function (Class, Constants, DOM, Edit) {
 
         // Define a has Attribute function for jquery
         $.fn.hasAttribute = function(name) {
             return this.attr(name) !== undefined;
         };
+
+        blocks.elements = {};
+
 
 
         // smallest elemet with 4 corner
@@ -642,13 +645,10 @@ blocks
                     this.horizontalMiddle = this.top + ((this.bottom - this.top) / 2);
 
                 }
+
                 this.properties = [];
-                if ((!DOM.canLayout(element) && !DOM.canEdit(element)) ||
-                    (this.parent instanceof container && this.parent.element == element)) {
-                    this.getProperties();
-                } else if ((this.canLayout || this.canEdit) && DOM.isProperty(this.element)) {
-                    this.properties.push(new property(this.element));
-                }
+                this.generateProperties(this.element, true);
+
             },
 
             // gets all dropspots for this block and his parents, for each side
@@ -850,28 +850,27 @@ blocks
                 return null;
             },
 
-            getProperties: function() {
-                this.properties = [];
-                var children = this.element.children();
 
-                for (var i = 0; i < children.length; i++) {
-                    this.generateProperties($(children[i]));
+            generateProperties: function(element, isCurrentBlock) {
+                var prop = null;
+                var canEdit = DOM.canEdit(element);
+                var canLayout = DOM.canLayout(element)
+
+                if (canLayout && !isCurrentBlock) {
+                    prop = new property(element);
+                } else if (canEdit) {
+                    prop = new property(element);
+                    Edit.makeEditable(element);
                 }
 
-
-            },
-
-            generateProperties: function(element) {
-                if (DOM.canLayout(element)) {
-                    this.properties.push(new property(element));
-                } else if (DOM.canEdit(element)) {
-                    this.properties.push(new property(element));
-                } else if (DOM.isProperty(element) && DOM.isEntity(element)) {
-                    this.properties.push(new property(element));
-                } else if (element.children().length > 0) {
+                if ((canLayout || prop == null) && element.children().length > 0) {
                     for(var i=0; i < element.children().length; i++) {
-                        this.generateProperties($(element.children()[i]));
+                        this.generateProperties($(element.children()[i]), false);
                     }
+                }
+
+                if (prop != null) {
+                    this.properties.push(prop);
                 }
             },
 
@@ -891,11 +890,9 @@ blocks
         });
 
 
-
-        this.Surface = surface;
-        this.ResizeHandle = resizeHandle;
-        this.Row = row;
-        this.Container = container;
-        this.Block = block;
-        this.Column = column;
+        blocks.elements.ResizeHandle = resizeHandle;
+        blocks.elements.Row = row;
+        blocks.elements.Container = container;
+        blocks.elements.Block = block;
+        blocks.elements.Column = column;
     } ]);

@@ -17,7 +17,7 @@
  *
  */
 
-blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broadcaster", "blocks.core.Constants", "blocks.core.DomManipulation", function (Elements, Broadcaster, Constants, DOM) {
+blocks.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.Constants", "blocks.core.DomManipulation", function (Broadcaster, Constants, DOM) {
     var Layouter = this;
     // Helper function to return the jQuery Element of the drop location
     // and prepare the dropLocation for the drop
@@ -31,7 +31,7 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
 
         // If we drop on the outer edge of the container we wrap everything inside a new container
         // Or we drop on the 1 element inside the container
-        if (dropLocation instanceof Elements.Container) {
+        if (dropLocation instanceof blocks.elements.Container) {
             var childrenColumns = dropLocationElement.children();
             if (childrenColumns.length > 1) {
                 retVal = DOM.createRow().append(childrenColumns.remove());
@@ -182,7 +182,7 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Elements", "blocks.core.Broa
 
     // remove block
     this.removeBlock = function(block) {
-        if (block instanceof Elements.Block) {
+        if (block instanceof blocks.elements.Block) {
             Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
             DOM.removeBlock(block, 300, function() {
                 Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DOM_DID_CHANGE);

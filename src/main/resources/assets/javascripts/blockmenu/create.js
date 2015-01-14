@@ -2,7 +2,7 @@
  * Created by wouter on 27/11/14.
  */
 blocks.plugin("blocks.core.BlockMenu.new", ["blocks.core.BlockMenu", "blocks.core.Layouter", "blocks.core.Notification",  function(Menu, Layouter, Notification) {
-    var button = $('<div type="button" class="btn btn-default"><i class="glyphicon glyphicon-asterisk"></i></div>');
+    var button = $('<div ><i class="glyphicon glyphicon-asterisk"></i> Add custom block</div>');
     Menu.addButton({
         element: button,
         priority: 100
@@ -51,7 +51,7 @@ blocks.plugin("blocks.core.BlockMenu.new", ["blocks.core.BlockMenu", "blocks.cor
 }]);
 
 blocks.plugin("blocks.core.BlockMenu.newText", ["blocks.core.BlockMenu", "blocks.core.Layouter", "blocks.core.Notification",  function(Menu, Layouter, Notification) {
-    var button = $('<div type="button" class="btn btn-default"><i class="glyphicon glyphicon-align-justify"></i></div>')
+    var button = $('<div ><i class="glyphicon glyphicon-align-justify"></i> Add basic text block</div>')
     Menu.addButton({
         element: button,
         priority: 100
