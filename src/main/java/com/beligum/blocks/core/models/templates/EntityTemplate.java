@@ -27,27 +27,27 @@ public class EntityTemplate extends AbstractTemplate implements Storable
     private String pageTemplateName = ParserConstants.DEFAULT_PAGE_TEMPLATE;
 
 
-    /**
-     *
-     * Constructor for a new entity-instance of a certain entity-class. It will uses copies of the templates of the entity-class.
-     * It's UID will be the of the form "[url]:[version]". It uses the current application version and the currently logged in user for field initialization.
-     * @param id the id of this entity* @param entityTemplateClass the class of which this entity is a entity-instance
-     * @throw IDException if no template in the language specified by the id could be found in the templates-map
-     */
-    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass) throws IDException
-    {
-        super(id, (Map) null);
-        this.templates = new HashMap<>();
-        Map<RedisID, String> classTemplates = entityTemplateClass.getTemplates();
-        for(RedisID classTemplateId : classTemplates.keySet()){
-            this.templates.put(new RedisID(id, classTemplateId.getLanguage()), classTemplates.get(classTemplateId));
-        }
-        this.entityTemplateClassName = entityTemplateClass.getName();
-        this.pageTemplateName = entityTemplateClass.getPageTemplateName();
-        if(!this.getLanguages().contains(id.getLanguage())){
-            throw new IDException("No html-template in language '" + id.getLanguage() + "' found between templates.");
-        }
-    }
+//    /**
+//     *
+//     * Constructor for a new entity-instance of a certain entity-class. It will uses copies of the templates of the entity-class.
+//     * It's UID will be the of the form "[url]:[version]". It uses the current application version and the currently logged in user for field initialization.
+//     * @param id the id of this entity* @param entityTemplateClass the class of which this entity is a entity-instance
+//     * @throw IDException if no template in the language specified by the id could be found in the templates-map
+//     */
+//    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass) throws IDException
+//    {
+//        super(id, (Map) null);
+//        this.templates = new HashMap<>();
+//        Map<RedisID, String> classTemplates = entityTemplateClass.getTemplates();
+//        for(RedisID classTemplateId : classTemplates.keySet()){
+//            this.templates.put(new RedisID(id, classTemplateId.getLanguage()), classTemplates.get(classTemplateId));
+//        }
+//        this.entityTemplateClassName = entityTemplateClass.getName();
+//        this.pageTemplateName = entityTemplateClass.getPageTemplateName();
+//        if(!this.getLanguages().contains(id.getLanguage())){
+//            throw new IDException("No html-template in language '" + id.getLanguage() + "' found between templates.");
+//        }
+//    }
 
     /**
      *

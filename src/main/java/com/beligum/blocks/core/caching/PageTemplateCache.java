@@ -41,7 +41,7 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
                 if (R.cacheManager() != null && R.cacheManager().getApplicationCache() != null) {R.cacheManager().getApplicationCache().put(CacheKeys.PAGE_TEMPLATES, new HashMap<String, PageTemplate>());
                     instance = new PageTemplateCache();
                     //insert the most basic possible page-template, for fall-back reasons
-                    //TODO BAS!: need to re-test this default-template (when no page-templates are defined at all), since we added bootstrap in it's definition
+                    //TODO BAS: need to re-test this default-template (when no page-templates are defined at all), since we added bootstrap in it's definition
                     PageTemplate pageTemplate = new PageTemplate(instance.getDefaultTemplateName(), BlocksConfig.getDefaultLanguage(), "<!DOCTYPE html>" +
                                                                                                     "<html>" +
                                                                                                     "<head>" +
