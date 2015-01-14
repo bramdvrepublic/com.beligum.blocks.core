@@ -214,6 +214,14 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
 
     /**
      *
+     * @return true if this cache is (not yet) totally filled up with all templates from disk
+     */
+    public boolean isFillingUp(){
+        return runningTroughHtmlTemplates;
+    }
+
+    /**
+     *
      * @return the object-class being stored in this cache
      */
     abstract public Class<? extends AbstractTemplate> getCachedClass();

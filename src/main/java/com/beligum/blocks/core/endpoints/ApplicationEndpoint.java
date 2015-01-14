@@ -20,6 +20,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.ThreadFactory;
 
 @Path("/")
 public class ApplicationEndpoint
@@ -87,7 +88,14 @@ public class ApplicationEndpoint
             //if no such page is present in db, ask if user wants to create a new page
             if(id.getVersion() == RedisID.NO_VERSION) {
                 Template template = R.templateEngine().getEmptyTemplate("/views/new-page.html");
-                List<EntityTemplateClass> entityTemplateClasses = EntityTemplateClassCache.getInstance().values();
+                //TODO BAS: should we use threading here?
+                //the first time the server is started, we need to wait for the cache to be proparly filled, so all classes will be shown the very first time a new page is made.
+                EntityTemplateClassCache entityTemplateClassCache = EntityTemplateClassCache.getInstance();
+                while(entityTemplateClassCache.isFillingUp()){
+                    Thread.sleep(1000);
+                    entityTemplateClassCache = EntityTemplateClassCache.getInstance();
+                }
+                List<EntityTemplateClass> entityTemplateClasses = entityTemplateClassCache.values();
                 //TODO BAS: find general way to split entity-classes to be shown when creating a new page and when creating a new block in frontend
                 List<EntityTemplateClass> pageClasses = new ArrayList<>();
                 for (EntityTemplateClass entityTemplateClass : entityTemplateClasses) {
