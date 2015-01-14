@@ -176,7 +176,6 @@ public class RedisID extends ID
             if(language.equals(PRIMARY_LANGUAGE)){
                 this.language = Languages.determinePrimaryLanguage(Redis.getInstance().fetchLanguageAlternatives(new RedisID(this.url, this.version, false)));
                 if(this.language.equals(NO_LANGUAGE)){
-                    //TODO BAS!: need to check this behaviour
                     this.idUri = initializeLanguageAndUrl(this.url, true);
                 }
             }

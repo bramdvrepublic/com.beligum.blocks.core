@@ -8,8 +8,8 @@
     <link rel="icon" href="favicon.ico">
     <link href="/assets/media/css/bootstrap.min.css" rel="stylesheet" media="screen">
     <link href="/assets/media/css/bootstrap-theme.min.css" rel="stylesheet" media="screen">
-    <link href="/assets/media/css/screen2.css" rel="stylesheet" media="screen">
-    <link href="/assets/media/css/responsive.css" rel="stylesheet" media="screen">
+    <link href="/assets/media/less/screen.less" rel="stylesheet" media="screen">
+    <link href="/assets/media/less/responsive.less" rel="stylesheet" media="screen">
     <script src="/assets/media/js/jquery-1.11.0.min.js"></script>
     <script src="/assets/media/js/modernizr.js"></script>
     <script src="/assets/media/js/less.js"></script>
@@ -51,17 +51,19 @@
     </div>
 </header>
 <section>
-    <div class="container">
-        <div property="slideshow" typeof="mot-slideshow" use-blueprint></div>
+    <div class="container-fluid slideshow">
+        <!--<div class="container">-->
+            <div property="slideshow" typeof="slideshow-content" use-blueprint></div>
+        <!--</div>-->
     </div>
 </section>
 <section class="page">
-    <div class="container">
+    <div class="container-fluid">
         <div template-content></div>
     </div>
 </section>
 <footer>
-    <div class="container">
+    <div class="container-fluid">
         <div property="footer" typeof="sponsors" use-blueprint></div>
     </div>
     <div id="lastline">

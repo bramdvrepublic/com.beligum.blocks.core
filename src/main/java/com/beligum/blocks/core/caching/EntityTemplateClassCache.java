@@ -44,7 +44,6 @@ public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTempl
                 if (R.cacheManager() != null && R.cacheManager().getApplicationCache() != null) {
                     R.cacheManager().getApplicationCache().put(CacheKeys.ENTITY_CLASSES, new HashMap<String, EntityTemplateClass>());
                     instance = new EntityTemplateClassCache();
-                    //TODO BAS!: does this kind of default-template (with only one language) give us all we need for later rendering of any languaged entity?
                     //insert most basic possible entity-template-class, it is not saved to db
                     EntityTemplateClass entityTemplateClass = new EntityTemplateClass(instance.getDefaultTemplateName(), BlocksConfig.getDefaultLanguage(), "<div " + ParserConstants.TYPE_OF + "=\"" + ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS + "\" "+ ParserConstants.CAN_EDIT +"></div>", ParserConstants.DEFAULT_PAGE_TEMPLATE);
                     instance.getCache().put(instance.getTemplateKey(instance.getDefaultTemplateName()), entityTemplateClass);
