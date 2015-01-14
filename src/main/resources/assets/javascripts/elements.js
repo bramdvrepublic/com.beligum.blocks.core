@@ -238,7 +238,7 @@ blocks
          * Is the abstract class for DOM elements (row, container, block)
          * contains some helperfunctions
          * */
-            var layoutElement = Class.create(surface, {
+        var layoutElement = Class.create(surface, {
 
 
             top: 0,
@@ -854,9 +854,9 @@ blocks
                 this.properties = [];
                 var children = this.element.children();
 
-                    for (var i = 0; i < children.length; i++) {
-                        this.generateProperties($(children[i]));
-                    }
+                for (var i = 0; i < children.length; i++) {
+                    this.generateProperties($(children[i]));
+                }
 
 
             },
