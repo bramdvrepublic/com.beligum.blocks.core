@@ -13,6 +13,7 @@ import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
@@ -104,7 +105,8 @@ public class FileToCacheVisitor extends AbstractVisitor
                         EntityTemplate propertyInstance;
                         String language = getLanguage(element, entityTemplateClass);
                         if(needsBlueprint(element)) {
-                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language), entityTemplateClass);
+                            RedisID propertyId = RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
+                            propertyInstance = this.getNewEntityClassCopy(element, propertyId, entityTemplateClass);
                         }
                         else{
                             propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language), entityTemplateClass, element.outerHtml());
@@ -118,7 +120,8 @@ public class FileToCacheVisitor extends AbstractVisitor
                         node = replaceElementWithPropertyReference(element);
                     }
                     else if(needsBlueprint(element)){
-                        EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass, entityTemplateClass.getLanguage()), entityTemplateClass);
+                        RedisID defaultEntityId = RedisID.renderNewEntityTemplateID(entityTemplateClass, entityTemplateClass.getLanguage());
+                        EntityTemplate defaultEntity = this.getNewEntityClassCopy(element, defaultEntityId, entityTemplateClass);
                         Redis.getInstance().save(defaultEntity);
                         node = replaceElementWithEntityReference(element, defaultEntity);
                     }
@@ -148,6 +151,27 @@ public class FileToCacheVisitor extends AbstractVisitor
         }
         return super.tail(node, depth);
 
+    }
+
+
+    /**
+     * Make a new copy of the class-template, using all node-attributes of the node specified.
+     * @param node
+     * @param id
+     * @param entityClass
+     * @return
+     * @throws IDException
+     */
+    private EntityTemplate getNewEntityClassCopy(Node node, RedisID id, EntityTemplateClass entityClass) throws IDException {
+        Map<RedisID, String> classTemplates = entityClass.getTemplates();
+        Map<RedisID, String> copiedTemplates = new HashMap<>();
+        for(RedisID languageId : classTemplates.keySet()){
+            Element classRoot = TemplateParser.parse(classTemplates.get(languageId)).child(0);
+            classRoot.attributes().addAll(node.attributes());
+            classRoot.removeAttr(ParserConstants.USE_BLUEPRINT);
+            copiedTemplates.put(languageId, classRoot.outerHtml());
+        }
+        return new EntityTemplate(id, entityClass, copiedTemplates);
     }
 
     /**
