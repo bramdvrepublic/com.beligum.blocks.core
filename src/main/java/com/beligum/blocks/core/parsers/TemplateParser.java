@@ -54,7 +54,11 @@ public class TemplateParser
             if(!Languages.containsLanguageCode(language)){
                 language = entityTemplateClass.getLanguage();
             }
-            Element doc = parse(entityTemplateClass.getTemplate(language));
+            String html = entityTemplateClass.getTemplate(language);
+            if(html == null){
+                html = entityTemplateClass.getTemplate();
+            }
+            Element doc = parse(html);
             ClassToStoredInstanceVisitor visitor = new ClassToStoredInstanceVisitor(pageURL, language);
             Traversor traversor = new Traversor(visitor);
             traversor.traverse(doc);
@@ -94,10 +98,20 @@ public class TemplateParser
         if(!Languages.isNonEmptyLanguageCode(language)){
             throw new ParseException("No language specified!");
         }
-        Element DOM = parse(pageTemplate.getTemplate(language));
+        String html = pageTemplate.getTemplate(language);
+        //if the requested language cannot be found, use the default language
+        if(html == null){
+            html = pageTemplate.getTemplate();
+        }
+        Element DOM = parse(html);
         Elements referenceBlocks = DOM.select("[" + ParserConstants.REFERENCE_TO + "=" + ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME +"]");
         for(Element reference : referenceBlocks){
-            Element entityRoot = TemplateParser.parse(entityTemplate.getTemplate(language)).child(0);
+            String entityHtml = entityTemplate.getTemplate(language);
+            //if the requested language cannot be found, use the default language
+            if(entityHtml == null){
+                entityHtml = entityTemplate.getTemplate();
+            }
+            Element entityRoot = TemplateParser.parse(entityHtml).child(0);
             reference.replaceWith(entityRoot);
         }
         Traversor traversor = new Traversor(new ToHtmlVisitor(language));

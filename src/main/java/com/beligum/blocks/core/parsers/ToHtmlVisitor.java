@@ -46,7 +46,12 @@ public class ToHtmlVisitor extends AbstractVisitor
             if(isEntity(node) && node instanceof Element) {
                 Element entityRoot = (Element) node;
                 EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
-                Element entityClassRoot = TemplateParser.parse(entityTemplateClass.getTemplate(language)).child(0);
+                String entityTemplateClassHtml = entityTemplateClass.getTemplate(language);
+                //if no template could be found for the current language, fall back to the primary language
+                if(entityTemplateClassHtml == null){
+                    entityTemplateClassHtml = entityTemplateClass.getTemplate();
+                }
+                Element entityClassRoot = TemplateParser.parse(entityTemplateClassHtml).child(0);
 
                 //if no modifacations can be done, first we fill in the correct property-references, coming from the class
                 if(useClass(entityRoot, entityClassRoot)){
@@ -137,7 +142,12 @@ public class ToHtmlVisitor extends AbstractVisitor
                             throw new ParseException("Found bad reference. Not present in db: " + getReferencedId(remainingClassReferencingElement));
                         }
                     }
-                    Node classDefaultRoot = TemplateParser.parse(classDefault.getTemplate(language)).child(0);
+                    String classDefaultHtml = classDefault.getTemplate(language);
+                    //if the current language cannot be found, fall back to primary language
+                    if(classDefaultHtml == null){
+                        classDefaultHtml = classDefault.getTemplate();
+                    }
+                    Node classDefaultRoot = TemplateParser.parse(classDefaultHtml).child(0);
                     remainingClassReferencingElement.replaceWith(classDefaultRoot);
                 }
                 Node returnRoot = toClassRoot;
@@ -176,7 +186,12 @@ public class ToHtmlVisitor extends AbstractVisitor
                 throw new ParseException("Couldn't find last version of class-default property '" + defaultClassPropertyId + "' in db.");
             }
         }
-        Element defaultClassPropertyRoot = TemplateParser.parse(defaultClassPropertyTemplate.getTemplate(language)).child(0);
+        String defaultClassPropertyHtml = defaultClassPropertyTemplate.getTemplate(language);
+        //if no template could be found for the current language, fall back to the primary language
+        if(defaultClassPropertyHtml == null){
+            defaultClassPropertyHtml = defaultClassPropertyTemplate.getTemplate();
+        }
+        Element defaultClassPropertyRoot = TemplateParser.parse(defaultClassPropertyHtml).child(0);
         String referencedInstanceId = referenceId;
         RedisID id = new RedisID(referencedInstanceId, RedisID.LAST_VERSION, language);
         defaultClassPropertyRoot.attr(ParserConstants.RESOURCE, id.getUrl().toString());
@@ -199,7 +214,12 @@ public class ToHtmlVisitor extends AbstractVisitor
                         throw new ParseException("Found bad reference. Not found in db: " + referencedId);
                     }
                 }
-                Element instanceTemplateRoot = TemplateParser.parse(instanceTemplate.getTemplate(language)).child(0);
+                String instanceHtml = instanceTemplate.getTemplate(language);
+                //if no template could be found for the current language, fall back to the primary language
+                if(instanceHtml == null){
+                    instanceHtml = instanceTemplate.getTemplate();
+                }
+                Element instanceTemplateRoot = TemplateParser.parse(instanceHtml).child(0);
                 if(StringUtils.isEmpty(getResource(instanceTemplateRoot)) &&
                    //when referencing to a class-default, we don't want the resource to show up in the browser
                    StringUtils.isEmpty(referencedId.getUrl().toURI().getFragment())){

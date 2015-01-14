@@ -92,7 +92,6 @@ public class ApplicationEndpoint
                 //the first time the server is started, we need to wait for the cache to be proparly filled, so all classes will be shown the very first time a new page is made.
                 EntityTemplateClassCache entityTemplateClassCache = EntityTemplateClassCache.getInstance();
                 while(entityTemplateClassCache.isFillingUp()){
-                    Thread.sleep(1000);
                     entityTemplateClassCache = EntityTemplateClassCache.getInstance();
                 }
                 List<EntityTemplateClass> entityTemplateClasses = entityTemplateClassCache.values();

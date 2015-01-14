@@ -81,7 +81,7 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
 
     /**
      *
-     * @return the template in the specified language, or if this language is not present, the first preferred language is returned
+     * @return the template in the specified language, or if this language is not present, null is returned
      * @throws NullPointerException if language is null
      */
     public String getTemplate(String language){
@@ -90,9 +90,6 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
             templates.put(languageID.getLanguage(), this.templates.get(languageID));
         }
         String template = templates.get(language);
-        if(template == null){
-            template = this.getTemplate();
-        }
         return template;
     }
 
