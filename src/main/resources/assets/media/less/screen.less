@@ -347,6 +347,7 @@ footer {
 .image {
   display: block;
   margin-bottom: 30px;
+  margin-top: 30px;
   img {
 	width: 100%;
 	height: auto;
@@ -563,12 +564,14 @@ footer {
 }
 
 .text-block {
+//  margin-top: 20px;
+//  margin-bottom: 20px;
   margin-top: 30px;
-  margin-bottom: 60px;
   h3 {
 	font-size: 3.6em;
-	color: @red;
-	margin: 0 10px;
+	margin-top: 30px;
+	margin-bottom: 10px;
+	color: @red
   }
   p {
 	color: #666;
@@ -596,13 +599,27 @@ footer {
 	  }
 	}
   }
-  .bordered {
-	margin: 30px 0;
-	padding: 20px;
-	border: 2px solid @red;
-	h3 {
-	  margin-top: 0;
+  div[can-edit]{
+	*:first-child{
+	  margin-top: 20px;
+//	  padding-top: 10px;
 	}
+//	*:last-child{
+//	  padding-bottom: 10px;
+//	}
+//	*{
+//	  padding-left: 10px;
+//	  padding-right: 10px;
+//	}
+  }
+}
+
+.bordered {
+  border: 2px solid @red;
+  margin-top: 30px;
+  margin-bottom: 30px;
+  .text-block{
+	margin: 20px;
   }
 }
 
@@ -682,7 +699,6 @@ footer {
 	}
   }
   .icon {
-	margin-top: 30px;
 	img {
 	  width: 100%;
 	  height: auto;
