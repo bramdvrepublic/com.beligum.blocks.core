@@ -45,7 +45,7 @@ blocks.plugin("blocks.core.LayoutAid", ["blocks.core.Layouter", "blocks.core.Bro
     var currentBlock = null;
 
     var enterBlockHoover = function(blockEvent) {
-        if (blockEvent.block.current != null && blockEvent.block.current.canDrag && !BlockMenu.mouseOverMenu()) {
+        if (blockEvent.block.current != null && blockEvent.block.current.canDrag) {
 //            showLayoutFrame();
             Overlay.highlightBlock(blockEvent.block.current);
             currentBlock = blockEvent.block.current;
@@ -86,9 +86,7 @@ blocks.plugin("blocks.core.LayoutAid", ["blocks.core.Layouter", "blocks.core.Bro
     });
     $(document).on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, function (event) {
         Logger.debug("changed blocks leave");
-        if(!BlockMenu.mouseOverMenu()) {
             leaveBlockHoover(event);
-        }
     });
 
     $(document).on(Broadcaster.EVENTS.HOOVER_ENTER_PROPERTY, function (event) {
@@ -115,9 +113,7 @@ blocks.plugin("blocks.core.LayoutAid", ["blocks.core.Layouter", "blocks.core.Bro
         leaveBlockHoover(event);
         leavePropertyHoover(event);
     })
-//    $(document).on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, function() {
-//        createLayoutFrame();
-//    })
+
 
 
 }]);

@@ -121,7 +121,7 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
     var manageActiveResizeHandle = function (blocksEvent) {
         if (activeResizehandleChanged(blocksEvent)) {
             if (activeResizeHandle != null && !draggingEnabled) {
-                Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DISABLE_BLOCK_DRAG);
+                Broadcaster.send(Broadcaster.EVENTS.DISABLE_BLOCK_DRAG);
                 draggingEnabled = true;
                 showHandleElement(activeResizeHandle.drawSurface);
             }  else if (activeResizeHandle == null && draggingEnabled) {

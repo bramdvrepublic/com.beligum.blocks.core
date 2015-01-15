@@ -137,7 +137,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
             if (draggingStatus != Constants.DRAGGING.NOT_ALLOWED) {
                 var oldDragStatus = draggingStatus;
                 if (oldDragStatus == Constants.DRAGGING.YES) {
-                    Broadcaster.sendNoTimeout(Broadcaster.EVENTS.END_DRAG);
+                    Broadcaster.send(Broadcaster.EVENTS.END_DRAG);
                 }
             }
             if (dblClickFound) {
@@ -157,16 +157,6 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
             Broadcaster.send(Broadcaster.EVENTS.START_DRAG, {draggingStart: draggingStart});
         }
     };
-
-//
-//    var blockChanged = function(block) {
-//        var retVal = false;
-//        if (block.current != currentBlock) {
-//            retVal= true;
-//            currentBlock = block.current();
-//        }
-//        return retVal;
-//    };
 
     /*
      *
@@ -215,9 +205,9 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
                         Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK);
                         Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_PROPERTY);
                     } else {
-                        Broadcaster.sendNoTimeout(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK);
+                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK);
                         Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_PROPERTY);
-                        Broadcaster.sendNoTimeout(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK);
+                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK);
                         Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_PROPERTY);
 
                         //Logger.debug("changed blocks");
@@ -293,19 +283,14 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
                 mouseMove(event);
             });
 
-//            $(document).on("click.blocks_core", function(event) {
-//                if (true) {
-//                    if (!event.shiftKey) {
-//                        event.preventDefault();
-//
-//                    }
-//                }
-//            });
+            $(document).on("click.blocks_core", function(event) {
+//                event.preventDefault();
+            });
 
-            $(document).mouseleave(function(){
+            $(document).on("mouseleave.blocks_core", function(){
                 mouseUp(event);
                 Logger.debug("Mouse out of window. Cancel!");
-            })
+            });
             resetMouse(true);
         }
     };
@@ -317,6 +302,8 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
             $(document).off("mousedown.blocks_core");
             $(document).off("mouseup.blocks_core");
             $(document).off("mousemove.blocks_core");
+            $(document).off("mouseleave.blocks_core");
+            $(document).off("click.blocks_core");
         }
     };
 
@@ -325,6 +312,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
     });
 
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
+        Logger.debug("Start blocks: activate mouse");
         Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
     });
 

@@ -142,7 +142,7 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.C
         droppedElement = droppedFunctions[droppedString](droppedElement, dropLocationElement);
 
         DOM.appendElement(droppedElement, dropLocationElement, side, function() {
-            Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DOM_DID_CHANGE);
+            Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
         });
 
@@ -185,7 +185,7 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.C
         if (block instanceof blocks.elements.Block) {
             Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
             DOM.removeBlock(block, 300, function() {
-                Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DOM_DID_CHANGE);
+                Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
                 Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
             })
         }

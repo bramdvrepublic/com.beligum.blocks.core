@@ -67,7 +67,7 @@ blocks.plugin("blocks.core.Admin", ["blocks.core.DomManipulation", "blocks.core.
         // insert html
         // store the current block before we deactivate the mouse
 
-        Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         var element = block.element;
         var front = $("<div />");
         var back = $("<div />");

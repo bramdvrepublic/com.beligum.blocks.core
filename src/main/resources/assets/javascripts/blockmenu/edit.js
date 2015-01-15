@@ -25,7 +25,6 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
 
     var doEditText = function(element) {
 
-//        Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
 
         $(element).attr("contenteditable", true);
         var editor = $(element).ckeditor().editor;
@@ -41,8 +40,6 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
 
 
     var doEditTextInline = function(element) {
-
-//        Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         element.attr("contenteditable", true);
         var editor = new Medium({element: element[0], mode: Medium.inlineMode});
         $(element).addClass(Constants.PROPERTY_CLASS);
