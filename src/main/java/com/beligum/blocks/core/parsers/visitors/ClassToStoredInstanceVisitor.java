@@ -80,14 +80,16 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                     EntityTemplate defaultEntityTemplate = this.fetchDefaultEntityTemplate(unversionedResourceId);
                     // Make a new entity-template-instance, which is a copy of the default-tempalte
                     EntityTemplateClass entityClass = EntityTemplateClassCache.getInstance().get(typeOf);
+                    // If the current language is not present in the default template, copy the template in the primary-language to the new language
+                    if(defaultEntityTemplate.getTemplate(this.language) == null){
+                        RedisID newLanguageId = RedisID.renderLanguagedId(defaultEntityTemplate.getId().getUrl(), RedisID.NEW_VERSION, this.language);
+                        defaultEntityTemplate.add(newLanguageId, defaultEntityTemplate.getTemplate());
+                    };
                     EntityTemplate newEntityInstance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityClass, this.language), entityClass, defaultEntityTemplate.getTemplates());
                     instance = newEntityInstance;
                 }
                 node = replaceNodeWithEntity(node, instance);
                 newInstancesNodes.push(node);
-            }
-            catch (ParseException e){
-                throw e;
             }
             catch (Exception e) {
                 throw new ParseException("Could not parse an " + EntityTemplate.class.getSimpleName() + " from " + Node.class.getSimpleName() + " ÷" +
