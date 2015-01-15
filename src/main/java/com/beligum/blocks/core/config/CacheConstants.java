@@ -1,8 +1,8 @@
 package com.beligum.blocks.core.config;
 
-import com.beligum.blocks.core.models.IdentifiableObject;
-import com.beligum.blocks.core.models.templates.PageTemplate;
-import com.beligum.blocks.core.models.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.redis.IdentifiableObject;
+import com.beligum.blocks.core.models.redis.templates.PageTemplate;
+import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 
 /**
  * Created by bas on 03.11.14.

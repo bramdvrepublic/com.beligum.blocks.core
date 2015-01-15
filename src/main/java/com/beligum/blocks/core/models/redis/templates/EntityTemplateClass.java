@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.models.templates;
+package com.beligum.blocks.core.models.redis.templates;
 
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
@@ -10,7 +10,6 @@ import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.SerializationException;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.internationalization.Languages;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -142,7 +141,7 @@ public class EntityTemplateClass extends AbstractTemplate
                 throw new DeserializationException("Found empty hash");
             }
             else{
-                Map<RedisID, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
+                Map<RedisID, String> templates = fetchLanguageTemplatesFromHash(hash);
                 EntityTemplateClass newInstance = new EntityTemplateClass(id, templates, hash.get(DatabaseConstants.PAGE_TEMPLATE));
                 newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
                 newInstance.creator = hash.get(DatabaseConstants.CREATOR);

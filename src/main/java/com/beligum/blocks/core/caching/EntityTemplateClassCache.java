@@ -1,20 +1,15 @@
 package com.beligum.blocks.core.caching;
 
 import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.config.ParserConstants;
-import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.internationalization.Languages;
-import com.beligum.blocks.core.models.templates.AbstractTemplate;
-import com.beligum.blocks.core.models.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
+import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.core.framework.base.R;
-import com.beligum.core.framework.utils.Logger;
 
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 /**

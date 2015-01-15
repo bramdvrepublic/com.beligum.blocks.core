@@ -8,7 +8,6 @@
     <title></title>
 
     <link rel="icon" type="image/x-icon" href="/assets/images/favicon.ico" />
-    <link href="/assets/stylesheets/styles.less" rel="stylesheet" type="text/css">
     $!header-styles-extra
 
     <script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>

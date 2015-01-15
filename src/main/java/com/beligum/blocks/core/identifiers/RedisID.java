@@ -8,7 +8,7 @@ import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.internationalization.Languages;
-import com.beligum.blocks.core.models.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import org.apache.commons.lang3.StringUtils;
 
 import java.net.MalformedURLException;

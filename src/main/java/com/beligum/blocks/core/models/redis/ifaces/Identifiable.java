@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.models.ifaces;
+package com.beligum.blocks.core.models.redis.ifaces;
 
 import com.beligum.blocks.core.identifiers.ID;
 

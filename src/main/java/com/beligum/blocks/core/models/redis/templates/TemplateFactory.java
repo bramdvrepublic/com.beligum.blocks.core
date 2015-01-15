@@ -1,6 +1,5 @@
-package com.beligum.blocks.core.models.templates;
+package com.beligum.blocks.core.models.redis.templates;
 
-import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.identifiers.RedisID;
 

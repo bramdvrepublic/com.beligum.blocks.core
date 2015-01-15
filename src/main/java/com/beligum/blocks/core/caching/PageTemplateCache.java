@@ -5,10 +5,9 @@ import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.models.templates.AbstractTemplate;
-import com.beligum.blocks.core.models.templates.PageTemplate;
+import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
+import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.core.framework.base.R;
-import com.beligum.core.framework.utils.Logger;
 
 import java.util.HashMap;
 import java.util.Map;

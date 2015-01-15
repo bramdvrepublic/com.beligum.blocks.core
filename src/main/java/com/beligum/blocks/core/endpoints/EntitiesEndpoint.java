@@ -9,14 +9,10 @@ import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.models.templates.EntityTemplate;
-import com.beligum.blocks.core.models.templates.EntityTemplateClass;
-import com.beligum.blocks.core.models.templates.PageTemplate;
+import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
+import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
-import com.beligum.core.framework.base.R;
-import com.beligum.core.framework.base.RequestContext;
-import com.beligum.core.framework.templating.ifaces.Template;
-import org.apache.poi.hssf.util.HSSFColor;
 import org.hibernate.validator.constraints.NotBlank;
 
 import javax.ws.rs.*;

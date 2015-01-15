@@ -1,7 +1,7 @@
-package com.beligum.blocks.core.models;
+package com.beligum.blocks.core.models.redis;
 
 import com.beligum.blocks.core.identifiers.ID;
-import com.beligum.blocks.core.models.ifaces.Identifiable;
+import com.beligum.blocks.core.models.redis.ifaces.Identifiable;
 
 /**
  * Created by bas on 07.10.14.
