@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.parsers;
+package com.beligum.blocks.core.parsers.visitors;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
@@ -8,14 +8,16 @@ import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
+import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.blocks.core.parsers.dynamicblocks.DynamicBlock;
+import com.beligum.blocks.core.parsers.dynamicblocks.TranslationList;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
-import javax.swing.text.html.parser.Entity;
-import java.util.Set;
+import java.net.URL;
 
 /**
 * Created by wouter on 23/11/14.
@@ -31,7 +33,8 @@ public class ToHtmlVisitor extends AbstractVisitor
      * @param language the preferred language we want to render html in
      * @throws ParseException if no known language was specified
      */
-    public ToHtmlVisitor(String language) throws ParseException {
+    public ToHtmlVisitor(URL pageUrl, String language) throws ParseException {
+        this.pageUrl = pageUrl;
         this.language = Languages.getStandardizedLanguage(language);
         if(!Languages.isNonEmptyLanguageCode(this.language)){
             throw new ParseException("Found unknown language '" + this.language + "'.");
@@ -48,13 +51,13 @@ public class ToHtmlVisitor extends AbstractVisitor
                 EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
                 String entityTemplateClassHtml = entityTemplateClass.getTemplate(language);
                 //if no template could be found for the current language, fall back to the primary language
-                if(entityTemplateClassHtml == null){
+                if (entityTemplateClassHtml == null) {
                     entityTemplateClassHtml = entityTemplateClass.getTemplate();
                 }
                 Element entityClassRoot = TemplateParser.parse(entityTemplateClassHtml).child(0);
 
                 //if no modifacations can be done, first we fill in the correct property-references, coming from the class
-                if(useClass(entityRoot, entityClassRoot)){
+                if (useClass(entityRoot, entityClassRoot)) {
                     node = copyPropertiesToClassTemplate(entityRoot, entityClassRoot);
                 }
                 //if this is a referencing block, replace it
@@ -63,9 +66,29 @@ public class ToHtmlVisitor extends AbstractVisitor
             return node;
         }
         catch(Exception e){
-            throw new ParseException("Error while parsing node '" + node.nodeName() + "' at tree depth '" + depth + "' to html.", e);
+            throw new ParseException("Error while parsing node '" + node.nodeName() + "' at tree depth '" + depth + "' to html: \n \n " + node + "\n \n", e);
         }
     }
+
+    @Override
+    public Node tail(Node node, int depth) throws ParseException
+    {
+        try {
+            if(isEntity(node) && node instanceof Element) {
+                //TODO BAS: here we should use a listener to check for all dynamic blocks (maybe we could use a default dynamic block, doing what is now coded in the else-scope
+                DynamicBlock translationList = new TranslationList(this.language, this.pageUrl);
+                if (translationList.getTypeOf().equals(this.getTypeOf(node))) {
+                    node = translationList.generateBlock((Element) node);
+                }
+            }
+            return super.tail(node, depth);
+        }
+        catch(Exception e){
+            throw new ParseException("Error while parsing to html at \n \n" + node + "\n \n");
+        }
+    }
+
+
 
     /**
      * Determines wether or not the class-template should be used, or rather the instance itself. This is done using isModifiable(entityRoot) and isModifiable(entityClassRoot)
@@ -89,11 +112,7 @@ public class ToHtmlVisitor extends AbstractVisitor
         }
     }
 
-    @Override
-    public Node tail(Node node, int depth) throws ParseException
-    {
-        return super.tail(node, depth);
-    }
+
 
     /**
      * Copy the (editable) properties from the instance-template to the class-template

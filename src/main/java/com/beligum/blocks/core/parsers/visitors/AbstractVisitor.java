@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.parsers;
+package com.beligum.blocks.core.parsers.visitors;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.BlocksConfig;
@@ -9,6 +9,7 @@ import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
+import com.beligum.blocks.core.parsers.TemplateParser;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
@@ -363,8 +364,19 @@ public class AbstractVisitor
         return retVal;
     }
 
+    public boolean isChangable(Element element) {
+        if(element == null){
+            return false;
+        }
+        boolean retVal = false;
+        if (element.hasAttr(ParserConstants.CAN_CHANGE)) {
+            retVal = true;
+        }
+        return retVal;
+    }
+
     public boolean isModifiable(Element element) {
-        return isEditable(element) || isLayoutable(element);
+        return isEditable(element) || isLayoutable(element) || isChangable(element);
     }
 
     public ParserConstants.ModificationLevel getModificationLevel(Element element){
