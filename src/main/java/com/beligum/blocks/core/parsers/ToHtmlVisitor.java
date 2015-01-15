@@ -3,19 +3,23 @@ package com.beligum.blocks.core.parsers;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.exceptions.LanguageException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.velocity.runtime.directive.Parse;
 import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
-import javax.swing.text.html.parser.Entity;
-import java.util.Set;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 
 /**
 * Created by wouter on 23/11/14.
@@ -31,7 +35,8 @@ public class ToHtmlVisitor extends AbstractVisitor
      * @param language the preferred language we want to render html in
      * @throws ParseException if no known language was specified
      */
-    public ToHtmlVisitor(String language) throws ParseException {
+    public ToHtmlVisitor(URL pageUrl, String language) throws ParseException {
+        this.pageUrl = pageUrl;
         this.language = Languages.getStandardizedLanguage(language);
         if(!Languages.isNonEmptyLanguageCode(this.language)){
             throw new ParseException("Found unknown language '" + this.language + "'.");
@@ -60,11 +65,36 @@ public class ToHtmlVisitor extends AbstractVisitor
                 //if this is a referencing block, replace it
                 node = replaceWithReferencedInstance(node);
             }
+            //translate all links into the current language
+            else if (node instanceof  Element&& ((Element)node).tagName().equals("a")) {
+                node = this.translateUrl(node);
+            }
             return node;
         }
         catch(Exception e){
-            throw new ParseException("Error while parsing node '" + node.nodeName() + "' at tree depth '" + depth + "' to html.", e);
+            throw new ParseException("Error while parsing node '" + node.nodeName() + "' at tree depth '" + depth + "' to html: \n \n " + node + "\n \n", e);
         }
+    }
+
+    /**
+     * Translate the url found in the href-attribute into the current language
+     * @param node
+     * @return
+     */
+    private Node translateUrl(Node node) throws ParseException, URISyntaxException, MalformedURLException, LanguageException {
+        String url = node.attr("href");
+        String lang = this.language;
+        //if we're dealing with a translation link, we simple want the link of this a-node to be the link of this page, translated into the specified language
+        if (node.hasAttr(ParserConstants.TRANSLATE)) {
+            lang = node.attr(ParserConstants.LANGUAGE);
+            if(!Languages.isNonEmptyLanguageCode(lang)){
+                throw new ParseException("A " + ParserConstants.TRANSLATE + "-node needs a " + ParserConstants.LANGUAGE + "-attribute specifying the language into which the entity should be translated. Not present at: \n \n " + node + "\n\n");
+            }
+            url = this.pageUrl.toString();
+        }
+        url = Languages.translateUrl(url, lang);
+        node.attr("href", url);
+        return node;
     }
 
     /**

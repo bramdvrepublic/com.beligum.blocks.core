@@ -114,7 +114,7 @@ public class TemplateParser
             Element entityRoot = TemplateParser.parse(entityHtml).child(0);
             reference.replaceWith(entityRoot);
         }
-        Traversor traversor = new Traversor(new ToHtmlVisitor(language));
+        Traversor traversor = new Traversor(new ToHtmlVisitor(entityTemplate.getUrl(), language));
         traversor.traverse(DOM);
         return DOM.outerHtml();
     }
@@ -128,7 +128,7 @@ public class TemplateParser
     public static String renderTemplate(AbstractTemplate template) throws ParseException
     {
         Element classDOM = parse(template.getTemplate());
-        Traversor traversor = new Traversor(new ToHtmlVisitor(template.getLanguage()));
+        Traversor traversor = new Traversor(new ToHtmlVisitor(template.getId().getUrl(), template.getLanguage()));
         Node classRoot = classDOM.child(0);
         traversor.traverse(classRoot);
         return classDOM.outerHtml();

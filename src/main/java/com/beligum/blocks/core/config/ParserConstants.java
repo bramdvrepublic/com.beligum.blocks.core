@@ -56,6 +56,8 @@ public class ParserConstants
     public static final String BLUEPRINT = "blueprint";
     /**the keyword indicating a certain entity is a copy of the entity-class (blueprint)*/
     public static final String USE_BLUEPRINT = "use-blueprint";
+    /**the keyword indicating a certain a-node is a link to another language of the same entity*/
+    public static final String TRANSLATE = "translate";
 
     /**
      * RDFa-constants

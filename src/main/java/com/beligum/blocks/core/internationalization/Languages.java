@@ -3,6 +3,8 @@ package com.beligum.blocks.core.internationalization;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.IDException;
+import com.beligum.blocks.core.exceptions.LanguageException;
+import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import org.apache.commons.beanutils.converters.ArrayConverter;
 import org.apache.commons.collections.CollectionUtils;
@@ -10,6 +12,8 @@ import org.apache.commons.collections.SetUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.net.URI;
+import java.net.URL;
 import java.util.*;
 
 /**
@@ -129,6 +133,81 @@ public class Languages
         }
         String primaryLanguage = Languages.determinePrimaryLanguage(languages.keySet());
         return languages.get(primaryLanguage);
+    }
+
+    /**
+     *
+     * @param urlString a url absolute or relative (and starting with '/'), to be translated
+     * @param language the language to be added to the url
+     * @return a string-representation of the absolute or relative url
+     * @throws LanguageException
+     */
+    static public String translateUrl(String urlString, String language) throws LanguageException{
+        try {
+            /*
+             * Check language
+             */
+            Set<String> permittedLanguages = Languages.getPermittedLanguageCodes();
+            if (!Languages.getPermittedLanguageCodes().contains(language)) {
+                throw new LanguageException("Found unknown language: " + language);
+            }
+            /*
+             * Check url
+             */
+            URL url;
+            boolean isAbsolute;
+            boolean startsWithSlash;
+            //since the specified url could be a relative one, we first use a uri to detect that
+            URI uri = new URI(urlString);
+            if(uri.isAbsolute()) {
+                url = uri.toURL();
+                isAbsolute = true;
+            }
+            //relative urls are first turned into absolute one's
+            else{
+                url = new URL(new URL(BlocksConfig.getSiteDomain()), uri.toString());
+                isAbsolute = false;
+                startsWithSlash = urlString.startsWith("/");
+                if(!isAbsolute && !startsWithSlash){
+                    throw new LanguageException("Cannot properly translate relative urls which don't start with a '/'. Found '" + urlString + "'.");
+                }
+            }
+            /*
+             * Remove present language-information and add the new language, or remove it if Languages.NO_LANGUAGE was specified
+             */
+            //TODO BAS SH: what with mailto-links? Can we detect them using URL-class?
+            String urlPath = url.getFile();
+            if (!StringUtils.isEmpty(url.getRef())) {
+                urlPath += "#" + url.getRef();
+            }
+            String[] splitted = urlPath.split("/");
+            //the uri-path always starts with "/", so the first index in the splitted-array always will be empty ""
+            if (splitted.length > 1) {
+                String foundLanguage = splitted[1];
+                if (permittedLanguages.contains(foundLanguage)) {
+                    //remove the language-information from the middle of the id
+                    urlPath = "";
+                    for (int j = 2; j < splitted.length; j++) {
+                        urlPath += "/" + splitted[j];
+                    }
+                }
+            }
+            if(!NO_LANGUAGE.equals(language)) {
+                urlPath = "/" + language + urlPath;
+            }
+            /*
+             * Revert the absolute to relative urls, if needed
+             */
+            if(isAbsolute) {
+                return new URL(url.getProtocol(), url.getHost(), url.getPort(), urlPath).toString();
+            }
+            else{
+                return urlPath;
+            }
+        }catch(Exception e){
+            throw new LanguageException("Could not translate url '" + urlString + "' into '" + language + "'.", e);
+        }
+
     }
 
 }
