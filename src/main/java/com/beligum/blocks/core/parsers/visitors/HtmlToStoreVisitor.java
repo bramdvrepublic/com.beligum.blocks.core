@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.parsers;
+package com.beligum.blocks.core.parsers.visitors;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;

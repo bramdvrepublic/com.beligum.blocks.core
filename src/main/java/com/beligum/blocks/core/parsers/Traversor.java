@@ -1,6 +1,7 @@
 package com.beligum.blocks.core.parsers;
 
 import com.beligum.blocks.core.exceptions.ParseException;
+import com.beligum.blocks.core.parsers.visitors.AbstractVisitor;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.NodeVisitor;
 
