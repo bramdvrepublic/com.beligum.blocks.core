@@ -24,12 +24,13 @@
  * with that timeout value. Default is 0, so all registered callbacks will be called without waiting
  * for each other (async). When you give a timeout value < 0 then the next registered callback will
  * be called when the previous callback finished. (synnchronous).
- * Using Broadcaster.sendNoTimeout("lookup") has the same effect as Broadcaster.send("lookup", null, -1);
+ * Using Broadcaster.send("lookup") has the same effect as Broadcaster.send("lookup", null, -1);
  *
  * */
 
- blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core.DomManipulation", function (Constants, DOM) {
+blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core.DomManipulation", function (Constants, DOM) {
     var Broadcaster = this;
+    var active = false;
     var hoveredBlocks = {current: null, previous: null};
     var properties = {current: null, previous: null};
     var directionVector = {x1: 0, y1: 0, x2: 0, y2: 0};
@@ -40,13 +41,20 @@
     var lastMoveEvent = $.Event("mousemove", {pageX:0, pageY:0});
 
 
+    var registerMouseMove = function() {
+        $(document).on("mousemove.blocks_broadcaster", function (event) {
+            var direction = calculateDirection(event);
+            lastMoveEvent = event;
+            lastMoveEvent.block = Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
+            lastMoveEvent.direction = direction;
+        });
+    }
 
-    $(document).on("mousemove.blocks_broadcaster", function (event) {
-         var direction = calculateDirection(event);
-        lastMoveEvent = event;
-        lastMoveEvent.block = Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
-        lastMoveEvent.direction = direction;
-    });
+    var unregisterMouseMove = function() {
+        $(document).off("mousemove.blocks_broadcaster");
+    }
+
+
 
     this.block = function() {
         return hoveredBlocks;
@@ -176,7 +184,7 @@
         var currentProperty = properties.current
         properties.current = null;
         if (hoveredBlocks.current != null) {
-            properties.current = hoveredBlocks.current.getProperty(x, y);
+//            properties.current = hoveredBlocks.current.getProperty(x, y);
         }
         if (properties.current != currentProperty) {
             properties.previous = currentProperty;
@@ -185,12 +193,12 @@
         return hoveredBlocks;
     };
 
-    this.send = function (eventName, custom) {
-//        setTimeout(function() {Broadcaster.sendNoTimeout(eventName, custom)}, 0);
-        Broadcaster.sendNoTimeout(eventName, custom);
-    };
+//    this.send = function (eventName, custom) {
+////        setTimeout(function() {Broadcaster.sendNoTimeout(eventName, custom)}, 0);
+//        Broadcaster.sendNoTimeout(eventName, custom);
+//    };
 
-    this.sendNoTimeout = function(eventName, custom) {
+    this.send = function(eventName, custom) {
 //        Logger.debug(eventName);
         var e = $.Event(eventName);
         e.pageX = lastMoveEvent.pageX;
@@ -240,8 +248,10 @@
     this.EVENTS.DID_REFRESH_LAYOUT = "DID_REFRESH_LAYOUT";
     this.EVENTS.DOM_WILL_CHANGE = "DOM_WILL_CHANGE";
     this.EVENTS.DOM_DID_CHANGE = "DOM_DID_CHANGE";
-
-
+    this.EVENTS.STOP_BLOCKS = "STOP_BLOCKS";
+    this.EVENTS.START_BLOCKS = "START_BLOCKS";
+    this.EVENTS.WILL_SAVE = "WILL_SAVE";
+    this.EVENTS.DID_SAVE = "DID_SAVE";
 
 
     // The parent element where the tree is build
@@ -273,20 +283,20 @@
     }
 
     var findContainers = function(element) {
-      var retVal = [];
-      if (isContainer(element)) {
-          retVal.push(element);
-      } else {
-          var children = element.children();
-        for(var i=0; i < children.length; i++) {
-            var block = $(children[i]);
-            if (isContainer(block)) {
-                retVal.push(block)
-            } else {
-                retval.push.apply(retval, findContainers(block));
+        var retVal = [];
+        if (isContainer(element)) {
+            retVal.push(element);
+        } else {
+            var children = element.children();
+            for(var i=0; i < children.length; i++) {
+                var block = $(children[i]);
+                if (isContainer(block)) {
+                    retVal.push(block)
+                } else {
+                    retval.push.apply(retval, findContainers(block));
+                }
             }
         }
-      }
         return retVal;
     };
 
@@ -319,12 +329,8 @@
         findContainersInParent(layoutParentElement);
 
 
-        Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DID_REFRESH_LAYOUT);
+        Broadcaster.send(Broadcaster.EVENTS.DID_REFRESH_LAYOUT);
     };
-
-    $(document).ready(function() {
-        buildLayoutTree();
-    });
 
 
     $(document).on(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, function() {
@@ -336,16 +342,31 @@
         Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);
     });
 
+    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
+        active = true;
+        layoutTree = null;
+        buildLayoutTree();
+        registerMouseMove();
+    });
 
+    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
+        active = false;
+        unregisterMouseMove();
+        layoutTree = [];
+    });
 
     // On Boot
-     var resizeTimeout = null
+    var resizeTimeout = null
     $(window).on("resize.blocks_broadcaster", function () {
+
         if (resizeTimeout != null) {
             clearTimeout(resizeTimeout);
             resizeTimeout = null;
+            Logger.debug("timeout cleared")
+        } else {
+            Logger.debug("timeout not cleared")
         }
-         resizeTimeout = setTimeout(function(){ Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);}, 200);
+        resizeTimeout = setTimeout(function(){ Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);}, 200);
 
     });
 

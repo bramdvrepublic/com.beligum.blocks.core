@@ -14,6 +14,7 @@
 
 // Hover with mouse over block
 .block-hover {
+  position:absolute;
   -webkit-box-shadow: 0 5px 20px rgba(51, 102, 146, 0.70), 0 0 8px 5px rgba(111, 199, 223, 0.90) ;
   box-shadow: 0 5px 20px rgba(51, 102, 146, 0.70), 0 0 8px 5px rgba(111, 199, 223, 0.90) ;
 }
@@ -24,12 +25,17 @@
 
 
 
-.property-hover, .property-hover:hover {
+.property-hover {
   outline: 1px dashed rgba(0, 0, 0, 0.8);
+  cursor: text;
+}
+
+.property-hover:hover {
+  outline: 1px dashed rgba(51, 102, 146, 0.70);
 }
 
 .property-hover:focus {
-  outline: 1px dashed rgba(0, 0, 0, 0.8);
+  outline: 2px dashed rgba(51, 102, 146, 0.70);
 }
 
 iframe {
@@ -168,16 +174,24 @@ iframe.cke_panel_frame  {
   top: 10px;
   z-index: 9999;
   background-color: lightseagreen;
-
+  display: none;
   .main-menu-items {
 
   }
+}
 
-  .main-menu-button {
-    float: right;
-    font-size: 40px;
-  }
+.blocks-main-menu.open {
+  display: block;
+}
 
+
+
+.blocks-main-edit-button {
+  position: absolute;
+  font-size: 40px;
+  right: 0px;
+  top: 0px;
+  cursor: pointer;
 }
 
 

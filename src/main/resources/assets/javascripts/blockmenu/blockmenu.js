@@ -50,10 +50,8 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
         }
         menuElement.css("position", "absolute");
         menuElement.css("top", activeBlock.top + "px");
-        // center menu in block
+        // put menu in upper left corner of block
         var menuWidth = menuElement.width();
-//        var menuLeft = activeBlock.right - menuWidth;
-//        if (menuLeft < 0) menuLeft = 0;
         menuElement.css("left", (activeBlock.right - menuWidth) + "px");
         menuElement.css("z-index", Overlay.maxIndex() + 1);
         menuElement.show();
@@ -64,12 +62,6 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
         activeBlock = null;
         menuElement.hide();
     };
-
-    $(document).ready(function() {
-        $("body").append(menuElement);
-        BlockMenu.hideMenuElement();
-    })
-
 
     /*
     * Add button to menu
@@ -98,40 +90,13 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
         return activeBlock;
     }
 
+    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
+        $("body").append(menuElement.remove());
+        BlockMenu.hideMenuElement();
+    });
 
-
-//    var activate= function(blockEvent) {
-//       active = true;
-//        showMenuElement(blockEvent)
-//    };
-//
-//    var deactivate = function(blockEvent) {
-//       active = false;
-//       hideMenuElement(blockEvent);
-//    };
-//
-//
-//    var active = true;
-//    var activeBlock = null;
-    var dragdropPrevented = false;
-
-//    Broadcaster.on(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, "blocks.core.BlockMenu", function (event) {
-//        showMenu(event.blockEvent)
-//    });
-//    Broadcaster.on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, "blocks.core.BlockMenu", function (event) {
-//        // check if not active block
-//        showMenu(event.blockEvent)
-//    });
-//    Broadcaster.on(Broadcaster.EVENTS.HOOVER_OVER_BLOCK, "blocks.core.BlockMenu", function (event) {
-//        showMenu(event.blockEvent)
-//    });
-//
-//    Broadcaster.on(Broadcaster.EVENTS.START_DRAG, "blocks.core.BlockMenu", function (event) {
-//        deactivate(event.blockEvent);
-//    });
-//
-//    Broadcaster.on(Broadcaster.EVENTS.END_DRAG, "blocks.core.BlockMenu", function (event) {
-//        activate(event.blockEvent)
-//    });
+    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
+        menuElement.remove();
+    });
 
 }]);

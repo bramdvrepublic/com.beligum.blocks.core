@@ -1,4 +1,4 @@
-blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", function(Constants) {
+blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broadcaster", function(Constants, Broadcaster) {
 
 
     var maxIndex = function() {
@@ -10,24 +10,42 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", function(Constant
     };
 
     this.maxIndex = maxIndex;
-    var overlayStack = [];
-    var highlightBackground = null;
+
+    var highlightBorder = {
+        0: $('<div />').addClass(Constants.BLOCK_HOVER_CLASS),
+        1: $('<div />').addClass(Constants.BLOCK_HOVER_CLASS),
+        2: $('<div />').addClass(Constants.BLOCK_HOVER_CLASS),
+        3: $('<div />').addClass(Constants.BLOCK_HOVER_CLASS)
+    };
+
+
 
     this.highlightBlock = function(block) {
-        if (highlightBackground != null) highlightBackground.remove();
-//        highlightBackground = addBlockBackground(block);
-//        highlightBackground.addClass(Constants.BLOCK_HOVER_CLASS);
-        block.element.addClass(Constants.BLOCK_HOVER_CLASS);
-//        var zindex = maxIndex() + 1;
-//        block.element.css("position", "relative");
-//        block.element.css("z-index", zindex);
+        var borderWidth = 1
+        highlightBorder[0].css("left", block.left + "px");
+        highlightBorder[0].css("top", block.top + "px");
+        highlightBorder[0].css("width", (block.right - block.left) + "px");
+        highlightBorder[0].css("height", (borderWidth) + "px");
+
+        highlightBorder[1].css("left", block.left + "px");
+        highlightBorder[1].css("top", block.bottom + "px");
+        highlightBorder[1].css("width", (block.right - block.left) + "px");
+        highlightBorder[1].css("height", (borderWidth) + "px");
+
+        highlightBorder[2].css("left", block.left + "px");
+        highlightBorder[2].css("top", block.top + "px");
+        highlightBorder[2].css("width", (borderWidth) + "px");
+        highlightBorder[2].css("height", (block.bottom - block.top) + "px");
+
+        highlightBorder[3].css("left", block.right + "px");
+        highlightBorder[3].css("top", block.top + "px");
+        highlightBorder[3].css("width", (borderWidth) + "px");
+        highlightBorder[3].css("height", (block.bottom - block.top) + "px");
+        $("." + Constants.BLOCK_HOVER_CLASS).show();
     };
 
     this.unhighlightBlock = function(block) {
-        if (highlightBackground != null) highlightBackground.remove();
-        block.element.removeClass(Constants.BLOCK_HOVER_CLASS)
-//        block.element.css("position", "");
-//        block.element.css("z-index", "");
+        $("." + Constants.BLOCK_HOVER_CLASS).hide();
     };
 
     this.highlightProperty = function(property) {
@@ -46,131 +64,81 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", function(Constant
         element.removeClass(Constants.PROPERTY_HOVER_CLASS);
     };
 
-    var addBlockBackground = function(block) {
-        var overlaybackground = $("<div>").addClass(Constants.OVERLAY_BACKGROUND_CLASS);
-        var zindex = maxIndex() + 1;
-        overlaybackground.css("width", (block.right - block.left));
-        overlaybackground.css("height", (block.bottom - block.top));
-        overlaybackground.css("position", "absolute");
-        overlaybackground.css("top", block.top);
-        overlaybackground.css("left", block.left);
+//    this.createForBlock = function (block, callback) {
+//        var overlayElement = $("<div>").addClass(Constants.OVERLAY_CLASS);
+//        var zindex = maxIndex() + 1;
+//        overlayElement.css("z-index", zindex + 1);
+////        var overlay = {overlayElement: overlayElement, element: block.element, position: $(block.element).css("position")};
+////        $(block.element).css("z-index", zindex + 3);
+////        if ($(block.element).css("position") != "relative") {
+//
+////        }
+//        $(block.element).css("z-index", zindex + 3);
+//        $(block.element).css("position", "relative");
+//        $(block.element).css("box-shadow", "-1000px -1000px 5000px 5000px rgba(255,255,255, 0.7)");
+//        $(block.element).before(overlayElement);
+//
+//        var removeOverlay = function() {
+//            $(block.element).css("z-index", "");
+//            $(block.element).css("position", "");
+//            $(block.element).css("box-shadow", "none");
+//            overlayElement.remove();
+//            if (callback!= null) callback();
+//        };
+//        this.removeOverlay = removeOverlay;
+//
+//        overlayElement.on("click", function(event) {
+//            event.preventDefault();
+//            event.stopPropagation();
+//            removeOverlay();
+//        })
+//    }
 
-        $("body").append(overlaybackground);
-        return overlaybackground;
+    this.overlayForElement = function (element, callback) {
+        var ol = $("<div />").addClass(Constants.OVERLAY_CLASS);
+        ol.attr("style", "position: absolute; top: 0px; left: 0px; position: fixed; top: 0px; bottom: 0px; left: 0px; right: 0px; background-color: rgba(0,0,0,0.8); z-index: 9000");
+
+        var oldElement = element;
+
+        var oldStyle = null;
+        if (oldElement.hasAttribute('style')) oldStyle = oldElement.attr('style');
+        oldElement.css("visibility", "hidden");
+        var clonedElement = oldElement.clone();
+        clonedElement.attr("style", "position: absolute; z-index: 9001; left: " + element.offset().left +"px; top: "+ element.offset().top+"px; width:" + (element.width()) + "px");
+
+        $("body").append(ol).append(clonedElement);
+
+        ol.on("click", function () {
+
+            ol.remove();
+            clonedElement.remove();
+            oldElement.css("visibility", "visible");
+            if (oldStyle != null) {
+                clonedElement.attr("style", oldStyle);
+            } else {
+                clonedElement.removeAttr("style");
+            }
+            oldElement.replaceWith(clonedElement);
+            callback();
+
+        });
+
+        return clonedElement;
+
     };
 
-    this.createForBlock = function (block, callback) {
-        var overlayElement = $("<div>").addClass(Constants.OVERLAY_CLASS);
-        var zindex = maxIndex() + 1;
-        overlayElement.css("z-index", zindex + 1);
-//        var overlay = {overlayElement: overlayElement, element: block.element, position: $(block.element).css("position")};
-//        $(block.element).css("z-index", zindex + 3);
-//        if ($(block.element).css("position") != "relative") {
 
-//        }
-        $(block.element).css("z-index", zindex + 3);
-        $(block.element).css("position", "relative");
-        $(block.element).css("box-shadow", "-1000px -1000px 5000px 5000px rgba(255,255,255, 0.7)");
-        $(block.element).before(overlayElement);
-
-        var removeOverlay = function() {
-            $(block.element).css("z-index", "");
-            $(block.element).css("position", "");
-            $(block.element).css("box-shadow", "none");
-            overlayElement.remove();
-            if (callback!= null) callback();
-        };
-        this.removeOverlay = removeOverlay;
-
-        overlayElement.on("click", function(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            removeOverlay();
-        })
-    }
-
-    this.createForElement = function (element, callback) {
-//        var overlay = $("<div>").addClass(Constants.OVERLAY_CLASS);
-//        var zindex = maxIndex() + 1;
-//        element = $(element);
-//        overlay.css("z-index", zindex + 1);
-//        element.css("z-index", zindex + 3);
-//        $(element).css("position", "relative");
-//        element.css("box-shadow", "-1000px -1000px 5000px 5000px rgba(255,255,255, 0.7)");
-//        $(element).before(overlay);
-
-        var undoOverlay = function(event) {
-            var e = element;
-            var x1 = e.offset().left;
-            var x2 = x1 + e.width();
-            var y1 = e.offset().top;
-            var y2 = y1 + e.height();
-
-            var cke = $(".cke");
-            var a1 = 0; var a2 = 0; var b1 = 0; var b2 = 0;
-            if (cke.length > 0) {
-                var a1 = cke.offset().left;
-                var a2 = a1 + e.width();
-                var b1 = cke.offset().top;
-                var b2 = b1 + e.height();
-            }
-
-            if (!((a1 < event.pageX && event.pageX < a2 && b1 < event.pageY && event.pageY < b2) ||
-                (x1 < event.pageX && event.pageX < x2 && y1 < event.pageY && event.pageY < y2))) {
-                var parent = $(event.target);
-
-                while (parent.length > 0) {
-                    if (parent.hasClass("cke")) return;
-                    parent = $(parent[0].parentElement);
-                }
-
-                event.preventDefault();
-                event.stopPropagation();
-                removeOverlay();
-            }
+    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
+        for (var i = 0; i < 4; i++) {
+            $("body").append(highlightBorder[i].remove());
         }
+    })
 
-        var removeOverlay = function() {
-//            $(element).css("z-index", "");
-//            $(element).css("position", "");
-//            $(element).css("box-shadow", "none");
-//            overlay.remove();
-            $(document).unbind("click", undoOverlay)
-            if (callback!= null) callback();
-        };
-//        this.removeOverlay = removeOverlay;
-
-
-        $(document).bind("click", undoOverlay)
-    }
-
-
-
-    var setAbsolute = function(block, relative) {
-        var zindex = maxIndex() + 1;
-        block.element.css("z-index", zindex);
-
-        block.element.css("width", (block.right - block.left));
-        block.element.css("height", (block.bottom - block.top));
-        if (!relative) {
-            block.element.css("position", "absolute");
-            block.element.css("top", block.top);
-            block.element.css("left", block.left);
-        } else {
-            block.element.css("position", "relative");
+    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
+        for (var i = 0; i < 4; i++) {
+            highlightBorder[i].remove();
         }
-    }
-
-    var unsetAbsolute = function(block, relative) {
-        var zindex = maxIndex() + 1;
-        block.element.css("z-index", "");
-        block.element.css("position", "");
-        block.element.css("width", "");
-        block.element.css("height", "");
-        block.element.css("top", "");
-        block.element.css("left","");
-    }
-
+    })
 
 
 }]);

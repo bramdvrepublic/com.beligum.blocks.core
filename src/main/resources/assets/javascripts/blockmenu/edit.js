@@ -1,4 +1,4 @@
-blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overlay", "blocks.core.DomManipulation", function(Broadcaster, Overlay, DOM) {
+blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Constants", "blocks.core.Overlay", "blocks.core.DomManipulation", function(Broadcaster, Constants, Overlay, DOM) {
     var Edit = this;
     var editors = [];
     var lastPoint = {x:0, y:0};
@@ -13,6 +13,7 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
     this.makeEditable = function(element) {
 
             if (DOM.canEdit(element)) {
+
                 doEdit = editFunction(element);
             }
 
@@ -28,9 +29,10 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
 
         $(element).attr("contenteditable", true);
         var editor = $(element).ckeditor().editor;
-
+        $(element).addClass(Constants.PROPERTY_CLASS);
 
         editors.push(function() {
+            $(element).removeClass(Constants.PROPERTY_CLASS);
             editor.destroy();
             element.removeAttr("contenteditable");
         });
@@ -43,35 +45,29 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
 //        Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         element.attr("contenteditable", true);
         var editor = new Medium({element: element[0], mode: Medium.inlineMode});
-
+        $(element).addClass(Constants.PROPERTY_CLASS);
         editors.push(function() {
+            $(element).removeClass(Constants.PROPERTY_CLASS);
             editor.destroy();
             element.removeAttr("contenteditable");
         });
     };
 
-//    var doEditIframe = function(element) {
-//        var iframe = element;
-//        removeEditor();
-//        Overlay.createForElement(block, function () {
-//            $(iframe.removeClass("edit"));
-//            Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
-//            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-//        });
-//
-//        $(iframe.addClass("edit"));
-//    };
-
-//    var doZoom = function(element) {
-//        removeEditor();
-//
-//    }
 
     var removeEditors = function() {
-        for (var i = 0; i < editors.length; i++) {
-            editors[i]();
-        }
+        var temp = editors;
         editors = [];
+//        for (var i = 0; i < temp.length; i++) {
+        while(temp.length > 0) {
+            try {
+                var editor = temp.pop();
+                editor();
+
+            } catch (e) {
+                var x = 0;
+            }
+
+        }
     }
 
     var registeredByType = {};
@@ -113,5 +109,9 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Overl
     $(document).on(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT, function() {
         removeEditors();
     });
+
+    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
+        removeEditors();
+    })
 
 }]);

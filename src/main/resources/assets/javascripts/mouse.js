@@ -293,22 +293,14 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
                 mouseMove(event);
             });
 
-            $(document).on("dblclick.blocks_core", function(event) {
-                dblClickFound = true;
-                event.preventDefault();
-                Broadcaster.send(Broadcaster.EVENTS.DOUBLE_CLICK_BLOCK);
-
-            });
-
-            $(document).on("click.blocks_core", function(event) {
-                if (true) {
-                    if (!event.shiftKey) {
-                        event.preventDefault();
-
-                    }
-                }
-
-            });
+//            $(document).on("click.blocks_core", function(event) {
+//                if (true) {
+//                    if (!event.shiftKey) {
+//                        event.preventDefault();
+//
+//                    }
+//                }
+//            });
 
             $(document).mouseleave(function(){
                 mouseUp(event);
@@ -325,16 +317,20 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
             $(document).off("mousedown.blocks_core");
             $(document).off("mouseup.blocks_core");
             $(document).off("mousemove.blocks_core");
-            $(document).off("dblclick.blocks_core");
-            //$(document).off("click.blocks_core");
         }
     };
 
     $(document).on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, function () {
-        // TODO: What if layout refreshes while we are dragging
         resetMouse();
     });
 
+    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
+        Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+    });
+
+    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
+        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+    });
 
     $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function () {registerMouseEvents();});
     $(document).on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, function () {unregisterMouseEvents();});
@@ -342,12 +338,6 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
     $(document).on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, function () {disallowDrag();});
 
     window.ondragstart = function() {return false;};
-
-    if (this.config.ACTIVATE_AT_BOOT) {
-        $(document).ready(function () {
-            registerMouseEvents();
-        });
-    }
 
 
 }])

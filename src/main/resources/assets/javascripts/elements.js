@@ -99,7 +99,6 @@ blocks
             setOther: function() {
                 var retVal = null;
                 if (this.anchor != null) {
-                    Logger.debug("calculate other");
                     retVal = this.anchor.getElementAtSide(this.side);
                 }
                 return retVal;

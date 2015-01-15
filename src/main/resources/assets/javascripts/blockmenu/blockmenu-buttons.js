@@ -12,7 +12,7 @@
 // block-parsedContent class
 
 
-blocks.plugin("blocks.core.BlockMenu.delete", ["blocks.core.BlockMenu", "blocks.core.Layouter", "blocks.core.Notification", function(Menu, Layouter, Notification) {
+blocks.plugin("blocks.core.BlockMenu.delete", ["blocks.core.BlockMenu", "blocks.core.Layouter", "blocks.core.Notification",  function(Menu, Layouter, Notification) {
     var button = $('<div class="block-menu-item"><i class="glyphicon glyphicon-trash"></i> Delete</div>')
     Menu.addButton({
         element: button,
@@ -28,8 +28,6 @@ blocks.plugin("blocks.core.BlockMenu.delete", ["blocks.core.BlockMenu", "blocks.
         }
     });
 
-
-
     button.on("click", function(event) {
         event.stopPropagation();
         var currentBlock = Menu.currentBlock();
@@ -39,7 +37,9 @@ blocks.plugin("blocks.core.BlockMenu.delete", ["blocks.core.BlockMenu", "blocks.
     })
 }]);
 
-blocks.plugin("blocks.core.BlockMenu.zoom", ["blocks.core.BlockMenu", "blocks.core.Layouter", "blocks.core.Notification", "blocks.core.DomManipulation", "blocks.core.Broadcaster", function(Menu, Layouter, Notification, DOM, Broadcaster) {
+
+
+blocks.plugin("blocks.core.BlockMenu.zoom", ["blocks.core.BlockMenu", "blocks.core.Layouter", "blocks.core.Notification", "blocks.core.DomManipulation", "blocks.core.Broadcaster", "blocks.core.Overlay", function(Menu, Layouter, Notification, DOM, Broadcaster, Overlay) {
     var button = $('<div><i class="glyphicon glyphicon-trash"></i> Zoom</div>')
     Menu.addButton({
         element: button,
@@ -49,8 +49,6 @@ blocks.plugin("blocks.core.BlockMenu.zoom", ["blocks.core.BlockMenu", "blocks.co
             if (DOM.canLayout(block.element)) retVal = true;
             return retVal;
         }
-
-
     });
 
 
@@ -60,38 +58,16 @@ blocks.plugin("blocks.core.BlockMenu.zoom", ["blocks.core.BlockMenu", "blocks.co
         var currentBlock = Menu.currentBlock();
         var lastParent = Broadcaster.layoutParentElement;
 
+        var clonedElement = Overlay.overlayForElement(currentBlock.element, function() {
+            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+            Broadcaster.setLayoutParent(lastParent);
+            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+        });
 
-        var ol = $("<div />");
-        ol.attr("style", "position: absolute; top: 0px; left: 0px; position: fixed; top: 0px; bottom: 0px; left: 0px; right: 0px; background-color: rgba(0,0,0,0.8); z-index: 9000");
-
-        var oldElement = currentBlock.element;
-
-        var oldStyle = null;
-        if (oldElement.hasAttribute('style')) oldStyle = oldElement.attr('style');
-        oldElement.css("visibility", "hidden");
-        var clonedElement = oldElement.clone();
-        clonedElement.attr("style", "position: absolute; z-index: 9001; left: " + currentBlock.left +"px; top: "+ currentBlock.top+"px; width:" + (currentBlock.right - currentBlock.left) + "px");
-
-        $("body").append(ol).append(clonedElement);
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         Broadcaster.setLayoutParent(clonedElement);
         Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
 
-        ol.on("click", function () {
-            ol.remove();
-            clonedElement.remove()
-            oldElement.css("visibility", "visible");
-            if (oldStyle != null) {
-                clonedElement.attr("style", oldStyle);
-            } else {
-                clonedElement.removeAttr("style");
-            }
-            oldElement.replaceWith(clonedElement);
-            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
-            Broadcaster.setLayoutParent(lastParent);
-            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
 
-
-        });
     })
 }]);

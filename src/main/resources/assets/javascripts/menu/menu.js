@@ -1,7 +1,7 @@
 blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notification", function(Broadcaster, Notification) {
-    var menuBtn = $('<div class"main-menu-button"></div>');
+    var menuBtn = $('<div class="blocks-main-edit-button"><i class="glyphicon glyphicon-cog"></i></div>');
 
-    var menuBar = $('<div class="blocks-main-menu"><div class="main-menu-items"></div><div class="main-menu-button"><i class="glyphicon glyphicon-cog"></i></div></div>');
+    var menuBar = $('<div class="blocks-main-menu"><div class="main-menu-items"></div></div>');
     var btnList = menuBar;
 
     var templateBtn = $('<a class="btn  btn-default" href="#">Change template</a>');
@@ -12,21 +12,13 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     $("body").prepend(menuBar);
     $("body").append(menuBtn);
 
-    menuBar.on("mouseenter", function(event) {
-        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
-        menuBar.addClass("open");
-    });
-
-    menuBar.on("mouseleave", function(event) {
-        Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-        menuBar.removeClass("open");
-    });
-
     menuBtn.on("click", function(event) {
         if (menuBar.hasClass("open")) {
             menuBar.removeClass("open");
+            Broadcaster.send(Broadcaster.EVENTS.STOP_BLOCKS);
         } else {
             menuBar.addClass("open");
+            Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS);
         }
     });
 
