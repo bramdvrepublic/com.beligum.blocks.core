@@ -75,7 +75,7 @@ public class ToHtmlVisitor extends AbstractVisitor
     {
         try {
             if(isEntity(node) && node instanceof Element) {
-                //TODO BAS: here we should use a listener to check for all dynamic blocks (maybe we could use a default dynamic block, doing what is now coded in the else-scope
+                //TODO BAS: here we should use a listener to check for all dynamic blocks
                 DynamicBlock translationList = new TranslationList(this.language, this.pageUrl);
                 if (translationList.getTypeOf().equals(this.getTypeOf(node))) {
                     node = translationList.generateBlock((Element) node);

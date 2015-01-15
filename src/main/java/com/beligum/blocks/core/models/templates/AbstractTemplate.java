@@ -28,6 +28,15 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     /**the creator of this row*/
     protected String creator;
 
+/*    TODO BAS!: make scripts and links-injection possible in this order:
+    1) links van template
+    2) links blueprints
+    3) links blocks
+    4) scripts template
+    5) scripts blueprints
+    6) scripts blocks
+    */
+
     /**
      * Constructor taking a unique id.
      * @param id id for this template
@@ -37,9 +46,9 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     {
         super(id);
         this.templates = templates;
-        //TODO: this version should be fetched from pom.xml
+        //TODO BAS!: this version should be fetched from pom.xml
         this.applicationVersion = "test";
-        //TODO: logged in user should be added here
+        //TODO BAS!: implement user-management
         this.creator = "me";
     }
 
