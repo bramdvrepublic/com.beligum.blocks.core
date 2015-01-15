@@ -26,8 +26,8 @@ public class ParserConstants
 
 
     public final static String CAN_LAYOUT = "can-layout";
-    public final static String CAN_CREATE = "can-create";
     public final static String CAN_EDIT = "can-edit";
+    public final static String CAN_CHANGE = "can-change";
 
     public final static String DEFAULT_ENTITY_TEMPLATE_CLASS = "default";
     public final static String DEFAULT_PAGE_TEMPLATE = "default";
@@ -56,8 +56,15 @@ public class ParserConstants
     public static final String BLUEPRINT = "blueprint";
     /**the keyword indicating a certain entity is a copy of the entity-class (blueprint)*/
     public static final String USE_BLUEPRINT = "use-blueprint";
-    /**the keyword indicating a certain a-node is a link to another language of the same entity*/
-    public static final String TRANSLATE = "translate";
+
+    /**
+     * Dynamic blocks
+     */
+    public class DynamicBlocks{
+        /**the typeof indicating a block is a translation-block*/
+        public static final String TRANSLATION_LIST = "translation-list";
+    }
+
 
     /**
      * RDFa-constants

@@ -1,24 +1,22 @@
-package com.beligum.blocks.core.parsers;
+package com.beligum.blocks.core.parsers.visitors;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
-import com.beligum.blocks.core.exceptions.LanguageException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
+import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.blocks.core.parsers.dynamicblocks.DynamicBlock;
+import com.beligum.blocks.core.parsers.dynamicblocks.TranslationList;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.velocity.runtime.directive.Parse;
 import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 
 /**
@@ -53,21 +51,17 @@ public class ToHtmlVisitor extends AbstractVisitor
                 EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
                 String entityTemplateClassHtml = entityTemplateClass.getTemplate(language);
                 //if no template could be found for the current language, fall back to the primary language
-                if(entityTemplateClassHtml == null){
+                if (entityTemplateClassHtml == null) {
                     entityTemplateClassHtml = entityTemplateClass.getTemplate();
                 }
                 Element entityClassRoot = TemplateParser.parse(entityTemplateClassHtml).child(0);
 
                 //if no modifacations can be done, first we fill in the correct property-references, coming from the class
-                if(useClass(entityRoot, entityClassRoot)){
+                if (useClass(entityRoot, entityClassRoot)) {
                     node = copyPropertiesToClassTemplate(entityRoot, entityClassRoot);
                 }
                 //if this is a referencing block, replace it
                 node = replaceWithReferencedInstance(node);
-            }
-            //translate all links into the current language
-            else if (node instanceof  Element&& ((Element)node).tagName().equals("a")) {
-                node = this.translateUrl(node);
             }
             return node;
         }
@@ -76,26 +70,25 @@ public class ToHtmlVisitor extends AbstractVisitor
         }
     }
 
-    /**
-     * Translate the url found in the href-attribute into the current language
-     * @param node
-     * @return
-     */
-    private Node translateUrl(Node node) throws ParseException, URISyntaxException, MalformedURLException, LanguageException {
-        String url = node.attr("href");
-        String lang = this.language;
-        //if we're dealing with a translation link, we simple want the link of this a-node to be the link of this page, translated into the specified language
-        if (node.hasAttr(ParserConstants.TRANSLATE)) {
-            lang = node.attr(ParserConstants.LANGUAGE);
-            if(!Languages.isNonEmptyLanguageCode(lang)){
-                throw new ParseException("A " + ParserConstants.TRANSLATE + "-node needs a " + ParserConstants.LANGUAGE + "-attribute specifying the language into which the entity should be translated. Not present at: \n \n " + node + "\n\n");
+    @Override
+    public Node tail(Node node, int depth) throws ParseException
+    {
+        try {
+            if(isEntity(node) && node instanceof Element) {
+                //TODO BAS: here we should use a listener to check for all dynamic blocks (maybe we could use a default dynamic block, doing what is now coded in the else-scope
+                DynamicBlock translationList = new TranslationList(this.language, this.pageUrl);
+                if (translationList.getTypeOf().equals(this.getTypeOf(node))) {
+                    node = translationList.generateBlock((Element) node);
+                }
             }
-            url = this.pageUrl.toString();
+            return super.tail(node, depth);
         }
-        url = Languages.translateUrl(url, lang);
-        node.attr("href", url);
-        return node;
+        catch(Exception e){
+            throw new ParseException("Error while parsing to html at \n \n" + node + "\n \n");
+        }
     }
+
+
 
     /**
      * Determines wether or not the class-template should be used, or rather the instance itself. This is done using isModifiable(entityRoot) and isModifiable(entityClassRoot)
@@ -119,11 +112,7 @@ public class ToHtmlVisitor extends AbstractVisitor
         }
     }
 
-    @Override
-    public Node tail(Node node, int depth) throws ParseException
-    {
-        return super.tail(node, depth);
-    }
+
 
     /**
      * Copy the (editable) properties from the instance-template to the class-template

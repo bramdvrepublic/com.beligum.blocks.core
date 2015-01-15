@@ -136,14 +136,18 @@ public class Languages
     }
 
     /**
-     *
+     * Method translating the string representation of a url to the specified language. Relative url's must start with a '/' for them to be properly translated.
+     * Relative urls without '/' will not be translated, nor will absolute urls to other sites then the one specified in the configuration xml.
      * @param urlString a url absolute or relative (and starting with '/'), to be translated
      * @param language the language to be added to the url
-     * @return a string-representation of the absolute or relative url
+     * @return a string-representation of the absolute or relative url, or the urlString itself if it is empty (or null)
      * @throws LanguageException
      */
     static public String translateUrl(String urlString, String language) throws LanguageException{
         try {
+            if(StringUtils.isEmpty(urlString)){
+                return urlString;
+            }
             /*
              * Check language
              */
@@ -162,6 +166,11 @@ public class Languages
             if(uri.isAbsolute()) {
                 url = uri.toURL();
                 isAbsolute = true;
+                //only http-protocols will be translated (so f.i. a mailto-protocol will stay unchanged)
+                //only absolute links of this very site will be translated
+                if(!"http".equals(url.getProtocol()) || !new URL(BlocksConfig.getSiteDomain()).getAuthority().equals(url.getAuthority())){
+                    return urlString;
+                }
             }
             //relative urls are first turned into absolute one's
             else{
@@ -169,13 +178,12 @@ public class Languages
                 isAbsolute = false;
                 startsWithSlash = urlString.startsWith("/");
                 if(!isAbsolute && !startsWithSlash){
-                    throw new LanguageException("Cannot properly translate relative urls which don't start with a '/'. Found '" + urlString + "'.");
+                    return urlString;
                 }
             }
             /*
              * Remove present language-information and add the new language, or remove it if Languages.NO_LANGUAGE was specified
              */
-            //TODO BAS SH: what with mailto-links? Can we detect them using URL-class?
             String urlPath = url.getFile();
             if (!StringUtils.isEmpty(url.getRef())) {
                 urlPath += "#" + url.getRef();
@@ -207,7 +215,6 @@ public class Languages
         }catch(Exception e){
             throw new LanguageException("Could not translate url '" + urlString + "' into '" + language + "'.", e);
         }
-
     }
 
 }

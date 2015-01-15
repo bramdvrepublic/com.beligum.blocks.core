@@ -8,9 +8,11 @@ import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
-import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
-import org.apache.commons.lang3.StringUtils;
+import com.beligum.blocks.core.parsers.visitors.ClassToStoredInstanceVisitor;
+import com.beligum.blocks.core.parsers.visitors.FileToCacheVisitor;
+import com.beligum.blocks.core.parsers.visitors.HtmlToStoreVisitor;
+import com.beligum.blocks.core.parsers.visitors.ToHtmlVisitor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -148,8 +150,7 @@ public class TemplateParser
      * @param html
      * @return
      */
-    //this method is protected, so all classes in this package can access it!
-    protected static Document parse(String html){
+    public static Document parse(String html){
         Document retVal = new Document(BlocksConfig.getSiteDomain());
         Document parsed = Jsoup.parse(html, BlocksConfig.getSiteDomain(), Parser.htmlParser());
         /*
