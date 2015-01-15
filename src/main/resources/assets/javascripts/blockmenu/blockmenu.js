@@ -17,25 +17,16 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
     var BlockMenu = this;
     // on hoover block show menu
 
+
     var menuElement = $('<div class="block-menu"></div>');
     var menuHandle = $('<div class="block-menu-handle"><i class="glyphicon glyphicon-cog"></div>')
     menuElement.append(menuHandle);
 
+    $("body").append(menuElement);
+
     var buttons = [];
     var activeBlock = null;
-    var hoverOverMenu = false;
 
-    menuElement.on("mouseenter", function() {
-        hoverOverMenu = true;
-    });
-
-    menuElement.on("mouseleave", function() {
-        hoverOverMenu = false;
-    });
-
-    this.mouseOverMenu = function() {
-        return hoverOverMenu;
-    };
 
     this.showMenuElement = function(blockEvent) {
         menuElement.hide();
@@ -90,13 +81,13 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
         return activeBlock;
     }
 
-    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
-        $("body").append(menuElement.remove());
-        BlockMenu.hideMenuElement();
-    });
-
-    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
-        menuElement.remove();
-    });
+//    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
+//
+//        BlockMenu.hideMenuElement();
+//    });
+//
+//    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
+////        menuElement.remove();
+//    });
 
 }]);

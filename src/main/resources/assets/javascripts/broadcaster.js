@@ -193,22 +193,20 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
         return hoveredBlocks;
     };
 
-//    this.send = function (eventName, custom) {
-////        setTimeout(function() {Broadcaster.sendNoTimeout(eventName, custom)}, 0);
-//        Broadcaster.sendNoTimeout(eventName, custom);
-//    };
 
     this.send = function(eventName, custom) {
+        if (active || eventName == Broadcaster.EVENTS.START_BLOCKS) {
 //        Logger.debug(eventName);
-        var e = $.Event(eventName);
-        e.pageX = lastMoveEvent.pageX;
-        e.pageY = lastMoveEvent.pageY;
-        e.direction = lastMoveEvent.direction;
-        e.block = hoveredBlocks;
-        e.property = properties;
-        e.custom = custom;
-        // send the event with jquery
-        $(document).triggerHandler(e);
+            var e = $.Event(eventName);
+            e.pageX = lastMoveEvent.pageX;
+            e.pageY = lastMoveEvent.pageY;
+            e.direction = lastMoveEvent.direction;
+            e.block = hoveredBlocks;
+            e.property = properties;
+            e.custom = custom;
+            // send the event with jquery
+            $(document).triggerHandler(e);
+        }
     };
 
 
@@ -334,12 +332,12 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
 
 
     $(document).on(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, function() {
-        Broadcaster.sendNoTimeout(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT);
+        Broadcaster.send(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT);
         buildLayoutTree();
     })
 
     $(document).on(Broadcaster.EVENTS.DOM_DID_CHANGE, function() {
-        Broadcaster.sendNoTimeout(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);
+        Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);
     });
 
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {

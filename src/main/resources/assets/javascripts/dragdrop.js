@@ -341,7 +341,6 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.L
 
     $(document).on(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG, function (event) {
         draggingEnabled = true;
-        Logger.debug("dragging enabled");
         $("body").css("cursor", "pointer");;
     });
 
