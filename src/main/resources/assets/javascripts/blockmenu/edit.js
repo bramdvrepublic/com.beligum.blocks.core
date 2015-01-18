@@ -13,7 +13,6 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
     this.makeEditable = function(element) {
 
             if (DOM.canEdit(element)) {
-
                 doEdit = editFunction(element);
             }
 
@@ -36,10 +35,17 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
             element.removeAttr("contenteditable");
         });
 
+
+
     };
 
 
     var doEditTextInline = function(element) {
+
+        $(element).on("focus", function() {
+            Overlay.overlayForElement(element);
+        });
+
         element.attr("contenteditable", true);
         var editor = new Medium({element: element[0], mode: Medium.inlineMode});
         $(element).addClass(Constants.PROPERTY_CLASS);
@@ -48,6 +54,10 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
             editor.destroy();
             element.removeAttr("contenteditable");
         });
+
+//        $(element).on("mouseup", function() {
+//            var editor = new Medium({element: element[0], mode: Medium.inlineMode});
+//        })
     };
 
 

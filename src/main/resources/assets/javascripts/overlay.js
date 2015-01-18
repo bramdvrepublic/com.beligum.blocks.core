@@ -18,6 +18,13 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broa
         3: $('<div />').addClass(Constants.BLOCK_HOVER_CLASS)
     };
 
+    var hideAll = function(element) {
+        if (element.prop("tagName") != "BODY") {
+            var siblings = element.siblings().addClass("not-visible");
+            hideAll(element.parent());
+        }
+
+    }
 
 
     this.highlightBlock = function(block) {
@@ -95,37 +102,48 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broa
 //    }
 
     this.overlayForElement = function (element, callback) {
-        var ol = $("<div />").addClass(Constants.OVERLAY_CLASS);
-        ol.attr("style", "position: absolute; top: 0px; left: 0px; position: fixed; top: 0px; bottom: 0px; left: 0px; right: 0px; background-color: rgba(0,0,0,0.8); z-index: 9000");
+//        var ol = $("<div />").addClass(Constants.OVERLAY_CLASS);
+//        ol.attr("style", "position: absolute; top: 0px; left: 0px; position: fixed; top: 0px; bottom: 0px; left: 0px; right: 0px; background-color: rgba(0,0,0,0.8); z-index: 9000");
+//
+//        var oldElement = element;
+//
+//        var oldStyle = null;
+//        if (oldElement.hasAttribute('style')) oldStyle = oldElement.attr('style');
+//        oldElement.css("visibility", "hidden");
+//        var clonedElement = oldElement.clone();
+//        clonedElement.attr("style", "position: absolute; z-index: 9001; left: " + element.offset().left +"px; top: "+ element.offset().top+"px; width:" + (element.width()) + "px");
+//
+//        $("body").append(ol).append(clonedElement);
+//
+//        ol.on("click", function () {
+//
+//            ol.remove();
+//            clonedElement.remove();
+//            oldElement.css("visibility", "visible");
+//            if (oldStyle != null) {
+//                clonedElement.attr("style", oldStyle);
+//            } else {
+//                clonedElement.removeAttr("style");
+//            }
+//            oldElement.replaceWith(clonedElement);
+//            callback();
+//
+//        });
+//
+//        return clonedElement;
 
-        var oldElement = element;
 
-        var oldStyle = null;
-        if (oldElement.hasAttribute('style')) oldStyle = oldElement.attr('style');
-        oldElement.css("visibility", "hidden");
-        var clonedElement = oldElement.clone();
-        clonedElement.attr("style", "position: absolute; z-index: 9001; left: " + element.offset().left +"px; top: "+ element.offset().top+"px; width:" + (element.width()) + "px");
+        hideAll(element);
 
-        $("body").append(ol).append(clonedElement);
-
-        ol.on("click", function () {
-
-            ol.remove();
-            clonedElement.remove();
-            oldElement.css("visibility", "visible");
-            if (oldStyle != null) {
-                clonedElement.attr("style", oldStyle);
-            } else {
-                clonedElement.removeAttr("style");
-            }
-            oldElement.replaceWith(clonedElement);
-            callback();
-
+        $(".not-visible").on("click", function() {
+            $(".not-visible").removeClass(".not-visible");
         });
 
-        return clonedElement;
+        return element;
+
 
     };
+
 
 
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {

@@ -26,6 +26,26 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
 
     var buttons = [];
     var activeBlock = null;
+    var hoverOverMenu = false;
+
+
+    /*
+    * This sets a state if mouse is over the menu
+    * Makes the menu not disappear
+    * */
+
+    menuElement.on("mouseenter", function() {
+        hoverOverMenu = true;
+    });
+
+    menuElement.on("mouseleave", function() {
+        hoverOverMenu = false;
+    });
+
+    this.mouseOverMenu = function() {
+        return hoverOverMenu;
+    };
+
 
 
     this.showMenuElement = function(blockEvent) {

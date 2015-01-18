@@ -284,7 +284,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
             });
 
             $(document).on("click.blocks_core", function(event) {
-//                event.preventDefault();
+                event.preventDefault();
             });
 
             $(document).on("mouseleave.blocks_core", function(){

@@ -642,7 +642,6 @@ blocks
                 if (this.canDrag) {
                     this.verticalMiddle = this.left + ((this.right - this.left) / 2);
                     this.horizontalMiddle = this.top + ((this.bottom - this.top) / 2);
-
                 }
 
                 this.properties = [];
@@ -855,14 +854,20 @@ blocks
                 var canEdit = DOM.canEdit(element);
                 var canLayout = DOM.canLayout(element)
 
-                if (canLayout && !isCurrentBlock) {
-                    prop = new property(element);
+                if (!isCurrentBlock) {
+                    if (canLayout) {
+                        prop = new property(element);
+                    } else if (DOM.isProperty(element)) {
+                        prop = new property(element);
+                        $(element).addClass("property-hover");
+                    }
                 } else if (canEdit) {
                     prop = new property(element);
                     Edit.makeEditable(element);
                 }
 
-                if ((canLayout || prop == null) && element.children().length > 0) {
+//                if ((canLayout || prop == null) && element.children().length > 0) {
+                if ((prop == null) && element.children().length > 0) {
                     for(var i=0; i < element.children().length; i++) {
                         this.generateProperties($(element.children()[i]), false);
                     }
