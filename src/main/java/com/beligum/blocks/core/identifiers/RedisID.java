@@ -372,6 +372,26 @@ public class RedisID extends ID
     }
 
     /**
+     * Method for getting a new uid for an entity belonging to a page-template
+     * @param pageTemplateName
+     * @return A versioned id of the form "blocks://[db-alias]/pageTemplates/[pageTemplateName]#[proptery]"
+     */
+    public static RedisID renderNewPageTemplateDefaultEntity(String pageTemplateName, String property, String language) throws IDException
+    {
+        try{
+            RedisID newID = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName + "#" + property), NEW_VERSION, true);
+            while(Redis.getInstance().fetchEntityTemplateClass(newID) != null) {
+                newID = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName + "#" + property), NEW_VERSION, true);
+            }
+            newID.language = language;
+            return newID;
+        }
+        catch (Exception e) {
+            throw new IDException("Could not construct id from site-domain '" + BlocksConfig.getSiteDomain() + "', name '" + pageTemplateName + "' and property '" + property + "'.");
+        }
+    }
+
+    /**
      * Method for getting a new template-class uid for a certain class.
      * @param entityTemplateClassName the name for this entity-class
      * @param language the language this entity-class is written in

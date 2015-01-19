@@ -36,6 +36,10 @@ public class FileToCacheVisitor extends AbstractVisitor
     private Stack<Boolean> parsingClassToBeCached = new Stack<>();
     /**the node of the page-template currently being parsed which has to be replaced with an entity*/
     private Element pageTemplateContentNode = null;
+    /**boolean indicating if we are parsing default entities for a certain page-template*/
+    private boolean enteredPageTemplateContentNode = false;
+    /**the language of this file, if present*/
+    private String pageTemplateLanguage = null;
 
     public FileToCacheVisitor()
     {
@@ -58,9 +62,11 @@ public class FileToCacheVisitor extends AbstractVisitor
             if (isPageTemplateRootNode(node)) {
                 this.pageTemplateName = getPageTemplateName(node);
                 this.parsingPageTemplate = true;
+                this.pageTemplateLanguage = getLanguage(node, null);
             }
             else if (parsingPageTemplate && isPageTemplateContentNode(node) && node instanceof Element) {
                 pageTemplateContentNode = (Element) node;
+                this.enteredPageTemplateContentNode = true;
             }
             if(hasTypeOf(node)) {
                 parsingClassToBeCached.push(containsClassToBeCached(node));
@@ -83,6 +89,9 @@ public class FileToCacheVisitor extends AbstractVisitor
             else{
                 throw new ParseException("Haven't found a content-node for page-template '" + getPageTemplateName(node) + "'.");
             }
+        }
+        if(node == this.pageTemplateContentNode){
+            this.enteredPageTemplateContentNode = false;
         }
         //if we reached an entity-node, determine it's entity-class and if needed, create a new entity-instance
         if (node instanceof Element && isEntity(node)) {
@@ -118,6 +127,29 @@ public class FileToCacheVisitor extends AbstractVisitor
                             Redis.getInstance().save(propertyInstance);
                         }
                         node = replaceElementWithPropertyReference(element);
+                    }
+                    //if we're parsing entities belonging to a page-template, we want to create a reproducable id, so we can permanently save changes in db
+                    else if(this.parsingPageTemplate && !this.enteredPageTemplateContentNode){
+                        RedisID defaultPageTemplateEntityId = RedisID.renderNewPageTemplateDefaultEntity(this.pageTemplateName, getProperty(element), this.pageTemplateLanguage);
+                        EntityTemplate lastVersion = (EntityTemplate) Redis.getInstance().fetchLastVersion(defaultPageTemplateEntityId, EntityTemplate.class);
+                        //if no version of this entity exists yet, make a new one
+                        if(lastVersion == null) {
+                            EntityTemplate newDefaultEntity;
+                            if(needsBlueprint(element)){
+                                defaultPageTemplateEntityId = RedisID.renderNewPageTemplateDefaultEntity(this.pageTemplateName, getProperty(element), this.pageTemplateLanguage);
+                                newDefaultEntity = this.getNewEntityClassCopy(element, defaultPageTemplateEntityId, entityTemplateClass);
+                            }
+                            else{
+                                defaultPageTemplateEntityId = RedisID.renderNewPageTemplateDefaultEntity(this.pageTemplateName, getProperty(element), entityTemplateClass.getLanguage());
+                                newDefaultEntity = new EntityTemplate(defaultPageTemplateEntityId, entityTemplateClass, element.outerHtml());
+                            }
+                            Redis.getInstance().save(newDefaultEntity);
+                            node = replaceElementWithEntityReference(element, newDefaultEntity);
+                        }
+                        //if a version has been stored in db before, use that version as page-template-entity (f.i. a menu that has been changed by the user, should stay changed after server-start-up)
+                        else{
+                            node = replaceNodeWithEntity(element, lastVersion);
+                        }
                     }
                     else if(needsBlueprint(element)){
                         RedisID defaultEntityId = RedisID.renderNewEntityTemplateID(entityTemplateClass, entityTemplateClass.getLanguage());
