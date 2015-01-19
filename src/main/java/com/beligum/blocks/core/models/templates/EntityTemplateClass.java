@@ -10,7 +10,6 @@ import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.SerializationException;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.internationalization.Languages;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -38,7 +37,7 @@ public class EntityTemplateClass extends AbstractTemplate
      */
     public EntityTemplateClass(String name, String primaryLanguage, Map<RedisID, String> templates, String pageTemplateName) throws IDException
     {
-        super(RedisID.renderNewEntityTemplateClassID(name, primaryLanguage), templates);
+        super(RedisID.renderNewEntityTemplateClassID(name, primaryLanguage), templates, , );
         this.name = name;
         if(pageTemplateName != null) {
             this.pageTemplateName = pageTemplateName;
@@ -58,7 +57,7 @@ public class EntityTemplateClass extends AbstractTemplate
      */
     public EntityTemplateClass(String name, String language, String template, String pageTemplateName) throws IDException
     {
-        super(RedisID.renderNewEntityTemplateClassID(name, language), template);
+        super(RedisID.renderNewEntityTemplateClassID(name, language), template, , );
         this.name = name;
         if(pageTemplateName != null) {
             this.pageTemplateName = pageTemplateName;
@@ -74,7 +73,7 @@ public class EntityTemplateClass extends AbstractTemplate
      */
     private EntityTemplateClass(RedisID id, Map<RedisID, String> templates, String pageTemplateName) throws IDException
     {
-        super(id, templates);
+        super(id, templates, , );
         //the name of this entity-template-class doesn't start with a "/", so we split it of the given path
         String[] splitted = id.getUrl().getPath().split("/");
         if (splitted.length > 0) {

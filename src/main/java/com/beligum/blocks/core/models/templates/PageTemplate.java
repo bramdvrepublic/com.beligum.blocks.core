@@ -4,7 +4,6 @@ import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.internationalization.Languages;
 
 import java.util.Map;
 
@@ -24,7 +23,7 @@ public class PageTemplate extends AbstractTemplate
      */
     public PageTemplate(String name, String primaryLanguage, Map<RedisID, String> templates) throws IDException
     {
-        super(RedisID.renderNewPageTemplateID(name, primaryLanguage), templates);
+        super(RedisID.renderNewPageTemplateID(name, primaryLanguage), templates, , );
         this.name = name;
         if(!this.getLanguages().contains(this.getId().getLanguage())){
             throw new IDException("No html-template in language '" + primaryLanguage + "' found between templates.");
@@ -40,7 +39,7 @@ public class PageTemplate extends AbstractTemplate
      */
     public PageTemplate(String name, String language, String template) throws IDException
     {
-        super(RedisID.renderNewPageTemplateID(name, language), template);
+        super(RedisID.renderNewPageTemplateID(name, language), template, , );
         this.name = name;
     }
 
@@ -52,7 +51,7 @@ public class PageTemplate extends AbstractTemplate
      */
     private PageTemplate(RedisID id, Map<RedisID, String> templates) throws IDException
     {
-        super(id, templates);
+        super(id, templates, , );
         if(!this.getLanguages().contains(id.getLanguage())){
             throw new IDException("No html-template in language '" + id.getLanguage() + "' found between templates.");
         }

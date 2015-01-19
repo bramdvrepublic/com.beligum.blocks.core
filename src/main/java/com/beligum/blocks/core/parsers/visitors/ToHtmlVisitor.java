@@ -18,6 +18,7 @@ import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
 import java.net.URL;
+import java.util.SortedSet;
 
 /**
 * Created by wouter on 23/11/14.
@@ -27,6 +28,10 @@ public class ToHtmlVisitor extends AbstractVisitor
 {
     /**the preferred language we want to render html in*/
     private final String language;
+    /**the (javascript-)scripts that need to be injected*/
+    private SortedSet<String> scripts;
+    /**the (css-)linked files that need to be injected*/
+    private SortedSet<String> links;
 
     /**
      *
@@ -79,6 +84,14 @@ public class ToHtmlVisitor extends AbstractVisitor
                 DynamicBlock translationList = new TranslationList(this.language, this.pageUrl);
                 if (translationList.getTypeOf().equals(this.getTypeOf(node))) {
                     node = translationList.generateBlock((Element) node);
+                }
+            }
+            else if(node.hasAttr("head")){
+                for(String script : scripts){
+
+                }
+                for(String link : links){
+
                 }
             }
             return super.tail(node, depth);
@@ -233,6 +246,8 @@ public class ToHtmlVisitor extends AbstractVisitor
                         throw new ParseException("Found bad reference. Not found in db: " + referencedId);
                     }
                 }
+                this.scripts.addAll(instanceTemplate.getScripts());
+                this.links.addAll(instanceTemplate.getLinks());
                 String instanceHtml = instanceTemplate.getTemplate(language);
                 //if no template could be found for the current language, fall back to the primary language
                 if(instanceHtml == null){

@@ -6,7 +6,6 @@ import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.*;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.ifaces.Storable;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -60,7 +59,7 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      */
     public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, Map<RedisID, String> templatesToBeCopied) throws IDException
     {
-        super(id, (Map) null);
+        super(id, (Map) null, , );
         this.templates = new HashMap<>();
         for(RedisID classTemplateId : templatesToBeCopied.keySet()){
             this.templates.put(new RedisID(id, classTemplateId.getLanguage()), templatesToBeCopied.get(classTemplateId));
@@ -80,7 +79,7 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      */
     public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, String template)
     {
-        super(id, template);
+        super(id, template, , );
         this.entityTemplateClassName = entityTemplateClass.getName();
         this.pageTemplateName = entityTemplateClass.getPageTemplateName();
     }
@@ -95,7 +94,7 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      */
     private EntityTemplate(RedisID id, String entityTemplateClassName, Map<RedisID, String> templates, String pageTemplateName) throws IDException
     {
-        super(id, templates);
+        super(id, templates, , );
         this.entityTemplateClassName = entityTemplateClassName;
         this.pageTemplateName = pageTemplateName;
         if(!this.getLanguages().contains(id.getLanguage())){

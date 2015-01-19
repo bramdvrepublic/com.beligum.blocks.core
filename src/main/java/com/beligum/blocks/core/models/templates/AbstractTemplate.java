@@ -27,13 +27,19 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     protected String applicationVersion;
     /**the creator of this row*/
     protected String creator;
+    /**the scripts this abstract template needs*/
+    protected SortedSet<String> scripts;
+    /**the (css-)linked files this abstract template needs*/
+    protected SortedSet<String> links;
 
     /**
      * Constructor taking a unique id.
      * @param id id for this template
      * @param templates the map of templates (language -> template) which represent the content of this template
+     * @param scripts the (javascript-)scripts this abstract template needs
+     * @param links the (css-)linked files this abstract template needs
      */
-    protected AbstractTemplate(RedisID id, Map<RedisID, String> templates)
+    protected AbstractTemplate(RedisID id, Map<RedisID, String> templates, SortedSet<String> scripts, SortedSet<String> links)
     {
         super(id);
         this.templates = templates;
@@ -41,21 +47,35 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
         this.applicationVersion = "test";
         //TODO: logged in user should be added here
         this.creator = "me";
+        this.scripts = scripts;
+        this.links = links;
     }
 
     /**
      * Constructor for template with one language: the one precent in the id. (Other language-templates could be added later if wanted.)
      * @param id id for this template
      * @param template the html-template of this template
+     * @param scripts the (javascript-)scripts this abstract template needs
+     * @param links the (css-)linked files this abstract template needs
      * @throws NullPointerException if the template is null
      */
-    protected AbstractTemplate(RedisID id, String template){
-        this(id, (Map) null);
+    protected AbstractTemplate(RedisID id, String template, SortedSet<String> scripts, SortedSet<String> links){
+        this(id, (Map) null, scripts, links);
         this.templates = new HashMap<>();
         if(template == null){
             throw new NullPointerException("Null-template found while constructing a template with id '" + id + "'.");
         }
         this.templates.put(id, template);
+    }
+
+    public SortedSet<String> getScripts()
+    {
+        return scripts;
+    }
+
+    public SortedSet<String> getLinks()
+    {
+        return links;
     }
 
     /**
