@@ -3,6 +3,7 @@ package com.beligum.blocks.core.models.templates;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.SerializationException;
@@ -27,19 +28,30 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     protected String applicationVersion;
     /**the creator of this row*/
     protected String creator;
-    /**the scripts this abstract template needs*/
-    protected SortedSet<String> scripts;
     /**the (css-)linked files this abstract template needs*/
-    protected SortedSet<String> links;
+    protected Set<String> links = new HashSet<>();
+    protected List<String> linksInOrder = new ArrayList<>();
+    /**the scripts this abstract template needs*/
+    protected Set<String> scripts = new HashSet<>();
+    protected List<String> scriptsInOrder = new ArrayList<>();
+
+    /*    TODO BAS!: make scripts and links-injection possible in this order:
+    1) links van template
+    2) links blueprints
+    3) links blocks
+    4) scripts template
+    5) scripts blueprints
+    6) scripts blocks
+    */
 
     /**
      * Constructor taking a unique id.
      * @param id id for this template
      * @param templates the map of templates (language -> template) which represent the content of this template
-     * @param scripts the (javascript-)scripts this abstract template needs
      * @param links the (css-)linked files this abstract template needs
+     * @param scripts the (javascript-)scripts this abstract template needs
      */
-    protected AbstractTemplate(RedisID id, Map<RedisID, String> templates, SortedSet<String> scripts, SortedSet<String> links)
+    protected AbstractTemplate(RedisID id, Map<RedisID, String> templates, List<String> links, List<String> scripts)
     {
         super(id);
         this.templates = templates;
@@ -47,20 +59,36 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
         this.applicationVersion = "test";
         //TODO: logged in user should be added here
         this.creator = "me";
-        this.scripts = scripts;
-        this.links = links;
+        if(links != null) {
+            for (String link : links) {
+                boolean added = this.links.add(link);
+                //if this link wasn't present yet, add it to the list
+                if (added) {
+                    this.linksInOrder.add(link);
+                }
+            }
+        }
+        if(scripts != null){
+            for (String script : scripts) {
+                boolean added = this.scripts.add(script);
+                //if this script wasn't present yet, add it to the list
+                if (added) {
+                    this.scriptsInOrder.add(script);
+                }
+            }
+        }
     }
 
     /**
-     * Constructor for template with one language: the one precent in the id. (Other language-templates could be added later if wanted.)
+     * Constructor for template with one language: the one present in the id. (Other language-templates could be added later if wanted.)
      * @param id id for this template
      * @param template the html-template of this template
-     * @param scripts the (javascript-)scripts this abstract template needs
-     * @param links the (css-)linked files this abstract template needs
+     * @param links the (css-)linked files this template needs
+     * @param scripts the (javascript-)scripts this template needs
      * @throws NullPointerException if the template is null
      */
-    protected AbstractTemplate(RedisID id, String template, SortedSet<String> scripts, SortedSet<String> links){
-        this(id, (Map) null, scripts, links);
+    protected AbstractTemplate(RedisID id, String template, List<String> links, List<String> scripts){
+        this(id, (Map) null, links, scripts);
         this.templates = new HashMap<>();
         if(template == null){
             throw new NullPointerException("Null-template found while constructing a template with id '" + id + "'.");
@@ -68,14 +96,14 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
         this.templates.put(id, template);
     }
 
-    public SortedSet<String> getScripts()
+    public List<String> getScripts() throws CacheException
     {
-        return scripts;
+        return scriptsInOrder;
     }
 
-    public SortedSet<String> getLinks()
+    public List<String> getLinks() throws CacheException
     {
-        return links;
+        return linksInOrder;
     }
 
     /**
@@ -221,13 +249,6 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     @Override
     public String getUnversionedId(){
         return this.getId().getUnversionedId();
-    }
-    /**
-     * @return the id of the hash representing this storable ("[storableId]:[version]:hash")
-     */
-    @Override
-    public String getHashId(){
-        return this.getId().getHashId();
     }
     /**
      * @return the version of the application this storable is supposed ot interact with

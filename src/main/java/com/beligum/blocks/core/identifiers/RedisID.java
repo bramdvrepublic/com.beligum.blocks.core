@@ -281,13 +281,6 @@ public class RedisID extends ID
         return getUnversionedId() + ":" + this.version;
     }
 
-    /**
-     *
-     * @return the string-id of the hash containing all page meta-data (info) of the page with this EntityID
-     */
-    public String getHashId(){
-        return getVersionedId() + ":" + DatabaseConstants.HASH_SUFFIX;
-    }
 
 
     @Override

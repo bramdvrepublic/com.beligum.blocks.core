@@ -16,6 +16,7 @@ import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
+import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
 import java.util.*;
@@ -40,10 +41,16 @@ public class FileToCacheVisitor extends AbstractVisitor
     private boolean enteredPageTemplateContentNode = false;
     /**the language of this file, if present*/
     private String pageTemplateLanguage = null;
+    /**the (css-)linked files that need to be injected*/
+    private Stack<List<String>> linksStack = new Stack<>();
+    /**the (javascript-)scripts that need to be injected*/
+    private Stack<List<String>> scriptsStack = new Stack<>();
 
     public FileToCacheVisitor()
     {
         parsingClassToBeCached.push(false);
+        linksStack.push(new ArrayList<String>());
+        scriptsStack.push(new ArrayList<String>());
     }
 
     public boolean isParsingClassToBeCached(){
@@ -69,7 +76,25 @@ public class FileToCacheVisitor extends AbstractVisitor
                 this.enteredPageTemplateContentNode = true;
             }
             if(hasTypeOf(node)) {
-                parsingClassToBeCached.push(containsClassToBeCached(node));
+                boolean containsClassToBeCached = containsClassToBeCached(node);
+                parsingClassToBeCached.push(containsClassToBeCached);
+                if(containsClassToBeCached) {
+                    linksStack.push(new ArrayList<String>());
+                    scriptsStack.push(new ArrayList<String>());
+                }
+            }
+            //add links and scripts to the stack and remove them from the html (to be re-injected later)
+            if(node.nodeName().equals("link")){
+                this.linksStack.peek().add(node.outerHtml());
+                Node emtpyNode = new TextNode("", null);
+                node.replaceWith(emtpyNode);
+                node = emtpyNode;
+            }
+            if(node.nodeName().equals("script")){
+                this.scriptsStack.peek().add(node.outerHtml());
+                Node emtpyNode = new TextNode("", null);
+                node.replaceWith(emtpyNode);
+                node = emtpyNode;
             }
             return node;
         }
@@ -81,6 +106,7 @@ public class FileToCacheVisitor extends AbstractVisitor
     @Override
     public Node tail(Node node, int depth) throws ParseException
     {
+        node = super.tail(node, depth);
         //if we reached the end of a new page-template, cache it
         if(isPageTemplateRootNode(node)){
             if(this.pageTemplateContentNode != null) {
@@ -101,11 +127,15 @@ public class FileToCacheVisitor extends AbstractVisitor
                 //if this element is a class-bleuprint, it must be added to the cache (even if a class with this name was cached before)
                 if(containsClassToBeCached(element)){
                     entityTemplateClass = cacheEntityTemplateClassFromNode(element);
-                    //we reached the tail of the last class to be cached we encountered in the head, so we reset parsingClassToBeCached to false
-                    this.parsingClassToBeCached.pop();
+                    this.linksStack.pop();
+                    this.scriptsStack.pop();
                 }
                 else{
                     entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(element));
+                }
+                //if we reached the tail of a node that has been pushed on the parsingClassToBeCached-stack (all typed entities), we remove it
+                if(hasTypeOf(node)){
+                    this.parsingClassToBeCached.pop();
                 }
                 if(isProperty(element)) {
                     //if we are parsing a new class to be cached, we should also make new default-properties
@@ -181,7 +211,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                 throw new ParseException("Could not parse an " + EntityTemplateClass.class.getSimpleName() + " from " + Node.class.getSimpleName() + ": \n \n" + node + "\n \n", e);
             }
         }
-        return super.tail(node, depth);
+        return node;
 
     }
 
@@ -194,7 +224,8 @@ public class FileToCacheVisitor extends AbstractVisitor
      * @return
      * @throws IDException
      */
-    private EntityTemplate getNewEntityClassCopy(Node node, RedisID id, EntityTemplateClass entityClass) throws IDException {
+    private EntityTemplate getNewEntityClassCopy(Node node, RedisID id, EntityTemplateClass entityClass) throws IDException, CacheException
+    {
         Map<RedisID, String> classTemplates = entityClass.getTemplates();
         Map<RedisID, String> copiedTemplates = new HashMap<>();
         for(RedisID languageId : classTemplates.keySet()){
@@ -273,7 +304,9 @@ public class FileToCacheVisitor extends AbstractVisitor
                     }
                 }
                 String language = getLanguage(classRoot, null);
-                EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, language, classRoot.outerHtml(), pageTemplateName);
+                List<String> links = this.linksStack.peek();
+                List<String> scripts = this.scriptsStack.peek();
+                EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, language, classRoot.outerHtml(), pageTemplateName, links, scripts);
                 EntityTemplateClassCache.getInstance().replace(entityTemplateClass);
                 return EntityTemplateClassCache.getInstance().get(entityClassName);
             }
@@ -311,7 +344,9 @@ public class FileToCacheVisitor extends AbstractVisitor
                 //we need to instanciate the cache first, so a default-template surely will be cached with an older version than the page-template we're about to make
                 PageTemplateCache cache = PageTemplateCache.getInstance();
                 String language = getLanguage(parent, null);
-                PageTemplate pageTemplate = new PageTemplate(templateName, language, parent.outerHtml());
+                List<String> links = linksStack.pop();
+                List<String> scripts = scriptsStack.pop();
+                PageTemplate pageTemplate = new PageTemplate(templateName, language, parent.outerHtml(), links, scripts);
                 replacement.replaceWith(contentNode);
                 boolean added = cache.add(pageTemplate);
                 //default page-templates should be added to the cache no matter what, so the last one encountered is kept
