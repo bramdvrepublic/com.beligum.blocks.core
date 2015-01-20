@@ -5,6 +5,7 @@
 @darkblue: #363558;
 @green: #3fa535;
 @blue: #0094d2;
+@pagebackground: #efefef;
 
 /* reset */
 body {
@@ -294,7 +295,7 @@ a {
 }
 
 .search {
-  background-color: #efefef;
+  background-color: @pagebackground;
   header {
 	p {
 	  color: @red;
@@ -410,7 +411,7 @@ footer {
 }
 
 .page {
-  background-color: #efefef;
+  background-color: @pagebackground;
   .pagetitle {
 	text-align: center;
 	margin-bottom: 0px !important;
@@ -441,7 +442,6 @@ footer {
   }
   .square-inner{
 	h3 {
-	  color: @red;
 	  font-size: 4.8em;
 	  font-weight: 700;
 	}
@@ -633,7 +633,7 @@ footer {
 
 .unidentified {
   //TODO: reset this background color (full-width)
-//  background-color: #efefef;
+//  background-color: @pagebackground;
   padding: 30px 0;
   header {
 	margin-bottom: 30px;
@@ -653,6 +653,15 @@ footer {
   }
   .image {
 	border: 3px solid #FFF;
+  }
+}
+
+.bordered-link{
+  .square-inner {
+	background-color: @pagebackground;
+	h3{
+	  color: @red;
+	}
   }
 }
 
