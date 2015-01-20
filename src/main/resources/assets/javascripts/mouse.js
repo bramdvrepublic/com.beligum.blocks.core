@@ -87,6 +87,8 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         } else {
             draggingStatus = Constants.DRAGGING.NOT_ALLOWED;
         }
+
+        mouseMove(Broadcaster.getLastMove());
     };
 
 
@@ -132,17 +134,22 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
      * If dragging send END_OF_DRAG and reset draggingOptions
      * */
     var mouseUp = function (event) {
-        enableSelection();
+//        enableSelection();
         if (active) {
             if (draggingStatus != Constants.DRAGGING.NOT_ALLOWED) {
                 var oldDragStatus = draggingStatus;
                 if (oldDragStatus == Constants.DRAGGING.YES) {
                     Broadcaster.send(Broadcaster.EVENTS.END_DRAG);
+                } else if (Broadcaster.block().current != null) {
+                    Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, Broadcaster.block().current.element);
+                    if (fakeFieldEvent != null) {
+                        // trigger fake event
+                        Broadcaster.sendToElement($(fakeFieldEvent.target), Broadcaster.EVENTS.FAKE_FIELD_CLICK, fakeFieldEvent);
+                        fakeFieldEvent = null;
+                    }
                 }
             }
-            if (dblClickFound) {
 
-            }
             resetMouse();
         }
 };
@@ -245,7 +252,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
     };
 
     // disable cross-browser text selection
-    var disableSelection = function () {
+    $(document).on(Broadcaster.EVENTS.DISABLE_SELECTION, function () {
         // http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
         $("html").css("-webkit-touch-callout", "none");
         $("html").css("-khtml-user-select", "none");
@@ -256,10 +263,10 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         // IE < 10
         $("html").attr("onselectstart", "return false;");
 
-    };
+    });
 
     // enable cross-browser text selection
-    var enableSelection = function () {
+    $(document).on(Broadcaster.EVENTS.ENABLE_SELECTION, function () {
         //http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
         $("html").css("-webkit-touch-callout", "text");
         $("html").css("-khtml-user-select", "text");
@@ -268,7 +275,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         $("html").css("user-select", "text");
         $("html").removeAttr("oncontextmenu", "");
         $("html").removeAttr("onselectstart");
-    }
+    });
 
     var registerMouseEvents = function () {
         if (!active) {
@@ -320,10 +327,26 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
     });
 
-    $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function () {registerMouseEvents();});
+    $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function (event) {registerMouseEvents();
+        mouseMove(event)});
     $(document).on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, function () {unregisterMouseEvents();});
     $(document).on(Broadcaster.EVENTS.DO_ALLOW_DRAG, function () {allowDrag();});
     $(document).on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, function () {disallowDrag();});
+
+    var fakeFieldEvent = null;
+    $(document).on(Broadcaster.EVENTS.REGISTER_FAKE_FIELD, function(event) {
+        $(event.custom).addClass("blocks-fake-field");
+    });
+
+    $(document).on(Broadcaster.EVENTS.UNREGISTER_FAKE_FIELDS, function(event) {
+        $(".blocks-fake-field").removeClass("blocks-fake-field");
+    });
+
+    $(document).on("mousedown", ".blocks-fake-field", function(event) {
+        fakeFieldEvent = event;
+    });
+
+
 
     window.ondragstart = function() {return false;};
 

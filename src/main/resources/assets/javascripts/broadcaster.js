@@ -28,7 +28,7 @@
  *
  * */
 
-blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core.DomManipulation", function (Constants, DOM) {
+blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.DomManipulation", function (Constants, DOM) {
     var Broadcaster = this;
     var active = false;
     var hoveredBlocks = {current: null, previous: null};
@@ -40,6 +40,10 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
     var layoutParentElement = null;
     var lastMoveEvent = $.Event("mousemove", {pageX:0, pageY:0});
 
+    this.getLastMove = function() {
+        return lastMoveEvent;
+    }
+
 
     var registerMouseMove = function() {
         $(document).on("mousemove.blocks_broadcaster", function (event) {
@@ -48,12 +52,22 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
             lastMoveEvent.block = Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
             lastMoveEvent.direction = direction;
         });
-    }
+    };
 
     var unregisterMouseMove = function() {
         $(document).off("mousemove.blocks_broadcaster");
-    }
+    };
 
+    var lastMouseDown = null;
+    var registerMouseDown = function() {
+        $(document).on("click.blocks_broadcaster", function (event) {
+            lastMouseDown = event;
+        });
+    };
+
+    var unregisterMouseDown = function() {
+        $(document).on("click.blocks_broadcaster");
+    };
 
 
     this.block = function() {
@@ -167,8 +181,8 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
         // we loop the trees of elements to find the smallest active element
         if (hoveredBlocks.current == null) {
             var i = 0;
-            while (i < Broadcaster.getLayoutTree().length && hoveredBlocks.current == null) {
-                var bb = Broadcaster.getLayoutTree()[i].findActiveElement(x, y);
+            if  (Broadcaster.getContainer() != null && hoveredBlocks.current == null) {
+                var bb = Broadcaster.getContainer().findActiveElement(x, y);
                 if (bb instanceof blocks.elements.Block) {
                     hoveredBlocks.current = bb;
                 }
@@ -179,17 +193,6 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
         if (hoveredBlocks.current != currentBlock) {
             hoveredBlocks.previous = currentBlock;
         }
-
-        // Set Property
-        var currentProperty = properties.current
-        properties.current = null;
-        if (hoveredBlocks.current != null) {
-//            properties.current = hoveredBlocks.current.getProperty(x, y);
-        }
-        if (properties.current != currentProperty) {
-            properties.previous = currentProperty;
-        }
-
         return hoveredBlocks;
     };
 
@@ -208,6 +211,22 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
             $(document).triggerHandler(e);
         }
     };
+
+    this.sendToElement = function(element, eventName, custom) {
+        if (active || eventName == Broadcaster.EVENTS.START_BLOCKS) {
+//        Logger.debug(eventName);
+            var e = $.Event(eventName);
+            e.pageX = lastMoveEvent.pageX;
+            e.pageY = lastMoveEvent.pageY;
+            e.direction = lastMoveEvent.direction;
+            e.block = hoveredBlocks;
+            e.property = properties;
+            e.custom = custom;
+            // send the event with jquery
+            element.triggerHandler(e);
+        }
+    };
+
 
 
     this.EVENTS = {};
@@ -233,8 +252,16 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
     this.EVENTS.HOOVER_OVER_PROPERTY = "HOOVER_OVER_PROPERTY";
 
     this.EVENTS.END_HOOVER = "END_HOOVER";
-    this.EVENTS.DOUBLE_CLICK_BLOCK = "DOUBLE_CLICK_BLOCK";
-    this.EVENTS.CLICK_BLOCK = "CLICK_BLOCK";
+    this.EVENTS.BLOCKS_CLICK = "BLOCKS_CLICK";
+
+    this.EVENTS.REGISTER_FIELD = "REGISTER_FIELD";
+    this.EVENTS.UNREGISTER_FIELDS = "UNREGISTER_FIELDS";
+    this.EVENTS.FAKE_FIELD_CLICK = "FAKE_FIELD_CLICK";
+    this.EVENTS.REGISTER_FAKE_FIELD = "REGISTER_FAKE_FIELD";
+    this.EVENTS.UNREGISTER_FAKE_FIELDS = "UNREGISTER_FAKE_FIELDS";
+
+    this.EVENTS.ENABLE_SELECTION = "ENABLE_SELECTION";
+    this.EVENTS.DISABLE_SELECTION = "DISABLE_SELECTION";
 
     // Notifications
     this.EVENTS.DO_ALLOW_DRAG = "ALLOW_DRAG";
@@ -255,14 +282,11 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
     // The parent element where the tree is build
     // if null this is automatically set to the container
 
-    this.getLayoutTree = function() {
-        if (layoutTree == null) {
-            buildLayoutTree();
-        }
+    this.getContainer = function() {
         return layoutTree;
     };
 
-    this.setLayoutParent = function(element) {
+    var setLayoutParent = function(element) {
         layoutParentElement = element;
         buildLayoutTree();
     };
@@ -277,8 +301,12 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
      */
 
     var isContainer = function(element) {
-        return DOM.isProperty(element) || DOM.canLayout(element) || DOM.canEdit(element);
-    }
+        return DOM.canLayout(element);
+    };
+
+    var isField = function(element) {
+        return DOM.canEdit(element) || DOM.canLayout(element);
+    };
 
     var findContainers = function(element) {
         var retVal = [];
@@ -302,42 +330,63 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
     var buildLayoutTree = function () {
         hoveredBlocks.previous = null;
         hoveredBlocks.current = null;
-        layoutTree = [];
+        layoutTree = null;
         //_this.cleanLayout();
         if (layoutParentElement == null) {
             layoutParentElement = $("body");
         }
 
-        var findContainersInParent = function(parent) {
+        var findFieldsInParent = function(parent, eventName) {
 
-            if (parent != null && parent.length > 0 && isContainer(parent)) {
-                var container = new blocks.elements.Container(parent);
-                container.createAllDropspots();
-                Logger.debug(container);
-                layoutTree.push(container);
-            } else {
-                var children = parent.children();
-                for (var i = 0; i < children.length; i++) {
-                    findContainersInParent($(children[i]));
+            if (parent != null && parent.length > 0) {
+                if (isField(parent)) {
+                    Broadcaster.send(eventName, parent)
+                } else {
+                    var children = parent.children();
+                    for (var i = 0; i < children.length; i++) {
+                        findFieldsInParent($(children[i]), eventName);
+                    }
                 }
             }
-
         };
 
-        findContainersInParent(layoutParentElement);
+        var container = new blocks.elements.Container(layoutParentElement);
+        $(".blocks-selected-block").removeClass("blocks-selected-block");
+        container.element.addClass("blocks-selected-block");
+        layoutTree = container;
+        if (isContainer(layoutParentElement)) {
+            container.createAllDropspots();
+            Logger.debug(container);
+            for (var i=0; i < container.blocks.length; i++) {
+                findFieldsInParent(container.blocks[i].element, Broadcaster.EVENTS.REGISTER_FAKE_FIELD);
+            }
 
+            Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
+            Broadcaster.send(Broadcaster.EVENTS.DISABLE_SELECTION);
+            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
 
+        } else {
+//            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+            Broadcaster.send(Broadcaster.EVENTS.ENABLE_SELECTION);
+            var children = layoutParentElement.children();
+            for (var i = 0; i < children.length; i++) {
+                findFieldsInParent($(children[i]), Broadcaster.EVENTS.REGISTER_FIELD);
+            }
+        }
         Broadcaster.send(Broadcaster.EVENTS.DID_REFRESH_LAYOUT);
     };
 
 
-    $(document).on(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, function() {
+    $(document).on(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, function(event) {
         Broadcaster.send(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT);
-        buildLayoutTree();
+        Broadcaster.send(Broadcaster.EVENTS.UNREGISTER_FIELDS);
+        Broadcaster.send(Broadcaster.EVENTS.UNREGISTER_FAKE_FIELDS);
+        setLayoutParent(event.custom);
     })
 
     $(document).on(Broadcaster.EVENTS.DOM_DID_CHANGE, function() {
-        Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);
+        var layoutContainer = Broadcaster.getContainer() == null ? null : Broadcaster.getContainer().element;
+        Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, layoutContainer);
     });
 
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
@@ -345,11 +394,13 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
         layoutTree = null;
         buildLayoutTree();
         registerMouseMove();
+        registerMouseDown();
     });
 
     $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
         active = false;
         unregisterMouseMove();
+        unregisterMouseDown();
         layoutTree = [];
     });
 
@@ -364,7 +415,8 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
         } else {
             Logger.debug("timeout not cleared")
         }
-        resizeTimeout = setTimeout(function(){ Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);}, 200);
+        var layoutContainer = Broadcaster.getContainer() == null ? null : Broadcaster.getContainer().element;
+        resizeTimeout = setTimeout(function(){ Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, layoutContainer);}, 200);
 
     });
 

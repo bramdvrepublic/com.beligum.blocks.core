@@ -12,20 +12,70 @@
   background-color: #6fc7df;
 }
 
+.not-visible {
+  opacity: 0.2;
+  -webkit-filter: blur(5px) grayscale(1);
+  -moz-filter: blur(5px) grayscale(20%);
+  -o-filter: blur(5px) grayscale(20%);
+  -ms-filter: blur(5px) grayscale(20%);
+  filter: blur(5px) grayscale(1);
+}
+
 // Hover with mouse over block
 .block-hover {
   position:absolute;
-  -webkit-box-shadow: 0 5px 20px rgba(51, 102, 146, 0.70), 0 0 8px 5px rgba(111, 199, 223, 0.90) ;
-  box-shadow: 0 5px 20px rgba(51, 102, 146, 0.70), 0 0 8px 5px rgba(111, 199, 223, 0.90) ;
+  border-style: dashed;
+  border-color: rgba(0, 0, 0, 0.8);
+  border-width: 0px;
+
+  &.not-visible {
+    opacity: 1;
+    -webkit-filter: none;
+//    -moz-filter: blur(5px);
+//    -o-filter: blur(5px); -ms-filter: blur(5px); filter: blur(5px);
+  }
+
+  &.left {
+    width: 0px;
+    border-left-width: 1px;
+  }
+
+  &.right {
+    width: 0px;
+    border-right-width: 1px;
+  }
+
+  &.top {
+    height: 0px;
+    border-top-width: 1px;
+  }
+
+  &.bottom {
+    heigh: 0px;
+    border-bottom-width: 1px;
+  }
 }
+
+.blocks-selected-block {
+  outline: 1px dotted rgba(0, 0, 0, 0.8);
+}
+
+.blocks-fake-field {
+//  outline: 1px solid rgba(200, 0, 0, 0.8);
+}
+
 
 .blocks-property {
 
 }
 
 
-.property-hover:hover, .property-hover:focus {
+.property-hover:hover {
   outline: 1px dashed rgba(0, 0, 0, 0.8);
+}
+
+.property-hover:focus {
+  outline: 1px dotted rgba(0, 0, 0, 0.8);
 }
 
 iframe {
@@ -152,15 +202,9 @@ iframe.cke_panel_frame  {
   &:hover .block-menu-item  {
     display: block;
   }
-
-
-
-
 }
 
-.not-visible {
-  opacity: 0.1;
-}
+
 
 .blocks-main-menu {
   width: 100%;

@@ -11,9 +11,8 @@ blocks.plugin("blocks.core.LayoutAid", ["blocks.core.Layouter", "blocks.core.Bro
     var layoutFrame = $('<div style="position: absolute; top: 0px; left: 0px; z-index: 500;" />');
     var createLayoutFrame = function() {
         layoutFrame.children().remove();
-        for(var i=0; i < Broadcaster.getLayoutTree().length; i++) {
-            var tree = Broadcaster.getLayoutTree()[i];
-            createFrame(tree);
+        if (Broadcaster.getContainer() != null) {
+            createFrame(Broadcaster.getContainer());
         }
     };
 
@@ -112,8 +111,7 @@ blocks.plugin("blocks.core.LayoutAid", ["blocks.core.Layouter", "blocks.core.Bro
     });
 
     $(document).on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, function() {
-        leaveBlockHoover(event);
-        leavePropertyHoover(event);
+
     })
 
 
