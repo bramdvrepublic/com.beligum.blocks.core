@@ -63,16 +63,6 @@ blocks
             }
         });
 
-        // smallest elemet with 4 corner
-        // and a function to check if x,y is inside the surface
-        var property = Class.create(surface, {
-            constructor: function (element) {
-                layoutElement.Super.call(this, this.calculateTop(element), this.calculateBottom(element), this.calculateLeft(element), this.calculateRight(element));
-                this.element = element;
-            }
-
-        });
-
         /*
          * Special element that indicates a trigger where a block could be dropped
          * on an other block. the dropspot is located on a SIDE of the block and the
@@ -479,8 +469,15 @@ blocks
 
                             newColumn = new column(innerZone.top, innerZone.bottom, zoneLeft, zoneRight, currentColumn, this, i);
 
-                            this.resizeHandles.push(new resizeHandle(oldColumn, newColumn));
-                            if (i == columnCount - 1) {
+                            var outside = this.parent != null && this.parent.parent != null &&  this.parent.parent instanceof container
+                            if (oldColumn != null) {
+                                this.resizeHandles.push(new resizeHandle(oldColumn, newColumn));
+                            } else if (outside) {
+                                this.resizeHandles.push(new resizeHandle(oldColumn, newColumn));
+                            }
+
+
+                            if (outside && i == columnCount - 1) {
                                 this.resizeHandles.push(new resizeHandle(newColumn, null));
                             }
 //
@@ -602,16 +599,12 @@ blocks
         var container = Class.create(layoutElement, {
             constructor: function (element) {
                 container.Super.call(this, this.calculateTop(element), this.calculateBottom(element), this.calculateLeft(element), this.calculateRight(element), element, null, 0);
-                this.generateChildrenForColumn();
-// if (DOM.isColumn(element) || DOM.isContainer(element)) {
-//
-//                } else {
-//                    this.generateChildrenForRow();
-//                }
-//                else {
-//                    var b = new block(this.calculateTop(element), this.calculateBottom(element), this.calculateLeft(element), this.calculateRight(element), element, this, 0);
-//                    this.children.push(b);
-//                }
+                this.blocks = [];
+                if (DOM.canLayout(element)) {
+                    this.generateChildrenForColumn();
+                }
+
+
             },
 
             getElementAtSide: function(side) {
@@ -628,6 +621,41 @@ blocks
                 }
                 return dropspots;
             }
+
+//
+//            getProperty: function(x, y) {
+//                for(var i=0; i< this.properties.length; i++) {
+//                    if (this.properties[i].isTriggered(x, y)) {
+//                        return this.properties[i];
+//                    }
+//                }
+//                return null;
+//            },
+//
+//            generateProperties: function(element) {
+//                var prop = null;
+//                var canChange = DOM.canEdit(element) || DOM.canLayout(element)
+//
+//                if (canChange) {
+//                    prop = new property(element);
+//                    $(element).addClass("property-hover");
+//                    if (DOM.canEdit(element)) {
+//                        Edit.makeEditable(element);
+//                    }
+//                }
+//
+////                if ((canLayout || prop == null) && element.children().length > 0) {
+//                if ((prop == null) && element.children().length > 0) {
+//                    for(var i=0; i < element.children().length; i++) {
+//                        this.generateProperties($(element.children()[i]));
+//                    }
+//                }
+//
+//                if (prop != null) {
+//                    this.properties.push(prop);
+//                }
+//            }
+
         });
 
         // Special kind of row that can contain template
@@ -644,8 +672,7 @@ blocks
                     this.horizontalMiddle = this.top + ((this.bottom - this.top) / 2);
                 }
 
-                this.properties = [];
-                this.generateProperties(this.element, true);
+                this.getContainer().blocks.push(this);
 
             },
 
@@ -837,45 +864,6 @@ blocks
 
                 if (this.isOuter(side) && this.parent != null) dropspots = this.parent.calculateDropspots(side, dropspots);
                 return dropspots;
-            },
-
-            getProperty: function(x, y) {
-                for(var i=0; i< this.properties.length; i++) {
-                    if (this.properties[i].isTriggered(x, y)) {
-                        return this.properties[i];
-                    }
-                }
-                return null;
-            },
-
-
-            generateProperties: function(element, isCurrentBlock) {
-                var prop = null;
-                var canEdit = DOM.canEdit(element);
-                var canLayout = DOM.canLayout(element)
-
-                if (!isCurrentBlock) {
-                    if (canLayout) {
-                        prop = new property(element);
-                    } else if (DOM.isProperty(element)) {
-                        prop = new property(element);
-                        $(element).addClass("property-hover");
-                    }
-                } else if (canEdit) {
-                    prop = new property(element);
-                    Edit.makeEditable(element);
-                }
-
-//                if ((canLayout || prop == null) && element.children().length > 0) {
-                if ((prop == null) && element.children().length > 0) {
-                    for(var i=0; i < element.children().length; i++) {
-                        this.generateProperties($(element.children()[i]), false);
-                    }
-                }
-
-                if (prop != null) {
-                    this.properties.push(prop);
-                }
             },
 
             getContainer: function() {

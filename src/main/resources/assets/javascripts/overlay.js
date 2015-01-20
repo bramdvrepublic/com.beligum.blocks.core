@@ -12,10 +12,10 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broa
     this.maxIndex = maxIndex;
 
     var highlightBorder = {
-        0: $('<div />').addClass(Constants.BLOCK_HOVER_CLASS),
-        1: $('<div />').addClass(Constants.BLOCK_HOVER_CLASS),
-        2: $('<div />').addClass(Constants.BLOCK_HOVER_CLASS),
-        3: $('<div />').addClass(Constants.BLOCK_HOVER_CLASS)
+        0: $('<div />').addClass(Constants.BLOCK_HOVER_CLASS).addClass("top"),
+        1: $('<div />').addClass(Constants.BLOCK_HOVER_CLASS).addClass("bottom"),
+        2: $('<div />').addClass(Constants.BLOCK_HOVER_CLASS).addClass("left"),
+        3: $('<div />').addClass(Constants.BLOCK_HOVER_CLASS).addClass("right")
     };
 
     var hideAll = function(element) {
@@ -23,9 +23,7 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broa
             var siblings = element.siblings().addClass("not-visible");
             hideAll(element.parent());
         }
-
-    }
-
+    };
 
     this.highlightBlock = function(block) {
         var borderWidth = 1
@@ -101,50 +99,44 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broa
 //        })
 //    }
 
-    this.overlayForElement = function (element, callback) {
-//        var ol = $("<div />").addClass(Constants.OVERLAY_CLASS);
-//        ol.attr("style", "position: absolute; top: 0px; left: 0px; position: fixed; top: 0px; bottom: 0px; left: 0px; right: 0px; background-color: rgba(0,0,0,0.8); z-index: 9000");
-//
-//        var oldElement = element;
-//
-//        var oldStyle = null;
-//        if (oldElement.hasAttribute('style')) oldStyle = oldElement.attr('style');
-//        oldElement.css("visibility", "hidden");
-//        var clonedElement = oldElement.clone();
-//        clonedElement.attr("style", "position: absolute; z-index: 9001; left: " + element.offset().left +"px; top: "+ element.offset().top+"px; width:" + (element.width()) + "px");
-//
-//        $("body").append(ol).append(clonedElement);
-//
-//        ol.on("click", function () {
-//
-//            ol.remove();
-//            clonedElement.remove();
-//            oldElement.css("visibility", "visible");
-//            if (oldStyle != null) {
-//                clonedElement.attr("style", oldStyle);
-//            } else {
-//                clonedElement.removeAttr("style");
-//            }
-//            oldElement.replaceWith(clonedElement);
-//            callback();
-//
-//        });
-//
-//        return clonedElement;
+    var outsideElement = function(element, event) {
+        var retVal = false;
+        if (event.pageX < element.offset().left ||  event.pageX > (element.offset().left + element.outerWidth()) ||
+            event.pageY < element.offset().top ||  event.pageY > (element.offset().top + element.outerHeight())) {
+            retVal = true;
+        }
+        return retVal;
+    };
 
-
-        hideAll(element);
-
-        $(".not-visible").on("click", function() {
-            $(".not-visible").removeClass(".not-visible");
-        });
-
+    var overlayList = [];
+    this.overlayForElement = function (element, allowRemove, callback) {
+        if (overlayList.length == 0 || overlayList[overlayList.length-1].element != element) {
+            hideAll(element);
+            overlayList.push({element: element, allowRemove: allowRemove, callback: callback});
+        }
         return element;
-
-
     };
 
 
+    $(document).on("mouseup.blocks_overlay", function(event) {
+        if (overlayList.length > 0) {
+            var overlayItem = overlayList.pop();
+
+            if (outsideElement(overlayItem.element, event) && overlayItem.allowRemove(event)) {
+                $(".not-visible").removeClass("not-visible");
+                var overlayListLength = overlayList.length;
+                if (overlayListLength > 0) {
+                    hideAll(overlayList[overlayListLength-1].element);
+                    Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, overlayList[overlayListLength-1].element);
+                } else {
+                    Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, null);
+                }
+                overlayItem.callback();
+            } else {
+                overlayList.push(overlayItem);
+            }
+        }
+    });
 
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
         for (var i = 0; i < 4; i++) {
@@ -156,7 +148,19 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broa
         for (var i = 0; i < 4; i++) {
             highlightBorder[i].remove();
         }
-    })
+    });
+
+    var Overlay = this;
+
+    $(document).on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, function(event) {
+        if (Broadcaster.getContainer() != null) {
+            Overlay.overlayForElement(Broadcaster.getContainer().element, function () {
+                return true;
+            }, function () {
+            });
+        }
+    });
+
 
 
 }]);

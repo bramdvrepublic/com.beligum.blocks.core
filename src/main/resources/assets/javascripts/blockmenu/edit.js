@@ -10,30 +10,69 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
     };
 
 
-    this.makeEditable = function(element) {
-
+    var makeEditable = function(element) {
+            var doEdit = null;
             if (DOM.canEdit(element)) {
                 doEdit = editFunction(element);
+            } else if (DOM.canLayout(element)) {
+                doEdit = doLayout;
             }
 
             if (doEdit != null) {
                 doEdit(element);
             }
+    };
 
+    var doLayout = function(element) {
+        $(element).addClass(Constants.PROPERTY_CLASS);
+
+        $(element).on(Broadcaster.EVENTS.FAKE_FIELD_CLICK, function(fakeFieldEvent) {
+            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, $(element));
+        });
+
+        editors.push(function() {
+            $(element).off(Broadcaster.EVENTS.FAKE_FIELD_CLICK);
+            $(element).removeClass(Constants.PROPERTY_CLASS);
+        });
     };
 
     var doEditText = function(element) {
 
-
+        // Preparation
         $(element).attr("contenteditable", true);
         var editor = $(element).ckeditor().editor;
         $(element).addClass(Constants.PROPERTY_CLASS);
 
+        // Forced Click
+        $(element).on(Broadcaster.EVENTS.FAKE_FIELD_CLICK, function(fakeFieldEvent) {
+            var setCursor = function() {
+                var caretPosition = document.caretRangeFromPoint(fakeFieldEvent.custom.clientX, fakeFieldEvent.custom.clientY);
+
+                var sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(caretPosition);
+            };
+
+            if (editor.status == "unloaded") {
+                editor.on("instanceReady", function() {
+                    setCursor();
+                })
+            } else {
+                setCursor();
+            }
+
+        });
+
+
+        // to remove
         editors.push(function() {
+            $(element).off(Broadcaster.EVENTS.FAKE_FIELD_CLICK);
             $(element).removeClass(Constants.PROPERTY_CLASS);
             editor.destroy();
             element.removeAttr("contenteditable");
         });
+
+
 
 
 
@@ -42,22 +81,33 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
 
     var doEditTextInline = function(element) {
 
-        $(element).on("focus", function() {
-            Overlay.overlayForElement(element);
-        });
 
         element.attr("contenteditable", true);
         var editor = new Medium({element: element[0], mode: Medium.inlineMode});
         $(element).addClass(Constants.PROPERTY_CLASS);
+
+
+        $(element).on(Broadcaster.EVENTS.FAKE_FIELD_CLICK, function(fakeFieldEvent) {
+            var setCursor = function() {
+                var caretPosition = document.caretRangeFromPoint(fakeFieldEvent.custom.clientX, fakeFieldEvent.custom.clientY);
+
+                var sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(caretPosition);
+            };
+            setCursor();
+
+        });
+
         editors.push(function() {
+            $(element).off(Broadcaster.EVENTS.FAKE_FIELD_CLICK)
             $(element).removeClass(Constants.PROPERTY_CLASS);
             editor.destroy();
             element.removeAttr("contenteditable");
         });
 
-//        $(element).on("mouseup", function() {
-//            var editor = new Medium({element: element[0], mode: Medium.inlineMode});
-//        })
+
+
     };
 
 
@@ -113,9 +163,14 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
     Edit.registerByTag("A", doEditTextInline);
     Edit.registerByTag("SPAN", doEditTextInline);
 
-    $(document).on(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT, function() {
+    $(document).on(Broadcaster.EVENTS.REGISTER_FIELD, function(event) {
+        makeEditable(event.custom);
+    });
+
+    $(document).on(Broadcaster.EVENTS.UNREGISTER_FIELDS, function(event) {
         removeEditors();
     });
+
 
     $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
         removeEditors();

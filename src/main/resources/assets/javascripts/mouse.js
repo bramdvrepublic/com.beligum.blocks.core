@@ -60,7 +60,7 @@
  *
  */
 
-blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "blocks.core.Constants", function (Broadcaster, Layouter, Constants) {
+blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "blocks.core.Constants", "blocks.core.DomManipulation", function (Broadcaster, Layouter, Constants, DOM) {
     // flag if this module is active
     var active = false;
     // dragging options, kept here for parsedContent while waiting for drag
@@ -87,6 +87,8 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         } else {
             draggingStatus = Constants.DRAGGING.NOT_ALLOWED;
         }
+
+        mouseMove(Broadcaster.getLastMove());
     };
 
 
@@ -132,20 +134,37 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
      * If dragging send END_OF_DRAG and reset draggingOptions
      * */
     var mouseUp = function (event) {
-        enableSelection();
+//        enableSelection();
         if (active) {
             if (draggingStatus != Constants.DRAGGING.NOT_ALLOWED) {
                 var oldDragStatus = draggingStatus;
                 if (oldDragStatus == Constants.DRAGGING.YES) {
                     Broadcaster.send(Broadcaster.EVENTS.END_DRAG);
+                } else if (Broadcaster.block().current != null) {
+                    Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, Broadcaster.block().current.element);
+                }
+                if (fakeFieldEvent.length > 0) {
+                    var deepest = $(fakeFieldEvent[0].target);
+                    var fakeFields = [];
+                    fakeFields.push(deepest);
+                    while (deepest.parent().length > 0) {
+                        if (deepest.parent().hasClass("blocks-fake-field") || deepest.parent().hasClass(Constants.PROPERTY_CLASS)) {
+                            fakeFields.push(deepest.parent())
+                        }
+                        deepest = deepest.parent();
+                    }
+
+                    for (var i=fakeFields.length-1; i >= 1; i--) {
+                            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, fakeFields[i]);
+                    }
+                    Broadcaster.sendToElement(fakeFields[0], Broadcaster.EVENTS.FAKE_FIELD_CLICK, fakeFieldEvent);
+
                 }
             }
-            if (dblClickFound) {
-
-            }
-            resetMouse();
         }
-};
+        fakeFieldEvent = [];
+        resetMouse();
+    };
 
     /*
      * While waiting for drag, check if threshold is activated to really start drag
@@ -245,7 +264,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
     };
 
     // disable cross-browser text selection
-    var disableSelection = function () {
+    $(document).on(Broadcaster.EVENTS.DISABLE_SELECTION, function () {
         // http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
         $("html").css("-webkit-touch-callout", "none");
         $("html").css("-khtml-user-select", "none");
@@ -256,10 +275,10 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         // IE < 10
         $("html").attr("onselectstart", "return false;");
 
-    };
+    });
 
     // enable cross-browser text selection
-    var enableSelection = function () {
+    $(document).on(Broadcaster.EVENTS.ENABLE_SELECTION, function () {
         //http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
         $("html").css("-webkit-touch-callout", "text");
         $("html").css("-khtml-user-select", "text");
@@ -268,7 +287,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         $("html").css("user-select", "text");
         $("html").removeAttr("oncontextmenu", "");
         $("html").removeAttr("onselectstart");
-    }
+    });
 
     var registerMouseEvents = function () {
         if (!active) {
@@ -320,10 +339,26 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
     });
 
-    $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function () {registerMouseEvents();});
+    $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function (event) {registerMouseEvents();
+        mouseMove(event)});
     $(document).on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, function () {unregisterMouseEvents();});
     $(document).on(Broadcaster.EVENTS.DO_ALLOW_DRAG, function () {allowDrag();});
     $(document).on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, function () {disallowDrag();});
+
+    var fakeFieldEvent = [];
+    $(document).on(Broadcaster.EVENTS.REGISTER_FAKE_FIELD, function(event) {
+        $(event.custom).addClass("blocks-fake-field");
+    });
+
+    $(document).on(Broadcaster.EVENTS.UNREGISTER_FAKE_FIELDS, function(event) {
+        $(".blocks-fake-field").removeClass("blocks-fake-field");
+    });
+
+    $(document).on("mousedown", ".blocks-fake-field", function(event) {
+        fakeFieldEvent.push(event);
+    });
+
+
 
     window.ondragstart = function() {return false;};
 
