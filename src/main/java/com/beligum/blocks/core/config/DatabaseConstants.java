@@ -16,6 +16,10 @@ public class DatabaseConstants
     public final static String ENTITY_TEMPLATE_CLASS = "entityTemplateClass";
     /**the default page-template field-name for an entity-class*/
     public final static String PAGE_TEMPLATE = "pageTemplate";
+    /**the (javascript-)script-tags*/
+    public final static String SCRIPTS = "scripts";
+    /**the (css-)linked files-tags*/
+    public final static String LINKS = "links";
     /**the suffix for the set of all entity-templates of a certain class*/
     public static final String ENTITY_TEMPLATE_CLASS_SET_SUFFIX = "Set";
 }

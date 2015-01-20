@@ -37,7 +37,8 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      */
     public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, Map<RedisID, String> templatesToBeCopied) throws IDException, CacheException
     {
-        super(id, (Map) null, entityTemplateClass.getLinks(), entityTemplateClass.getScripts());
+        //no scripts or links are specified for an entity-template (this could be implemented later, if wanted)
+        super(id, (Map) null, null, null);
         this.templates = new HashMap<>();
         for(RedisID classTemplateId : templatesToBeCopied.keySet()){
             this.templates.put(new RedisID(id, classTemplateId.getLanguage()), templatesToBeCopied.get(classTemplateId));
@@ -57,7 +58,7 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      */
     public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, String template) throws CacheException
     {
-        super(id, template, entityTemplateClass.getLinks(), entityTemplateClass.getScripts());
+        super(id, template, null, null);
         this.entityTemplateClassName = entityTemplateClass.getName();
         this.pageTemplateName = entityTemplateClass.getPageTemplateName();
     }
@@ -199,6 +200,9 @@ public class EntityTemplate extends AbstractTemplate implements Storable
         Map<String, String> hash = super.toHash();
         hash.put(DatabaseConstants.ENTITY_TEMPLATE_CLASS, this.entityTemplateClassName);
         hash.put(DatabaseConstants.PAGE_TEMPLATE, this.pageTemplateName);
+        //an entity-template doesn't have links and scripts (for the moment, this could be implemented later)
+        hash.remove(DatabaseConstants.SCRIPTS);
+        hash.remove(DatabaseConstants.LINKS);
         return hash;
     }
 

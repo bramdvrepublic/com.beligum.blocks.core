@@ -11,9 +11,12 @@ import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.IdentifiableObject;
 import com.beligum.blocks.core.models.ifaces.Storable;
+import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.core.framework.templating.ifaces.Template;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.jsoup.nodes.Element;
 
 import java.util.*;
 
@@ -280,6 +283,20 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
             for (RedisID languageId : this.templates.keySet()) {
                 hash.put(languageId.getLanguage(), languageId.toString());
             }
+            String links = "";
+            for(String link : this.linksInOrder){
+                links += link;
+            }
+            if(!StringUtils.isEmpty(links)) {
+                hash.put(DatabaseConstants.LINKS, links);
+            }
+            String scripts = "";
+            for(String script : this.scriptsInOrder){
+                scripts += script;
+            }
+            if(!StringUtils.isEmpty(scripts)) {
+                hash.put(DatabaseConstants.SCRIPTS, scripts);
+            }
             hash.put(DatabaseConstants.APP_VERSION, this.applicationVersion);
             hash.put(DatabaseConstants.CREATOR, this.creator);
             return hash;
@@ -315,6 +332,37 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
         }
     }
 
+    static private List<String> fetchTagListFromHash(String dataBaseConstant, Map<String, String> hash){
+        List<String> tags = new ArrayList<>();
+        String tagsList = hash.get(dataBaseConstant);
+        if(!StringUtils.isEmpty(tagsList)) {
+            Element tagsRoot = TemplateParser.parse(tagsList).child(0);
+            tags.add(tagsRoot.outerHtml());
+            for(Element tag : tagsRoot.siblingElements()){
+                tags.add(tag.outerHtml());
+            }
+        }
+        return tags;
+    }
+
+    /**
+     * Method for fetching a list of link-tags from a db-hash
+     * @param hash
+     * @return
+     */
+    static protected List<String> fetchLinksFromHash(Map<String, String> hash){
+        return fetchTagListFromHash(DatabaseConstants.LINKS, hash);
+    }
+
+    /**
+     * Method for fetching a list of script-tags from a db-hash
+     * @param hash
+     * @return
+     */
+    static protected List<String> fetchScriptsFromHash(Map<String, String> hash){
+        return fetchTagListFromHash(DatabaseConstants.SCRIPTS, hash);
+    }
+
     //__________IMPLEMENTATION OF COMPARABLE_______________//
 
     @Override
@@ -346,6 +394,12 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
             String language = languageId.getLanguage();
             significantFieldsSet = significantFieldsSet.append(language + "->" + templates.get(languageId));
         }
+        for(String link : this.linksInOrder){
+            significantFieldsSet = significantFieldsSet.append(link);
+        }
+        for(String script : this.scriptsInOrder){
+            significantFieldsSet = significantFieldsSet.append(script);
+        }
         return significantFieldsSet.toHashCode();
     }
 
@@ -373,6 +427,14 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
                 for(RedisID languageId : templates.keySet()){
                     String language = languageId.getLanguage();
                     significantFieldsSet = significantFieldsSet.append(this.getTemplate(language), abstractTemplateObj.getTemplate(language));
+                }
+                significantFieldsSet = significantFieldsSet.append(this.linksInOrder.size(), abstractTemplateObj.linksInOrder.size());
+                significantFieldsSet = significantFieldsSet.append(this.scriptsInOrder.size(), abstractTemplateObj.scriptsInOrder.size());
+                for(int i = 0; significantFieldsSet.isEquals() && i<this.linksInOrder.size(); i++){
+                    significantFieldsSet = significantFieldsSet.append(this.linksInOrder.get(i), abstractTemplateObj.linksInOrder.get(i));
+                }
+                for(int i = 0; significantFieldsSet.isEquals() && i<this.scriptsInOrder.size(); i++){
+                    significantFieldsSet = significantFieldsSet.append(this.scriptsInOrder.get(i), abstractTemplateObj.scriptsInOrder.get(i));
                 }
                 return significantFieldsSet.isEquals();
             }

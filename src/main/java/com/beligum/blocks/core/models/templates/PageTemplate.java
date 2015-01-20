@@ -81,7 +81,9 @@ public class PageTemplate extends AbstractTemplate
             }
             else{
                 Map<RedisID, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
-                PageTemplate newInstance = new PageTemplate(id, templates, null,  null);
+                List<String> links = AbstractTemplate.fetchLinksFromHash(hash);
+                List<String> scripts = AbstractTemplate.fetchScriptsFromHash(hash);
+                PageTemplate newInstance = new PageTemplate(id, templates, links, scripts);
                 newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
                 newInstance.creator = hash.get(DatabaseConstants.CREATOR);
                 String[] splitted = id.getUnversionedId().split("/");

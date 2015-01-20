@@ -163,10 +163,14 @@ public class TemplateParser
          * Thus if the head (or body) is empty, but the body (or head) is not, we only want the info in the body (or head).
          */
         if(parsed.head().children().isEmpty() && !parsed.body().children().isEmpty()){
-            retVal.appendChild(parsed.body().child(0));
+            for(Node child : parsed.body().children()) {
+                retVal.appendChild(child);
+            }
         }
         else if(parsed.body().children().isEmpty() && !parsed.head().children().isEmpty()){
-            retVal.appendChild(parsed.head().child(0));
+            for(Node child : parsed.head().children()) {
+                retVal.appendChild(child);
+            }
         }
         else{
             retVal = parsed;

@@ -147,7 +147,9 @@ public class EntityTemplateClass extends AbstractTemplate
             }
             else{
                 Map<RedisID, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
-                EntityTemplateClass newInstance = new EntityTemplateClass(id, templates, hash.get(DatabaseConstants.PAGE_TEMPLATE), null, null);
+                List<String> links = AbstractTemplate.fetchLinksFromHash(hash);
+                List<String> scripts = AbstractTemplate.fetchScriptsFromHash(hash);
+                EntityTemplateClass newInstance = new EntityTemplateClass(id, templates, hash.get(DatabaseConstants.PAGE_TEMPLATE), links, scripts);
                 newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
                 newInstance.creator = hash.get(DatabaseConstants.CREATOR);
                 return newInstance;
