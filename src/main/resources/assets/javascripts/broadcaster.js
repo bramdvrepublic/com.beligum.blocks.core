@@ -336,82 +336,82 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         if (layoutParentElement == null) {
             layoutParentElement = $("body");
         }
-
-        var findFieldsInParent = function(parent, eventName) {
-            if (parent != null && parent.length > 0) {
-                if (isField(parent)) {
-                    Broadcaster.send(eventName, parent)
-                    if (isContainer(parent)) {
-                        $(parent).addClass("blocks-zoomable");
-                        findRowsInParent(parent);
-                    }
-                } else {
-                    var children = parent.children();
-                    for (var i = 0; i < children.length; i++) {
-                        findFieldsInParent($(children[i]), eventName);
-                    }
-                }
-            }
-        };
-
-        var findRowsInParent = function(parent) {
-            $(parent).children().each(function(index, row) {
-                row = $(row);
-                if (DOM.isRow(row)) {
-                    findColumnsInParent(row);
-                }
-            })
-        };
-
-        var findColumnsInParent = function(row) {
-            row.children().each(function(index, column) {
-                 column = $(column);
-                if (DOM.isColumn(column)) {
-                    if (DOM.isRow(column.children().first())) {
-                        findRowsInParent(column);
-                    } else {
-                        findBlocksInParent(column);
-                    }
-                }
-            })
-        };
-
-        var findBlocksInParent = function(column) {
-            column.children().each(function(index, block) {
-                // register als fake block
-
-                Broadcaster.send(Broadcaster.EVENTS.REGISTER_FAKE_FIELD, $(block));
-                $(block).addClass("blocks-zoomable");
-                findFieldsInParent($(block), Broadcaster.EVENTS.REGISTER_FAKE_FIELD);
-            });
-        };
+//
+//        var findFieldsInParent = function(parent, eventName) {
+//            if (parent != null && parent.length > 0) {
+//                if (isField(parent)) {
+//                    Broadcaster.send(eventName, parent)
+//                    if (isContainer(parent)) {
+//                        $(parent).addClass("blocks-zoomable");
+//                        findRowsInParent(parent);
+//                    }
+//                } else {
+//                    var children = parent.children();
+//                    for (var i = 0; i < children.length; i++) {
+//                        findFieldsInParent($(children[i]), eventName);
+//                    }
+//                }
+//            }
+//        };
+//
+//        var findRowsInParent = function(parent) {
+//            $(parent).children().each(function(index, row) {
+//                row = $(row);
+//                if (DOM.isRow(row)) {
+//                    findColumnsInParent(row);
+//                }
+//            })
+//        };
+//
+//        var findColumnsInParent = function(row) {
+//            row.children().each(function(index, column) {
+//                 column = $(column);
+//                if (DOM.isColumn(column)) {
+//                    if (DOM.isRow(column.children().first())) {
+//                        findRowsInParent(column);
+//                    } else {
+//                        findBlocksInParent(column);
+//                    }
+//                }
+//            })
+//        };
+//
+//        var findBlocksInParent = function(column) {
+//            column.children().each(function(index, block) {
+//                // register als fake block
+//
+//                Broadcaster.send(Broadcaster.EVENTS.REGISTER_FAKE_FIELD, $(block));
+//                $(block).addClass("blocks-zoomable");
+//                findFieldsInParent($(block), Broadcaster.EVENTS.REGISTER_FAKE_FIELD);
+//            });
+//        };
 
 
         var container = new blocks.elements.Container(layoutParentElement);
-        $(".blocks-selected-block").removeClass("blocks-selected-block");
-        container.element.addClass("blocks-selected-block");
+//        $(".blocks-selected-block").removeClass("blocks-selected-block");
+//        container.element.addClass("blocks-selected-block");
         layoutTree = container;
 
-        if (isContainer(layoutParentElement)) {
-            container.createAllDropspots();
-            Logger.debug(container);
-            for (var i=0; i < container.blocks.length; i++) {
-                Broadcaster.send(Broadcaster.EVENTS.REGISTER_FAKE_FIELD, container.blocks[i].element)
-                findFieldsInParent(container.blocks[i].element, Broadcaster.EVENTS.REGISTER_FAKE_FIELD);
-            }
-
-            Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
-            Broadcaster.send(Broadcaster.EVENTS.DISABLE_SELECTION);
-            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-
-        } else {
-        // Block die niet layoutable is, zoek alle velden en
-            Broadcaster.send(Broadcaster.EVENTS.ENABLE_SELECTION);
-            var children = layoutParentElement.children();
-            for (var i = 0; i < children.length; i++) {
-                findFieldsInParent($(children[i]), Broadcaster.EVENTS.REGISTER_FIELD);
-            }
-        }
+//        if (isContainer(layoutParentElement)) {
+//            container.createAllDropspots();
+//            Logger.debug(container);
+//            for (var i=0; i < container.blocks.length; i++) {
+//                Broadcaster.send(Broadcaster.EVENTS.REGISTER_FAKE_FIELD, container.blocks[i].element)
+//                findFieldsInParent(container.blocks[i].element, Broadcaster.EVENTS.REGISTER_FAKE_FIELD);
+//            }
+//
+//            Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
+//            Broadcaster.send(Broadcaster.EVENTS.DISABLE_SELECTION);
+//            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+//
+//        } else {
+//        // Block die niet layoutable is, zoek alle velden en
+//            Broadcaster.send(Broadcaster.EVENTS.ENABLE_SELECTION);
+//            var children = layoutParentElement.children();
+//            for (var i = 0; i < children.length; i++) {
+//                findFieldsInParent($(children[i]), Broadcaster.EVENTS.REGISTER_FIELD);
+//            }
+//        }
         Broadcaster.send(Broadcaster.EVENTS.DID_REFRESH_LAYOUT);
     };
 

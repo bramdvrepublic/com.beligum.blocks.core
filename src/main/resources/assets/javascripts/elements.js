@@ -595,16 +595,29 @@ blocks
             }
         });
 
+        var property = Class.create(layoutElement, {
+            constructor: function (element) {
+                property.Super.call(this, this.calculateTop(element), this.calculateBottom(element), this.calculateLeft(element), this.calculateRight(element), element, null, 0);
+                this.container = null;
+                if (DOM.canLayout(element)) {
+                    this.container = new container(element);
+                }
+            }
+        });
+
         // special kind of row that defines the region where blocks can be dragged
         var container = Class.create(layoutElement, {
             constructor: function (element) {
                 container.Super.call(this, this.calculateTop(element), this.calculateBottom(element), this.calculateLeft(element), this.calculateRight(element), element, null, 0);
                 this.blocks = [];
+                this.properties = [];
                 if (DOM.canLayout(element)) {
                     this.generateChildrenForColumn();
+                } else {
+                    for (var i=0; i < this.element.children().length; i++) {
+                        this.generateProperties($(this.element.children()[i]));
+                    }
                 }
-
-
             },
 
             getElementAtSide: function(side) {
@@ -620,7 +633,7 @@ blocks
                     dropspots = this.parent.calculateDropspots(side, dropspots);
                 }
                 return dropspots;
-            }
+            },
 
 //
 //            getProperty: function(x, y) {
@@ -631,30 +644,30 @@ blocks
 //                }
 //                return null;
 //            },
-//
-//            generateProperties: function(element) {
-//                var prop = null;
-//                var canChange = DOM.canEdit(element) || DOM.canLayout(element)
-//
-//                if (canChange) {
-//                    prop = new property(element);
-//                    $(element).addClass("property-hover");
-//                    if (DOM.canEdit(element)) {
-//                        Edit.makeEditable(element);
-//                    }
-//                }
-//
-////                if ((canLayout || prop == null) && element.children().length > 0) {
-//                if ((prop == null) && element.children().length > 0) {
-//                    for(var i=0; i < element.children().length; i++) {
-//                        this.generateProperties($(element.children()[i]));
-//                    }
-//                }
-//
-//                if (prop != null) {
-//                    this.properties.push(prop);
-//                }
-//            }
+
+            generateProperties: function(element) {
+                var prop = null;
+                var canChange = DOM.canEdit(element) || DOM.canLayout(element)
+
+                if (DOM.canLayout(element)) {
+                    prop = new property(element);
+                    $(element).addClass("property-hover");
+                } else if (DOM.canEdit(element)) {
+                    prop = new property(element);
+//                    Edit.makeEditable(element);
+                }
+
+//                if ((canLayout || prop == null) && element.children().length > 0) {
+                if ((prop == null) && element.children().length > 0) {
+                    for(var i=0; i < element.children().length; i++) {
+                        this.generateProperties($(element.children()[i]));
+                    }
+                }
+
+                if (prop != null) {
+                    this.properties.push(prop);
+                }
+            }
 
         });
 
@@ -673,7 +686,7 @@ blocks
                 }
 
                 this.getContainer().blocks.push(this);
-
+                this.container = new container(this.element);
             },
 
             // gets all dropspots for this block and his parents, for each side

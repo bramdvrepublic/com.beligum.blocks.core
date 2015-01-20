@@ -26,9 +26,9 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
     var doLayout = function(element) {
         $(element).addClass(Constants.PROPERTY_CLASS);
 
-        $(element).on(Broadcaster.EVENTS.FAKE_FIELD_CLICK, function(fakeFieldEvent) {
-            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, $(element));
-        });
+//        $(element).on(Broadcaster.EVENTS.FAKE_FIELD_CLICK, function(fakeFieldEvent) {
+//            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, $(element));
+//        });
 
         editors.push(function() {
             $(element).off(Broadcaster.EVENTS.FAKE_FIELD_CLICK);

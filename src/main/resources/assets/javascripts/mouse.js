@@ -345,18 +345,66 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
     $(document).on(Broadcaster.EVENTS.DO_ALLOW_DRAG, function () {allowDrag();});
     $(document).on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, function () {disallowDrag();});
 
-    var fakeFieldEvent = [];
-    $(document).on(Broadcaster.EVENTS.REGISTER_FAKE_FIELD, function(event) {
-        $(event.custom).addClass("blocks-fake-field");
+
+
+    var hooveredFields = [];
+
+    $(document).on("mouseenter", ".property-hover", function(event) {
+        $(".hovered-property").removeClass("hovered-property");
+        var target = $(event.currentTarget);
+        target.addClass("hovered-property");
+        hooveredFields.push(target);
     });
 
-    $(document).on(Broadcaster.EVENTS.UNREGISTER_FAKE_FIELDS, function(event) {
-        $(".blocks-fake-field").removeClass("blocks-fake-field");
+    $(document).on("mouseleave", ".property-hover", function(event) {
+
+        var keptFields = [];
+        var i = 0;
+        for (var i=0; i < hooveredFields.length; i++) {
+            if (hooveredFields[i][0] != event.currentTarget) {
+                keptFields.push(hooveredFields[i]);
+                hooveredFields[i].removeClass("hovered-property");
+
+            } else {
+                var x = 0;
+            }
+            i++;
+        }
+        hooveredFields = keptFields;
+
     });
 
-    $(document).on("mousedown", ".blocks-fake-field", function(event) {
-        fakeFieldEvent.push(event);
+    $(document).on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, function(event) {
+        var layoutContainer = Broadcaster.getContainer();
+        hooveredFields = [];
+        $(".hovered-property").removeClass("hovererd-property");
+
+        var doBlock = function(element) {
+            $(element.addClass("property-hover"))
+        };
+
+        var doProperty = function(element) {
+            $(element.addClass("property-hover"))
+        };
+
+        var enableBlocks = function(container) {
+            var i = 0;
+            for (i = 0; i < container.blocks.length; i++) {
+                doBlock(container.blocks[i].element);
+                enableBlocks(container.blocks[i].container)
+            }
+            for (i = 0; i < container.properties.length; i++) {
+                doProperty(container.properties[i].element);
+                if (container.properties[i].container != null) {
+                    enableBlocks(container.properties[i].container)
+                }
+            }
+        };
+
+        enableBlocks(layoutContainer);
     });
+
+
 
 
 
