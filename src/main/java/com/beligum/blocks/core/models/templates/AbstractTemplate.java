@@ -38,16 +38,6 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     protected Set<String> scripts = new HashSet<>();
     protected List<String> scriptsInOrder = new ArrayList<>();
 
-    /*
-    TODO BAS SH2: home-page is not loading any scripts.
-    TODO BAS SH3: what about the injection of 3 and 6?:
-    1) links van template
-    2) links blueprints
-    3) links blocks
-    4) scripts template
-    5) scripts blueprints
-    6) scripts blocks
-    */
 
     /**
      * Constructor taking a unique id.

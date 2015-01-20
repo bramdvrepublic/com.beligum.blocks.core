@@ -11,6 +11,7 @@ import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -67,6 +68,24 @@ public class TranslationList implements DynamicBlock
         return ParserConstants.DynamicBlocks.TRANSLATION_LIST;
     }
 
+    /**
+     * @return an ordered list with all link-nodes needed to render this dynamic block
+     */
+    @Override
+    public List<Element> getLinks()
+    {
+        //a translation-list doesn't need any css-files to be rendered
+        return new ArrayList<>();
+    }
+    /**
+     * @return an ordered list with all script-nodes needed to render this dynamic block
+     */
+    @Override
+    public List<Element> getScripts()
+    {
+        //a translation-list doesn't need any javascript-files to be rendered
+        return  new ArrayList<>();
+    }
     private String getListItem(String language) throws LanguageException
     {
         //if we're dealing with a translation list, we simple want the links to be a link of this page, translated into the specified language

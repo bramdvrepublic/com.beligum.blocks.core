@@ -178,7 +178,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                         }
                         //if a version has been stored in db before, use that version as page-template-entity (f.i. a menu that has been changed by the user, should stay changed after server-start-up)
                         else{
-                            node = replaceNodeWithEntity(element, lastVersion);
+                            node = replaceElementWithEntityReference(element, lastVersion);
                         }
                     }
                     else if(needsBlueprint(element)){

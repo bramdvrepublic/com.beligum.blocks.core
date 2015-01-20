@@ -67,3 +67,14 @@ Is done in 4 visiting-lines:
  - Preferred languages can be specified in the configuration-xml under "blocks.site.languages", as a list, in order from most preferred language to least preferred language.
  - Languages should always be represented as a (2 letter) ISO 639 language-code.
  - If a url needs to be translated, it needs to be an absolute url of this site-domain or a relative url starting with a '/'. Relative urls without '/' will not be translated!
+
+#Script- and style-injection
+ - Scripts and links (f.i. css-files) can be added to page-templates, class bleuprints and dynamic blocks
+ - Scripts of page-templates and entity-classes are saved to db as a html-blob
+ - When a page is send to the client, the scripts and links are injected in this order:
+     1. links of page-template
+     2. links of blueprints
+     3. links of dynamic blocks
+     4. scripts of page-template
+     5. scripts of blueprints
+     6. scripts of dynamic blocks

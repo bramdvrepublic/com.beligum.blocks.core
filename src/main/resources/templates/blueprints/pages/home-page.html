@@ -1,5 +1,6 @@
 <div typeof="home-page" blueprint template="slideshow" can-layout>
     <div property="welcome" typeof="home-row" class="home-row" blueprint>
+        <link href="/assets/libs/bootstrap/css/home-row.css" rel="stylesheet" />
         <div class="row" style="background-color: white">
             <div class="col-md-4 image">
                 <img property="image" src="/assets/media/images/maalsteen.jpg" alt="" can-edit/>
@@ -10,6 +11,7 @@
                 </header>
                 <p property="text" class="text" can-edit>Vier historische gebouwen in Grimbergen, omgeven door een prachtig natuurdomein, nodigen je uit voor een dagje leerrijke ontspanning. Want er valt heel wat te beleven in het MOT, zowel binnen als buiten.</p>
                 <ul property="button-list" typeof="button-list" class="button-list" can-layout blueprint>
+                    <link href="/assets/libs/bootstrap/css/button-list.css" rel="stylesheet" />
                     <div class="row-fluid">
                         <div property="button" name="museum" typeof="button" class="button">
                             <a property="button-text" href="museum" title="" can-edit>over het museum</a>
@@ -17,8 +19,10 @@
                         <div property="button" name="experience" typeof="button" class="button">
                             <a property="button-text" href="beleving" title="" can-edit>beleving in het MOT</a>
                         </div>
+                        <script src="/assets/libs/jquery/button-list.js" type="application/javascript" ></script>
                     </div>
                 </ul>
+                <script src="/assets/libs/jquery/home-row.js" type="application/javascript" ></script>
             </div>
         </div>
     </div>
@@ -38,17 +42,13 @@
                     <p property="subtitle" class="red" can-edit>Het MOT beschikt over verschillende online databanken. Zoeken maar!</p>
                 </header>
                 <p property="text" class="text" can-edit>Onze data is vrij toegankelijk te raadplegen. Ontdek waarvoor gevonden gereedschap dient of b.v. van welke smid het komt.</p>
-                <link href="/assets/libs/bootstrap/css/home-row.css" rel="stylesheet" />
                 <ul property="button-list" typeof="button-list" class="button-list" can-layout>
-                    <script src="/assets/libs/jquery/button-list.js" type="application/javascript" ></script>
-                    <link href="/assets/libs/bootstrap/css/button-list.css" rel="stylesheet" />
                     <div class="row-fluid">
                         <div property="button" name="search" typeof="button" class="button">
                             <a property="button-text" href="zoek" title="" can-edit>zoeken maar</a>
                         </div>
                     </div>
                 </ul>
-                <script src="/assets/libs/jquery/home-row.js" type="application/javascript" ></script>
             </div>
         </div>
     </div>

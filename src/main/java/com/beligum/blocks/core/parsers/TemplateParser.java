@@ -21,6 +21,7 @@ import org.jsoup.parser.Parser;
 import org.jsoup.select.Elements;
 
 import java.net.URL;
+import java.util.List;
 
 /**
  * Created by wouter on 21/11/14.
@@ -89,6 +90,8 @@ public class TemplateParser
 
     /**
      * Render the html of a certain entity inside a page-template, using the specified language
+     * Uses scripts and links injection to place all javascripts and css-class in the right order:
+     * 1) links of page-template, 2) links of blueprints, 3) links of dynamic blocks, 4) scripts of page-template, 5) scripts of blueprints, 6) scripts of dynamic blocks
      * @param pageTemplate
      * @param entityTemplate
      * @param language
@@ -106,7 +109,7 @@ public class TemplateParser
             if(html == null){
                 html = pageTemplate.getTemplate();
             }
-            Element DOM = parse(html);
+            Document DOM = parse(html);
             Elements referenceBlocks = DOM.select("[" + ParserConstants.REFERENCE_TO + "=" + ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME +"]");
             for(Element reference : referenceBlocks){
                 String entityHtml = entityTemplate.getTemplate(language);
@@ -117,8 +120,18 @@ public class TemplateParser
                 Element entityRoot = TemplateParser.parse(entityHtml).child(0);
                 reference.replaceWith(entityRoot);
             }
-            Traversor traversor = new Traversor(new ToHtmlVisitor(entityTemplate.getUrl(), language, pageTemplate.getLinks(), pageTemplate.getScripts()));
+            ToHtmlVisitor visitor = new ToHtmlVisitor(entityTemplate.getUrl(), language, pageTemplate.getLinks(), pageTemplate.getScripts());
+            Traversor traversor = new Traversor(visitor);
             traversor.traverse(DOM);
+            //inject links and scripts found by the visitor while parsing the DOM
+            List<Node> links = visitor.getLinks();
+            List<Node> scripts = visitor.getScripts();
+            for(Node link : links){
+                DOM.head().appendChild(link);
+            }
+            for(Node script : scripts){
+                DOM.head().appendChild(script);
+            }
             return DOM.outerHtml();
         }
         catch (Exception e){
@@ -127,7 +140,7 @@ public class TemplateParser
     }
 
     /**
-     * Renders the template in the primary language of the specified template
+     * Renders the template in the primary language of the specified template, no scripts or links are injected
      * @param template
      * @return
      * @throws ParseException
