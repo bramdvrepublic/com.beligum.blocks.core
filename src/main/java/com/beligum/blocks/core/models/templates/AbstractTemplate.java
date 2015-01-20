@@ -3,6 +3,7 @@ package com.beligum.blocks.core.models.templates;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.SerializationException;
@@ -10,9 +11,12 @@ import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.IdentifiableObject;
 import com.beligum.blocks.core.models.ifaces.Storable;
+import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.core.framework.templating.ifaces.Template;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.jsoup.nodes.Element;
 
 import java.util.*;
 
@@ -27,13 +31,22 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     protected String applicationVersion;
     /**the creator of this row*/
     protected String creator;
+    /**the (css-)linked files this abstract template needs*/
+    protected Set<String> links = new HashSet<>();
+    protected List<String> linksInOrder = new ArrayList<>();
+    /**the scripts this abstract template needs*/
+    protected Set<String> scripts = new HashSet<>();
+    protected List<String> scriptsInOrder = new ArrayList<>();
+
 
     /**
      * Constructor taking a unique id.
      * @param id id for this template
      * @param templates the map of templates (language -> template) which represent the content of this template
+     * @param links the (css-)linked files this abstract template needs
+     * @param scripts the (javascript-)scripts this abstract template needs
      */
-    protected AbstractTemplate(RedisID id, Map<RedisID, String> templates)
+    protected AbstractTemplate(RedisID id, Map<RedisID, String> templates, List<String> links, List<String> scripts)
     {
         super(id);
         this.templates = templates;
@@ -41,21 +54,51 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
         this.applicationVersion = "test";
         //TODO: logged in user should be added here
         this.creator = "me";
+        if(links != null) {
+            for (String link : links) {
+                boolean added = this.links.add(link);
+                //if this link wasn't present yet, add it to the list
+                if (added) {
+                    this.linksInOrder.add(link);
+                }
+            }
+        }
+        if(scripts != null){
+            for (String script : scripts) {
+                boolean added = this.scripts.add(script);
+                //if this script wasn't present yet, add it to the list
+                if (added) {
+                    this.scriptsInOrder.add(script);
+                }
+            }
+        }
     }
 
     /**
-     * Constructor for template with one language: the one precent in the id. (Other language-templates could be added later if wanted.)
+     * Constructor for template with one language: the one present in the id. (Other language-templates could be added later if wanted.)
      * @param id id for this template
      * @param template the html-template of this template
+     * @param links the (css-)linked files this template needs
+     * @param scripts the (javascript-)scripts this template needs
      * @throws NullPointerException if the template is null
      */
-    protected AbstractTemplate(RedisID id, String template){
-        this(id, (Map) null);
+    protected AbstractTemplate(RedisID id, String template, List<String> links, List<String> scripts){
+        this(id, (Map) null, links, scripts);
         this.templates = new HashMap<>();
         if(template == null){
             throw new NullPointerException("Null-template found while constructing a template with id '" + id + "'.");
         }
         this.templates.put(id, template);
+    }
+
+    public List<String> getScripts() throws CacheException
+    {
+        return scriptsInOrder;
+    }
+
+    public List<String> getLinks() throws CacheException
+    {
+        return linksInOrder;
     }
 
     /**
@@ -203,13 +246,6 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
         return this.getId().getUnversionedId();
     }
     /**
-     * @return the id of the hash representing this storable ("[storableId]:[version]:hash")
-     */
-    @Override
-    public String getHashId(){
-        return this.getId().getHashId();
-    }
-    /**
      * @return the version of the application this storable is supposed ot interact with
      */
     @Override
@@ -236,6 +272,20 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
             Map<String, String> hash = new HashMap<>();
             for (RedisID languageId : this.templates.keySet()) {
                 hash.put(languageId.getLanguage(), languageId.toString());
+            }
+            String links = "";
+            for(String link : this.linksInOrder){
+                links += link;
+            }
+            if(!StringUtils.isEmpty(links)) {
+                hash.put(DatabaseConstants.LINKS, links);
+            }
+            String scripts = "";
+            for(String script : this.scriptsInOrder){
+                scripts += script;
+            }
+            if(!StringUtils.isEmpty(scripts)) {
+                hash.put(DatabaseConstants.SCRIPTS, scripts);
             }
             hash.put(DatabaseConstants.APP_VERSION, this.applicationVersion);
             hash.put(DatabaseConstants.CREATOR, this.creator);
@@ -272,6 +322,37 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
         }
     }
 
+    static private List<String> fetchTagListFromHash(String dataBaseConstant, Map<String, String> hash){
+        List<String> tags = new ArrayList<>();
+        String tagsList = hash.get(dataBaseConstant);
+        if(!StringUtils.isEmpty(tagsList)) {
+            Element tagsRoot = TemplateParser.parse(tagsList).child(0);
+            tags.add(tagsRoot.outerHtml());
+            for(Element tag : tagsRoot.siblingElements()){
+                tags.add(tag.outerHtml());
+            }
+        }
+        return tags;
+    }
+
+    /**
+     * Method for fetching a list of link-tags from a db-hash
+     * @param hash
+     * @return
+     */
+    static protected List<String> fetchLinksFromHash(Map<String, String> hash){
+        return fetchTagListFromHash(DatabaseConstants.LINKS, hash);
+    }
+
+    /**
+     * Method for fetching a list of script-tags from a db-hash
+     * @param hash
+     * @return
+     */
+    static protected List<String> fetchScriptsFromHash(Map<String, String> hash){
+        return fetchTagListFromHash(DatabaseConstants.SCRIPTS, hash);
+    }
+
     //__________IMPLEMENTATION OF COMPARABLE_______________//
 
     @Override
@@ -303,6 +384,12 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
             String language = languageId.getLanguage();
             significantFieldsSet = significantFieldsSet.append(language + "->" + templates.get(languageId));
         }
+        for(String link : this.linksInOrder){
+            significantFieldsSet = significantFieldsSet.append(link);
+        }
+        for(String script : this.scriptsInOrder){
+            significantFieldsSet = significantFieldsSet.append(script);
+        }
         return significantFieldsSet.toHashCode();
     }
 
@@ -330,6 +417,14 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
                 for(RedisID languageId : templates.keySet()){
                     String language = languageId.getLanguage();
                     significantFieldsSet = significantFieldsSet.append(this.getTemplate(language), abstractTemplateObj.getTemplate(language));
+                }
+                significantFieldsSet = significantFieldsSet.append(this.linksInOrder.size(), abstractTemplateObj.linksInOrder.size());
+                significantFieldsSet = significantFieldsSet.append(this.scriptsInOrder.size(), abstractTemplateObj.scriptsInOrder.size());
+                for(int i = 0; significantFieldsSet.isEquals() && i<this.linksInOrder.size(); i++){
+                    significantFieldsSet = significantFieldsSet.append(this.linksInOrder.get(i), abstractTemplateObj.linksInOrder.get(i));
+                }
+                for(int i = 0; significantFieldsSet.isEquals() && i<this.scriptsInOrder.size(); i++){
+                    significantFieldsSet = significantFieldsSet.append(this.scriptsInOrder.get(i), abstractTemplateObj.scriptsInOrder.get(i));
                 }
                 return significantFieldsSet.isEquals();
             }

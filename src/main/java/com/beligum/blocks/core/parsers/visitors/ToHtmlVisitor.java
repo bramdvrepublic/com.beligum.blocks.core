@@ -11,6 +11,7 @@ import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.parsers.dynamicblocks.DynamicBlock;
 import com.beligum.blocks.core.parsers.dynamicblocks.TranslationList;
+import org.apache.commons.collections.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Element;
@@ -18,6 +19,7 @@ import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
 import java.net.URL;
+import java.util.*;
 
 /**
 * Created by wouter on 23/11/14.
@@ -27,6 +29,29 @@ public class ToHtmlVisitor extends AbstractVisitor
 {
     /**the preferred language we want to render html in*/
     private final String language;
+    /**the (javascript-)scripts that need to be injected*/
+    private Set<String> scripts = new HashSet<>();
+    private List<String> scriptsInOrder = new ArrayList<>();
+    /**the (css-)linked files that need to be injected*/
+    private Set<String> links = new HashSet<>();
+    private List<String> linksInOrder = new ArrayList<>();
+    /**the links needed to render all dynamic blocks encountered*/
+    private List<Node> dynamicBlockLinks = new ArrayList<>();
+    /**the scripts needed to render all dynamic blocks encountered*/
+    private List<Node> dynamicBlockScripts = new ArrayList<>();
+
+    /**
+     *
+     * @param language the preferred language we want to render html in
+     * @param pageTemplateLinks the (css-)linked files of the page-template this page is being rendered in
+     * @param pageTemplateScripts the (javascript-)scripts of the page-template this page is being rendered in
+     * @throws ParseException if no known language was specified
+     */
+    public ToHtmlVisitor(URL pageUrl, String language, List<String> pageTemplateLinks, List<String> pageTemplateScripts) throws ParseException {
+        this(pageUrl, language);
+        addLinks(pageTemplateLinks);
+        addScripts(pageTemplateScripts);
+    }
 
     /**
      *
@@ -49,6 +74,8 @@ public class ToHtmlVisitor extends AbstractVisitor
             if(isEntity(node) && node instanceof Element) {
                 Element entityRoot = (Element) node;
                 EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
+                this.addLinks(entityTemplateClass.getLinks());
+                this.addScripts(entityTemplateClass.getScripts());
                 String entityTemplateClassHtml = entityTemplateClass.getTemplate(language);
                 //if no template could be found for the current language, fall back to the primary language
                 if (entityTemplateClassHtml == null) {
@@ -56,7 +83,7 @@ public class ToHtmlVisitor extends AbstractVisitor
                 }
                 Element entityClassRoot = TemplateParser.parse(entityTemplateClassHtml).child(0);
 
-                //if no modifacations can be done, first we fill in the correct property-references, coming from the class
+                //if no modifications can be done, first we fill in the correct property-references, coming from the class
                 if (useClass(entityRoot, entityClassRoot)) {
                     node = copyPropertiesToClassTemplate(entityRoot, entityClassRoot);
                 }
@@ -74,20 +101,90 @@ public class ToHtmlVisitor extends AbstractVisitor
     public Node tail(Node node, int depth) throws ParseException
     {
         try {
+            node = super.tail(node, depth);
             if(isEntity(node) && node instanceof Element) {
-                //TODO BAS: here we should use a listener to check for all dynamic blocks (maybe we could use a default dynamic block, doing what is now coded in the else-scope
+                Element element = (Element) node;
+                //TODO BAS: here we should use a listener to check for all dynamic blocks
                 DynamicBlock translationList = new TranslationList(this.language, this.pageUrl);
-                if (translationList.getTypeOf().equals(this.getTypeOf(node))) {
-                    node = translationList.generateBlock((Element) node);
+                if (translationList.getTypeOf().equals(this.getTypeOf(element))) {
+                    element = translationList.generateBlock(element);
+                    for(Element link : translationList.getLinks()) {
+                        boolean added = this.links.add(link.outerHtml());
+                        if(added){
+                            this.dynamicBlockLinks.add(link);
+                        }
+                    }
+                    for(Element script : translationList.getScripts()) {
+                        boolean added = this.scripts.add(script.outerHtml());
+                        if(added){
+                            this.dynamicBlockScripts.add(script);
+                        }
+                    }
                 }
+                node = element;
             }
-            return super.tail(node, depth);
+            return node;
         }
         catch(Exception e){
             throw new ParseException("Error while parsing to html at \n \n" + node + "\n \n");
         }
     }
 
+    /**
+     * Note: Use this method only after traversing the html. If not, an empty set will be returned.
+     * @return an ordered list of all link-nodes needed to render this page
+     */
+    public List<Node> getLinks(){
+        List<Node> links = new ArrayList<>();
+        for(String link : this.linksInOrder){
+            Node linkNode = TemplateParser.parse(link).child(0);
+            links.add(linkNode);
+        }
+        links.addAll(this.dynamicBlockLinks);
+        return links;
+    }
+
+    /**
+     * Note: Use this method only after traversing the html. If not, an empty set will be returned.
+     * @return an ordered list of all script-nodes needed to render this page
+     */
+    public List<Node> getScripts(){
+        List<Node> scripts = new ArrayList<>();
+        for(String script : this.scriptsInOrder){
+            Node scriptNode = TemplateParser.parse(script).child(0);
+            scripts.add(scriptNode);
+        }
+        scripts.addAll(this.dynamicBlockScripts);
+        return scripts;
+    }
+
+    /**
+     * Add (unique) links to this visitor, in order
+     * @param links
+     */
+    private void addLinks(List<String> links){
+        for(String link : links) {
+            boolean added = this.links.add(link);
+            //if this link wasn't present yet, add it to the list
+            if(added){
+                this.linksInOrder.add(link);
+            }
+        }
+    }
+
+    /**
+     * Add (unique) scirpts to this visitor, in order
+     * @param scripts
+     */
+    private void addScripts(List<String> scripts){
+        for(String script : scripts) {
+            boolean added = this.scripts.add(script);
+            //if this script wasn't present yet, add it to the list
+            if(added){
+                this.scriptsInOrder.add(script);
+            }
+        }
+    }
 
 
     /**
