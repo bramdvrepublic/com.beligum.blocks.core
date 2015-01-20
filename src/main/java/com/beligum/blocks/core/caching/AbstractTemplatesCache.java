@@ -80,8 +80,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             }
             //TODO BAS: when adding possibility to parse multiple entity-class-languages from file to cache, multiple languages should be able to be added
             if(!getCache().containsKey(template.getUnversionedId())) {
-                RedisID lastVersion = new RedisID(template.getId().getUrl(), RedisID.LAST_VERSION, false);
-                AbstractTemplate storedTemplate = Redis.getInstance().fetchTemplate(lastVersion, this.getCachedClass());
+                AbstractTemplate storedTemplate = Redis.getInstance().fetchLastVersion(template.getId(), this.getCachedClass());
                 if(!template.equals(storedTemplate)){
                     Redis.getInstance().save(template);
                 }

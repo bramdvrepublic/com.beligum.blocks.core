@@ -28,7 +28,7 @@ public class AbstractVisitor
 
     public Node head(Node node, int depth) throws ParseException
     {
-        if (isEntity(node)) {
+        if (hasTypeOf(node)) {
             typeOfStack.push(node);
         }
         return node;
@@ -37,7 +37,7 @@ public class AbstractVisitor
     public Node tail(Node node, int depth) throws ParseException
     {
         try {
-            if (isEntity(node)) {
+            if (hasTypeOf(node)) {
                 typeOfStack.pop();
                 if (parentUrl == null && typeOfStack.isEmpty() && hasResource(node)) {
                     parentUrl = new URL(getResource(node));
@@ -69,18 +69,6 @@ public class AbstractVisitor
         }
     }
 
-    /**
-     *
-     * @return the last (grand)parent-node that is a (typed) entity
-     */
-    protected Node getTypedParent() {
-        if(!this.typeOfStack.empty()){
-            return this.typeOfStack.peek();
-        }
-        else{
-            return null;
-        }
-    }
 
     /**
      *

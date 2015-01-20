@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.models.redis.templates;
+package com.beligum.blocks.core.models.templates;
 
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
@@ -15,6 +15,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,11 +34,13 @@ public class EntityTemplateClass extends AbstractTemplate
      * @param primaryLanguage the language this entity-template-class will always fall back to if needed
      * @param templates A map relating languages to template-strings corresponding to the most outer layer of the element-tree in this entity. At least one template in the primary-language should be present.
      * @param pageTemplateName the default page-template this entity-class should be rendered in
+     * @param links the (css-)linked files this template needs
+     * @param scripts the (javascript-)scripts this template needs
      * @throws IDException if no new id could be rendered using the specified name and language, or if no template of that language is present in the specified map of templates
      */
-    public EntityTemplateClass(String name, String primaryLanguage, Map<RedisID, String> templates, String pageTemplateName) throws IDException
+    public EntityTemplateClass(String name, String primaryLanguage, Map<RedisID, String> templates, String pageTemplateName, List<String> links, List<String> scripts) throws IDException
     {
-        super(RedisID.renderNewEntityTemplateClassID(name, primaryLanguage), templates);
+        super(RedisID.renderNewEntityTemplateClassID(name, primaryLanguage), templates, links, scripts);
         this.name = name;
         if(pageTemplateName != null) {
             this.pageTemplateName = pageTemplateName;
@@ -53,11 +56,13 @@ public class EntityTemplateClass extends AbstractTemplate
      * @param language the language of this class
      * @param template the html-template of this class
      * @param pageTemplateName the default page-template this entity-class should be rendered in
+     * @param links the (css-)linked files this template needs
+     * @param scripts the (javascript-)scripts this template needs
      * @throws IDException if no new id could be rendered using the specified name
      */
-    public EntityTemplateClass(String name, String language, String template, String pageTemplateName) throws IDException
+    public EntityTemplateClass(String name, String language, String template, String pageTemplateName, List<String> links, List<String> scripts) throws IDException
     {
-        super(RedisID.renderNewEntityTemplateClassID(name, language), template);
+        super(RedisID.renderNewEntityTemplateClassID(name, language), template, links, scripts);
         this.name = name;
         if(pageTemplateName != null) {
             this.pageTemplateName = pageTemplateName;
@@ -71,9 +76,9 @@ public class EntityTemplateClass extends AbstractTemplate
      * @param pageTemplateName
      * @throws IDException
      */
-    private EntityTemplateClass(RedisID id, Map<RedisID, String> templates, String pageTemplateName) throws IDException
+    private EntityTemplateClass(RedisID id, Map<RedisID, String> templates, String pageTemplateName, List<String> links, List<String> scripts) throws IDException
     {
-        super(id, templates);
+        super(id, templates, links, scripts);
         //the name of this entity-template-class doesn't start with a "/", so we split it of the given path
         String[] splitted = id.getUrl().getPath().split("/");
         if (splitted.length > 0) {
@@ -141,8 +146,10 @@ public class EntityTemplateClass extends AbstractTemplate
                 throw new DeserializationException("Found empty hash");
             }
             else{
-                Map<RedisID, String> templates = fetchLanguageTemplatesFromHash(hash);
-                EntityTemplateClass newInstance = new EntityTemplateClass(id, templates, hash.get(DatabaseConstants.PAGE_TEMPLATE));
+                Map<RedisID, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
+                List<String> links = AbstractTemplate.fetchLinksFromHash(hash);
+                List<String> scripts = AbstractTemplate.fetchScriptsFromHash(hash);
+                EntityTemplateClass newInstance = new EntityTemplateClass(id, templates, hash.get(DatabaseConstants.PAGE_TEMPLATE), links, scripts);
                 newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
                 newInstance.creator = hash.get(DatabaseConstants.CREATOR);
                 return newInstance;
@@ -191,7 +198,7 @@ public class EntityTemplateClass extends AbstractTemplate
     @Override
     public boolean equals(Object obj)
     {
-        if(!(obj instanceof EntityTemplate)) {
+        if(!(obj instanceof EntityTemplateClass)) {
             return false;
         }
         else{

@@ -281,13 +281,6 @@ public class RedisID extends ID
         return getUnversionedId() + ":" + this.version;
     }
 
-    /**
-     *
-     * @return the string-id of the hash containing all page meta-data (info) of the page with this EntityID
-     */
-    public String getHashId(){
-        return getVersionedId() + ":" + DatabaseConstants.HASH_SUFFIX;
-    }
 
 
     @Override
@@ -369,6 +362,26 @@ public class RedisID extends ID
     public static RedisID renderNewEntityTemplateID(EntityTemplateClass entityTemplateClass, String language) throws IDException
     {
         return Redis.getInstance().renderNewEntityTemplateID(entityTemplateClass, language);
+    }
+
+    /**
+     * Method for getting a new uid for an entity belonging to a page-template
+     * @param pageTemplateName
+     * @return A versioned id of the form "blocks://[db-alias]/pageTemplates/[pageTemplateName]#[proptery]"
+     */
+    public static RedisID renderNewPageTemplateDefaultEntity(String pageTemplateName, String property, String language) throws IDException
+    {
+        try{
+            RedisID newID = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName + "#" + property), NEW_VERSION, true);
+            while(Redis.getInstance().fetchEntityTemplateClass(newID) != null) {
+                newID = new RedisID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName + "#" + property), NEW_VERSION, true);
+            }
+            newID.language = language;
+            return newID;
+        }
+        catch (Exception e) {
+            throw new IDException("Could not construct id from site-domain '" + BlocksConfig.getSiteDomain() + "', name '" + pageTemplateName + "' and property '" + property + "'.");
+        }
     }
 
     /**

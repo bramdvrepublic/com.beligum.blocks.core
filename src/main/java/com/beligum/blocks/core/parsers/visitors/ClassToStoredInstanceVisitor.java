@@ -105,6 +105,7 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
     public Node tail(Node node, int depth) throws ParseException
     {
         try {
+            node = super.tail(node, depth);
             Node lastInstanceNode = !newInstancesNodes.isEmpty() ? newInstancesNodes.peek() : null;
             if (node.equals(lastInstanceNode) && node instanceof Element) {
                 EntityTemplateClass entityClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
@@ -124,7 +125,7 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
                 node = replaceElementWithEntityReference((Element) node, newInstance);
                 newInstancesNodes.pop();
             }
-            return super.tail(node, depth);
+            return node;
         }
         catch (ParseException e){
             throw e;
