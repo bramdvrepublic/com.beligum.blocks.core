@@ -60,7 +60,7 @@
  *
  */
 
-blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "blocks.core.Constants", function (Broadcaster, Layouter, Constants) {
+blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "blocks.core.Constants", "blocks.core.DomManipulation", function (Broadcaster, Layouter, Constants, DOM) {
     // flag if this module is active
     var active = false;
     // dragging options, kept here for parsedContent while waiting for drag
@@ -142,17 +142,29 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
                     Broadcaster.send(Broadcaster.EVENTS.END_DRAG);
                 } else if (Broadcaster.block().current != null) {
                     Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, Broadcaster.block().current.element);
-                    if (fakeFieldEvent != null) {
-                        // trigger fake event
-                        Broadcaster.sendToElement($(fakeFieldEvent.target), Broadcaster.EVENTS.FAKE_FIELD_CLICK, fakeFieldEvent);
-                        fakeFieldEvent = null;
+                }
+                if (fakeFieldEvent.length > 0) {
+                    var deepest = $(fakeFieldEvent[0].target);
+                    var fakeFields = [];
+                    fakeFields.push(deepest);
+                    while (deepest.parent().length > 0) {
+                        if (deepest.parent().hasClass("blocks-fake-field") || deepest.parent().hasClass(Constants.PROPERTY_CLASS)) {
+                            fakeFields.push(deepest.parent())
+                        }
+                        deepest = deepest.parent();
                     }
+
+                    for (var i=fakeFields.length-1; i >= 1; i--) {
+                            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, fakeFields[i]);
+                    }
+                    Broadcaster.sendToElement(fakeFields[0], Broadcaster.EVENTS.FAKE_FIELD_CLICK, fakeFieldEvent);
+
                 }
             }
-
-            resetMouse();
         }
-};
+        fakeFieldEvent = [];
+        resetMouse();
+    };
 
     /*
      * While waiting for drag, check if threshold is activated to really start drag
@@ -333,7 +345,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
     $(document).on(Broadcaster.EVENTS.DO_ALLOW_DRAG, function () {allowDrag();});
     $(document).on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, function () {disallowDrag();});
 
-    var fakeFieldEvent = null;
+    var fakeFieldEvent = [];
     $(document).on(Broadcaster.EVENTS.REGISTER_FAKE_FIELD, function(event) {
         $(event.custom).addClass("blocks-fake-field");
     });
@@ -343,7 +355,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
     });
 
     $(document).on("mousedown", ".blocks-fake-field", function(event) {
-        fakeFieldEvent = event;
+        fakeFieldEvent.push(event);
     });
 
 

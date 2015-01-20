@@ -21,20 +21,17 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
             if (doEdit != null) {
                 doEdit(element);
             }
-
     };
 
     var doLayout = function(element) {
         $(element).addClass(Constants.PROPERTY_CLASS);
 
-
-
-        $(element).on("click.edit_canlayout", function(event) {
-            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, element);
+        $(element).on(Broadcaster.EVENTS.FAKE_FIELD_CLICK, function(fakeFieldEvent) {
+            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, $(element));
         });
 
         editors.push(function() {
-            $(element).off("click.edit_canlayout");
+            $(element).off(Broadcaster.EVENTS.FAKE_FIELD_CLICK);
             $(element).removeClass(Constants.PROPERTY_CLASS);
         });
     };

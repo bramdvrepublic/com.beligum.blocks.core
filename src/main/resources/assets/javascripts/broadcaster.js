@@ -258,6 +258,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     this.EVENTS.UNREGISTER_FIELDS = "UNREGISTER_FIELDS";
     this.EVENTS.FAKE_FIELD_CLICK = "FAKE_FIELD_CLICK";
     this.EVENTS.REGISTER_FAKE_FIELD = "REGISTER_FAKE_FIELD";
+    this.EVENTS.REGISTER_FAKE_BLOCK_FIELD = "REGISTER_FAKE_BLOCK_FIELD";
     this.EVENTS.UNREGISTER_FAKE_FIELDS = "UNREGISTER_FAKE_FIELDS";
 
     this.EVENTS.ENABLE_SELECTION = "ENABLE_SELECTION";
@@ -337,10 +338,13 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         }
 
         var findFieldsInParent = function(parent, eventName) {
-
             if (parent != null && parent.length > 0) {
                 if (isField(parent)) {
                     Broadcaster.send(eventName, parent)
+                    if (isContainer(parent)) {
+                        $(parent).addClass("blocks-zoomable");
+                        findRowsInParent(parent);
+                    }
                 } else {
                     var children = parent.children();
                     for (var i = 0; i < children.length; i++) {
@@ -350,14 +354,49 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
             }
         };
 
+        var findRowsInParent = function(parent) {
+            $(parent).children().each(function(index, row) {
+                row = $(row);
+                if (DOM.isRow(row)) {
+                    findColumnsInParent(row);
+                }
+            })
+        };
+
+        var findColumnsInParent = function(row) {
+            row.children().each(function(index, column) {
+                 column = $(column);
+                if (DOM.isColumn(column)) {
+                    if (DOM.isRow(column.children().first())) {
+                        findRowsInParent(column);
+                    } else {
+                        findBlocksInParent(column);
+                    }
+                }
+            })
+        };
+
+        var findBlocksInParent = function(column) {
+            column.children().each(function(index, block) {
+                // register als fake block
+
+                Broadcaster.send(Broadcaster.EVENTS.REGISTER_FAKE_FIELD, $(block));
+                $(block).addClass("blocks-zoomable");
+                findFieldsInParent($(block), Broadcaster.EVENTS.REGISTER_FAKE_FIELD);
+            });
+        };
+
+
         var container = new blocks.elements.Container(layoutParentElement);
         $(".blocks-selected-block").removeClass("blocks-selected-block");
         container.element.addClass("blocks-selected-block");
         layoutTree = container;
+
         if (isContainer(layoutParentElement)) {
             container.createAllDropspots();
             Logger.debug(container);
             for (var i=0; i < container.blocks.length; i++) {
+                Broadcaster.send(Broadcaster.EVENTS.REGISTER_FAKE_FIELD, container.blocks[i].element)
                 findFieldsInParent(container.blocks[i].element, Broadcaster.EVENTS.REGISTER_FAKE_FIELD);
             }
 
@@ -366,7 +405,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
 
         } else {
-//            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+        // Block die niet layoutable is, zoek alle velden en
             Broadcaster.send(Broadcaster.EVENTS.ENABLE_SELECTION);
             var children = layoutParentElement.children();
             for (var i = 0; i < children.length; i++) {
@@ -379,6 +418,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
 
     $(document).on(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, function(event) {
         Broadcaster.send(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT);
+        $(".blocks-zoomable").removeClass("blocks-zoomable");
         Broadcaster.send(Broadcaster.EVENTS.UNREGISTER_FIELDS);
         Broadcaster.send(Broadcaster.EVENTS.UNREGISTER_FAKE_FIELDS);
         setLayoutParent(event.custom);
