@@ -234,6 +234,9 @@ public class FileToCacheVisitor extends AbstractVisitor
             classRoot.removeAttr(ParserConstants.USE_BLUEPRINT);
             copiedTemplates.put(languageId, classRoot.outerHtml());
         }
+        if(entityClass.getTemplate(id.getLanguage())==null){
+            copiedTemplates.put(id, entityClass.getTemplate());
+        }
         return new EntityTemplate(id, entityClass, copiedTemplates);
     }
 
