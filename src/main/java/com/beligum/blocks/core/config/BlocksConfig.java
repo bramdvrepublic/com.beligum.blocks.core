@@ -12,7 +12,8 @@ import java.util.Locale;
 public class BlocksConfig
 {
     /**the path to the location of bootstrap*/
-    public static final String BOOTSTRAP_FILEPATH = "assets/media/js/bootstrap.min.js";
+    public static final String BOOTSTRAP_JS_FILEPATH = "assets/media/js/bootstrap.min.js";
+    public static final String BOOSTRAP_CSS_FILEPATH = "/assets/libs/bootstrap/css/bootstrap.css";
 
     /**the languages this site can work with, ordered from most preferred languages, to less preferred*/
     public static String[] cachedLanguages;

@@ -2,6 +2,9 @@ package com.beligum.blocks.core.parsers.dynamicblocks;
 
 import com.beligum.blocks.core.exceptions.ParseException;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
+
+import java.util.List;
 
 /**
  * Created by bas on 15.01.15.
@@ -23,4 +26,17 @@ public interface DynamicBlock
      * @return
      */
     public String getTypeOf();
+
+    /**
+     *
+     * @return an ordered list with all link-nodes needed to render this dynamic block
+     */
+    public List<Element> getLinks();
+
+    /**
+     *
+     * @return an ordered list with all script-nodes needed to render this dynamic block
+     */
+    public List<Element> getScripts();
+
 }

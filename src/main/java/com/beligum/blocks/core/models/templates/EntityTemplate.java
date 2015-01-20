@@ -6,7 +6,6 @@ import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.*;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.ifaces.Storable;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -14,6 +13,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.net.URL;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,29 +26,6 @@ public class EntityTemplate extends AbstractTemplate implements Storable
 
     private String pageTemplateName = ParserConstants.DEFAULT_PAGE_TEMPLATE;
 
-
-//    /**
-//     *
-//     * Constructor for a new entity-instance of a certain entity-class. It will uses copies of the templates of the entity-class.
-//     * It's UID will be the of the form "[url]:[version]". It uses the current application version and the currently logged in user for field initialization.
-//     * @param id the id of this entity* @param entityTemplateClass the class of which this entity is a entity-instance
-//     * @throw IDException if no template in the language specified by the id could be found in the templates-map
-//     */
-//    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass) throws IDException
-//    {
-//        super(id, (Map) null);
-//        this.templates = new HashMap<>();
-//        Map<RedisID, String> classTemplates = entityTemplateClass.getTemplates();
-//        for(RedisID classTemplateId : classTemplates.keySet()){
-//            this.templates.put(new RedisID(id, classTemplateId.getLanguage()), classTemplates.get(classTemplateId));
-//        }
-//        this.entityTemplateClassName = entityTemplateClass.getName();
-//        this.pageTemplateName = entityTemplateClass.getPageTemplateName();
-//        if(!this.getLanguages().contains(id.getLanguage())){
-//            throw new IDException("No html-template in language '" + id.getLanguage() + "' found between templates.");
-//        }
-//    }
-
     /**
      *
      * Constructor for a new entity-instance of a certain entity-class. It will uses copies of the templates of the entity-class.
@@ -58,9 +35,10 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      *                  this can be used to copy one template's language-templates to another one
      * @throw IDException if no template in the language specified by the id could be found in the templates-map, or if that map was empty
      */
-    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, Map<RedisID, String> templatesToBeCopied) throws IDException
+    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, Map<RedisID, String> templatesToBeCopied) throws IDException, CacheException
     {
-        super(id, (Map) null);
+        //no scripts or links are specified for an entity-template (this could be implemented later, if wanted)
+        super(id, (Map) null, null, null);
         this.templates = new HashMap<>();
         for(RedisID classTemplateId : templatesToBeCopied.keySet()){
             this.templates.put(new RedisID(id, classTemplateId.getLanguage()), templatesToBeCopied.get(classTemplateId));
@@ -78,9 +56,9 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      * @param entityTemplateClass the class of which this entity is a entity-instance
      * @param template the html-template of this template
      */
-    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, String template)
+    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, String template) throws CacheException
     {
-        super(id, template);
+        super(id, template, null, null);
         this.entityTemplateClassName = entityTemplateClass.getName();
         this.pageTemplateName = entityTemplateClass.getPageTemplateName();
     }
@@ -95,7 +73,7 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      */
     private EntityTemplate(RedisID id, String entityTemplateClassName, Map<RedisID, String> templates, String pageTemplateName) throws IDException
     {
-        super(id, templates);
+        super(id, templates, null, null);
         this.entityTemplateClassName = entityTemplateClassName;
         this.pageTemplateName = pageTemplateName;
         if(!this.getLanguages().contains(id.getLanguage())){
@@ -128,6 +106,25 @@ public class EntityTemplate extends AbstractTemplate implements Storable
         }
     }
 
+    @Override
+    public List<String> getScripts() throws CacheException
+    {
+        List<String> scripts = super.getScripts();
+        if(scripts == null){
+            scripts = this.getEntityTemplateClass().getScripts();
+        }
+        return scripts;
+    }
+    @Override
+    public List<String> getLinks() throws CacheException
+    {
+
+        List<String> links = super.getLinks();
+        if(links == null){
+            links = this.getEntityTemplateClass().getScripts();
+        }
+        return links;
+    }
     /**
      *
      * @return the entity-class of this entity-instance
@@ -203,6 +200,9 @@ public class EntityTemplate extends AbstractTemplate implements Storable
         Map<String, String> hash = super.toHash();
         hash.put(DatabaseConstants.ENTITY_TEMPLATE_CLASS, this.entityTemplateClassName);
         hash.put(DatabaseConstants.PAGE_TEMPLATE, this.pageTemplateName);
+        //an entity-template doesn't have links and scripts (for the moment, this could be implemented later)
+        hash.remove(DatabaseConstants.SCRIPTS);
+        hash.remove(DatabaseConstants.LINKS);
         return hash;
     }
 

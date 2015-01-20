@@ -50,6 +50,7 @@ public class HtmlToStoreVisitor extends AbstractVisitor
     public Node tail(Node node, int depth) throws ParseException
     {
         try {
+            node = super.tail(node, depth);
             if (isEntity(node) && node instanceof Element) {
                 String resourceUrl = getResource(node);
                 EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
@@ -73,8 +74,7 @@ public class HtmlToStoreVisitor extends AbstractVisitor
                 }
                 node = replaceElementWithEntityReference((Element) node, currentEntityTemplate);
             }
-
-            return super.tail(node, depth);
+            return node;
         }catch(Exception e){
             throw new ParseException("Could not parse resource-node: \n \n " + node, e);
         }
