@@ -50,8 +50,7 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     {
         super(id);
         this.templates = templates;
-        //TODO: this version should be fetched from pom.xml
-        this.applicationVersion = "test";
+        this.applicationVersion = BlocksConfig.getProjectVersion();
         //TODO: logged in user should be added here
         this.creator = "me";
         if(links != null) {
