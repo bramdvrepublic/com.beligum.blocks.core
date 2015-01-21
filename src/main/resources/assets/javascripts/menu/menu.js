@@ -39,36 +39,66 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     });
 
     var modalText = '<div class="form-inline" role="form"><div class="form-group"></div></div>';
+//
+//    templateBtn.on("click", function() {
+//        // show dialog with all templates
+//        event.stopPropagation();
+//        $.getJSON("/entities/template").success(function(data) {
+//            var optionList = $('<select class="form-control" id="blocktypeselect"></div>');
+//            var label = '<label for="inputPassword2" class="sr-only">Type block : </label>';
+//            for(var i=0; i< data.length; i++) {
+//                optionList.append('<option value="'+data[i]+'">'+data[i]+'</option>');
+//            }
+//            var list = $(modalText);
+//            list.find(".form-group").empty().append(label).append(optionList);
+//            Notification.alert("Set template", list.html(), function(content) {
+//                var value = content.find("#blocktypeselect").val();
+//                if (value != null && value != "") {
+//                    $.ajax({
+//                        url: "/entities/template",
+//                        type: "PUT",
+//                        contentType: "application/json",
+//                        data: {template: value, id: location.href}
+//                    }).success(function(data) {
+//                        //var newBlock = blocks[value];
+//                        Logger.debug("Template changed")
+//                    });
+//                }
+//
+//            });
+//        });
+//        // choose and click
+//    });
 
-    templateBtn.on("click", function() {
-        // show dialog with all templates
-        event.stopPropagation();
-        $.getJSON("/entities/template").success(function(data) {
-            var optionList = $('<select class="form-control" id="blocktypeselect"></div>');
-            var label = '<label for="inputPassword2" class="sr-only">Type block : </label>';
-            for(var i=0; i< data.length; i++) {
-                optionList.append('<option value="'+data[i]+'">'+data[i]+'</option>');
-            }
-            var list = $(modalText);
-            list.find(".form-group").empty().append(label).append(optionList);
-            Notification.alert("Set template", list.html(), function(content) {
-                var value = content.find("#blocktypeselect").val();
-                if (value != null && value != "") {
-                    $.ajax({
-                        url: "/entities/template",
-                        type: "PUT",
-                        contentType: "application/json",
-                        data: {template: value, id: location.href}
-                    }).success(function(data) {
-                        //var newBlock = blocks[value];
-                        Logger.debug("Template changed")
-                    });
-                }
-
-            });
-        });
-        // choose and click
-    });
+//    templateBtn.on("click", function() {
+//        // show dialog with all templates
+//        event.stopPropagation();
+//        $.getJSON("/entities/template").success(function(data) {
+//            var optionList = $('<select class="form-control" id="blocktypeselect"></div>');
+//            var label = '<label for="inputPassword2" class="sr-only">Type block : </label>';
+//            for(var i=0; i< data.length; i++) {
+//                optionList.append('<option value="'+data[i]+'">'+data[i]+'</option>');
+//            }
+//            var list = $(modalText);
+//            list.find(".form-group").empty().append(label).append(optionList);
+//            Notification.alert("Set template", list.html(), function(content) {
+//                var value = content.find("#blocktypeselect").val();
+//                if (value != null && value != "") {
+//                    $.ajax({
+//                        url: "/entities/template",
+//                        type: "PUT",
+//                        contentType: "application/json",
+//                        data: {template: value, id: location.href}
+//                    }).success(function(data) {
+//                        //var newBlock = blocks[value];
+//                        Logger.debug("Template changed")
+//                    });
+//                }
+//
+//            });
+//        });
+//        // choose and click
+//    });
 
 
 }]);

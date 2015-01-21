@@ -63,7 +63,6 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
         element.attr("contenteditable", true);
         var editor = new Medium({element: element[0], mode: Medium.inlineMode});
 
-
         var setCursor = function() {
             var caretPosition = document.caretRangeFromPoint(blockEvent.clientX, blockEvent.clientY);
 
@@ -78,7 +77,6 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
             element.removeAttr("contenteditable");
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
         })
-
 
     };
 
