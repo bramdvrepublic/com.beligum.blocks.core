@@ -140,29 +140,12 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
                 var oldDragStatus = draggingStatus;
                 if (oldDragStatus == Constants.DRAGGING.YES) {
                     Broadcaster.send(Broadcaster.EVENTS.END_DRAG);
-                } else if (Broadcaster.block().current != null) {
-                    Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, Broadcaster.block().current.element);
+                } else if (Broadcaster.property().current != null) {
+                    Broadcaster.send(Broadcaster.EVENTS.REGISTER_FIELD);
                 }
-                if (fakeFieldEvent.length > 0) {
-                    var deepest = $(fakeFieldEvent[0].target);
-                    var fakeFields = [];
-                    fakeFields.push(deepest);
-                    while (deepest.parent().length > 0) {
-                        if (deepest.parent().hasClass("blocks-fake-field") || deepest.parent().hasClass(Constants.PROPERTY_CLASS)) {
-                            fakeFields.push(deepest.parent())
-                        }
-                        deepest = deepest.parent();
-                    }
 
-                    for (var i=fakeFields.length-1; i >= 1; i--) {
-                            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, fakeFields[i]);
-                    }
-                    Broadcaster.sendToElement(fakeFields[0], Broadcaster.EVENTS.FAKE_FIELD_CLICK, fakeFieldEvent);
-
-                }
             }
         }
-        fakeFieldEvent = [];
         resetMouse();
     };
 
@@ -170,9 +153,11 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
      * While waiting for drag, check if threshold is activated to really start drag
      * */
     var enableDragAfterTreshold = function (event) {
+        Logger.debug("Calculate wait for drag");
         if (Math.abs(draggingStart.pageX - event.pageX) > config.DRAGGING_THRESHOLD ||
             Math.abs(draggingStart.pageY - event.pageY) > config.DRAGGING_THRESHOLD) {
             draggingStatus = Constants.DRAGGING.YES;
+            Logger.debug("Start drag");
             Broadcaster.send(Broadcaster.EVENTS.START_DRAG, {draggingStart: draggingStart});
         }
     };
@@ -189,13 +174,14 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
                 Logger.debug("New block");
                 changedBlock = true;
                 currentBlock = block.current;
+
             }
 
             var changedProperty = false;
             var property = Broadcaster.property();
             // check if property changed since last mouse move
             if (property.current !== currentProperty) {
-                Logger.debug("New property");
+
                 changedProperty = true;
                 currentProperty = property.current;
             }
@@ -204,6 +190,11 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
                 enableDragAfterTreshold(event);
             } else if (draggingStatus != Constants.DRAGGING.YES) {
                 if (changedProperty) {
+                    $("." + Constants.PROPERTY_CLASS).removeClass(Constants.PROPERTY_CLASS);
+                    if (property.current != null) {
+                        property.current.element.addClass(Constants.PROPERTY_CLASS);
+                    }
+
                     if (property.current == null) {
                         Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_PROPERTY);
                     } else if (property.previous == null) {
@@ -217,6 +208,10 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
                 }
 
                 if (changedBlock) {
+                    $("." + Constants.BLOCK_CLASS).removeClass(Constants.BLOCK_CLASS);
+                    if (block.current != null) {
+                        block.current.element.addClass(Constants.BLOCK_CLASS);
+                    }
                     if (block.current == null) {
                         Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK);
                         Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_PROPERTY);
@@ -302,9 +297,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
                 mouseMove(event);
             });
 
-            $(document).on("click.blocks_core", function(event) {
-                event.preventDefault();
-            });
+
 
             $(document).on("mouseleave.blocks_core", function(){
                 mouseUp(event);
@@ -322,7 +315,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
             $(document).off("mouseup.blocks_core");
             $(document).off("mousemove.blocks_core");
             $(document).off("mouseleave.blocks_core");
-            $(document).off("click.blocks_core");
+
         }
     };
 
@@ -333,78 +326,93 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
         Logger.debug("Start blocks: activate mouse");
         Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+
+        $(document).on("click.blocks_core", function(event) {
+            event.preventDefault();
+        });
+
     });
 
     $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+        $(document).off("click.blocks_core");
     });
 
     $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function (event) {registerMouseEvents();
-        mouseMove(event)});
-    $(document).on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, function () {unregisterMouseEvents();});
+        mouseMove(event);
+        Broadcaster.send(Broadcaster.EVENTS.DISABLE_SELECTION);
+    });
+    $(document).on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, function () {unregisterMouseEvents(); Broadcaster.send(Broadcaster.EVENTS.ENABLE_SELECTION);});
+
     $(document).on(Broadcaster.EVENTS.DO_ALLOW_DRAG, function () {allowDrag();});
     $(document).on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, function () {disallowDrag();});
 
 
-
-    var hooveredFields = [];
-
-    $(document).on("mouseenter", ".property-hover", function(event) {
-        $(".hovered-property").removeClass("hovered-property");
-        var target = $(event.currentTarget);
-        target.addClass("hovered-property");
-        hooveredFields.push(target);
-    });
-
-    $(document).on("mouseleave", ".property-hover", function(event) {
-
-        var keptFields = [];
-        var i = 0;
-        for (var i=0; i < hooveredFields.length; i++) {
-            if (hooveredFields[i][0] != event.currentTarget) {
-                keptFields.push(hooveredFields[i]);
-                hooveredFields[i].removeClass("hovered-property");
-
-            } else {
-                var x = 0;
-            }
-            i++;
-        }
-        hooveredFields = keptFields;
-
-    });
-
-    $(document).on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, function(event) {
-        var layoutContainer = Broadcaster.getContainer();
-        hooveredFields = [];
-        $(".hovered-property").removeClass("hovererd-property");
-
-        var doBlock = function(element) {
-            $(element.addClass("property-hover"))
-        };
-
-        var doProperty = function(element) {
-            $(element.addClass("property-hover"))
-        };
-
-        var enableBlocks = function(container) {
-            var i = 0;
-            for (i = 0; i < container.blocks.length; i++) {
-                doBlock(container.blocks[i].element);
-                enableBlocks(container.blocks[i].container)
-            }
-            for (i = 0; i < container.properties.length; i++) {
-                doProperty(container.properties[i].element);
-                if (container.properties[i].container != null) {
-                    enableBlocks(container.properties[i].container)
-                }
-            }
-        };
-
-        enableBlocks(layoutContainer);
-    });
+//
+//    var hoveredField = null;
+//    var currentTarget = null
+//
+//    var setCurrentHover = function(myTarget) {
+//            Logger.debug("mouseenter find closest")
+//            var target = $(myTarget);
+//            var closest = null;
+//            if (target.hasClass("property-hover")) {
+//                closest = target;
+//            } else {
+//                closest = target.closest(".property-hover");
+//            }
+//
+//            if (hoveredField != null) hoveredField.removeClass("hovered-property");
+//            if (closest.length > 0) {
+//                Logger.debug("mouseenter find closest: nothing ound")
+//                hoveredField = closest.first();
+//                hoveredField.addClass("hovered-property")
+//            }
+//
+//    };
+//
+//    $(document).on("mouseenter.mouse_core", "body", function(event) {
+//        setCurrentHover(event.target);
+//    });
+//
+//    $(document).on("mouseleave.mouse_core", "body", function(event) {
+//        setCurrentHover(event.target);
+//    });
 
 
+
+//
+//    $(document).on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, function(event) {
+//        var layoutContainer = Broadcaster.getContainer();
+//        hooveredFields = [];
+//        $(".property-hover").removeClass("property-hover");
+//
+//        var doBlock = function(element) {
+//            $(element.addClass("property-hover"))
+//        };
+//
+//        var doProperty = function(element) {
+//            $(element.addClass("property-hover"))
+//        };
+//
+//        var enableBlocks = function(container) {
+//            var i = 0;
+//            for (i = 0; i < container.blocks.length; i++) {
+//                doBlock(container.blocks[i].element);
+//                enableBlocks(container.blocks[i].container)
+//            }
+//            for (i = 0; i < container.properties.length; i++) {
+//                doProperty(container.properties[i].element);
+//                if (container.properties[i].container != null) {
+//                    enableBlocks(container.properties[i].container)
+//                }
+//            }
+//        };
+//
+//        enableBlocks(layoutContainer);
+//    });
+//
+//
 
 
 

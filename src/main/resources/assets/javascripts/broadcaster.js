@@ -31,9 +31,11 @@
 blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.DomManipulation", function (Constants, DOM) {
     var Broadcaster = this;
     var active = false;
+    var fields = {current: null, previous: null};
     var hoveredBlocks = {current: null, previous: null};
     var properties = {current: null, previous: null};
     var directionVector = {x1: 0, y1: 0, x2: 0, y2: 0};
+
     var lastPoints = [];
     var resetDirectionHandler = null;
     var layoutTree = null;
@@ -165,34 +167,72 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         return direction;
     };
 
+
+
     // sets the current active block
     this.getHooveredBlockForPosition = function (x, y) {
+        var currentField = fields.current;
+        fields.current = null;
+
         var currentBlock = hoveredBlocks.current;
         hoveredBlocks.current = null;
+
+
+        var currentProperty = properties.current;
+        properties.current = null;
+
         // First search for active element
         // If an element is active, we have a big chance the next event is in the same element, so we start our search here
-        if (currentBlock != null) {
-            var bb = currentBlock.findActiveElement(x, y);
-            if (bb instanceof blocks.elements.Block) {
-                hoveredBlocks.current = bb;
+        if (currentField != null) {
+            var bb = currentField.findActiveElement(x, y);
+            if (bb instanceof blocks.elements.Block || bb instanceof blocks.elements.Property) {
+                fields.current = bb;
             }
         }
+
         // Our shortcut failed so search the full page
         // we loop the trees of elements to find the smallest active element
-        if (hoveredBlocks.current == null) {
-            var i = 0;
-            if  (Broadcaster.getContainer() != null && hoveredBlocks.current == null) {
+        if (fields.current == null) {
+            if  (Broadcaster.getContainer() != null) {
                 var bb = Broadcaster.getContainer().findActiveElement(x, y);
-                if (bb instanceof blocks.elements.Block) {
-                    hoveredBlocks.current = bb;
+                if (bb != null && (bb instanceof blocks.elements.Block || bb instanceof blocks.elements.Property)) {
+                    fields.current = bb;
+                } else if (bb != null) {
+                    // loop back until we find null, block or field
+                    while (bb != null && !(bb instanceof blocks.elements.Block || bb instanceof blocks.elements.Property)) {
+                        bb = bb.parent;
+                    }
+                    fields.current = bb;
                 }
-                i++;
+            }
+        }
+
+        if (fields.current != currentField) {
+            fields.previous = currentField;
+        }
+
+
+        if (fields.current != null) {
+            if (fields.current instanceof blocks.elements.Property) {
+                properties.current = fields.current;
+                hoveredBlocks.current = fields.current;
+                while (hoveredBlocks.current != null && !(hoveredBlocks.current instanceof blocks.elements.Block)) {
+                    hoveredBlocks.current = hoveredBlocks.current.parent;
+                }
+            } else {
+                hoveredBlocks.current = fields.current;
+                properties.current = null;
             }
         }
 
         if (hoveredBlocks.current != currentBlock) {
             hoveredBlocks.previous = currentBlock;
         }
+
+        if (properties.current != currentProperty) {
+            properties.previous = currentProperty;
+        }
+
         return hoveredBlocks;
     };
 
@@ -203,6 +243,8 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
             var e = $.Event(eventName);
             e.pageX = lastMoveEvent.pageX;
             e.pageY = lastMoveEvent.pageY;
+            e.clientX = lastMoveEvent.clientX;
+            e.clientY = lastMoveEvent.clientY;
             e.direction = lastMoveEvent.direction;
             e.block = hoveredBlocks;
             e.property = properties;
@@ -336,6 +378,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         if (layoutParentElement == null) {
             layoutParentElement = $("body");
         }
+        layoutParentElement = $("body");
 //
 //        var findFieldsInParent = function(parent, eventName) {
 //            if (parent != null && parent.length > 0) {
@@ -387,7 +430,8 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
 //        };
 
 
-        var container = new blocks.elements.Container(layoutParentElement);
+        var container = new blocks.elements.Container(layoutParentElement, null);
+
 //        $(".blocks-selected-block").removeClass("blocks-selected-block");
 //        container.element.addClass("blocks-selected-block");
         layoutTree = container;
@@ -415,6 +459,39 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         Broadcaster.send(Broadcaster.EVENTS.DID_REFRESH_LAYOUT);
     };
 
+    var oldLayoutTree = null
+    var oldContainerParent = null;
+    var zoom = function() {
+        if (oldLayoutTree == null) {
+            oldLayoutTree = layoutTree;
+            var current = hoveredBlocks.current;
+            layoutTree = current.getContainer();
+            oldContainerParent = layoutTree.parent;
+            layoutTree.parent = null;
+        }
+    }
+
+    var unzoom = function() {
+        if (oldLayoutTree != null) {
+            layoutTree.parent = oldContainerParent;
+            oldContainerParent = null;
+            layoutTree = oldLayoutTree;
+            oldLayoutTree = null;
+        }
+    };
+
+    $(document).on(Broadcaster.EVENTS.START_DRAG, function() {
+        zoom();
+    })
+
+    $(document).on(Broadcaster.EVENTS.END_DRAG, function() {
+        unzoom();
+    });
+
+    $(document).on(Broadcaster.EVENTS.ABORT_DRAG, function() {
+        unzoom();
+    });
+
 
     $(document).on(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, function(event) {
         Broadcaster.send(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT);
@@ -432,7 +509,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
         active = true;
         layoutTree = null;
-        buildLayoutTree();
+        Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, null);
         registerMouseMove();
         registerMouseDown();
     });
@@ -441,7 +518,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         active = false;
         unregisterMouseMove();
         unregisterMouseDown();
-        layoutTree = [];
+        layoutTree = null;
     });
 
     // On Boot

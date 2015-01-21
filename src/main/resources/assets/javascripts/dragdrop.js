@@ -21,11 +21,24 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.L
     * METHODS CALLED WHILE DRAGGING
     **/
 
+    var hideAll = function(element) {
+        if (element.prop("tagName") != "BODY") {
+            var siblings = element.siblings().addClass("not-visible");
+            hideAll(element.parent());
+        }
+    };
+
+    var showAll = function() {
+        $(".not-visible").removeClass("not-visible");
+    }
+
     var dragStarted = function (blockEvent) {
         Logger.debug("drag started");
         old_direction = Constants.DIRECTION.NONE;
         currentDraggedBlock = Broadcaster.getHooveredBlockForPosition(blockEvent.custom.draggingStart.pageX, blockEvent.custom.draggingStart.pageY).current;
         if (draggingEnabled && currentDraggedBlock != null && currentDraggedBlock.canDrag) {
+            hideAll(Broadcaster.getContainer().element);
+            currentDraggedBlock.getContainer().createAllDropspots();
             createDraggedOverlay(currentDraggedBlock);
             createDropPointerElement("anchor");
             createDropPointerElement("other");
@@ -123,6 +136,7 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.L
 //                currentDraggedBlock = null;
                 draggingEnabled = false;
                 dragging = false;
+                showAll();
                 //Broadcaster.send(new Broadcaster.EVENTS.DISABLE_DRAG(200, "blocks.core.DragDrop", dragEnabled));
         }
     }

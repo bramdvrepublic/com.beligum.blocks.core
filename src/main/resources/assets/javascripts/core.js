@@ -69,7 +69,7 @@ blocks.plugin("blocks.core.Constants", function() {
     this.OVERLAY_CLASS = "blocks-overlay";
     this.OVERLAY_BACKGROUND_CLASS = "block-hover";
     this.COLUMN_RESIZER_CLASS = "column-resize-handle";
-    this.BLOCK_HOVER_CLASS = "block-hover";
+    this.BLOCK_CLASS = "block-hover";
     this.PROPERTY_CLASS = "property-hover";
     this.OVERLAY_BACKGROUND_CLASS = "block-overlay-background";
     this.ADMIN_ANIMATION_FRONT = "admin-animation-front";
