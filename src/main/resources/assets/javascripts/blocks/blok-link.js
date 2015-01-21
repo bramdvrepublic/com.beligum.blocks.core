@@ -3,7 +3,8 @@
  */
 
 blocks.plugin("blocks.core.bloklink", ["blocks.core.Admin", function(Admin) {
-    var dialogContent = $('<div class="form-inline" role="form"><div class="form-group">' +
+    var dialogContent = $('<div class="form" role="form"><div class="form-group">' +
+        '<label for="colorselect">Kleur</label>' +
         '<select class="form-control" id="colorselect">' +
         '<option value="">Roze</option>'+
         '<option value="bgblue">Blauw</option>'+
@@ -12,16 +13,30 @@ blocks.plugin("blocks.core.bloklink", ["blocks.core.Admin", function(Admin) {
         '<option value="bggreen">Groen</option>'+
         '<option value="bgorange">Oranje</option>'+
         '<option value="bgred">Rood</option>'+
-        '</select></div></div>');
+        '</select></div>' +
+        '' +
+        '<div class="form-group">' +
+        '<label for="colorselect">Url</label>' +
+        '<input type="text" class="form-control"  id="linkurl" value="" />' +
+        '</div>' +
+        '</div>');
+
 
 
     Admin.register(
         {
-            enabled: function(element) {
-                return element.attr("typeof") == "exhibition";
+            enabled: function(block) {
+                var retVal = (block.element.attr("typeof") == "exhibition") || (block.element.attr("typeof") == "experience") || (block.element.attr("typeof") == "bordered-link");
+                if (retVal) {
+                    var a = block.element.children("a").first();
+                    var link = a.attr("href");
+                    var input = dialogContent.find("#linkurl");
+                    input.val(link);
+                }
+                return retVal;
             },
-            callback: function(block, element, content) {
 
+            callback: function(block, element, content) {
                 var color = content.find("#colorselect").val();
                 var el = block.element.find(".square-inner");
                 el.removeClass("bgblue");
@@ -32,9 +47,14 @@ blocks.plugin("blocks.core.bloklink", ["blocks.core.Admin", function(Admin) {
                 el.removeClass("bgred");
                 el.addClass(color);
 
+                var a = block.element.children("a").first();
+                var url = content.find("#linkurl").val();
+                a.attr("href", url);
 
             },
-            element: dialogContent,
+            element: function() {
+                return dialogContent
+            },
             title: "Kies de kleur van de blok"
         }
     );

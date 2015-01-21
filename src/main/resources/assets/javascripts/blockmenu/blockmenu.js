@@ -19,10 +19,22 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
 
 
     var menuElement = $('<div class="block-menu"></div>');
+
+
     var menuHandle = $('<div class="block-menu-handle"><i class="glyphicon glyphicon-cog"></div>')
     menuElement.append(menuHandle);
+    menuHandle.on("mousedown", function() {
+        if (menuElement.hasClass("open")) {
+            menuElement.removeClass("open");
+            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+        } else {
+            menuElement.addClass("open");
+            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+        }
+    });
 
-    $("body").append(menuElement);
+
+
 
     var buttons = [];
     var activeBlock = null;
@@ -101,13 +113,37 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
         return activeBlock;
     }
 
-//    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
-//
-//        BlockMenu.hideMenuElement();
-//    });
-//
-//    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
-////        menuElement.remove();
-//    });
+    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
+        $("body").append(menuElement);
+        BlockMenu.hideMenuElement();
+    });
+
+    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
+        menuElement.remove();
+    });
+
+    var enterBlockHoover = function(blockEvent) {
+        BlockMenu.showMenuElement(blockEvent);
+    };
+
+    var leaveBlockHoover = function(blockEvent) {
+        BlockMenu.hideMenuElement(blockEvent);
+    };
+
+    $(document).on(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, function (event) {
+        Logger.debug("changed blocks enter");
+        enterBlockHoover(event);
+
+    });
+    $(document).on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, function (event) {
+        Logger.debug("changed blocks leave");
+        if(!BlockMenu.mouseOverMenu()) {
+            leaveBlockHoover(event);
+        }
+    });
+
+    $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function (event) {
+        menuElement.removeClass("open");
+    });
 
 }]);

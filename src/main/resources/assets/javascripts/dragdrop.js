@@ -34,6 +34,7 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.L
 
     var dragStarted = function (blockEvent) {
         Logger.debug("drag started");
+//        Broadcaster.zoom();
         old_direction = Constants.DIRECTION.NONE;
         currentDraggedBlock = Broadcaster.getHooveredBlockForPosition(blockEvent.custom.draggingStart.pageX, blockEvent.custom.draggingStart.pageY).current;
         if (draggingEnabled && currentDraggedBlock != null && currentDraggedBlock.canDrag) {
@@ -137,6 +138,7 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.L
                 draggingEnabled = false;
                 dragging = false;
                 showAll();
+//                Broadcaster.unzoom();
                 //Broadcaster.send(new Broadcaster.EVENTS.DISABLE_DRAG(200, "blocks.core.DragDrop", dragEnabled));
         }
     }

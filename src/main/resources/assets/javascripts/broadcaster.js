@@ -60,17 +60,6 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         $(document).off("mousemove.blocks_broadcaster");
     };
 
-    var lastMouseDown = null;
-    var registerMouseDown = function() {
-        $(document).on("click.blocks_broadcaster", function (event) {
-            lastMouseDown = event;
-        });
-    };
-
-    var unregisterMouseDown = function() {
-        $(document).on("click.blocks_broadcaster");
-    };
-
 
     this.block = function() {
         return hoveredBlocks;
@@ -239,7 +228,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
 
     this.send = function(eventName, custom) {
         if (active || eventName == Broadcaster.EVENTS.START_BLOCKS) {
-//        Logger.debug(eventName);
+        Logger.debug(eventName);
             var e = $.Event(eventName);
             e.pageX = lastMoveEvent.pageX;
             e.pageY = lastMoveEvent.pageY;
@@ -252,10 +241,13 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
             // send the event with jquery
             $(document).triggerHandler(e);
         }
+        if (eventName == Broadcaster.EVENTS.STOP_BLOCKS) {
+            active = false;
+        }
     };
 
     this.sendToElement = function(element, eventName, custom) {
-        if (active || eventName == Broadcaster.EVENTS.START_BLOCKS) {
+        if (active) {
 //        Logger.debug(eventName);
             var e = $.Event(eventName);
             e.pageX = lastMoveEvent.pageX;
@@ -347,9 +339,6 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         return DOM.canLayout(element);
     };
 
-    var isField = function(element) {
-        return DOM.canEdit(element) || DOM.canLayout(element);
-    };
 
     var findContainers = function(element) {
         var retVal = [];
@@ -375,87 +364,11 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         hoveredBlocks.current = null;
         layoutTree = null;
         //_this.cleanLayout();
-        if (layoutParentElement == null) {
-            layoutParentElement = $("body");
-        }
+
         layoutParentElement = $("body");
-//
-//        var findFieldsInParent = function(parent, eventName) {
-//            if (parent != null && parent.length > 0) {
-//                if (isField(parent)) {
-//                    Broadcaster.send(eventName, parent)
-//                    if (isContainer(parent)) {
-//                        $(parent).addClass("blocks-zoomable");
-//                        findRowsInParent(parent);
-//                    }
-//                } else {
-//                    var children = parent.children();
-//                    for (var i = 0; i < children.length; i++) {
-//                        findFieldsInParent($(children[i]), eventName);
-//                    }
-//                }
-//            }
-//        };
-//
-//        var findRowsInParent = function(parent) {
-//            $(parent).children().each(function(index, row) {
-//                row = $(row);
-//                if (DOM.isRow(row)) {
-//                    findColumnsInParent(row);
-//                }
-//            })
-//        };
-//
-//        var findColumnsInParent = function(row) {
-//            row.children().each(function(index, column) {
-//                 column = $(column);
-//                if (DOM.isColumn(column)) {
-//                    if (DOM.isRow(column.children().first())) {
-//                        findRowsInParent(column);
-//                    } else {
-//                        findBlocksInParent(column);
-//                    }
-//                }
-//            })
-//        };
-//
-//        var findBlocksInParent = function(column) {
-//            column.children().each(function(index, block) {
-//                // register als fake block
-//
-//                Broadcaster.send(Broadcaster.EVENTS.REGISTER_FAKE_FIELD, $(block));
-//                $(block).addClass("blocks-zoomable");
-//                findFieldsInParent($(block), Broadcaster.EVENTS.REGISTER_FAKE_FIELD);
-//            });
-//        };
 
+        layoutTree = new blocks.elements.Container(layoutParentElement, null);
 
-        var container = new blocks.elements.Container(layoutParentElement, null);
-
-//        $(".blocks-selected-block").removeClass("blocks-selected-block");
-//        container.element.addClass("blocks-selected-block");
-        layoutTree = container;
-
-//        if (isContainer(layoutParentElement)) {
-//            container.createAllDropspots();
-//            Logger.debug(container);
-//            for (var i=0; i < container.blocks.length; i++) {
-//                Broadcaster.send(Broadcaster.EVENTS.REGISTER_FAKE_FIELD, container.blocks[i].element)
-//                findFieldsInParent(container.blocks[i].element, Broadcaster.EVENTS.REGISTER_FAKE_FIELD);
-//            }
-//
-//            Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
-//            Broadcaster.send(Broadcaster.EVENTS.DISABLE_SELECTION);
-//            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-//
-//        } else {
-//        // Block die niet layoutable is, zoek alle velden en
-//            Broadcaster.send(Broadcaster.EVENTS.ENABLE_SELECTION);
-//            var children = layoutParentElement.children();
-//            for (var i = 0; i < children.length; i++) {
-//                findFieldsInParent($(children[i]), Broadcaster.EVENTS.REGISTER_FIELD);
-//            }
-//        }
         Broadcaster.send(Broadcaster.EVENTS.DID_REFRESH_LAYOUT);
     };
 
@@ -496,8 +409,6 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     $(document).on(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, function(event) {
         Broadcaster.send(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT);
         $(".blocks-zoomable").removeClass("blocks-zoomable");
-        Broadcaster.send(Broadcaster.EVENTS.UNREGISTER_FIELDS);
-        Broadcaster.send(Broadcaster.EVENTS.UNREGISTER_FAKE_FIELDS);
         setLayoutParent(event.custom);
     })
 
@@ -511,13 +422,10 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         layoutTree = null;
         Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, null);
         registerMouseMove();
-        registerMouseDown();
     });
 
     $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
-        active = false;
         unregisterMouseMove();
-        unregisterMouseDown();
         layoutTree = null;
     });
 

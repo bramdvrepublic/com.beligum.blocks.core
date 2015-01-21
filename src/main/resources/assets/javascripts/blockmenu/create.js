@@ -57,7 +57,7 @@ blocks.plugin("blocks.core.BlockMenu.newText", ["blocks.core.BlockMenu", "blocks
         priority: 100
     });
 
-    var newBlock = $("<div class='block can-edit' typeof='text'><h1 property='content' class='can-edit'>Enter here your text.</h1></div>")
+    var newBlock = $("<div typeof='text' ><div property='content' can-edit><h1>Enter some text here.<h1></h1></div></div>")
 
     button.on("click", function(event) {
         var currentBlock = Menu.currentBlock();

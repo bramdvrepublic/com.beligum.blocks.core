@@ -258,9 +258,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         resetMouse(true);
     };
 
-    // disable cross-browser text selection
-    $(document).on(Broadcaster.EVENTS.DISABLE_SELECTION, function () {
-        // http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
+    var disableSelection = function() {
         $("html").css("-webkit-touch-callout", "none");
         $("html").css("-khtml-user-select", "none");
         $("html").css("-moz-user-select", "none");
@@ -269,11 +267,15 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         $("html").attr("oncontextmenu", "return false;");
         // IE < 10
         $("html").attr("onselectstart", "return false;");
+    };
 
+    // disable cross-browser text selection
+    $(document).on(Broadcaster.EVENTS.DISABLE_SELECTION, function () {
+        // http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
+        disableSelection();
     });
 
-    // enable cross-browser text selection
-    $(document).on(Broadcaster.EVENTS.ENABLE_SELECTION, function () {
+    var enableSelection = function() {
         //http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
         $("html").css("-webkit-touch-callout", "text");
         $("html").css("-khtml-user-select", "text");
@@ -282,6 +284,11 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         $("html").css("user-select", "text");
         $("html").removeAttr("oncontextmenu", "");
         $("html").removeAttr("onselectstart");
+    }
+
+    // enable cross-browser text selection
+    $(document).on(Broadcaster.EVENTS.ENABLE_SELECTION, function () {
+        enableSelection();
     });
 
     var registerMouseEvents = function () {
@@ -300,7 +307,12 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
 
 
             $(document).on("mouseleave.blocks_core", function(){
-                mouseUp(event);
+//                mouseUp(event);
+                if (draggingStatus == Constants.DRAGGING.YES) {
+                    Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG);
+                }
+                resetMouse();
+
                 Logger.debug("Mouse out of window. Cancel!");
             });
             resetMouse(true);
@@ -325,6 +337,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
 
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
         Logger.debug("Start blocks: activate mouse");
+        Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);
         Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
 
         $(document).on("click.blocks_core", function(event) {
@@ -334,85 +347,27 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
     });
 
     $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
+        $("." + Constants.PROPERTY_CLASS).removeClass(Constants.PROPERTY_CLASS);
+        $("." + Constants.PROPERTY_CLASS).removeClass(Constants.BLOCK_CLASS);
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         $(document).off("click.blocks_core");
     });
 
-    $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function (event) {registerMouseEvents();
+    $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function (event) {
+        registerMouseEvents();
         mouseMove(event);
-        Broadcaster.send(Broadcaster.EVENTS.DISABLE_SELECTION);
+        Broadcaster.send(Broadcaster.EVENTS.DISABLE_SELECTION)
+        $("." + Constants.PROPERTY_CLASS).removeClass(Constants.PROPERTY_CLASS);
+        $("." + Constants.PROPERTY_CLASS).removeClass(Constants.BLOCK_CLASS);;
     });
-    $(document).on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, function () {unregisterMouseEvents(); Broadcaster.send(Broadcaster.EVENTS.ENABLE_SELECTION);});
+
+    $(document).on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, function () {
+        unregisterMouseEvents();
+        enableSelection();
+    });
 
     $(document).on(Broadcaster.EVENTS.DO_ALLOW_DRAG, function () {allowDrag();});
     $(document).on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, function () {disallowDrag();});
-
-
-//
-//    var hoveredField = null;
-//    var currentTarget = null
-//
-//    var setCurrentHover = function(myTarget) {
-//            Logger.debug("mouseenter find closest")
-//            var target = $(myTarget);
-//            var closest = null;
-//            if (target.hasClass("property-hover")) {
-//                closest = target;
-//            } else {
-//                closest = target.closest(".property-hover");
-//            }
-//
-//            if (hoveredField != null) hoveredField.removeClass("hovered-property");
-//            if (closest.length > 0) {
-//                Logger.debug("mouseenter find closest: nothing ound")
-//                hoveredField = closest.first();
-//                hoveredField.addClass("hovered-property")
-//            }
-//
-//    };
-//
-//    $(document).on("mouseenter.mouse_core", "body", function(event) {
-//        setCurrentHover(event.target);
-//    });
-//
-//    $(document).on("mouseleave.mouse_core", "body", function(event) {
-//        setCurrentHover(event.target);
-//    });
-
-
-
-//
-//    $(document).on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, function(event) {
-//        var layoutContainer = Broadcaster.getContainer();
-//        hooveredFields = [];
-//        $(".property-hover").removeClass("property-hover");
-//
-//        var doBlock = function(element) {
-//            $(element.addClass("property-hover"))
-//        };
-//
-//        var doProperty = function(element) {
-//            $(element.addClass("property-hover"))
-//        };
-//
-//        var enableBlocks = function(container) {
-//            var i = 0;
-//            for (i = 0; i < container.blocks.length; i++) {
-//                doBlock(container.blocks[i].element);
-//                enableBlocks(container.blocks[i].container)
-//            }
-//            for (i = 0; i < container.properties.length; i++) {
-//                doProperty(container.properties[i].element);
-//                if (container.properties[i].container != null) {
-//                    enableBlocks(container.properties[i].container)
-//                }
-//            }
-//        };
-//
-//        enableBlocks(layoutContainer);
-//    });
-//
-//
 
 
 

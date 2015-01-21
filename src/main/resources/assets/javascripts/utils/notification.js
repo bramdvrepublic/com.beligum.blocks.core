@@ -14,14 +14,17 @@ blocks.plugin("blocks.core.Notification", ["blocks.core.Broadcaster", function(B
         var modalHeader = $("<div class='modal-header'></div>");
         var closeIcon = $('<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>');
         var modalTitle = $("<h4 class='modal-title'>" + title + "</h4>");
-        var modalBody = $("<div class='modal-body'>" + message + "</div>");
+        var modalBody = $("<div class='modal-body'></div>").append($(message));
         var modalFooter = $("<div class='modal-footer'></div>");
         var closeButton = $('<button type="button" class="btn btn-default" >Cancel</button>');
         var okButton = $('<button type="button" class="btn btn-primary">Ok</button>');
         modal.css("z-index", (maxIndex() + 2));
-//        modal.css("top", "10%");
-        modal.css("height", "60%");
-        modalBody.css("overflow", "scroll");
+        modalDialog.css("height", "80%");
+        modal.css("max-height", "60%");
+
+        modalBody.css("overflow", "auto");
+        modalBody.css("min-height", "10%");
+        modalBody.css("max-height", "50%");
         var hideDialog = function(callback) {
             modal.fadeOut(200, function() {
                 modal.remove();
