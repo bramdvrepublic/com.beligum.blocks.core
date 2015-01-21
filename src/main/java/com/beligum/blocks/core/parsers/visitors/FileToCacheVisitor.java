@@ -12,6 +12,7 @@ import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.blocks.core.parsers.Traversor;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
@@ -145,18 +146,18 @@ public class FileToCacheVisitor extends AbstractVisitor
                         String language = getLanguage(element, entityTemplateClass);
                         if(needsBlueprint(element)) {
                             RedisID propertyId = RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
-                            propertyInstance = this.getNewEntityClassCopy(element, propertyId, entityTemplateClass);
+                            propertyInstance = this.saveNewEntityClassCopy(element, propertyId, entityTemplateClass);
                         }
                         else{
                             propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language), entityTemplateClass, element.outerHtml());
+                            RedisID lastVersion = new RedisID(propertyInstance.getUnversionedId(), RedisID.LAST_VERSION, language);
+                            EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
+                            //if no version is present in db, or this version is different, save to db
+                            if (storedInstance == null || !storedInstance.equals(propertyInstance)) {
+                                Redis.getInstance().save(propertyInstance);
+                            }
                         }
-                        RedisID lastVersion = new RedisID(propertyInstance.getUnversionedId(), RedisID.LAST_VERSION, language);
-                        EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
-                        //if no version is present in db, or this version is different, save to db
-                        if (storedInstance == null || !storedInstance.equals(propertyInstance)) {
-                            Redis.getInstance().save(propertyInstance);
-                        }
-                        node = replaceElementWithPropertyReference(element);
+                        node = replaceElementWithEntityReference(element, propertyInstance);
                     }
                     //if we're parsing entities belonging to a page-template, we want to create a reproducable id, so we can permanently save changes in db
                     else if(this.parsingPageTemplate && !this.enteredPageTemplateContentNode){
@@ -167,13 +168,13 @@ public class FileToCacheVisitor extends AbstractVisitor
                             EntityTemplate newDefaultEntity;
                             if(needsBlueprint(element)){
                                 defaultPageTemplateEntityId = RedisID.renderNewPageTemplateDefaultEntity(this.pageTemplateName, getProperty(element), this.pageTemplateLanguage);
-                                newDefaultEntity = this.getNewEntityClassCopy(element, defaultPageTemplateEntityId, entityTemplateClass);
+                                newDefaultEntity = this.saveNewEntityClassCopy(element, defaultPageTemplateEntityId, entityTemplateClass);
                             }
                             else{
                                 defaultPageTemplateEntityId = RedisID.renderNewPageTemplateDefaultEntity(this.pageTemplateName, getProperty(element), entityTemplateClass.getLanguage());
                                 newDefaultEntity = new EntityTemplate(defaultPageTemplateEntityId, entityTemplateClass, element.outerHtml());
+                                Redis.getInstance().save(newDefaultEntity);
                             }
-                            Redis.getInstance().save(newDefaultEntity);
                             node = replaceElementWithEntityReference(element, newDefaultEntity);
                         }
                         //if a version has been stored in db before, use that version as page-template-entity (f.i. a menu that has been changed by the user, should stay changed after server-start-up)
@@ -183,8 +184,7 @@ public class FileToCacheVisitor extends AbstractVisitor
                     }
                     else if(needsBlueprint(element)){
                         RedisID defaultEntityId = RedisID.renderNewEntityTemplateID(entityTemplateClass, entityTemplateClass.getLanguage());
-                        EntityTemplate defaultEntity = this.getNewEntityClassCopy(element, defaultEntityId, entityTemplateClass);
-                        Redis.getInstance().save(defaultEntity);
+                        EntityTemplate defaultEntity = this.saveNewEntityClassCopy(element, defaultEntityId, entityTemplateClass);
                         node = replaceElementWithEntityReference(element, defaultEntity);
                     }
                     //if no new class is being parsed, we are parsing a default-instance of a certain type
@@ -224,7 +224,7 @@ public class FileToCacheVisitor extends AbstractVisitor
      * @return
      * @throws IDException
      */
-    private EntityTemplate getNewEntityClassCopy(Node node, RedisID id, EntityTemplateClass entityClass) throws IDException, CacheException
+    private EntityTemplate saveNewEntityClassCopy(Node node, RedisID id, EntityTemplateClass entityClass) throws IDException, CacheException, ParseException
     {
         Map<RedisID, String> classTemplates = entityClass.getTemplates();
         Map<RedisID, String> copiedTemplates = new HashMap<>();
@@ -232,9 +232,16 @@ public class FileToCacheVisitor extends AbstractVisitor
             Element classRoot = TemplateParser.parse(classTemplates.get(languageId)).child(0);
             classRoot.attributes().addAll(node.attributes());
             classRoot.removeAttr(ParserConstants.USE_BLUEPRINT);
+            //a copy of an entity-class, also means a copy of all of it's children, so we need to traverse all templates to create entity-copies of all it's children
+            Traversor traversor = new Traversor(new ClassToStoredInstanceVisitor(id.getUrl(), id.getLanguage()));
+            traversor.traverse(classRoot);
             copiedTemplates.put(languageId, classRoot.outerHtml());
         }
         if(entityClass.getTemplate(id.getLanguage())==null){
+            //a copy of an entity-class, also means a copy of all of it's children, so we need to traverse all templates to create entity-copies of all it's children
+            Element classRoot = TemplateParser.parse(entityClass.getTemplate()).child(0);
+            Traversor traversor = new Traversor(new ClassToStoredInstanceVisitor(id.getUrl(), id.getLanguage()));
+            traversor.traverse(classRoot);
             copiedTemplates.put(id, entityClass.getTemplate());
         }
         return new EntityTemplate(id, entityClass, copiedTemplates);
