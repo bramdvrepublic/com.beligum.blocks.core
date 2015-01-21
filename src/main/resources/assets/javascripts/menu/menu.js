@@ -4,8 +4,8 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     var menuBar = $('<div class="blocks-main-menu"><div class="main-menu-items"></div></div>');
     var btnList = menuBar;
 
-    var templateBtn = $('<a class="btn  btn-default" href="#">Change template</a>');
-    btnList.append(templateBtn);
+//    var templateBtn = $('<a class="btn  btn-default" href="#">Change template</a>');
+//    btnList.append(templateBtn);
     var saveBtn = $('<a class="btn  btn-default" href="#">Save</a>');
     btnList.append(saveBtn);
 

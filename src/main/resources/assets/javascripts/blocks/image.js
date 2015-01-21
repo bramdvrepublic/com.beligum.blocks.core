@@ -1,7 +1,7 @@
 blocks.plugin("blocks.core.image", ["blocks.core.Edit", "blocks.core.Notification", "blocks.core.Broadcaster", function(Edit, Notification, Broadcaster) {
     var dialogContent = $('<div class="form-inline" role="form"><div class="form-group">' +
         '<label for="imagelabel" class="sr-only">Geef de url van een afbeelding: </label>'  +
-        '<input type="text" placeholder="Geef een url" id="imageselect" />'+
+        '<input type="text"  class="form-control"  placeholder="Geef een url" id="imageselect" />'+
 
         '</select></div></div>');
 

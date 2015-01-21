@@ -189,8 +189,8 @@ blocks
          */
         var resizeHandle = Class.create(surface, {
             STATIC: {
-                DRAW_WIDTH: 5,
-                TRIGGER_WIDTH: 20
+                DRAW_WIDTH: 30,
+                TRIGGER_WIDTH: 40
             },
 
             constructor: function (leftColumn, rightColumn) {
