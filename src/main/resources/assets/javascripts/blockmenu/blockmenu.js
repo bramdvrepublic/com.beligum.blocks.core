@@ -23,7 +23,8 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
 
     var menuHandle = $('<div class="block-menu-handle"><i class="glyphicon glyphicon-cog"></div>')
     menuElement.append(menuHandle);
-    menuHandle.on("mousedown", function() {
+
+    $(document).on("mousedown", ".block-menu-handle", function() {
         if (menuElement.hasClass("open")) {
             menuElement.removeClass("open");
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);

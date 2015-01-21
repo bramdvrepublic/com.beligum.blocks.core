@@ -347,8 +347,6 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
     });
 
     $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
-        $("." + Constants.PROPERTY_CLASS).removeClass(Constants.PROPERTY_CLASS);
-        $("." + Constants.PROPERTY_CLASS).removeClass(Constants.BLOCK_CLASS);
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         $(document).off("click.blocks_core");
     });
