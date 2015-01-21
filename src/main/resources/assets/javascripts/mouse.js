@@ -136,6 +136,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
     var mouseUp = function (event) {
 //        enableSelection();
         if (active) {
+            Logger.debug("MOUSE UP");
             if (draggingStatus != Constants.DRAGGING.NOT_ALLOWED) {
                 var oldDragStatus = draggingStatus;
                 if (oldDragStatus == Constants.DRAGGING.YES) {
@@ -351,9 +352,11 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         $(document).off("click.blocks_core");
     });
 
+
+
     $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function (event) {
+        Logger.debug("ACTIVATE MOUSE");
         registerMouseEvents();
-        mouseMove(event);
         Broadcaster.send(Broadcaster.EVENTS.DISABLE_SELECTION)
         $("." + Constants.PROPERTY_CLASS).removeClass(Constants.PROPERTY_CLASS);
         $("." + Constants.PROPERTY_CLASS).removeClass(Constants.BLOCK_CLASS);;
