@@ -75,18 +75,18 @@ public class TemplateParser
 
     }
 
-    /**
-     * Render the html of a certain entity inside a page-template, using the primary language of the entity-template
-     * @param pageTemplate
-     * @param entityTemplate
-     * @return
-     * @throws ParseException
-     */
-    public static String renderEntityInsidePageTemplate(PageTemplate pageTemplate, EntityTemplate entityTemplate) throws ParseException
-    {
-        String language = entityTemplate.getLanguage();
-        return renderEntityInsidePageTemplate(pageTemplate, entityTemplate, language);
-    }
+//    /**
+//     * Render the html of a certain entity inside a page-template, using the primary language of the entity-template
+//     * @param pageTemplate
+//     * @param entityTemplate
+//     * @return
+//     * @throws ParseException
+//     */
+//    public static String renderEntityInsidePageTemplate(PageTemplate pageTemplate, EntityTemplate entityTemplate) throws ParseException
+//    {
+//        String language = entityTemplate.getLanguage();
+//        return renderEntityInsidePageTemplate(pageTemplate, entityTemplate, language);
+//    }
 
     /**
      * Render the html of a certain entity inside a page-template, using the specified language

@@ -133,7 +133,7 @@ public class ApplicationEndpoint
                     }
                     //save a new language (from url) to db, which is a copy of the last stored version
                     else {
-                        String lastVersionHtml = TemplateParser.renderEntityInsidePageTemplate(storedInstance.getPageTemplate(), storedInstance);
+                        String lastVersionHtml = TemplateParser.renderEntityInsidePageTemplate(storedInstance.getPageTemplate(), storedInstance, id.getLanguage());
                         TemplateParser.updateEntity(url, lastVersionHtml);
                         return Response.seeOther(url.toURI()).build();
                     }
