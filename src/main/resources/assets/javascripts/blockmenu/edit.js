@@ -81,21 +81,6 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
     };
 
 
-    var removeEditors = function() {
-        var temp = editors;
-        editors = [];
-//        for (var i = 0; i < temp.length; i++) {
-        while(temp.length > 0) {
-            try {
-                var editor = temp.pop();
-                editor();
-
-            } catch (e) {
-                var x = 0;
-            }
-
-        }
-    }
 
     var registeredByType = {};
     this.registerByType = function(type, callback) {
@@ -139,13 +124,5 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
         makeEditable(event);
     });
 
-    $(document).on(Broadcaster.EVENTS.UNREGISTER_FIELDS, function(event) {
-        removeEditors();
-    });
-
-
-    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
-        removeEditors();
-    })
 
 }]);

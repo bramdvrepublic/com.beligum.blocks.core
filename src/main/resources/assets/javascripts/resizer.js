@@ -13,6 +13,7 @@
  * */
 
 blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broadcaster", "blocks.core.Constants", "blocks.core.DomManipulation", "blocks.core.Overlay", function (Elements, Broadcaster, Constants, DOM, Overlay) {
+    var Resizer = this;
     var active = false;
     var draggingEnabled = false;
     var dragging = false;
@@ -24,21 +25,16 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
     var maxColumn;
 
 
-    var activate = function() {
-        active = true;
+    this.activate = function(value) {
+        active = value;
         dragColumns = [];
         currentDragColumn = 0;
         activeResizeHandle = null;
         minColumn = null;
         maxColumn = null;
-        // check if a handle exists in the dom and remove it before setting to null
-        removeHandleElement();
+
     };
 
-
-    var deactivate = function() {
-        active = false;
-    };
 
 
     // Check if a handle exists in the dom and if not, add 1
@@ -53,14 +49,7 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
 
     // show the handle at the correct position
     var showHandleElement = function (surface) {
-//        checkIfHandleElementExists();
-//        resizeHandleElement.css('position', 'absolute');
-//        resizeHandleElement.css("left", surface.left + "px");
-//        resizeHandleElement.css("top", surface.top + "px");
-//        resizeHandleElement.css("width", surface.right - surface.left + "px");
-//        resizeHandleElement.css("height", surface.bottom - surface.top + "px");
-//        resizeHandleElement.css("cursor", "col-resize");
-        $("body").css("cursor", "col-resize");
+
     };
 
     // update the position of the handle element in the dom
@@ -75,7 +64,6 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
         if (resizeHandleElement != null) {
             $("." + Constants.COLUMN_RESIZER_CLASS).remove();
             resizeHandleElement = null;
-            $("html").css("cursor", 'auto');
         }
     };
 
@@ -103,14 +91,29 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
         return retVal;
     };
 
+
+    var activeRowElement = null;
+
+    var setCursor = function(value) {
+        if (value && activeRowElement != null) {
+            activeRowElement.addClass(Constants.RESIZING_CLASS);
+        } else if (!value && activeRowElement != null) {
+            activeRowElement.removeClass(Constants.RESIZING_CLASS);
+            activeRowElement = null;
+        }
+    };
+
     var activeResizehandleChanged = function (blocksEvent) {
         var retVal = false;
         var newResizeHandle = findActiveResizeHandle(blocksEvent);
         if (activeResizeHandle != newResizeHandle) {
             if (activeResizeHandle != null) {
                 removeHandleElement();
+                setCursor(false);
             }
+
             activeResizeHandle = newResizeHandle;
+
             retVal = true;
         }
         return retVal;
@@ -118,11 +121,16 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
     /*
      * Checks if the mouse hoovers over a handle and allows or disallows dragging
      * */
-    var manageActiveResizeHandle = function (blocksEvent) {
+    this.manageActiveResizeHandle = function (blocksEvent) {
         if (activeResizehandleChanged(blocksEvent)) {
             if (activeResizeHandle != null && !draggingEnabled) {
                 Broadcaster.send(Broadcaster.EVENTS.DISABLE_BLOCK_DRAG);
                 draggingEnabled = true;
+                var col = activeResizeHandle.leftColumn || activeResizeHandle.rightColumn;
+
+                setCursor(false);
+                activeRowElement = col.parent.element;
+                setCursor(true);
                 showHandleElement(activeResizeHandle.drawSurface);
             }  else if (activeResizeHandle == null && draggingEnabled) {
                 Broadcaster.send(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG);
@@ -137,13 +145,14 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
      * show dragHandle
      * init triggerpoints to resize our column (initdrag)
      * */
-    var startDrag = function (blocksEvent) {
+    this.startDrag = function (blocksEvent) {
         if (active && draggingEnabled) {
             $(document).on("mousemove.resizehandledrag", function (event) {
                 doDrag(event)
             });
             showHandleElement(activeResizeHandle.drawSurface);
             initDrag(activeResizeHandle);
+            activeRowElement.find("*").addClass(Constants.RESIZING_CLASS);
             dragging = true;
         }
     };
@@ -153,12 +162,12 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
      * remove handle
      * send DOM_DID_CHANGE EVENT
      * */
-    var endDrag = function (blocksEvent) {
+    this.endDrag = function (blocksEvent) {
         if (active && dragging) {
             dragging = false;
             $(document).off("mousemove.resizehandledrag");
             removeHandleElement();
-            $('body').css("cursor", 'auto')
+            activeRowElement.find("*").removeClass(Constants.RESIZING_CLASS);
             Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
         }
     };
@@ -282,37 +291,8 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
     };
 
 
-    $(document).on(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, function (event) {
-        manageActiveResizeHandle(event)
-    });
-    $(document).on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, function (event) {
-        manageActiveResizeHandle(event)
-    });
-    $(document).on(Broadcaster.EVENTS.HOOVER_OVER_BLOCK, function (event) {
-        manageActiveResizeHandle(event)
-    });
-
-    $(document).on(Broadcaster.EVENTS.DO_ALLOW_DRAG, function () {
-        activate();
-    });
-    $(document).on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, function () {
-        deactivate();
-    });
-
-    // effective dragging
-    $(document).on(Broadcaster.EVENTS.START_DRAG, function (event) {
-        startDrag(event)
-    });
-    $(document).on(Broadcaster.EVENTS.END_DRAG, function (event) {
-        endDrag(event)
-    });
-    $(document).on(Broadcaster.EVENTS.ABORT_DRAG, function (event) {
-        endDrag(event)
-    });
-
 
     // On boot
-    activate();
 
 }]);
 

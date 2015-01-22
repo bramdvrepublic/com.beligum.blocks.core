@@ -653,7 +653,6 @@ blocks
 
                 if (DOM.canLayout(element)) {
                     prop = new property(element, this);
-                    $(element).addClass("property-hover");
                 } else if (DOM.canEdit(element)) {
                     prop = new property(element, this);
 //                    Edit.makeEditable(element);

@@ -53,22 +53,6 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broa
         $("." + Constants.BLOCK_HOVER_CLASS).hide();
     };
 
-    this.highlightProperty = function(property) {
-        property.element.addClass(Constants.PROPERTY_HOVER_CLASS);
-    };
-
-    this.unhighlightProperty = function(property) {
-        property.element.removeClass(Constants.PROPERTY_HOVER_CLASS);
-    };
-
-    this.highlightElementAsProperty = function(element) {
-        element.addClass(Constants.PROPERTY_HOVER_CLASS);
-    };
-
-    this.unhighlightElementAsProperty = function(element) {
-        element.removeClass(Constants.PROPERTY_HOVER_CLASS);
-    };
-
 //    this.createForBlock = function (block, callback) {
 //        var overlayElement = $("<div>").addClass(Constants.OVERLAY_CLASS);
 //        var zindex = maxIndex() + 1;
@@ -138,27 +122,22 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broa
         }
     });
 
-    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
-        for (var i = 0; i < 4; i++) {
-            $("body").append(highlightBorder[i].remove());
-        }
-    })
-
-    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
-        for (var i = 0; i < 4; i++) {
-            highlightBorder[i].remove();
-        }
-    });
+//    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
+//        for (var i = 0; i < 4; i++) {
+//            $("body").append(highlightBorder[i].remove());
+//        }
+//    })
+//
+//    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
+//        for (var i = 0; i < 4; i++) {
+//            highlightBorder[i].remove();
+//        }
+//    });
 
     var Overlay = this;
 
     $(document).on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, function(event) {
-        if (Broadcaster.getContainer() != null) {
-            Overlay.overlayForElement(Broadcaster.getContainer().element, function () {
-                return true;
-            }, function () {
-            });
-        }
+
     });
 
 

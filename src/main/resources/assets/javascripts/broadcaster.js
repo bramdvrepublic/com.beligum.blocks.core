@@ -30,14 +30,13 @@
 
 blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.DomManipulation", function (Constants, DOM) {
     var Broadcaster = this;
-    var active = false;
+
+    this.active = false;
     var fields = {current: null, previous: null};
     var hoveredBlocks = {current: null, previous: null};
     var properties = {current: null, previous: null};
     var directionVector = {x1: 0, y1: 0, x2: 0, y2: 0};
 
-    var lastPoints = [];
-    var resetDirectionHandler = null;
     var layoutTree = null;
     var layoutParentElement = null;
     var lastMoveEvent = $.Event("mousemove", {pageX:0, pageY:0});
@@ -47,7 +46,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     }
 
 
-    var registerMouseMove = function() {
+    this.registerMouseMove = function() {
         $(document).on("mousemove.blocks_broadcaster", function (event) {
             var direction = calculateDirection(event);
             lastMoveEvent = event;
@@ -56,7 +55,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         });
     };
 
-    var unregisterMouseMove = function() {
+    this.unregisterMouseMove = function() {
         $(document).off("mousemove.blocks_broadcaster");
     };
 
@@ -157,6 +156,10 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     };
 
 
+    this.resetHover = function() {
+        var hoveredBlocks = {current: null, previous: null};
+        var properties = {current: null, previous: null};
+    };
 
     // sets the current active block
     this.getHooveredBlockForPosition = function (x, y) {
@@ -227,7 +230,11 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
 
 
     this.send = function(eventName, custom) {
-        if (active || eventName == Broadcaster.EVENTS.START_BLOCKS) {
+        if (eventName == Broadcaster.EVENTS.START_BLOCKS) {
+            Broadcaster.active = true;
+        }
+
+        if (Broadcaster.active) {
         Logger.debug(eventName);
             var e = $.Event(eventName);
             e.pageX = lastMoveEvent.pageX;
@@ -242,12 +249,12 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
             $(document).triggerHandler(e);
         }
         if (eventName == Broadcaster.EVENTS.STOP_BLOCKS) {
-            active = false;
+            Broadcaster.active = false;
         }
     };
 
     this.sendToElement = function(element, eventName, custom) {
-        if (active) {
+        if (Broadcaster.active) {
 //        Logger.debug(eventName);
             var e = $.Event(eventName);
             e.pageX = lastMoveEvent.pageX;
@@ -317,11 +324,15 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     // The parent element where the tree is build
     // if null this is automatically set to the container
 
+    this.setContainer = function(value) {
+        layoutTree = value
+    };
+
     this.getContainer = function() {
         return layoutTree;
     };
 
-    var setLayoutParent = function(element) {
+    this.setLayoutParent = function(element) {
         layoutParentElement = element;
         buildLayoutTree();
     };
@@ -374,17 +385,20 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
 
     var oldLayoutTree = null
     var oldContainerParent = null;
-    var zoom = function() {
+
+    this.zoom = function() {
         if (oldLayoutTree == null) {
             oldLayoutTree = layoutTree;
             var current = hoveredBlocks.current;
-            layoutTree = current.getContainer();
-            oldContainerParent = layoutTree.parent;
-            layoutTree.parent = null;
+            if (current != null) {
+                layoutTree = current.getContainer();
+                oldContainerParent = layoutTree.parent;
+                layoutTree.parent = null;
+            }
         }
     }
 
-    var unzoom = function() {
+    this.unzoom = function() {
         if (oldLayoutTree != null) {
             layoutTree.parent = oldContainerParent;
             oldContainerParent = null;
@@ -393,41 +407,6 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         }
     };
 
-    $(document).on(Broadcaster.EVENTS.START_DRAG, function() {
-        zoom();
-    })
-
-    $(document).on(Broadcaster.EVENTS.END_DRAG, function() {
-        unzoom();
-    });
-
-    $(document).on(Broadcaster.EVENTS.ABORT_DRAG, function() {
-        unzoom();
-    });
-
-
-    $(document).on(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, function(event) {
-        Broadcaster.send(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT);
-        $(".blocks-zoomable").removeClass("blocks-zoomable");
-        setLayoutParent(event.custom);
-    })
-
-    $(document).on(Broadcaster.EVENTS.DOM_DID_CHANGE, function() {
-        var layoutContainer = Broadcaster.getContainer() == null ? null : Broadcaster.getContainer().element;
-        Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, layoutContainer);
-    });
-
-    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
-        active = true;
-        layoutTree = null;
-        Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, null);
-        registerMouseMove();
-    });
-
-    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
-        unregisterMouseMove();
-        layoutTree = null;
-    });
 
     // On Boot
     var resizeTimeout = null
