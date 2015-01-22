@@ -32,15 +32,15 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.C
         // If we drop on the outer edge of the container we wrap everything inside a new container
         // Or we drop on the 1 element inside the container
         if (dropLocation instanceof blocks.elements.Container) {
-            var childrenColumns = dropLocationElement.children();
-            if (childrenColumns.length > 1) {
-                retVal = DOM.createRow().append(childrenColumns.remove());
-                dropLocationElement.append(DOM.wrapBlockInColumn(retVal, 12));
-            } else if (childrenColumns.length == 1) {
+            var childrenRows = dropLocationElement.children();
+            if (childrenRows.length > 1) {
+                retVal = DOM.createRow().append(DOM.createColumn().append(childrenRows.remove()));
+                dropLocationElement.append(retVal);
+            } else if (childrenRows.length == 1) {
                 if (side == Constants.SIDE.TOP) {
-                    retVal = $(childrenColumns[0].children[0]);
+                    retVal = $(childrenRows[0].children[0]);
                 } else {
-                    retVal = $(childrenColumns[0].children[childrenColumns[0].children.length - 1]);
+                    retVal = $(childrenRows[0].children[childrenRows[0].children.length - 1]);
                 }
             } else {
                 Logger.debug("This should never happen!")
