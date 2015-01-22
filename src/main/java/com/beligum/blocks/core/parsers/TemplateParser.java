@@ -1,5 +1,6 @@
 package com.beligum.blocks.core.parsers;
 
+import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.IDException;
@@ -11,15 +12,17 @@ import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.visitors.*;
+import com.beligum.core.framework.utils.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
 import org.jsoup.select.Elements;
+import sun.security.pkcs.ParsingException;
 
 import java.net.URL;
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,25 +34,79 @@ public class TemplateParser
 
     /**
      * Parse all templates found in the specified html and cache them in the specified collection.
-     * @param html the html to be parsed
+     * @param fileHtml the html to be parsed
      * @param cache a {@link java.util.List} in which the {@link PageTemplate}s and {@link EntityTemplateClass}es should be cached
      * @throws ParseException
      */
-    public static void cacheBlueprintsFromFile(String html, List<AbstractTemplate> cache) throws ParseException
+    public static void findTemplatesFromFile(String fileHtml, List<AbstractTemplate> cache) throws ParseException
     {
-        Document doc = parse(html);
-        Traversor traversor = new Traversor(new BlueprintVisitor(cache));
+        Document doc = parse(fileHtml);
+        Traversor traversor = new Traversor(new FindTemplatesVisitor(cache));
         traversor.traverse(doc);
 
     }
 
-    public static void injectDefaultsForTemplates(Collection<? extends AbstractTemplate> templates) throws ParseException
+    /**
+     * Method taking a list of templates and using those to save default-entities to db and eventually cache all templates to the application-cache, holding references to the saved default-entities.
+     * This method also selects which templates will be cached to the application-cache, if multiple templates with the same name are present. (F.i. blueprints are always preferred.)
+     * @param foundTemplates a list of templates, containing all templates found while visiting the template-files on disk
+     * @throws ParseException
+     */
+    public static void injectDefaultsInFoundTemplatesAndCache(List<? extends AbstractTemplate> foundTemplates) throws ParseException
     {
-        for(AbstractTemplate template : templates) {
+        Map<String, PageTemplate> allPageTemplates = new HashMap<>();
+        Map<String, EntityTemplateClass> allEntityClasses = new HashMap<>();
+        //split the list of templates up into page-templates and entity-classes
+        for(AbstractTemplate template : foundTemplates) {
+            if(template instanceof PageTemplate){
+                PageTemplate replacedTemplate = allPageTemplates.put(template.getName(), (PageTemplate) template);
+                //default page-templates should be added to the cache no matter what, so the last one encountered is kept
+                if (replacedTemplate != null && replacedTemplate.getName().contentEquals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
+                    Logger.warn("Replaced default-" + PageTemplate.class.getSimpleName() + ". This should only happen once!");
+                }
+                //no two page-templates with the same name can be defined
+                else if(replacedTemplate != null){
+                    throw new ParseException("Cannot add two " + PageTemplate.class.getSimpleName() + "s with the same name '" + template.getName() + "' to the cache.");
+                }
+            }
+            else if(template instanceof EntityTemplateClass){
+                EntityTemplateClass replacedTemplate = allEntityClasses.put(template.getName(), (EntityTemplateClass) template);
+                //if an entity-class with this name was already present, check if it was a non-blueprint, if not, throw an exception since only one blueprint can be defined per class
+                if(replacedTemplate != null){
+                    Map<RedisID, String> replacedTemplates = replacedTemplate.getTemplates();
+                    boolean isBlueprint = false;
+                    for(RedisID languageId : replacedTemplates.keySet()){
+                        isBlueprint = new SuperVisitor().isBlueprint(TemplateParser.parse(replacedTemplates.get(languageId)).child(0));
+                        if(isBlueprint){
+                            throw new ParseException("An "+ EntityTemplateClass.class.getSimpleName() + " of type '" + replacedTemplate.getName() + "' was already present in cache. Cannot have two blueprints for the same type. Found at \n \n " + template + "\n \n");
+                        }
+                    }
+                }
+            }
+            //only page-tempaltes and entity-template-classes should be present in th list of found templates
+            else{
+                throw new ParseException("Found unsupported " + AbstractTemplate.class.getSimpleName() + "-type " + template.getClass().getSimpleName() + ".");
+            }
+        }
+
+        //create defaults for all found entity-classes
+        for(String templateName : allEntityClasses.keySet()){
+            AbstractTemplate template = allEntityClasses.get(templateName);
             Map<RedisID, String> htmlTemplates = template.getTemplates();
             for(RedisID language : htmlTemplates.keySet()) {
                 Document doc = parse(htmlTemplates.get(language));
-                Traversor traversor = new Traversor(new DefaultsVisitor(language.getLanguage(), template));
+                Traversor traversor = new Traversor(new DefaultsVisitor(language.getLanguage(), template, allEntityClasses, allPageTemplates));
+                traversor.traverse(doc);
+            }
+        }
+
+        //create defaults for all found page-tempaltes
+        for(String templateName : allPageTemplates.keySet()){
+            AbstractTemplate template = allPageTemplates.get(templateName);
+            Map<RedisID, String> htmlTemplates = template.getTemplates();
+            for(RedisID language : htmlTemplates.keySet()) {
+                Document doc = parse(htmlTemplates.get(language));
+                Traversor traversor = new Traversor(new DefaultsVisitor(language.getLanguage(), template, allEntityClasses, allPageTemplates));
                 traversor.traverse(doc);
             }
         }

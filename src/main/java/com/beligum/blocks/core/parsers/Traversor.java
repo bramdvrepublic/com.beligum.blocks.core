@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.parsers;
 
 import com.beligum.blocks.core.exceptions.ParseException;
-import com.beligum.blocks.core.parsers.visitors.AbstractVisitor;
+import com.beligum.blocks.core.parsers.visitors.SuperVisitor;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.NodeVisitor;
 
@@ -16,7 +16,7 @@ import java.net.URL;
  */
 public class Traversor
 {
-    private AbstractVisitor visitor;
+    private SuperVisitor visitor;
 
     private URL pageUrl = null;
 
@@ -24,7 +24,7 @@ public class Traversor
      * Create a new traversor.
      * @param visitor a class implementing the {@link NodeVisitor} interface, to be called when visiting each node.
      */
-    public Traversor(AbstractVisitor visitor)
+    public Traversor(SuperVisitor visitor)
     {
         this.visitor = visitor;
     }

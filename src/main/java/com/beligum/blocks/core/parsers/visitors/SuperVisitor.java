@@ -21,7 +21,7 @@ import java.util.Stack;
 /**
  * Created by wouter on 23/11/14.
  */
-public class AbstractVisitor
+public class SuperVisitor
 {
     protected Stack<Node> typeOfStack = new Stack<>();
     protected URL parentUrl = null;

@@ -19,7 +19,7 @@ import java.net.URL;
  * Created by bas on 10.12.14.
  * Visitor holding all functionalities to go from html to an updated stored instance of entities
  */
-public class HtmlToStoreVisitor extends AbstractVisitor
+public class HtmlToStoreVisitor extends SuperVisitor
 {
     private final String language;
 

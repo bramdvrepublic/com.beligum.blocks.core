@@ -27,20 +27,25 @@ import java.util.*;
 /**
  * Created by bas on 22/01/15.
  */
-public class DefaultsVisitor extends AbstractVisitor
+public class DefaultsVisitor extends SuperVisitor
 {
     //the language we're parsing
     private String language;
     //the type of template we're parsing
     private AbstractTemplate parsingTemplate;
 
+    private Map<String, EntityTemplateClass> allEntityClasses;
+    private Map<String, PageTemplate> allPageTemplates;
+
     /**
      *
-     * @param language
+     * @param language The language the defaults will have.
      * @param parsingTemplate The template this visitor will be visiting for the creation of default values. Only EntityTemplateClass and PageTemplate are supported.
+     * @param allEntityClasses A map holding all class-templates to be used to render default-values with.
+     * @param allPageTemplates A map holding all page-templates.
      * @throws ParseException If an unknown or empty language is specified and if te type of the parsingTemplate is not supported.
      */
-    public DefaultsVisitor(String language, AbstractTemplate parsingTemplate) throws ParseException
+    public DefaultsVisitor(String language, AbstractTemplate parsingTemplate, Map<String, EntityTemplateClass> allEntityClasses, Map<String, PageTemplate> allPageTemplates) throws ParseException
     {
         if(Languages.isNonEmptyLanguageCode(language)) {
             this.language = language;
@@ -48,12 +53,23 @@ public class DefaultsVisitor extends AbstractVisitor
         else{
             throw new ParseException("Found unknown or empty language '" + language + "'.");
         }
-        if(parsingTemplate instanceof EntityTemplateClass || parsingTemplate instanceof PageTemplate) {
+        if(parsingTemplate instanceof EntityTemplateClass) {
+            if(!allEntityClasses.containsKey(parsingTemplate.getName())){
+                throw new ParseException("Found unknown entity-class '" + parsingTemplate.getName() + "'.");
+            }
+            this.parsingTemplate = parsingTemplate;
+        }
+        else if(parsingTemplate instanceof PageTemplate) {
+            if(!allPageTemplates.containsKey(parsingTemplate.getName())){
+                throw new ParseException("Found unknown page-template-name '" + parsingTemplate.getName() + "'.");
+            }
             this.parsingTemplate = parsingTemplate;
         }
         else{
             throw new ParseException("Cannot visit a template of type " + parsingTemplate.getClass().getSimpleName() + ". Only " + EntityTemplateClass.class.getSimpleName() + " and " + PageTemplate.class + " are supported.");
         }
+        this.allEntityClasses = allEntityClasses;
+        this.allPageTemplates = allPageTemplates;
     }
 
     @Override
@@ -76,7 +92,10 @@ public class DefaultsVisitor extends AbstractVisitor
             try {
                 Element element = (Element) node;
                 if(isProperty(element)) {
-                    EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(element));
+                    EntityTemplateClass entityTemplateClass = allEntityClasses.get(getTypeOf(element));
+                    if(entityTemplateClass == null){
+                        throw new ParseException("Found unknown entity-class '" + getTypeOf(element) + "' at node \n \n " + element + "\n \n");
+                    }
                     //for entity-template-classes, new default-properties should be constructed
                     if(this.parsingTemplate instanceof EntityTemplateClass) {
                         element.removeAttr(ParserConstants.BLUEPRINT);
@@ -143,29 +162,25 @@ public class DefaultsVisitor extends AbstractVisitor
                 }
                 //we reached the tail of the outer-most tag of an entity-template-class, so we cache it to the application-cache
                 else if(parsingTemplate instanceof EntityTemplateClass){
-                    AbstractTemplate replacedTemplate = EntityTemplateClassCache.getInstance().replace((EntityTemplateClass) parsingTemplate);
-                    if(replacedTemplate != null){
-                        Map<RedisID, String> templates = replacedTemplate.getTemplates();
-                        boolean isBlueprint = false;
-                        for(RedisID languageId : templates.keySet()){
-                            isBlueprint = this.isBlueprint(TemplateParser.parse(templates.get(languageId)).child(0));
-                            if(isBlueprint){
-                                throw new ParseException("An "+ EntityTemplateClass.class.getSimpleName() + " of type '" + replacedTemplate.getName() + "' was already present in cache. Cannot have two blueprints for the same type. Found at \n \n " + node);
-                            }
-                        }
+                    checkPropertyUniqueness(element);
+                    EntityTemplateClass parsingTemplate = (EntityTemplateClass) this.parsingTemplate;
+                    /*
+                     * Use all info from the template we're parsing to make a real entity-template-class to be cached.
+                     * The correct template of this class to be cached has just been created in this defaults-visitor and can thus be found at element.outerHtml().
+                     */
+                    EntityTemplateClass entityTemplateClass = new EntityTemplateClass(parsingTemplate.getName(), this.language, element.outerHtml(), parsingTemplate.getPageTemplateName(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
+                    boolean added = EntityTemplateClassCache.getInstance().add(entityTemplateClass);
+                    if(!added){
+                        throw new ParseException("Could not add " + EntityTemplateClass.class.getSimpleName() + " '" + entityTemplateClass.getName() + "' to application cache. This shouldn't happen.");
                     }
                 }
                 //we reached the tail of the outer-most tag of a page-template, so we cache it to the application-cache
                 else if(parsingTemplate instanceof PageTemplate) {
-                    boolean added = PageTemplateCache.getInstance().add((PageTemplate) parsingTemplate);
-                    //default page-templates should be added to the cache no matter what, so the last one encountered is kept
-                    if (!added && parsingTemplate.getName().contentEquals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
-                        PageTemplateCache.getInstance().replace((PageTemplate) parsingTemplate);
-                        Logger.warn("Replaced default-" + PageTemplate.class.getSimpleName() + ". This should only happen once!");
-                    }
-                    else if(!added){
-                        throw new ParsingException(PageTemplate.class.getSimpleName() + " '" + parsingTemplate.getName() + "' was not added to the application-cache, since another " + PageTemplate.class.getSimpleName() +
-                                    " with the same name was already present. Cannot add two ");
+                    checkPropertyUniqueness(element);
+                    PageTemplate pageTemplate = new PageTemplate(parsingTemplate.getName(), this.language, element.outerHtml(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
+                    boolean added = PageTemplateCache.getInstance().add(pageTemplate);
+                    if(!added){
+                        throw new ParseException("Could not add " + PageTemplate.class.getSimpleName() + " '" + pageTemplate.getName() + "' to application cache. This shouldn't happen.");
                     }
                 }
                 else{
@@ -209,6 +224,41 @@ public class DefaultsVisitor extends AbstractVisitor
             copiedTemplates.put(id, entityClass.getTemplate());
         }
         return new EntityTemplate(id, entityClass, copiedTemplates);
+    }
+
+    /**
+     * Checks if the properties af a template are unique (or have a unique name if multiple equal properties are present).
+     * @param templateRoot root-node of a template
+     * @return true if all properties are unique, throws {@link ParseException} otherwise.
+     * @throws ParseException
+     */
+    private boolean checkPropertyUniqueness(Element templateRoot) throws ParseException
+    {
+        Elements properties = templateRoot.select("[" + ParserConstants.PROPERTY + "]");
+        //the class-root is not a property of this class, so if it contains the "property"-attribute, it is removed from the list
+        properties.remove(templateRoot);
+        //since we are sure to be working with class-properties, we now all of them will hold an attribute "property", so we can use this in a comparator to sort all elements according to the property-value
+        Collections.sort(properties, new Comparator<Element>() {
+            @Override
+            public int compare(Element classProperty1, Element classProperty2) {
+                return getProperty(classProperty1).compareTo(getProperty(classProperty2));
+            }
+        });
+        for(int i = 1; i<properties.size(); i++){
+            Element previousClassProperty = properties.get(i-1);
+            String previousClassPropertyValue = getProperty(previousClassProperty);
+            Element classProperty = properties.get(i);
+            String classPropertyValue = getProperty(classProperty);
+            if(previousClassPropertyValue.equals(classPropertyValue)){
+                //check if properties with the same attribute-value, have a different name (<div property="something" name="some_thing"></div> and <div property="something"  name="so_me_th_ing"></div> is a correct situation)
+                String previousClassPropertyName = getPropertyName(previousClassProperty);
+                String classPropertyName = getPropertyName(classProperty);
+                if(StringUtils.isEmpty(previousClassPropertyName) || StringUtils.isEmpty(classPropertyName)){
+                    throw new ParseException("Found two properties with same property-value '" + previousClassPropertyValue + "' and no name-attribute to distinguish them at \n \n" + templateRoot + "\n \n");
+                }
+            }
+        }
+        return true;
     }
 
 

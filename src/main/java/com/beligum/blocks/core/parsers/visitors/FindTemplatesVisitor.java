@@ -1,22 +1,17 @@
 package com.beligum.blocks.core.parsers.visitors;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
-import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
-import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
-import com.beligum.blocks.core.parsers.TemplateParser;
-import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
-import org.jsoup.select.Elements;
 
 import java.util.*;
 
@@ -24,7 +19,7 @@ import java.util.*;
  * Created by wouter on 22/11/14.
  * Visitor holding all functionalities to parse a html-file to entity-classes stored in cache
  */
-public class BlueprintVisitor extends AbstractVisitor
+public class FindTemplatesVisitor extends SuperVisitor
 {
 
     private String pageTemplateName = null;
@@ -37,19 +32,19 @@ public class BlueprintVisitor extends AbstractVisitor
     /**the (javascript-)scripts that need to be injected*/
     private Stack<List<String>> scriptsStack = new Stack<>();
 
-    private List<AbstractTemplate> cache;
+    private List<AbstractTemplate> foundTemplates;
 
     /**
      *
-     * @param cache the list to be filled up with entity-template-classes and page-templates
+     * @param foundTemplates the list to be filled up with entity-template-classes and page-templates
      * @throws NullPointerException if no cache is specified
      */
-    public BlueprintVisitor(List<AbstractTemplate> cache)
+    public FindTemplatesVisitor(List<AbstractTemplate> foundTemplates)
     {
-        if(cache == null){
+        if(foundTemplates == null){
             throw new NullPointerException("Cannot cache to null-collection.");
         }
-        this.cache = cache;
+        this.foundTemplates = foundTemplates;
         linksStack.push(new ArrayList<String>());
         scriptsStack.push(new ArrayList<String>());
     }
@@ -113,8 +108,6 @@ public class BlueprintVisitor extends AbstractVisitor
                 //if this element is a class-bleuprint, it must be added to the cache (even if a class with this name was cached before)
                 if(containsClassToBeCached(element)){
                     entityTemplateClass = cacheEntityTemplateClassFromNode(element);
-                    this.linksStack.pop();
-                    this.scriptsStack.pop();
                     /*
                      * If we have cached an new entity-template-class which is a property of a parent entity,
                      * we switch it by a use-blueprint-tag, to be filled in again when the defaults are made (in DefaultVisitor)
@@ -176,39 +169,16 @@ public class BlueprintVisitor extends AbstractVisitor
                 if(StringUtils.isEmpty(pageTemplateName)){
                     pageTemplateName = this.pageTemplateName;
                 }
-                Elements classProperties = classRoot.select("[" + ParserConstants.PROPERTY + "]");
-                //the class-root is not a property of this class, so if it contains the "property"-attribute, it is removed from the list
-                classProperties.remove(classRoot);
-                //since we are sure to be working with class-properties, we now all of them will hold an attribute "property", so we can use this in a comparator to sort all elements according to the property-value
-                Collections.sort(classProperties, new Comparator<Element>() {
-                    @Override
-                    public int compare(Element classProperty1, Element classProperty2) {
-                        return getProperty(classProperty1).compareTo(getProperty(classProperty2));
-                    }
-                });
-                for(int i = 1; i<classProperties.size(); i++){
-                    Element previousClassProperty = classProperties.get(i-1);
-                    String previousClassPropertyValue = getProperty(previousClassProperty);
-                    Element classProperty = classProperties.get(i);
-                    String classPropertyValue = getProperty(classProperty);
-                    if(previousClassPropertyValue.equals(classPropertyValue)){
-                        //check if properties with the same attribute-value, have a different name (<div property="something" name="some_thing"></div> and <div property="something"  name="so_me_th_ing"></div> is a correct situation)
-                        String previousClassPropertyName = getPropertyName(previousClassProperty);
-                        String classPropertyName = getPropertyName(classProperty);
-                        if(StringUtils.isEmpty(previousClassPropertyName) || StringUtils.isEmpty(classPropertyName)){
-                            throw new ParseException("Found two class-properties with same property-value '" + previousClassPropertyValue + "' and no name-attribute to distinguish them at \n \n" + classRoot + "\n \n");
-                        }
-                    }
-                }
+
                 String language = getLanguage(classRoot, null);
-                List<String> links = this.linksStack.peek();
-                List<String> scripts = this.scriptsStack.peek();
+                List<String> links = this.linksStack.pop();
+                List<String> scripts = this.scriptsStack.pop();
                 EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, language, classRoot.outerHtml(), pageTemplateName, links, scripts);
-                this.cache.add(entityTemplateClass);
+                this.foundTemplates.add(entityTemplateClass);
                 return entityTemplateClass;
             }
             else{
-                throw new ParseException(Node.class.getSimpleName() + " '" + classRoot + "' does not define an entity.");
+                throw new ParseException("Found + " + Node.class.getSimpleName() + " which doesn't define an entity. At: \n \n" + classRoot + " \n \n");
             }
         }
         catch(Exception e){
@@ -243,7 +213,7 @@ public class BlueprintVisitor extends AbstractVisitor
                 List<String> scripts = scriptsStack.pop();
                 PageTemplate pageTemplate = new PageTemplate(templateName, language, parent.outerHtml(), links, scripts);
                 replacement.replaceWith(contentNode);
-                this.cache.add(pageTemplate);
+                this.foundTemplates.add(pageTemplate);
             }
             else{
                 throw new ParseException("Found node which is not a page-template-content-node, this should be impossible. At: \n \n " + contentNode + "\n \n");

@@ -7,8 +7,6 @@ import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.AbstractTemplate;
-import com.beligum.blocks.core.models.templates.EntityTemplate;
-import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.utils.Logger;
@@ -80,7 +78,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             if(template == null){
                 return false;
             }
-            //TODO BAS: when adding possibility to parse multiple entity-class-languages from file to cache, multiple languages should be able to be added
+            //TODO BAS: when adding possibility to parse multiple entity-class-languages from file to cache, multiple languages should be able to be added. This class should have the functionality to put two different languages together in one entity-template-class
             if(!getCache().containsKey(template.getUnversionedId())) {
                 AbstractTemplate storedTemplate = Redis.getInstance().fetchLastVersion(template.getId(), this.getCachedClass());
                 if(!template.equals(storedTemplate)){
@@ -163,7 +161,8 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             Path templatesFolder = rootFolder.resolve(BlocksConfig.getTemplateFolder());
 
             try {
-                final List<AbstractTemplate> pageTemplates = new ArrayList<>();
+                //list which will be filled up with all templates found in all files in the templates-folder
+                final List<AbstractTemplate> foundTemplates = new ArrayList<>();
 
                 //first fetch all blueprints from all files
                 FileVisitor<Path> visitor = new SimpleFileVisitor<Path>()
@@ -175,7 +174,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                         if (filePath.getFileName().toString().endsWith("html") || filePath.getFileName().toString().endsWith("htm")) {
                             try {
                                 String html = new String(Files.readAllBytes(filePath));
-                                TemplateParser.cacheBlueprintsFromFile(html, pageTemplates);
+                                TemplateParser.findTemplatesFromFile(html, foundTemplates);
                             }
                             catch (ParseException e) {
                                 Logger.error("Parse error while fetching blueprints from file '" + filePath + "'.", e);
@@ -187,9 +186,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                 Files.walkFileTree(templatesFolder, visitor);
 
                 //then add all default-value's to the found classes
-                TemplateParser.injectDefaultsForTemplates(PageTemplateCache.getInstance().values());
-                TemplateParser.injectDefaultsForTemplates(EntityTemplateClassCache.getInstance().values());
-
+                TemplateParser.injectDefaultsInFoundTemplatesAndCache(foundTemplates);
             }
             catch (Exception e) {
                 Logger.error("Error while filling cache: " + this, e);

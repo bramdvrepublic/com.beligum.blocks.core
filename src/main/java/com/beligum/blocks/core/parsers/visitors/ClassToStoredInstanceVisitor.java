@@ -22,7 +22,7 @@ import java.util.Stack;
  * Created by bas on 03.12.14.
  * Visitor holding all functionalities to go from a cached class-template to a new instance
  */
-public class ClassToStoredInstanceVisitor extends AbstractVisitor
+public class ClassToStoredInstanceVisitor extends SuperVisitor
 {
     //the parent-nodes of the entity-template instances to be created
     private Stack<Node> newInstancesNodes = new Stack<>();

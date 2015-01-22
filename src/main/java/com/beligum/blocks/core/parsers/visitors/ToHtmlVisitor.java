@@ -11,7 +11,6 @@ import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.parsers.dynamicblocks.DynamicBlock;
 import com.beligum.blocks.core.parsers.dynamicblocks.TranslationList;
-import org.apache.commons.collections.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Element;
@@ -25,7 +24,7 @@ import java.util.*;
 * Created by wouter on 23/11/14.
  * Visitor holding all functionalities to go from a stored entity-templates to a html-page
 */
-public class ToHtmlVisitor extends AbstractVisitor
+public class ToHtmlVisitor extends SuperVisitor
 {
     /**the preferred language we want to render html in*/
     private final String language;
