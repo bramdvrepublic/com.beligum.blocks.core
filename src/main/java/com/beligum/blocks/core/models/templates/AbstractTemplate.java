@@ -52,6 +52,7 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
         this.templates = templates;
         this.applicationVersion = BlocksConfig.getProjectVersion();
         //TODO: logged in user should be added here
+        //TODO BAS SH: start user management?
         this.creator = "me";
         if(links != null) {
             for (String link : links) {
