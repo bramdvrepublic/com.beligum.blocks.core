@@ -21,16 +21,31 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
     menuElement.append(menuHandle);
 
     $(document).on("mousedown", ".block-menu-handle", function(event) {
-        if (menuElement.hasClass("open")) {
-            menuElement.removeClass("open");
-            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-        } else {
+        if (!menuElement.hasClass("open")) {
             menuElement.addClass("open");
             Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+
+            // Handler to close the manu on click
+            $(document).on("mousedown.remove_block_menu", function (event) {
+                var target = $(event.target);
+                if (!target.hasClass("block-menu-item") && !target.closest("block-menu-item").length > 0) {
+
+                    menuElement.removeClass("open");
+                    $(document).off("mousedown.remove_block_menu");
+                    BlockMenu.hideMenu();
+                    Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+                }
+
+
+
+
+            });
         }
+
         event.preventDefault();
-        event.stopPropagation();
     });
+
+
 
     menuElement.on("mouseenter", function() {
         hoverOverMenu = true;
@@ -64,6 +79,7 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
 
     this.hideMenu = function() {
         activeBlock = null;
+        menuElement.removeClass("open");
         menuElement.hide();
     };
 
@@ -83,7 +99,7 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
                 }
             }
             menuElement.css("position", "absolute");
-            menuElement.css("top", activeBlock.top + "px");
+            menuElement.css("top", activeBlock.element.offset().top + "px");
             // put menu in upper left corner of block
             var menuWidth = menuElement.width();
             menuElement.css("left", (activeBlock.right - menuWidth) + "px");

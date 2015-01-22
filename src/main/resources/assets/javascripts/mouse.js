@@ -144,7 +144,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
                 if (oldDragStatus == Constants.DRAGGING.YES) {
                     Broadcaster.send(Broadcaster.EVENTS.END_DRAG);
                 } else if (Broadcaster.property().current != null) {
-                    Broadcaster.send(Broadcaster.EVENTS.REGISTER_FIELD);
+                    Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
                 }
 
             }

@@ -10,7 +10,7 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
     };
 
 
-    var makeEditable = function(event) {
+    Edit.makeEditable = function(event) {
             var element = event.property.current.element;
             var doEdit = null;
             if (DOM.canEdit(element)) {
@@ -119,10 +119,6 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
     Edit.registerByTag("A", doEditTextInline);
     Edit.registerByTag("SPAN", doEditTextInline);
 
-    $(document).on(Broadcaster.EVENTS.REGISTER_FIELD, function(event) {
-
-        makeEditable(event);
-    });
 
 
 }]);

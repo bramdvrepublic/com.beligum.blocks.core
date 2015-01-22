@@ -58,7 +58,6 @@ blocks.plugin("blocks.core.BlockMenu.delete", ["blocks.core.BlockMenu", "blocks.
 //    button.on("click", function(event) {
 //        event.stopPropagation();
 //        var currentBlock = Menu.currentBlock();
-//        var lastParent = Broadcaster.layoutParentElement;
 //
 //        var clonedElement = Overlay.overlayForElement(currentBlock.element, function() {
 //            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);

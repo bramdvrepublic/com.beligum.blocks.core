@@ -1,7 +1,7 @@
 /**
  * Created by wouter on 19/01/15.
  */
-blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.BlockMenu", "blocks.core.Highlighter",  function(Constants, Broadcaster, Mouse, DragDrop, Resizer, BlockMenu, Highlighter) {
+blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.BlockMenu", "blocks.core.Highlighter", "blocks.core.Edit",  function(Constants, Broadcaster, Mouse, DragDrop, Resizer, BlockMenu, Highlighter, Edit) {
 
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
         Broadcaster.setContainer(null);
@@ -57,18 +57,20 @@ blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broa
 
 
     $(document).on(Broadcaster.EVENTS.DOM_DID_CHANGE, function() {
-        var layoutContainer = Broadcaster.getContainer().element;
-        Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, layoutContainer);
+        Broadcaster.resetHover();
+        Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, null);
     });
 
     $(document).on(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, function(event) {
         Broadcaster.send(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT);
-        Broadcaster.setLayoutParent(event.custom);
+        Broadcaster.buildLayoutTree();
+        Highlighter.showBlockOverlay(Broadcaster.block().current);
+        Highlighter.showPropertyOverlay(Broadcaster.property().current);
+        Broadcaster.send(Broadcaster.EVENTS.DID_REFRESH_LAYOUT);
     });
 
     $(document).on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, function () {
         Mouse.resetMouse();
-
     });
 
 
@@ -122,22 +124,17 @@ blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broa
 
     $(document).on(Broadcaster.EVENTS.END_DRAG, function (event) {
         Broadcaster.unzoom();
-        Broadcaster.resetHover();
+
         Mouse.enableContextMenu();
         DragDrop.dragEnded(event);
         Resizer.endDrag(event);
-        Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
-        Highlighter.showBlockOverlay(Broadcaster.block().current);
-        Highlighter.showPropertyOverlay(Broadcaster.property().current);
     });
 
     $(document).on(Broadcaster.EVENTS.ABORT_DRAG, function (event) {
         Broadcaster.unzoom();
-        Broadcaster.resetHover();
         Mouse.enableContextMenu();
         DragDrop.dragAborted(event);
-        Resizer.endDrag(event)
-        Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
+        Resizer.endDrag(event);
         Highlighter.showBlockOverlay(Broadcaster.block().current);
         Highlighter.showPropertyOverlay(Broadcaster.property().current);
     });
@@ -175,7 +172,19 @@ blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broa
         DragDrop.dragEnterBlock(event)
     });
 
+    /*
+    * Edit properties
+    * */
 
+    $(document).on(Broadcaster.EVENTS.START_EDIT_FIELD, function(event) {
+        BlockMenu.hideMenu();
+        Edit.makeEditable(event);
+
+    });
+
+    $(document).on(Broadcaster.EVENTS.END_EDIT_FIELD, function(event) {
+
+    });
 
 
 

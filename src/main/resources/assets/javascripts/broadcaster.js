@@ -38,7 +38,6 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     var directionVector = {x1: 0, y1: 0, x2: 0, y2: 0};
 
     var layoutTree = null;
-    var layoutParentElement = null;
     var lastMoveEvent = $.Event("mousemove", {pageX:0, pageY:0});
 
     this.getLastMove = function() {
@@ -157,8 +156,12 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
 
 
     this.resetHover = function() {
-        var hoveredBlocks = {current: null, previous: null};
-        var properties = {current: null, previous: null};
+        fields = {current: null, previous: null};
+        hoveredBlocks = {current: null, previous: null};
+        properties = {current: null, previous: null};
+        lastMoveEvent.block = hoveredBlocks;
+        lastMoveEvent.property = properties;
+
     };
 
     // sets the current active block
@@ -295,12 +298,9 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     this.EVENTS.END_HOOVER = "END_HOOVER";
     this.EVENTS.BLOCKS_CLICK = "BLOCKS_CLICK";
 
-    this.EVENTS.REGISTER_FIELD = "REGISTER_FIELD";
-    this.EVENTS.UNREGISTER_FIELDS = "UNREGISTER_FIELDS";
-    this.EVENTS.FAKE_FIELD_CLICK = "FAKE_FIELD_CLICK";
-    this.EVENTS.REGISTER_FAKE_FIELD = "REGISTER_FAKE_FIELD";
-    this.EVENTS.REGISTER_FAKE_BLOCK_FIELD = "REGISTER_FAKE_BLOCK_FIELD";
-    this.EVENTS.UNREGISTER_FAKE_FIELDS = "UNREGISTER_FAKE_FIELDS";
+    this.EVENTS.START_EDIT_FIELD = "START_EDIT_FIELD";
+    this.EVENTS.END_EDIT_FIELDS = "END_EDIT_FIELDS";
+
 
     this.EVENTS.ENABLE_SELECTION = "ENABLE_SELECTION";
     this.EVENTS.DISABLE_SELECTION = "DISABLE_SELECTION";
@@ -330,11 +330,6 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
 
     this.getContainer = function() {
         return layoutTree;
-    };
-
-    this.setLayoutParent = function(element) {
-        layoutParentElement = element;
-        buildLayoutTree();
     };
 
     /*
@@ -370,17 +365,13 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     };
 
 
-    var buildLayoutTree = function () {
+    this.buildLayoutTree = function () {
         hoveredBlocks.previous = null;
         hoveredBlocks.current = null;
-        layoutTree = null;
-        //_this.cleanLayout();
 
-        layoutParentElement = $("body");
-
-        layoutTree = new blocks.elements.Container(layoutParentElement, null);
-
-        Broadcaster.send(Broadcaster.EVENTS.DID_REFRESH_LAYOUT);
+        layoutTree = new blocks.elements.Container( $("body"), null);
+        Broadcaster.resetHover();
+        lastMoveEvent.block = Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
     };
 
     var oldLayoutTree = null

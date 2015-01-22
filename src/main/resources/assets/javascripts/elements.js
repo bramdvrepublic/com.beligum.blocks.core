@@ -245,6 +245,16 @@ blocks
 
             constructor: function (top, bottom, left, right, element, parent, index) {
                 layoutElement.Super.call(this, top, bottom, left, right);
+                this.el = {top:0, bottom:0, left:0, right:0};
+                if (element != null) {
+                    this.el = {
+                        top: element.offset().top,
+                        bottom: element.offset().top + element.height(),
+                        left: element.offset().left,
+                        right: element.offset().left + element.width()
+                    };
+                }
+
                 this.parent = parent;
                 this.index = index;
                 this.element = element;
@@ -462,6 +472,7 @@ blocks
                             newColumn = new column(innerZone.top, innerZone.bottom, zoneLeft, zoneRight, currentColumn, this, i);
 
                             var outside = this.parent != null && this.parent.parent != null &&  this.parent.parent instanceof container
+
                             if (oldColumn != null) {
                                 this.resizeHandles.push(new resizeHandle(oldColumn, newColumn));
                             } else if (outside) {
