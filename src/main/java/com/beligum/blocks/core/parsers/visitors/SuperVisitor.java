@@ -121,7 +121,7 @@ public class SuperVisitor
             Element replacement = new Element(element.tag(), BlocksConfig.getSiteDomain());
             replacement.attributes().addAll(element.attributes());
             replacement.removeAttr(ParserConstants.BLUEPRINT);
-            replacement.attr(ParserConstants.USE_BLUEPRINT, null);
+            replacement.attr(ParserConstants.USE_BLUEPRINT, "");
             element.replaceWith(replacement);
             return replacement;
         }

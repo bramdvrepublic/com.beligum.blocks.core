@@ -34,17 +34,23 @@ public class FindTemplatesVisitor extends SuperVisitor
 
     private List<AbstractTemplate> foundTemplates;
 
+    private Set<String> foundEntityClassNames;
+
     /**
      *
      * @param foundTemplates the list to be filled up with entity-template-classes and page-templates
      * @throws NullPointerException if no cache is specified
      */
-    public FindTemplatesVisitor(List<AbstractTemplate> foundTemplates)
+    public FindTemplatesVisitor(List<AbstractTemplate> foundTemplates, Set<String> foundEntityClassNames)
     {
         if(foundTemplates == null){
             throw new NullPointerException("Cannot cache to null-collection.");
         }
         this.foundTemplates = foundTemplates;
+        if(foundEntityClassNames == null){
+            throw new NullPointerException("Cannot fill up null-collection.");
+        }
+        this.foundEntityClassNames = foundEntityClassNames;
         linksStack.push(new ArrayList<String>());
         scriptsStack.push(new ArrayList<String>());
     }
@@ -141,8 +147,8 @@ public class FindTemplatesVisitor extends SuperVisitor
         }
         else{
             String typeOf = getTypeOf(node);
-            //if no class of this type can be found, we use the found html as blueprint
-            if(!typeOf.equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS) && !EntityTemplateClassCache.getInstance().contains(typeOf)){
+            //if no class of this type has be found yet, we use the found html as blueprint
+            if(!typeOf.equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS) && !this.foundEntityClassNames.contains(typeOf)){
                 return true;
             }
             else{
@@ -175,6 +181,7 @@ public class FindTemplatesVisitor extends SuperVisitor
                 List<String> scripts = this.scriptsStack.pop();
                 EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, language, classRoot.outerHtml(), pageTemplateName, links, scripts);
                 this.foundTemplates.add(entityTemplateClass);
+                this.foundEntityClassNames.add(entityClassName);
                 return entityTemplateClass;
             }
             else{

@@ -1,5 +1,6 @@
 package com.beligum.blocks.core.parsers;
 
+import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
@@ -19,12 +20,12 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
 import org.jsoup.select.Elements;
-import sun.security.pkcs.ParsingException;
 
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by wouter on 21/11/14.
@@ -36,12 +37,13 @@ public class TemplateParser
      * Parse all templates found in the specified html and cache them in the specified collection.
      * @param fileHtml the html to be parsed
      * @param cache a {@link java.util.List} in which the {@link PageTemplate}s and {@link EntityTemplateClass}es should be cached
+     * @param foundEntityClassNames the names of all entity-classes already found
      * @throws ParseException
      */
-    public static void findTemplatesFromFile(String fileHtml, List<AbstractTemplate> cache) throws ParseException
+    public static void findTemplatesFromFile(String fileHtml, List<AbstractTemplate> cache, Set<String> foundEntityClassNames) throws ParseException
     {
         Document doc = parse(fileHtml);
-        Traversor traversor = new Traversor(new FindTemplatesVisitor(cache));
+        Traversor traversor = new Traversor(new FindTemplatesVisitor(cache, foundEntityClassNames));
         traversor.traverse(doc);
 
     }
@@ -54,61 +56,73 @@ public class TemplateParser
      */
     public static void injectDefaultsInFoundTemplatesAndCache(List<? extends AbstractTemplate> foundTemplates) throws ParseException
     {
-        Map<String, PageTemplate> allPageTemplates = new HashMap<>();
-        Map<String, EntityTemplateClass> allEntityClasses = new HashMap<>();
-        //split the list of templates up into page-templates and entity-classes
-        for(AbstractTemplate template : foundTemplates) {
-            if(template instanceof PageTemplate){
-                PageTemplate replacedTemplate = allPageTemplates.put(template.getName(), (PageTemplate) template);
-                //default page-templates should be added to the cache no matter what, so the last one encountered is kept
-                if (replacedTemplate != null && replacedTemplate.getName().contentEquals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
-                    Logger.warn("Replaced default-" + PageTemplate.class.getSimpleName() + ". This should only happen once!");
+        try {
+            Map<String, PageTemplate> allPageTemplates = new HashMap<>();
+            allPageTemplates.put(ParserConstants.DEFAULT_PAGE_TEMPLATE, PageTemplateCache.getInstance().get(ParserConstants.DEFAULT_PAGE_TEMPLATE));
+            Map<String, EntityTemplateClass> allEntityClasses = new HashMap<>();
+            allEntityClasses.put(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS, EntityTemplateClassCache.getInstance().get(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS));
+            //split the list of templates up into page-templates and entity-classes
+            for (AbstractTemplate template : foundTemplates) {
+                if (template instanceof PageTemplate) {
+                    PageTemplate replacedTemplate = allPageTemplates.put(template.getName(), (PageTemplate) template);
+                    //default page-templates should be added to the cache no matter what, so the last one encountered is kept
+                    if (replacedTemplate != null && replacedTemplate.getName().contentEquals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
+                        Logger.warn("Replaced default-" + PageTemplate.class.getSimpleName() + ". This should only happen once!");
+                    }
+                    //no two page-templates with the same name can be defined
+                    else if (replacedTemplate != null) {
+                        throw new ParseException(
+                                        "Cannot add two " + PageTemplate.class.getSimpleName() + "s with the same name '" + template.getName() + "' to the cache. First found \n \n" +
+                                        replacedTemplate +
+                                        "\n \n and then \n \n" + template + "\n \n");
+                    }
                 }
-                //no two page-templates with the same name can be defined
-                else if(replacedTemplate != null){
-                    throw new ParseException("Cannot add two " + PageTemplate.class.getSimpleName() + "s with the same name '" + template.getName() + "' to the cache.");
-                }
-            }
-            else if(template instanceof EntityTemplateClass){
-                EntityTemplateClass replacedTemplate = allEntityClasses.put(template.getName(), (EntityTemplateClass) template);
-                //if an entity-class with this name was already present, check if it was a non-blueprint, if not, throw an exception since only one blueprint can be defined per class
-                if(replacedTemplate != null){
-                    Map<RedisID, String> replacedTemplates = replacedTemplate.getTemplates();
-                    boolean isBlueprint = false;
-                    for(RedisID languageId : replacedTemplates.keySet()){
-                        isBlueprint = new SuperVisitor().isBlueprint(TemplateParser.parse(replacedTemplates.get(languageId)).child(0));
-                        if(isBlueprint){
-                            throw new ParseException("An "+ EntityTemplateClass.class.getSimpleName() + " of type '" + replacedTemplate.getName() + "' was already present in cache. Cannot have two blueprints for the same type. Found at \n \n " + template + "\n \n");
+                else if (template instanceof EntityTemplateClass) {
+                    EntityTemplateClass replacedTemplate = allEntityClasses.put(template.getName(), (EntityTemplateClass) template);
+                    //if an entity-class with this name was already present, check if it was a non-blueprint, if not, throw an exception since only one blueprint can be defined per class
+                    if (replacedTemplate != null) {
+                        Map<RedisID, String> replacedTemplates = replacedTemplate.getTemplates();
+                        boolean isBlueprint = false;
+                        for (RedisID languageId : replacedTemplates.keySet()) {
+                            isBlueprint = new SuperVisitor().isBlueprint(TemplateParser.parse(replacedTemplates.get(languageId)).child(0));
+                            if (isBlueprint) {
+                                throw new ParseException("An " + EntityTemplateClass.class.getSimpleName() + " of type '" + replacedTemplate.getName() +
+                                                         "' was already present in cache. Cannot have two blueprints for the same type. Found two! First encountered \n \n " + replacedTemplate +
+                                                         "\n \n  and then \n \n" + template + "\n \n");
+                            }
                         }
                     }
                 }
+                //only page-tempaltes and entity-template-classes should be present in th list of found templates
+                else {
+                    throw new ParseException("Found unsupported " + AbstractTemplate.class.getSimpleName() + "-type " + template.getClass().getSimpleName() + ".");
+                }
             }
-            //only page-tempaltes and entity-template-classes should be present in th list of found templates
-            else{
-                throw new ParseException("Found unsupported " + AbstractTemplate.class.getSimpleName() + "-type " + template.getClass().getSimpleName() + ".");
+
+            //create defaults for all found entity-classes
+            for (String templateName : allEntityClasses.keySet()) {
+                AbstractTemplate template = allEntityClasses.get(templateName);
+                Map<RedisID, String> htmlTemplates = template.getTemplates();
+                for (RedisID language : htmlTemplates.keySet()) {
+                    Document doc = parse(htmlTemplates.get(language));
+                    Traversor traversor = new Traversor(new DefaultsAndCachingVisitor(language.getLanguage(), template, allEntityClasses, allPageTemplates));
+                    traversor.traverse(doc);
+                }
+            }
+
+            //create defaults for all found page-tempaltes
+            for (String templateName : allPageTemplates.keySet()) {
+                AbstractTemplate template = allPageTemplates.get(templateName);
+                Map<RedisID, String> htmlTemplates = template.getTemplates();
+                for (RedisID language : htmlTemplates.keySet()) {
+                    Document doc = parse(htmlTemplates.get(language));
+                    Traversor traversor = new Traversor(new DefaultsAndCachingVisitor(language.getLanguage(), template, allEntityClasses, allPageTemplates));
+                    traversor.traverse(doc);
+                }
             }
         }
-
-        //create defaults for all found entity-classes
-        for(String templateName : allEntityClasses.keySet()){
-            AbstractTemplate template = allEntityClasses.get(templateName);
-            Map<RedisID, String> htmlTemplates = template.getTemplates();
-            for(RedisID language : htmlTemplates.keySet()) {
-                Document doc = parse(htmlTemplates.get(language));
-                Traversor traversor = new Traversor(new DefaultsVisitor(language.getLanguage(), template, allEntityClasses, allPageTemplates));
-                traversor.traverse(doc);
-            }
-        }
-
-        //create defaults for all found page-tempaltes
-        for(String templateName : allPageTemplates.keySet()){
-            AbstractTemplate template = allPageTemplates.get(templateName);
-            Map<RedisID, String> htmlTemplates = template.getTemplates();
-            for(RedisID language : htmlTemplates.keySet()) {
-                Document doc = parse(htmlTemplates.get(language));
-                Traversor traversor = new Traversor(new DefaultsVisitor(language.getLanguage(), template, allEntityClasses, allPageTemplates));
-                traversor.traverse(doc);
-            }
+        catch (Exception e){
+            throw new ParseException("Error while injecting defaults into templates to be cached.", e);
         }
     }
 
@@ -145,17 +159,17 @@ public class TemplateParser
 
     }
 
-//    /**
-//     * Render the html of a certain entity inside a page-template, using the primary language of the entity-template
-//     * @param pageTemplate
-//     * @param entityTemplate
-//     * @throws ParseException
-//     */
-//    public static String renderEntityInsidePageTemplate(PageTemplate pageTemplate, EntityTemplate entityTemplate) throws ParseException
-//    {
-//        String language = entityTemplate.getLanguage();
-//        return renderEntityInsidePageTemplate(pageTemplate, entityTemplate, language);
-//    }
+    //    /**
+    //     * Render the html of a certain entity inside a page-template, using the primary language of the entity-template
+    //     * @param pageTemplate
+    //     * @param entityTemplate
+    //     * @throws ParseException
+    //     */
+    //    public static String renderEntityInsidePageTemplate(PageTemplate pageTemplate, EntityTemplate entityTemplate) throws ParseException
+    //    {
+    //        String language = entityTemplate.getLanguage();
+    //        return renderEntityInsidePageTemplate(pageTemplate, entityTemplate, language);
+    //    }
 
     /**
      * Render the html of a certain entity inside a page-template, using the specified language

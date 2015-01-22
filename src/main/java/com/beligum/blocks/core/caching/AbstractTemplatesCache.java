@@ -163,6 +163,8 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             try {
                 //list which will be filled up with all templates found in all files in the templates-folder
                 final List<AbstractTemplate> foundTemplates = new ArrayList<>();
+                //set which will be filled up with all class-names found in all files in the templates-folder
+                final Set<String> foundEntityClassNames = new HashSet<>();
 
                 //first fetch all blueprints from all files
                 FileVisitor<Path> visitor = new SimpleFileVisitor<Path>()
@@ -174,10 +176,10 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                         if (filePath.getFileName().toString().endsWith("html") || filePath.getFileName().toString().endsWith("htm")) {
                             try {
                                 String html = new String(Files.readAllBytes(filePath));
-                                TemplateParser.findTemplatesFromFile(html, foundTemplates);
+                                TemplateParser.findTemplatesFromFile(html, foundTemplates, foundEntityClassNames);
                             }
                             catch (ParseException e) {
-                                Logger.error("Parse error while fetching blueprints from file '" + filePath + "'.", e);
+                                Logger.error("Parse error while fetching page-templates and blueprints from file '" + filePath + "'.", e);
                             }
                         }
                         return FileVisitResult.CONTINUE;
@@ -189,7 +191,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                 TemplateParser.injectDefaultsInFoundTemplatesAndCache(foundTemplates);
             }
             catch (Exception e) {
-                Logger.error("Error while filling cache: " + this, e);
+                throw new CacheException("Error while filling cache: " + this, e);
             }
             finally {
                 runningTroughHtmlTemplates = false;

@@ -2,11 +2,13 @@ package com.beligum.blocks.core.parsers.visitors;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
+import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
+import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.templates.AbstractTemplate;
@@ -15,19 +17,18 @@ import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.parsers.Traversor;
-import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
-import sun.security.pkcs.ParsingException;
 
 import java.util.*;
 
 /**
  * Created by bas on 22/01/15.
  */
-public class DefaultsVisitor extends SuperVisitor
+public class DefaultsAndCachingVisitor extends SuperVisitor
 {
     //the language we're parsing
     private String language;
@@ -45,7 +46,7 @@ public class DefaultsVisitor extends SuperVisitor
      * @param allPageTemplates A map holding all page-templates.
      * @throws ParseException If an unknown or empty language is specified and if te type of the parsingTemplate is not supported.
      */
-    public DefaultsVisitor(String language, AbstractTemplate parsingTemplate, Map<String, EntityTemplateClass> allEntityClasses, Map<String, PageTemplate> allPageTemplates) throws ParseException
+    public DefaultsAndCachingVisitor(String language, AbstractTemplate parsingTemplate, Map<String, EntityTemplateClass> allEntityClasses, Map<String, PageTemplate> allPageTemplates) throws ParseException
     {
         if(Languages.isNonEmptyLanguageCode(language)) {
             this.language = language;
@@ -92,64 +93,60 @@ public class DefaultsVisitor extends SuperVisitor
             try {
                 Element element = (Element) node;
                 if(isProperty(element)) {
-                    EntityTemplateClass entityTemplateClass = allEntityClasses.get(getTypeOf(element));
-                    if(entityTemplateClass == null){
-                        throw new ParseException("Found unknown entity-class '" + getTypeOf(element) + "' at node \n \n " + element + "\n \n");
+                    String typeOf = getTypeOf(element);
+                    EntityTemplateClass entityTemplateClass = allEntityClasses.get(typeOf);
+                    if (entityTemplateClass == null) {
+                        throw new ParseException("Found unknown entity-class '" + typeOf + "' at node \n \n " + element + "\n \n");
                     }
+                    //we found an uncached entity-template-class, so we cache it
+                    if(!EntityTemplateClassCache.getInstance().contains(typeOf)){
+                        //TODO BAS SH: you're debugging the new visitor (making default instances). The entity-template-class-part seems already quite all right, only here about a infite loop seems to amerge.
+                        Traversor traversor = new Traversor(new DefaultsAndCachingVisitor(entityTemplateClass.getLanguage(), entityTemplateClass, allEntityClasses, allPageTemplates));
+                        traversor.traverse(TemplateParser.parse(entityTemplateClass.getTemplate()));
+                    }
+                    //we want to use the cached entity-template-class
+                    entityTemplateClass = EntityTemplateClassCache.getInstance().get(typeOf);
                     //for entity-template-classes, new default-properties should be constructed
-                    if(this.parsingTemplate instanceof EntityTemplateClass) {
-                        element.removeAttr(ParserConstants.BLUEPRINT);
-                        EntityTemplate propertyInstance;
-                        String language = getLanguage(element, entityTemplateClass);
-                        if(needsBlueprint(element)) {
-                            RedisID propertyId = RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
-                            propertyInstance = this.saveNewEntityClassCopy(element, propertyId, entityTemplateClass);
-                        }
-                        else{
-                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language), entityTemplateClass, element.outerHtml());
-                            RedisID lastVersion = new RedisID(propertyInstance.getUnversionedId(), RedisID.LAST_VERSION, language);
-                            EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
-                            //if no version is present in db, or this version is different, save to db
-                            if (storedInstance == null || !storedInstance.equals(propertyInstance)) {
-                                Redis.getInstance().save(propertyInstance);
+                    if(this.parsingTemplate instanceof EntityTemplateClass){
+                        if(this.parsingTemplate.getName().equals(this.getParentType())) {
+//                            element.removeAttr(ParserConstants.BLUEPRINT);
+                            EntityTemplate propertyInstance;
+                            String language = getLanguage(element, entityTemplateClass);
+                            if (needsBlueprint(element)) {
+                                RedisID propertyId = RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
+                                node = this.saveNewEntityClassCopy(element, propertyId, entityTemplateClass);
+                            }
+                            else {
+                                RedisID propertyId = RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
+                                node = this.saveNewEntityDefault(element, propertyId, entityTemplateClass);
                             }
                         }
-                        node = replaceElementWithEntityReference(element, propertyInstance);
+                        else{
+                            //do nothing, since we have found an entity that is not a direct child of the template being parsed, this sort of entity will be taken care of while saving a new entity-default
+                        }
                     }
                     //if we're parsing entities belonging to a page-template, we want to create a reproducable id, so we can permanently save changes in db
-                    else if(this.parsingTemplate instanceof PageTemplate){
+                    else if(this.parsingTemplate instanceof PageTemplate && /*TODO BAS: only do this step if in depth '1' of the pagetemplate*/true){
                         RedisID defaultPageTemplateEntityId = RedisID.renderNewPageTemplateDefaultEntity(this.parsingTemplate.getName(), getProperty(element), this.language);
                         EntityTemplate lastVersion = (EntityTemplate) Redis.getInstance().fetchLastVersion(defaultPageTemplateEntityId, EntityTemplate.class);
                         //if no version of this entity exists yet, make a new one
                         if(lastVersion == null) {
-                            EntityTemplate newDefaultEntity;
                             if(needsBlueprint(element)){
                                 defaultPageTemplateEntityId = RedisID.renderNewPageTemplateDefaultEntity(this.parsingTemplate.getName(), getProperty(element), this.language);
-                                newDefaultEntity = this.saveNewEntityClassCopy(element, defaultPageTemplateEntityId, entityTemplateClass);
+                                node = this.saveNewEntityClassCopy(element, defaultPageTemplateEntityId, entityTemplateClass);
                             }
                             else{
                                 defaultPageTemplateEntityId = RedisID.renderNewPageTemplateDefaultEntity(this.parsingTemplate.getName(), getProperty(element), entityTemplateClass.getLanguage());
-                                newDefaultEntity = new EntityTemplate(defaultPageTemplateEntityId, entityTemplateClass, element.outerHtml());
+                                EntityTemplate newDefaultEntity = new EntityTemplate(defaultPageTemplateEntityId, entityTemplateClass, element.outerHtml());
                                 Redis.getInstance().save(newDefaultEntity);
+                                node = replaceElementWithEntityReference(element, newDefaultEntity);
                             }
-                            node = replaceElementWithEntityReference(element, newDefaultEntity);
                         }
                         //if a version has been stored in db before, use that version as page-template-entity (f.i. a menu that has been changed by the user, should stay changed after server-start-up)
                         else{
                             node = replaceElementWithEntityReference(element, lastVersion);
                         }
                     }
-                    //                    else if(needsBlueprint(element)){
-                    //                        RedisID defaultEntityId = RedisID.renderNewEntityTemplateID(entityTemplateClass, entityTemplateClass.getLanguage());
-                    //                        EntityTemplate defaultEntity = this.saveNewEntityClassCopy(element, defaultEntityId, entityTemplateClass);
-                    //                        node = replaceElementWithEntityReference(element, defaultEntity);
-                    //                    }
-                    //                    //if no new class is being parsed, we are parsing a default-instance of a certain type
-                    //                    else{
-                    //                        EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass, entityTemplateClass.getLanguage()), entityTemplateClass, element.outerHtml());
-                    //                        Redis.getInstance().save(defaultEntity);
-                    //                        node = replaceElementWithEntityReference(element, defaultEntity);
-                    //                    }
                 }
                 else if(this.typeOfStack.size()>0) {
                     /*
@@ -162,26 +159,11 @@ public class DefaultsVisitor extends SuperVisitor
                 }
                 //we reached the tail of the outer-most tag of an entity-template-class, so we cache it to the application-cache
                 else if(parsingTemplate instanceof EntityTemplateClass){
-                    checkPropertyUniqueness(element);
-                    EntityTemplateClass parsingTemplate = (EntityTemplateClass) this.parsingTemplate;
-                    /*
-                     * Use all info from the template we're parsing to make a real entity-template-class to be cached.
-                     * The correct template of this class to be cached has just been created in this defaults-visitor and can thus be found at element.outerHtml().
-                     */
-                    EntityTemplateClass entityTemplateClass = new EntityTemplateClass(parsingTemplate.getName(), this.language, element.outerHtml(), parsingTemplate.getPageTemplateName(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
-                    boolean added = EntityTemplateClassCache.getInstance().add(entityTemplateClass);
-                    if(!added){
-                        throw new ParseException("Could not add " + EntityTemplateClass.class.getSimpleName() + " '" + entityTemplateClass.getName() + "' to application cache. This shouldn't happen.");
-                    }
+                    this.cacheEntityTemplateClass(element);
                 }
                 //we reached the tail of the outer-most tag of a page-template, so we cache it to the application-cache
                 else if(parsingTemplate instanceof PageTemplate) {
-                    checkPropertyUniqueness(element);
-                    PageTemplate pageTemplate = new PageTemplate(parsingTemplate.getName(), this.language, element.outerHtml(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
-                    boolean added = PageTemplateCache.getInstance().add(pageTemplate);
-                    if(!added){
-                        throw new ParseException("Could not add " + PageTemplate.class.getSimpleName() + " '" + pageTemplate.getName() + "' to application cache. This shouldn't happen.");
-                    }
+                    this.cachePageTemplate(element);
                 }
                 else{
                     throw new ParseException("Unexpected behaviour at node \n \n" + node + "\n \n");
@@ -195,21 +177,46 @@ public class DefaultsVisitor extends SuperVisitor
 
     }
 
+    private void cacheEntityTemplateClass(Element root) throws ParseException, CacheException, IDException
+    {
+        checkPropertyUniqueness(root);
+        EntityTemplateClass parsingTemplate = (EntityTemplateClass) this.parsingTemplate;
+        /*
+         * Use all info from the template we're parsing to make a real entity-template-class to be cached.
+         * The correct template of this class to be cached has just been created in this defaults-visitor and can thus be found at element.outerHtml().
+         */
+        EntityTemplateClass entityTemplateClass = new EntityTemplateClass(parsingTemplate.getName(), this.language, root.outerHtml(), parsingTemplate.getPageTemplateName(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
+        boolean added = EntityTemplateClassCache.getInstance().add(entityTemplateClass);
+        if(!added){
+            throw new ParseException("Could not add " + EntityTemplateClass.class.getSimpleName() + " '" + entityTemplateClass.getName() + "' to application cache. This shouldn't happen.");
+        }
+    }
+
+    private void cachePageTemplate(Element root) throws ParseException, CacheException, IDException
+    {
+        checkPropertyUniqueness(root);
+        PageTemplate pageTemplate = new PageTemplate(parsingTemplate.getName(), this.language, root.outerHtml(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
+        boolean added = PageTemplateCache.getInstance().add(pageTemplate);
+        if(!added){
+            throw new ParseException("Could not add " + PageTemplate.class.getSimpleName() + " '" + pageTemplate.getName() + "' to application cache. This shouldn't happen.");
+        }
+    }
+
 
     /**
-     * Make a new copy of the class-template, using all node-attributes of the node specified.
-     * @param node
+     * Make a new copy of the class-template, using all node-attributes of the node specified and return a node referencing to that template
+     * @param element
      * @param id
      * @param entityClass
      * @throws com.beligum.blocks.core.exceptions.IDException
      */
-    private EntityTemplate saveNewEntityClassCopy(Node node, RedisID id, EntityTemplateClass entityClass) throws IDException, CacheException, ParseException
+    private Element saveNewEntityClassCopy(Element element, RedisID id, EntityTemplateClass entityClass) throws IDException, CacheException, ParseException
     {
         Map<RedisID, String> classTemplates = entityClass.getTemplates();
         Map<RedisID, String> copiedTemplates = new HashMap<>();
         for(RedisID languageId : classTemplates.keySet()){
             Element classRoot = TemplateParser.parse(classTemplates.get(languageId)).child(0);
-            classRoot.attributes().addAll(node.attributes());
+            classRoot.attributes().addAll(element.attributes());
             classRoot.removeAttr(ParserConstants.USE_BLUEPRINT);
             //a copy of an entity-class, also means a copy of all of it's children, so we need to traverse all templates to create entity-copies of all it's children
             Traversor traversor = new Traversor(new ClassToStoredInstanceVisitor(id.getUrl(), id.getLanguage()));
@@ -223,7 +230,24 @@ public class DefaultsVisitor extends SuperVisitor
             traversor.traverse(classRoot);
             copiedTemplates.put(id, entityClass.getTemplate());
         }
-        return new EntityTemplate(id, entityClass, copiedTemplates);
+        element = replaceElementWithEntityReference(element, new EntityTemplate(id, entityClass, copiedTemplates));
+        return element;
+    }
+
+    private Node saveNewEntityDefault(Node node, RedisID id, EntityTemplateClass entityClass) throws IDException, CacheException, RedisException, ParseException
+    {
+        //traverse the entity-root and save new instances to db
+        Traversor traversor = new Traversor(new HtmlToStoreVisitor(id.getLanguagedUrl()));
+        /*
+         * HtmlToStoredInstance needs a html-document to traverse correctly.
+         * We put the root of the entity to be a default into the body and let the visitor save new instances we're needed.
+         */
+        Document entityRoot = new Document(BlocksConfig.getSiteDomain());
+        entityRoot.appendChild(node.clone());
+        traversor.traverse(entityRoot);
+        Node entityReference = entityRoot.child(0);
+        node.replaceWith(entityReference);
+        return entityReference;
     }
 
     /**
