@@ -1,6 +1,7 @@
 blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notification", function(Broadcaster, Notification) {
-    var menuBtn = $('<div class="blocks-main-edit-button"><i class="glyphicon glyphicon-cog"></i></div>');
+    this.MainMenu = this;
 
+    var menuBtn = $('<div class="blocks-main-edit-button"><i class="glyphicon glyphicon-cog"></i></div>');
     var menuBar = $('<div class="blocks-main-menu"><div class="main-menu-items"></div></div>');
     var btnList = menuBar;
 
@@ -9,8 +10,6 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     var saveBtn = $('<a class="btn  btn-default" href="#">Save</a>');
     btnList.append(saveBtn);
 
-    $("body").prepend(menuBar);
-    $("body").append(menuBtn);
 
     menuBtn.on("click", function(event) {
         if (menuBar.hasClass("open")) {
@@ -33,10 +32,26 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
                 contentType: 'application/json; charset=UTF-8',
                 success: function() {
                     Logger.debug("Saved data!");
+                    menuBar.addClass("open");
                 },
                 dataType: 'json'}
         )
     });
+
+
+    var create = function() {
+        $("body").prepend(menuBar);
+        $("body").append(menuBtn);
+    };
+
+    var remove = function() {
+        menuBar.remove();
+        menuBtn.remove();
+    };
+
+    create();
+
+
 
     var modalText = '<div class="form-inline" role="form"><div class="form-group"></div></div>';
 //
