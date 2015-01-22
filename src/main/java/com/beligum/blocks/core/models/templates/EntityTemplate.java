@@ -33,7 +33,7 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      * @param id the id of this entity* @param entityTemplateClass the class of which this entity is a entity-instance
      * @param templatesToBeCopied a map (languageId -> html-template) with all language-templates, only the language present in the keys of the map will be used to put into this maps templates
      *                  this can be used to copy one template's language-templates to another one
-     * @throw IDException if no template in the language specified by the id could be found in the templates-map, or if that map was empty
+     * @throws IDException if no template in the language specified by the id could be found in the templates-map, or if that map was empty
      */
     public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, Map<RedisID, String> templatesToBeCopied) throws IDException, CacheException
     {
@@ -167,7 +167,6 @@ public class EntityTemplate extends AbstractTemplate implements Storable
     }
     /**
      * render the html of this entity-template, using it's page-template (or, if it is the default-page-template, use the page-template of the class) and class-template
-     * @return
      */
     public String renderEntityInPageTemplate(String language) throws CacheException, ParseException
     {
@@ -181,7 +180,6 @@ public class EntityTemplate extends AbstractTemplate implements Storable
 
     /**
      * render the html of this entity-template, without using a page-template
-     * @return
      * @throws ParseException
      */
     public String renderEntity() throws ParseException
@@ -237,7 +235,6 @@ public class EntityTemplate extends AbstractTemplate implements Storable
     /**
      * Two templates have the same hashCode when their template-content, url and meta-data are equal.
      * (thus equal through object-state, not object-address)
-     * @return
      */
     @Override
     public int hashCode()

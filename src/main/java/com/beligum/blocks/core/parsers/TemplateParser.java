@@ -8,11 +8,9 @@ import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
+import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
-import com.beligum.blocks.core.parsers.visitors.ClassToStoredInstanceVisitor;
-import com.beligum.blocks.core.parsers.visitors.FileToCacheVisitor;
-import com.beligum.blocks.core.parsers.visitors.HtmlToStoreVisitor;
-import com.beligum.blocks.core.parsers.visitors.ToHtmlVisitor;
+import com.beligum.blocks.core.parsers.visitors.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -21,7 +19,9 @@ import org.jsoup.parser.Parser;
 import org.jsoup.select.Elements;
 
 import java.net.URL;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by wouter on 21/11/14.
@@ -30,16 +30,29 @@ public class TemplateParser
 {
 
     /**
-     * Parse all templates found in the specified html and cache them in the correct cacher. (PageTemplate in PageTemplateCache, EntityTemplateClass in EntityTemplateClassCache)
+     * Parse all templates found in the specified html and cache them in the specified collection.
      * @param html the html to be parsed
+     * @param cache a {@link java.util.List} in which the {@link PageTemplate}s and {@link EntityTemplateClass}es should be cached
      * @throws ParseException
      */
-    public static void cacheTemplatesFromFile(String html) throws ParseException
+    public static void cacheBlueprintsFromFile(String html, List<AbstractTemplate> cache) throws ParseException
     {
         Document doc = parse(html);
-        Traversor traversor = new Traversor(new FileToCacheVisitor());
+        Traversor traversor = new Traversor(new BlueprintVisitor(cache));
         traversor.traverse(doc);
 
+    }
+
+    public static void injectDefaultsForTemplates(Collection<? extends AbstractTemplate> templates) throws ParseException
+    {
+        for(AbstractTemplate template : templates) {
+            Map<RedisID, String> htmlTemplates = template.getTemplates();
+            for(RedisID language : htmlTemplates.keySet()) {
+                Document doc = parse(htmlTemplates.get(language));
+                Traversor traversor = new Traversor(new DefaultsVisitor(language.getLanguage(), template));
+                traversor.traverse(doc);
+            }
+        }
     }
 
     /**
@@ -79,7 +92,6 @@ public class TemplateParser
 //     * Render the html of a certain entity inside a page-template, using the primary language of the entity-template
 //     * @param pageTemplate
 //     * @param entityTemplate
-//     * @return
 //     * @throws ParseException
 //     */
 //    public static String renderEntityInsidePageTemplate(PageTemplate pageTemplate, EntityTemplate entityTemplate) throws ParseException
@@ -95,7 +107,6 @@ public class TemplateParser
      * @param pageTemplate
      * @param entityTemplate
      * @param language
-     * @return
      * @throws ParseException
      */
     public static String renderEntityInsidePageTemplate(PageTemplate pageTemplate, EntityTemplate entityTemplate, String language) throws ParseException
@@ -142,7 +153,6 @@ public class TemplateParser
     /**
      * Renders the template in the primary language of the specified template, no scripts or links are injected
      * @param template
-     * @return
      * @throws ParseException
      */
     public static String renderTemplate(AbstractTemplate template) throws ParseException
@@ -166,7 +176,6 @@ public class TemplateParser
      * Parse html to jsoup-document.
      * Note: if the html received contains an empty head, only the body-html is returned.
      * @param html
-     * @return
      */
     public static Document parse(String html){
         Document retVal = new Document(BlocksConfig.getSiteDomain());

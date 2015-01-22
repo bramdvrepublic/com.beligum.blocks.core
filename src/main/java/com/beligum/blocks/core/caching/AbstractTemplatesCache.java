@@ -1,14 +1,13 @@
 package com.beligum.blocks.core.caching;
 
 import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.config.DatabaseConstants;
-import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.AbstractTemplate;
+import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
@@ -38,7 +37,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
 
     /**
      * This method returns a map with all present Cachables (value) by name (key)
-     * @returns a map of all the currently cached Cachables from the application cache
+     * @return a map of all the currently cached Cachables from the application cache
      */
     abstract protected Map<String, T> getCache();
 
@@ -153,7 +152,6 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
 
     /**
      * Fill up the page-cache with all template found in file-system
-     * @return A full AbstractCachableClassCache
      * @throws com.beligum.blocks.core.exceptions.CacheException
      */
     protected void fillCache() throws CacheException
@@ -163,9 +161,11 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             URI rootFolderUri = FileFunctions.getCurrentMavenSrcResourceFolder(this.getClass());
             Path rootFolder = Paths.get(rootFolderUri.getSchemeSpecificPart());
             Path templatesFolder = rootFolder.resolve(BlocksConfig.getTemplateFolder());
-            Path blueprintsFolder = rootFolder.resolve(BlocksConfig.getBlueprintsFolder());
 
             try {
+                final List<AbstractTemplate> pageTemplates = new ArrayList<>();
+
+                //first fetch all blueprints from all files
                 FileVisitor<Path> visitor = new SimpleFileVisitor<Path>()
                 {
                     @Override
@@ -174,17 +174,22 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                     {
                         if (filePath.getFileName().toString().endsWith("html") || filePath.getFileName().toString().endsWith("htm")) {
                             try {
-                                TemplateParser.cacheTemplatesFromFile(new String(Files.readAllBytes(filePath)));
+                                String html = new String(Files.readAllBytes(filePath));
+                                TemplateParser.cacheBlueprintsFromFile(html, pageTemplates);
                             }
                             catch (ParseException e) {
-                                Logger.error("Parse error while parsing file '" + filePath + "'.", e);
+                                Logger.error("Parse error while fetching blueprints from file '" + filePath + "'.", e);
                             }
                         }
                         return FileVisitResult.CONTINUE;
                     }
                 };
-                Files.walkFileTree(blueprintsFolder, visitor);
                 Files.walkFileTree(templatesFolder, visitor);
+
+                //then add all default-value's to the found classes
+                TemplateParser.injectDefaultsForTemplates(PageTemplateCache.getInstance().values());
+                TemplateParser.injectDefaultsForTemplates(EntityTemplateClassCache.getInstance().values());
+
             }
             catch (Exception e) {
                 Logger.error("Error while filling cache: " + this, e);
@@ -198,7 +203,6 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
 
     /**
      * Gets all  values of the cache's map, sorted by name
-     * @return
      */
     public List<T> values()
     {

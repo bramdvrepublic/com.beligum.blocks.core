@@ -191,7 +191,6 @@ public class ToHtmlVisitor extends AbstractVisitor
      * Determines wether or not the class-template should be used, or rather the instance itself. This is done using isModifiable(entityRoot) and isModifiable(entityClassRoot)
      * @param entityRoot
      * @param entityClassRoot
-     * @return
      */
     private boolean useClass(Element entityRoot, Element entityClassRoot){
         boolean entityIsModifiable = isModifiable(entityRoot);
@@ -215,7 +214,6 @@ public class ToHtmlVisitor extends AbstractVisitor
      * Copy the (editable) properties from the instance-template to the class-template
      * @param fromInstanceRoot
      * @param toClassRoot
-     * @return
      * @throws ParseException
      */
     private Node copyPropertiesToClassTemplate(Element fromInstanceRoot, Element toClassRoot) throws ParseException

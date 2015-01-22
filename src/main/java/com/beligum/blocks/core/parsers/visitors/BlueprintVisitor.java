@@ -3,16 +3,14 @@ package com.beligum.blocks.core.parsers.visitors;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.ParserConstants;
-import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.models.templates.EntityTemplate;
+import com.beligum.blocks.core.models.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
-import com.beligum.blocks.core.parsers.Traversor;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
@@ -26,41 +24,34 @@ import java.util.*;
  * Created by wouter on 22/11/14.
  * Visitor holding all functionalities to parse a html-file to entity-classes stored in cache
  */
-public class FileToCacheVisitor extends AbstractVisitor
+public class BlueprintVisitor extends AbstractVisitor
 {
-
-    //TODO BAS SH: split file-to-cache visitor into two visitors, one for extracting the blueprints and cache corresponding classes to cache, a second to instantiate the defaults afterwards (maybe blueprint-attributes should be saved to db?)
 
     private String pageTemplateName = null;
     /**flag for indicating if the current traverse has encountered a tag indicating a page-template is being parsed*/
     private boolean parsingPageTemplate = false;
-    /**flag for indicating if the current traverse has encountered a tag holding a new class to be cached*/
-    private Stack<Boolean> parsingClassToBeCached = new Stack<>();
     /**the node of the page-template currently being parsed which has to be replaced with an entity*/
     private Element pageTemplateContentNode = null;
-    /**boolean indicating if we are parsing default entities for a certain page-template*/
-    private boolean enteredPageTemplateContentNode = false;
-    /**the language of this file, if present*/
-    private String pageTemplateLanguage = null;
     /**the (css-)linked files that need to be injected*/
     private Stack<List<String>> linksStack = new Stack<>();
     /**the (javascript-)scripts that need to be injected*/
     private Stack<List<String>> scriptsStack = new Stack<>();
 
-    public FileToCacheVisitor()
+    private List<AbstractTemplate> cache;
+
+    /**
+     *
+     * @param cache the list to be filled up with entity-template-classes and page-templates
+     * @throws NullPointerException if no cache is specified
+     */
+    public BlueprintVisitor(List<AbstractTemplate> cache)
     {
-        parsingClassToBeCached.push(false);
+        if(cache == null){
+            throw new NullPointerException("Cannot cache to null-collection.");
+        }
+        this.cache = cache;
         linksStack.push(new ArrayList<String>());
         scriptsStack.push(new ArrayList<String>());
-    }
-
-    public boolean isParsingClassToBeCached(){
-        if(!parsingClassToBeCached.empty()){
-            return parsingClassToBeCached.peek();
-        }
-        else{
-            return false;
-        }
     }
 
     @Override
@@ -70,15 +61,12 @@ public class FileToCacheVisitor extends AbstractVisitor
             if (isPageTemplateRootNode(node)) {
                 this.pageTemplateName = getPageTemplateName(node);
                 this.parsingPageTemplate = true;
-                this.pageTemplateLanguage = getLanguage(node, null);
             }
             else if (parsingPageTemplate && isPageTemplateContentNode(node) && node instanceof Element) {
                 pageTemplateContentNode = (Element) node;
-                this.enteredPageTemplateContentNode = true;
             }
             if(hasTypeOf(node)) {
                 boolean containsClassToBeCached = containsClassToBeCached(node);
-                parsingClassToBeCached.push(containsClassToBeCached);
                 if(containsClassToBeCached) {
                     linksStack.push(new ArrayList<String>());
                     scriptsStack.push(new ArrayList<String>());
@@ -117,95 +105,25 @@ public class FileToCacheVisitor extends AbstractVisitor
                 throw new ParseException("Haven't found a content-node for page-template '" + getPageTemplateName(node) + "'.");
             }
         }
-        if(node == this.pageTemplateContentNode){
-            this.enteredPageTemplateContentNode = false;
-        }
         //if we reached an entity-node, determine it's entity-class and if needed, create a new entity-instance
         if (node instanceof Element && isEntity(node)) {
             try {
                 Element element = (Element) node;
-                EntityTemplateClass entityTemplateClass;
+                EntityTemplateClass entityTemplateClass = null;
                 //if this element is a class-bleuprint, it must be added to the cache (even if a class with this name was cached before)
                 if(containsClassToBeCached(element)){
                     entityTemplateClass = cacheEntityTemplateClassFromNode(element);
                     this.linksStack.pop();
                     this.scriptsStack.pop();
-                }
-                else{
-                    entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(element));
-                }
-                //if we reached the tail of a node that has been pushed on the parsingClassToBeCached-stack (all typed entities), we remove it
-                if(hasTypeOf(node)){
-                    this.parsingClassToBeCached.pop();
-                }
-                if(isProperty(element)) {
-                    //if we are parsing a new class to be cached, we should also make new default-properties
-                    if(this.isParsingClassToBeCached()) {
-                        element.removeAttr(ParserConstants.BLUEPRINT);
-                        EntityTemplate propertyInstance;
-                        String language = getLanguage(element, entityTemplateClass);
-                        if(needsBlueprint(element)) {
-                            RedisID propertyId = RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
-                            propertyInstance = this.saveNewEntityClassCopy(element, propertyId, entityTemplateClass);
-                        }
-                        else{
-                            propertyInstance = new EntityTemplate(RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language), entityTemplateClass, element.outerHtml());
-                            RedisID lastVersion = new RedisID(propertyInstance.getUnversionedId(), RedisID.LAST_VERSION, language);
-                            EntityTemplate storedInstance = Redis.getInstance().fetchEntityTemplate(lastVersion);
-                            //if no version is present in db, or this version is different, save to db
-                            if (storedInstance == null || !storedInstance.equals(propertyInstance)) {
-                                Redis.getInstance().save(propertyInstance);
-                            }
-                        }
-                        node = replaceElementWithEntityReference(element, propertyInstance);
-                    }
-                    //if we're parsing entities belonging to a page-template, we want to create a reproducable id, so we can permanently save changes in db
-                    else if(this.parsingPageTemplate && !this.enteredPageTemplateContentNode){
-                        RedisID defaultPageTemplateEntityId = RedisID.renderNewPageTemplateDefaultEntity(this.pageTemplateName, getProperty(element), this.pageTemplateLanguage);
-                        EntityTemplate lastVersion = (EntityTemplate) Redis.getInstance().fetchLastVersion(defaultPageTemplateEntityId, EntityTemplate.class);
-                        //if no version of this entity exists yet, make a new one
-                        if(lastVersion == null) {
-                            EntityTemplate newDefaultEntity;
-                            if(needsBlueprint(element)){
-                                defaultPageTemplateEntityId = RedisID.renderNewPageTemplateDefaultEntity(this.pageTemplateName, getProperty(element), this.pageTemplateLanguage);
-                                newDefaultEntity = this.saveNewEntityClassCopy(element, defaultPageTemplateEntityId, entityTemplateClass);
-                            }
-                            else{
-                                defaultPageTemplateEntityId = RedisID.renderNewPageTemplateDefaultEntity(this.pageTemplateName, getProperty(element), entityTemplateClass.getLanguage());
-                                newDefaultEntity = new EntityTemplate(defaultPageTemplateEntityId, entityTemplateClass, element.outerHtml());
-                                Redis.getInstance().save(newDefaultEntity);
-                            }
-                            node = replaceElementWithEntityReference(element, newDefaultEntity);
-                        }
-                        //if a version has been stored in db before, use that version as page-template-entity (f.i. a menu that has been changed by the user, should stay changed after server-start-up)
-                        else{
-                            node = replaceElementWithEntityReference(element, lastVersion);
-                        }
-                    }
-                    else if(needsBlueprint(element)){
-                        RedisID defaultEntityId = RedisID.renderNewEntityTemplateID(entityTemplateClass, entityTemplateClass.getLanguage());
-                        EntityTemplate defaultEntity = this.saveNewEntityClassCopy(element, defaultEntityId, entityTemplateClass);
-                        node = replaceElementWithEntityReference(element, defaultEntity);
-                    }
-                    //if no new class is being parsed, we are parsing a default-instance of a certain type
-                    else{
-                        EntityTemplate defaultEntity = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityTemplateClass, entityTemplateClass.getLanguage()), entityTemplateClass, element.outerHtml());
-                        Redis.getInstance().save(defaultEntity);
-                        node = replaceElementWithEntityReference(element, defaultEntity);
-                    }
-                }
-                else if(this.typeOfStack.size()>0) {
                     /*
-                     * If we find an entity which is not a property, we throw an exception, since this makes no rdf-sense.
-                     * However, if the node is the head-node of a class-blueprint, no property-attribute is expected, and so then no error is thrown
+                     * If we have cached an new entity-template-class which is a property of a parent entity,
+                     * we switch it by a use-blueprint-tag, to be filled in again when the defaults are made (in DefaultVisitor)
                      */
-                    if (!(this.typeOfStack.size() == 1 && isBlueprint(this.typeOfStack.peek()))) {
-                        throw new ParseException("Found entity-child with typeof-attribute, but no property-attribute at \n \n " + element + "\n \n");
+                    if(isProperty(element) && isBlueprint(element) && entityTemplateClass != null){
+                        node = replaceNodeWithUseBlueprintTag(element);
                     }
                 }
-                else{
-                    //do nothing, since we have found the ending of the outer-most typeof-tag
-                }
+
             }
             catch (Exception e) {
                 throw new ParseException("Could not parse an " + EntityTemplateClass.class.getSimpleName() + " from " + Node.class.getSimpleName() + ": \n \n" + node + "\n \n", e);
@@ -213,38 +131,6 @@ public class FileToCacheVisitor extends AbstractVisitor
         }
         return node;
 
-    }
-
-
-    /**
-     * Make a new copy of the class-template, using all node-attributes of the node specified.
-     * @param node
-     * @param id
-     * @param entityClass
-     * @return
-     * @throws IDException
-     */
-    private EntityTemplate saveNewEntityClassCopy(Node node, RedisID id, EntityTemplateClass entityClass) throws IDException, CacheException, ParseException
-    {
-        Map<RedisID, String> classTemplates = entityClass.getTemplates();
-        Map<RedisID, String> copiedTemplates = new HashMap<>();
-        for(RedisID languageId : classTemplates.keySet()){
-            Element classRoot = TemplateParser.parse(classTemplates.get(languageId)).child(0);
-            classRoot.attributes().addAll(node.attributes());
-            classRoot.removeAttr(ParserConstants.USE_BLUEPRINT);
-            //a copy of an entity-class, also means a copy of all of it's children, so we need to traverse all templates to create entity-copies of all it's children
-            Traversor traversor = new Traversor(new ClassToStoredInstanceVisitor(id.getUrl(), id.getLanguage()));
-            traversor.traverse(classRoot);
-            copiedTemplates.put(languageId, classRoot.outerHtml());
-        }
-        if(entityClass.getTemplate(id.getLanguage())==null){
-            //a copy of an entity-class, also means a copy of all of it's children, so we need to traverse all templates to create entity-copies of all it's children
-            Element classRoot = TemplateParser.parse(entityClass.getTemplate()).child(0);
-            Traversor traversor = new Traversor(new ClassToStoredInstanceVisitor(id.getUrl(), id.getLanguage()));
-            traversor.traverse(classRoot);
-            copiedTemplates.put(id, entityClass.getTemplate());
-        }
-        return new EntityTemplate(id, entityClass, copiedTemplates);
     }
 
     /**
@@ -273,7 +159,8 @@ public class FileToCacheVisitor extends AbstractVisitor
     }
 
     /**
-     * Caches the entity-template parsed from the root-element specified. If a certain implementation of this entity-class is already present in cache, it is replaced.
+     * Caches the entity-template parsed from the root-element specified. If a certain (non-blueprint) implementation of this entity-class is already present in cache, it is replaced.
+     * If a bleuprint was already present, an exception is thrown.
      * @param classRoot node defining an entity-template-class
      * @return the entity-template-class defined by the node
      * @throws ParseException
@@ -317,8 +204,8 @@ public class FileToCacheVisitor extends AbstractVisitor
                 List<String> links = this.linksStack.peek();
                 List<String> scripts = this.scriptsStack.peek();
                 EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, language, classRoot.outerHtml(), pageTemplateName, links, scripts);
-                EntityTemplateClassCache.getInstance().replace(entityTemplateClass);
-                return EntityTemplateClassCache.getInstance().get(entityClassName);
+                this.cache.add(entityTemplateClass);
+                return entityTemplateClass;
             }
             else{
                 throw new ParseException(Node.class.getSimpleName() + " '" + classRoot + "' does not define an entity.");
@@ -351,22 +238,15 @@ public class FileToCacheVisitor extends AbstractVisitor
                  * All of this is done so we can give a page-template to the first entity encountered.
                  */
                 Node replacement = this.replaceElementWithReference(contentNode, ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME);
-                //we need to instanciate the cache first, so a default-template surely will be cached with an older version than the page-template we're about to make
-                PageTemplateCache cache = PageTemplateCache.getInstance();
                 String language = getLanguage(parent, null);
                 List<String> links = linksStack.pop();
                 List<String> scripts = scriptsStack.pop();
                 PageTemplate pageTemplate = new PageTemplate(templateName, language, parent.outerHtml(), links, scripts);
                 replacement.replaceWith(contentNode);
-                boolean added = cache.add(pageTemplate);
-                //default page-templates should be added to the cache no matter what, so the last one encountered is kept
-                if (!added && this.pageTemplateName.contentEquals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
-                    PageTemplateCache.getInstance().replace(pageTemplate);
-                }
-                else if(!added){
-                    Logger.warn(PageTemplate.class.getName() + " '" + pageTemplate.getName() + "' was not added to the application-cache, since an other " + PageTemplate.class.getName() +
-                                " with the same name was already present.");
-                }
+                this.cache.add(pageTemplate);
+            }
+            else{
+                throw new ParseException("Found node which is not a page-template-content-node, this should be impossible. At: \n \n " + contentNode + "\n \n");
             }
             return contentNode;
         }

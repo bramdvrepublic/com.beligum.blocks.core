@@ -136,7 +136,6 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
     /**
      * Determine and fetch the default entity-template. First try to fetch the language we're parsing, if not found, fetch the primary language of the default template.
      * @param unversionedResourceId
-     * @return
      * @throws IDException
      * @throws RedisException
      * @throws ParseException

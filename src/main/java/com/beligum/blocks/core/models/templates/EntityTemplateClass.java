@@ -125,7 +125,6 @@ public class EntityTemplateClass extends AbstractTemplate
     /**
      * returns the base-url for the entity-class
      * @param entityClassName the name of the entity-class (f.i. "default" for a entityClass filtered from the file "entities/default/index.html")
-     * @return
      */
     public static URL getBaseUrl(String entityClassName) throws MalformedURLException
     {
@@ -177,7 +176,6 @@ public class EntityTemplateClass extends AbstractTemplate
     /**
      * Two templates have the same hashCode when their template-content, url and meta-data are equal.
      * (thus equal through object-state, not object-address)
-     * @return
      */
     @Override
     public int hashCode()

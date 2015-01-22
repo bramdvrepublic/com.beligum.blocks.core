@@ -83,7 +83,7 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
     /**
      * This method returns a map with all present Cachables (value) by name (key)
      *
-     * @returns a map of all the currently cached Cachables from the application cache
+     * @return a map of all the currently cached Cachables from the application cache
      */
     @Override
     protected Map<String, PageTemplate> getCache()

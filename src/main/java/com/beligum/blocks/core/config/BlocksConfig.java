@@ -24,7 +24,7 @@ public class BlocksConfig
     public static final String BOOSTRAP_CSS_FILEPATH = "/assets/libs/bootstrap/css/bootstrap.css";
 
     public static final String PROJECT_VERSION_KEY = "appVersion";
-    //TODO BAS!: is version-loading like this all right? (ask Bram)
+    //TODO BAS! (ask Bram): is version-loading like this all right?
     public static final String PROPERTIES_FILE = "target/classes/blocks.properties";
 
     /**the languages this site can work with, ordered from most preferred languages, to less preferred*/

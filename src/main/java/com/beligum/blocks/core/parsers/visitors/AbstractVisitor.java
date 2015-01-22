@@ -112,6 +112,25 @@ public class AbstractVisitor
     }
 
     /**
+     * Replace an element with that same element having an attribute "use-blueprint" and with no children.
+     * @param element
+     * @return the replacement-element
+     */
+    protected Element replaceNodeWithUseBlueprintTag(Element element){
+        if(element!=null){
+            Element replacement = new Element(element.tag(), BlocksConfig.getSiteDomain());
+            replacement.attributes().addAll(element.attributes());
+            replacement.removeAttr(ParserConstants.BLUEPRINT);
+            replacement.attr(ParserConstants.USE_BLUEPRINT, null);
+            element.replaceWith(replacement);
+            return replacement;
+        }
+        else{
+            return element;
+        }
+    }
+
+    /**
      * Replace the specified node with the root-node of an entity-template
      * @param node
      * @param replacement
@@ -412,7 +431,6 @@ public class AbstractVisitor
     /**
      * Get the "name" attribute of a property-tag. Used for guaranteeing the uniqueness of a class-property-id
      * @param node
-     * @return
      */
     public String getPropertyName(Node node){
         if(isProperty(node)){

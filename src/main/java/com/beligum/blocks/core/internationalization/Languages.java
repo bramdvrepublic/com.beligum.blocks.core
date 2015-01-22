@@ -98,7 +98,6 @@ public class Languages
      * Uses the site's preferred languages, and if none of the languages can be found, it returns a random one.
      * If an empty set is specified, the constant Languages.NO_LANGUAGE is returned.
      * @param languages
-     * @return
      */
     static public String determinePrimaryLanguage(Set<String> languages){
         String[] preferredLanguages = BlocksConfig.getLanguages();
@@ -123,7 +122,6 @@ public class Languages
      * Determine which of the language-ids is the site's preferred one (primary)
      * This method uses the preferred order of languages specified in the configuration-xml.
      * @param languageIds a set of languages to choose from, if this set is empty, null will be returned
-     * @return
      */
     public static RedisID determinePrimaryLanguageId(Set<RedisID> languageIds)
     {
