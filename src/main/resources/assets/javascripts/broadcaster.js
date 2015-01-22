@@ -299,7 +299,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     this.EVENTS.BLOCKS_CLICK = "BLOCKS_CLICK";
 
     this.EVENTS.START_EDIT_FIELD = "START_EDIT_FIELD";
-    this.EVENTS.END_EDIT_FIELDS = "END_EDIT_FIELDS";
+    this.EVENTS.END_EDIT_FIELD = "END_EDIT_FIELDS";
 
 
     this.EVENTS.ENABLE_SELECTION = "ENABLE_SELECTION";

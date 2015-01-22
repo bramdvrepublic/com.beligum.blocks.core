@@ -40,7 +40,7 @@ blocks.plugin("blocks.core.Notification", ["blocks.core.Broadcaster", function(B
             closeIcon.on("click", function(event) {
                 event.stopPropagation();
                 hideDialog(cancelFunction)});
-            okButton.on("click", function() {
+            okButton.on("click", function(event) {
                 event.stopPropagation();
                 hideDialog(okFunction)}
             );

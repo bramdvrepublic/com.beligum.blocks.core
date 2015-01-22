@@ -183,7 +183,7 @@ blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broa
     });
 
     $(document).on(Broadcaster.EVENTS.END_EDIT_FIELD, function(event) {
-
+        Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
     });
 
 

@@ -70,14 +70,14 @@ blocks.plugin("blocks.core.Admin", ["blocks.core.BlockMenu", "blocks.core.DomMan
     }
 
     var button = $('<div ><i class="glyphicon glyphicon-pencil"></i> Edit block</div>');
-    button.click(function() {
-//        Broadcaster.send(Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE));
-        startAdmin(Menu.currentBlock(), Menu.currentBlock().element);
-    })
+
 
     Menu.addButton({
         element: button,
-        priority: 100
+        priority: 100,
+        action: function(event) {
+            startAdmin(Menu.currentBlock(), Menu.currentBlock().element);
+        }
     });
 
 }]);

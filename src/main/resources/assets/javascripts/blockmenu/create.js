@@ -3,10 +3,7 @@
  */
 blocks.plugin("blocks.core.BlockMenu.new", ["blocks.core.BlockMenu", "blocks.core.Layouter", "blocks.core.Notification",  function(Menu, Layouter, Notification) {
     var button = $('<div ><i class="glyphicon glyphicon-asterisk"></i> Add custom block</div>');
-    Menu.addButton({
-        element: button,
-        priority: 100
-    });
+
 
     var modalText = '<div class="form-inline" role="form"><div class="form-group"></div></div>';
     var blocks = {
@@ -18,35 +15,35 @@ blocks.plugin("blocks.core.BlockMenu.new", ["blocks.core.BlockMenu", "blocks.cor
         layout: $("<div class='block can-layout' ></div>")
     }
 
-    button.on("click", function(event) {
-        event.stopPropagation();
-        var currentBlock = Menu.currentBlock();
-        $.getJSON("/entities/list").success(function(data) {
-            var optionList = $('<select class="form-control" id="blocktypeselect"></div>');
-            var label = '<label for="inputPassword2" class="sr-only">Type block : </label>';
-            for(var i=0; i< data.length; i++) {
-                optionList.append('<option value="'+data[i]+'">'+data[i]+'</option>');
-            }
-            var list = $(modalText);
-            list.find(".form-group").empty().append(label).append(optionList);
-            Notification.alert("Add new block", list.html(), function(content) {
-                var value = content.find("#blocktypeselect").val();
-                if (value != null && value != "") {
-                    $.getJSON("/entities/class/" + value).success(function(data) {
-                        //var newBlock = blocks[value];
-                        var x= 0;
-                        Layouter.addNewBlockAtLocation($(data.template), currentBlock);
-                    });
+    Menu.addButton({
+        element: button,
+        priority: 100,
+        action: function(event) {
+            event.stopPropagation();
+            var currentBlock = Menu.currentBlock();
+            $.getJSON("/entities/list").success(function(data) {
+                var optionList = $('<select class="form-control" id="blocktypeselect"></div>');
+                var label = '<label for="inputPassword2" class="sr-only">Type block : </label>';
+                for(var i=0; i< data.length; i++) {
+                    optionList.append('<option value="'+data[i]+'">'+data[i]+'</option>');
                 }
+                var list = $(modalText);
+                list.find(".form-group").empty().append(label).append(optionList);
+                Notification.alert("Add new block", list.html(), function(content) {
+                    var value = content.find("#blocktypeselect").val();
+                    if (value != null && value != "") {
+                        $.getJSON("/entities/class/" + value).success(function(data) {
+                            //var newBlock = blocks[value];
+                            var x= 0;
+                            Layouter.addNewBlockAtLocation($(data.template), currentBlock);
+                        });
+                    }
 
+                });
             });
-        });
 
+        }
     });
-
-
-
-
 
 }]);
 
@@ -54,16 +51,17 @@ blocks.plugin("blocks.core.BlockMenu.newText", ["blocks.core.BlockMenu", "blocks
     var button = $('<div ><i class="glyphicon glyphicon-align-justify"></i> Add basic text block</div>')
     Menu.addButton({
         element: button,
-        priority: 100
+        priority: 100,
+        action: function(event) {
+            var currentBlock = Menu.currentBlock();
+            // copy block and add to body
+            Layouter.addNewBlockAtLocation($(newBlock[0].outerHTML), Menu.currentBlock());
+        }
     });
 
     var newBlock = $("<div typeof='text' ><div property='content' can-edit><h1>Enter some text here.<h1></h1></div></div>")
 
-    button.on("click", function(event) {
-        var currentBlock = Menu.currentBlock();
-        // copy block and add to body
-        Layouter.addNewBlockAtLocation($(newBlock[0].outerHTML), Menu.currentBlock());
-    })
+
 
 
 }]);

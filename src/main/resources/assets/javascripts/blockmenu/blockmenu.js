@@ -22,6 +22,26 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
 
     $(document).on("mousedown", ".block-menu-handle", function(event) {
         if (!menuElement.hasClass("open")) {
+
+            $.each(buttons, function(index, button) {
+                if (button.enabled != null && !button.enabled(activeBlock)) {
+                    $(button.element).addClass("disabled");
+                    $(button.element).off("mouseup.block-menu-action")
+                } else {
+                    $(button.element).addClass("enabled");
+                    $(button.element).off("mouseup.block-menu-action")
+                    $(button.element).on("mouseup.block-menu-action", function(event) {
+                        $(document).off("mousedown.remove_block_menu");
+                        button.action(event);
+                        BlockMenu.hideMenu();
+                    })
+                }
+
+            });
+
+
+
+
             menuElement.addClass("open");
             Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
 
@@ -35,9 +55,6 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
                     BlockMenu.hideMenu();
                     Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
                 }
-
-
-
 
             });
         }
@@ -91,13 +108,7 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
             // sets the block this menu is currently bound to
             activeBlock = block;
 
-            for (var i = 0; i < buttons.length; i++) {
-                if (buttons[i].enabled != null && !buttons[i].enabled(activeBlock)) {
-                    $(buttons[i].element).addClass("disabled");
-                } else {
-                    $(buttons[i].element).removeClass("disabled");
-                }
-            }
+
             menuElement.css("position", "absolute");
             menuElement.css("top", activeBlock.element.offset().top + "px");
             // put menu in upper left corner of block

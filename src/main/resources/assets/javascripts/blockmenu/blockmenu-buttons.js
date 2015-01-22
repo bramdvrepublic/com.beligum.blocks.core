@@ -25,18 +25,18 @@ blocks.plugin("blocks.core.BlockMenu.delete", ["blocks.core.BlockMenu", "blocks.
             } else {
                 return true;
             }
+        },
+        action: function(event) {
+            event.stopPropagation();
+            var currentBlock = Menu.currentBlock();
+            Notification.dialog("Delete", "<p>You will now delete this block!</p><p>Are you sure?</p>", function() {
+                Layouter.removeBlock(currentBlock);
+            },function() {
+
+            });
         }
     });
 
-    button.on("click", function(event) {
-        event.stopPropagation();
-        var currentBlock = Menu.currentBlock();
-        Notification.dialog("Delete", "<p>You will now delete this block!</p><p>Are you sure?</p>", function() {
-            Layouter.removeBlock(currentBlock);
-        },function() {
-
-            });
-    })
 }]);
 
 

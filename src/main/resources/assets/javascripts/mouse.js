@@ -257,8 +257,8 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
 
     // http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
     this.disableSelection = function() {
-//        var sel = window.getSelection();
-//        sel.removeAllRanges();
+        var sel = window.getSelection();
+        sel.removeAllRanges();
         var html = $("html");
         html.addClass("no-select");
 
