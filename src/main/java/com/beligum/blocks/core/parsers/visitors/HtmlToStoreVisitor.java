@@ -10,6 +10,7 @@ import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.templates.EntityTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import org.apache.commons.lang3.StringUtils;
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 
@@ -19,8 +20,11 @@ import java.net.URL;
  * Created by bas on 10.12.14.
  * Visitor holding all functionalities to go from html to an updated stored instance of entities
  */
-public class HtmlToStoreVisitor extends AbstractVisitor
+public class HtmlToStoreVisitor extends SuperVisitor
 {
+    /**The root-node of the html-tree being parsed*/
+    private final Document root;
+
     private final String language;
 
     /**
@@ -28,14 +32,21 @@ public class HtmlToStoreVisitor extends AbstractVisitor
      * @param entityUrl The url of the entity of which a certain language will be updated.
      * @throws ParseException If no language-information is specified in the entityUrl.
      */
-    public HtmlToStoreVisitor(URL entityUrl) throws ParseException {
+    public HtmlToStoreVisitor(URL entityUrl, Document root) throws ParseException {
         try {
+            if(entityUrl == null){
+                throw new NullPointerException("Found empty entity-url.");
+            }
+            if(root == null){
+                throw new NullPointerException("Found null-root.");
+            }
             this.pageUrl = entityUrl;
+            this.root = root;
             this.language = new RedisID(this.pageUrl, RedisID.NO_VERSION, false).getLanguage();
             if(!Languages.isNonEmptyLanguageCode(this.language)){
                 throw new ParseException("Cannot update entity '" + entityUrl + "'. It's url does not hold language-information.");
             }
-        }catch (IDException e){
+        }catch (Exception e){
             throw new ParseException("Could not parse language from page-url '" + this.pageUrl + "'.");
         }
     }
@@ -52,6 +63,13 @@ public class HtmlToStoreVisitor extends AbstractVisitor
         try {
             node = super.tail(node, depth);
             if (isEntity(node) && node instanceof Element) {
+                /*
+                 * If we reached an entity, which was the root of the received html, this entity should have the page-url as resource.
+                 * This is done so we can parse entities which aren't imbedded in a html-page
+                 */
+                if(root.equals(node.parent())){
+                    node.attr(ParserConstants.RESOURCE, pageUrl.toString());
+                }
                 String resourceUrl = getResource(node);
                 EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
                 RedisID resourceId;

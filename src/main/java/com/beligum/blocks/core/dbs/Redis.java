@@ -40,13 +40,13 @@ public class Redis implements Closeable
      */
     private Redis(){
         //create a thread-save pool of Jedis-instances, using default configuration
-//        TODO: put Redis back to Sentinel-state
-//        String[] sentinelHostsAndPorts = BlocksConfig.getRedisSentinels();
-//        Set<String> sentinels = new HashSet<>();
-//        for(int i = 0; i<sentinelHostsAndPorts.length; i++){
-//            sentinels.add(sentinelHostsAndPorts[i]);
-//        }
-//        pool = new JedisSentinelPool(BlocksConfig.getRedisMasterName(), sentinels);
+        //        TODO: put Redis back to Sentinel-state
+        //        String[] sentinelHostsAndPorts = BlocksConfig.getRedisSentinels();
+        //        Set<String> sentinels = new HashSet<>();
+        //        for(int i = 0; i<sentinelHostsAndPorts.length; i++){
+        //            sentinels.add(sentinelHostsAndPorts[i]);
+        //        }
+        //        pool = new JedisSentinelPool(BlocksConfig.getRedisMasterName(), sentinels);
         pool = new JedisPool(BlocksConfig.getRedisMasterHost(), Integer.parseInt(BlocksConfig.getRedisMasterPort()));
     }
 
@@ -301,7 +301,6 @@ public class Redis implements Closeable
 
     /**
      * Empty database completely. ALL DATA WILL BE LOST!!! Use with care!
-     * @return
      */
     public void flushDB(){
         try(Jedis redisClient = pool.getResource()){
@@ -335,6 +334,17 @@ public class Redis implements Closeable
             else {
                 return new Long(RedisID.NO_VERSION);
             }
+        }
+    }
+
+    public EntityTemplate fetchLastEntityTemplateVersion(String url) throws RedisException
+    {
+        try {
+            RedisID lastVersion = new RedisID(new URL(url), RedisID.LAST_VERSION, false);
+            return fetchEntityTemplate(lastVersion);
+        }
+        catch (Exception e){
+            throw new RedisException("Could not fetch last version of '" + url + "'.");
         }
     }
 

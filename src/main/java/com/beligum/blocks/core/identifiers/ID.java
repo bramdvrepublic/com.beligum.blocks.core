@@ -78,7 +78,6 @@ public class ID
     }
     /**
      * Two ids have the same hashCode when their string-representations are equal
-     * @return
      */
     @Override
     public int hashCode()

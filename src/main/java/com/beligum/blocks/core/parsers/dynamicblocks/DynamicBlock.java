@@ -16,14 +16,12 @@ public interface DynamicBlock
     /**
      * Main function of a dynamic block which generates it's html.
      * @param element
-     * @return
      * @throws ParseException
      */
     public Element generateBlock(Element element) throws ParseException;
 
     /**
      * Get the typeof corresponding to this dynamic block
-     * @return
      */
     public String getTypeOf();
 

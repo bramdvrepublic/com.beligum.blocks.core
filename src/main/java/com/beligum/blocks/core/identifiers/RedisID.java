@@ -250,6 +250,12 @@ public class RedisID extends ID
         try {
             String newPath = this.url.getPath();
             newPath = "/" + this.language + newPath;
+            if(!StringUtils.isEmpty(this.url.getQuery())){
+                newPath += "?" + this.url.getQuery();
+            }
+            if(!StringUtils.isEmpty(this.url.getRef())){
+                newPath += "#" + this.url.getRef();
+            }
             return new URL(this.url.getProtocol(), this.url.getHost(), this.url.getPort(), newPath);
         }catch (Exception e){
             throw new IDException("Could not generate url with proper language-references using url '" + this.url + "' and language '" + this.language + "'.");

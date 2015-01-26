@@ -1,15 +1,12 @@
 package com.beligum.blocks.core.caching;
 
 import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.config.DatabaseConstants;
-import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.templates.AbstractTemplate;
-import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.utils.Logger;
@@ -38,7 +35,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
 
     /**
      * This method returns a map with all present Cachables (value) by name (key)
-     * @returns a map of all the currently cached Cachables from the application cache
+     * @return a map of all the currently cached Cachables from the application cache
      */
     abstract protected Map<String, T> getCache();
 
@@ -81,7 +78,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             if(template == null){
                 return false;
             }
-            //TODO BAS: when adding possibility to parse multiple entity-class-languages from file to cache, multiple languages should be able to be added
+            //TODO BAS: when adding possibility to parse multiple entity-class-languages from file to cache, multiple languages should be able to be added. This class should have the functionality to put two different languages together in one entity-template-class
             if(!getCache().containsKey(template.getUnversionedId())) {
                 AbstractTemplate storedTemplate = Redis.getInstance().fetchLastVersion(template.getId(), this.getCachedClass());
                 if(!template.equals(storedTemplate)){
@@ -153,7 +150,6 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
 
     /**
      * Fill up the page-cache with all template found in file-system
-     * @return A full AbstractCachableClassCache
      * @throws com.beligum.blocks.core.exceptions.CacheException
      */
     protected void fillCache() throws CacheException
@@ -163,9 +159,14 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             URI rootFolderUri = FileFunctions.getCurrentMavenSrcResourceFolder(this.getClass());
             Path rootFolder = Paths.get(rootFolderUri.getSchemeSpecificPart());
             Path templatesFolder = rootFolder.resolve(BlocksConfig.getTemplateFolder());
-            Path blueprintsFolder = rootFolder.resolve(BlocksConfig.getBlueprintsFolder());
 
             try {
+                //list which will be filled up with all templates found in all files in the templates-folder
+                final List<AbstractTemplate> foundTemplates = new ArrayList<>();
+                //set which will be filled up with all class-names found in all files in the templates-folder
+                final Set<String> foundEntityClassNames = new HashSet<>();
+
+                //first fetch all blueprints from all files
                 FileVisitor<Path> visitor = new SimpleFileVisitor<Path>()
                 {
                     @Override
@@ -174,20 +175,23 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                     {
                         if (filePath.getFileName().toString().endsWith("html") || filePath.getFileName().toString().endsWith("htm")) {
                             try {
-                                TemplateParser.cacheTemplatesFromFile(new String(Files.readAllBytes(filePath)));
+                                String html = new String(Files.readAllBytes(filePath));
+                                TemplateParser.findTemplatesFromFile(html, foundTemplates, foundEntityClassNames);
                             }
                             catch (ParseException e) {
-                                Logger.error("Parse error while parsing file '" + filePath + "'.", e);
+                                Logger.error("Parse error while fetching page-templates and blueprints from file '" + filePath + "'.", e);
                             }
                         }
                         return FileVisitResult.CONTINUE;
                     }
                 };
-                Files.walkFileTree(blueprintsFolder, visitor);
                 Files.walkFileTree(templatesFolder, visitor);
+
+                //then add all default-value's to the found classes
+                TemplateParser.injectDefaultsInFoundTemplatesAndCache(foundTemplates);
             }
             catch (Exception e) {
-                Logger.error("Error while filling cache: " + this, e);
+                throw new CacheException("Error while filling cache: " + this, e);
             }
             finally {
                 runningTroughHtmlTemplates = false;
@@ -198,7 +202,6 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
 
     /**
      * Gets all  values of the cache's map, sorted by name
-     * @return
      */
     public List<T> values()
     {
