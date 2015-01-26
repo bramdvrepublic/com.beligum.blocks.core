@@ -25,14 +25,11 @@ import java.util.concurrent.ThreadFactory;
 @Path("/")
 public class ApplicationEndpoint
 {
-//    @Path("/ind")
-//    @GET
-//    public Response index()
-//    {
-//        Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/index.html");
-////        TypeCacher.instance().reset();
-//        return Response.ok(indexTemplate).build();
-//    }
+    @GET
+    public Response index() throws URISyntaxException
+    {
+        return Response.seeOther(new URI("/index")).build();
+    }
 
     @Path("/finder")
     @GET
@@ -51,16 +48,6 @@ public class ApplicationEndpoint
         //        TypeCacher.instance().reset();
         return Response.ok(indexTemplate).build();
     }
-
-    //TODO BAS!: check if this works properly
-//    @Path("/")
-//    @GET
-//    public Response overzicht() throws URISyntaxException
-//    {
-////        Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/overzicht.html");
-//        //        TypeCacher.instance().reset();
-//        return Response.seeOther(new URI("/index")).build();
-//    }
 
 //    @Path("/show")
 //    @GET
@@ -82,7 +69,6 @@ public class ApplicationEndpoint
     public Response getPageWithId(@PathParam("randomPage") String randomURLPath)
     {
         try{
-            Redis redis = Redis.getInstance();
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
             //if no language info is specified in the url, or if the specified language doesn't exist, the default language will still be shown
             RedisID id = new RedisID(url, RedisID.LAST_VERSION, false);
