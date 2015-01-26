@@ -25,7 +25,7 @@ public class BlocksConfig
 
     public static final String PROJECT_VERSION_KEY = "appVersion";
     //TODO BAS! (ask Bram): is version-loading like this all right?
-    public static final String PROPERTIES_FILE = "target/classes/blocks.properties";
+    public static final String PROPERTIES_FILE = "blocks.properties";
 
     /**the languages this site can work with, ordered from most preferred languages, to less preferred*/
     public static String[] cachedLanguages;
@@ -70,7 +70,7 @@ public class BlocksConfig
             Properties prop = new Properties();
             InputStream input = null;
             try {
-                input = new FileInputStream(PROPERTIES_FILE);
+                input = BlocksConfig.class.getResourceAsStream("/" + PROPERTIES_FILE);
                 // load a properties file
                 prop.load(input);
                 // get the property value and print it out

@@ -52,7 +52,7 @@ public class ApplicationEndpoint
         return Response.ok(indexTemplate).build();
     }
 
-    //TODO BAS!: check if this works proparly
+    //TODO BAS!: check if this works properly
 //    @Path("/")
 //    @GET
 //    public Response overzicht() throws URISyntaxException
