@@ -71,6 +71,19 @@ public class SuperVisitor
         }
     }
 
+    /**
+     *
+     * @return the last typed parent-node visited
+     */
+    protected Node getParent(){
+        if(!this.typeOfStack.empty()){
+            return this.typeOfStack.peek();
+        }
+        else{
+            return null;
+        }
+    }
+
 
     /**
      *

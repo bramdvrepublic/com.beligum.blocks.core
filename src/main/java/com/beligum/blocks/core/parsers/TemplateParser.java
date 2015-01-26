@@ -99,25 +99,30 @@ public class TemplateParser
                 }
             }
 
-            //create defaults for all found entity-classes
+            //create defaults for all found entity-classes and cache to application-cache
             for (String templateName : allEntityClasses.keySet()) {
-                AbstractTemplate template = allEntityClasses.get(templateName);
-                Map<RedisID, String> htmlTemplates = template.getTemplates();
-                for (RedisID language : htmlTemplates.keySet()) {
-                    Document doc = parse(htmlTemplates.get(language));
-                    Traversor traversor = new Traversor(new DefaultsAndCachingVisitor(language.getLanguage(), template, allEntityClasses, allPageTemplates));
-                    traversor.traverse(doc);
+                //during traversal of a template, all it's child-types are cached too
+                if(!EntityTemplateClassCache.getInstance().contains(templateName)) {
+                    AbstractTemplate template = allEntityClasses.get(templateName);
+                    Map<RedisID, String> htmlTemplates = template.getTemplates();
+                    for (RedisID language : htmlTemplates.keySet()) {
+                        Document doc = parse(htmlTemplates.get(language));
+                        Traversor traversor = new Traversor(new DefaultsAndCachingVisitor(language.getLanguage(), doc, template, allEntityClasses, allPageTemplates));
+                        traversor.traverse(doc);
+                    }
                 }
             }
 
-            //create defaults for all found page-tempaltes
+            //create defaults for all found page-templates and cache to application-cache
             for (String templateName : allPageTemplates.keySet()) {
-                AbstractTemplate template = allPageTemplates.get(templateName);
-                Map<RedisID, String> htmlTemplates = template.getTemplates();
-                for (RedisID language : htmlTemplates.keySet()) {
-                    Document doc = parse(htmlTemplates.get(language));
-                    Traversor traversor = new Traversor(new DefaultsAndCachingVisitor(language.getLanguage(), template, allEntityClasses, allPageTemplates));
-                    traversor.traverse(doc);
+                if(!PageTemplateCache.getInstance().contains(templateName)) {
+                    AbstractTemplate template = allPageTemplates.get(templateName);
+                    Map<RedisID, String> htmlTemplates = template.getTemplates();
+                    for (RedisID language : htmlTemplates.keySet()) {
+                        Document doc = parse(htmlTemplates.get(language));
+                        Traversor traversor = new Traversor(new DefaultsAndCachingVisitor(language.getLanguage(), doc, template, allEntityClasses, allPageTemplates));
+                        traversor.traverse(doc);
+                    }
                 }
             }
         }
@@ -238,7 +243,7 @@ public class TemplateParser
     public static void updateEntity(URL entityUrl, String html) throws ParseException
     {
         Document newDOM = parse(html);
-        Traversor traversor = new Traversor(new HtmlToStoreVisitor(entityUrl));
+        Traversor traversor = new Traversor(new HtmlToStoreVisitor(entityUrl, newDOM));
         traversor.traverse(newDOM);
         //        return traversor.getPageUrl();
     }
@@ -255,12 +260,12 @@ public class TemplateParser
          * If only part of a html-file is being parsed (which starts f.i. with a <div>-tag), Jsoup will add <html>-, <head>- and <body>-tags, which is not what we want
          * Thus if the head (or body) is empty, but the body (or head) is not, we only want the info in the body (or head).
          */
-        if(parsed.head().children().isEmpty() && !parsed.body().children().isEmpty()){
+        if(parsed.head().childNodes().isEmpty() && !parsed.body().childNodes().isEmpty()){
             for(Node child : parsed.body().children()) {
                 retVal.appendChild(child);
             }
         }
-        else if(parsed.body().children().isEmpty() && !parsed.head().children().isEmpty()){
+        else if(parsed.body().childNodes().isEmpty() && !parsed.head().childNodes().isEmpty()){
             for(Node child : parsed.head().children()) {
                 retVal.appendChild(child);
             }
