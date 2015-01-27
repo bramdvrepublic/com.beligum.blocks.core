@@ -19,8 +19,10 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
+import org.jsoup.parser.Tag;
 import org.jsoup.select.Elements;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
@@ -181,8 +183,14 @@ public class TemplateParser
 
     /**
      * Render the html of a certain entity inside a page-template, using the specified language
-     * Uses scripts and links injection to place all javascripts and css-class in the right order:
-     * 1) links of page-template, 2) links of blueprints, 3) links of dynamic blocks, 4) scripts of page-template, 5) scripts of blueprints, 6) scripts of dynamic blocks
+     * Uses scripts and links injection to place all javascripts and css-classes in the right order:
+     * 1) links of page-template
+     * 2) links of blueprints
+     * 3) links of dynamic blocks
+     * 4) scripts of page-template
+     * 5) scripts of blueprints
+     * 6) scripts of dynamic blocks
+     * 7) frontend-scripts if an admin is logged in
      * @param pageTemplate
      * @param entityTemplate
      * @param language
@@ -210,6 +218,7 @@ public class TemplateParser
                 Element entityRoot = TemplateParser.parse(entityHtml).child(0);
                 reference.replaceWith(entityRoot);
             }
+
             ToHtmlVisitor visitor = new ToHtmlVisitor(entityTemplate.getUrl(), language, pageTemplate.getLinks(), pageTemplate.getScripts());
             Traversor traversor = new Traversor(visitor);
             traversor.traverse(DOM);
@@ -222,6 +231,9 @@ public class TemplateParser
             for(Node script : scripts){
                 DOM.head().appendChild(script);
             }
+            //inject frontend links and scripts if logged in as administrator
+            //TODO BAS: this should only happen when an administrator is logged in
+            addFrontendScripts(DOM);
             return DOM.outerHtml();
         }
         catch (Exception e){
@@ -280,6 +292,14 @@ public class TemplateParser
             retVal = parsed;
         }
         return retVal;
+    }
+
+    private static void addFrontendScripts(Document DOM) throws IOException, ParseException
+    {
+        String frontendScriptsSource = BlocksConfig.getFrontEndScripts();
+        Element head = DOM.head();
+        Element link = head.appendElement("link");
+        new SuperVisitor().includeSource(link, frontendScriptsSource);
     }
 
 }

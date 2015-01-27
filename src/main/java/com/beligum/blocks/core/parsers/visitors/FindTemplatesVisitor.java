@@ -150,36 +150,7 @@ public class FindTemplatesVisitor extends SuperVisitor
 
     }
 
-    /**
-     * Include the html found in the file found at {@param sourcePath} and replace the element {@param at} by the found tags.
-     * @param at
-     * @param sourcePath
-     * @throws IOException
-     * @throws ParseException
-     */
-    private Node includeSource(Element at, String sourcePath) throws IOException, ParseException
-    {
-        try(InputStream input = this.getClass().getResourceAsStream(sourcePath)){
-            String content = "";
-            List<String> lines = IOUtils.readLines(input);
-            for(String line : lines){
-                content += line + "\n";
-            }
-            Document DOM = TemplateParser.parse(content);
-            if(DOM.childNodes().isEmpty()){
-                throw new ParseException("Found empty file at '" + sourcePath + "'. Cannot include an empty file.");
-            }
-            Node firstChild = DOM.childNode(0);
-            Element parent = at.parent();
-            if(parent == null){
-                throw new ParseException("Cannot use an include as a root-node. Found at \n\n" + at + "\n\n");
-            }
-            int siblingIndex = at.siblingIndex();
-            parent.insertChildren(siblingIndex,DOM.childNodes());
-            at.remove();
-            return firstChild;
-        }
-    }
+
 
     /**
      *
