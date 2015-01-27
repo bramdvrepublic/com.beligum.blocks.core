@@ -7,9 +7,11 @@
 
     <title></title>
 
+    <link href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
     <link rel="icon" type="image/x-icon" href="/assets/images/favicon.ico" />
     $!header-styles-extra
 
+    <script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
     <script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
     $!header-scripts-extra
 

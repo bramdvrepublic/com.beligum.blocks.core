@@ -4,3 +4,5 @@ added tag pointing to front-end-scripts
             <frontend>/templates/blocks-scripts.html</frontend>
         </scripts>
     </blocks>
+
+using sql for user-management, a correct server must be specified in the configuration xml

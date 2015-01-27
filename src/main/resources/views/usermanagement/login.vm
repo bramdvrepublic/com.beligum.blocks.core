@@ -1,0 +1,49 @@
+#define ($body-html)
+<div class="container user-login">
+    <div class="row">
+        <div class="col-sm-6 col-sm-offset-3">
+
+            <h1>Sign in </h1>
+
+            #if($RESPONSE && $RESPONSE.status!=200)
+            <h3 class="error">
+                #if($RESPONSE.status==400)
+                Unable to login with the supplied input
+                #elseif($RESPONSE.status==401)
+                Please log in first
+                #end
+            </h3>
+            #end
+
+            <form role="form" method="POST" action="/users/login">
+                <div class="form-group">
+                    <label for="username">E-mail</label>
+                    <input type="text" ng-model="l.name" class="form-control" placeholder="Email" id="username" name="username" value="$!VALUES['username']">
+                </div>
+                ## don't show password-specific errors; it's a security breach
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" ng-model="l.pass" class="form-control" placeholder="Password" id="password" name="password" value="$!VALUES['password']">
+                </div>
+                ## don't show password-specific errors; it's a security breach
+
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox" name="rememberMe" value="true" value="$!VALUES['rememberMe']==true"> Remember me
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Sign in</button>
+            </form>
+            <div class="footer">
+                <hr>
+                <a href="/users/forgotpassword">Forgot password?</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+#end
+
+#parse('/views/templates/main.vm')
