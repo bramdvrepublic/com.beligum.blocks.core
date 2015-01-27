@@ -19,7 +19,7 @@ import java.util.Stack;
 /**
  * Created by wouter on 23/11/14.
  */
-public class AbstractVisitor
+public class SuperVisitor
 {
     protected Stack<Node> typeOfStack = new Stack<>();
     protected URL parentUrl = null;
@@ -69,6 +69,19 @@ public class AbstractVisitor
         }
     }
 
+    /**
+     *
+     * @return the last typed parent-node visited
+     */
+    protected Node getParent(){
+        if(!this.typeOfStack.empty()){
+            return this.typeOfStack.peek();
+        }
+        else{
+            return null;
+        }
+    }
+
 
     /**
      *
@@ -103,6 +116,25 @@ public class AbstractVisitor
             replacementNode.attr(ParserConstants.REFERENCE_TO, referenceTo);
             element.replaceWith(replacementNode);
             return replacementNode;
+        }
+        else{
+            return element;
+        }
+    }
+
+    /**
+     * Replace an element with that same element having an attribute "use-blueprint" and with no children.
+     * @param element
+     * @return the replacement-element
+     */
+    protected Element replaceNodeWithUseBlueprintTag(Element element){
+        if(element!=null){
+            Element replacement = new Element(element.tag(), BlocksConfig.getSiteDomain());
+            replacement.attributes().addAll(element.attributes());
+            replacement.removeAttr(ParserConstants.BLUEPRINT);
+            replacement.attr(ParserConstants.USE_BLUEPRINT, "");
+            element.replaceWith(replacement);
+            return replacement;
         }
         else{
             return element;
@@ -410,7 +442,6 @@ public class AbstractVisitor
     /**
      * Get the "name" attribute of a property-tag. Used for guaranteeing the uniqueness of a class-property-id
      * @param node
-     * @return
      */
     public String getPropertyName(Node node){
         if(isProperty(node)){

@@ -63,16 +63,6 @@ blocks
             }
         });
 
-        // smallest elemet with 4 corner
-        // and a function to check if x,y is inside the surface
-        var property = Class.create(surface, {
-            constructor: function (element) {
-                layoutElement.Super.call(this, this.calculateTop(element), this.calculateBottom(element), this.calculateLeft(element), this.calculateRight(element));
-                this.element = element;
-            }
-
-        });
-
         /*
          * Special element that indicates a trigger where a block could be dropped
          * on an other block. the dropspot is located on a SIDE of the block and the
@@ -199,8 +189,8 @@ blocks
          */
         var resizeHandle = Class.create(surface, {
             STATIC: {
-                DRAW_WIDTH: 5,
-                TRIGGER_WIDTH: 20
+                DRAW_WIDTH: 30,
+                TRIGGER_WIDTH: 40
             },
 
             constructor: function (leftColumn, rightColumn) {
@@ -255,26 +245,26 @@ blocks
 
             constructor: function (top, bottom, left, right, element, parent, index) {
                 layoutElement.Super.call(this, top, bottom, left, right);
+                this.el = {top:0, bottom:0, left:0, right:0};
+                if (element != null) {
+                    this.el = {
+                        top: element.offset().top,
+                        bottom: element.offset().top + element.height(),
+                        left: element.offset().left,
+                        right: element.offset().left + element.width()
+                    };
+                }
+
                 this.parent = parent;
                 this.index = index;
                 this.element = element;
                 this.children = [];
                 this.resizeHandles = [];
                 this.totalBlocks = null;
+                this.canLayout = false;
                 this.canDrag = false;
-                if (element != null) {
-                    this.canEdit = DOM.canEdit(element);
-                    if (this.parent != null) {
-                        if (this.parent.canLayout || this.parent.canDrag) {
-                            this.canDrag = true;
-                        }
-                    } else {
-                        this.canLayout = DOM.canLayout(element);
-                        if (this.canLayout) {
-                            this.canDrag = true;
-                        }
-                    }
-                }
+                this.canEdit = false;
+
             },
 
             // Easily walk the tree and find the block that contains the coordinates
@@ -468,19 +458,29 @@ blocks
                             if (i > 0) { // Not first column
                                 // left side is between previous column and this column
                                 var previousColumn = $(columns[i - 1]);
-                                zoneLeft = (this.calculateRight(previousColumn) + this.calculateLeft(currentColumn)) / 2;
+//                                zoneLeft = (this.calculateRight(previousColumn) + this.calculateLeft(currentColumn)) / 2;
+                                zoneLeft = this.calculateLeft(currentColumn);
                             }
                             if (i < columnCount - 1) { // not last column
                                 // right side is between next column and this column
                                 var nextColumn = $(columns[i + 1]);
-                                zoneRight = (this.calculateRight(currentColumn) + this.calculateLeft(nextColumn)) / 2;
+//                                zoneRight = (this.calculateRight(currentColumn) + this.calculateLeft(nextColumn)) / 2;
+                                zoneRight = this.calculateRight(currentColumn);
                             }
 
 
                             newColumn = new column(innerZone.top, innerZone.bottom, zoneLeft, zoneRight, currentColumn, this, i);
 
-                            this.resizeHandles.push(new resizeHandle(oldColumn, newColumn));
-                            if (i == columnCount - 1) {
+                            var outside = this.parent != null && this.parent.parent != null &&  this.parent.parent instanceof container
+
+                            if (oldColumn != null) {
+                                this.resizeHandles.push(new resizeHandle(oldColumn, newColumn));
+                            } else if (outside) {
+                                this.resizeHandles.push(new resizeHandle(oldColumn, newColumn));
+                            }
+
+
+                            if (outside && i == columnCount - 1) {
                                 this.resizeHandles.push(new resizeHandle(newColumn, null));
                             }
 //
@@ -598,20 +598,42 @@ blocks
             }
         });
 
+        var property = Class.create(layoutElement, {
+            constructor: function (element, parent) {
+                property.Super.call(this, this.calculateTop(element), this.calculateBottom(element), this.calculateLeft(element), this.calculateRight(element), element, parent, 0);
+                this.container = null;
+                if (DOM.canEdit(element)) {
+                    this.canEdit = true;
+                }
+                this.container = new container(element, this);
+            },
+
+            findActiveElement: function (x, y) {
+                var retVal = null;
+                if (this.isTriggered(x, y)) {
+                    retVal = this.container.findActiveElement(x, y);
+                    if (retVal == null || retVal == this.container) {
+                        retVal = this;
+                    }
+                }
+                return retVal;
+            }
+
+        });
+
         // special kind of row that defines the region where blocks can be dragged
         var container = Class.create(layoutElement, {
-            constructor: function (element) {
-                container.Super.call(this, this.calculateTop(element), this.calculateBottom(element), this.calculateLeft(element), this.calculateRight(element), element, null, 0);
-                this.generateChildrenForColumn();
-// if (DOM.isColumn(element) || DOM.isContainer(element)) {
-//
-//                } else {
-//                    this.generateChildrenForRow();
-//                }
-//                else {
-//                    var b = new block(this.calculateTop(element), this.calculateBottom(element), this.calculateLeft(element), this.calculateRight(element), element, this, 0);
-//                    this.children.push(b);
-//                }
+            constructor: function (element, parent) {
+                container.Super.call(this, this.calculateTop(element), this.calculateBottom(element), this.calculateLeft(element), this.calculateRight(element), element, parent, 0);
+                this.blocks = [];
+                if (DOM.canLayout(element)) {
+                    this.canLayout = true;
+                    this.generateChildrenForColumn();
+                } else {
+                    for (var i=0; i < this.element.children().length; i++) {
+                        this.generateProperties($(this.element.children()[i]));
+                    }
+                }
             },
 
             getElementAtSide: function(side) {
@@ -623,31 +645,71 @@ blocks
                     dropspots.push(new dropspot(side, this, dropspots.length));
                 }
 
-                if (this.isOuter(side) && this.parent != null) {
-                    dropspots = this.parent.calculateDropspots(side, dropspots);
-                }
                 return dropspots;
+            },
+
+//
+//            getProperty: function(x, y) {
+//                for(var i=0; i< this.properties.length; i++) {
+//                    if (this.properties[i].isTriggered(x, y)) {
+//                        return this.properties[i];
+//                    }
+//                }
+//                return null;
+//            },
+
+            generateProperties: function(element) {
+                var prop = null;
+                var canChange = DOM.canEdit(element) || DOM.canLayout(element)
+
+                if (DOM.canLayout(element)) {
+                    prop = new property(element, this);
+                } else if (DOM.canEdit(element)) {
+                    prop = new property(element, this);
+//                    Edit.makeEditable(element);
+                }
+
+//                if ((canLayout || prop == null) && element.children().length > 0) {
+                if ((prop == null) && element.children().length > 0) {
+                    for(var i=0; i < element.children().length; i++) {
+                        this.generateProperties($(element.children()[i]));
+                    }
+                }
+
+                if (prop != null) {
+                    this.children.push(prop);
+                }
             }
+
         });
 
         // Special kind of row that can contain template
         var block = Class.create(layoutElement, {
             constructor: function (top, bottom, left, right, element, parent, index) {
-                block.Super.call(this, top, bottom, left, right, element, parent, index);
+                block.Super.call(this, top, bottom, this.calculateLeft(element), this.calculateRight(element), element, parent, index);
                 element.removeAttr(Constants.FAKE_BLOCK);
                 // if a block is editable does not depend on the parent
 
-                this.children = [];
                 this.dropspots = {};
                 if (this.canDrag) {
                     this.verticalMiddle = this.left + ((this.right - this.left) / 2);
                     this.horizontalMiddle = this.top + ((this.bottom - this.top) / 2);
-
                 }
+                var ct = this.getContainer()
+                ct.blocks.push(this);
+                this.canDrag = ct.canLayout;
+                this.container = new container(this.element, this);
+            },
 
-                this.properties = [];
-                this.generateProperties(this.element, true);
-
+            findActiveElement: function (x, y) {
+                var retVal = null;
+                if (this.isTriggered(x, y)) {
+                    retVal = this.container.findActiveElement(x, y);
+                    if (retVal == null || retVal == this.container) {
+                        retVal = this;
+                    }
+                }
+                return retVal;
             },
 
             // gets all dropspots for this block and his parents, for each side
@@ -813,14 +875,18 @@ blocks
                 Logger.debug("Recalculate triggers");
                 if (currentDropspot == null || !currentDropspot.makeTriggers(x, y, direction)) {
                     var newDropspot = currentDropspot;
-                    if (direction == Constants.DIRECTION.UP) {
-                        newDropspot = this.verticalDropspots[this.verticalDropspots.length - 1];
-                    } else if (direction == Constants.DIRECTION.DOWN) {
-                        newDropspot = this.verticalDropspots[0];
-                    } else if (direction == Constants.DIRECTION.LEFT) {
-                        newDropspot = this.horizontalDropspots[this.horizontalDropspots.length -1];
-                    } else if (direction == Constants.DIRECTION.RIGHT) {
-                        newDropspot = this.horizontalDropspots[0];
+                    try {
+                        if (direction == Constants.DIRECTION.UP) {
+                            newDropspot = this.verticalDropspots[this.verticalDropspots.length - 1];
+                        } else if (direction == Constants.DIRECTION.DOWN) {
+                            newDropspot = this.verticalDropspots[0];
+                        } else if (direction == Constants.DIRECTION.LEFT) {
+                            newDropspot = this.horizontalDropspots[this.horizontalDropspots.length - 1];
+                        } else if (direction == Constants.DIRECTION.RIGHT) {
+                            newDropspot = this.horizontalDropspots[0];
+                        }
+                    } catch (e) {
+                        Logger.error(this);
                     }
                     Logger.debug("Calculate at border");
                     if (newDropspot != null) {
@@ -840,42 +906,9 @@ blocks
                 return dropspots;
             },
 
-            getProperty: function(x, y) {
-                for(var i=0; i< this.properties.length; i++) {
-                    if (this.properties[i].isTriggered(x, y)) {
-                        return this.properties[i];
-                    }
-                }
-                return null;
-            },
-
-
-            generateProperties: function(element, isCurrentBlock) {
-                var prop = null;
-                var canEdit = DOM.canEdit(element);
-                var canLayout = DOM.canLayout(element)
-
-                if (canLayout && !isCurrentBlock) {
-                    prop = new property(element);
-                } else if (canEdit) {
-                    prop = new property(element);
-                    Edit.makeEditable(element);
-                }
-
-                if ((canLayout || prop == null) && element.children().length > 0) {
-                    for(var i=0; i < element.children().length; i++) {
-                        this.generateProperties($(element.children()[i]), false);
-                    }
-                }
-
-                if (prop != null) {
-                    this.properties.push(prop);
-                }
-            },
-
             getContainer: function() {
                 var parent = this.parent;
-                while (parent.parent != null) {
+                while (parent != null && !(parent instanceof blocks.elements.Container)) {
                     parent = parent.parent;
                 }
                 return parent;
@@ -894,4 +927,5 @@ blocks
         blocks.elements.Container = container;
         blocks.elements.Block = block;
         blocks.elements.Column = column;
+        blocks.elements.Property = property;
     } ]);

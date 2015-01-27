@@ -104,7 +104,6 @@ public class PageTemplate extends AbstractTemplate
     /**
      * Two templates have the same hashCode when their template-content, url and meta-data are equal.
      * (thus equal through object-state, not object-address)
-     * @return
      */
     @Override
     public int hashCode()

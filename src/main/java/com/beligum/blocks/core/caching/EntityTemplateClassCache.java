@@ -67,7 +67,7 @@ public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTempl
 
     /**
      * This method returns a map with all default page-instances (value) of all present pageClasses (key)
-     * @returns a map of all the currently cached page-classes from the application cache
+     * @return a map of all the currently cached page-classes from the application cache
      */
     @Override
     protected Map<String, EntityTemplateClass> getCache(){

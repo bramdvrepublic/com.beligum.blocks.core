@@ -50,9 +50,8 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     {
         super(id);
         this.templates = templates;
-        //TODO: this version should be fetched from pom.xml
-        this.applicationVersion = "test";
-        //TODO: logged in user should be added here
+        this.applicationVersion = BlocksConfig.getProjectVersion();
+        //TODO: logged in user should be added here (user management)
         this.creator = "me";
         if(links != null) {
             for (String link : links) {
@@ -298,7 +297,6 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     /**
      * Method fetching all templates in different languages, found as keys in the specified hash.
      * @param hash
-     * @return
      * @throws IDException if a bad id is found in the specified hash
      */
     static protected Map<RedisID, String> fetchLanguageTemplatesFromHash(Map<String, String> hash) throws DeserializationException
@@ -338,7 +336,6 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     /**
      * Method for fetching a list of link-tags from a db-hash
      * @param hash
-     * @return
      */
     static protected List<String> fetchLinksFromHash(Map<String, String> hash){
         return fetchTagListFromHash(DatabaseConstants.LINKS, hash);
@@ -347,7 +344,6 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     /**
      * Method for fetching a list of script-tags from a db-hash
      * @param hash
-     * @return
      */
     static protected List<String> fetchScriptsFromHash(Map<String, String> hash){
         return fetchTagListFromHash(DatabaseConstants.SCRIPTS, hash);
@@ -369,7 +365,6 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     /**
      * Two templates have the same hashCode when their template-content, url and meta-data are equal.
      * (thus equal through object-state, not object-address)
-     * @return
      */
     @Override
     public int hashCode()

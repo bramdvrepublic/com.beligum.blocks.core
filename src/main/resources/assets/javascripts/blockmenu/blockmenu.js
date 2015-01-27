@@ -15,44 +15,112 @@
 // TODO when showing menu set height block double of menu
 blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.Overlay", function(Broadcaster, Overlay) {
     var BlockMenu = this;
-    // on hoover block show menu
-
-
+    var hoverOverMenu = false;
     var menuElement = $('<div class="block-menu"></div>');
     var menuHandle = $('<div class="block-menu-handle"><i class="glyphicon glyphicon-cog"></div>')
     menuElement.append(menuHandle);
 
-    $("body").append(menuElement);
+    $(document).on("mousedown", ".block-menu-handle", function(event) {
+        if (!menuElement.hasClass("open")) {
+
+            $.each(buttons, function(index, button) {
+                if (button.enabled != null && !button.enabled(activeBlock)) {
+                    $(button.element).addClass("disabled");
+                    $(button.element).off("mouseup.block-menu-action")
+                } else {
+                    $(button.element).addClass("enabled");
+                    $(button.element).off("mouseup.block-menu-action")
+                    $(button.element).on("mouseup.block-menu-action", function(event) {
+                        $(document).off("mousedown.remove_block_menu");
+                        button.action(event);
+                        BlockMenu.hideMenu();
+                    })
+                }
+
+            });
+
+
+
+
+            menuElement.addClass("open");
+            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+
+            // Handler to close the manu on click
+            $(document).on("mousedown.remove_block_menu", function (event) {
+                var target = $(event.target);
+                if (!target.hasClass("block-menu-item") && !target.closest("block-menu-item").length > 0) {
+
+                    menuElement.removeClass("open");
+                    $(document).off("mousedown.remove_block_menu");
+                    BlockMenu.hideMenu();
+                    Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+                }
+
+            });
+        }
+
+        event.preventDefault();
+    });
+
+
+
+    menuElement.on("mouseenter", function() {
+        hoverOverMenu = true;
+    });
+
+    menuElement.on("mouseleave", function() {
+        hoverOverMenu = false;
+        if (activeBlock == null) {
+            Broadcaster.resetHover();
+        }
+    });
+
+    this.mouseOverMenu = function() {
+        return hoverOverMenu;
+    };
+
+
 
     var buttons = [];
     var activeBlock = null;
 
 
-    this.showMenuElement = function(blockEvent) {
-        menuElement.hide();
-        activeBlock = blockEvent.block.current;
+    this.createMenu = function() {
+        $("body").append(menuElement);
+        BlockMenu.hideMenu();
+    }
 
-        for (var i = 0; i < buttons.length; i++) {
-            if (buttons[i].enabled != null && !buttons[i].enabled(activeBlock)) {
-                $(buttons[i].element).addClass("disabled");
-            } else {
-                $(buttons[i].element).removeClass("disabled");
-            }
-        }
-        menuElement.css("position", "absolute");
-        menuElement.css("top", activeBlock.top + "px");
-        // put menu in upper left corner of block
-        var menuWidth = menuElement.width();
-        menuElement.css("left", (activeBlock.right - menuWidth) + "px");
-        menuElement.css("z-index", Overlay.maxIndex() + 1);
-        menuElement.show();
+    this.removeMenu = function() {
+        menuElement.remove();
+    }
 
-    };
-
-    this.hideMenuElement = function() {
+    this.hideMenu = function() {
         activeBlock = null;
+        menuElement.removeClass("open");
         menuElement.hide();
     };
+
+
+    this.showMenu = function(block) {
+        if (block != null) {
+            visible = true;
+            menuElement.hide();
+            // sets the block this menu is currently bound to
+            activeBlock = block;
+
+
+            menuElement.css("position", "absolute");
+            menuElement.css("top", activeBlock.element.offset().top + "px");
+            // put menu in upper left corner of block
+            var menuWidth = menuElement.width();
+            menuElement.css("left", (activeBlock.right - menuWidth) + "px");
+            menuElement.css("z-index", Overlay.maxIndex() + 1);
+            menuElement.show();
+        } else {
+            menuElement.hide();
+        }
+    };
+
 
     /*
     * Add button to menu
@@ -79,15 +147,7 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
 
     this.currentBlock = function() {
         return activeBlock;
-    }
+    };
 
-//    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
-//
-//        BlockMenu.hideMenuElement();
-//    });
-//
-//    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
-////        menuElement.remove();
-//    });
 
 }]);

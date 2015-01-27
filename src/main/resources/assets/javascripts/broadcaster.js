@@ -28,32 +28,35 @@
  *
  * */
 
-blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core.DomManipulation", function (Constants, DOM) {
+blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.DomManipulation", function (Constants, DOM) {
     var Broadcaster = this;
-    var active = false;
+
+    this.active = false;
+    var fields = {current: null, previous: null};
     var hoveredBlocks = {current: null, previous: null};
     var properties = {current: null, previous: null};
     var directionVector = {x1: 0, y1: 0, x2: 0, y2: 0};
-    var lastPoints = [];
-    var resetDirectionHandler = null;
+
     var layoutTree = null;
-    var layoutParentElement = null;
     var lastMoveEvent = $.Event("mousemove", {pageX:0, pageY:0});
 
+    this.getLastMove = function() {
+        return lastMoveEvent;
+    }
 
-    var registerMouseMove = function() {
+
+    this.registerMouseMove = function() {
         $(document).on("mousemove.blocks_broadcaster", function (event) {
             var direction = calculateDirection(event);
             lastMoveEvent = event;
             lastMoveEvent.block = Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
             lastMoveEvent.direction = direction;
         });
-    }
+    };
 
-    var unregisterMouseMove = function() {
+    this.unregisterMouseMove = function() {
         $(document).off("mousemove.blocks_broadcaster");
-    }
-
+    };
 
 
     this.block = function() {
@@ -151,28 +154,69 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
         return direction;
     };
 
+
+    this.resetHover = function() {
+        fields = {current: null, previous: null};
+        hoveredBlocks = {current: null, previous: null};
+        properties = {current: null, previous: null};
+        lastMoveEvent.block = hoveredBlocks;
+        lastMoveEvent.property = properties;
+
+    };
+
     // sets the current active block
     this.getHooveredBlockForPosition = function (x, y) {
+        var currentField = fields.current;
+        fields.current = null;
+
         var currentBlock = hoveredBlocks.current;
         hoveredBlocks.current = null;
+
+
+        var currentProperty = properties.current;
+        properties.current = null;
+
         // First search for active element
         // If an element is active, we have a big chance the next event is in the same element, so we start our search here
-        if (currentBlock != null) {
-            var bb = currentBlock.findActiveElement(x, y);
-            if (bb instanceof blocks.elements.Block) {
-                hoveredBlocks.current = bb;
+        if (currentField != null) {
+            var bb = currentField.findActiveElement(x, y);
+            if (bb instanceof blocks.elements.Block || bb instanceof blocks.elements.Property) {
+                fields.current = bb;
             }
         }
+
         // Our shortcut failed so search the full page
         // we loop the trees of elements to find the smallest active element
-        if (hoveredBlocks.current == null) {
-            var i = 0;
-            while (i < Broadcaster.getLayoutTree().length && hoveredBlocks.current == null) {
-                var bb = Broadcaster.getLayoutTree()[i].findActiveElement(x, y);
-                if (bb instanceof blocks.elements.Block) {
-                    hoveredBlocks.current = bb;
+        if (fields.current == null) {
+            if  (Broadcaster.getContainer() != null) {
+                var bb = Broadcaster.getContainer().findActiveElement(x, y);
+                if (bb != null && (bb instanceof blocks.elements.Block || bb instanceof blocks.elements.Property)) {
+                    fields.current = bb;
+                } else if (bb != null) {
+                    // loop back until we find null, block or field
+                    while (bb != null && !(bb instanceof blocks.elements.Block || bb instanceof blocks.elements.Property)) {
+                        bb = bb.parent;
+                    }
+                    fields.current = bb;
                 }
-                i++;
+            }
+        }
+
+        if (fields.current != currentField) {
+            fields.previous = currentField;
+        }
+
+
+        if (fields.current != null) {
+            if (fields.current instanceof blocks.elements.Property) {
+                properties.current = fields.current;
+                hoveredBlocks.current = fields.current;
+                while (hoveredBlocks.current != null && !(hoveredBlocks.current instanceof blocks.elements.Block)) {
+                    hoveredBlocks.current = hoveredBlocks.current.parent;
+                }
+            } else {
+                hoveredBlocks.current = fields.current;
+                properties.current = null;
             }
         }
 
@@ -180,12 +224,6 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
             hoveredBlocks.previous = currentBlock;
         }
 
-        // Set Property
-        var currentProperty = properties.current
-        properties.current = null;
-        if (hoveredBlocks.current != null) {
-//            properties.current = hoveredBlocks.current.getProperty(x, y);
-        }
         if (properties.current != currentProperty) {
             properties.previous = currentProperty;
         }
@@ -195,7 +233,31 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
 
 
     this.send = function(eventName, custom) {
-        if (active || eventName == Broadcaster.EVENTS.START_BLOCKS) {
+        if (eventName == Broadcaster.EVENTS.START_BLOCKS) {
+            Broadcaster.active = true;
+        }
+
+        if (Broadcaster.active) {
+        Logger.debug(eventName);
+            var e = $.Event(eventName);
+            e.pageX = lastMoveEvent.pageX;
+            e.pageY = lastMoveEvent.pageY;
+            e.clientX = lastMoveEvent.clientX;
+            e.clientY = lastMoveEvent.clientY;
+            e.direction = lastMoveEvent.direction;
+            e.block = hoveredBlocks;
+            e.property = properties;
+            e.custom = custom;
+            // send the event with jquery
+            $(document).triggerHandler(e);
+        }
+        if (eventName == Broadcaster.EVENTS.STOP_BLOCKS) {
+            Broadcaster.active = false;
+        }
+    };
+
+    this.sendToElement = function(element, eventName, custom) {
+        if (Broadcaster.active) {
 //        Logger.debug(eventName);
             var e = $.Event(eventName);
             e.pageX = lastMoveEvent.pageX;
@@ -205,9 +267,10 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
             e.property = properties;
             e.custom = custom;
             // send the event with jquery
-            $(document).triggerHandler(e);
+            element.triggerHandler(e);
         }
     };
+
 
 
     this.EVENTS = {};
@@ -233,8 +296,14 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
     this.EVENTS.HOOVER_OVER_PROPERTY = "HOOVER_OVER_PROPERTY";
 
     this.EVENTS.END_HOOVER = "END_HOOVER";
-    this.EVENTS.DOUBLE_CLICK_BLOCK = "DOUBLE_CLICK_BLOCK";
-    this.EVENTS.CLICK_BLOCK = "CLICK_BLOCK";
+    this.EVENTS.BLOCKS_CLICK = "BLOCKS_CLICK";
+
+    this.EVENTS.START_EDIT_FIELD = "START_EDIT_FIELD";
+    this.EVENTS.END_EDIT_FIELD = "END_EDIT_FIELDS";
+
+
+    this.EVENTS.ENABLE_SELECTION = "ENABLE_SELECTION";
+    this.EVENTS.DISABLE_SELECTION = "DISABLE_SELECTION";
 
     // Notifications
     this.EVENTS.DO_ALLOW_DRAG = "ALLOW_DRAG";
@@ -255,16 +324,12 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
     // The parent element where the tree is build
     // if null this is automatically set to the container
 
-    this.getLayoutTree = function() {
-        if (layoutTree == null) {
-            buildLayoutTree();
-        }
-        return layoutTree;
+    this.setContainer = function(value) {
+        layoutTree = value
     };
 
-    this.setLayoutParent = function(element) {
-        layoutParentElement = element;
-        buildLayoutTree();
+    this.getContainer = function() {
+        return layoutTree;
     };
 
     /*
@@ -277,8 +342,9 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
      */
 
     var isContainer = function(element) {
-        return DOM.isProperty(element) || DOM.canLayout(element) || DOM.canEdit(element);
-    }
+        return DOM.canLayout(element);
+    };
+
 
     var findContainers = function(element) {
         var retVal = [];
@@ -299,59 +365,39 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
     };
 
 
-    var buildLayoutTree = function () {
+    this.buildLayoutTree = function () {
         hoveredBlocks.previous = null;
         hoveredBlocks.current = null;
-        layoutTree = [];
-        //_this.cleanLayout();
-        if (layoutParentElement == null) {
-            layoutParentElement = $("body");
-        }
 
-        var findContainersInParent = function(parent) {
-
-            if (parent != null && parent.length > 0 && isContainer(parent)) {
-                var container = new blocks.elements.Container(parent);
-                container.createAllDropspots();
-                Logger.debug(container);
-                layoutTree.push(container);
-            } else {
-                var children = parent.children();
-                for (var i = 0; i < children.length; i++) {
-                    findContainersInParent($(children[i]));
-                }
-            }
-
-        };
-
-        findContainersInParent(layoutParentElement);
-
-
-        Broadcaster.send(Broadcaster.EVENTS.DID_REFRESH_LAYOUT);
+        layoutTree = new blocks.elements.Container( $("body"), null);
+        Broadcaster.resetHover();
+        lastMoveEvent.block = Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
     };
 
+    var oldLayoutTree = null
+    var oldContainerParent = null;
 
-    $(document).on(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, function() {
-        Broadcaster.send(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT);
-        buildLayoutTree();
-    })
+    this.zoom = function() {
+        if (oldLayoutTree == null) {
+            oldLayoutTree = layoutTree;
+            var current = hoveredBlocks.current;
+            if (current != null) {
+                layoutTree = current.getContainer();
+                oldContainerParent = layoutTree.parent;
+                layoutTree.parent = null;
+            }
+        }
+    }
 
-    $(document).on(Broadcaster.EVENTS.DOM_DID_CHANGE, function() {
-        Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);
-    });
+    this.unzoom = function() {
+        if (oldLayoutTree != null) {
+            layoutTree.parent = oldContainerParent;
+            oldContainerParent = null;
+            layoutTree = oldLayoutTree;
+            oldLayoutTree = null;
+        }
+    };
 
-    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
-        active = true;
-        layoutTree = null;
-        buildLayoutTree();
-        registerMouseMove();
-    });
-
-    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
-        active = false;
-        unregisterMouseMove();
-        layoutTree = [];
-    });
 
     // On Boot
     var resizeTimeout = null
@@ -364,7 +410,8 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants",  "blocks.core
         } else {
             Logger.debug("timeout not cleared")
         }
-        resizeTimeout = setTimeout(function(){ Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);}, 200);
+        var layoutContainer = Broadcaster.getContainer() == null ? null : Broadcaster.getContainer().element;
+        resizeTimeout = setTimeout(function(){ Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, layoutContainer);}, 200);
 
     });
 

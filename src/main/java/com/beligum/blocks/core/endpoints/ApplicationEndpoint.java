@@ -24,14 +24,11 @@ import java.util.*;
 @Path("/")
 public class ApplicationEndpoint
 {
-//    @Path("/ind")
-//    @GET
-//    public Response index()
-//    {
-//        Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/index.html");
-////        TypeCacher.instance().reset();
-//        return Response.ok(indexTemplate).build();
-//    }
+    @GET
+    public Response index() throws URISyntaxException
+    {
+        return Response.seeOther(new URI("/index")).build();
+    }
 
     @Path("/finder")
     @GET
@@ -49,15 +46,6 @@ public class ApplicationEndpoint
         Template indexTemplate = R.templateEngine().getEmptyTemplate("/templates/mot/"+name+".html");
         //        TypeCacher.instance().reset();
         return Response.ok(indexTemplate).build();
-    }
-
-    @Path("/")
-    @GET
-    public Response overzicht() throws URISyntaxException
-    {
-//        Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/overzicht.html");
-        //        TypeCacher.instance().reset();
-        return Response.seeOther(new URI("/index")).build();
     }
 
 //    @Path("/show")
@@ -80,14 +68,13 @@ public class ApplicationEndpoint
     public Response getPageWithId(@PathParam("randomPage") String randomURLPath)
     {
         try{
-            Redis redis = Redis.getInstance();
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
             //if no language info is specified in the url, or if the specified language doesn't exist, the default language will still be shown
             RedisID id = new RedisID(url, RedisID.LAST_VERSION, false);
             //if no such page is present in db, ask if user wants to create a new page
             if(id.getVersion() == RedisID.NO_VERSION) {
                 Template template = R.templateEngine().getEmptyTemplate("/views/new-page.html");
-                //TODO BAS: should we use threading here?
+                //TODO BAS (ask Bram): should we use threading here?
                 //the first time the server is started, we need to wait for the cache to be proparly filled, so all classes will be shown the very first time a new page is made.
                 EntityTemplateClassCache entityTemplateClassCache = EntityTemplateClassCache.getInstance();
                 while(entityTemplateClassCache.isFillingUp()){
@@ -132,7 +119,7 @@ public class ApplicationEndpoint
                     }
                     //save a new language (from url) to db, which is a copy of the last stored version
                     else {
-                        String lastVersionHtml = TemplateParser.renderEntityInsidePageTemplate(storedInstance.getPageTemplate(), storedInstance);
+                        String lastVersionHtml = TemplateParser.renderEntityInsidePageTemplate(storedInstance.getPageTemplate(), storedInstance, id.getLanguage());
                         TemplateParser.updateEntity(url, lastVersionHtml);
                         return Response.seeOther(url.toURI()).build();
                     }

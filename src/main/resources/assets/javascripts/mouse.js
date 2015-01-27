@@ -60,8 +60,9 @@
  *
  */
 
-blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "blocks.core.Constants", function (Broadcaster, Layouter, Constants) {
+blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "blocks.core.Constants", "blocks.core.DomManipulation", function (Broadcaster, Layouter, Constants, DOM) {
     // flag if this module is active
+    var Mouse = this;
     var active = false;
     // dragging options, kept here for parsedContent while waiting for drag
     var draggingStatus = Constants.DRAGGING.NO;
@@ -73,13 +74,14 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
     var config = this.config;
     var windowFrame = {width: 0, height: 0};
 
-    var resetMouse = function () {
+    this.resetMouse = function () {
         windowFrame = {width: document.innerWidth, height: document.innerHeight};
         dblClickFound = false;
         draggingStart = null;
 
         currentBlock = null;
         currentProperty = null;
+        triggeredMouseDown = false;
         var docWidth = $(document).width();
         if (docWidth > 920) {
             Broadcaster.send(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG);
@@ -87,6 +89,8 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         } else {
             draggingStatus = Constants.DRAGGING.NOT_ALLOWED;
         }
+
+        mouseMove(Broadcaster.getLastMove());
     };
 
 
@@ -97,12 +101,13 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
      *   - disable selection
      *   - keep current jQuery event as startevent
      * */
-
+    var triggeredMouseDown = false;
     var mouseDown = function (event) {
         if (active) {
 
             // check for left mouse click
             if (event.which == 1) {
+                triggeredMouseDown = true;
                 var block = Broadcaster.getHooveredBlockForPosition(event.pageX, event.pageY);
                 if (draggingStatus == Constants.DRAGGING.NO &&
                     block != null) {
@@ -112,7 +117,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
 //                    disableSelection();
                 } else {
                     Logger.debug("We can not start because dragging is already in place or not allowed. " + draggingStatus);
-                    resetMouse();
+                    Mouse.resetMouse();
                     draggingStatus = Constants.DRAGGING.TEXT_SELECTION;
                     Broadcaster.send(Broadcaster.EVENTS.END_HOOVER);
 
@@ -123,7 +128,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
                 if (draggingStatus == Constants.DRAGGING.YES) {
                     Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG);
                 }
-                resetMouse();
+                Mouse.resetMouse();
             }
         }
     };
@@ -132,29 +137,32 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
      * If dragging send END_OF_DRAG and reset draggingOptions
      * */
     var mouseUp = function (event) {
-        enableSelection();
-        if (active) {
+        if (active && triggeredMouseDown) {
+            Logger.debug("MOUSE UP");
             if (draggingStatus != Constants.DRAGGING.NOT_ALLOWED) {
                 var oldDragStatus = draggingStatus;
                 if (oldDragStatus == Constants.DRAGGING.YES) {
                     Broadcaster.send(Broadcaster.EVENTS.END_DRAG);
+                } else if (Broadcaster.property().current != null) {
+                    Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
                 }
-            }
-            if (dblClickFound) {
 
             }
-            resetMouse();
         }
-};
+        Mouse.resetMouse();
+    };
 
     /*
      * While waiting for drag, check if threshold is activated to really start drag
      * */
     var enableDragAfterTreshold = function (event) {
+        Logger.debug("Calculate wait for drag");
         if (Math.abs(draggingStart.pageX - event.pageX) > config.DRAGGING_THRESHOLD ||
             Math.abs(draggingStart.pageY - event.pageY) > config.DRAGGING_THRESHOLD) {
             draggingStatus = Constants.DRAGGING.YES;
+            Logger.debug("Start drag");
             Broadcaster.send(Broadcaster.EVENTS.START_DRAG, {draggingStart: draggingStart});
+
         }
     };
 
@@ -170,13 +178,14 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
                 Logger.debug("New block");
                 changedBlock = true;
                 currentBlock = block.current;
+
             }
 
             var changedProperty = false;
             var property = Broadcaster.property();
             // check if property changed since last mouse move
             if (property.current !== currentProperty) {
-                Logger.debug("New property");
+
                 changedProperty = true;
                 currentProperty = property.current;
             }
@@ -185,6 +194,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
                 enableDragAfterTreshold(event);
             } else if (draggingStatus != Constants.DRAGGING.YES) {
                 if (changedProperty) {
+
                     if (property.current == null) {
                         Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_PROPERTY);
                     } else if (property.previous == null) {
@@ -198,6 +208,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
                 }
 
                 if (changedBlock) {
+
                     if (block.current == null) {
                         Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK);
                         Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_PROPERTY);
@@ -234,96 +245,96 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         }
     };
 
-    var disallowDrag = function() {
+    this.disallowDrag = function() {
         Logger.debug("Dragging not allowed");
         draggingStatus = Constants.DRAGGING.NOT_ALLOWED;
     };
 
-    var allowDrag = function() {
+    this.allowDrag = function() {
         Logger.debug("Dragging allowed");
-        resetMouse(true);
+        Mouse.resetMouse(true);
     };
 
-    // disable cross-browser text selection
-    var disableSelection = function () {
-        // http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
-        $("html").css("-webkit-touch-callout", "none");
-        $("html").css("-khtml-user-select", "none");
-        $("html").css("-moz-user-select", "none");
-        $("html").css("-ms-user-select", "none");
-        $("html").css("user-select", "none");
+    // http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
+    this.disableSelection = function() {
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        var html = $("html");
+        html.addClass("no-select");
+
+
+    };
+
+    this.enableSelection = function() {
+        //http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
+        var html = $("html");
+        html.removeClass("no-select");
+
+
+    }
+
+    this.disableContextMenu = function() {
         $("html").attr("oncontextmenu", "return false;");
         // IE < 10
         $("html").attr("onselectstart", "return false;");
-
     };
 
-    // enable cross-browser text selection
-    var enableSelection = function () {
-        //http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
-        $("html").css("-webkit-touch-callout", "text");
-        $("html").css("-khtml-user-select", "text");
-        $("html").css("-moz-user-select", "text");
-        $("html").css("-ms-user-select", "text");
-        $("html").css("user-select", "text");
+    this.enableContextMenu = function() {
         $("html").removeAttr("oncontextmenu", "");
         $("html").removeAttr("onselectstart");
-    }
-
-    var registerMouseEvents = function () {
-        if (!active) {
-            active = true;
-            $(document).on("mousedown.blocks_core", function (event) {
-                mouseDown(event);
-            });
-            $(document).on("mouseup.blocks_core", function (event) {
-                mouseUp(event);
-            });
-            $(document).on("mousemove.blocks_core", function (event) {
-                mouseMove(event);
-            });
-
-            $(document).on("click.blocks_core", function(event) {
-//                event.preventDefault();
-            });
-
-            $(document).on("mouseleave.blocks_core", function(){
-                mouseUp(event);
-                Logger.debug("Mouse out of window. Cancel!");
-            });
-            resetMouse(true);
-        }
     };
 
 
-    var unregisterMouseEvents = function () {
-        if (active) {
-            active = false;
-            $(document).off("mousedown.blocks_core");
-            $(document).off("mouseup.blocks_core");
-            $(document).off("mousemove.blocks_core");
-            $(document).off("mouseleave.blocks_core");
-            $(document).off("click.blocks_core");
-        }
+
+
+
+
+    this.activate = function () {
+        Mouse.deactivate();
+        active = true;
+        $(document).on("mousedown.blocks_core", function (event) {
+            if (event.which == 1) { mouseDown(event);}
+        });
+        $(document).on("mouseup.blocks_core", function (event) {
+            if (event.which == 1) {mouseUp(event); }
+        });
+        $(document).on("mousemove.blocks_core", function (event) {
+            mouseMove(event);
+        });
+
+
+
+        $(document).on("mouseleave.blocks_core", function(){
+//                mouseUp(event);
+            if (draggingStatus == Constants.DRAGGING.YES) {
+                Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG);
+            }
+            Mouse.resetMouse();
+
+            Logger.debug("Mouse out of window. Cancel!");
+        });
+
+        Mouse.resetMouse();
+        Mouse.disableSelection();
+
     };
 
-    $(document).on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, function () {
-        resetMouse();
-    });
 
-    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
-        Logger.debug("Start blocks: activate mouse");
-        Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-    });
+    this.deactivate = function () {
+        active = false;
+        $(document).off("mousedown.blocks_core");
+        $(document).off("mouseup.blocks_core");
+        $(document).off("mousemove.blocks_core");
+        $(document).off("mouseleave.blocks_core");
+        Mouse.enableSelection();
 
-    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
-        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
-    });
+    };
 
-    $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function () {registerMouseEvents();});
-    $(document).on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, function () {unregisterMouseEvents();});
-    $(document).on(Broadcaster.EVENTS.DO_ALLOW_DRAG, function () {allowDrag();});
-    $(document).on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, function () {disallowDrag();});
+
+
+
+
+
 
     window.ondragstart = function() {return false;};
 

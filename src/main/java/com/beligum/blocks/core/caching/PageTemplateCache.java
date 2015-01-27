@@ -42,16 +42,18 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
                 if (R.cacheManager() != null && R.cacheManager().getApplicationCache() != null) {R.cacheManager().getApplicationCache().put(CacheKeys.PAGE_TEMPLATES, new HashMap<String, PageTemplate>());
                     instance = new PageTemplateCache();
                     //insert the most basic possible page-template, for fall-back reasons: uses bootstrap
-                    //TODO BAS: need to re-test this default-template (when no page-templates are defined at all), since we added bootstrap in it's definition
                     List<String> links = new ArrayList<>();
                     List<String> scripts = new ArrayList<>();
                     links.add("<link href=\"" + BlocksConfig.BOOSTRAP_CSS_FILEPATH + "\" rel=\"stylesheet\" />");
                     scripts.add("<script src=\"" + BlocksConfig.BOOTSTRAP_JS_FILEPATH + "\"></script>");
+                    //Note: do not remove the comment-tag in the definition of the default page-template. The head should not be empty, if not exceptions will occur when parsing it.
                     PageTemplate pageTemplate = new PageTemplate(instance.getDefaultTemplateName(), BlocksConfig.getDefaultLanguage(), "<!DOCTYPE html>" +
                                                                                                     "<html>" +
-                                                                                                    "<head></head>" +
+                                                                                                    "<head>" +
+                                                                                                    "<!--This is a rendered default page-template. If you want to use another page-template, you should overwrite it (template=\"default\").-->" +
+                                                                                                    "</head>" +
                                                                                                     "<body>" +
-                                                                                                    "<div class=\"container>\"" +
+                                                                                                    "<div class=\"container\">" +
                                                                                                     //default referencing div
                                                                                                     "<div " + ParserConstants.PAGE_TEMPLATE_CONTENT_ATTR + "=\"\" " + ParserConstants.REFERENCE_TO + "=\""+ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME + "\"></div>" +
                                                                                                     "</div>" +
@@ -83,7 +85,7 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
     /**
      * This method returns a map with all present Cachables (value) by name (key)
      *
-     * @returns a map of all the currently cached Cachables from the application cache
+     * @return a map of all the currently cached Cachables from the application cache
      */
     @Override
     protected Map<String, PageTemplate> getCache()

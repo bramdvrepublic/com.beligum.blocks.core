@@ -9,63 +9,97 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
         return currentBlock.element.find("iframe").length == 1;
     };
 
+    var getRangeFromPosition = function(x, y) {
+        var range = null;
+        if (document.caretPositionFromPoint) {
+            var pos = document.caretPositionFromPoint(x, y);
+            range = document.createRange();
+//            range.selectNodeContents(pos.offsetNode);
+            range.setStart(pos.offsetNode, pos.offset);
+//            range.setEnd(pos.offsetNode, pos.offset);
 
-    this.makeEditable = function(element) {
+        } else if (document.caretRangeFromPoint) {
+            range = document.caretRangeFromPoint(x, y);
+        } else {
+            Logger.debug("Field editing is not supported ...");
+        }
+        return range;
+    }
 
+    Edit.makeEditable = function(event) {
+            var element = event.property.current.element;
+            var doEdit = null;
             if (DOM.canEdit(element)) {
-
-                doEdit = editFunction(element);
+                doEdit = editFunction(event);
             }
 
             if (doEdit != null) {
-                doEdit(element);
+                Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+                doEdit(event);
             }
-
     };
 
-    var doEditText = function(element) {
 
-
+    var doEditText = function(blockEvent) {
+        element = blockEvent.property.current.element;
+        // Preparation
         $(element).attr("contenteditable", true);
         var editor = $(element).ckeditor().editor;
-        $(element).addClass(Constants.PROPERTY_CLASS);
 
-        editors.push(function() {
-            $(element).removeClass(Constants.PROPERTY_CLASS);
-            editor.destroy();
-            element.removeAttr("contenteditable");
-        });
-
-    };
-
-
-    var doEditTextInline = function(element) {
-        element.attr("contenteditable", true);
-        var editor = new Medium({element: element[0], mode: Medium.inlineMode});
-        $(element).addClass(Constants.PROPERTY_CLASS);
-        editors.push(function() {
-            $(element).removeClass(Constants.PROPERTY_CLASS);
-            editor.destroy();
-            element.removeAttr("contenteditable");
-        });
-    };
-
-
-    var removeEditors = function() {
-        var temp = editors;
-        editors = [];
-//        for (var i = 0; i < temp.length; i++) {
-        while(temp.length > 0) {
-            try {
-                var editor = temp.pop();
-                editor();
-
-            } catch (e) {
-                var x = 0;
+        var setCursor = function() {
+            var caretPosition = getRangeFromPosition(blockEvent.clientX, blockEvent.clientY);
+            if (caretPosition != null) {
+                var sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(caretPosition);
             }
+        };
 
+        if (editor.status == "unloaded") {
+            editor.on("instanceReady", function() {
+                setCursor();
+            })
+        } else {
+            setCursor();
         }
-    }
+
+        editor.on("blur", function() {
+            editor.destroy();
+            element.removeAttr("contenteditable");
+            Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
+        })
+
+
+
+    };
+
+
+    var doEditTextInline = function(blockEvent) {
+        element = blockEvent.property.current.element;
+
+        element.attr("contenteditable", true);
+        element.focus();
+        var editor = new Medium({element: element[0], mode: Medium.inlineMode});
+
+        var setCursor = function() {
+            var caretPosition = getRangeFromPosition(blockEvent.clientX, blockEvent.clientY);
+            if (caretPosition != null) {
+                var sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(caretPosition);
+            }
+        };
+        setCursor();
+
+        element.on("blur", function() {
+            editor.destroy();
+            element.removeAttr("contenteditable");
+            Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
+        })
+
+    };
+
+
 
     var registeredByType = {};
     this.registerByType = function(type, callback) {
@@ -77,7 +111,8 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
         registeredByTag[tag] = callback;
     }
 
-    var editFunction = function(element) {
+    var editFunction = function(event) {
+        var element = event.property.current.element;
         var retVal = null
         if (DOM.isEntity(element)) {
             var t = element.attr(Constants.IS_ENTITY);
@@ -103,12 +138,6 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
     Edit.registerByTag("A", doEditTextInline);
     Edit.registerByTag("SPAN", doEditTextInline);
 
-    $(document).on(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT, function() {
-        removeEditors();
-    });
 
-    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
-        removeEditors();
-    })
 
 }]);

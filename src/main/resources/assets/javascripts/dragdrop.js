@@ -9,7 +9,7 @@
  */
 
 blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Layouter", "blocks.core.Constants", "blocks.core.Overlay", function (Broadcaster, Layouter, Constants, Overlay) {
-
+    var DragDrop = this;
     var draggingEnabled = false;
     var dragging = false;
     var draggedOverlay = null;
@@ -21,11 +21,30 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.L
     * METHODS CALLED WHILE DRAGGING
     **/
 
-    var dragStarted = function (blockEvent) {
+    this.setActive = function(value) {
+        draggingEnabled = value;
+        currentDraggedBlock = null;
+    }
+
+    var hideAll = function(element) {
+        if (element.prop("tagName") != "BODY") {
+            var siblings = element.siblings().addClass("not-visible");
+            hideAll(element.parent());
+        }
+    };
+
+    var showAll = function() {
+        $(".not-visible").removeClass("not-visible");
+    };
+
+    this.dragStarted = function (blockEvent) {
         Logger.debug("drag started");
+//        Broadcaster.zoom();
         old_direction = Constants.DIRECTION.NONE;
         currentDraggedBlock = Broadcaster.getHooveredBlockForPosition(blockEvent.custom.draggingStart.pageX, blockEvent.custom.draggingStart.pageY).current;
         if (draggingEnabled && currentDraggedBlock != null && currentDraggedBlock.canDrag) {
+            hideAll(Broadcaster.getContainer().element);
+            currentDraggedBlock.getContainer().createAllDropspots();
             createDraggedOverlay(currentDraggedBlock);
             createDropPointerElement("anchor");
             createDropPointerElement("other");
@@ -38,7 +57,7 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.L
     };
 
     // TODO check necessity canLayout
-    var dragLeaveBlock = function (blockEvent) {
+    this.dragLeaveBlock = function (blockEvent) {
         if (dragging && (blockEvent.block.current == null || !blockEvent.block.current.canDrag)) {
             hideDropPointerElement("anchor");
             hideDropPointerElement("other");
@@ -49,14 +68,14 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.L
 
 
 
-    var dragEnterBlock = function (blockEvent) {
+    this.dragEnterBlock = function (blockEvent) {
         if (blockEvent.block.current != null) {
             Logger.debug("Recalculate triggers on enter");
             blockEvent.block.current.recalculateTriggers(old_direction, blockEvent.pageX, blockEvent.pageY, null);
         }
     };
 
-    var dragOverBlock = function(blockEvent) {
+    this.dragOverBlock = function(blockEvent) {
         if (dragging && blockEvent.block.current != null && blockEvent.block.current.canDrag) {
             // find the triggered dropspot
             // dropspot has an "anchor" block and sometimes "other" (when dropping between 2 columns, 2 rows, 2 blocks)
@@ -87,7 +106,7 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.L
         }
     };
 
-    var dragEnded = function (blockEvent) {
+    this.dragEnded = function (blockEvent) {
         if (dragging) {
             // Dragged out of window (drag should've send an ABORT_DRAG event)
 //            if (blockEvent.event.pageX > $(document).innerWidth() || blockEvent.event.pageX < 0 || blockEvent.event.pageY > $(document).innerHeight() || blockEvent.event.pageY < 0) {
@@ -109,11 +128,11 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.L
             } else {
                 Logger.debug("No drop for block");
             }
-            dragAborted();
+            DragDrop.dragAborted();
         }
     };
 
-    var dragAborted = function() {
+    this.dragAborted = function() {
         if (dragging) {
                 $("body").css("cursor", "auto");
                 $("html").css("cursor", "auto");
@@ -123,6 +142,8 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.L
 //                currentDraggedBlock = null;
                 draggingEnabled = false;
                 dragging = false;
+                showAll();
+//                Broadcaster.unzoom();
                 //Broadcaster.send(new Broadcaster.EVENTS.DISABLE_DRAG(200, "blocks.core.DragDrop", dragEnabled));
         }
     }
@@ -304,52 +325,6 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.L
     cssArrowClass[Constants.SIDE.RIGHT] = "glyphicon-arrow-right";
 
 
-
-    $(document).on(Broadcaster.EVENTS.START_DRAG, function (event) {
-        dragStarted(event)
-    });
-    $(document).on(Broadcaster.EVENTS.END_DRAG, function (event) {
-        dragEnded(event)
-    });
-    $(document).on(Broadcaster.EVENTS.ABORT_DRAG, function (event) {
-        dragAborted(event);
-
-    });
-
-    $(document).on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, function (event) {
-        Logger.debug("dragging not allowed");
-        currentDraggedBlock = null;
-            draggingEnabled = true;
-    });
-
-    $(document).on(Broadcaster.EVENTS.DO_ALLOW_DRAG, function (event) {
-        Logger.debug("dragging allowed");
-        if (!draggingEnabled) {
-            draggingEnabled = false;
-        }
-    });
-
-    $(document).on(Broadcaster.EVENTS.DRAG_LEAVE_BLOCK, function (event) {
-        dragLeaveBlock(event)
-    });
-    $(document).on(Broadcaster.EVENTS.DRAG_OVER_BLOCK, function (event) {
-        dragOverBlock(event)
-    });
-    $(document).on(Broadcaster.EVENTS.DRAG_ENTER_BLOCK, function (event) {
-        dragEnterBlock(event)
-    });
-
-    $(document).on(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG, function (event) {
-        draggingEnabled = true;
-        $("body").css("cursor", "pointer");;
-    });
-
-    $(document).on(Broadcaster.EVENTS.DISABLE_BLOCK_DRAG, function (event) {
-        Logger.debug("dragging disabled");
-        draggingEnabled = false;
-        currentDraggedBlock = null;
-        $("body").css("cursor", "auto");
-    });
 
 
 }]);

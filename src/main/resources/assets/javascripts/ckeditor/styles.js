@@ -31,7 +31,8 @@ CKEDITOR.stylesSet.add( 'default', [
 	{ name: 'Address',			element: 'address' },
 	*/
 
-	{ name: 'Italic Title',		element: 'h2', styles: { 'font-style': 'italic' } },
+
+
 	{ name: 'Subtitle',			element: 'h3', styles: { 'color': '#aaa', 'font-style': 'italic' } },
 	{
 		name: 'Special Container',
@@ -57,7 +58,16 @@ CKEDITOR.stylesSet.add( 'default', [
 	{ name: 'Superscript',		element: 'sup' },
 	*/
 
+
+
 	{ name: 'Marker',			element: 'span', attributes: { 'class': 'marker' } },
+
+    { name: 'Title 1',		element: 'h1' },
+    { name: 'Title 2',		element: 'h2' },
+    { name: 'Title 3',		element: 'h3' },
+    { name: 'Title 4',		element: 'h4' },
+    { name: 'Title 5',		element: 'h5' },
+    { name: 'Title 6',		element: 'h4' },
 
 	{ name: 'Big',				element: 'big' },
 	{ name: 'Small',			element: 'small' },

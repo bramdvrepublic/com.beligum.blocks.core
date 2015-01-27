@@ -22,7 +22,7 @@ import java.util.Stack;
  * Created by bas on 03.12.14.
  * Visitor holding all functionalities to go from a cached class-template to a new instance
  */
-public class ClassToStoredInstanceVisitor extends AbstractVisitor
+public class ClassToStoredInstanceVisitor extends SuperVisitor
 {
     //TODO BAS: inject css-classes of class into instance, afterwards add classes of instance (which could overwrite the class-css)
 
@@ -138,7 +138,6 @@ public class ClassToStoredInstanceVisitor extends AbstractVisitor
     /**
      * Determine and fetch the default entity-template. First try to fetch the language we're parsing, if not found, fetch the primary language of the default template.
      * @param unversionedResourceId
-     * @return
      * @throws IDException
      * @throws RedisException
      * @throws ParseException
