@@ -157,7 +157,7 @@ public class FindTemplatesVisitor extends SuperVisitor
      * @throws IOException
      * @throws ParseException
      */
-    private Element includeSource(Element at, String sourcePath) throws IOException, ParseException
+    private Node includeSource(Element at, String sourcePath) throws IOException, ParseException
     {
         try(InputStream input = this.getClass().getResourceAsStream(sourcePath)){
             String content = "";
@@ -166,16 +166,16 @@ public class FindTemplatesVisitor extends SuperVisitor
                 content += line + "\n";
             }
             Document DOM = TemplateParser.parse(content);
-            if(DOM.children().isEmpty()){
-                throw new ParseException("Could not include any valid html from '" + sourcePath + "'.");
+            if(DOM.childNodes().isEmpty()){
+                throw new ParseException("Found empty file at '" + sourcePath + "'. Cannot include an empty file.");
             }
-            Element firstChild = DOM.child(0);
+            Node firstChild = DOM.childNode(0);
             Element parent = at.parent();
             if(parent == null){
                 throw new ParseException("Cannot use an include as a root-node. Found at \n\n" + at + "\n\n");
             }
             int siblingIndex = at.siblingIndex();
-            parent.insertChildren(siblingIndex,DOM.children());
+            parent.insertChildren(siblingIndex,DOM.childNodes());
             at.remove();
             return firstChild;
         }

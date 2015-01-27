@@ -45,7 +45,6 @@ public class TemplateParser
         Document doc = parse(fileHtml);
         Traversor traversor = new Traversor(new FindTemplatesVisitor(cache, foundEntityClassNames));
         traversor.traverse(doc);
-
     }
 
     /**
@@ -265,14 +264,17 @@ public class TemplateParser
          * Thus if the head (or body) is empty, but the body (or head) is not, we only want the info in the body (or head).
          */
         if(parsed.head().childNodes().isEmpty() && !parsed.body().childNodes().isEmpty()){
-            for(Node child : parsed.body().children()) {
-                retVal.appendChild(child);
+            for(Node child : parsed.body().childNodes()) {
+                retVal.appendChild(child.clone());
             }
         }
         else if(parsed.body().childNodes().isEmpty() && !parsed.head().childNodes().isEmpty()){
-            for(Node child : parsed.head().children()) {
-                retVal.appendChild(child);
+            for(Node child : parsed.head().childNodes()) {
+                retVal.appendChild(child.clone());
             }
+        }
+        else if(parsed.body().childNodes().isEmpty() && parsed.body().childNodes().isEmpty()){
+            //add nothing to the retVal so an empty document will be returned
         }
         else{
             retVal = parsed;
