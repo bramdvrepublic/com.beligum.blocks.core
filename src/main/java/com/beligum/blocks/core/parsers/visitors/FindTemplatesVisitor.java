@@ -1,13 +1,13 @@
 package com.beligum.blocks.core.parsers.visitors;
 
-import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
-import com.beligum.blocks.core.models.templates.AbstractTemplate;
-import com.beligum.blocks.core.models.templates.EntityTemplateClass;
-import com.beligum.blocks.core.models.templates.PageTemplate;
+import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
+import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;

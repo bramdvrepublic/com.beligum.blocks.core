@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.models.templates;
+package com.beligum.blocks.core.models.redis.templates;
 
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.DatabaseConstants;
@@ -9,10 +9,9 @@ import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.SerializationException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
-import com.beligum.blocks.core.models.IdentifiableObject;
-import com.beligum.blocks.core.models.ifaces.Storable;
+import com.beligum.blocks.core.models.redis.IdentifiableObject;
+import com.beligum.blocks.core.models.redis.ifaces.Storable;
 import com.beligum.blocks.core.parsers.TemplateParser;
-import com.beligum.core.framework.templating.ifaces.Template;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;

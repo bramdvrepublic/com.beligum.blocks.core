@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.models.templates;
+package com.beligum.blocks.core.models.redis.templates;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
@@ -6,7 +6,7 @@ import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.*;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.models.ifaces.Storable;
+import com.beligum.blocks.core.models.redis.ifaces.Storable;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;

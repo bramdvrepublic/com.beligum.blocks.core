@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.models.templates;
+package com.beligum.blocks.core.models.redis.templates;
 
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
