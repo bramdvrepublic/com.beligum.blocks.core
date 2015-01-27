@@ -9,9 +9,9 @@ import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.models.templates.EntityTemplate;
-import com.beligum.blocks.core.models.templates.EntityTemplateClass;
-import com.beligum.blocks.core.models.templates.PageTemplate;
+import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
+import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.ws.rs.*;
