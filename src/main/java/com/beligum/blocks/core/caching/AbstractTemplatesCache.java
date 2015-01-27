@@ -215,6 +215,20 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     }
 
     /**
+     * Gets all keys of the cache's map, alphabetically sorted
+     */
+    public List<String> keys()
+    {
+        Collection<String> keys = this.getCache().keySet();
+        List<String> keysList = new LinkedList<>();
+        for(String key : keys){
+            keysList.add(key);
+        }
+        Collections.sort(keysList);
+        return keysList;
+    }
+
+    /**
      *
      * @return true if this cache is (not yet) totally filled up with all templates from disk
      */

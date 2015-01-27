@@ -67,7 +67,7 @@ public class TemplateParser
                     PageTemplate replacedTemplate = allPageTemplates.put(template.getName(), (PageTemplate) template);
                     //default page-templates should be added to the cache no matter what, so the last one encountered is kept
                     if (replacedTemplate != null && replacedTemplate.getName().contentEquals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
-                        Logger.warn("Replaced default-" + PageTemplate.class.getSimpleName() + ". This should only happen once!");
+                        Logger.warn("Default-" + PageTemplate.class.getSimpleName() + " will be replaced. This should only happen once!");
                     }
                     //no two page-templates with the same name can be defined
                     else if (replacedTemplate != null) {
@@ -79,8 +79,12 @@ public class TemplateParser
                 }
                 else if (template instanceof EntityTemplateClass) {
                     EntityTemplateClass replacedTemplate = allEntityClasses.put(template.getName(), (EntityTemplateClass) template);
+                    //default entity-template-classes should be added to the cache no matter what, so the last one encountered is kept
+                    if (replacedTemplate != null && replacedTemplate.getName().contentEquals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS)) {
+                        Logger.warn("Default-" + EntityTemplateClass.class.getSimpleName() + " will be replaced. This should only happen once!");
+                    }
                     //if an entity-class with this name was already present, check if it was a non-blueprint, if not, throw an exception since only one blueprint can be defined per class
-                    if (replacedTemplate != null) {
+                    else if (replacedTemplate != null) {
                         Map<RedisID, String> replacedTemplates = replacedTemplate.getTemplates();
                         boolean isBlueprint = false;
                         for (RedisID languageId : replacedTemplates.keySet()) {
@@ -93,7 +97,7 @@ public class TemplateParser
                         }
                     }
                 }
-                //only page-tempaltes and entity-template-classes should be present in th list of found templates
+                //only page-templates and entity-template-classes should be present in the list of found templates
                 else {
                     throw new ParseException("Found unsupported " + AbstractTemplate.class.getSimpleName() + "-type " + template.getClass().getSimpleName() + ".");
                 }
@@ -102,7 +106,7 @@ public class TemplateParser
             //create defaults for all found entity-classes and cache to application-cache
             for (String templateName : allEntityClasses.keySet()) {
                 //during traversal of a template, all it's child-types are cached too
-                if(!EntityTemplateClassCache.getInstance().contains(templateName)) {
+                if(!EntityTemplateClassCache.getInstance().contains(templateName) || templateName.equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS)) {
                     AbstractTemplate template = allEntityClasses.get(templateName);
                     Map<RedisID, String> htmlTemplates = template.getTemplates();
                     for (RedisID language : htmlTemplates.keySet()) {
@@ -115,7 +119,7 @@ public class TemplateParser
 
             //create defaults for all found page-templates and cache to application-cache
             for (String templateName : allPageTemplates.keySet()) {
-                if(!PageTemplateCache.getInstance().contains(templateName)) {
+                if(!PageTemplateCache.getInstance().contains(templateName) || templateName.equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
                     AbstractTemplate template = allPageTemplates.get(templateName);
                     Map<RedisID, String> htmlTemplates = template.getTemplates();
                     for (RedisID language : htmlTemplates.keySet()) {

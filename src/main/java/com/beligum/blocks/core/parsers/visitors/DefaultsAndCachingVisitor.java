@@ -17,6 +17,7 @@ import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.parsers.Traversor;
+import com.beligum.core.framework.utils.Logger;
 import com.github.sommeri.less4j.core.ast.Page;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Document;
@@ -207,8 +208,16 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
          */
         EntityTemplateClass entityTemplateClass = new EntityTemplateClass(parsingTemplate.getName(), this.language, root.outerHtml(), parsingTemplate.getPageTemplateName(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
         boolean added = EntityTemplateClassCache.getInstance().add(entityTemplateClass);
-        if(!added){
-            throw new ParseException("Could not add " + EntityTemplateClass.class.getSimpleName() + " '" + entityTemplateClass.getName() + "' to application cache. This shouldn't happen.");
+        if(!added) {
+            if (entityTemplateClass.getName().equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS)) {
+                if(!EntityTemplateClassCache.getInstance().get(entityTemplateClass.getName()).equals(entityTemplateClass)) {
+                    EntityTemplateClassCache.getInstance().replace(entityTemplateClass);
+                    Logger.warn("Replaced default-" + EntityTemplateClass.class.getSimpleName() + ".");
+                }
+            }
+            else {
+                throw new ParseException("Could not add " + EntityTemplateClass.class.getSimpleName() + " '" + entityTemplateClass.getName() + "' to application cache. This shouldn't happen.");
+            }
         }
     }
 
@@ -218,7 +227,15 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
         PageTemplate pageTemplate = new PageTemplate(parsingTemplate.getName(), this.language, root.outerHtml(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
         boolean added = PageTemplateCache.getInstance().add(pageTemplate);
         if(!added){
-            throw new ParseException("Could not add " + PageTemplate.class.getSimpleName() + " '" + pageTemplate.getName() + "' to application cache. This shouldn't happen.");
+            if(pageTemplate.getName().equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)){
+                if(!PageTemplateCache.getInstance().get(pageTemplate.getName()).equals(pageTemplate)){
+                    PageTemplateCache.getInstance().replace(pageTemplate);
+                    Logger.warn("Replaced default-" + PageTemplate.class.getSimpleName() + ".");
+                }
+            }
+            else {
+                throw new ParseException("Could not add " + PageTemplate.class.getSimpleName() + " '" + pageTemplate.getName() + "' to application cache. This shouldn't happen.");
+            }
         }
     }
 

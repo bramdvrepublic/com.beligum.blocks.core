@@ -1,6 +1,5 @@
 package com.beligum.blocks.core.parsers.visitors;
 
-import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
@@ -8,12 +7,20 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.models.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.templates.PageTemplate;
+import com.beligum.blocks.core.parsers.TemplateParser;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 
-import java.util.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.Stack;
 
 /**
  * Created by wouter on 22/11/14.
@@ -75,21 +82,32 @@ public class FindTemplatesVisitor extends SuperVisitor
             }
             //add links and scripts to the stack and remove them from the html (to be re-injected later)
             if(node.nodeName().equals("link")){
-                this.linksStack.peek().add(node.outerHtml());
-                Node emtpyNode = new TextNode("", null);
-                node.replaceWith(emtpyNode);
-                node = emtpyNode;
+                //if an include has been found, import the wanted html-file
+                if(node.hasAttr("href") && node.attr("rel").equals(ParserConstants.INCLUDE)){
+                    Element element = (Element) node;
+                    String source = node.attr("href");
+                    node = includeSource(element, source);
+                }
+                //if not, add the link to the links-stack
+                else {
+                    this.linksStack.peek().add(node.outerHtml());
+                    Node emtpyNode = new TextNode("", null);
+                    node.replaceWith(emtpyNode);
+                    node = emtpyNode;
+                }
             }
+            //if a script has been found, add it to the scripts-stack
             if(node.nodeName().equals("script")){
                 this.scriptsStack.peek().add(node.outerHtml());
                 Node emtpyNode = new TextNode("", null);
                 node.replaceWith(emtpyNode);
                 node = emtpyNode;
             }
+
             return node;
         }
         catch (Exception e){
-            throw new ParseException("Could not parse tag-head while caching at " + node, e);
+            throw new ParseException("Could not parse tag-head while looking for blueprints and page-templates at " + node, e);
         }
     }
 
@@ -130,6 +148,37 @@ public class FindTemplatesVisitor extends SuperVisitor
         }
         return node;
 
+    }
+
+    /**
+     * Include the html found in the file found at {@param sourcePath} and replace the element {@param at} by the found tags.
+     * @param at
+     * @param sourcePath
+     * @throws IOException
+     * @throws ParseException
+     */
+    private Element includeSource(Element at, String sourcePath) throws IOException, ParseException
+    {
+        try(InputStream input = this.getClass().getResourceAsStream(sourcePath)){
+            String content = "";
+            List<String> lines = IOUtils.readLines(input);
+            for(String line : lines){
+                content += line + "\n";
+            }
+            Document DOM = TemplateParser.parse(content);
+            if(DOM.children().isEmpty()){
+                throw new ParseException("Could not include any valid html from '" + sourcePath + "'.");
+            }
+            Element firstChild = DOM.child(0);
+            Element parent = at.parent();
+            if(parent == null){
+                throw new ParseException("Cannot use an include as a root-node. Found at \n\n" + at + "\n\n");
+            }
+            int siblingIndex = at.siblingIndex();
+            parent.insertChildren(siblingIndex,DOM.children());
+            at.remove();
+            return firstChild;
+        }
     }
 
     /**
