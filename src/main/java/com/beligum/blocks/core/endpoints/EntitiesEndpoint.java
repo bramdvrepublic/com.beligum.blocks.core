@@ -30,25 +30,6 @@ import java.util.*;
 public class EntitiesEndpoint
 {
 
-    @GET
-    @Path("/reset")
-    public Response resetCache() throws CacheException
-    {
-        EntityTemplateClassCache.getInstance().reset();
-        PageTemplateCache.getInstance().reset();
-        return Response.ok("Cache reset").build();
-    }
-
-    @GET
-    @Path("/flush")
-    //TODO BAS: this method should not be accessible in production-fase!
-    public Response flushEntities() throws CacheException
-    {
-        this.resetCache();
-        Redis.getInstance().flushDB();
-        return Response.ok("<ul><li>Cache reset</li><li>Database emptied</li></ul>").build();
-    }
-
     @POST
     /**
      * Create a new page-instance of the page-class specified as a parameter

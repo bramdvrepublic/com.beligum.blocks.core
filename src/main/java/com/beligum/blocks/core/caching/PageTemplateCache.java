@@ -47,18 +47,18 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
                     links.add("<link href=\"" + BlocksConfig.BOOSTRAP_CSS_FILEPATH + "\" rel=\"stylesheet\" />");
                     scripts.add("<script src=\"" + BlocksConfig.BOOTSTRAP_JS_FILEPATH + "\"></script>");
                     //Note: do not remove the comment-tag in the definition of the default page-template. The head should not be empty, if not exceptions will occur when parsing it.
-                    PageTemplate pageTemplate = new PageTemplate(instance.getDefaultTemplateName(), BlocksConfig.getDefaultLanguage(), "<!DOCTYPE html>" +
-                                                                                                    "<html>" +
-                                                                                                    "<head>" +
-                                                                                                    "<!--This is a rendered default page-template. If you want to use another page-template, you should overwrite it (template=\"default\").-->" +
-                                                                                                    "</head>" +
-                                                                                                    "<body>" +
-                                                                                                    "<div class=\"container\">" +
+                    PageTemplate pageTemplate = new PageTemplate(instance.getDefaultTemplateName(), BlocksConfig.getDefaultLanguage(), "<!DOCTYPE html>\n" +
+                                                                                                    "<html>\n" +
+                                                                                                    "<head>\n" +
+                                                                                                    "<!--This is a rendered default page-template. If you want to use another page-template, you should overwrite it (template=\"default\").-->\n" +
+                                                                                                    "</head>\n" +
+                                                                                                    "<body>\n" +
+                                                                                                    "<div class=\"container\">\n" +
                                                                                                     //default referencing div
-                                                                                                    "<div " + ParserConstants.PAGE_TEMPLATE_CONTENT_ATTR + "=\"\" " + ParserConstants.REFERENCE_TO + "=\""+ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME + "\"></div>" +
-                                                                                                    "</div>" +
-                                                                                                    "</body>" +
-                                                                                                    "</html>", links, scripts);
+                                                                                                    "<div " + ParserConstants.PAGE_TEMPLATE_CONTENT_ATTR + "=\"\" " + ParserConstants.REFERENCE_TO + "=\""+ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME + "\"></div>\n" +
+                                                                                                    "</div>\n" +
+                                                                                                    "</body>\n" +
+                                                                                                    "</html>\n", links, scripts);
                     instance.getCache().put(instance.getTemplateKey(instance.getDefaultTemplateName()), pageTemplate);
                     instance.fillCache();
                 }

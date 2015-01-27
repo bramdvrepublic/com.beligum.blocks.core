@@ -7,100 +7,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
     <link rel="icon" type="image/x-icon" href="/assets/images/favicon.ico" />
 
-    <link href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
-    <!--<link href="/assets/stylesheets/styles.less" rel="stylesheet" />-->
-    <link href="/assets/stylesheets/blocks.less" rel="stylesheet" />
-
-    <link href="../../assets/media/less/screen.less" rel="stylesheet" media="screen">
-    <link href="../../assets/media/less/responsive.less" rel="stylesheet" media="screen">
-    <script src="../../assets/media/js/jquery-1.11.0.min.js"></script>
-    <script src="../../assets/media/js/modernizr.js"></script>
-    <script src="../../assets/media/js/less.js"></script>
-    <script src="//use.typekit.net/mvl7xyt.js"></script>
-    <script src="../../assets/media/js/bootstrap.min.js"></script>
-    <script>try{Typekit.load();}catch(e){}</script>
-    <!--[if lt IE 9]>
-    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-    <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
-    <![endif]-->
-
-
-    <script src="/assets/javascripts/ckeditor/ckeditor.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/ckeditor/adapters/jquery.js" type="application/javascript" ></script>
-
-    <script src="/assets/javascripts/medium/medium.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/blocks.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/core.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/broadcaster.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/layout.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/utils/dom-manipulation.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/elements.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/mouse.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/resizer.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/dragdrop.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/blockmenu/blockmenu.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/blockmenu/blockmenu-buttons.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/utils/layout-aid.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/utils/notification.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/blockmenu/edit.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/blockmenu/admin.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/blockmenu/create.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/overlay.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/blocks/image.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/blocks/video.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/blocks/blok-link.js" type="application/javascript" ></script>
-    <script src="/assets/javascripts/menu/menu.js" type="application/javascript"></script>
-    <script src="/assets/javascripts/manager.js" type="application/javascript"></script>
+    <link href="/templates/default-head.html" rel="include">
 
 </head>
 <body>
 
 <header id="header">
     <div class="container">
-        <div property="menu" typeof="mot-menu" lang="nl">
-            <div class="row">
-                <h1 class="col-md-2" id="logo"><a href="/index" title="">MOT</a></h1>
-                <div class="col-md-10">
-                    <div id="navigation">
-                        <div class="row">
-                            <div class="col-md-12 contact">
-                                <ul>
-                                    <li>+32 2 270 81 11</li>
-                                    <li><a href="mailto:info@mot.be" title="">info@mot.be</a></li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div id="accessibility" class="row">
-                            <div class="col-md-12">
-                                <div class="fontsize">
-                                    <ul>
-                                        <li class="smaller"><a href="" title="">A</a></li>
-                                        <li class="larger"><a href="" title="">A</a></li>
-                                    </ul>
-                                </div>
-                                <nav property="languages" class="languages" typeof="translation-list">
-                                    <div></div>
-                                </nav>
-                            </div>
-                        </div>
-                        <div id="menu" class="row">
-                            <nav class="col-md-9">
-                                <ul>
-                                    <li><a property="button" name="museum" href="museum" title="" can-edit>museum</a></li>
-                                    <li><a property="button" name="beleving" href="beleving" title="" can-edit>beleving</a></li>
-                                    <li><a property="button" name="praktisch" href="praktisch" title="" can-edit>praktisch</a></li>
-                                </ul>
-                            </nav>
-                            <div class="col-md-3 search-button">
-                                <a href="opzoeken" title="">Opzoeken!</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!--<span id="mobilebutton"><img src="../assets/media/images/mobilebutton.svg" alt=""/></span>-->
-            </div>
-        </div>
-
+        <div property="menu" typeof="mot-menu" use-blueprint></div>
     </div>
 </header>
 <section class="page">

@@ -19,8 +19,10 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
+import org.jsoup.parser.Tag;
 import org.jsoup.select.Elements;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
@@ -45,7 +47,6 @@ public class TemplateParser
         Document doc = parse(fileHtml);
         Traversor traversor = new Traversor(new FindTemplatesVisitor(cache, foundEntityClassNames));
         traversor.traverse(doc);
-
     }
 
     /**
@@ -67,7 +68,7 @@ public class TemplateParser
                     PageTemplate replacedTemplate = allPageTemplates.put(template.getName(), (PageTemplate) template);
                     //default page-templates should be added to the cache no matter what, so the last one encountered is kept
                     if (replacedTemplate != null && replacedTemplate.getName().contentEquals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
-                        Logger.warn("Replaced default-" + PageTemplate.class.getSimpleName() + ". This should only happen once!");
+                        Logger.warn("Default-" + PageTemplate.class.getSimpleName() + " will be replaced. This should only happen once!");
                     }
                     //no two page-templates with the same name can be defined
                     else if (replacedTemplate != null) {
@@ -79,8 +80,12 @@ public class TemplateParser
                 }
                 else if (template instanceof EntityTemplateClass) {
                     EntityTemplateClass replacedTemplate = allEntityClasses.put(template.getName(), (EntityTemplateClass) template);
+                    //default entity-template-classes should be added to the cache no matter what, so the last one encountered is kept
+                    if (replacedTemplate != null && replacedTemplate.getName().contentEquals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS)) {
+                        Logger.warn("Default-" + EntityTemplateClass.class.getSimpleName() + " will be replaced. This should only happen once!");
+                    }
                     //if an entity-class with this name was already present, check if it was a non-blueprint, if not, throw an exception since only one blueprint can be defined per class
-                    if (replacedTemplate != null) {
+                    else if (replacedTemplate != null) {
                         Map<RedisID, String> replacedTemplates = replacedTemplate.getTemplates();
                         boolean isBlueprint = false;
                         for (RedisID languageId : replacedTemplates.keySet()) {
@@ -93,7 +98,7 @@ public class TemplateParser
                         }
                     }
                 }
-                //only page-tempaltes and entity-template-classes should be present in th list of found templates
+                //only page-templates and entity-template-classes should be present in the list of found templates
                 else {
                     throw new ParseException("Found unsupported " + AbstractTemplate.class.getSimpleName() + "-type " + template.getClass().getSimpleName() + ".");
                 }
@@ -102,7 +107,7 @@ public class TemplateParser
             //create defaults for all found entity-classes and cache to application-cache
             for (String templateName : allEntityClasses.keySet()) {
                 //during traversal of a template, all it's child-types are cached too
-                if(!EntityTemplateClassCache.getInstance().contains(templateName)) {
+                if(!EntityTemplateClassCache.getInstance().contains(templateName) || templateName.equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS)) {
                     AbstractTemplate template = allEntityClasses.get(templateName);
                     Map<RedisID, String> htmlTemplates = template.getTemplates();
                     for (RedisID language : htmlTemplates.keySet()) {
@@ -115,7 +120,7 @@ public class TemplateParser
 
             //create defaults for all found page-templates and cache to application-cache
             for (String templateName : allPageTemplates.keySet()) {
-                if(!PageTemplateCache.getInstance().contains(templateName)) {
+                if(!PageTemplateCache.getInstance().contains(templateName) || templateName.equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
                     AbstractTemplate template = allPageTemplates.get(templateName);
                     Map<RedisID, String> htmlTemplates = template.getTemplates();
                     for (RedisID language : htmlTemplates.keySet()) {
@@ -178,8 +183,14 @@ public class TemplateParser
 
     /**
      * Render the html of a certain entity inside a page-template, using the specified language
-     * Uses scripts and links injection to place all javascripts and css-class in the right order:
-     * 1) links of page-template, 2) links of blueprints, 3) links of dynamic blocks, 4) scripts of page-template, 5) scripts of blueprints, 6) scripts of dynamic blocks
+     * Uses scripts and links injection to place all javascripts and css-classes in the right order:
+     * 1) links of page-template
+     * 2) links of blueprints
+     * 3) links of dynamic blocks
+     * 4) scripts of page-template
+     * 5) scripts of blueprints
+     * 6) scripts of dynamic blocks
+     * 7) frontend-scripts if an admin is logged in
      * @param pageTemplate
      * @param entityTemplate
      * @param language
@@ -207,6 +218,7 @@ public class TemplateParser
                 Element entityRoot = TemplateParser.parse(entityHtml).child(0);
                 reference.replaceWith(entityRoot);
             }
+
             ToHtmlVisitor visitor = new ToHtmlVisitor(entityTemplate.getUrl(), language, pageTemplate.getLinks(), pageTemplate.getScripts());
             Traversor traversor = new Traversor(visitor);
             traversor.traverse(DOM);
@@ -219,6 +231,9 @@ public class TemplateParser
             for(Node script : scripts){
                 DOM.head().appendChild(script);
             }
+            //inject frontend links and scripts if logged in as administrator
+            //TODO BAS: this should only happen when an administrator is logged in
+            addFrontendScripts(DOM);
             return DOM.outerHtml();
         }
         catch (Exception e){
@@ -261,19 +276,30 @@ public class TemplateParser
          * Thus if the head (or body) is empty, but the body (or head) is not, we only want the info in the body (or head).
          */
         if(parsed.head().childNodes().isEmpty() && !parsed.body().childNodes().isEmpty()){
-            for(Node child : parsed.body().children()) {
-                retVal.appendChild(child);
+            for(Node child : parsed.body().childNodes()) {
+                retVal.appendChild(child.clone());
             }
         }
         else if(parsed.body().childNodes().isEmpty() && !parsed.head().childNodes().isEmpty()){
-            for(Node child : parsed.head().children()) {
-                retVal.appendChild(child);
+            for(Node child : parsed.head().childNodes()) {
+                retVal.appendChild(child.clone());
             }
+        }
+        else if(parsed.body().childNodes().isEmpty() && parsed.body().childNodes().isEmpty()){
+            //add nothing to the retVal so an empty document will be returned
         }
         else{
             retVal = parsed;
         }
         return retVal;
+    }
+
+    private static void addFrontendScripts(Document DOM) throws IOException, ParseException
+    {
+        String frontendScriptsSource = BlocksConfig.getFrontEndScripts();
+        Element head = DOM.head();
+        Element link = head.appendElement("link");
+        new SuperVisitor().includeSource(link, frontendScriptsSource);
     }
 
 }

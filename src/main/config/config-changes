@@ -1,0 +1,6 @@
+added tag pointing to front-end-scripts
+    <blocks>
+        <scripts>
+            <frontend>/templates/blocks-scripts.html</frontend>
+        </scripts>
+    </blocks>

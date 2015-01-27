@@ -1,6 +1,6 @@
 package com.beligum.blocks.core.parsers.visitors;
 
-
+import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
@@ -8,12 +8,20 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
+import com.beligum.blocks.core.parsers.TemplateParser;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 
-import java.util.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.Stack;
 
 /**
  * Created by wouter on 22/11/14.
@@ -75,21 +83,32 @@ public class FindTemplatesVisitor extends SuperVisitor
             }
             //add links and scripts to the stack and remove them from the html (to be re-injected later)
             if(node.nodeName().equals("link")){
-                this.linksStack.peek().add(node.outerHtml());
-                Node emtpyNode = new TextNode("", null);
-                node.replaceWith(emtpyNode);
-                node = emtpyNode;
+                //if an include has been found, import the wanted html-file
+                if(node.hasAttr("href") && node.attr("rel").equals(ParserConstants.INCLUDE)){
+                    Element element = (Element) node;
+                    String source = node.attr("href");
+                    node = includeSource(element, source);
+                }
+                //if not, add the link to the links-stack
+                else {
+                    this.linksStack.peek().add(node.outerHtml());
+                    Node emtpyNode = new TextNode("", null);
+                    node.replaceWith(emtpyNode);
+                    node = emtpyNode;
+                }
             }
+            //if a script has been found, add it to the scripts-stack
             if(node.nodeName().equals("script")){
                 this.scriptsStack.peek().add(node.outerHtml());
                 Node emtpyNode = new TextNode("", null);
                 node.replaceWith(emtpyNode);
                 node = emtpyNode;
             }
+
             return node;
         }
         catch (Exception e){
-            throw new ParseException("Could not parse tag-head while caching at " + node, e);
+            throw new ParseException("Could not parse tag-head while looking for blueprints and page-templates at " + node, e);
         }
     }
 
@@ -131,6 +150,8 @@ public class FindTemplatesVisitor extends SuperVisitor
         return node;
 
     }
+
+
 
     /**
      *

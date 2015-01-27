@@ -26,6 +26,8 @@ public class BlocksConfig
     public static final String PROJECT_VERSION_KEY = "appVersion";
     public static final String PROPERTIES_FILE = "blocks.properties";
 
+
+
     /**the languages this site can work with, ordered from most preferred languages, to less preferred*/
     public static String[] cachedLanguages;
     public static String projectVersion = null;
@@ -62,6 +64,10 @@ public class BlocksConfig
 
     public static String getRedisMasterName(){
         return getConfiguration("blocks.redis.master-name");
+    }
+
+    public static String getFrontEndScripts(){
+        return getConfiguration("blocks.scripts.frontend");
     }
 
     public static String getProjectVersion(){
