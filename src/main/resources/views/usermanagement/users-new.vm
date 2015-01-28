@@ -1,0 +1,58 @@
+#define ($body-html)
+<div class="container">
+
+    <div class="row">
+
+        <div class="col-sm-6 col-sm-offset-3">
+
+            <h1>New user</h1>
+
+            <form role="form" method="POST" action="/users">
+                <div class="form-group">
+                    <label for="firstName">First name</label>
+                    <input type="text" class="form-control" placeholder="First name" name="firstName" id="firstName" value="$!newUser.firstName">
+                </div>
+                #set($varname='newUser.firstName') #parse("/views/templates/snippets/formError.html")
+
+                <div class="form-group">
+                    <label for="lastName">Last name</label>
+                    <input type="text" class="form-control" placeholder="Last name" name="lastName" id="lastName" value="$!newUser.lastName">
+                </div>
+                #set($varname='newUser.lastName') #parse("/views/templates/snippets/formError.html")
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="text" class="form-control" placeholder="Email" name="email" id="email" value="$!newUser.email">
+                </div>
+                #set($varname='newUser.email') #parse("/views/templates/snippets/formError.html")
+
+                <div class="form-group">
+                    <label for="role">Role</label>
+                    <select class="form-control" name="role" id="role" value="$!newUser.role">
+                        #foreach($role in $roles)
+                        <option value="$role">$role</option>
+                        #end
+                    </select>
+                </div>
+                #set($varname='newUser.role') #parse("/views/templates/snippets/formError.html")
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" class="form-control" placeholder="Password" name="password" id="password" value="">
+                </div>
+                #set($varname='newUser.password') #parse("/views/templates/snippets/formError.html")
+
+                <div class="form-group">
+                    <label for="password">Confirm password</label>
+                    <input type="password" class="form-control" placeholder="Re-enter password" name="passwordCheck" id="passwordCheck" value="">
+                </div>
+                #set($varname='newUser.passwordCheck') #parse("/views/templates/snippets/formError.html")
+
+                <button type="submit" class="btn btn-primary">Add user</button>
+            </form>
+        </div>
+    </div>
+</div>
+#end
+
+#parse('/views/templates/main.html')

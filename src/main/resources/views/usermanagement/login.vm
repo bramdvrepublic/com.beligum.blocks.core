@@ -46,4 +46,4 @@
 
 #end
 
-#parse('/views/templates/main.vm')
+#parse('/views/templates/main.html')

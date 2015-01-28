@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.shiro.authz.Permission;
 import org.apache.shiro.authz.permission.WildcardPermission;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -21,6 +22,7 @@ public class Permissions implements PermissionsConfigurator
 
     //-----PERMISSIONS-----
     public static final String USER_LOGGEDIN = "user:loggedIn";
+    public static final String USER_CAN_MODIFY = "user:canModify";
     public static final String USER_CREATE = "user:create";
     public static final String USER_DELETE = "user:delete";
 
@@ -31,6 +33,7 @@ public class Permissions implements PermissionsConfigurator
                                                     (Permission) new WildcardPermission(USER_LOGGEDIN)
                                     ),
                                     PermissionsConfigurator.ROLE_ADMIN, ImmutableSet.of(
+                                                    (Permission) new WildcardPermission(USER_CAN_MODIFY),
                                                     (Permission) new WildcardPermission(USER_CREATE),
                                                     (Permission) new WildcardPermission(USER_DELETE)
                                     )
@@ -50,6 +53,14 @@ public class Permissions implements PermissionsConfigurator
     public Set<Permission> getPermissionsFor(PermissionRole permRole)
     {
         return PERMISSIONS.get(permRole);
+    }
+
+    public static Set<String> getRoleNames(){
+        Set<String> roleNames = new HashSet<>();
+        for(PermissionRole permission : PERMISSIONS.keySet()){
+            roleNames.add(permission.getRoleName());
+        }
+        return roleNames;
     }
 
     //-----PROTECTED METHODS-----

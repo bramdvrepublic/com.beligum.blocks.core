@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.validation;
+package com.beligum.blocks.core.data.in;
 
 import javax.ws.rs.FormParam;
 

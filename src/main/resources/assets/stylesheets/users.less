@@ -1,0 +1,50 @@
+@red: #ce0538;
+@darkgray: #5d5d5d;
+@lightgray: #7e7e7e;
+
+.navbar {
+  background-color: @red;
+  border-radius: 0;
+}
+
+.red-btn {
+  :hover{
+    color: @red;
+    background-color: #FFF;
+    border-color: #FFF;
+  }
+  button {
+    text-align: center;
+    margin-left: 8px;
+    margin-right: 8px;
+    padding-top: 10px;
+    background-color: @red;
+    padding: 5px 15px;
+    border-radius: 5px;
+    color: #FFF;
+    font-weight: 700;
+    text-align: center;
+    border: 3px solid #FFF;
+  }
+}
+
+.red-table {
+  border-color: @red;
+  thead{
+    tr{
+      th{
+        border-color:@red;
+        color: @darkgray;
+      }
+    }
+  }
+  tbody{
+    tr{
+      td{
+        border-top: 0px;
+        color: @darkgray;
+        opacity: 0.8;
+      }
+    }
+  }
+}

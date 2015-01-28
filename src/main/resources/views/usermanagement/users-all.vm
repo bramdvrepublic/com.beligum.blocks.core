@@ -1,0 +1,50 @@
+#define ($header-styles-extra)
+<link href="/assets/stylesheets/users.less" rel="stylesheet" />
+#end
+
+#define ($body-html)
+<nav class="navbar">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-2">
+                <a href="/" class="red-btn">
+                    <button class="btn btn-default pull-left navbar-btn">Home</button>
+                </a>
+            </div>
+            <div class="col-md-offset-8 col-md-2">
+                <a href="users/new" class="red-btn">
+                    <button class="btn btn-default pull-right navbar-btn">New user</button>
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <table class="table red-table">
+                <thead>
+                <tr>
+                    <th>First name</th>
+                    <th>Last name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                </tr>
+                </thead>
+                <tbody>
+                    #foreach($user in $users)
+                    <tr>
+                        <td>$!user.firstName</td>
+                        <td>$!user.lastName</td>
+                        <td>$!user.email</td>
+                        <td>$!user.subject.role</td>
+                    </tr>
+                    #end
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+#end
+
+#parse('/views/templates/main.html')

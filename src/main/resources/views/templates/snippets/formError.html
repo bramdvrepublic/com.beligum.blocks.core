@@ -1,0 +1,7 @@
+#if($ERRORS)
+<ul class="errors">
+    #foreach($error in $ERRORS[$varname])
+        <li>$I18N.getMessage($error.messageTemplate, $error.message)</li>
+    #end
+</ul>
+#end

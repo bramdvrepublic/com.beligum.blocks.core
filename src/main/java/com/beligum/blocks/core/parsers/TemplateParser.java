@@ -13,7 +13,9 @@ import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.visitors.*;
+import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.utils.Logger;
+import org.apache.shiro.SecurityUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -233,7 +235,9 @@ public class TemplateParser
             }
             //inject frontend links and scripts if logged in as administrator
             //TODO BAS: this should only happen when an administrator is logged in
-            addFrontendScripts(DOM);
+            if(SecurityUtils.getSubject().isPermitted(Permissions.USER_CAN_MODIFY)) {
+                addFrontendScripts(DOM);
+            }
             return DOM.outerHtml();
         }
         catch (Exception e){

@@ -1,15 +1,17 @@
 package com.beligum.blocks.core.endpoints;
 
-import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
+import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.base.RequestContext;
 import com.beligum.core.framework.templating.ifaces.Template;
+import org.apache.shiro.SecurityUtils;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
@@ -19,7 +21,8 @@ import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Path("/")
 public class ApplicationEndpoint
@@ -35,7 +38,6 @@ public class ApplicationEndpoint
     public Response finder()
     {
         Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/finder.html");
-        //        TypeCacher.instance().reset();
         return Response.ok(indexTemplate).build();
     }
 
@@ -44,7 +46,6 @@ public class ApplicationEndpoint
     public Response mot(@PathParam("name") String name)
     {
         Template indexTemplate = R.templateEngine().getEmptyTemplate("/templates/mot/"+name+".html");
-        //        TypeCacher.instance().reset();
         return Response.ok(indexTemplate).build();
     }
 
@@ -60,11 +61,14 @@ public class ApplicationEndpoint
             RedisID id = new RedisID(url, RedisID.LAST_VERSION, false);
             //if no such page is present in db, ask if user wants to create a new page
             if(id.getVersion() == RedisID.NO_VERSION) {
+                if(!SecurityUtils.getSubject().isPermitted(Permissions.USER_CAN_MODIFY)){
+                    throw new NotFoundException("Page does not exist: " + url);
+                }
                 Template template = R.templateEngine().getEmptyTemplate("/views/new-page.vm");
-                //TODO BAS (ask Bram): should we use threading here?
                 //the first time the server is started, we need to wait for the cache to be proparly filled, so all classes will be shown the very first time a new page is made.
                 EntityTemplateClassCache entityTemplateClassCache = EntityTemplateClassCache.getInstance();
                 while(entityTemplateClassCache.isFillingUp()){
+                    Thread.sleep(100);
                     entityTemplateClassCache = EntityTemplateClassCache.getInstance();
                 }
                 List<EntityTemplateClass> entityTemplateClasses = entityTemplateClassCache.values();
@@ -104,11 +108,10 @@ public class ApplicationEndpoint
                         String page = storedInstance.renderEntityInPageTemplate(id.getLanguage());
                         return Response.ok(page).build();
                     }
-                    //save a new language (from url) to db, which is a copy of the last stored version
-                    else {
+                    //show the default language, but act as if it is the requested language
+                    else{
                         String lastVersionHtml = TemplateParser.renderEntityInsidePageTemplate(storedInstance.getPageTemplate(), storedInstance, id.getLanguage());
-                        TemplateParser.updateEntity(url, lastVersionHtml);
-                        return Response.seeOther(url.toURI()).build();
+                        return Response.ok(lastVersionHtml).build();
                     }
                 }
                 else {
