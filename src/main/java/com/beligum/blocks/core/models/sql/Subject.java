@@ -11,7 +11,7 @@ import javax.persistence.OneToOne;
  */
 @Entity
 @DiscriminatorValue("subject")
-public class Subject extends AbstractSubject
+public class Subject extends AbstractSubject implements Comparable<Subject>
 {
     @OneToOne(mappedBy = "subject")
     private Person person;
@@ -20,5 +20,15 @@ public class Subject extends AbstractSubject
     public String getName()
     {
         return this.person.getFirstName() + " " + this.person.getLastName();
+    }
+
+    /**
+     * Compare subject by role-name, for sorting in user-list.
+     * @param subject
+     */
+    @Override
+    public int compareTo(Subject subject)
+    {
+        return this.getRole().compareToIgnoreCase(subject.getRole());
     }
 }

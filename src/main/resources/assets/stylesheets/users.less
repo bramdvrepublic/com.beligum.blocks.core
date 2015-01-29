@@ -1,10 +1,22 @@
 @red: #ce0538;
 @darkgray: #5d5d5d;
 @lightgray: #7e7e7e;
+@button-font-weight: 700;
+@button-border: 3px;
 
-.navbar {
+body{
+  //  font-family: "museo-sans";
+  h1, h2, h3, h4, h5, h6{
+    color: @darkgray;
+  }
+}
+
+.red-navbar {
   background-color: @red;
   border-radius: 0;
+  .row{
+    margin-top: 25px;
+  }
 }
 
 .red-btn {
@@ -22,9 +34,9 @@
     padding: 5px 15px;
     border-radius: 5px;
     color: #FFF;
-    font-weight: 700;
+    font-weight: @button-font-weight;
     text-align: center;
-    border: 3px solid #FFF;
+    border: @button-border solid #FFF;
   }
 }
 
@@ -35,6 +47,14 @@
       th{
         border-color:@red;
         color: @darkgray;
+        a{
+          color: inherit;
+          cursor: pointer;
+          text-decoration: none;
+        }
+        a:hover{
+          color: @red;
+        }
       }
     }
   }
@@ -47,4 +67,40 @@
       }
     }
   }
+  .glyphicon{
+    font-size: 10px;
+    padding-left: 5px;
+  }
 }
+
+.red-form{
+  color: @lightgray;
+  label{
+    color: @darkgray;
+  }
+  input:active, input:focus,
+  select:active, select: focus{
+    border-color: @red;
+    box-shadow: none;
+  }
+  option:active, option: focus{
+    background-color: @red;
+  }
+  .btn{
+    background-color: @red;
+    border: @button-border solid @red;
+    font-weight: @button-font-weight;
+  }
+  .btn:focus{
+    outline: none;
+  }
+  .btn:active{
+    background-color: white;
+    color: @red;
+    outline: none;
+  }
+  .errors{
+    color: @red;
+  }
+}
+

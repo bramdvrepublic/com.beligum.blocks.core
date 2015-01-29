@@ -12,6 +12,7 @@ import com.beligum.core.framework.templating.ifaces.Template;
 import com.google.common.net.HttpHeaders;
 import gen.com.beligum.blocks.core.endpoints.ApplicationEndpointRoutes;
 import gen.com.beligum.blocks.core.endpoints.UsersEndpointRoutes;
+import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -22,6 +23,8 @@ import javax.validation.Valid;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Comparator;
@@ -33,21 +36,76 @@ import java.util.List;
 @Path("/users")
 public class UsersEndpoint
 {
+    private static final String FIRST_NAME = "firstName";
+
     @GET
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
-    public Response users(){
+    public Response users(@QueryParam("sort") @DefaultValue(FIRST_NAME)
+                          final String fieldName) throws Exception
+    {
+        /*
+         * Fetch users-template
+         */
         Template template = R.templateEngine().getEmptyTemplate("/views/usermanagement/users-all.vm");
         List<Person> users = PersonRepository.getAllPersons();
-        //TODO BAS SH: implement sorting for all fields, then go on and do the password-reset-bit
+
+        /*
+         * Sort the users using the specified field-name.
+         * This uses java-reflection.
+         * First check if the specified field exists
+         */
+        Field[] fields = Person.class.getDeclaredFields();
+        boolean foundField = false;
+        int i = 0;
+        while(!foundField && i<fields.length){
+            foundField = fields[i].getName().equals(fieldName);
+            i++;
+        }
+        if(!foundField){
+            throw new Exception("Cannot sort by '" + fieldName + "'. No such field in " + Person.class.getName() + ".class.");
+        }
+        final Field toBeCompared = fields[i-1];
         Collections.sort(users, new Comparator<Person>()
         {
             @Override
             public int compare(Person p1, Person p2)
             {
-                return p1.getFirstName().compareTo(p2.getFirstName());
+                int compared;
+                try {
+                    Comparable field1 = (Comparable) PropertyUtils.getProperty(p1, fieldName);
+                    Comparable field2 = (Comparable) PropertyUtils.getProperty(p2, fieldName);
+                    if (field1 == null) {
+                        compared = 1;
+                    }
+                    else if (field2 == null) {
+                        compared = -1;
+                    }
+                    else {
+                        if(toBeCompared.getType().equals(String.class)) {
+                            String string1 = (String) field1;
+                            String string2 = (String) field2;
+                            compared = string1.compareToIgnoreCase(string2);
+                        }
+                        else {
+                            compared = field1.compareTo(field2);
+                        }
+                    }
+                }
+                catch(ClassCastException e){
+                    throw new RuntimeException("Cannot sort by '" + fieldName + "', since it is not a comparable field.");
+                }
+                catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+                    throw new RuntimeException("Cannot sort by '" + fieldName + "', since it is not an accessible field.");
+                }
+                return compared;
             }
         });
+
+        /*
+         * Add users-list and return
+         */
         template.set("users", users);
+        template.set("sortedBy", fieldName);
         return Response.ok(template).build();
     }
 
@@ -72,7 +130,7 @@ public class UsersEndpoint
         person.setLastName(newUser.lastName);
         person.setEmail(newUser.email);
         RequestContext.getEntityManager().persist(person);
-        return Response.seeOther(URI.create(UsersEndpointRoutes.users().getPath())).build();
+        return Response.seeOther(URI.create(UsersEndpointRoutes.users(FIRST_NAME).getPath())).build();
     }
 
     @GET
@@ -127,10 +185,9 @@ public class UsersEndpoint
     @GET
     @Path("init")
     public Response initializeUsers(){
-        //TODO BAS SH: make at least the admin-person (subject?) so that logging in becomes possible
         // Make sure 1 admin account exists
         List<Subject> admins = RequestContext.getEntityManager().createQuery("SELECT s FROM Subject s WHERE s.role = 'admin'", Subject.class)
-                                            .getResultList();
+                                             .getResultList();
         if (admins.size() == 0) {
             Person admin = new Person();
             Subject subject = new Subject();

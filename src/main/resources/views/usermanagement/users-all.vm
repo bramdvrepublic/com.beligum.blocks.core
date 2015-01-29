@@ -3,7 +3,7 @@
 #end
 
 #define ($body-html)
-<nav class="navbar">
+<nav class="navbar red-navbar">
     <div class="container">
         <div class="row">
             <div class="col-md-2">
@@ -12,7 +12,7 @@
                 </a>
             </div>
             <div class="col-md-offset-8 col-md-2">
-                <a href="users/new" class="red-btn">
+                <a href="/users/new" class="red-btn">
                     <button class="btn btn-default pull-right navbar-btn">New user</button>
                 </a>
             </div>
@@ -22,26 +22,40 @@
 <div class="container">
     <div class="row">
         <div class="col-md-12">
-            <table class="table red-table">
-                <thead>
-                <tr>
-                    <th>First name</th>
-                    <th>Last name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                </tr>
-                </thead>
-                <tbody>
-                    #foreach($user in $users)
+            <div class="table-responsive">
+                <table class="table red-table">
+                    <thead>
                     <tr>
-                        <td>$!user.firstName</td>
-                        <td>$!user.lastName</td>
-                        <td>$!user.email</td>
-                        <td>$!user.subject.role</td>
+                        <th><a href="users?sort=firstName">
+                            First name
+                            <span class="glyphicon glyphicon-chevron-up" #if($sortedBy != "firstName") style="opacity: 0" #end></span>
+                        </a></th>
+                        <th><a href="users?sort=lastName">
+                            Last name
+                            <span class="glyphicon glyphicon-chevron-up" #if($sortedBy != "lastName") style="opacity: 0" #end></span>
+                        </a></th>
+                        <th><a href="users?sort=email">
+                            Email
+                            <span class="glyphicon glyphicon-chevron-up" #if($sortedBy != "email") style="opacity: 0" #end></span>
+                        </a></th>
+                        <th><a href="users?sort=subject">
+                            Role
+                            <span class="glyphicon glyphicon-chevron-up" #if($sortedBy != "subject") style="opacity: 0" #end></span>
+                        </a></th>
                     </tr>
-                    #end
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        #foreach($user in $users)
+                        <tr>
+                            <td>$!user.firstName</td>
+                            <td>$!user.lastName</td>
+                            <td>$!user.email</td>
+                            <td>$!user.subject.role</td>
+                        </tr>
+                        #end
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
