@@ -14,7 +14,10 @@ import gen.com.beligum.blocks.core.endpoints.ApplicationEndpointRoutes;
 import gen.com.beligum.blocks.core.endpoints.UsersEndpointRoutes;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.authc.UnknownAccountException;
 import org.apache.shiro.authc.UsernamePasswordToken;
+import org.apache.shiro.authz.UnauthenticatedException;
+import org.apache.shiro.authz.UnauthorizedException;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
@@ -155,7 +158,12 @@ public class UsersEndpoint
         if (currentSubject.isAuthenticated()) {
             currentSubject.logout();
         }
-        currentSubject.login(new UsernamePasswordToken(loginUser.username, loginUser.password, loginUser.rememberMe));
+        try{
+            currentSubject.login(new UsernamePasswordToken(loginUser.username, loginUser.password, loginUser.rememberMe));
+        }catch (Exception e){
+            Template template = R.templateEngine().getEmptyTemplate("/views/usermanagement/login.vm");
+            return Response.status(Response.Status.BAD_REQUEST).entity(template).build();
+        }
         Response retVal = null;
         URI referer = URI.create(RequestContext.getRequest().getHeader(HttpHeaders.REFERER));
         if (referer.getPath().equalsIgnoreCase(UsersEndpointRoutes.login().getPath())) {

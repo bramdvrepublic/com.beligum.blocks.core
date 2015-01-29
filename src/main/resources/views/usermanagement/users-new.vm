@@ -6,17 +6,22 @@
 <nav class="navbar red-navbar">
     <div class="container">
         <div class="row">
-            <div class="col-md-1">
-                <a href="/" class="red-btn">
-                    <button class="btn btn-default navbar-btn">Home</button>
-                </a>
+        ##            <div class="col-md-1">
+        ##                <a href="/" class="red-btn">
+        ##                    <button class="btn btn-default navbar-btn">Home</button>
+        ##                </a>
+        ##            </div>
+            <div class="col-md-3">
+                <div id="logo">
+                    <a href="/"></a>
+                </div>
             </div>
             <div class="col-md-1">
                 <a href="/users" class="red-btn">
                     <button class="btn btn-default  navbar-btn">Users</button>
                 </a>
             </div>
-            <div class="col-md-offset-8 col-md-2">
+            <div class="col-md-offset-6 col-md-2">
                 <a href="" class="red-btn">
                     <button type="submit" form="userForm" class="btn btn-default pull-right navbar-btn">Save user</button>
                 </a>
@@ -55,7 +60,7 @@
                     <label for="role">Role</label>
                     <select class="form-control" name="role" id="role" value="$!newUser.role">
                         #foreach($role in $roles)
-                        <option value="$role">$role</option>
+                            <option value="$role">$role</option>
                         #end
                     </select>
                     #set($varname='newUser.role') #parse("/views/templates/snippets/formError.html")

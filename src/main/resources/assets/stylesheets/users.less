@@ -11,9 +11,22 @@ body{
   }
 }
 
+#logo {
+  background-color: @red;
+  position: relative;
+  z-index: 1;
+  a {
+    width: 170px;
+    height: 50px;
+    display: block;
+    background: url('/assets/media/images/MOT-logo-mobile-white.svg') no-repeat left top;
+  }
+}
+
 .red-navbar {
   background-color: @red;
   border-radius: 0;
+  height: 76px;
   .row{
     margin-top: 25px;
   }
@@ -27,8 +40,6 @@ body{
   }
   button {
     text-align: center;
-    margin-left: 8px;
-    margin-right: 8px;
     padding-top: 10px;
     background-color: @red;
     padding: 5px 15px;
@@ -75,17 +86,20 @@ body{
 
 .red-form{
   color: @lightgray;
+  *{
+    border-color: @lightgray;
+  }
   label{
     color: @darkgray;
   }
   input:active, input:focus,
-  select:active, select: focus{
-    border-color: @red;
-    box-shadow: none;
-  }
+select:active, select: focus{
+  border-color: @red;
+  box-shadow: none;
+}
   option:active, option: focus{
-    background-color: @red;
-  }
+  background-color: @red;
+}
   .btn{
     background-color: @red;
     border: @button-border solid @red;
@@ -102,5 +116,22 @@ body{
   .errors{
     color: @red;
   }
+}
+
+.user-login{
+  hr{
+    border-color: @lightgray;
+    opacity: 0.8;
+    margin-top: 30px;
+  }
+  a{
+    color: @red;
+    opacity: 0.85;
+  }
+}
+.error{
+  color: @red;
+  margin-top: 20px;
+  margin-bottom: 20px;
 }
 

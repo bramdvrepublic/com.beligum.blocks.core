@@ -6,12 +6,12 @@
 <nav class="navbar red-navbar">
     <div class="container">
         <div class="row">
-            <div class="col-md-2">
-                <a href="/" class="red-btn">
-                    <button class="btn btn-default pull-left navbar-btn">Home</button>
-                </a>
+            <div class="col-md-3">
+                <div id="logo">
+                    <a href="/"></a>
+                </div>
             </div>
-            <div class="col-md-offset-8 col-md-2">
+            <div class="col-md-offset-7 col-md-2">
                 <a href="/users/new" class="red-btn">
                     <button class="btn btn-default pull-right navbar-btn">New user</button>
                 </a>
