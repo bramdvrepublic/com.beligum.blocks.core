@@ -1,0 +1,13 @@
+#if($FEEDBACK_MESSAGES)
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2 feedback-messages">
+            #foreach($msg in $FEEDBACK_MESSAGES)
+                <div class="alert alert-$msg.level.styleClass alert-dismissible" role="alert">
+                    $I18N.getMessage($msg.messageTemplate, $msg.message)
+                </div>
+            #end
+        </div>
+    </div>
+</div>
+#end

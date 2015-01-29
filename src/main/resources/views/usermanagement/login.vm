@@ -1,20 +1,4 @@
-#define ($header-styles-extra)
-<link href="/assets/stylesheets/users.less" rel="stylesheet" />
-#end
-
 #define ($body-html)
-<nav class="navbar red-navbar">
-    <div class="container">
-        <div class="row">
-            <div class="col-md-1">
-                <div id="logo">
-                    <a href="/">
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</nav>
 <div class="container user-login">
     <div class="row">
         <div class="col-sm-6 col-sm-offset-3">
@@ -63,4 +47,4 @@
 
 #end
 
-#parse('/views/templates/main.html')
+#parse('/views/usermanagement/main.html')

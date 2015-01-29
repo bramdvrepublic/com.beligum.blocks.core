@@ -1,24 +1,12 @@
-#define ($header-styles-extra)
-<link href="/assets/stylesheets/users.less" rel="stylesheet" />
+#define($navbar-extra)
+<div class="col-md-offset-7 col-md-2">
+    <a href="/users/new" class="red-btn">
+        <button class="btn btn-default pull-right navbar-btn">New user</button>
+    </a>
+</div>
 #end
 
 #define ($body-html)
-<nav class="navbar red-navbar">
-    <div class="container">
-        <div class="row">
-            <div class="col-md-3">
-                <div id="logo">
-                    <a href="/"></a>
-                </div>
-            </div>
-            <div class="col-md-offset-7 col-md-2">
-                <a href="/users/new" class="red-btn">
-                    <button class="btn btn-default pull-right navbar-btn">New user</button>
-                </a>
-            </div>
-        </div>
-    </div>
-</nav>
 <div class="container">
     <div class="row">
         <div class="col-md-12">
@@ -61,4 +49,4 @@
 </div>
 #end
 
-#parse('/views/templates/main.html')
+#parse('/views/usermanagement/main.html')

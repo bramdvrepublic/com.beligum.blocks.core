@@ -26,4 +26,4 @@
 </div>
 #end
 
-#parse("/views/templates/main.html")
+#parse("/views/main.html")

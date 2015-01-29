@@ -1,34 +1,17 @@
-#define ($header-styles-extra)
-<link href="/assets/stylesheets/users.less" rel="stylesheet" />
+#define ($navbar-extra)
+<div class="col-md-1">
+    <a href="/users" class="red-btn">
+        <button class="btn btn-default  navbar-btn">Users</button>
+    </a>
+</div>
+<div class="col-md-offset-6 col-md-2">
+    <a href="" class="red-btn">
+        <button type="submit" form="userForm" class="btn btn-default pull-right navbar-btn">Save user</button>
+    </a>
+</div>
 #end
 
 #define ($body-html)
-<nav class="navbar red-navbar">
-    <div class="container">
-        <div class="row">
-        ##            <div class="col-md-1">
-        ##                <a href="/" class="red-btn">
-        ##                    <button class="btn btn-default navbar-btn">Home</button>
-        ##                </a>
-        ##            </div>
-            <div class="col-md-3">
-                <div id="logo">
-                    <a href="/"></a>
-                </div>
-            </div>
-            <div class="col-md-1">
-                <a href="/users" class="red-btn">
-                    <button class="btn btn-default  navbar-btn">Users</button>
-                </a>
-            </div>
-            <div class="col-md-offset-6 col-md-2">
-                <a href="" class="red-btn">
-                    <button type="submit" form="userForm" class="btn btn-default pull-right navbar-btn">Save user</button>
-                </a>
-            </div>
-        </div>
-    </div>
-</nav>
 <div class="container">
 
     <div class="row">
@@ -41,19 +24,19 @@
                 <div class="form-group">
                     <label for="firstName">First name</label>
                     <input type="text" class="form-control" placeholder="First name" name="firstName" id="firstName" value="$!newUser.firstName">
-                    #set($varname='newUser.firstName') #parse("/views/templates/snippets/formError.html")
+                    #set($varname='newUser.firstName') #parse("/views/snippets/formError.vm")
                 </div>
 
                 <div class="form-group">
                     <label for="lastName">Last name</label>
                     <input type="text" class="form-control" placeholder="Last name" name="lastName" id="lastName" value="$!newUser.lastName">
-                    #set($varname='newUser.lastName') #parse("/views/templates/snippets/formError.html")
+                    #set($varname='newUser.lastName') #parse("/views/snippets/formError.vm")
                 </div>
 
                 <div class="form-group">
                     <label for="email">Email</label>
                     <input type="text" class="form-control" placeholder="Email" name="email" id="email" value="$!newUser.email">
-                    #set($varname='newUser.email') #parse("/views/templates/snippets/formError.html")
+                    #set($varname='newUser.email') #parse("/views/snippets/formError.vm")
                 </div>
 
                 <div class="form-group">
@@ -63,19 +46,19 @@
                             <option value="$role">$role</option>
                         #end
                     </select>
-                    #set($varname='newUser.role') #parse("/views/templates/snippets/formError.html")
+                    #set($varname='newUser.role') #parse("/views/snippets/formError.vm")
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password</label>
                     <input type="password" class="form-control" placeholder="Password" name="password" id="password" value="">
-                    #set($varname='newUser.password') #parse("/views/templates/snippets/formError.html")
+                    #set($varname='newUser.password') #parse("/views/snippets/formError.vm")
                 </div>
 
                 <div class="form-group">
                     <label for="password">Confirm password</label>
                     <input type="password" class="form-control" placeholder="Re-enter password" name="passwordCheck" id="passwordCheck" value="">
-                    #set($varname='newUser.passwordCheck') #parse("/views/templates/snippets/formError.html")
+                    #set($varname='newUser.passwordCheck') #parse("/views/snippets/formError.vm")
                 </div>
             </form>
         </div>
@@ -83,4 +66,4 @@
 </div>
 #end
 
-#parse('/views/templates/main.html')
+#parse('/views/usermanagement/main.html')

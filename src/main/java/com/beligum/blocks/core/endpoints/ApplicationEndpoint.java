@@ -56,6 +56,7 @@ public class ApplicationEndpoint
     public Response getPageWithId(@PathParam("randomPage") String randomURLPath)
     {
         try{
+            //TODO BAS!: make deletion of pages possible
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
             //if no language info is specified in the url, or if the specified language doesn't exist, the default language will still be shown
             RedisID id = new RedisID(url, RedisID.LAST_VERSION, false);
