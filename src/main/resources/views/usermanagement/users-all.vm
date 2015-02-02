@@ -1,3 +1,7 @@
+#define($header-scripts-extra)
+<script src="/assets/javascripts/users.js" type="application/javascript" ></script>
+#end
+
 #define($navbar-extra)
 <div class="col-md-offset-7 col-md-2">
     <a href="/users/new" class="red-btn">
@@ -34,7 +38,7 @@
                     </thead>
                     <tbody>
                         #foreach($user in $users)
-                        <tr>
+                        <tr href="/users/$user.id">
                             <td>$!user.firstName</td>
                             <td>$!user.lastName</td>
                             <td>$!user.email</td>

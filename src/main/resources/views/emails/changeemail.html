@@ -1,0 +1,12 @@
+#define ($mailbody-html)
+
+<p>
+You have requested to change your e-mailaddress</p>
+<p>
+    $!emailMessage
+</p>
+<p>
+    <a href="$!resetAddress">Change your mailaddress</a>
+</p>
+#end
+#parse('/views/emails/main.html')

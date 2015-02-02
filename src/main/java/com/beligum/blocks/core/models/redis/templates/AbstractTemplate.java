@@ -387,6 +387,8 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
         return significantFieldsSet.toHashCode();
     }
 
+
+
     /**
      * Two templates are equal when their template-content, url and meta-data are equal
      * (thus equal through object-state, not object-address).

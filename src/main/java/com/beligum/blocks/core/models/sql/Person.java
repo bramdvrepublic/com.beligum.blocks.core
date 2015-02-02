@@ -49,4 +49,15 @@ public class Person extends BasicModel
     {
         this.email = email == null ? email : (email.toLowerCase().trim());
     }
+
+    @Override
+    public int hashCode()
+    {
+        return super.hashCode();
+    }
+    @Override
+    public boolean equals(Object o)
+    {
+        return super.equals(o);
+    }
 }

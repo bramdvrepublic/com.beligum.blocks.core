@@ -16,6 +16,14 @@ public class Subject extends AbstractSubject implements Comparable<Subject>
     @OneToOne(mappedBy = "subject")
     private Person person;
 
+    public Person getPerson()
+    {
+        return person;
+    }
+    public void setPerson(Person person)
+    {
+        this.person = person;
+    }
     @Override
     public String getName()
     {

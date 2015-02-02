@@ -70,11 +70,22 @@ body{
     }
   }
   tbody{
+    a{
+      display: block;
+      height: 35px;
+    }
     tr{
       td{
         border-top: 0px;
         color: @darkgray;
         opacity: 0.8;
+      }
+    }
+    tr:hover{
+      td{
+        color: @red;
+        cursor: pointer;
+        text-decoration: none;
       }
     }
   }
