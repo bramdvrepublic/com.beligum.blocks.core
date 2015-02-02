@@ -10,4 +10,14 @@
         </div>
     </div>
 </div>
+#elseif($feedbackMessage)
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2 feedback-messages">
+            <div class="alert alert-$feedbackMessage.level.styleClass alert-dismissible" role="alert">
+                $feedbackMessage.message
+            </div>
+        </div>
+    </div>
+</div>
 #end

@@ -9,9 +9,11 @@ import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.blocks.core.data.in.LoginUser;
 import com.beligum.blocks.core.data.in.NewUser;
 import com.beligum.blocks.core.validation.ExistingEntityId;
+import com.beligum.blocks.core.validation.messages.CustomFeedbackMessage;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.base.RequestContext;
 import com.beligum.core.framework.email.EmailException;
+import com.beligum.core.framework.i18n.I18n;
 import com.beligum.core.framework.templating.ifaces.Template;
 import com.beligum.core.framework.utils.toolkit.BasicFunctions;
 import com.beligum.core.framework.validation.messages.DefaultFeedbackMessage;
@@ -21,10 +23,7 @@ import gen.com.beligum.blocks.core.endpoints.ApplicationEndpointRoutes;
 import gen.com.beligum.blocks.core.endpoints.UsersEndpointRoutes;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.shiro.SecurityUtils;
-import org.apache.shiro.authc.UnknownAccountException;
 import org.apache.shiro.authc.UsernamePasswordToken;
-import org.apache.shiro.authz.UnauthenticatedException;
-import org.apache.shiro.authz.UnauthorizedException;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
@@ -151,9 +150,15 @@ public class UsersEndpoint
     @Produces(MediaType.TEXT_HTML)
     //TODO BAS: Redirect after UnauthorizedException to this method?
     public Response getLogin() {
-        //TODO BAS SH: confirmation-link in forgot-password-mail passes here twice: why? (Dat zorgt ervoor dat de feedback-messages niet getoond worden, omdat de second time around, er geen feedback-messages meer zijn...)
-        //TODO BAS SH2: continue implementing password-reset (you stranded at when you have chosen a new password and click 'proceed'), then do edit-user-functionalities
-        return Response.ok(R.templateEngine().getEmptyTemplate("/views/usermanagement/login.vm")).build();
+        return Response.ok(this.getLoginTemplate()).build();
+    }
+    /**
+     *
+     * @return a template holding all necessary (velocity-)variables to be rendered correctly
+     */
+    private Template getLoginTemplate(){
+        //if ever the login-template changes, all velocity-variables need to be set in this method before returning the template
+        return R.templateEngine().getEmptyTemplate("/views/usermanagement/login.vm");
     }
 
     @POST
@@ -286,7 +291,7 @@ public class UsersEndpoint
             person.getSubject().setConfirmation(null);
         }
         R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "forgotPasswordFinal"));
-        return Response.seeOther(URI.create(ApplicationEndpointRoutes.index().getPath())).build();
+        return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
     }
 
     @GET
@@ -297,7 +302,7 @@ public class UsersEndpoint
         EntityManager em = RequestContext.getEntityManager();
         Template template = R.templateEngine().getEmptyTemplate("/views/usermanagement/confirmation.vm");
         Person person = em.find(Person.class, personId);
-        Response.ResponseBuilder retval = null;
+        Response retval = null;
         //logout subject before continuing
         SecurityUtils.getSubject().logout();
 
@@ -327,16 +332,26 @@ public class UsersEndpoint
             // if confirmation string is correct, update person and update subject of person
             if (confirmString.equals(person.getSubject().getConfirmation())) {
                 template.set("person", person);
-                R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "forgotPasswordSuccess"));
-                retval = Response.ok(template);
+                /*
+                 * Cannot use a DefaultFeedbackMessage here with a redirect, since some e-mail clients receive the redirect,
+                 * and then send the redirected url to a browser, which then requests that url for a second time
+                 * (where the feedback-message will no longer be present in the template-context).
+                 */
+                template.set("feedbackMessage", new CustomFeedbackMessage("forgotPasswordSuccess", FeedbackMessage.Level.SUCCESS));
             } else {
-                R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "emailConfirmationFailure"));
-                retval = Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath()));
+                /*
+                 * Cannot use a DefaultFeedbackMessage here with a redirect, since some e-mail clients receive the redirect,
+                 * and then send the redirected url to a browser, which then requests that url for a second time
+                 * (where the feedback-message will no longer be present in the template-context).
+                 */
+                template = this.getLoginTemplate();
+                template.set("feedbackMessage", new CustomFeedbackMessage("emailConfirmationFailure", FeedbackMessage.Level.ERROR));
             }
+            retval = Response.ok(template).build();
         } else {
             throw new Exception();
         }
-        return retval.build();
+        return retval;
     }
 
 
