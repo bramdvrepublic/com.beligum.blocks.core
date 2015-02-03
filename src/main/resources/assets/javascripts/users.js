@@ -1,12 +1,14 @@
-function queryParam(paramName){
+function queryParam(paramName) {
     var query = window.location.search.split("?");
-    var paramPairs = query[1].split("&");
-    var i;
-    for(i = 0; i<paramPairs.length; i++){
-        var paramPair = paramPairs[i];
-        var pair = paramPair.split("=");
-        if(pair[0] == paramName){
-            return pair[1];
+    if (query.length > 1) {
+        var paramPairs = query[1].split("&");
+        var i;
+        for (i = 0; i < paramPairs.length; i++) {
+            var paramPair = paramPairs[i];
+            var pair = paramPair.split("=");
+            if (pair[0] == paramName) {
+                return pair[1];
+            }
         }
     }
     return null;

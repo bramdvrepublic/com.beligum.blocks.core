@@ -22,6 +22,8 @@ public class NewUser implements PasswordComparable
 
     //-----VARIABLES-----
     //a new user is active by default
+    //TODO BAS SH: dit moet ook gekozen worden bij het aanmaken van ene nieuwe user
+    //TODO BAS SH 2: daarna veilige password-functionaliteiten (=geen van server terugkerende paswoorden) bij een user-profile implementeren (naar een apparte site gaan met twee veldjes, en dan wordt het paswoord verandert zonder een confirmatie-email)
     public boolean active = true;
 
     @FormParam("firstName")
@@ -40,6 +42,7 @@ public class NewUser implements PasswordComparable
 
     @FormParam("password")
     @NotBlank
+    //TODO: remove maximum size (need to change database entry type of subject.password for longer possiblities)
     @Size(min = 6, max = 20)
     public String cleartextPassword;
 

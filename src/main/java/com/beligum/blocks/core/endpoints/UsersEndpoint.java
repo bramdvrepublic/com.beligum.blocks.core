@@ -397,6 +397,7 @@ public class UsersEndpoint
         return Response.ok(template).build();
     }
 
+
     @POST
     @Path(FORGOT_PASSWORD)
     public Response postForgotPassword(@Valid @BeanParam
