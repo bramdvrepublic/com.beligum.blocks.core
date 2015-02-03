@@ -1,12 +1,14 @@
 #define ($navbar-extra)
 <div class="col-md-1">
-    <a href="/users" class="red-btn">
-        <button class="btn btn-default  navbar-btn">Users</button>
-    </a>
+    #if(!$isProfile)
+        <a href="/users" class="red-btn">
+            <button class="btn btn-default  navbar-btn">Users</button>
+        </a>
+    #end
 </div>
 <div class="col-md-offset-6 col-md-2">
     <a href="" class="red-btn">
-        <button type="submit" form="userForm" class="btn btn-default pull-right navbar-btn">Save user</button>
+        <button type="submit" form="userForm" class="btn btn-default pull-right navbar-btn">#if($isProfile) Save profile #else Save user #end</button>
     </a>
 </div>
 #end
@@ -20,7 +22,7 @@
 
             <h1>Edit user</h1>
 
-            <form role="form" method="POST" action="/users/$editUser.id" class="red-form" id="userForm">
+            <form role="form" method="POST" #if($isProfile) action="/users/$editUser.id/profile" #else action="/users/$editUser.id" #end class="red-form" id="userForm">
                 <div class="form-group">
                     <label for="firstName">First name</label>
                     <input type="text" class="form-control" placeholder="First name" name="firstName" id="firstName" value="$!editUser.firstName">
@@ -39,28 +41,33 @@
                     #set($varname='editUser.email') #parse("/views/snippets/formError.vm")
                 </div>
 
-                <div class="form-group">
-                    <label for="role">Role</label>
-                    <select class="form-control" name="role" id="role" value="$!editUser.subject.role">
-                        #foreach($role in $roles)
-                            <option #if($role == $!editUser.subject.role) selected #end value="$role">$role</option>
-                        #end
-                    </select>
-                    #set($varname='editUser.role') #parse("/views/snippets/formError.vm")
-                </div>
 
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" class="form-control" placeholder="Password" name="password" id="password" value="">
-                    #set($varname='editUser.password') #parse("/views/snippets/formError.vm")
-                </div>
+                #if(!$isProfile)
+                    <div class="form-group">
+                        <label for="role">Role</label>
+                        <select class="form-control" name="role" id="role" value="$!editUser.subject.role">
+                            #foreach($role in $roles)
+                                <option #if($role == $!editUser.subject.role) selected #end value="$role">$role</option>
+                            #end
+                        </select>
+                        #set($varname='editUser.role') #parse("/views/snippets/formError.vm")
+                    </div>
+                #end
 
-                <div class="form-group">
-                    <label for="password">Confirm password</label>
-                    <input type="password" class="form-control" placeholder="Re-enter password" name="passwordCheck" id="passwordCheck" value="">
-                    #set($varname='editUser.passwordCheck') #parse("/views/snippets/formError.vm")
-                    #set($varname='editUser') #parse("/views/snippets/formError.vm")
-                </div>
+                #if($isProfile)
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" class="form-control" placeholder="Password" name="password" id="password" value="">
+                        #set($varname='editUser.password') #parse("/views/snippets/formError.vm")
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Confirm password</label>
+                        <input type="password" class="form-control" placeholder="Re-enter password" name="passwordCheck" id="passwordCheck" value="">
+                        #set($varname='editUser.passwordCheck') #parse("/views/snippets/formError.vm")
+                        #set($varname='editUser') #parse("/views/snippets/formError.vm")
+                    </div>
+                #end
             </form>
         </div>
     </div>

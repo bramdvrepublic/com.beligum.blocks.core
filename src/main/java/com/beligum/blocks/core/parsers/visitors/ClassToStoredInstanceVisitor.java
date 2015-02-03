@@ -24,7 +24,7 @@ import java.util.Stack;
  */
 public class ClassToStoredInstanceVisitor extends SuperVisitor
 {
-    //TODO BAS: inject css-classes of class into instance, afterwards add classes of instance (which could overwrite the class-css)
+    //TODO BAS!: inject css-classes of class into instance, afterwards add classes of instance (which could overwrite the class-css)
 
     //the parent-nodes of the entity-template instances to be created
     private Stack<Node> newInstancesNodes = new Stack<>();

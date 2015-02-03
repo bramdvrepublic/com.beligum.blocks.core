@@ -48,6 +48,7 @@ body{
     font-weight: @button-font-weight;
     text-align: center;
     border: @button-border solid #FFF;
+    outline: none !important;
   }
 }
 
@@ -74,14 +75,21 @@ body{
       display: block;
       height: 35px;
     }
-    tr{
+    tr, tr.nohover{
       td{
         border-top: 0px;
         color: @darkgray;
         opacity: 0.8;
+        a{
+          color: @darkgray;
+        }
+        a.hover{
+          color: @red;
+          cursor: pointer;
+        }
       }
     }
-    tr:hover{
+    tr.hover{
       td{
         color: @red;
         cursor: pointer;
@@ -144,5 +152,10 @@ select:active, select: focus{
   color: @red;
   margin-top: 20px;
   margin-bottom: 20px;
+}
+
+.red-accent{
+  color: @red;
+  opacity: 0.65;
 }
 

@@ -12,12 +12,11 @@ import javax.ws.rs.FormParam;
  * Created by bramdeveirman on 13/10/14.
  */
 @Named("editUser")
-public class EditUser
+public class ProfileUser
 {
-
     //-----CONSTANTS-----
 
-    //-----VARIABLES-----
+    //-----VARIABLES-----    //-----VARIABLES-----
     @FormParam("firstName")
     @NotBlank
     public String firstName;
@@ -29,9 +28,15 @@ public class EditUser
     @Email
     public String email;
 
-    @FormParam("role")
-    @RoleExists
-    public String role;
+    @FormParam("password")
+    @NotBlank
+    @Size(min = 6, max = 20)
+    public String cleartextPassword;
+
+    @FormParam("passwordCheck")
+    @NotBlank
+    @Size(min = 6, max = 20)
+    public String cleartextPasswordCheck;
 
 
     //-----CONSTRUCTORS-----

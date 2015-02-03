@@ -34,15 +34,17 @@
                             Role
                             <span class="glyphicon glyphicon-chevron-up" #if($sortedBy != "subject") style="opacity: 0" #end></span>
                         </a></th>
+                        <th>Delete</th>
                     </tr>
                     </thead>
                     <tbody>
                         #foreach($user in $users)
-                        <tr href="/users/$user.id">
-                            <td>$!user.firstName</td>
-                            <td>$!user.lastName</td>
-                            <td>$!user.email</td>
-                            <td>$!user.subject.role</td>
+                        <tr>
+                            <td href="/users/$user.id">$!user.firstName</td>
+                            <td href="/users/$user.id">$!user.lastName</td>
+                            <td href="/users/$user.id">$!user.email</td>
+                            <td href="/users/$user.id">$!user.subject.role</td>
+                            <td class="delete"><a url="/users/$user.id"><span class="glyphicon glyphicon-trash"></span></a></td>
                         </tr>
                         #end
                     </tbody>
