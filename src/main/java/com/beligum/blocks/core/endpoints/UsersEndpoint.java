@@ -56,7 +56,7 @@ public class UsersEndpoint
     @GET
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
     public Response users(@QueryParam("sort") @DefaultValue(FIRST_NAME)
-                          final String fieldName) throws Exception
+                          final String fieldName, @QueryParam("inactive") @DefaultValue("true") boolean showInactive) throws Exception
     {
         /*
          * Fetch users-template
@@ -121,6 +121,7 @@ public class UsersEndpoint
          */
         template.set("users", users);
         template.set("sortedBy", fieldName);
+        template.set("showInactive", showInactive);
         return Response.ok(template).build();
     }
 
@@ -150,19 +151,6 @@ public class UsersEndpoint
         return template;
     }
 
-    @DELETE
-    @Path("/{userId}")
-    @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
-    public Response deleteUser(@PathParam("userId") long userId){
-        EntityManager em = RequestContext.getEntityManager();
-        Person user = em.find(Person.class, userId);
-        em.remove(user.getSubject());
-        em.remove(user);
-        em.flush();
-        R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "userDeleted"));
-        return Response.seeOther(URI.create(UsersEndpointRoutes.users(FIRST_NAME).getPath())).build();
-    }
-
     @GET
     @Path("/new")
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
@@ -185,7 +173,7 @@ public class UsersEndpoint
         person.setLastName(newUser.lastName);
         person.setEmail(newUser.email);
         RequestContext.getEntityManager().persist(person);
-        return Response.seeOther(URI.create(UsersEndpointRoutes.users(FIRST_NAME).getPath())).build();
+        return Response.seeOther(URI.create(UsersEndpointRoutes.users(FIRST_NAME, true).getPath())).build();
     }
 
     @GET
@@ -295,12 +283,15 @@ public class UsersEndpoint
      */
     public Response editUserProfile(@PathParam("userId") @ExistingEntityId(Person.class) long userId, @Valid @BeanParam ProfileUser profileUser) throws Exception
     {
+        //TODO BAS!: try dao-wiring here
         this.checkCurrentUser(userId);
         EditUser editUser = new EditUser();
         editUser.email = profileUser.email;
         editUser.firstName = profileUser.firstName;
         editUser.lastName = profileUser.lastName;
-        editUser.role = RequestContext.getEntityManager().find(Person.class, userId).getSubject().getRole();
+        Person persisted = RequestContext.getEntityManager().find(Person.class, userId);
+        editUser.role = persisted.getSubject().getRole();
+        editUser.active = persisted.isActive();
         return updateUser(userId, editUser, true, true);
     }
     private Response updateUser(long userId, EditUser editUser, boolean needsConfirmation, boolean isProfile) throws Exception
@@ -518,12 +509,13 @@ public class UsersEndpoint
                 person.getSubject().setPrincipalReset(null);
                 person.getSubject().setConfirmation(null);
                 em.merge(person);
-                template.set(FEEDBACK_MESSAGE, new CustomFeedbackMessage("emailChangedSuccess", FeedbackMessage.Level.SUCCESS));
+                R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "emailChangedSuccess"));
+                return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
             }
             else {
-                template.set(FEEDBACK_MESSAGE, new CustomFeedbackMessage("emailConfirmationFailure", FeedbackMessage.Level.ERROR));
+                R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.ERROR, "emailConfirmationFailure"));
+                return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
             }
-            return Response.ok(template).build();
         }
         else{
             return Response.seeOther(URI.create(ApplicationEndpointRoutes.index().getPath())).build();

@@ -5,6 +5,7 @@ import org.hibernate.validator.constraints.Email;
 import org.hibernate.validator.constraints.NotBlank;
 
 import javax.inject.Named;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.ws.rs.FormParam;
 
@@ -32,6 +33,9 @@ public class EditUser
     @FormParam("role")
     @RoleExists
     public String role;
+
+    @FormParam("active")
+    public boolean active;
 
 
     //-----CONSTRUCTORS-----

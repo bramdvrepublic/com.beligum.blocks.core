@@ -11,11 +11,12 @@ import javax.persistence.*;
 public class Person extends BasicModel
 {
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
+    @OneToOne(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     private Subject subject;
     private String firstName;
     private String lastName;
     private String email;
+    private boolean active;
 
     public Subject getSubject()
     {
@@ -49,15 +50,12 @@ public class Person extends BasicModel
     {
         this.email = email == null ? email : (email.toLowerCase().trim());
     }
-
-    @Override
-    public int hashCode()
+    public boolean isActive()
     {
-        return super.hashCode();
+        return active;
     }
-    @Override
-    public boolean equals(Object o)
+    public void setActive(boolean active)
     {
-        return super.equals(o);
+        this.active = active;
     }
 }

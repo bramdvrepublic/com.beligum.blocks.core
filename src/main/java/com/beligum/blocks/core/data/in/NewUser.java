@@ -21,6 +21,9 @@ public class NewUser implements PasswordComparable
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    //a new user is active by default
+    public boolean active = true;
+
     @FormParam("firstName")
     @NotBlank
     public String firstName;

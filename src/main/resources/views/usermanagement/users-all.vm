@@ -18,33 +18,39 @@
                 <table class="table red-table">
                     <thead>
                     <tr>
-                        <th><a href="users?sort=firstName">
+                        <th><a href="/users?sort=firstName&inactive=$showInactive" class="sortlink" name="firstName">
                             First name
                             <span class="glyphicon glyphicon-chevron-up" #if($sortedBy != "firstName") style="opacity: 0" #end></span>
                         </a></th>
-                        <th><a href="users?sort=lastName">
+                        <th><a href="/users?sort=lastName&inactive=$showInactive" class="sortlink" name="lastName">
                             Last name
                             <span class="glyphicon glyphicon-chevron-up" #if($sortedBy != "lastName") style="opacity: 0" #end></span>
                         </a></th>
-                        <th><a href="users?sort=email">
+                        <th><a href="/users?sort=email&inactive=$showInactive" class="sortlink" name="email">
                             Email
                             <span class="glyphicon glyphicon-chevron-up" #if($sortedBy != "email") style="opacity: 0" #end></span>
                         </a></th>
-                        <th><a href="users?sort=subject">
+                        <th><a href="/users?sort=subject&inactive=$showInactive" class="sortlink" name="subject">
                             Role
                             <span class="glyphicon glyphicon-chevron-up" #if($sortedBy != "subject") style="opacity: 0" #end></span>
                         </a></th>
-                        <th>Delete</th>
+                        <th><a onclick="changeActiveView()" id="changeActiveView">
+                            #if($showInactive)
+                                Hide inactive
+                            #else
+                                Show inactive
+                            #end
+                        </a></th>
                     </tr>
                     </thead>
                     <tbody>
                         #foreach($user in $users)
-                        <tr>
-                            <td href="/users/$user.id">$!user.firstName</td>
-                            <td href="/users/$user.id">$!user.lastName</td>
-                            <td href="/users/$user.id">$!user.email</td>
-                            <td href="/users/$user.id">$!user.subject.role</td>
-                            <td class="delete"><a url="/users/$user.id"><span class="glyphicon glyphicon-trash"></span></a></td>
+                        <tr href="/users/$user.id" #if(!$user.active)class="inactive"#end>
+                            <td>$!user.firstName</td>
+                            <td>$!user.lastName</td>
+                            <td>$!user.email</td>
+                            <td>$!user.subject.role</td>
+                            <td><span class="glyphicon glyphicon-ok"></span></td>
                         </tr>
                         #end
                     </tbody>
@@ -53,6 +59,9 @@
         </div>
     </div>
 </div>
+    <script>
+        var showInactive = $showInactive;
+    </script>
 #end
 
 #parse('/views/usermanagement/main.html')

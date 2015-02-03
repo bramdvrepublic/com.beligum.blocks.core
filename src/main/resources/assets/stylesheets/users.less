@@ -75,21 +75,23 @@ body{
       display: block;
       height: 35px;
     }
-    tr, tr.nohover{
+    tr{
       td{
         border-top: 0px;
-        color: @darkgray;
         opacity: 0.8;
+        color: @darkgray;
         a{
-          color: @darkgray;
-        }
-        a.hover{
-          color: @red;
-          cursor: pointer;
+          color: inherit;
         }
       }
+
     }
-    tr.hover{
+    tr.inactive{
+      .glyphicon{
+        color: white;
+      }
+    }
+    tr:hover{
       td{
         color: @red;
         cursor: pointer;
@@ -132,6 +134,11 @@ select:active, select: focus{
     color: @red;
     outline: none;
   }
+  .checkbox{
+    label{
+      font-weight: bold;
+    }
+  }
   .errors{
     color: @red;
   }
@@ -158,4 +165,5 @@ select:active, select: focus{
   color: @red;
   opacity: 0.65;
 }
+
 
