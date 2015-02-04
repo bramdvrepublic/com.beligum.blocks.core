@@ -29,6 +29,7 @@ import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.apache.shiro.authz.annotation.RequiresUser;
 
 import javax.inject.Inject;
+import javax.naming.AuthenticationException;
 import javax.persistence.EntityManager;
 import javax.validation.Valid;
 import javax.ws.rs.*;
@@ -207,7 +208,15 @@ public class UsersEndpoint
         }
         try{
             currentSubject.login(new UsernamePasswordToken(loginUser.username, loginUser.password, loginUser.rememberMe));
+            DefaultCookiePrincipal principal = (DefaultCookiePrincipal) currentSubject.getPrincipal();
+            user =  em.createQuery("SELECT p FROM Person p WHERE  p.id = :id", Person.class)
+                      .setParameter("id", principal.getId()).getSingleResult();
+            if(!user.getSubject().getActive()){
+                currentSubject.logout();
+                throw new AuthenticationException("Cannot log in inactive user '" + user.getId() + "'.");
+            }
         }catch (Exception e){
+            Logger.error(e.getMessage(), e.getCause());
             Template template = this.getLoginTemplate();
             return Response.status(Response.Status.BAD_REQUEST).entity(template).build();
         }
@@ -291,7 +300,7 @@ public class UsersEndpoint
         editUser.lastName = profileUser.lastName;
         Person persisted = RequestContext.getEntityManager().find(Person.class, userId);
         editUser.role = persisted.getSubject().getRole();
-        editUser.active = persisted.isActive();
+        editUser.active = persisted.getSubject().getActive();
         return updateUser(userId, editUser, true, true);
     }
     private Response updateUser(long userId, EditUser editUser, boolean needsConfirmation, boolean isProfile) throws Exception
@@ -322,6 +331,7 @@ public class UsersEndpoint
                 }
             }
         }
+        persistedUser.getSubject().setActive(editUser.active);
         persistedUser.getSubject().setRole(editUser.role);
         Utils.autowireDaoToModel(editUser, persistedUser);
         if(needsConfirmation) {/*
@@ -405,8 +415,8 @@ public class UsersEndpoint
     {
         EntityManager em = RequestContext.getEntityManager();
         //fakes sending email == success if user enters an email address that's not linked to a user
-        Person person = em.createQuery("SELECT p FROM Person p WHERE p.email = :email", Person.class)
-                          .setParameter("email", forgotPasswordUser.email.toLowerCase().trim()).getSingleResult();
+        Person person = em.createNamedQuery(Person.FIND_PERSON_BY_EMAIL, Person.class)
+                          .setParameter(Person.QUERY_PARAMETER, forgotPasswordUser.email.toLowerCase().trim()).getSingleResult();
         if (person != null) {
             person.getSubject().setConfirmation(BasicFunctions.createRandomString(32));
             sendForgotPasswordEmail(person);
@@ -438,8 +448,8 @@ public class UsersEndpoint
     public Response postForgotPasswordFinal(@Valid @BeanParam
                                             ForgotPasswordUserFinal forgotPasswordUserFinal) throws Exception {
         EntityManager em = RequestContext.getEntityManager();
-        Person person = em.createQuery("SELECT p FROM Person p WHERE p.email = :email", Person.class)
-                          .setParameter("email", forgotPasswordUserFinal.email.toLowerCase().trim()).getSingleResult();
+        Person person = em.createNamedQuery(Person.FIND_PERSON_BY_EMAIL, Person.class)
+                          .setParameter(Person.QUERY_PARAMETER, forgotPasswordUserFinal.email.toLowerCase().trim()).getSingleResult();
         if (person != null) {
             if (person.getId().equals(forgotPasswordUserFinal.personId) && person.getSubject().getConfirmation().equals(forgotPasswordUserFinal.confirmation)) {
                 person.getSubject().setPassword(R.configuration().getSecurityConfig().getPasswordService().encryptPassword(forgotPasswordUserFinal.cleartextPassword));

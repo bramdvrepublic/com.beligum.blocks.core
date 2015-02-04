@@ -54,7 +54,7 @@
                     </div>
 
                     <div class="checkbox">
-                        <label for="active"><input type="checkbox" name="active" id="active" value="true" #if($editUser.active)checked#end>Active</label>
+                        <label for="active"><input type="checkbox" name="active" id="active" value="true" #if($editUser.subject.active)checked#end>Active</label>
                     </div>
                 #end
 

@@ -45,7 +45,7 @@
                     </thead>
                     <tbody>
                         #foreach($user in $users)
-                        <tr href="/users/$user.id" #if(!$user.active)class="inactive"#end>
+                        <tr href="/users/$user.id" #if(!$user.subject.active)class="inactive"#end>
                             <td>$!user.firstName</td>
                             <td>$!user.lastName</td>
                             <td>$!user.email</td>

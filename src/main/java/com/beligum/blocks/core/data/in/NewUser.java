@@ -42,7 +42,7 @@ public class NewUser implements PasswordComparable
 
     @FormParam("password")
     @NotBlank
-    //TODO: remove maximum size (need to change database entry type of subject.password for longer possiblities)
+    //TODO: remove maximum size (need to change database entry type of subject.password for longer possibilities)
     @Size(min = 6, max = 20)
     public String cleartextPassword;
 
