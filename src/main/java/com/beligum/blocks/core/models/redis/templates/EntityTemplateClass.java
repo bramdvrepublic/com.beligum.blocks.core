@@ -150,7 +150,7 @@ public class EntityTemplateClass extends AbstractTemplate
                 List<String> scripts = AbstractTemplate.fetchScriptsFromHash(hash);
                 EntityTemplateClass newInstance = new EntityTemplateClass(id, templates, hash.get(DatabaseConstants.PAGE_TEMPLATE), links, scripts);
                 newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
-                newInstance.creator = hash.get(DatabaseConstants.CREATOR);
+                newInstance.created_by = hash.get(DatabaseConstants.CREATOR);
                 return newInstance;
             }
         }
@@ -158,18 +158,11 @@ public class EntityTemplateClass extends AbstractTemplate
             throw new DeserializationException("Could not construct an object of class '" + EntityTemplateClass.class.getName() + "' from specified hash.", e);
         }
     }
-    /**
-     * Gives a hash-representation of this storable to save to the db. This method decides what information is stored in db, and what is not.
-     *
-     * @return a map representing the key-value structure of this element to be saved to db
-     */
-    @Override
-    public Map<String, String> toHash() throws SerializationException
-    {
-        Map<String, String> hash = super.toHash();
-        hash.put(DatabaseConstants.PAGE_TEMPLATE, this.pageTemplateName);
-        return hash;
-    }
+
+
+
+
+
 
     //________________OVERRIDE OF OBJECT_______________//
 

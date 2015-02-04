@@ -29,7 +29,7 @@ public class PageTemplate extends AbstractTemplate
         if(!this.getLanguages().contains(this.getId().getLanguage())){
             throw new IDException("No html-template in language '" + primaryLanguage + "' found between templates.");
         }
-        //TODO: should the creator of a page-template be the <author>-tag of the html file?, or else "server-start" or appVersion or something?
+        //TODO: should the created_by of a page-template be the <author>-tag of the html file?, or else "server-start" or appVersion or something?
     }
 
     /**
@@ -85,7 +85,7 @@ public class PageTemplate extends AbstractTemplate
                 List<String> scripts = AbstractTemplate.fetchScriptsFromHash(hash);
                 PageTemplate newInstance = new PageTemplate(id, templates, links, scripts);
                 newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
-                newInstance.creator = hash.get(DatabaseConstants.CREATOR);
+                newInstance.created_by = hash.get(DatabaseConstants.CREATOR);
                 String[] splitted = id.getUnversionedId().split("/");
                 newInstance.name = splitted[splitted.length-1];
                 return newInstance;

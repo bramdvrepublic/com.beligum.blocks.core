@@ -10,8 +10,10 @@ public class DatabaseConstants
     public static final String SCHEME_NAME = "blocks";
     /**name of the application-version-field in db*/
     public final static String APP_VERSION = "appVersion";
-    /**name of the creator-field in db*/
-    public final static String CREATOR = "creator";
+    /**name of the created_by-field in db*/
+    public final static String CREATOR = "created_by";
+    /**deletion flag field name*/
+    public final static String DELETE = "delete";
     /**name of the entity-template-class-field in db*/
     public final static String ENTITY_TEMPLATE_CLASS = "entityTemplateClass";
     /**the default page-template field-name for an entity-class*/

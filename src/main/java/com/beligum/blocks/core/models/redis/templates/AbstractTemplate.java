@@ -3,6 +3,7 @@ package com.beligum.blocks.core.models.redis.templates;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.endpoints.UsersEndpoint;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
@@ -12,6 +13,7 @@ import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.IdentifiableObject;
 import com.beligum.blocks.core.models.redis.ifaces.Storable;
 import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.blocks.core.utils.Utils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -28,8 +30,16 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     protected Map<RedisID, String> templates;
     /**the version of the application this row is supposed to interact with*/
     protected String applicationVersion;
-    /**the creator of this row*/
-    protected String creator;
+    /**the created_by of this row*/
+    protected String created_by;
+    /**the created_by of this row*/
+    protected String updated_by;
+    /**the created_by of this row*/
+    protected String created_at;
+    /**the created_by of this row*/
+    protected String updated_at;
+    /**deletion flag*/
+    protected Boolean deleted = false;
     /**the (css-)linked files this abstract template needs*/
     protected Set<String> links = new HashSet<>();
     protected List<String> linksInOrder = new ArrayList<>();
@@ -50,8 +60,6 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
         super(id);
         this.templates = templates;
         this.applicationVersion = BlocksConfig.getProjectVersion();
-        //TODO: logged in user should be added here (user management)
-        this.creator = "me";
         if(links != null) {
             for (String link : links) {
                 boolean added = this.links.add(link);
@@ -255,9 +263,26 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
      * @return the creator of this storable
      */
     @Override
-    public String getCreator()
+    public String getCreatedBy()
     {
-        return this.creator;
+        return this.created_by;
+    }
+    /**
+     * @return the updater of this storable
+     */
+    @Override
+    public String getUpdatedBy()
+    {
+        return this.updated_by;
+    }
+
+    /**
+     * @return deletion flag
+     */
+    @Override
+    public Boolean getDeleted()
+    {
+        return deleted;
     }
     /**
      * Gives a hash-representation of this storable to save to the db. This method decides what information is stored in db, and what is not.
@@ -267,7 +292,18 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     @Override
     public Map<String, String> toHash() throws SerializationException{
         try {
-            Map<String, String> hash = new HashMap<>();
+            Map<String, String> hash = Utils.toHash(this);
+            /*
+             * The id should not be saved as a seperate field in db. It is the key of this template, so present in db anyway.
+             * The templates are separately saved per language, not under the key "templates".
+             * Links and scripts field should only be saved when present.
+             */
+            hash.remove("id");
+            hash.remove("templates");
+            hash.remove("links");
+            hash.remove("linksInOrder");
+            hash.remove("scripts");
+            hash.remove("scriptsInOrder");
             for (RedisID languageId : this.templates.keySet()) {
                 hash.put(languageId.getLanguage(), languageId.toString());
             }
@@ -285,8 +321,6 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
             if(!StringUtils.isEmpty(scripts)) {
                 hash.put(DatabaseConstants.SCRIPTS, scripts);
             }
-            hash.put(DatabaseConstants.APP_VERSION, this.applicationVersion);
-            hash.put(DatabaseConstants.CREATOR, this.creator);
             return hash;
         }catch(Exception e){
             throw new SerializationException("Could not construct a proper hash from " + AbstractTemplate.class.getSimpleName() + ": " + this, e);
@@ -371,7 +405,7 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
         //7 and 31 are two randomly chosen prime numbers, needed for building hashcodes, ideally, these are different for each class
         HashCodeBuilder significantFieldsSet = new HashCodeBuilder(7, 31);
         significantFieldsSet = significantFieldsSet.append(this.getUnversionedId())
-                                                   .append(this.creator)
+                                                   .append(this.created_by)
                                                    .append(this.applicationVersion);
         //all map-pairs "language -> template" must be added to the hashcode, we do this by customly specifying a string containing both
         for(RedisID languageId : templates.keySet()){
@@ -406,7 +440,7 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
                 AbstractTemplate abstractTemplateObj = (AbstractTemplate) obj;
                 EqualsBuilder significantFieldsSet = new EqualsBuilder();
                 significantFieldsSet = significantFieldsSet.append(this.getUnversionedId(), abstractTemplateObj.getUnversionedId())
-                                                           .append(this.creator, abstractTemplateObj.creator)
+                                                           .append(this.created_by, abstractTemplateObj.created_by)
                                                            .append(this.applicationVersion, abstractTemplateObj.applicationVersion);
                 //check if all templates in different languages are equal and that exactly the same languages are present in both objects
                 significantFieldsSet = significantFieldsSet.append(templates.size(), abstractTemplateObj.templates.size());

@@ -27,7 +27,9 @@ import java.util.*;
 public class Redis implements Closeable
 {
 
-    //TODO check/boost redis-performance with http://redis.io/topics/benchmarks
+    /*
+     * Note: check/boost redis-performance with http://redis.io/topics/benchmarks
+     */
 
 
     //a thread-save pool for connection to the redis-master-server
@@ -97,6 +99,7 @@ public class Redis implements Closeable
                 pipelinedSaveTransaction.multi();
                 try {
                     if (lastVersion == RedisID.NO_VERSION || template.getVersion() > lastVersion) {
+                        //TODO BAS!: here created_by, updated_by, created_at and updated_at should be filled in (if lastVersion == RedisID.NO_VERSION...)
                         pipelinedSaveTransaction.lpush(template.getUnversionedId(), template.getVersionedId());
                         //an EntityTemplate should also be saved in a set named after it's entityTemplateClassName
                         if (template instanceof EntityTemplate) {

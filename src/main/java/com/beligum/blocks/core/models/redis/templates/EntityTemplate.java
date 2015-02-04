@@ -95,7 +95,7 @@ public class EntityTemplate extends AbstractTemplate implements Storable
                 Map<RedisID, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
                 EntityTemplate newInstance = new EntityTemplate(id, hash.get(DatabaseConstants.ENTITY_TEMPLATE_CLASS), templates, hash.get(DatabaseConstants.PAGE_TEMPLATE));
                 newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
-                newInstance.creator = hash.get(DatabaseConstants.CREATOR);
+                newInstance.created_by = hash.get(DatabaseConstants.CREATOR);
                 return newInstance;
             }
             else{
@@ -134,6 +134,14 @@ public class EntityTemplate extends AbstractTemplate implements Storable
         return EntityTemplateClassCache.getInstance().get(this.entityTemplateClassName);
     }
 
+    public String getEntityTemplateClassName()
+    {
+        return entityTemplateClassName;
+    }
+    public String getPageTemplateName()
+    {
+        return pageTemplateName;
+    }
     /**
      *
      * @return a url to the latest version of this entity

@@ -35,7 +35,18 @@ public interface Storable extends Identifiable
     /**
      * @return the creator of this storable
      */
-    public String getCreator();
+    public String getCreatedBy();
+
+    /**
+     * @return the updater of this storable
+     */
+    public String getUpdatedBy();
+
+    /**
+     * @return deletion flag
+     */
+    public Boolean getDeleted();
+
     /**
      * Gives a hash-representation of this storable to save to the db. This method decides what information is stored in db, and what is not.
      * @return a map representing the key-value structure of this element to be saved to db

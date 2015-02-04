@@ -267,7 +267,7 @@ public class UsersEndpoint
         }
         return Response.ok(getUserTemplate(userId, true)).build();
     }
-    private Template getUserTemplate(long userId, boolean isCurrentUser) throws Exception
+    private Template getUserTemplate(long userId, boolean isCurrentUser)
     {
         Person userToBeEdited = RequestContext.getEntityManager().find(Person.class, userId);
         Template template = R.templateEngine().getEmptyTemplate("/views/usermanagement/users-edit.vm");
@@ -573,14 +573,14 @@ public class UsersEndpoint
         return Response.ok(template).build();
     }
 
-    private Person fetchCurrentUserFromCookie() throws Exception
+    public static Person fetchCurrentUserFromCookie()
     {
         try {
             EntityManager em = RequestContext.getEntityManager();
             DefaultCookiePrincipal principal = (DefaultCookiePrincipal) SecurityUtils.getSubject().getPrincipal();
             return em.find(Person.class, principal.getId());
         }catch (ClassCastException e){
-            throw new Exception("Found unsupported cookieprincipal of class '" + SecurityUtils.getSubject().getPrincipal().getClass().getName() + "'.");
+            throw new RuntimeException("Found unsupported cookieprincipal of class '" + SecurityUtils.getSubject().getPrincipal().getClass().getName() + "'.");
         }
     }
 }
