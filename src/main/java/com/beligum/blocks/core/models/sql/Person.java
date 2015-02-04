@@ -17,7 +17,7 @@ public class Person extends BasicModel
     public static final String FIND_PERSON_BY_EMAIL = "findPersonByEmail";
     public static final String QUERY_PARAMETER = "email";
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @OneToOne(fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
     private Subject subject;
     private String firstName;
     private String lastName;

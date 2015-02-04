@@ -1,6 +1,6 @@
 #define ($navbar-extra)
 <div class="col-md-1">
-    #if(!$isProfile)
+    #if(!$isProfile || $isAdmin)
         <a href="/users" class="red-btn">
             <button class="btn btn-default  navbar-btn">Users</button>
         </a>
@@ -8,7 +8,7 @@
 </div>
 <div class="col-md-offset-6 col-md-2">
     <a href="" class="red-btn">
-        <button type="submit" form="userForm" class="btn btn-default pull-right navbar-btn">#if($isProfile) Save profile #else Save user #end</button>
+        <button type="submit" form="userForm" class="btn btn-default pull-right navbar-btn">#if($isProfile && !$isAdmin) Save profile #else Save user #end</button>
     </a>
 </div>
 #end
@@ -57,22 +57,11 @@
                         <label for="active"><input type="checkbox" name="active" id="active" value="true" #if($editUser.subject.active)checked#end>Active</label>
                     </div>
                 #end
-
-                #if($isProfile)
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" class="form-control" placeholder="Password" name="password" id="password" value="">
-                        #set($varname='editUser.password') #parse("/views/snippets/formError.vm")
-                    </div>
-
-                    <div class="form-group">
-                        <label for="password">Confirm password</label>
-                        <input type="password" class="form-control" placeholder="Re-enter password" name="passwordCheck" id="passwordCheck" value="">
-                        #set($varname='editUser.passwordCheck') #parse("/views/snippets/formError.vm")
-                        #set($varname='editUser') #parse("/views/snippets/formError.vm")
-                    </div>
-                #end
             </form>
+            <div class="footer">
+                <hr>
+                <a href="/users/$editUser.id/changepassword" class="red-accent">Change password</a>
+            </div>
         </div>
     </div>
 </div>

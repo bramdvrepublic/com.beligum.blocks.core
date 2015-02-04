@@ -1,6 +1,7 @@
 package com.beligum.blocks.core.data.in;
 
-
+import com.beligum.blocks.core.models.sql.Person;
+import com.beligum.blocks.core.validation.ExistingEntityId;
 import com.beligum.blocks.core.validation.PasswordComparable;
 import com.beligum.blocks.core.validation.PasswordEquality;
 import org.hibernate.validator.constraints.Email;
@@ -11,15 +12,18 @@ import javax.validation.constraints.Size;
 import javax.ws.rs.FormParam;
 
 /**
- * Created by bram on 10/13/14.
+ * Created by bas on 04.02.15.
  */
-@Named("forgotPasswordUserFinal")
+@Named("changePasswordUser")
 @PasswordEquality(formParam = "equality", message = "Please fill in the same password twice.", caseSensitive = true)
-public class ForgotPasswordUserFinal implements PasswordComparable
+public class ChangePasswordUser implements PasswordComparable
 {
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    @FormParam("id")
+    @ExistingEntityId(entityClass = Person.class)
+    public Long id;
     @FormParam("email")
     @NotBlank
     @Email(message = "email address not right")
@@ -32,11 +36,6 @@ public class ForgotPasswordUserFinal implements PasswordComparable
     @NotBlank
     @Size(min = 6, max = 20)
     public String cleartextPasswordCheck;
-    @FormParam("confirmation")
-    public String confirmation;
-    @FormParam("id")
-    public Long id;
-
 
 
     //-----CONSTRUCTORS-----
@@ -50,9 +49,4 @@ public class ForgotPasswordUserFinal implements PasswordComparable
     public String getClearTextPasswordCheck() {
         return cleartextPasswordCheck;
     }
-
-    //-----PROTECTED METHODS-----
-
-    //-----PRIVATE METHODS-----
-
 }

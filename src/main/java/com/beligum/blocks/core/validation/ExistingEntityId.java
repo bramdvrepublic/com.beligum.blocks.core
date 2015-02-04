@@ -29,8 +29,8 @@ public @interface ExistingEntityId
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    //string for the error-message returned to the client when not able to validate
-    Class<?> value();
+    //
+    Class<?> entityClass();
 
     //string for the error-message returned to the client when not able to validate
     String message() default "entity doesn't exist";
@@ -56,7 +56,7 @@ public @interface ExistingEntityId
         @Override
         public void initialize(ExistingEntityId constraintAnnotation)
         {
-            this.entityClass = constraintAnnotation.value();
+            this.entityClass = constraintAnnotation.entityClass();
         }
         @Override
         public boolean isValid(Long value, ConstraintValidatorContext context)

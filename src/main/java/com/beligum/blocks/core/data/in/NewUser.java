@@ -19,13 +19,6 @@ import javax.ws.rs.FormParam;
 public class NewUser implements PasswordComparable
 {
     //-----CONSTANTS-----
-
-    //-----VARIABLES-----
-    //a new user is active by default
-    //TODO BAS SH: dit moet ook gekozen worden bij het aanmaken van ene nieuwe user
-    //TODO BAS SH 2: daarna veilige password-functionaliteiten (=geen van server terugkerende paswoorden) bij een user-profile implementeren (naar een apparte site gaan met twee veldjes, en dan wordt het paswoord verandert zonder een confirmatie-email)
-    public boolean active = true;
-
     @FormParam("firstName")
     @NotBlank
     public String firstName;
@@ -54,6 +47,9 @@ public class NewUser implements PasswordComparable
     @FormParam("role")
     @RoleExists
     public String role;
+
+    @FormParam("active")
+    public boolean active ;
 
 
     //-----CONSTRUCTORS-----

@@ -28,7 +28,6 @@ import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.apache.shiro.authz.annotation.RequiresUser;
 
-import javax.inject.Inject;
 import javax.naming.AuthenticationException;
 import javax.persistence.EntityManager;
 import javax.validation.Valid;
@@ -126,31 +125,6 @@ public class UsersEndpoint
         return Response.ok(template).build();
     }
 
-    @GET
-    @Path("/{userId}")
-    @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
-    public Response getUser(@PathParam("userId") long userId)
-    {
-        //will be true if the admin is editing himself
-        boolean isCurrentUser = this.checkCurrentUser(userId);
-        return Response.ok(getUserTemplate(userId, isCurrentUser)).build();
-    }
-    @GET
-    @Path("/{userId}/profile")
-    @RequiresUser
-    public Response getUserProfile(@PathParam("userId") long userId)
-    {
-        boolean isCurrentUser = this.checkCurrentUser(userId);
-        return Response.ok(getUserTemplate(userId, isCurrentUser)).build();
-    }
-    private Template getUserTemplate(long userId, boolean isCurrentUser){
-        Person userToBeEdited = RequestContext.getEntityManager().find(Person.class, userId);
-        Template template = R.templateEngine().getEmptyTemplate("/views/usermanagement/users-edit.vm");
-        template.set("editUser", userToBeEdited);
-        template.set("roles", Permissions.getRoleNames());
-        template.set("isProfile", isCurrentUser);
-        return template;
-    }
 
     @GET
     @Path("/new")
@@ -168,6 +142,7 @@ public class UsersEndpoint
         subject.setPassword(R.configuration().getSecurityConfig().getPasswordService().encryptPassword(newUser.cleartextPassword));
         subject.setRole(newUser.role);
         subject.setPrincipal(newUser.email);
+        subject.setActive(newUser.active);
         Person person = new Person();
         person.setSubject(subject);
         person.setFirstName(newUser.firstName);
@@ -208,9 +183,7 @@ public class UsersEndpoint
         }
         try{
             currentSubject.login(new UsernamePasswordToken(loginUser.username, loginUser.password, loginUser.rememberMe));
-            DefaultCookiePrincipal principal = (DefaultCookiePrincipal) currentSubject.getPrincipal();
-            user =  em.createQuery("SELECT p FROM Person p WHERE  p.id = :id", Person.class)
-                      .setParameter("id", principal.getId()).getSingleResult();
+            user = fetchCurrentUserFromCookie();
             if(!user.getSubject().getActive()){
                 currentSubject.logout();
                 throw new AuthenticationException("Cannot log in inactive user '" + user.getId() + "'.");
@@ -261,6 +234,7 @@ public class UsersEndpoint
             admin.setSubject(subject);
             admin.setFirstName("Mr.");
             admin.setLastName("admin");
+            admin.setEmail("admin@admin.com");
             RequestContext.getEntityManager().persist(admin);
             return Response.ok("Admin initialized").build();
         }
@@ -273,6 +247,36 @@ public class UsersEndpoint
 
 
     //_____________________UPATE_USER_____________________//
+    @GET
+    @Path("/{userId}")
+    @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
+    public Response getUser(@PathParam("userId") long userId) throws Exception
+    {
+        //will be true if the admin is editing himself
+        boolean isCurrentUser = this.checkForCurrentUser(userId);
+        return Response.ok(getUserTemplate(userId, isCurrentUser)).build();
+    }
+    @GET
+    @Path("/{userId}/profile")
+    @RequiresUser
+    public Response getUserProfile(@PathParam("userId") long userId) throws Exception
+    {
+        boolean isCurrentUser = this.checkForCurrentUser(userId);
+        if(!isCurrentUser){
+            throw new UnauthorizedException("Admin is trying to access profile of other user.");
+        }
+        return Response.ok(getUserTemplate(userId, true)).build();
+    }
+    private Template getUserTemplate(long userId, boolean isCurrentUser) throws Exception
+    {
+        Person userToBeEdited = RequestContext.getEntityManager().find(Person.class, userId);
+        Template template = R.templateEngine().getEmptyTemplate("/views/usermanagement/users-edit.vm");
+        template.set("editUser", userToBeEdited);
+        template.set("roles", Permissions.getRoleNames());
+        template.set("isProfile", isCurrentUser);
+        template.set("isAdmin", this.fetchCurrentUserFromCookie().getSubject().getRole().equals(Permissions.ADMIN_ROLE_NAME));
+        return template;
+    }
 
     @POST
     @Path("/{userId}")
@@ -280,7 +284,7 @@ public class UsersEndpoint
     /**
      * Admin updating-method for users
      */
-    public Response editUser(@PathParam("userId") @ExistingEntityId(Person.class) long userId, @Valid @BeanParam EditUser editUser) throws Exception
+    public Response editUser(@PathParam("userId") @ExistingEntityId(entityClass = Person.class) long userId, @Valid @BeanParam EditUser editUser) throws Exception
     {
         return updateUser(userId, editUser, false, false);
     }
@@ -290,14 +294,11 @@ public class UsersEndpoint
     /**
      * Updating-method for current user-profile
      */
-    public Response editUserProfile(@PathParam("userId") @ExistingEntityId(Person.class) long userId, @Valid @BeanParam ProfileUser profileUser) throws Exception
+    public Response editUserProfile(@PathParam("userId") @ExistingEntityId(entityClass = Person.class) long userId, @Valid @BeanParam ProfileUser profileUser) throws Exception
     {
-        //TODO BAS!: try dao-wiring here
-        this.checkCurrentUser(userId);
+        this.checkForCurrentUser(userId);
         EditUser editUser = new EditUser();
-        editUser.email = profileUser.email;
-        editUser.firstName = profileUser.firstName;
-        editUser.lastName = profileUser.lastName;
+        Utils.autowireDaoToModel(profileUser, editUser);
         Person persisted = RequestContext.getEntityManager().find(Person.class, userId);
         editUser.role = persisted.getSubject().getRole();
         editUser.active = persisted.getSubject().getActive();
@@ -352,26 +353,60 @@ public class UsersEndpoint
     /**
      *
      * @param userId the id of the user which should be the current user
-     * @return true if the current user has the specified id, false if the current user is has the admin-role
+     * @return true if the current user has the specified id, false if the current user is not the current user but has the admin-role
      * @throws org.apache.shiro.authz.UnauthorizedException if the specified user-id is not the same as off the current (logged in) user
      */
-    private boolean checkCurrentUser(long userId){
+    private boolean checkForCurrentUser(long userId){
         try {
-            if (!SecurityUtils.getSubject().hasRole(Permissions.ADMIN_ROLE_NAME)) {
-                DefaultCookiePrincipal cookiePrincipal = (DefaultCookiePrincipal) SecurityUtils.getSubject().getPrincipal();
-                if (!cookiePrincipal.getId().equals(userId)) {
-                    throw new UnauthorizedException("User '" + cookiePrincipal.getId() + "' cannot edit the information of user '" + userId + "'.");
+            //Note: probably only should use this method when @RequiresUser has been assessed
+            DefaultCookiePrincipal cookiePrincipal = (DefaultCookiePrincipal) SecurityUtils.getSubject().getPrincipal();
+            if (!cookiePrincipal.getId().equals(userId)) {
+                if (!SecurityUtils.getSubject().hasRole(Permissions.ADMIN_ROLE_NAME)) {
+                    throw new UnauthorizedException("User '" + userId + "' is not the current authenticated user. Currently authenticated is user '" +cookiePrincipal.getId() + "'.");
                 }
                 else {
-                    return true;
+                    return false;
                 }
             }
             else {
-                return false;
+                return true;
             }
         }catch (Exception e){
-            throw new UnauthorizedException("Current user cannot edit the information of user '" + userId + "'.", e);
+            throw new UnauthorizedException("Current user could not be checked for access to user information of user '" + userId +"'.", e);
+        }
+    }
 
+
+
+    //___________________CHANGE_EMAIL_CONFIRMATION___________________
+    @GET
+    @Path("changeemailfinal")
+    public Response changeEmailFinalConfirmation(@ExistingEntityId(entityClass = Person.class) @QueryParam("u") Long personId,
+                                                 @QueryParam("c") String confirmString, @QueryParam("conf") boolean confirmation){
+        if(confirmation) {
+            EntityManager em = RequestContext.getEntityManager();
+            Template template = this.getLoginTemplate();
+            Person person = em.find(Person.class, personId);
+            // if userId is found
+            // if confirmation string is correct, update person and update subject of person
+            // logout principal if logged in
+            if (confirmString.equals(person.getSubject().getConfirmation())) {
+                String newEmail = person.getSubject().getPrincipalReset();
+                person.getSubject().setPrincipal(newEmail);
+                person.setEmail(newEmail);
+                person.getSubject().setPrincipalReset(null);
+                person.getSubject().setConfirmation(null);
+                em.merge(person);
+                R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "emailChangedSuccess"));
+                return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
+            }
+            else {
+                R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.ERROR, "emailConfirmationFailure"));
+                return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
+            }
+        }
+        else{
+            return Response.seeOther(URI.create(ApplicationEndpointRoutes.index().getPath())).build();
         }
     }
 
@@ -396,10 +431,46 @@ public class UsersEndpoint
     }
 
 
+    //____________________CHANGE_PASSWORD_AS_LOGGED_IN_USER_____________//
+    @GET
+    @Path("{userId}/changepassword")
+    @RequiresUser
+    public Response getChangePassword(@PathParam("userId") @ExistingEntityId(entityClass = Person.class) long userId) {
+        //will throw exception if the current user is not the one being accessed, or an administrator
+        this.checkForCurrentUser(userId);
+        Template template = R.templateEngine().getEmptyTemplate("/views/usermanagement/changePassword.vm");
+        template.set("person", RequestContext.getEntityManager().find(Person.class, userId));
+        return Response.ok(template).build();
+    }
+
+    @POST
+    @Path("{userId}/changepassword")
+    @RequiresUser
+    public Response changePassword(@PathParam("userId") long userId, @BeanParam @Valid ChangePasswordUser changePasswordUser) throws Exception
+    {
+        //will throw exception if the current user is not the one being accessed, or an administrator
+        boolean isCurrentUser = this.checkForCurrentUser(userId);
+        EntityManager em = RequestContext.getEntityManager();
+        Person user = em.find(Person.class, userId);
+        if(user.getEmail().equals(changePasswordUser.email)) {
+            user.getSubject().setPassword(R.configuration().getSecurityConfig().getPasswordService().encryptPassword(changePasswordUser.cleartextPassword));
+        }
+        else{
+            throw new Exception("Found wrong email while changing user password. This should not happen!");
+        }
+        em.merge(user);
+        R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "changedPassword"));
+        if(isCurrentUser && !user.getSubject().getRole().equals(Permissions.ADMIN_ROLE_NAME)){
+            return Response.seeOther(URI.create(UsersEndpointRoutes.getUserProfile(userId).getPath())).build();
+        }
+        else{
+            return Response.seeOther(URI.create(UsersEndpointRoutes.getUser(userId).getPath())).build();
+        }
+    }
+
 
 
     //_____________________PASSWORD_RESET_________________//
-
     @GET
     @Path(FORGOT_PASSWORD)
     public Response getForgotPassword() {
@@ -451,7 +522,7 @@ public class UsersEndpoint
         Person person = em.createNamedQuery(Person.FIND_PERSON_BY_EMAIL, Person.class)
                           .setParameter(Person.QUERY_PARAMETER, forgotPasswordUserFinal.email.toLowerCase().trim()).getSingleResult();
         if (person != null) {
-            if (person.getId().equals(forgotPasswordUserFinal.personId) && person.getSubject().getConfirmation().equals(forgotPasswordUserFinal.confirmation)) {
+            if (person.getId().equals(forgotPasswordUserFinal.id) && person.getSubject().getConfirmation().equals(forgotPasswordUserFinal.confirmation)) {
                 person.getSubject().setPassword(R.configuration().getSecurityConfig().getPasswordService().encryptPassword(forgotPasswordUserFinal.cleartextPassword));
             }
             person.getSubject().setConfirmation(null);
@@ -462,7 +533,7 @@ public class UsersEndpoint
 
     @GET
     @Path("confirm")
-    public Response getConfirmation(@QueryParam("action") String action, @ExistingEntityId(Person.class) @QueryParam("u") Long personId,
+    public Response getConfirmation(@QueryParam("action") String action, @ExistingEntityId(entityClass = Person.class) @QueryParam("u") Long personId,
                                     @QueryParam("c") String confirmString) throws Exception {
         EntityManager em = RequestContext.getEntityManager();
         Template template;
@@ -502,34 +573,14 @@ public class UsersEndpoint
         return Response.ok(template).build();
     }
 
-    @GET
-    @Path("changeemailfinal")
-    public Response changeEmailFinalConfirmation(@ExistingEntityId(Person.class) @QueryParam("u") Long personId,
-                                                 @QueryParam("c") String confirmString, @QueryParam("conf") boolean confirmation){
-        if(confirmation) {
+    private Person fetchCurrentUserFromCookie() throws Exception
+    {
+        try {
             EntityManager em = RequestContext.getEntityManager();
-            Template template = this.getLoginTemplate();
-            Person person = em.find(Person.class, personId);
-            // if userId is found
-            // if confirmation string is correct, update person and update subject of person
-            // logout principal if logged in
-            if (confirmString.equals(person.getSubject().getConfirmation())) {
-                String newEmail = person.getSubject().getPrincipalReset();
-                person.getSubject().setPrincipal(newEmail);
-                person.setEmail(newEmail);
-                person.getSubject().setPrincipalReset(null);
-                person.getSubject().setConfirmation(null);
-                em.merge(person);
-                R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "emailChangedSuccess"));
-                return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
-            }
-            else {
-                R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.ERROR, "emailConfirmationFailure"));
-                return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
-            }
-        }
-        else{
-            return Response.seeOther(URI.create(ApplicationEndpointRoutes.index().getPath())).build();
+            DefaultCookiePrincipal principal = (DefaultCookiePrincipal) SecurityUtils.getSubject().getPrincipal();
+            return em.find(Person.class, principal.getId());
+        }catch (ClassCastException e){
+            throw new Exception("Found unsupported cookieprincipal of class '" + SecurityUtils.getSubject().getPrincipal().getClass().getName() + "'.");
         }
     }
 }

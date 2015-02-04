@@ -234,7 +234,6 @@ public class TemplateParser
                 DOM.head().appendChild(script);
             }
             //inject frontend links and scripts if logged in as administrator
-            //TODO BAS: this should only happen when an administrator is logged in
             if(SecurityUtils.getSubject().isPermitted(Permissions.USER_CAN_MODIFY)) {
                 addFrontendScripts(DOM);
             }

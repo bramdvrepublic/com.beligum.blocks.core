@@ -61,6 +61,10 @@
                     #set($varname='newUser.passwordCheck') #parse("/views/snippets/formError.vm")
                     #set($varname='newUser') #parse("/views/snippets/formError.vm")
                 </div>
+
+                <div class="checkbox">
+                    <label for="active"><input type="checkbox" name="active" id="active" value="true" #if(!$newUser || $newUser.active)checked#end>Active</label>
+                </div>
             </form>
         </div>
     </div>

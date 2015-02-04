@@ -16,7 +16,7 @@ public class ProfileUser
 {
     //-----CONSTANTS-----
 
-    //-----VARIABLES-----    //-----VARIABLES-----
+    //-----VARIABLES-----
     @FormParam("firstName")
     @NotBlank
     public String firstName;
@@ -28,21 +28,10 @@ public class ProfileUser
     @Email
     public String email;
 
-    @FormParam("password")
-    @NotBlank
-    @Size(min = 6, max = 20)
-    public String cleartextPassword;
-
-    @FormParam("passwordCheck")
-    @NotBlank
-    @Size(min = 6, max = 20)
-    public String cleartextPasswordCheck;
-
 
     //-----CONSTRUCTORS-----
+
     //-----PUBLIC METHODS-----
-
-
 
     //-----PROTECTED METHODS-----
 
