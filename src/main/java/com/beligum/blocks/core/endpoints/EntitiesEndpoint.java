@@ -101,6 +101,13 @@ public class EntitiesEndpoint
         return Response.ok(entityUrl.toURI()).build();
     }
 
+    @POST
+    @Path("/delete")
+    public Response deleteEntity(String url){
+        //TODO BAS SH: only delete single template corresponding to this url, so all it's children stay accessible
+        return Response.ok().build();
+    }
+
 
     @GET
     @Path("/list")

@@ -9,6 +9,8 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
 //    btnList.append(templateBtn);
     var saveBtn = $('<a class="btn  btn-default" href="#">Save</a>');
     btnList.append(saveBtn);
+    var deleteBtn = $('<a class="btn  btn-default" href="#">Delete</a>');
+    btnList.append(deleteBtn);
 
 
     menuBtn.on("click", function(event) {
@@ -35,6 +37,20 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
                     menuBar.addClass("open");
                 },
                 dataType: 'json'}
+        )
+    });
+
+    deleteBtn.on("click", function() {
+        menuBar.removeClass("open");
+        $.ajax({type: 'POST',
+                url: "/entities/delete",
+                data: document.URL,
+                success: function() {
+                    Logger.debug("Deleted page!");
+                    //show the user this page has really gone
+                    location.reload();
+                }
+            }
         )
     });
 

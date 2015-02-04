@@ -14,6 +14,7 @@ public class Storable extends Identifiable
 {
     /**the version of the application this template is supposed to interact with*/
     protected String applicationVersion;
+    //TODO BAS: fix date-format and user-format for storage and comment this here
     /**the creator of this template*/
     protected String createdBy;
     /**the updater of this template*/
