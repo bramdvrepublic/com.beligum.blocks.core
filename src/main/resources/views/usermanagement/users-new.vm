@@ -58,8 +58,7 @@
                 <div class="form-group">
                     <label for="password">Confirm password</label>
                     <input type="password" class="form-control" placeholder="Re-enter password" name="passwordCheck" id="passwordCheck" value="">
-                    #set($varname='newUser.passwordCheck') #parse("/views/snippets/formError.vm")
-                    #set($varname='newUser') #parse("/views/snippets/formError.vm")
+                    #set($varnames=['newUser.passwordCheck', 'passwordEqualityCheck']) #parse("/views/snippets/formError.vm")
                 </div>
 
                 <div class="checkbox">

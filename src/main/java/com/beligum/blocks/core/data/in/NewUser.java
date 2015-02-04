@@ -15,7 +15,7 @@ import javax.ws.rs.FormParam;
  * Created by bas on 28.01.15.
  */
 @Named("newUser")
-@PasswordEquality(formParam = "passwordCheck", message = "Please fill in the same password twice.", caseSensitive = true)
+@PasswordEquality(formParam = "passwordEqualityCheck", message = "Please fill in the same password twice.", caseSensitive = true)
 public class NewUser implements PasswordComparable
 {
     //-----CONSTANTS-----

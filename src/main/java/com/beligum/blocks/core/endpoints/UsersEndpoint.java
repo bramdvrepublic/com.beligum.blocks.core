@@ -53,6 +53,9 @@ public class UsersEndpoint
     private static final String CHANGE_EMAIL = "changeemail";
     private static final String FEEDBACK_MESSAGE = "feedbackMessage";
 
+    //TODO BAS SH: use trashed-flag to implement user-deletion, rechtste knoppen onderaan en inactivation bovenaan rechts onder menubalk, userIds na action plaatsen in urls, table lines in grijs-wit (even lijnen, use less second color), users/profile should "redirect" to current user, wrong redirect na mislukte email-change in user-profile
+    //TODO BAS SH: vraag aan Bram zelfde form voor edit-user als new-user
+
     @GET
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
     public Response users(@QueryParam("sort") @DefaultValue(FIRST_NAME)

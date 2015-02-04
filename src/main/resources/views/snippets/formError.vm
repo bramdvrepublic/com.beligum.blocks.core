@@ -3,5 +3,10 @@
     #foreach($error in $ERRORS[$varname])
         <li>$I18N.getMessage($error.messageTemplate, $error.message)</li>
     #end
+    #foreach($varname in $varnames)
+        #foreach($error in $ERRORS[$varname])
+            <li>$I18N.getMessage($error.messageTemplate, $error.message)</li>
+        #end
+    #end
 </ul>
 #end
