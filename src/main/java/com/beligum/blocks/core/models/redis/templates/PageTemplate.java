@@ -4,6 +4,7 @@ import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.utils.Utils;
 
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,7 @@ public class PageTemplate extends AbstractTemplate
         if(!this.getLanguages().contains(this.getId().getLanguage())){
             throw new IDException("No html-template in language '" + primaryLanguage + "' found between templates.");
         }
-        //TODO: should the created_by of a page-template be the <author>-tag of the html file?, or else "server-start" or appVersion or something?
+        //TODO: should the createdBy of a page-template be the <author>-tag of the html file?, or else "server-start" or appVersion or something?
     }
 
     /**
@@ -80,12 +81,15 @@ public class PageTemplate extends AbstractTemplate
                 throw new DeserializationException("Found empty hash.");
             }
             else{
+                /*
+                 * Fetch all fields from the hash, removing them as they are used.
+                 * Afterwards use all remaining information to be wired to the a new instance
+                 */
                 Map<RedisID, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
                 List<String> links = AbstractTemplate.fetchLinksFromHash(hash);
                 List<String> scripts = AbstractTemplate.fetchScriptsFromHash(hash);
                 PageTemplate newInstance = new PageTemplate(id, templates, links, scripts);
-                newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
-                newInstance.created_by = hash.get(DatabaseConstants.CREATOR);
+                Utils.autowireDaoToModel(hash, newInstance);
                 String[] splitted = id.getUnversionedId().split("/");
                 newInstance.name = splitted[splitted.length-1];
                 return newInstance;

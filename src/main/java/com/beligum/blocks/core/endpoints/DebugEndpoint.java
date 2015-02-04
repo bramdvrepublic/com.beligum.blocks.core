@@ -4,14 +4,12 @@ import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.dbs.Redis;
-import com.beligum.blocks.core.exceptions.CacheException;
-import com.beligum.blocks.core.exceptions.IDException;
-import com.beligum.blocks.core.exceptions.ParseException;
-import com.beligum.blocks.core.exceptions.RedisException;
+import com.beligum.blocks.core.exceptions.*;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
+import com.beligum.blocks.core.utils.Utils;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.ws.rs.*;
@@ -110,5 +108,30 @@ public class DebugEndpoint
         String url = BlocksConfig.getSiteDomain() + "/" + resourcePath;
         EntityTemplate template = (EntityTemplate) Redis.getInstance().fetchLastVersion(new RedisID(new URL(url), RedisID.LAST_VERSION, false), EntityTemplate.class);
         return Response.ok(template.renderEntityInPageTemplate(template.getLanguage())).build();
+    }
+
+    @GET
+    @Path("/hash/{resourcePath:.+}")
+    @Produces("text/html")
+    public Response getTemplateHash(
+                    @PathParam("resourcePath")
+                    @DefaultValue("")
+                    String resourcePath,
+                    @QueryParam("fragment")
+                    @DefaultValue("")
+                    String fragment)
+                    throws MalformedURLException, IDException, RedisException, CacheException, ParseException, SerializationException
+    {
+        if(!StringUtils.isEmpty(fragment)){
+            resourcePath += "#" + fragment;
+        }
+        String url = BlocksConfig.getSiteDomain() + "/" + resourcePath;
+        EntityTemplate template = (EntityTemplate) Redis.getInstance().fetchLastVersion(new RedisID(new URL(url), RedisID.LAST_VERSION, false), EntityTemplate.class);
+        String retVal = "";
+        Map<String, String> hash = template.toHash();
+        for(String key : hash.keySet()){
+            retVal += key + "  ---->  " + hash.get(key) + "<br/><br/>";
+        }
+        return Response.ok(retVal).build();
     }
 }

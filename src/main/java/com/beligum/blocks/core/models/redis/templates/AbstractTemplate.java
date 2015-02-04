@@ -3,17 +3,14 @@ package com.beligum.blocks.core.models.redis.templates;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.dbs.Redis;
-import com.beligum.blocks.core.endpoints.UsersEndpoint;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.SerializationException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
-import com.beligum.blocks.core.models.redis.IdentifiableObject;
-import com.beligum.blocks.core.models.redis.ifaces.Storable;
+import com.beligum.blocks.core.models.redis.Storable;
 import com.beligum.blocks.core.parsers.TemplateParser;
-import com.beligum.blocks.core.utils.Utils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -24,22 +21,10 @@ import java.util.*;
 /**
  * Created by bas on 05.11.14.
  */
-public abstract class AbstractTemplate extends IdentifiableObject implements Storable, Comparable<AbstractTemplate>
+public abstract class AbstractTemplate extends Storable implements Comparable<AbstractTemplate>
 {
     /**string representing the html-template of this element, once the template has been set, it cannot be changed*/
     protected Map<RedisID, String> templates;
-    /**the version of the application this row is supposed to interact with*/
-    protected String applicationVersion;
-    /**the created_by of this row*/
-    protected String created_by;
-    /**the created_by of this row*/
-    protected String updated_by;
-    /**the created_by of this row*/
-    protected String created_at;
-    /**the created_by of this row*/
-    protected String updated_at;
-    /**deletion flag*/
-    protected Boolean deleted = false;
     /**the (css-)linked files this abstract template needs*/
     protected Set<String> links = new HashSet<>();
     protected List<String> linksInOrder = new ArrayList<>();
@@ -59,7 +44,6 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     {
         super(id);
         this.templates = templates;
-        this.applicationVersion = BlocksConfig.getProjectVersion();
         if(links != null) {
             for (String link : links) {
                 boolean added = this.links.add(link);
@@ -216,74 +200,9 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
      *
      * @return the language stored in the id of this template
      */
-
     abstract public String getName();
 
-    //________________IMPLEMENTATION OF STORABLE_____________
-    /**
-     * Override of the getId-method of IdentifiableObject. Here a RedisID is returned, which has more functionalities.
-     * @return the id of this storable
-     */
-    @Override
-    public RedisID getId()
-    {
-        return (RedisID) super.getId();
-    }
-    /**
-     * @return the version of this storable, which is the time it was created in milliseconds
-     */
-    @Override
-    public long getVersion()
-    {
-        return this.getId().getVersion();
-    }
-    /**
-     * @return the id of this storable with it's version attached ("[storableId]:[version]")
-     */
-    @Override
-    public String getVersionedId(){
-        return this.getId().getVersionedId();
-    }
-    /**
-     * @return the id of this storable without a version attached ("[storableId]")
-     */
-    @Override
-    public String getUnversionedId(){
-        return this.getId().getUnversionedId();
-    }
-    /**
-     * @return the version of the application this storable is supposed ot interact with
-     */
-    @Override
-    public String getApplicationVersion()
-    {
-        return this.applicationVersion;
-    }
-    /**
-     * @return the creator of this storable
-     */
-    @Override
-    public String getCreatedBy()
-    {
-        return this.created_by;
-    }
-    /**
-     * @return the updater of this storable
-     */
-    @Override
-    public String getUpdatedBy()
-    {
-        return this.updated_by;
-    }
 
-    /**
-     * @return deletion flag
-     */
-    @Override
-    public Boolean getDeleted()
-    {
-        return deleted;
-    }
     /**
      * Gives a hash-representation of this storable to save to the db. This method decides what information is stored in db, and what is not.
      *
@@ -292,7 +211,7 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     @Override
     public Map<String, String> toHash() throws SerializationException{
         try {
-            Map<String, String> hash = Utils.toHash(this);
+            Map<String, String> hash = super.toHash();
             /*
              * The id should not be saved as a seperate field in db. It is the key of this template, so present in db anyway.
              * The templates are separately saved per language, not under the key "templates".
@@ -328,7 +247,7 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     }
 
     /**
-     * Method fetching all templates in different languages, found as keys in the specified hash.
+     * Method fetching all templates in different languages, found as keys in the specified hash. The used keys will be deleted from the hash.
      * @param hash
      * @throws IDException if a bad id is found in the specified hash
      */
@@ -342,6 +261,7 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
                 if (permittedLanguages.contains(key)) {
                     RedisID languageId = new RedisID(hash.get(key));
                     templates.put(languageId, Redis.getInstance().fetchStringForId(languageId));
+                    hash.remove(key);
                 }
             }
             if(templates.isEmpty()){
@@ -362,12 +282,13 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
             for(Element tag : tagsRoot.siblingElements()){
                 tags.add(tag.outerHtml());
             }
+            hash.remove(dataBaseConstant);
         }
         return tags;
     }
 
     /**
-     * Method for fetching a list of link-tags from a db-hash
+     * Method for fetching a list of link-tags from a db-hash. The links will be removed from the hash afterwards.
      * @param hash
      */
     static protected List<String> fetchLinksFromHash(Map<String, String> hash){
@@ -375,7 +296,7 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
     }
 
     /**
-     * Method for fetching a list of script-tags from a db-hash
+     * Method for fetching a list of script-tags from a db-hash. The scripts will be removed from the hash afterwards.
      * @param hash
      */
     static protected List<String> fetchScriptsFromHash(Map<String, String> hash){
@@ -405,7 +326,7 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
         //7 and 31 are two randomly chosen prime numbers, needed for building hashcodes, ideally, these are different for each class
         HashCodeBuilder significantFieldsSet = new HashCodeBuilder(7, 31);
         significantFieldsSet = significantFieldsSet.append(this.getUnversionedId())
-                                                   .append(this.created_by)
+                                                   .append(this.createdBy)
                                                    .append(this.applicationVersion);
         //all map-pairs "language -> template" must be added to the hashcode, we do this by customly specifying a string containing both
         for(RedisID languageId : templates.keySet()){
@@ -440,7 +361,7 @@ public abstract class AbstractTemplate extends IdentifiableObject implements Sto
                 AbstractTemplate abstractTemplateObj = (AbstractTemplate) obj;
                 EqualsBuilder significantFieldsSet = new EqualsBuilder();
                 significantFieldsSet = significantFieldsSet.append(this.getUnversionedId(), abstractTemplateObj.getUnversionedId())
-                                                           .append(this.created_by, abstractTemplateObj.created_by)
+                                                           .append(this.createdBy, abstractTemplateObj.createdBy)
                                                            .append(this.applicationVersion, abstractTemplateObj.applicationVersion);
                 //check if all templates in different languages are equal and that exactly the same languages are present in both objects
                 significantFieldsSet = significantFieldsSet.append(templates.size(), abstractTemplateObj.templates.size());

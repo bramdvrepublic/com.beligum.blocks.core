@@ -8,16 +8,16 @@ public class DatabaseConstants
 {
     /**name of the scheme used for uri-identification of objects in the blocks-project*/
     public static final String SCHEME_NAME = "blocks";
-    /**name of the application-version-field in db*/
-    public final static String APP_VERSION = "appVersion";
-    /**name of the created_by-field in db*/
-    public final static String CREATOR = "created_by";
-    /**deletion flag field name*/
-    public final static String DELETE = "delete";
+//    /**name of the application-version-field in db*/
+//    public final static String APP_VERSION = "appVersion";
+//    /**name of the createdBy-field in db*/
+//    public final static String CREATOR = "createdBy";
+//    /**deletion flag field name*/
+//    public final static String DELETE = "delete";
     /**name of the entity-template-class-field in db*/
-    public final static String ENTITY_TEMPLATE_CLASS = "entityTemplateClass";
-    /**the default page-template field-name for an entity-class*/
-    public final static String PAGE_TEMPLATE = "pageTemplate";
+    public final static String ENTITY_TEMPLATE_CLASS_NAME = "entityTemplateClassName";
+//    /**the default page-template field-name for an entity-class*/
+//    public final static String PAGE_TEMPLATE = "pageTemplate";
     /**the (javascript-)script-tags*/
     public final static String SCRIPTS = "scripts";
     /**the (css-)linked files-tags*/

@@ -6,8 +6,8 @@ import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.*;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.models.redis.ifaces.Storable;
 import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.blocks.core.utils.Utils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -19,7 +19,7 @@ import java.util.Map;
 /**
  * Created by bas on 05.11.14.
  */
-public class EntityTemplate extends AbstractTemplate implements Storable
+public class EntityTemplate extends AbstractTemplate
 {
     /**the class of which this viewable is a viewable-instance*/
     protected String entityTemplateClassName = ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS;
@@ -68,14 +68,12 @@ public class EntityTemplate extends AbstractTemplate implements Storable
      * @param id
      * @param entityTemplateClassName
      * @param templates
-     * @param pageTemplateName
      * @throw IDException if no template in the language specified by the id could be found in the templates-map
      */
-    private EntityTemplate(RedisID id, String entityTemplateClassName, Map<RedisID, String> templates, String pageTemplateName) throws IDException
+    private EntityTemplate(RedisID id, String entityTemplateClassName, Map<RedisID, String> templates) throws IDException
     {
         super(id, templates, null, null);
         this.entityTemplateClassName = entityTemplateClassName;
-        this.pageTemplateName = pageTemplateName;
         if(!this.getLanguages().contains(id.getLanguage())){
             throw new IDException("No html-template in language '" + id.getLanguage() + "' found between templates.");
         }
@@ -91,15 +89,21 @@ public class EntityTemplate extends AbstractTemplate implements Storable
     protected static EntityTemplate createInstanceFromHash(RedisID id, Map<String, String> hash) throws DeserializationException
     {
         try{
-            if(hash != null && !hash.isEmpty() && hash.containsKey(DatabaseConstants.ENTITY_TEMPLATE_CLASS)) {
+            if(hash != null && !hash.isEmpty() && hash.containsKey(DatabaseConstants.ENTITY_TEMPLATE_CLASS_NAME)) {
+                /*
+                 * Fetch all fields from the hash, removing them as they are used.
+                 * Afterwards use all remaining information to be wired to the a new instance
+                 */
                 Map<RedisID, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
-                EntityTemplate newInstance = new EntityTemplate(id, hash.get(DatabaseConstants.ENTITY_TEMPLATE_CLASS), templates, hash.get(DatabaseConstants.PAGE_TEMPLATE));
-                newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
-                newInstance.created_by = hash.get(DatabaseConstants.CREATOR);
+                String entityTemplateClassName = hash.get(DatabaseConstants.ENTITY_TEMPLATE_CLASS_NAME);
+                hash.remove(DatabaseConstants.ENTITY_TEMPLATE_CLASS_NAME);
+                EntityTemplate newInstance = new EntityTemplate(id, entityTemplateClassName, templates);
+                //all the information that still remains in the hash is wired to the instance
+                Utils.autowireDaoToModel(hash, newInstance);
                 return newInstance;
             }
             else{
-                throw new DeserializationException("Hash doesn't contain key '" + DatabaseConstants.ENTITY_TEMPLATE_CLASS + "'."  + hash);
+                throw new DeserializationException("Hash doesn't contain key '" + DatabaseConstants.ENTITY_TEMPLATE_CLASS_NAME + "'."  + hash);
             }
         }catch (Exception e){
             throw new DeserializationException("Could not construct an entity-template from the specified hash", e);
@@ -204,8 +208,6 @@ public class EntityTemplate extends AbstractTemplate implements Storable
     public Map<String, String> toHash() throws SerializationException
     {
         Map<String, String> hash = super.toHash();
-        hash.put(DatabaseConstants.ENTITY_TEMPLATE_CLASS, this.entityTemplateClassName);
-        hash.put(DatabaseConstants.PAGE_TEMPLATE, this.pageTemplateName);
         //an entity-template doesn't have links and scripts (for the moment, this could be implemented later)
         hash.remove(DatabaseConstants.SCRIPTS);
         hash.remove(DatabaseConstants.LINKS);

@@ -10,6 +10,7 @@ import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.SerializationException;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.utils.Utils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -73,10 +74,9 @@ public class EntityTemplateClass extends AbstractTemplate
      * Constructor used for turning a redis-hash into an entity-template.
      * @param id
      * @param templates
-     * @param pageTemplateName
      * @throws IDException
      */
-    private EntityTemplateClass(RedisID id, Map<RedisID, String> templates, String pageTemplateName, List<String> links, List<String> scripts) throws IDException
+    private EntityTemplateClass(RedisID id, Map<RedisID, String> templates, List<String> links, List<String> scripts) throws IDException
     {
         super(id, templates, links, scripts);
         //the name of this entity-template-class doesn't start with a "/", so we split it of the given path
@@ -86,9 +86,6 @@ public class EntityTemplateClass extends AbstractTemplate
         }
         else {
             this.name = null;
-        }
-        if(pageTemplateName != null) {
-            this.pageTemplateName = pageTemplateName;
         }
         if(!this.getLanguages().contains(id.getLanguage())){
             throw new IDException("No html-template in language '" + id.getLanguage() + "' found between templates.");
@@ -145,12 +142,15 @@ public class EntityTemplateClass extends AbstractTemplate
                 throw new DeserializationException("Found empty hash");
             }
             else{
+                /*
+                 * Fetch all fields from the hash, removing them as they are used.
+                 * Afterwards use all remaining information to be wired to the a new instance
+                 */
                 Map<RedisID, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
                 List<String> links = AbstractTemplate.fetchLinksFromHash(hash);
                 List<String> scripts = AbstractTemplate.fetchScriptsFromHash(hash);
-                EntityTemplateClass newInstance = new EntityTemplateClass(id, templates, hash.get(DatabaseConstants.PAGE_TEMPLATE), links, scripts);
-                newInstance.applicationVersion = hash.get(DatabaseConstants.APP_VERSION);
-                newInstance.created_by = hash.get(DatabaseConstants.CREATOR);
+                EntityTemplateClass newInstance = new EntityTemplateClass(id, templates, links, scripts);
+                Utils.autowireDaoToModel(hash, newInstance);
                 return newInstance;
             }
         }
