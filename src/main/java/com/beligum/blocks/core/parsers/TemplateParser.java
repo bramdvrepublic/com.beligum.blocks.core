@@ -21,7 +21,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
-import org.jsoup.parser.Tag;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
@@ -234,7 +233,7 @@ public class TemplateParser
                 DOM.head().appendChild(script);
             }
             //inject frontend links and scripts if logged in as administrator
-            if(SecurityUtils.getSubject().isPermitted(Permissions.USER_CAN_MODIFY)) {
+            if(SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
                 addFrontendScripts(DOM);
             }
             return DOM.outerHtml();
@@ -263,7 +262,6 @@ public class TemplateParser
         Document newDOM = parse(html);
         Traversor traversor = new Traversor(new HtmlToStoreVisitor(entityUrl, newDOM));
         traversor.traverse(newDOM);
-        //        return traversor.getPageUrl();
     }
 
     /**

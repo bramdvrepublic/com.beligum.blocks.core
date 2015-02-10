@@ -32,9 +32,14 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
                 url: "/entities/save",
                 data: o,
                 contentType: 'application/json; charset=UTF-8',
-                success: function() {
-                    Logger.debug("Saved data!");
-                    menuBar.addClass("open");
+                complete: function(data) {
+                    if(data.responseText){
+                        //an url has been returned
+                        window.location = data.responseText;
+                    }else {
+                        Logger.debug("Saved data!");
+                        menuBar.addClass("open");
+                    }
                 },
                 dataType: 'json'}
         )
@@ -45,10 +50,12 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
         $.ajax({type: 'POST',
                 url: "/entities/delete",
                 data: document.URL,
-                success: function() {
-                    Logger.debug("Deleted page!");
-                    //show the user this page has really gone
-                    location.reload();
+                success: function(url) {
+                    if(url){
+                        window.location = url;
+                    }else{
+                        location.reload();
+                    }
                 }
             }
         )

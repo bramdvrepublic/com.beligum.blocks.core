@@ -257,12 +257,16 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
             Set<String> keys = hash.keySet();
             Set<String> permittedLanguages = Languages.getPermittedLanguageCodes();
             Map<RedisID, String> templates = new HashMap<>();
+            Set<String> keysToBeRemoved = new HashSet<>();
             for (String key : keys) {
                 if (permittedLanguages.contains(key)) {
                     RedisID languageId = new RedisID(hash.get(key));
                     templates.put(languageId, Redis.getInstance().fetchStringForId(languageId));
-                    hash.remove(key);
+                    keysToBeRemoved.add(key);
                 }
+            }
+            for(String key: keysToBeRemoved){
+                hash.remove(key);
             }
             if(templates.isEmpty()){
                 throw new DeserializationException("No html-template found for any language in hash: \n \n " + hash + "\n \n");
@@ -327,7 +331,8 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
         HashCodeBuilder significantFieldsSet = new HashCodeBuilder(7, 31);
         significantFieldsSet = significantFieldsSet.append(this.getUnversionedId())
                                                    .append(this.createdBy)
-                                                   .append(this.applicationVersion);
+                                                   .append(this.applicationVersion)
+                                                   .append(this.deleted);
         //all map-pairs "language -> template" must be added to the hashcode, we do this by customly specifying a string containing both
         for(RedisID languageId : templates.keySet()){
             String language = languageId.getLanguage();
@@ -362,7 +367,8 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
                 EqualsBuilder significantFieldsSet = new EqualsBuilder();
                 significantFieldsSet = significantFieldsSet.append(this.getUnversionedId(), abstractTemplateObj.getUnversionedId())
                                                            .append(this.createdBy, abstractTemplateObj.createdBy)
-                                                           .append(this.applicationVersion, abstractTemplateObj.applicationVersion);
+                                                           .append(this.applicationVersion, abstractTemplateObj.applicationVersion)
+                                                           .append(this.deleted, abstractTemplateObj.deleted);
                 //check if all templates in different languages are equal and that exactly the same languages are present in both objects
                 significantFieldsSet = significantFieldsSet.append(templates.size(), abstractTemplateObj.templates.size());
                 for(RedisID languageId : templates.keySet()){

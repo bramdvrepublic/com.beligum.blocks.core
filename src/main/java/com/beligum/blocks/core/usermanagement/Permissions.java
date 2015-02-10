@@ -21,8 +21,8 @@ public class Permissions implements PermissionsConfigurator
     //-----ROLES-----
 
     //-----PERMISSIONS-----
+    public static final String ENTITY_MODIFY = "entity:modify";
     public static final String USER_LOGGEDIN = "user:loggedIn";
-    public static final String USER_CAN_MODIFY = "user:canModify";
     public static final String USER_CREATE = "user:create";
     public static final String USER_DELETE = "user:delete";
 
@@ -33,7 +33,7 @@ public class Permissions implements PermissionsConfigurator
                                                     (Permission) new WildcardPermission(USER_LOGGEDIN)
                                     ),
                                     PermissionsConfigurator.ROLE_ADMIN, ImmutableSet.of(
-                                                    (Permission) new WildcardPermission(USER_CAN_MODIFY),
+                                                    (Permission) new WildcardPermission(ENTITY_MODIFY),
                                                     (Permission) new WildcardPermission(USER_CREATE),
                                                     (Permission) new WildcardPermission(USER_DELETE)
                                     )

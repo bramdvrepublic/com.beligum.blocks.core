@@ -9,16 +9,24 @@ import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.internationalization.Languages;
+import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.core.framework.base.R;
+import com.beligum.core.framework.utils.Logger;
+import com.beligum.core.framework.validation.messages.DefaultFeedbackMessage;
+import com.beligum.core.framework.validation.messages.FeedbackMessage;
+import gen.com.beligum.blocks.core.endpoints.ApplicationEndpointRoutes;
 import org.hibernate.validator.constraints.NotBlank;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
@@ -56,11 +64,11 @@ public class EntitiesEndpoint
         if(lastVersion == null || !id.hasLanguage()) {
             id = new RedisID(entityUrl, RedisID.LAST_VERSION, true);
         }
-        else if(lastVersion.getLanguages().contains(id.getLanguage())){
+        else if(lastVersion.getLanguages().contains(id.getLanguage()) && lastVersion.getDeleted() == false){
             throw new Exception("Cannot create an entity-language which already exists! This should not happen.");
         }
         else{
-            //do nothing, since this just means we're adding a new language to an entity
+            //do nothing, since this just means we're adding a new language to an entity or we are reviving an old version
         }
         newEntityUrl = TemplateParser.saveNewEntityTemplateToDb(entityUrl, id.getLanguage(), entityTemplateClass);
 
@@ -85,7 +93,6 @@ public class EntitiesEndpoint
     @POST
     @Path("/save")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     /*
      * update a page-instance with id 'entityId' to be the html specified
      */
@@ -96,16 +103,21 @@ public class EntitiesEndpoint
             url = url.substring(0, url.length()-1);
         }
         URL entityUrl = new URL(url);
+        //ignore the query-part of the url to fetch an entity from db, use only the path of the url
+        entityUrl = new URL(entityUrl, entityUrl.getPath());
+        EntityTemplate entity = (EntityTemplate) Redis.getInstance().fetchLastVersion(new RedisID(entityUrl, RedisID.LAST_VERSION, true), EntityTemplate.class);
         TemplateParser.updateEntity(entityUrl, data.get("page"));
-        //shouldn't do a redirect here, since the read of the entity could be done from a redis-slave, which would give the impression nothing was saved yet
-        return Response.ok(entityUrl.toURI()).build();
+        return Response.ok(entityUrl.getPath()).build();
     }
 
     @POST
     @Path("/delete")
-    public Response deleteEntity(String url){
-        //TODO BAS SH: only delete single template corresponding to this url, so all it's children stay accessible
-        return Response.ok().build();
+    public Response deleteEntity(String url) throws RedisException, MalformedURLException
+    {
+        Redis.getInstance().trash(url);
+        URL entityUrl = new URL(url);
+        entityUrl = new URL(entityUrl, entityUrl.getPath());
+        return Response.ok(entityUrl.toString()).build();
     }
 
 
@@ -173,5 +185,28 @@ public class EntitiesEndpoint
         entityTemplate.setPageTemplateName(templateName);
         String entity = entityTemplate.renderEntityInPageTemplate(entityTemplate.getLanguage());
         return Response.ok(entity).build();
+    }
+
+    @POST
+    @Path("/deletedversion")
+    public Response showDeletedVersion(@FormParam("page-url") String pageUrl) throws MalformedURLException, CacheException, ParseException, IDException, RedisException
+    {
+        List<AbstractTemplate> versionList = Redis.getInstance().versionList(new RedisID(new URL(pageUrl), RedisID.LAST_VERSION, true),EntityTemplate.class);
+        EntityTemplate lastAccessibleVersion = null;
+        Iterator<AbstractTemplate> it = versionList.iterator();
+        while(lastAccessibleVersion == null && it.hasNext()){
+            EntityTemplate version = (EntityTemplate) it.next();
+            if(!version.getDeleted()){
+                lastAccessibleVersion = version;
+            }
+        }
+        if(lastAccessibleVersion != null) {
+            String pageUrlPath = new URL(pageUrl).getPath().substring(1);
+            return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId(pageUrlPath, new Long(lastAccessibleVersion.getVersion())).getAbsoluteUrl())).build();
+        }
+        else{
+            Logger.error("Bad request: cannot revive '" + pageUrl + "' to the state before it was deleted, since no version is present in db which is not deleted.");
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
     }
 }

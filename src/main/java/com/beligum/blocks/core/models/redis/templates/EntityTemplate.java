@@ -110,6 +110,20 @@ public class EntityTemplate extends AbstractTemplate
         }
     }
 
+    public static EntityTemplate copyToNewId(EntityTemplate original, RedisID newId) throws Exception
+    {
+        try {
+            Map<String, String> hash = original.toHash();
+            EntityTemplate newVersion = new EntityTemplate(newId, original.getEntityTemplateClass(), original.getTemplates());
+            //all the information that still remains in the hash is wired to the instance
+            Utils.autowireDaoToModel(hash, newVersion);
+            return newVersion;
+
+        }catch (Exception e){
+            throw new Exception("Could not copy " + EntityTemplate.class.getSimpleName() + " '" + original.getName() + "' to new version '" + newId + "'.", e);
+        }
+    }
+
     @Override
     public List<String> getScripts() throws CacheException
     {

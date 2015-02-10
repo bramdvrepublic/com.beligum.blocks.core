@@ -9,8 +9,12 @@ import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
+import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.blocks.core.utils.Utils;
+import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.authz.annotation.RequiresRoles;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
@@ -22,6 +26,7 @@ import java.util.*;
  * Created by bas on 27.01.15.
  */
 @Path("/debug")
+@RequiresRoles(Permissions.ADMIN_ROLE_NAME)
 public class DebugEndpoint
 {
     @GET
@@ -30,6 +35,7 @@ public class DebugEndpoint
     {
         this.resetCache();
         Redis.getInstance().flushDB();
+        Logger.warn("Database been flushed by user '" + SecurityUtils.getSubject().getPrincipal() + "'.");
         return Response.ok("<ul><li>Cache reset</li><li>Database emptied</li></ul>").build();
     }
 
@@ -39,6 +45,7 @@ public class DebugEndpoint
     {
         EntityTemplateClassCache.getInstance().reset();
         PageTemplateCache.getInstance().reset();
+        Logger.warn("Cache has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "'.");
         return Response.ok("Cache reset").build();
     }
 

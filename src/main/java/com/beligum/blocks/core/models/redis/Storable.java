@@ -28,7 +28,6 @@ public class Storable extends Identifiable
 
     public Storable(RedisID id){
         super(id);
-        //TODO BAS!: are applicationversions remembered like this?
         this.applicationVersion = BlocksConfig.getProjectVersion();
     }
 

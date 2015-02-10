@@ -36,11 +36,11 @@ public class RedisID extends ID
 
 
     /**constant used to indicate a redis-id has no version attached*/
-    public static final long NO_VERSION = -1;
+    public static final Long NO_VERSION = new Long(-1);
     /**constant that can be given to RedisID-constructors, indicating the RedisID should point to the last version of an storable object saved in redis-db*/
-    public static final long LAST_VERSION = -2;
+    public static final Long LAST_VERSION = new Long(-2);
     /**constant used to indicate a new verion should be made for a RedisID, using the current system's time*/
-    public static final long NEW_VERSION = -3;
+    public static final Long NEW_VERSION = new Long(-3);
 
     /**constant indicating a redis-id without language*/
     public static final String NO_LANGUAGE = Languages.NO_LANGUAGE;
@@ -106,7 +106,15 @@ public class RedisID extends ID
             if(versionedDbUri.getAuthority() == null || !versionedDbUri.getAuthority().equals(BlocksConfig.getSiteDBAlias())){
                 throw new IDException("Uncorrect db-id (uncorrect site-alias) '" + versionedDbId + "'.");
             }
-            if(!versionedDbUri.getPath().contains(":") && !(!StringUtils.isEmpty(versionedDbUri.getFragment()) && versionedDbUri.getFragment().contains(":") )){
+            //check for version in all important parts of the uri
+            boolean isVersioned = versionedDbUri.getPath().contains(":");
+            if(!isVersioned){
+                isVersioned = !StringUtils.isEmpty(versionedDbUri.getQuery()) && versionedDbUri.getQuery().contains(":");
+            }
+            if(!isVersioned){
+                isVersioned = !StringUtils.isEmpty(versionedDbUri.getFragment()) && versionedDbUri.getFragment().contains(":");
+            }
+            if(!isVersioned){
                 throw new IDException("Found unversioned id '" + versionedDbId + "', but I need a versioned one.");
             }
 
@@ -116,6 +124,9 @@ public class RedisID extends ID
             String[] splittedByDoublePoint = null;
             if(!StringUtils.isEmpty(versionedDbUri.getFragment())) {
                 splittedByDoublePoint = versionedDbUri.getFragment().split(":");
+            }
+            else if(!StringUtils.isEmpty(versionedDbUri.getQuery())){
+                splittedByDoublePoint = versionedDbUri.getQuery().split(":");
             }
             else{
                 splittedByDoublePoint = versionedDbUri.getPath().split(":");
@@ -194,6 +205,27 @@ public class RedisID extends ID
     }
 
     /**
+     * Constructor taking an id retrieved form the Redis db and transforming it into an ID-object.
+     * If no version is present in the specified id, the last version is returned.
+     * The specified language is injected in the id. (So if language-information is present in the versionedDbId, it is overwritten by the language-parameter.)
+     * @param versionedDbId the id retrieved form db (must be of the form "blocks://[siteDomainAlias]/[objectName]:[version]"
+     * @throws URISyntaxException when the id cannot properly be transformed into a URI, since this class is actually a wrapper around a URI
+     * @throws IDException when no versioned id is specified or when the id cannot properly be generated from the specified string
+     */
+    public RedisID(String versionedDbId, String language) throws IDException
+    {
+        this(versionedDbId);
+        if(language.equals(RedisID.PRIMARY_LANGUAGE)){
+            Set<String> languageAlternatives = Redis.getInstance().fetchLanguageAlternatives(this);
+            language = Languages.determinePrimaryLanguage(languageAlternatives);
+        }
+        if(!Languages.isNonEmptyLanguageCode(language) && !language.equals(RedisID.NO_LANGUAGE)){
+            throw new IDException("Cannot add unkown language '" + language + "' to base-id '" + this + "'.");
+        }
+        this.language = language;
+    }
+
+    /**
      * Constructor copying the baseId, but taking another language
      * @param baseId
      * @param language
@@ -201,15 +233,7 @@ public class RedisID extends ID
      */
     public RedisID(RedisID baseId, String language) throws IDException
     {
-        this(baseId.getVersionedId());
-        if(language.equals(RedisID.PRIMARY_LANGUAGE)){
-            Set<String> languageAlternatives = Redis.getInstance().fetchLanguageAlternatives(baseId);
-            language = Languages.determinePrimaryLanguage(languageAlternatives);
-        }
-        if(!Languages.isNonEmptyLanguageCode(language) && !language.equals(RedisID.NO_LANGUAGE)){
-            throw new IDException("Cannot add unkown language '" + language + "' to base-id '" + baseId + "'.");
-        }
-        this.language = language;
+        this(baseId.getVersionedId(), language);
     }
 
     public long getVersion()

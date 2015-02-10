@@ -67,4 +67,4 @@
 </div>
 #end
 
-#parse('/views/usermanagement/main.html')
+#parse('/views/mot-main.html')

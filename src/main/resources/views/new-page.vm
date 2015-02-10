@@ -3,7 +3,7 @@
     <div class="row">
         <div class="col-md-12">
             <div class="block center-block">
-                <h1>Wilt u een nieuwe pagina aanmaken?</h1>
+                <h2>Do you want to create a new page?</h2>
             </div>
         </div>
     </div>
@@ -26,4 +26,4 @@
 </div>
 #end
 
-#parse("/views/main.html")
+#parse("/views/mot-main.html")

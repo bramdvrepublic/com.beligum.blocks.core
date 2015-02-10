@@ -5,10 +5,6 @@ import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
-import com.beligum.blocks.core.models.redis.templates.PageTemplate;
-import com.beligum.blocks.core.models.redis.templates.TemplateFactory;
 import com.beligum.blocks.core.models.redis.templates.*;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -343,17 +339,6 @@ public class Redis implements Closeable
         }
     }
 
-    public EntityTemplate fetchLastEntityTemplateVersion(String url) throws RedisException
-    {
-        try {
-            RedisID lastVersion = new RedisID(new URL(url), RedisID.LAST_VERSION, false);
-            return fetchEntityTemplate(lastVersion);
-        }
-        catch (Exception e){
-            throw new RedisException("Could not fetch last version of '" + url + "'.");
-        }
-    }
-
     /**
      * Get the last saved version of a entity with a certain url.
      * @param entityUrl the url of the entity to get the last version of
@@ -403,6 +388,51 @@ public class Redis implements Closeable
             return retVal;
         }catch(MalformedURLException e){
             throw new IDException("Cannot render proper id with entity-template-class '" + entityTemplateClass.getName() +" and site-domain '" + BlocksConfig.getSiteDomain() + "'.", e);
+        }
+    }
+
+    public boolean trash(String url) throws RedisException
+    {
+        try {
+            /*
+             * Since we want to block all access to all versions of the entity at this url,
+             * we need only the path of the url specified.
+             * That is why we redefine the entity-url starting from it's domain-name and path.
+             */
+            URL entityUrl = new URL(url);
+            entityUrl = new URL(entityUrl, entityUrl.getPath());
+            EntityTemplate storedVersion = (EntityTemplate) this.fetchLastVersion(new RedisID(entityUrl, RedisID.LAST_VERSION, true), EntityTemplate.class);
+            if(storedVersion == null){
+                throw new NullPointerException("Cannot trash '" + url + "', since no previous version of that entity was found in db.");
+            }
+            RedisID newId = new RedisID(new URL(url), RedisID.NEW_VERSION, true);
+            //if the language of the url to be trashed is not present in db, we're dealing with a not yet saved language af an entity, so we trash the whole entity
+            if(storedVersion.getTemplate(newId.getLanguage()) == null){
+                newId = new RedisID(newId, storedVersion.getLanguage());
+            }
+            EntityTemplate newVersion = EntityTemplate.copyToNewId(storedVersion, newId);
+            newVersion.setDeleted(true);
+            this.save(newVersion);
+            return true;
+        }catch (Exception e){
+            throw new RedisException("Could not trash entity at '" + url + "'.", e);
+        }
+    }
+
+    public List<AbstractTemplate> versionList(RedisID id, Class<? extends AbstractTemplate> type) throws RedisException
+    {
+        try(Jedis redisClient = pool.getResource()){
+            List<AbstractTemplate> versionList = new ArrayList<>();
+            List<String> versionedIds = redisClient.lrange(id.getUnversionedId(), 0, -1);
+            for(String versionStringId : versionedIds){
+                RedisID versionId = new RedisID(versionStringId, RedisID.PRIMARY_LANGUAGE);
+                AbstractTemplate template = this.fetchTemplate(versionId, type);
+                versionList.add(template);
+            }
+            return versionList;
+        }
+        catch (Exception e){
+            throw new RedisException("Could not get version-list for '" + id + "' from db.", e);
         }
     }
 
