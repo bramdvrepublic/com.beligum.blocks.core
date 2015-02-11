@@ -8,13 +8,17 @@ import javax.persistence.*;
  * Created by bas on 15.01.15.
  */
 @Entity
-@NamedQueries({ @NamedQuery(
-                name = Person.FIND_PERSON_BY_EMAIL,
-                query = "FROM Person p WHERE p.email = :"+Person.QUERY_PARAMETER)
+@NamedQueries({
+                @NamedQuery(name = Person.FIND_PERSON_BY_EMAIL,
+                                query = "FROM Person p WHERE p.email = :"+Person.QUERY_PARAMETER),
+                @NamedQuery(name = Person.FIND_UNDELETED_PERSONS,
+                                query = "FROM Person p WHERE p.deleted = false"
+                )
 })
 public class Person extends BasicModel
 {
     public static final String FIND_PERSON_BY_EMAIL = "findPersonByEmail";
+    public static final String FIND_UNDELETED_PERSONS = "findUndeletedPerson";
     public static final String QUERY_PARAMETER = "email";
 
     @OneToOne(fetch = FetchType.LAZY, cascade = { CascadeType.ALL })

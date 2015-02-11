@@ -3,7 +3,6 @@ package com.beligum.blocks.core.endpoints;
 import com.beligum.blocks.core.data.in.*;
 import com.beligum.blocks.core.models.sql.Person;
 import com.beligum.blocks.core.models.sql.Subject;
-import com.beligum.blocks.core.repositories.PersonRepository;
 import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.blocks.core.utils.Utils;
 import com.beligum.blocks.core.validation.ExistingEntityId;
@@ -65,7 +64,7 @@ public class UsersEndpoint
          * Fetch users-template
          */
         Template template = R.templateEngine().getEmptyTemplate("/views/usermanagement/users-all.vm");
-        List<Person> users = PersonRepository.getAllPersons();
+        List<Person> users = RequestContext.getEntityManager().createNamedQuery(Person.FIND_UNDELETED_PERSONS, Person.class).getResultList();
 
         /*
          * Sort the users using the specified field-name.
@@ -392,6 +391,23 @@ public class UsersEndpoint
         }
     }
 
+    //___________________DELETE_USER____________________________
+    @DELETE
+    @Path("/{userId}")
+    @RequiresPermissions(Permissions.USER_DELETE)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deleteUser(@PathParam("userId") long userId){
+        EntityManager em = RequestContext.getEntityManager();
+        Person user = em.find(Person.class, userId);
+        user.setDeleted(true);
+        user.getSubject().setActive(false);
+        user.getSubject().setDeleted(true);
+        em.merge(user);
+        R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "userDeleted"));
+        //return the redirect url
+        return Response.ok(URI.create(UsersEndpointRoutes.users(FIRST_NAME, true).getPath())).build();
+    }
+
 
 
     //___________________CHANGE_EMAIL_CONFIRMATION___________________
@@ -544,7 +560,7 @@ public class UsersEndpoint
             person.getSubject().setConfirmation(null);
         }
         R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "forgotPasswordFinal"));
-        return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
+        return Response.ok(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
     }
 
     @GET

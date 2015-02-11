@@ -1,7 +1,7 @@
 @red: #ce0538;
 @opaque-red: rgba(206,5,56,0.8);
 @darkgray: #5d5d5d;
-@opaque-darkgray: rgba(93,93,93,0.8);
+@opaque-darkgray: rgba(93,93,93,0.9);
 @lightgray: #7e7e7e;
 @opaque-lightgray: rgba(26,26,26,0.25);
 @button-font-weight: 700;
@@ -106,6 +106,7 @@ body{
   }
   tbody{
     border-bottom: 10px;
+    cursor: pointer;
     a{
       display: block;
       height: 35px;
@@ -113,8 +114,7 @@ body{
     tr{
       td{
         border-color: @opaque-lightgray;
-        opacity: 0.9;
-        color: @darkgray;
+        color: @opaque-darkgray;
         a{
           color: inherit;
         }
@@ -125,11 +125,30 @@ body{
         color: white;
       }
     }
-    tr:hover{
+    tr.hover{
       td{
         color: @red;
         cursor: pointer;
         text-decoration: none;
+      }
+    }
+    tr.nohover{
+      td.delete{
+        color: @opaque-darkgray;
+      }
+    }
+    .delete{
+      .hover{
+        color: @red;
+      }
+      .nohover{
+        color: @opaque-darkgray;
+      }
+      .glyphicon{
+        color: inherit !important;
+      }
+      a{
+        height: inherit !important;
       }
     }
   }
@@ -188,6 +207,7 @@ select:active, select: focus{
   color: @red;
   opacity: 0.65;
 }
+
 
 a.red-accent:hover{
   color: @red;

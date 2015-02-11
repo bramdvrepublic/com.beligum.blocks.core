@@ -9,11 +9,13 @@
 
     <link href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
     <link rel="icon" type="image/x-icon" href="/assets/images/favicon.ico" />
-    <link href="/assets/stylesheets/mot-main.less" rel="stylesheet" />
+    <link href="/assets/stylesheets/usermanagement/mot-modals.less" rel="stylesheet" />
+    <link href="/assets/stylesheets/usermanagement/mot-main.less" rel="stylesheet" />
     $!header-styles-extra
 
     <script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
     <script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
+    <script src="/assets/javascripts/usermanagement/modals.js" type="application/javascript" ></script>
     $!header-scripts-extra
 
 
@@ -40,6 +42,8 @@ $!buttonbar
 #parse("/views/snippets/feedbackMessages.vm")
 
 $!body-html
+
+#parse("/views/snippets/modals.vm")
 
 </body>
 </html>
