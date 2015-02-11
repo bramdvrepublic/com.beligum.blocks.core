@@ -60,7 +60,6 @@ public class ApplicationEndpoint
             if(randomURLPath != null && (randomURLPath.equals("") || randomURLPath.equals("/"))){
                 return Response.seeOther(URI.create(ApplicationEndpointRoutes.index().getPath())).build();
             }
-            //TODO BAS!: make deletion of pages possible
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
             if(version == null){
                 version = RedisID.LAST_VERSION;
@@ -92,7 +91,6 @@ public class ApplicationEndpoint
             }
             //if the url contains both version and language-information, try to render the entity
             else {
-                //TODO BAS SH: problems while deleting entities, when we're deleting an entity in a language that has not really been saved yet
                 version = id.getVersion();
                 EntityTemplate entityTemplate = Redis.getInstance().fetchEntityTemplate(id);
                 //if no entity-template is returned from db, the specified language doesn't exist

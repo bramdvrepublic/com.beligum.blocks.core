@@ -4,10 +4,15 @@
         <button class="btn btn-default  navbar-btn">Users</button>
     </a>
 </div>
-<div class="col-md-offset-6 col-md-2">
-    <a href="" class="red-btn">
-        <button type="submit" form="userForm" class="btn btn-default pull-right navbar-btn">Save user</button>
-    </a>
+#end
+
+#define($buttonbar)
+<div class="container buttonbar">
+    <div class="col-md-offset-10 col-md-2">
+        <a href="">
+            <button type="submit" form="userForm" class="btn btn-primary pull-right navbar-btn">Save user</button>
+        </a>
+    </div>
 </div>
 #end
 

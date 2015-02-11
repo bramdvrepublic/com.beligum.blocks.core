@@ -5,12 +5,34 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     var menuBar = $('<div class="blocks-main-menu"><div class="main-menu-items"></div></div>');
     var btnList = menuBar;
 
+    //TODO BAS SH: first try doing all usermanagement-requirements, then add a modal to the delete-button (sketch is given here)
 //    var templateBtn = $('<a class="btn  btn-default" href="#">Change template</a>');
 //    btnList.append(templateBtn);
     var saveBtn = $('<a class="btn  btn-default" href="#">Save</a>');
     btnList.append(saveBtn);
     var deleteBtn = $('<a class="btn  btn-default" href="#">Delete</a>');
     btnList.append(deleteBtn);
+    var modalBtn = $('<button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal">Launch demo modal </button>');
+    btnList.append(modalBtn);
+
+    var deleteModal = $('<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"> ' +
+    '<div class="modal-dialog"> ' +
+    '<div class="modal-content"> ' +
+    '<div class="modal-header"> ' +
+    '<button type="button" class="close" data-dismiss="modal" aria-label="Close">' +
+    '<span aria-hidden="true">&times;</span>' +
+    '</button> ' +
+    '<h4 class="modal-title" id="myModalLabel">Modal title</h4> ' +
+    '</div> ' +
+    '<div class="modal-body">... </div> ' +
+    '<div class="modal-footer"> ' +
+    '<button type="button" class="btn btn-default" data-dismiss="modal">Close</button> ' +
+    '<button type="button" class="btn btn-primary">Save changes</button> ' +
+    '</div> ' +
+    '</div> ' +
+    '</div> ' +
+    '</div>');
+    $("body").append(deleteModal);
 
 
     menuBtn.on("click", function(event) {

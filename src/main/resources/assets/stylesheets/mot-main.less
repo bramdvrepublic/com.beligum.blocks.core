@@ -1,8 +1,11 @@
 @red: #ce0538;
+@opaque-red: rgba(206,5,56,0.8);
 @darkgray: #5d5d5d;
+@opaque-darkgray: rgba(93,93,93,0.8);
 @lightgray: #7e7e7e;
+@opaque-lightgray: rgba(26,26,26,0.25);
 @button-font-weight: 700;
-@button-border: 3px;
+@button-border: 2px;
 @border-radius: 5px;
 
 body{
@@ -45,6 +48,24 @@ body{
   }
 }
 
+.buttonbar {
+  margin-bottom: 25px;
+  .btn{
+    background-color: white;
+    color: @darkgray;
+    border: @button-border solid @darkgray;
+    font-weight: @button-font-weight;
+  }
+  .btn:focus{
+    outline: none;
+  }
+  .btn:active{
+    background-color: @darkgray;
+    color: white;
+    outline: none;
+  }
+}
+
 .red-btn {
   :hover{
     color: @red;
@@ -84,20 +105,20 @@ body{
     }
   }
   tbody{
+    border-bottom: 10px;
     a{
       display: block;
       height: 35px;
     }
     tr{
       td{
-        border-top: 0px;
-        opacity: 0.8;
+        border-color: @opaque-lightgray;
+        opacity: 0.9;
         color: @darkgray;
         a{
           color: inherit;
         }
       }
-
     }
     tr.inactive{
       .glyphicon{

@@ -53,13 +53,7 @@ public class UsersEndpoint
     private static final String CHANGE_EMAIL = "changeemail";
     private static final String FEEDBACK_MESSAGE = "feedbackMessage";
 
-    //TODO BAS SH: ameliorate user management
     //TODO BAS!: use trashed-flag to implement user-deletion
-    //TODO BAS!: rechtste knoppen onderaan en inactivation bovenaan rechts onder menubalk
-    //TODO BAS!: userIds na action plaatsen in urls
-    //TODO BAS!: table lines in grijs-wit (even lijnen, use less second color)
-    //TODO BAS!: users/profile should "redirect" to current user
-    //TODO BAS!: wrong redirect na mislukte email-change in user-profile
     //TODO BAS!: vraag aan Bram zelfde form voor edit-user als new-user
 
     @GET
@@ -266,7 +260,7 @@ public class UsersEndpoint
         return Response.ok(getUserTemplate(userId, isCurrentUser)).build();
     }
     @GET
-    @Path("/{userId}/profile")
+    @Path("/profile/{userId}")
     @RequiresUser
     public Response getUserProfile(@PathParam("userId") long userId) throws Exception
     {
@@ -298,7 +292,7 @@ public class UsersEndpoint
         return updateUser(userId, editUser, false, false);
     }
     @POST
-    @Path("/{userId}/profile")
+    @Path("/profile/{userId}")
     @RequiresUser
     /**
      * Updating-method for current user-profile
@@ -313,6 +307,14 @@ public class UsersEndpoint
         editUser.active = persisted.getSubject().getActive();
         return updateUser(userId, editUser, true, true);
     }
+    @GET
+    @Path("/profile")
+    @RequiresUser
+    public Response getCurrentUserProfile(){
+        DefaultCookiePrincipal principal = (DefaultCookiePrincipal) SecurityUtils.getSubject().getPrincipal();
+        long currentUserId = principal.getId();
+        return Response.seeOther(URI.create(UsersEndpointRoutes.getUserProfile(currentUserId).getPath())).build();
+    }
     private Response updateUser(long userId, EditUser editUser, boolean needsConfirmation, boolean isProfile) throws Exception
     {
         EntityManager em = RequestContext.getEntityManager();
@@ -326,7 +328,12 @@ public class UsersEndpoint
             //if this email is already in use, do not save, and return error
             if(!emailUser.isEmpty()){
                 R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.ERROR, "emailAlreadyInUse"));
-                return Response.seeOther(URI.create(UsersEndpointRoutes.getUser(userId).getPath())).build();
+                if(isProfile){
+                    return Response.seeOther(URI.create(UsersEndpointRoutes.getUserProfile(userId).getPath())).build();
+                }
+                else {
+                    return Response.seeOther(URI.create(UsersEndpointRoutes.getUser(userId).getPath())).build();
+                }
             }
             else {
                 persistedUser.getSubject().setPrincipalReset(editUser.email);
@@ -442,7 +449,7 @@ public class UsersEndpoint
 
     //____________________CHANGE_PASSWORD_AS_LOGGED_IN_USER_____________//
     @GET
-    @Path("{userId}/changepassword")
+    @Path("/changepassword/{userId}")
     @RequiresUser
     public Response getChangePassword(@PathParam("userId") @ExistingEntityId(entityClass = Person.class) long userId) {
         //will throw exception if the current user is not the one being accessed, or an administrator
@@ -453,7 +460,7 @@ public class UsersEndpoint
     }
 
     @POST
-    @Path("{userId}/changepassword")
+    @Path("/changepassword/{userId}")
     @RequiresUser
     public Response changePassword(@PathParam("userId") long userId, @BeanParam @Valid ChangePasswordUser changePasswordUser) throws Exception
     {

@@ -2,11 +2,24 @@
 <script src="/assets/javascripts/users.js" type="application/javascript" ></script>
 #end
 
-#define($navbar-extra)
-<div class="col-md-offset-7 col-md-2">
-    <a href="/users/new" class="red-btn">
-        <button class="btn btn-default pull-right navbar-btn">New user</button>
-    </a>
+#define($buttonbar)
+<div class="container buttonbar">
+    <div class="col-md-2 pull-right">
+        <a onclick="changeActiveView()">
+            <button type="submit" form="userForm" class="btn btn-primary pull-right navbar-btn"id="changeActiveView">
+                #if($showInactive)
+                    Hide inactive
+                #else
+                    Show inactive
+                #end
+            </button>
+        </a>
+    </div>
+    <div class="col-md-2 pull-right">
+        <a href="/users/new">
+            <button class="btn btn-primary pull-right navbar-btn">New user</button>
+        </a>
+    </div>
 </div>
 #end
 
@@ -34,13 +47,7 @@
                             Role
                             <span class="glyphicon glyphicon-chevron-up" #if($sortedBy != "subject") style="opacity: 0" #end></span>
                         </a></th>
-                        <th><a onclick="changeActiveView()" id="changeActiveView">
-                            #if($showInactive)
-                                Hide inactive
-                            #else
-                                Show inactive
-                            #end
-                        </a></th>
+                        <th>Active</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -59,9 +66,9 @@
         </div>
     </div>
 </div>
-    <script>
-        var showInactive = $showInactive;
-    </script>
+<script>
+    var showInactive = $showInactive;
+</script>
 #end
 
 #parse('/views/mot-main.html')
