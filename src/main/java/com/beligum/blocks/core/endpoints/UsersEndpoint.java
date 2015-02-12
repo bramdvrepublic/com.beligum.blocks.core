@@ -55,7 +55,6 @@ public class UsersEndpoint
     private static final String CHANGE_EMAIL = "changeemail";
     private static final String FEEDBACK_MESSAGE = "feedbackMessage";
 
-    //TODO BAS!: use trashed-flag to implement user-deletion
     //TODO BAS!: vraag aan Bram zelfde form voor edit-user als new-user
 
     @GET
