@@ -10,6 +10,7 @@ import com.beligum.blocks.core.validation.messages.CustomFeedbackMessage;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.base.RequestContext;
 import com.beligum.core.framework.email.EmailException;
+import com.beligum.core.framework.i18n.I18n;
 import com.beligum.core.framework.security.DefaultCookiePrincipal;
 import com.beligum.core.framework.templating.ifaces.Template;
 import com.beligum.core.framework.utils.Logger;
@@ -395,17 +396,20 @@ public class UsersEndpoint
     @DELETE
     @Path("/{userId}")
     @RequiresPermissions(Permissions.USER_DELETE)
-    @Produces(MediaType.APPLICATION_JSON)
     public Response deleteUser(@PathParam("userId") long userId){
+    //TODO BAS SH 2: daarna moet er nog voor gezorgd worden dat een gedelete user opnieuw kan aangemaakt worden
+        if(this.getCurrentUserId() == userId){
+            Logger.warn("User '" + userId + "' cannot delete himself.");
+            return Response.status(Response.Status.FORBIDDEN).entity(I18n.instance().getMessage("selfDelete")).build();
+        }
         EntityManager em = RequestContext.getEntityManager();
         Person user = em.find(Person.class, userId);
         user.setDeleted(true);
         user.getSubject().setActive(false);
         user.getSubject().setDeleted(true);
         em.merge(user);
-        R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "userDeleted"));
         //return the redirect url
-        return Response.ok(URI.create(UsersEndpointRoutes.users(FIRST_NAME, true).getPath())).build();
+        return Response.ok(I18n.instance().getMessage("userDeleted")).build();
     }
 
 
@@ -605,14 +609,18 @@ public class UsersEndpoint
         return Response.ok(template).build();
     }
 
-    public static Person fetchCurrentUserFromCookie()
+    public Person fetchCurrentUserFromCookie()
     {
         try {
             EntityManager em = RequestContext.getEntityManager();
-            DefaultCookiePrincipal principal = (DefaultCookiePrincipal) SecurityUtils.getSubject().getPrincipal();
-            return em.find(Person.class, principal.getId());
+            return em.find(Person.class, getCurrentUserId());
         }catch (ClassCastException e){
             throw new RuntimeException("Found unsupported cookieprincipal of class '" + SecurityUtils.getSubject().getPrincipal().getClass().getName() + "'.");
         }
+    }
+
+    public long getCurrentUserId(){
+        DefaultCookiePrincipal principal = (DefaultCookiePrincipal) SecurityUtils.getSubject().getPrincipal();
+        return principal.getId();
     }
 }

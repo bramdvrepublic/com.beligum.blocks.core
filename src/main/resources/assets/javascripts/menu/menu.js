@@ -5,7 +5,7 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     var menuBar = $('<div class="blocks-main-menu"><div class="main-menu-items"></div></div>');
     var btnList = menuBar;
 
-    //TODO BAS SH: first try doing all usermanagement-requirements, then add a modal to the delete-button (sketch is given here)
+    //TODO BAS SH 3: add a modal to the delete-button (sketch is given here)
 //    var templateBtn = $('<a class="btn  btn-default" href="#">Change template</a>');
 //    btnList.append(templateBtn);
     var saveBtn = $('<a class="btn  btn-default" href="#">Save</a>');

@@ -3,31 +3,50 @@
  * Customization of modals can be done using data-... attributes
  * Needs jQuery.js
  */
-
-function customize(modal){
-    modal.on('show.bs.modal', function (event) {
-        var causeElement = $(event.relatedTarget);
-        var onConfirm = causeElement.data("on-confirm");
-        var bodyText = causeElement.data("body-text");
-        var confirmText = causeElement.data("confirm-text");
-        var title = causeElement.data("title");
-        var modal = $(this);
-        if(onConfirm) {
-            modal.find("#confirm").attr("onclick", onConfirm);
+var MODALS = {
+    MODAL_ON_CONFIRM : "on-confirm",
+    MODAL_BODY_TEXT : "body-text",
+    MODAL_CONFIRM_TEXT : "confirm-text",
+    MODAL_TITLE : "title",
+    ERROR : "#errorModal",
+    SUCCESS : "#successModal",
+    DANGER : "#dangerModal",
+    setModalData: function (modal, data) {
+        if (data) {
+            if (data.onConfirm) {
+                modal.find(".confirm").attr("onclick", data.onConfirm);
+            }
+            if (data.bodyText) {
+                modal.find(".modal-body").text(data.bodyText);
+            }
+            if (data.confirmText) {
+                modal.find(".confirm").text(data.confirmText);
+            }
+            if (data.title) {
+                modal.find(".modal-title").text(data.title);
+            }
         }
-        if(bodyText){
-            modal.find(".modal-body").text(bodyText);
-        }
-        if(confirmText){
-            modal.find("#confirm").text(confirmText);
-        }
-        if(title){
-            modal.find("#confirmModalLabel").text(title);
-        }
-    });
-}
+    },
+    customize: function (modal) {
+        modal.on('show.bs.modal', function (event) {
+            var causeElement = $(event.relatedTarget);
+            var data = {};
+            data.onConfirm = causeElement.data(MODALS.MODAL_ON_CONFIRM);
+            data.bodyText = causeElement.data(MODALS.MODAL_BODY_TEXT);
+            data.confirmText = causeElement.data(MODALS.MODAL_CONFIRM_TEXT);
+            data.title = causeElement.data(MODALS.MODAL_TITLE);
+            var modal = $(this);
+            MODALS.setModalData(modal, data);
+        });
+    },
+    show: function(modalName, data){
+        var modal = $(modalName).modal();
+        MODALS.setModalData(modal, data);
+        $(modalName).modal('show');
+    }
+};
 
 jQuery(document).ready(function($) {
-    customize($('#confirmModal'));
-    customize($('#successModal'));
+    MODALS.customize($(MODALS.DANGER));
+    MODALS.customize($(MODALS.ERROR));
 });

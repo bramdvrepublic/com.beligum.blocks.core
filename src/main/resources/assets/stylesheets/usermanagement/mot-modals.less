@@ -7,9 +7,9 @@
 @lightgray: #7e7e7e;
 @opaque-lightgray: rgba(26,26,26,0.25);
 
-#confirmModal{
+.custom-modal(@color){
   .modal-header{
-    background-color: @red;
+    background-color: @color;
     border-top-left-radius: inherit;
     border-top-right-radius: inherit;
     h4{
@@ -29,18 +29,24 @@
       border-color: @lightgray;
     }
     .btn:active{
-      outline-color: @red;
+      outline-color: @color;
     }
-    #confirm {
-      background-color: @red;
-      border-color: @red;
+    .confirm {
+      background-color: @color;
+      border-color: @color;
       color: white;
     }
   }
 }
 
+#dangerModal{
+  .custom-modal(@red);
+}
+
 #successModal{
-  .modal-header{
-    background-color: @green;
-  }
+  .custom-modal(@green);
+}
+
+#errorModal{
+  .custom-modal(@red);
 }

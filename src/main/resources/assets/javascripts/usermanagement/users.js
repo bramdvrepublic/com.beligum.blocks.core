@@ -76,14 +76,22 @@ function deleteUser(userId){
     $.ajax({
         url: "/users/" + userId,
         type: 'delete',
-        success: function(url){
-            //TODO BAS SH: een modal tonen wegens succes (style in green) en bij confirmatie naar de users-page gaan
-            if(url){
-                window.location = url;
-            }
-            else{
-                location.reload();
-            }
+        success: function(response){
+            var modalData = {
+                bodyText: response ? response : "The user has been deleted.",
+                onConfirm: "toUsersIndex()"
+            };
+            MODALS.show(MODALS.SUCCESS, modalData);
+        },
+        error: function(response){
+            var modalData = {
+                bodyText: response.status == 403 ? response.responseText : "An error occurred while deleting the user."
+            };
+            MODALS.show(MODALS.ERROR, modalData);
         }
-    })
+    });
+}
+
+function toUsersIndex(){
+    window.location = "/users";
 }
