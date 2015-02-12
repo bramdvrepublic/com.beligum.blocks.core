@@ -196,7 +196,7 @@ public class EntitiesEndpoint
         Iterator<AbstractTemplate> it = versionList.iterator();
         while(lastAccessibleVersion == null && it.hasNext()){
             EntityTemplate version = (EntityTemplate) it.next();
-            if(!version.getDeleted()){
+            if(version != null && !version.getDeleted()){
                 lastAccessibleVersion = version;
             }
         }

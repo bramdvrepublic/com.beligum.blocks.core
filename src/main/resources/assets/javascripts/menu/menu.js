@@ -5,34 +5,12 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     var menuBar = $('<div class="blocks-main-menu"><div class="main-menu-items"></div></div>');
     var btnList = menuBar;
 
-    //TODO BAS SH 3: add a modal to the delete-button (sketch is given here)
 //    var templateBtn = $('<a class="btn  btn-default" href="#">Change template</a>');
 //    btnList.append(templateBtn);
     var saveBtn = $('<a class="btn  btn-default" href="#">Save</a>');
     btnList.append(saveBtn);
     var deleteBtn = $('<a class="btn  btn-default" href="#">Delete</a>');
     btnList.append(deleteBtn);
-    var modalBtn = $('<button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal">Launch demo modal </button>');
-    btnList.append(modalBtn);
-
-    var deleteModal = $('<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"> ' +
-    '<div class="modal-dialog"> ' +
-    '<div class="modal-content"> ' +
-    '<div class="modal-header"> ' +
-    '<button type="button" class="close" data-dismiss="modal" aria-label="Close">' +
-    '<span aria-hidden="true">&times;</span>' +
-    '</button> ' +
-    '<h4 class="modal-title" id="myModalLabel">Modal title</h4> ' +
-    '</div> ' +
-    '<div class="modal-body">... </div> ' +
-    '<div class="modal-footer"> ' +
-    '<button type="button" class="btn btn-default" data-dismiss="modal">Close</button> ' +
-    '<button type="button" class="btn btn-primary">Save changes</button> ' +
-    '</div> ' +
-    '</div> ' +
-    '</div> ' +
-    '</div>');
-    $("body").append(deleteModal);
 
 
     menuBtn.on("click", function(event) {
@@ -68,19 +46,21 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     });
 
     deleteBtn.on("click", function() {
-        menuBar.removeClass("open");
-        $.ajax({type: 'POST',
-                url: "/entities/delete",
-                data: document.URL,
-                success: function(url) {
-                    if(url){
-                        window.location = url;
-                    }else{
-                        location.reload();
+        var onConfirm = function(){
+            $.ajax({type: 'POST',
+                    url: "/entities/delete",
+                    data: document.URL,
+                    success: function(url) {
+                        if(url){
+                            window.location = url;
+                        }else{
+                            location.reload();
+                        }
                     }
                 }
-            }
-        )
+            )
+        };
+        Notification.dialog("Delete page", "<div>Do you want to delete this page and all it's translations?</div>", onConfirm);
     });
 
 

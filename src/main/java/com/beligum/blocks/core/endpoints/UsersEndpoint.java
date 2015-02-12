@@ -154,11 +154,6 @@ public class UsersEndpoint
             subject = (Subject) em.createNamedQuery(AbstractSubject.FIND_SUBJECT_BY_PRINCIPAL_QUERY_NAME, AbstractSubject.class)
                                   .setParameter(1, newUser.email)
                                   .getSingleResult();
-            if(!subject.isDeleted()){
-                //TODO BAS: ask Bram how to keep filled in information in new-user-form and be able to show this message (ConstraintViolationException?)
-                R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.ERROR, "emailAlreadyInUse"));
-                return Response.seeOther(URI.create(UsersEndpointRoutes.newUser().getPath())).build();
-            }
             subject.setDeleted(false);
             subject.setActive(true);
         }catch(NoResultException e) {
@@ -168,10 +163,6 @@ public class UsersEndpoint
             person = em.createNamedQuery(Person.FIND_PERSON_BY_EMAIL, Person.class)
                        .setParameter(Person.QUERY_PARAMETER, newUser.email)
                        .getSingleResult();
-            if(!person.isDeleted()){
-                R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.ERROR, "emailAlreadyInUse"));
-                return Response.seeOther(URI.create(UsersEndpointRoutes.newUser().getPath())).build();
-            }
             person.setDeleted(false);
         }catch (NoResultException e){
             person = new Person();

@@ -32,21 +32,25 @@ public @interface EmailDoesNotExist
         }
 
         @Override
-        public boolean isValid(String email, ConstraintValidatorContext arg1) {
+        public boolean isValid(String email, ConstraintValidatorContext arg1)
+        {
             EntityManager em = RequestContext.getEntityManager();
             Principal currentPrincipal = Authentication.getCurrentPrincipal();
-            Person person = null;
-            boolean retVal = false;
             if (currentPrincipal != null && email.toLowerCase().trim().equals(currentPrincipal.getUsername().toLowerCase().trim())) {
                 return true;
             }
+            else {
+                Person person = null;
                 try {
                     person = em.createQuery("SELECT p FROM Person p WHERE p.email like :email", Person.class).setParameter("email", email).getSingleResult();
-                } catch (NoResultException ex) {
+                }
+                catch (NoResultException ex) {
                     return true;
                 }
-                return retVal;
+                //if a person was found with that email-adress, it "does not exist" when it is a deleted person
+                return person.isDeleted();
             }
         }
     }
+}
 
