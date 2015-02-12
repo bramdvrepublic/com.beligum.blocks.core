@@ -1,11 +1,15 @@
 #if($ERRORS)
 <ul class="errors">
-    #foreach($error in $ERRORS[$varname])
-        <li>$I18N.getMessage($error.messageTemplate, $error.message)</li>
-    #end
-    #foreach($varname in $varnames)
+    #if($varname && !$varnames)
         #foreach($error in $ERRORS[$varname])
             <li>$I18N.getMessage($error.messageTemplate, $error.message)</li>
+        #end
+    #end
+    #if($varnames)
+        #foreach($varname in $varnames)
+            #foreach($error in $ERRORS[$varname])
+                <li>$I18N.getMessage($error.messageTemplate, $error.message)</li>
+            #end
         #end
     #end
 </ul>

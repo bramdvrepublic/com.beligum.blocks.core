@@ -11,6 +11,7 @@ import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.base.RequestContext;
 import com.beligum.core.framework.email.EmailException;
 import com.beligum.core.framework.i18n.I18n;
+import com.beligum.core.framework.models.AbstractSubject;
 import com.beligum.core.framework.security.DefaultCookiePrincipal;
 import com.beligum.core.framework.templating.ifaces.Template;
 import com.beligum.core.framework.utils.Logger;
@@ -27,19 +28,20 @@ import org.apache.shiro.authz.UnauthorizedException;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.apache.shiro.authz.annotation.RequiresUser;
+import org.glassfish.jersey.server.internal.inject.ConfiguredValidator;
 
 import javax.naming.AuthenticationException;
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
 import javax.validation.Valid;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.validation.Validator;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by bas on 15.01.15.
@@ -141,17 +143,52 @@ public class UsersEndpoint
     @POST
     @RequiresPermissions(Permissions.USER_CREATE)
     public Response storeNewUser(@BeanParam @Valid NewUser newUser){
-        Subject subject = new Subject();
+        EntityManager em = RequestContext.getEntityManager();
+        Subject subject;
+        Person person;
+        /*
+         * If this email has been used before, reuse the previous subject- and person-entity.
+         * If not, create a new subject and person.
+         */
+        try{
+            subject = (Subject) em.createNamedQuery(AbstractSubject.FIND_SUBJECT_BY_PRINCIPAL_QUERY_NAME, AbstractSubject.class)
+                                  .setParameter(1, newUser.email)
+                                  .getSingleResult();
+            if(!subject.isDeleted()){
+                //TODO BAS: ask Bram how to keep filled in information in new-user-form and be able to show this message (ConstraintViolationException?)
+                R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.ERROR, "emailAlreadyInUse"));
+                return Response.seeOther(URI.create(UsersEndpointRoutes.newUser().getPath())).build();
+            }
+            subject.setDeleted(false);
+            subject.setActive(true);
+        }catch(NoResultException e) {
+            subject = new Subject();
+        }
+        try{
+            person = em.createNamedQuery(Person.FIND_PERSON_BY_EMAIL, Person.class)
+                       .setParameter(Person.QUERY_PARAMETER, newUser.email)
+                       .getSingleResult();
+            if(!person.isDeleted()){
+                R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.ERROR, "emailAlreadyInUse"));
+                return Response.seeOther(URI.create(UsersEndpointRoutes.newUser().getPath())).build();
+            }
+            person.setDeleted(false);
+        }catch (NoResultException e){
+            person = new Person();
+        }
+        /*
+         * Persist all other received fields
+         */
         subject.setPassword(R.configuration().getSecurityConfig().getPasswordService().encryptPassword(newUser.cleartextPassword));
         subject.setRole(newUser.role);
         subject.setPrincipal(newUser.email);
         subject.setActive(newUser.active);
-        Person person = new Person();
         person.setSubject(subject);
         person.setFirstName(newUser.firstName);
         person.setLastName(newUser.lastName);
         person.setEmail(newUser.email);
-        RequestContext.getEntityManager().persist(person);
+        em.merge(person);
+        R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "userCreated"));
         return Response.seeOther(URI.create(UsersEndpointRoutes.users(FIRST_NAME, true).getPath())).build();
     }
 
@@ -397,7 +434,6 @@ public class UsersEndpoint
     @Path("/{userId}")
     @RequiresPermissions(Permissions.USER_DELETE)
     public Response deleteUser(@PathParam("userId") long userId){
-    //TODO BAS SH 2: daarna moet er nog voor gezorgd worden dat een gedelete user opnieuw kan aangemaakt worden
         if(this.getCurrentUserId() == userId){
             Logger.warn("User '" + userId + "' cannot delete himself.");
             return Response.status(Response.Status.FORBIDDEN).entity(I18n.instance().getMessage("selfDelete")).build();

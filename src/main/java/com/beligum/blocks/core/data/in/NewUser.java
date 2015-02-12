@@ -30,7 +30,6 @@ public class NewUser implements PasswordComparable
     @FormParam("email")
     @NotBlank
     @Email
-    @EmailDoesNotExist
     public String email;
 
     @FormParam("password")
