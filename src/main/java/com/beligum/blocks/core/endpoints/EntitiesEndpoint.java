@@ -9,16 +9,13 @@ import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
-import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
-import com.beligum.core.framework.base.R;
+import com.beligum.core.framework.i18n.I18n;
 import com.beligum.core.framework.utils.Logger;
-import com.beligum.core.framework.validation.messages.DefaultFeedbackMessage;
-import com.beligum.core.framework.validation.messages.FeedbackMessage;
 import gen.com.beligum.blocks.core.endpoints.ApplicationEndpointRoutes;
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -27,7 +24,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
 
@@ -96,29 +92,37 @@ public class EntitiesEndpoint
     /*
      * update a page-instance with id 'entityId' to be the html specified
      */
-    public Response updateEntity(Map<String, String> data) throws MalformedURLException, ParseException, URISyntaxException, IDException, RedisException
+    public Response updateEntity(Map<String, String> data)
     {
-        String url = data.get("url");
-        if(url.endsWith("#")){
-            url = url.substring(0, url.length()-1);
+        try{
+            String url = data.get("url");
+            if(url.endsWith("#")){
+                url = url.substring(0, url.length()-1);
+            }
+            URL entityUrl = new URL(url);
+            //ignore the query-part of the url to fetch an entity from db, use only the path of the url
+            entityUrl = new URL(entityUrl, entityUrl.getPath());
+            EntityTemplate entity = (EntityTemplate) Redis.getInstance().fetchLastVersion(new RedisID(entityUrl, RedisID.LAST_VERSION, true), EntityTemplate.class);
+            TemplateParser.updateEntity(entityUrl, data.get("page"));
+            return Response.ok(entityUrl.getPath()).build();
+        }catch (Exception e){
+            return Response.status(Response.Status.BAD_REQUEST).entity(I18n.instance().getMessage("entitySaveFailed")).build();
         }
-        URL entityUrl = new URL(url);
-        //ignore the query-part of the url to fetch an entity from db, use only the path of the url
-        entityUrl = new URL(entityUrl, entityUrl.getPath());
-        EntityTemplate entity = (EntityTemplate) Redis.getInstance().fetchLastVersion(new RedisID(entityUrl, RedisID.LAST_VERSION, true), EntityTemplate.class);
-        TemplateParser.updateEntity(entityUrl, data.get("page"));
-        return Response.ok(entityUrl.getPath()).build();
     }
 
     @POST
     @Path("/delete")
-    public Response deleteEntity(String url) throws RedisException, MalformedURLException
+    public Response deleteEntity(String url)
     {
-        //TODO BAS!: thrown exceptions are not yet reported to user
-        Redis.getInstance().trash(url);
-        URL entityUrl = new URL(url);
-        entityUrl = new URL(entityUrl, entityUrl.getPath());
-        return Response.ok(entityUrl.toString()).build();
+        try {
+            Redis.getInstance().trash(url);
+            URL entityUrl = new URL(url);
+            entityUrl = new URL(entityUrl, entityUrl.getPath());
+            return Response.ok(entityUrl.toString()).build();
+        }
+        catch(Exception e){
+            return Response.status(Response.Status.BAD_REQUEST).entity(I18n.instance().getMessage("entityDeleteFailed")).build();
+        }
     }
 
 

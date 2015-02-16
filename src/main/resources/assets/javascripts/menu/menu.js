@@ -32,16 +32,17 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
                 url: "/entities/save",
                 data: o,
                 contentType: 'application/json; charset=UTF-8',
-                complete: function(data) {
-                    if(data.responseText){
-                        //an url has been returned
-                        window.location = data.responseText;
-                    }else {
-                        Logger.debug("Saved data!");
-                        menuBar.addClass("open");
+                success: function(url, textStatus, response) {
+                    if(url){
+                        window.location = url;
+                    }else{
+                        location.reload();
                     }
                 },
-                dataType: 'json'}
+                error: function(response, textStatus, errorThrown) {
+                    var message = response.status == 400 ? response.responseText : "An error occurred while saving the page";
+                    Notification.dialog("Error", "<div>" + message + "</div>", function(){});
+                }}
         )
     });
 
@@ -50,12 +51,16 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
             $.ajax({type: 'POST',
                     url: "/entities/delete",
                     data: document.URL,
-                    success: function(url) {
+                    success: function(url, textStatus, response) {
                         if(url){
                             window.location = url;
                         }else{
                             location.reload();
                         }
+                    },
+                    error: function(response, textStatus, errorThrown) {
+                        var message = response.status == 400 ? response.responseText : "An error occurred while deleting the page.";
+                        Notification.dialog("Error", "<div>" + message + "</div>", function(){});
                     }
                 }
             )
