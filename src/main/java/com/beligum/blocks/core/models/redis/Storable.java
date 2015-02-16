@@ -32,14 +32,21 @@ public class Storable extends Identifiable
     protected Boolean deleted = false;
 
     public Storable(RedisID id){
+        this(id, true);
+    }
+
+    /**
+     * Constructor so that extending classes can chose not to let the creation data (user and date) be rendered automatically.
+     * @param id an id for this {@link com.beligum.blocks.core.models.redis.Storable}
+     * @param renderCreationData false if no meta data should be rendered by the (@link Storable} class
+     */
+    protected Storable(RedisID id, boolean renderCreationData){
         super(id);
-        this.applicationVersion = BlocksConfig.getProjectVersion();
-        this.createdAt = LocalDateTime.now().toString();
-        this.updatedAt = LocalDateTime.now().toString();
-        Principal currentPrincipal = Authentication.getCurrentPrincipal();
-        if (currentPrincipal != null) {
-            this.createdBy = currentPrincipal.getUsername();
-            this.updatedBy = currentPrincipal.getUsername();
+        //TODO BAS SH: is this a good idea? we need this in the createInstanceFromHash-methods, so if no info is found in db, it is not rendered automatically
+        if(renderCreationData) {
+            this.applicationVersion = BlocksConfig.getProjectVersion();
+            this.createdAt = this.getCurrentTime();
+            this.createdBy = this.getCurrentUserName();
         }
     }
 
@@ -145,5 +152,26 @@ public class Storable extends Identifiable
     public Map<String, String> toHash() throws SerializationException
     {
         return Utils.toHash(this);
+    }
+
+    /**
+     *
+     * @return the current local time, in a format each {@link Storable} can understand
+     */
+    public static String getCurrentTime(){
+        return LocalDateTime.now().toString();
+    }
+
+    /**
+     *
+     * @return the name (identifier) of the current authenticated user, in a format each {@link Storable} can understand
+     */
+    public static String getCurrentUserName(){
+        String retVal = null;
+        Principal currentPrincipal = Authentication.getCurrentPrincipal();
+        if (currentPrincipal != null) {
+            retVal = currentPrincipal.getUsername();
+        }
+        return retVal;
     }
 }

@@ -196,7 +196,7 @@ public class EntitiesEndpoint
     @Path("/deletedversion")
     public Response showDeletedVersion(@FormParam("page-url") String pageUrl) throws MalformedURLException, CacheException, ParseException, IDException, RedisException
     {
-        List<AbstractTemplate> versionList = Redis.getInstance().versionList(new RedisID(new URL(pageUrl), RedisID.LAST_VERSION, true),EntityTemplate.class);
+        List<AbstractTemplate> versionList = Redis.getInstance().fetchVersionList(new RedisID(new URL(pageUrl), RedisID.LAST_VERSION, true), EntityTemplate.class);
         EntityTemplate lastAccessibleVersion = null;
         Iterator<AbstractTemplate> it = versionList.iterator();
         while(lastAccessibleVersion == null && it.hasNext()){

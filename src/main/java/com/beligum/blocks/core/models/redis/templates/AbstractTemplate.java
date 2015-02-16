@@ -322,7 +322,7 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
 
     /**
      * Two templates have the same hashCode when their template-content, url and meta-data are equal.
-     * (thus equal through object-state, not object-address)
+     * (thus equal through object-state, not object-address). Version numbers are not used to check for equality!
      */
     @Override
     public int hashCode()
@@ -331,6 +331,7 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
         HashCodeBuilder significantFieldsSet = new HashCodeBuilder(7, 31);
         significantFieldsSet = significantFieldsSet.append(this.getUnversionedId())
                                                    .append(this.createdBy)
+                                                   .append(this.updatedBy)
                                                    .append(this.applicationVersion)
                                                    .append(this.deleted);
         //all map-pairs "language -> template" must be added to the hashcode, we do this by customly specifying a string containing both
@@ -351,7 +352,7 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
 
     /**
      * Two templates are equal when their template-content, url and meta-data are equal
-     * (thus equal through object-state, not object-address).
+     * (thus equal through object-state, not object-address). Version numbers are not used to check for equality!
      * @param obj
      * @return true if two templates are equal, false otherwise
      */
@@ -367,6 +368,7 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
                 EqualsBuilder significantFieldsSet = new EqualsBuilder();
                 significantFieldsSet = significantFieldsSet.append(this.getUnversionedId(), abstractTemplateObj.getUnversionedId())
                                                            .append(this.createdBy, abstractTemplateObj.createdBy)
+                                                           .append(this.updatedBy, abstractTemplateObj.updatedAt)
                                                            .append(this.applicationVersion, abstractTemplateObj.applicationVersion)
                                                            .append(this.deleted, abstractTemplateObj.deleted);
                 //check if all templates in different languages are equal and that exactly the same languages are present in both objects

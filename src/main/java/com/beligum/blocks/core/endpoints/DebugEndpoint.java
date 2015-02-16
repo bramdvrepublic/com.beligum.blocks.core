@@ -3,17 +3,17 @@ package com.beligum.blocks.core.endpoints;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.*;
 import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
+import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.usermanagement.Permissions;
-import com.beligum.blocks.core.utils.Utils;
 import com.beligum.core.framework.utils.Logger;
-import org.apache.commons.collections.ListUtils;
-import org.apache.commons.collections.SetUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
@@ -31,6 +31,10 @@ import java.util.*;
 @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
 public class DebugEndpoint
 {
+    public static final String ENTTIY_INSTANCE_TYPE = "instance";
+    public static final String ENTITY_CLASS_TYPE = "class";
+    public static final String PAGE_TEMPLATE_TYPE = "template";
+
     @GET
     @Path("/flush")
     public Response flushEntities() throws CacheException
@@ -88,15 +92,14 @@ public class DebugEndpoint
                     String resourcePath,
                     @QueryParam("fragment")
                     @DefaultValue("")
-                    String fragment)
+                    String fragment,
+                    @QueryParam("type")
+                    String typeName)
                     throws MalformedURLException, IDException, RedisException, CacheException, ParseException
     {
-        if(!StringUtils.isEmpty(fragment)){
-            resourcePath += "#" + fragment;
-        }
-        String url = BlocksConfig.getSiteDomain() + "/" + resourcePath;
-        //TODO BAS: implement src-fetching for classes and page-templates
-        EntityTemplate template = (EntityTemplate) Redis.getInstance().fetchLastVersion(new RedisID(new URL(url), RedisID.LAST_VERSION, false), EntityTemplate.class);
+        URL url = renderUrl(resourcePath,fragment);
+        Class<? extends AbstractTemplate> type = determineType(typeName);
+        AbstractTemplate template = Redis.getInstance().fetchLastVersion(new RedisID(url, RedisID.LAST_VERSION, false), type);
         return Response.ok(template.toString()).build();
     }
 
@@ -109,15 +112,20 @@ public class DebugEndpoint
                     String resourcePath,
                     @QueryParam("fragment")
                     @DefaultValue("")
-                    String fragment)
+                    String fragment,
+                    @QueryParam("type")
+                    String typeName)
                     throws MalformedURLException, IDException, RedisException, CacheException, ParseException
     {
-        if(!StringUtils.isEmpty(fragment)){
-            resourcePath += "#" + fragment;
+        URL url = renderUrl(resourcePath, fragment);
+        Class<? extends AbstractTemplate> type = determineType(typeName);
+        AbstractTemplate template = Redis.getInstance().fetchLastVersion(new RedisID(url, RedisID.LAST_VERSION, false), type);
+        if(template instanceof EntityTemplate) {
+            return Response.ok(((EntityTemplate) template).renderEntityInPageTemplate(template.getLanguage())).build();
         }
-        String url = BlocksConfig.getSiteDomain() + "/" + resourcePath;
-        EntityTemplate template = (EntityTemplate) Redis.getInstance().fetchLastVersion(new RedisID(new URL(url), RedisID.LAST_VERSION, false), EntityTemplate.class);
-        return Response.ok(template.renderEntityInPageTemplate(template.getLanguage())).build();
+        else{
+            return Response.ok(TemplateParser.renderTemplate(template)).build();
+        }
     }
 
     @GET
@@ -129,21 +137,94 @@ public class DebugEndpoint
                     String resourcePath,
                     @QueryParam("fragment")
                     @DefaultValue("")
-                    String fragment)
+                    String fragment,
+                    @QueryParam("type")
+                    String typeName)
                     throws MalformedURLException, IDException, RedisException, CacheException, ParseException, SerializationException
     {
-        if(!StringUtils.isEmpty(fragment)){
-            resourcePath += "#" + fragment;
-        }
-        String url = BlocksConfig.getSiteDomain() + "/" + resourcePath;
-        EntityTemplate template = (EntityTemplate) Redis.getInstance().fetchLastVersion(new RedisID(new URL(url), RedisID.LAST_VERSION, false), EntityTemplate.class);
+        URL url = renderUrl(resourcePath, fragment);
+        Class<? extends AbstractTemplate> type = this.determineType(typeName);
+        AbstractTemplate template =  Redis.getInstance().fetchLastVersion(new RedisID(url, RedisID.LAST_VERSION, false), type);
         String retVal = "";
         Map<String, String> hash = template.toHash();
         List<String> keys = new ArrayList<>(hash.keySet());
         Collections.sort(keys);
         for(String key : keys){
-            retVal += key + "  ---->  " + hash.get(key) + "<br/><br/>";
+            String fieldContent = hash.get(key);
+            fieldContent = fieldContent.replace("<", "&lt;");
+            fieldContent = fieldContent.replace(">", "&gt;");
+            retVal += key + "  ---->  " + fieldContent + "<br/><br/>";
         }
         return Response.ok(retVal).build();
+    }
+
+    @GET
+    @Path("/hash/allversions/{resourcePath:.+}")
+    @Produces("text/html")
+    public Response getTemplateHashForAllVersions(@PathParam("resourcePath")
+                                                  @DefaultValue("")
+                                                  String resourcePath,
+                                                  @QueryParam("fragment")
+                                                  @DefaultValue("")
+                                                  String fragment,
+                                                  @QueryParam("type")
+                                                  String typeName) throws MalformedURLException, IDException, RedisException, SerializationException
+    {
+        Class<? extends AbstractTemplate> type = determineType(typeName);
+        URL url = renderUrl(resourcePath, fragment);
+        List<AbstractTemplate> versions = Redis.getInstance().fetchVersionList(new RedisID(url, RedisID.LAST_VERSION, false), type);
+        String retVal = "";
+        for(AbstractTemplate template : versions) {
+            if(template != null) {
+                retVal += "----------------------------------" + template.getId() + "---------------------------------- <br/><br/>";
+                Map<String, String> hash = template.toHash();
+                List<String> keys = new ArrayList<>(hash.keySet());
+                Collections.sort(keys);
+                for (String key : keys) {
+                    String fieldContent = hash.get(key);
+                    fieldContent = fieldContent.replace("<", "&lt;");
+                    fieldContent = fieldContent.replace(">", "&gt;");
+                    retVal += key + "  ---->  " + fieldContent + "<br/><br/>";
+                }
+                retVal += "<br/><br/><br/>";
+            }
+            else{
+                retVal += "----------------------------------FOUND NULL TEMPLATE----------------------------------";
+                retVal += "<br/><br/><br/><br/><br/>";
+            }
+        }
+        return Response.ok(retVal).build();
+    }
+
+    private URL renderUrl(String resourcePath, String fragment) throws MalformedURLException
+    {
+        if(!StringUtils.isEmpty(fragment)){
+            resourcePath += "#" + fragment;
+        }
+        return new URL(BlocksConfig.getSiteDomain() + "/" + resourcePath);
+    }
+
+    private Class<? extends AbstractTemplate> determineType(String typeName){
+        Class<? extends AbstractTemplate> type;
+        if(!StringUtils.isEmpty(typeName)) {
+            switch (typeName) {
+                case ENTTIY_INSTANCE_TYPE:
+                    type = EntityTemplate.class;
+                    break;
+                case ENTITY_CLASS_TYPE:
+                    type = EntityTemplateClass.class;
+                    break;
+                case PAGE_TEMPLATE_TYPE:
+                    type = PageTemplate.class;
+                    break;
+                default:
+                    type = EntityTemplate.class;
+                    break;
+            }
+        }
+        else{
+            type = EntityTemplate.class;
+        }
+        return type;
     }
 }

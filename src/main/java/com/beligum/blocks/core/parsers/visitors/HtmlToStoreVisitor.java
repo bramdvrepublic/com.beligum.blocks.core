@@ -3,10 +3,10 @@ package com.beligum.blocks.core.parsers.visitors;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
-import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
+import com.beligum.blocks.core.models.redis.Storable;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import org.apache.commons.lang3.StringUtils;
@@ -88,6 +88,8 @@ public class HtmlToStoreVisitor extends SuperVisitor
                     currentEntityTemplate = storedEntityTemplate;
                 }
                 else {
+                    currentEntityTemplate.setUpdatedAt(Storable.getCurrentTime());
+                    currentEntityTemplate.setUpdatedBy(Storable.getCurrentUserName());
                     Redis.getInstance().save(currentEntityTemplate);
                 }
                 node = replaceElementWithEntityReference((Element) node, currentEntityTemplate);

@@ -5,6 +5,7 @@ import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
+import com.beligum.blocks.core.models.redis.Storable;
 import com.beligum.blocks.core.models.redis.templates.*;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -414,6 +415,8 @@ public class Redis implements Closeable
             }
             EntityTemplate newVersion = EntityTemplate.copyToNewId(storedVersion, newId);
             newVersion.setDeleted(true);
+            newVersion.setUpdatedBy(Storable.getCurrentUserName());
+            newVersion.setUpdatedAt(Storable.getCurrentTime());
             this.save(newVersion);
             return true;
         }catch (Exception e){
@@ -421,7 +424,7 @@ public class Redis implements Closeable
         }
     }
 
-    public List<AbstractTemplate> versionList(RedisID id, Class<? extends AbstractTemplate> type) throws RedisException
+    public List<AbstractTemplate> fetchVersionList(RedisID id, Class<? extends AbstractTemplate> type) throws RedisException
     {
         try(Jedis redisClient = pool.getResource()){
             List<AbstractTemplate> versionList = new ArrayList<>();

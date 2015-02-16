@@ -328,7 +328,6 @@ public class ToHtmlVisitor extends SuperVisitor
                         throw new ParseException("Found bad reference. Not found in db: " + referencedId);
                     }
                 }
-                //TODO BAS SH: later do the update- and created-fields, you started at Storable.java, but that is probably not enough, since we need only once set the created-fields for each url or class or pageTemplate with the same uri
                 if(!instanceTemplate.getDeleted()) {
                     String instanceHtml = instanceTemplate.getTemplate(language);
                     //if no template could be found for the current language, fall back to the primary language

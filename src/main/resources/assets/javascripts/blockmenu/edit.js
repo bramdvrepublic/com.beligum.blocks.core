@@ -41,9 +41,10 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
 
 
     var doEditText = function(blockEvent) {
-        element = blockEvent.property.current.element;
+        var element = blockEvent.property.current.element;
         // Preparation
         $(element).attr("contenteditable", true);
+        var oldInlineStyle = element.attr("style");
         var editor = $(element).ckeditor().editor;
 
         var setCursor = function() {
@@ -66,6 +67,11 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
         editor.on("blur", function() {
             editor.destroy();
             element.removeAttr("contenteditable");
+            if (oldInlineStyle == undefined) {
+                element.removeAttr("style");
+            } else {
+                element.attr("style", oldInlineStyle);
+            }
             Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
         })
 

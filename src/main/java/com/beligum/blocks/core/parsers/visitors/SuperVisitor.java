@@ -492,7 +492,9 @@ public class SuperVisitor
         if(!StringUtils.isEmpty(previousLevel)) {
             to.removeClass(previousLevel);
         }
-        to.addClass(modificationLevel.toString());
+        if(!StringUtils.isEmpty(modificationLevel.toString())) {
+            to.addClass(modificationLevel.toString());
+        }
         return to;
     }
 

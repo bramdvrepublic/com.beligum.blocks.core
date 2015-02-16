@@ -3,6 +3,7 @@ package com.beligum.blocks.core.parsers.visitors;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
@@ -11,6 +12,7 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.exceptions.RedisException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.internationalization.Languages;
+import com.beligum.blocks.core.models.redis.Storable;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
@@ -207,6 +209,8 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
          */
         EntityTemplateClass entityTemplateClass = new EntityTemplateClass(parsingTemplate.getName(), this.language, root.outerHtml(), parsingTemplate.getPageTemplateName(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
         boolean added = EntityTemplateClassCache.getInstance().add(entityTemplateClass);
+        //store the fact that this entitytemplate was created by the start-up of the server
+        entityTemplateClass.setCreatedBy(DatabaseConstants.SERVER_START_UP);
         if(!added) {
             if (entityTemplateClass.getName().equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS)) {
                 if(!EntityTemplateClassCache.getInstance().get(entityTemplateClass.getName()).equals(entityTemplateClass)) {
@@ -224,6 +228,8 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
     {
         checkPropertyUniqueness(root);
         PageTemplate pageTemplate = new PageTemplate(parsingTemplate.getName(), this.language, root.outerHtml(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
+        //store the fact that this template was created by the start-up of the server
+        pageTemplate.setCreatedBy(DatabaseConstants.SERVER_START_UP);
         boolean added = PageTemplateCache.getInstance().add(pageTemplate);
         if(!added){
             if(pageTemplate.getName().equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)){
