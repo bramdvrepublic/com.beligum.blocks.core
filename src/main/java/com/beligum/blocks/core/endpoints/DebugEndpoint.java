@@ -12,6 +12,8 @@ import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.blocks.core.utils.Utils;
 import com.beligum.core.framework.utils.Logger;
+import org.apache.commons.collections.ListUtils;
+import org.apache.commons.collections.SetUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
@@ -93,6 +95,7 @@ public class DebugEndpoint
             resourcePath += "#" + fragment;
         }
         String url = BlocksConfig.getSiteDomain() + "/" + resourcePath;
+        //TODO BAS: implement src-fetching for classes and page-templates
         EntityTemplate template = (EntityTemplate) Redis.getInstance().fetchLastVersion(new RedisID(new URL(url), RedisID.LAST_VERSION, false), EntityTemplate.class);
         return Response.ok(template.toString()).build();
     }
@@ -136,7 +139,9 @@ public class DebugEndpoint
         EntityTemplate template = (EntityTemplate) Redis.getInstance().fetchLastVersion(new RedisID(new URL(url), RedisID.LAST_VERSION, false), EntityTemplate.class);
         String retVal = "";
         Map<String, String> hash = template.toHash();
-        for(String key : hash.keySet()){
+        List<String> keys = new ArrayList<>(hash.keySet());
+        Collections.sort(keys);
+        for(String key : keys){
             retVal += key + "  ---->  " + hash.get(key) + "<br/><br/>";
         }
         return Response.ok(retVal).build();

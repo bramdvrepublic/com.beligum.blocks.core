@@ -4,7 +4,12 @@ import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.SerializationException;
 import com.beligum.blocks.core.identifiers.RedisID;
 import com.beligum.blocks.core.utils.Utils;
+import com.beligum.core.framework.security.Authentication;
+import com.beligum.core.framework.security.Principal;
+import org.joda.time.LocalDateTime;
 
+import javax.persistence.PrePersist;
+import javax.persistence.PreUpdate;
 import java.util.Map;
 
 /**
@@ -29,6 +34,13 @@ public class Storable extends Identifiable
     public Storable(RedisID id){
         super(id);
         this.applicationVersion = BlocksConfig.getProjectVersion();
+        this.createdAt = LocalDateTime.now().toString();
+        this.updatedAt = LocalDateTime.now().toString();
+        Principal currentPrincipal = Authentication.getCurrentPrincipal();
+        if (currentPrincipal != null) {
+            this.createdBy = currentPrincipal.getUsername();
+            this.updatedBy = currentPrincipal.getUsername();
+        }
     }
 
     //________________IMPLEMENTATION OF STORABLE_____________

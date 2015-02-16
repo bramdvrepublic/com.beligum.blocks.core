@@ -23,6 +23,8 @@ import java.util.Set;
  */
 public class RedisID extends ID
 {
+    //TODO BAS: should probably be named BlocksID, since no real Redis-functionalities are present
+
     /**long representing the versioning stamp*/
     private long version = -1;
     /**the url this id is based on*/

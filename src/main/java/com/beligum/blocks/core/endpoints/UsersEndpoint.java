@@ -259,12 +259,12 @@ public class UsersEndpoint
             Person admin = new Person();
             Subject subject = new Subject();
             subject.setRole(Permissions.ROLE_ADMIN.getRoleName());
-            subject.setPrincipal("admin");
+            subject.setPrincipal("admin@beligum.com");
             subject.setPassword(R.configuration().getSecurityConfig().getPasswordService().encryptPassword("blgf0re"));
             admin.setSubject(subject);
             admin.setFirstName("Mr.");
             admin.setLastName("admin");
-            admin.setEmail("admin@admin.com");
+            admin.setEmail("admin@beligum.com");
             RequestContext.getEntityManager().persist(admin);
             return Response.ok("Admin initialized").build();
         }
@@ -422,6 +422,7 @@ public class UsersEndpoint
     //___________________DELETE_USER____________________________
     @DELETE
     @Path("/{userId}")
+    @Consumes
     @RequiresPermissions(Permissions.USER_DELETE)
     public Response deleteUser(@PathParam("userId") long userId){
         if(this.getCurrentUserId() == userId){

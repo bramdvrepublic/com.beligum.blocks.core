@@ -11,6 +11,7 @@ import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.parsers.dynamicblocks.DynamicBlock;
 import com.beligum.blocks.core.parsers.dynamicblocks.TranslationList;
+import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Element;
@@ -21,9 +22,9 @@ import java.net.URL;
 import java.util.*;
 
 /**
-* Created by wouter on 23/11/14.
+ * Created by wouter on 23/11/14.
  * Visitor holding all functionalities to go from a stored entity-templates to a html-page
-*/
+ */
 public class ToHtmlVisitor extends SuperVisitor
 {
     /**the preferred language we want to render html in*/
@@ -71,6 +72,10 @@ public class ToHtmlVisitor extends SuperVisitor
         try {
             node = super.head(node, depth);
             if(isEntity(node) && node instanceof Element) {
+                //if this is a referencing block, replace it
+                node = replaceWithReferencedInstance(node);
+
+                //now check if the properties found in the entity should be copied to the class-template
                 Element entityRoot = (Element) node;
                 EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
                 this.addLinks(entityTemplateClass.getLinks());
@@ -82,12 +87,10 @@ public class ToHtmlVisitor extends SuperVisitor
                 }
                 Element entityClassRoot = TemplateParser.parse(entityTemplateClassHtml).child(0);
 
-                //if no modifications can be done, first we fill in the correct property-references, coming from the class
+                //if no modifications can be done to the class-template, we fill in the correct property-references coming from the instance
                 if (useClass(entityRoot, entityClassRoot)) {
                     node = copyPropertiesToClassTemplate(entityRoot, entityClassRoot);
                 }
-                //if this is a referencing block, replace it
-                node = replaceWithReferencedInstance(node);
             }
             return node;
         }
@@ -225,9 +228,10 @@ public class ToHtmlVisitor extends SuperVisitor
 
             //if referencing, editable properties are present in the class-template, they are proper properties and they should be filled in from the entity-instance we are parsing now
             if (!instanceProperties.isEmpty() && !classProperties.isEmpty()) {
+                //copy all properties of the instance to the class
                 for (Element classProperty : classProperties) {
                     for (Element instanceProperty : instanceProperties) {
-                        if (getPropertyId(instanceProperty).contentEquals(getPropertyId(classProperty))) {
+                        if (getPropertyId(instanceProperty).equals(getPropertyId(classProperty))) {
                             Element element = null;
                             //If the classproperty is modifiable, we replace it with the instance's property
                             if (isModifiable(classProperty)) {
@@ -245,23 +249,20 @@ public class ToHtmlVisitor extends SuperVisitor
                         }
                     }
                 }
+                //all remaining class-properties are rendered, since we are starting from the class anyway
                 for(Element remainingClassReferencingElement : classReferencingElements){
-                    //when a typeof-child without a property is encountered, we can only render the default value, without showing it's resource, so it is not overwritten later
-                    RedisID classDefaultId = new RedisID(getReferencedId(remainingClassReferencingElement), RedisID.LAST_VERSION, language);
-                    EntityTemplate classDefault = Redis.getInstance().fetchEntityTemplate(classDefaultId);
-                    if(classDefault == null){
-                        classDefault = (EntityTemplate) Redis.getInstance().fetchLastVersion(classDefaultId, EntityTemplate.class);
-                        if(classDefault == null) {
-                            throw new ParseException("Found bad reference. Not present in db: " + getReferencedId(remainingClassReferencingElement));
-                        }
+                    if(!remainingClassReferencingElement.hasAttr(ParserConstants.PROPERTY)) {
+                        throw new ParseException("Found entity which is not a property in class '" + toClassRoot.attr(ParserConstants.TYPE_OF) + "' at: \n \n " + classReferencingElements+ "\n \n");
                     }
-                    String classDefaultHtml = classDefault.getTemplate(language);
-                    //if the current language cannot be found, fall back to primary language
-                    if(classDefaultHtml == null){
-                        classDefaultHtml = classDefault.getTemplate();
+                    Logger.debug("Found class property which was not replaced by an instance property of class '" + toClassRoot.attr(ParserConstants.TYPE_OF) + "' at: " +
+                                 remainingClassReferencingElement);
+                }
+                //all remaining instance-properties are reported in debug-mode, but are ignore for the rest
+                for(Element remainingInstanceReferencingElement : instanceReferencingElements){
+                    if(!remainingInstanceReferencingElement.hasAttr(ParserConstants.PROPERTY)) {
+                        throw new ParseException("Found entity which is not a property of class '" + toClassRoot.attr(ParserConstants.TYPE_OF) + "' at \n \n " + classReferencingElements+ "\n \n");
                     }
-                    Node classDefaultRoot = TemplateParser.parse(classDefaultHtml).child(0);
-                    remainingClassReferencingElement.replaceWith(classDefaultRoot);
+                    Logger.debug("Found instance property which was not copied to the class of type '" + toClassRoot.attr(ParserConstants.TYPE_OF) + "' at: " + remainingInstanceReferencingElement);
                 }
                 Node returnRoot = toClassRoot;
                 for (Attribute attribute : fromInstanceRoot.attributes()) {
@@ -327,20 +328,29 @@ public class ToHtmlVisitor extends SuperVisitor
                         throw new ParseException("Found bad reference. Not found in db: " + referencedId);
                     }
                 }
-                String instanceHtml = instanceTemplate.getTemplate(language);
-                //if no template could be found for the current language, fall back to the primary language
-                if(instanceHtml == null){
-                    instanceHtml = instanceTemplate.getTemplate();
+                //TODO BAS SH: this if-else-block works to stop the parsing of a simple deleted entity, but doesn't seem to work for f.i. a "home-row" (the welcome row) on the index-page
+                //TODO BAS SH 2: later do the update- and created-fields, you started at Storable.java, but that is probably not enough, since we need only once set the created-fields for each url or class or pageTemplate with the same uri
+                //TODO BAS SH 3: should show modal when errors occured while deleting an entity (or saving one)
+                if(!instanceTemplate.getDeleted()) {
+                    String instanceHtml = instanceTemplate.getTemplate(language);
+                    //if no template could be found for the current language, fall back to the primary language
+                    if (instanceHtml == null) {
+                        instanceHtml = instanceTemplate.getTemplate();
+                    }
+                    Element instanceTemplateRoot = TemplateParser.parse(instanceHtml).child(0);
+                    if (StringUtils.isEmpty(getResource(instanceTemplateRoot)) &&
+                        //when referencing to a class-default, we don't want the resource to show up in the browser
+                        StringUtils.isEmpty(referencedId.getUrl().toURI().getFragment())) {
+                        instanceTemplateRoot.attr(ParserConstants.RESOURCE, referencedId.getUrl().toString());
+                    }
+                    instanceRootNode.replaceWith(instanceTemplateRoot);
+                    instanceRootNode.removeAttr(ParserConstants.REFERENCE_TO);
+                    return instanceTemplateRoot;
                 }
-                Element instanceTemplateRoot = TemplateParser.parse(instanceHtml).child(0);
-                if(StringUtils.isEmpty(getResource(instanceTemplateRoot)) &&
-                   //when referencing to a class-default, we don't want the resource to show up in the browser
-                   StringUtils.isEmpty(referencedId.getUrl().toURI().getFragment())){
-                    instanceTemplateRoot.attr(ParserConstants.RESOURCE, referencedId.getUrl().toString());
+                else{
+                    instanceRootNode.removeAttr(ParserConstants.REFERENCE_TO);
+                    return instanceRootNode;
                 }
-                instanceRootNode.replaceWith(instanceTemplateRoot);
-                instanceRootNode.removeAttr(ParserConstants.REFERENCE_TO);
-                return instanceTemplateRoot;
             }
             else{
                 return instanceRootNode;

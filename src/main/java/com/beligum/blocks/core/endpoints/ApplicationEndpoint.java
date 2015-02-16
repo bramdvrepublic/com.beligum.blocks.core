@@ -56,7 +56,7 @@ public class ApplicationEndpoint
     @GET
     public Response getPageWithId(@PathParam("randomPage") String randomURLPath, @QueryParam("version") Long version)
     {
-        //TODO BAS!: make site-map with language-tree
+        //TODO BAS!3: make site-map with language-tree
         try{
             if(randomURLPath != null && (randomURLPath.equals("") || randomURLPath.equals("/"))){
                 return Response.seeOther(URI.create(ApplicationEndpointRoutes.index().getPath())).build();
@@ -178,7 +178,7 @@ public class ApplicationEndpoint
             entityTemplateClassCache = EntityTemplateClassCache.getInstance();
         }
         List<EntityTemplateClass> entityTemplateClasses = entityTemplateClassCache.values();
-        //TODO BAS: find general way to split entity-classes to be shown when creating a new page and when creating a new block in frontend
+        //TODO BAS!2: find general way to split entity-classes to be shown when creating a new page and when creating a new block in frontend -> page-block or block-block-attribute opslaan in db
         List<EntityTemplateClass> pageClasses = new ArrayList<>();
         for (EntityTemplateClass entityTemplateClass : entityTemplateClasses) {
             if (entityTemplateClass.getName().contains("-page")) {

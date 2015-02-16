@@ -23,6 +23,8 @@ import java.util.*;
 */
 public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
 {
+    //TODO BAS: EntityTemplateCache for frequently visited pages
+
     /** boolean telling us whether or not one of the inheriting classes is already running through the template-html-files*/
     private static boolean runningTroughHtmlTemplates = false;
 

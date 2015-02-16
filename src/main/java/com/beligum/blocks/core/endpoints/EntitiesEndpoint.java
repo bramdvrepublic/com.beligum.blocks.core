@@ -114,6 +114,7 @@ public class EntitiesEndpoint
     @Path("/delete")
     public Response deleteEntity(String url) throws RedisException, MalformedURLException
     {
+        //TODO BAS!: thrown exceptions are not yet reported to user
         Redis.getInstance().trash(url);
         URL entityUrl = new URL(url);
         entityUrl = new URL(entityUrl, entityUrl.getPath());

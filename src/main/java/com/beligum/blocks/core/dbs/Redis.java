@@ -22,6 +22,8 @@ import java.util.*;
  */
 public class Redis implements Closeable
 {
+    //TODO BAS: should be implemented to implement an interface Database holding methods like save(? extends Storable), fetch(? extends Storable, Class<? extends Storable>) and fetchLastVersion(Storable, Class)...
+
 
     /*
      * Note: check/boost redis-performance with http://redis.io/topics/benchmarks
@@ -95,7 +97,7 @@ public class Redis implements Closeable
                 pipelinedSaveTransaction.multi();
                 try {
                     if (lastVersion == RedisID.NO_VERSION || template.getVersion() > lastVersion) {
-                        //TODO BAS!: here createdBy, updatedBy, createdAt and updatedAt should be filled in (if lastVersion == RedisID.NO_VERSION...)
+                        //TODO BAS!1: here createdBy, updatedBy, createdAt and updatedAt should be filled in (if lastVersion == RedisID.NO_VERSION...)
                         pipelinedSaveTransaction.lpush(template.getUnversionedId(), template.getVersionedId());
                         //an EntityTemplate should also be saved in a set named after it's entityTemplateClassName
                         if (template instanceof EntityTemplate) {
