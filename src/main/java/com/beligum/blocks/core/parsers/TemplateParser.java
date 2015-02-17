@@ -6,7 +6,7 @@ import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
-import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
@@ -89,9 +89,9 @@ public class TemplateParser
                     }
                     //if an entity-class with this name was already present, check if it was a non-blueprint, if not, throw an exception since only one blueprint can be defined per class
                     else if (replacedTemplate != null) {
-                        Map<RedisID, String> replacedTemplates = replacedTemplate.getTemplates();
+                        Map<BlocksID, String> replacedTemplates = replacedTemplate.getTemplates();
                         boolean isBlueprint = false;
-                        for (RedisID languageId : replacedTemplates.keySet()) {
+                        for (BlocksID languageId : replacedTemplates.keySet()) {
                             isBlueprint = new SuperVisitor().isBlueprint(TemplateParser.parse(replacedTemplates.get(languageId)).child(0));
                             if (isBlueprint) {
                                 throw new ParseException("An " + EntityTemplateClass.class.getSimpleName() + " of type '" + replacedTemplate.getName() +
@@ -112,8 +112,8 @@ public class TemplateParser
                 //during traversal of a template, all it's child-types are cached too
                 if(!EntityTemplateClassCache.getInstance().contains(templateName) || templateName.equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS)) {
                     AbstractTemplate template = allEntityClasses.get(templateName);
-                    Map<RedisID, String> htmlTemplates = template.getTemplates();
-                    for (RedisID language : htmlTemplates.keySet()) {
+                    Map<BlocksID, String> htmlTemplates = template.getTemplates();
+                    for (BlocksID language : htmlTemplates.keySet()) {
                         Document doc = parse(htmlTemplates.get(language));
                         Traversor traversor = new Traversor(new DefaultsAndCachingVisitor(language.getLanguage(), doc, template, allEntityClasses, allPageTemplates));
                         traversor.traverse(doc);
@@ -125,8 +125,8 @@ public class TemplateParser
             for (String templateName : allPageTemplates.keySet()) {
                 if(!PageTemplateCache.getInstance().contains(templateName) || templateName.equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
                     AbstractTemplate template = allPageTemplates.get(templateName);
-                    Map<RedisID, String> htmlTemplates = template.getTemplates();
-                    for (RedisID language : htmlTemplates.keySet()) {
+                    Map<BlocksID, String> htmlTemplates = template.getTemplates();
+                    for (BlocksID language : htmlTemplates.keySet()) {
                         Document doc = parse(htmlTemplates.get(language));
                         Traversor traversor = new Traversor(new DefaultsAndCachingVisitor(language.getLanguage(), doc, template, allEntityClasses, allPageTemplates));
                         traversor.traverse(doc);
@@ -163,7 +163,7 @@ public class TemplateParser
             Traversor traversor = new Traversor(visitor);
             traversor.traverse(doc);
             pageStringId = visitor.getReferencedId(doc.child(0));
-            RedisID pageId = new RedisID(pageStringId, RedisID.NO_VERSION, language);
+            BlocksID pageId = new BlocksID(pageStringId, BlocksID.NO_VERSION, language);
             return pageId.getLanguagedUrl();
         }
         catch(IDException e){

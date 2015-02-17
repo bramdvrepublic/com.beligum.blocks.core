@@ -4,7 +4,7 @@ import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
-import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.core.framework.base.R;
@@ -86,7 +86,7 @@ public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTempl
     @Override
     protected String getTemplateKey(String templateName) throws IDException
     {
-        return RedisID.renderUnversionedEntityTemplateClassID(templateName);
+        return BlocksID.renderUnversionedEntityTemplateClassID(templateName);
     }
 
     @Override

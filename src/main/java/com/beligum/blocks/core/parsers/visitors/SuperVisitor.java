@@ -3,7 +3,7 @@ package com.beligum.blocks.core.parsers.visitors;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.ParseException;
-import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
@@ -115,7 +115,7 @@ public class SuperVisitor
      */
     protected Element replaceElementWithReference(Element element, String referenceTo)
     {
-        if(referenceTo != null && (referenceTo.contentEquals(ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME) || RedisID.isRedisId(referenceTo))) {
+        if(referenceTo != null && (referenceTo.contentEquals(ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME) || BlocksID.isRedisId(referenceTo))) {
             Element replacementNode = new Element(element.tag(), BlocksConfig.getSiteDomain());
             replacementNode.attributes().addAll(element.attributes());
             replacementNode.attr(ParserConstants.REFERENCE_TO, referenceTo);
@@ -460,7 +460,7 @@ public class SuperVisitor
                     return null;
                 }
                 try {
-                    return RedisID.renderNewPropertyId(parentEntityClassName, propertyValue, getPropertyName(node), RedisID.NO_LANGUAGE).getUnversionedId();
+                    return BlocksID.renderNewPropertyId(parentEntityClassName, propertyValue, getPropertyName(node), BlocksID.NO_LANGUAGE).getUnversionedId();
 
                 }catch(Exception e){
                     throw new ParseException("Could not render new property-id.", e);

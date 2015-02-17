@@ -3,10 +3,9 @@ package com.beligum.blocks.core.endpoints;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.*;
-import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
@@ -17,6 +16,7 @@ import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
+import org.joda.time.LocalDateTime;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
@@ -41,7 +41,7 @@ public class DebugEndpoint
     {
         this.resetCache();
         Redis.getInstance().flushDB();
-        Logger.warn("Database been flushed by user '" + SecurityUtils.getSubject().getPrincipal() + "'.");
+        Logger.warn("Database been flushed by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
         return Response.ok("<ul><li>Cache reset</li><li>Database emptied</li></ul>").build();
     }
 
@@ -51,7 +51,7 @@ public class DebugEndpoint
     {
         EntityTemplateClassCache.getInstance().reset();
         PageTemplateCache.getInstance().reset();
-        Logger.warn("Cache has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "'.");
+        Logger.warn("Cache has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
         return Response.ok("Cache reset").build();
     }
 
@@ -95,11 +95,11 @@ public class DebugEndpoint
                     String fragment,
                     @QueryParam("type")
                     String typeName)
-                    throws MalformedURLException, IDException, RedisException, CacheException, ParseException
+                    throws MalformedURLException, IDException, DatabaseException, CacheException, ParseException
     {
         URL url = renderUrl(resourcePath,fragment);
         Class<? extends AbstractTemplate> type = determineType(typeName);
-        AbstractTemplate template = Redis.getInstance().fetchLastVersion(new RedisID(url, RedisID.LAST_VERSION, false), type);
+        AbstractTemplate template = (AbstractTemplate) Redis.getInstance().fetchLastVersion(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
         return Response.ok(template.toString()).build();
     }
 
@@ -115,11 +115,11 @@ public class DebugEndpoint
                     String fragment,
                     @QueryParam("type")
                     String typeName)
-                    throws MalformedURLException, IDException, RedisException, CacheException, ParseException
+                    throws MalformedURLException, IDException, DatabaseException, CacheException, ParseException
     {
         URL url = renderUrl(resourcePath, fragment);
         Class<? extends AbstractTemplate> type = determineType(typeName);
-        AbstractTemplate template = Redis.getInstance().fetchLastVersion(new RedisID(url, RedisID.LAST_VERSION, false), type);
+        AbstractTemplate template = (AbstractTemplate) Redis.getInstance().fetchLastVersion(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
         if(template instanceof EntityTemplate) {
             return Response.ok(((EntityTemplate) template).renderEntityInPageTemplate(template.getLanguage())).build();
         }
@@ -140,11 +140,11 @@ public class DebugEndpoint
                     String fragment,
                     @QueryParam("type")
                     String typeName)
-                    throws MalformedURLException, IDException, RedisException, CacheException, ParseException, SerializationException
+                    throws MalformedURLException, IDException, DatabaseException, CacheException, ParseException, SerializationException
     {
         URL url = renderUrl(resourcePath, fragment);
         Class<? extends AbstractTemplate> type = this.determineType(typeName);
-        AbstractTemplate template =  Redis.getInstance().fetchLastVersion(new RedisID(url, RedisID.LAST_VERSION, false), type);
+        AbstractTemplate template = (AbstractTemplate) Redis.getInstance().fetchLastVersion(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
         String retVal = "";
         Map<String, String> hash = template.toHash();
         List<String> keys = new ArrayList<>(hash.keySet());
@@ -168,11 +168,11 @@ public class DebugEndpoint
                                                   @DefaultValue("")
                                                   String fragment,
                                                   @QueryParam("type")
-                                                  String typeName) throws MalformedURLException, IDException, RedisException, SerializationException
+                                                  String typeName) throws MalformedURLException, IDException, DatabaseException, SerializationException
     {
         Class<? extends AbstractTemplate> type = determineType(typeName);
         URL url = renderUrl(resourcePath, fragment);
-        List<AbstractTemplate> versions = Redis.getInstance().fetchVersionList(new RedisID(url, RedisID.LAST_VERSION, false), type);
+        List<AbstractTemplate> versions = Redis.getInstance().fetchVersionList(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
         String retVal = "";
         for(AbstractTemplate template : versions) {
             if(template != null) {

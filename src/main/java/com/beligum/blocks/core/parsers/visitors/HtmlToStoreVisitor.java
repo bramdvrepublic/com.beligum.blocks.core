@@ -4,7 +4,7 @@ import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.ParseException;
-import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.Storable;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
@@ -42,7 +42,7 @@ public class HtmlToStoreVisitor extends SuperVisitor
             }
             this.pageUrl = entityUrl;
             this.root = root;
-            this.language = new RedisID(this.pageUrl, RedisID.NO_VERSION, false).getLanguage();
+            this.language = new BlocksID(this.pageUrl, BlocksID.NO_VERSION, false).getLanguage();
             if(!Languages.isNonEmptyLanguageCode(this.language)){
                 throw new ParseException("Cannot update entity '" + entityUrl + "'. It's url does not hold language-information.");
             }
@@ -72,25 +72,26 @@ public class HtmlToStoreVisitor extends SuperVisitor
                 }
                 String resourceUrl = getResource(node);
                 EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
-                RedisID resourceId;
+                BlocksID resourceId;
                 if(StringUtils.isEmpty(resourceUrl)) {
-                    resourceId = RedisID.renderNewEntityTemplateID(entityTemplateClass, this.language);
+                    resourceId = BlocksID.renderNewEntityTemplateID(entityTemplateClass, this.language);
                     resourceUrl = resourceId.getUrl().toString();
                     node.attr(ParserConstants.RESOURCE, resourceUrl);
                 }
                 else{
-                    resourceId = RedisID.renderLanguagedId(new URL(resourceUrl), RedisID.LAST_VERSION, this.language);
+                    resourceId = BlocksID.renderLanguagedId(new URL(resourceUrl), BlocksID.LAST_VERSION, this.language);
                 }
                 EntityTemplate storedEntityTemplate = (EntityTemplate) Redis.getInstance().fetchLastVersion(resourceId, EntityTemplate.class);
-                RedisID newVersionId = RedisID.renderLanguagedId(new URL(resourceUrl), RedisID.NEW_VERSION, this.language);
+                BlocksID newVersionId = BlocksID.renderLanguagedId(new URL(resourceUrl), BlocksID.NEW_VERSION, this.language);
                 EntityTemplate currentEntityTemplate = new EntityTemplate(newVersionId, entityTemplateClass, node.outerHtml());
                 if (currentEntityTemplate.equals(storedEntityTemplate)) {
                     currentEntityTemplate = storedEntityTemplate;
                 }
-                else {
-                    currentEntityTemplate.setUpdatedAt(Storable.getCurrentTime());
-                    currentEntityTemplate.setUpdatedBy(Storable.getCurrentUserName());
-                    Redis.getInstance().save(currentEntityTemplate);
+                else if(storedEntityTemplate == null) {
+                    Redis.getInstance().create(currentEntityTemplate);
+                }
+                else{
+                    Redis.getInstance().update(currentEntityTemplate);
                 }
                 node = replaceElementWithEntityReference((Element) node, currentEntityTemplate);
             }

@@ -1,22 +1,24 @@
 package com.beligum.blocks.core.models.redis;
 
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.exceptions.SerializationException;
-import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.utils.Utils;
 import com.beligum.core.framework.security.Authentication;
 import com.beligum.core.framework.security.Principal;
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.UnavailableSecurityManagerException;
 import org.joda.time.LocalDateTime;
 
-import javax.persistence.PrePersist;
-import javax.persistence.PreUpdate;
 import java.util.Map;
 
 /**
  * Created by bas on 04.02.15.
  */
-public class Storable extends Identifiable
-{
+public class Storable{
+    //string representing the unique id of this object
+    protected final BlocksID id;
     /**the version of the application this template is supposed to interact with*/
     protected String applicationVersion;
     //TODO BAS!: fix date-format and user-format for storage and comment this here
@@ -31,23 +33,10 @@ public class Storable extends Identifiable
     /**deletion flag*/
     protected Boolean deleted = false;
 
-    public Storable(RedisID id){
-        this(id, true);
-    }
-
-    /**
-     * Constructor so that extending classes can chose not to let the creation data (user and date) be rendered automatically.
-     * @param id an id for this {@link com.beligum.blocks.core.models.redis.Storable}
-     * @param renderCreationData false if no meta data should be rendered by the (@link Storable} class
-     */
-    protected Storable(RedisID id, boolean renderCreationData){
-        super(id);
-        //TODO BAS SH: is this a good idea? we need this in the createInstanceFromHash-methods, so if no info is found in db, it is not rendered automatically
-        if(renderCreationData) {
-            this.applicationVersion = BlocksConfig.getProjectVersion();
-            this.createdAt = this.getCurrentTime();
-            this.createdBy = this.getCurrentUserName();
-        }
+    public Storable(BlocksID id)
+    {
+        this.id = id;
+        setCreation(this);
     }
 
     //________________IMPLEMENTATION OF STORABLE_____________
@@ -55,9 +44,9 @@ public class Storable extends Identifiable
      * Override of the getId-method of IdentifiableObject. Here a RedisID is returned, which has more functionalities.
      * @return the id of this storable
      */
-    public RedisID getId()
+    public BlocksID getId()
     {
-        return (RedisID) super.getId();
+        return id;
     }
     /**
      * @return the version of this storable, which is the time it was created in milliseconds
@@ -158,7 +147,7 @@ public class Storable extends Identifiable
      *
      * @return the current local time, in a format each {@link Storable} can understand
      */
-    public static String getCurrentTime(){
+    private static String getCurrentTime(){
         return LocalDateTime.now().toString();
     }
 
@@ -166,12 +155,32 @@ public class Storable extends Identifiable
      *
      * @return the name (identifier) of the current authenticated user, in a format each {@link Storable} can understand
      */
-    public static String getCurrentUserName(){
-        String retVal = null;
-        Principal currentPrincipal = Authentication.getCurrentPrincipal();
-        if (currentPrincipal != null) {
-            retVal = currentPrincipal.getUsername();
+    private static String getCurrentUserName(){
+        Principal currentPrincipal;
+        try{
+            currentPrincipal = Authentication.getCurrentPrincipal();
+            if (currentPrincipal != null) {
+                return currentPrincipal.getUsername();
+            }
+            else {
+                return DatabaseConstants.SERVER_USER_NAME;
+            }
         }
-        return retVal;
+        //if no Shiro securitymanager is present, this means we're still starting up the server (and thus no securitymanager is configured yet)
+        catch(UnavailableSecurityManagerException e){
+            return DatabaseConstants.SERVER_START_UP;
+        }
+    }
+
+    public static void setCreation(Storable toBeUpdated){
+        toBeUpdated.applicationVersion = BlocksConfig.getProjectVersion();
+        toBeUpdated.createdAt = getCurrentTime();
+        toBeUpdated.createdBy = getCurrentUserName();
+    }
+
+    public static void setUpdate(Storable toBeUpdated){
+        toBeUpdated.applicationVersion = BlocksConfig.getProjectVersion();
+        toBeUpdated.updatedAt = getCurrentTime();
+        toBeUpdated.updatedBy = getCurrentUserName();
     }
 }

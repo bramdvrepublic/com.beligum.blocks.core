@@ -1,9 +1,8 @@
 package com.beligum.blocks.core.models.redis.templates;
 
-import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
-import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.utils.Utils;
 
 import java.util.List;
@@ -23,9 +22,9 @@ public class PageTemplate extends AbstractTemplate
      * @param templates the map of templates (language -> template) which represent the content of this template  @throws IDException if no new id could be rendered using the specified name@throws IDException
      * @throws IDException if no new id could be rendered using the specified name and language, or if no template of that language is present in the specified map of templates
      */
-    public PageTemplate(String name, String primaryLanguage, Map<RedisID, String> templates, List<String> links, List<String> scripts) throws IDException
+    public PageTemplate(String name, String primaryLanguage, Map<BlocksID, String> templates, List<String> links, List<String> scripts) throws IDException
     {
-        super(RedisID.renderNewPageTemplateID(name, primaryLanguage), templates, links, scripts);
+        super(BlocksID.renderNewPageTemplateID(name, primaryLanguage), templates, links, scripts);
         this.name = name;
         if(!this.getLanguages().contains(this.getId().getLanguage())){
             throw new IDException("No html-template in language '" + primaryLanguage + "' found between templates.");
@@ -41,7 +40,7 @@ public class PageTemplate extends AbstractTemplate
      */
     public PageTemplate(String name, String language, String template, List<String> links, List<String> scripts) throws IDException
     {
-        super(RedisID.renderNewPageTemplateID(name, language), template, links, scripts);
+        super(BlocksID.renderNewPageTemplateID(name, language), template, links, scripts);
         this.name = name;
     }
 
@@ -51,7 +50,7 @@ public class PageTemplate extends AbstractTemplate
      * @param templates the map of templates (language -> template) which represent the content of this template  @throws IDException if no new id could be rendered using the specified name@throws IDException
      * @throws IDException if no new id could be rendered using the specified name, or if no template of the language specified by the id is present in the map of templates
      */
-    private PageTemplate(RedisID id, Map<RedisID, String> templates, List<String> links, List<String> scripts) throws IDException
+    private PageTemplate(BlocksID id, Map<BlocksID, String> templates, List<String> links, List<String> scripts) throws IDException
     {
         super(id, templates, links, scripts);
         if(!this.getLanguages().contains(id.getLanguage())){
@@ -74,7 +73,7 @@ public class PageTemplate extends AbstractTemplate
      * @throws DeserializationException when a bad hash is found
      */
     //is protected so that all classes in package can access this method
-    protected static PageTemplate createInstanceFromHash(RedisID id, Map<String, String> hash) throws DeserializationException
+    protected static PageTemplate createInstanceFromHash(BlocksID id, Map<String, String> hash) throws DeserializationException
     {
         try{
             if(hash == null || hash.isEmpty()) {
@@ -85,7 +84,7 @@ public class PageTemplate extends AbstractTemplate
                  * Fetch all fields from the hash, removing them as they are used.
                  * Afterwards use all remaining information to be wired to the a new instance
                  */
-                Map<RedisID, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
+                Map<BlocksID, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
                 List<String> links = AbstractTemplate.fetchLinksFromHash(hash);
                 List<String> scripts = AbstractTemplate.fetchScriptsFromHash(hash);
                 PageTemplate newInstance = new PageTemplate(id, templates, links, scripts);

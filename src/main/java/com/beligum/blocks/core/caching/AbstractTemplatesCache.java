@@ -5,7 +5,7 @@ import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
-import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
@@ -19,8 +19,8 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
 /**
-* Created by bas on 03.11.14.
-*/
+ * Created by bas on 03.11.14.
+ */
 public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
 {
     //TODO BAS: EntityTemplateCache for frequently visited pages
@@ -82,9 +82,12 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             }
             //TODO BAS: when adding possibility to parse multiple entity-class-languages from file to cache, multiple languages should be able to be added. This class should have the functionality to put two different languages together in one entity-template-class
             if(!getCache().containsKey(template.getUnversionedId())) {
-                AbstractTemplate storedTemplate = Redis.getInstance().fetchLastVersion(template.getId(), this.getCachedClass());
-                if(!template.equals(storedTemplate)){
-                    Redis.getInstance().save(template);
+                AbstractTemplate storedTemplate = (AbstractTemplate) Redis.getInstance().fetchLastVersion(template.getId(), this.getCachedClass());
+                if(storedTemplate == null){
+                    Redis.getInstance().create(template);
+                }
+                else if(!template.equals(storedTemplate)){
+                    Redis.getInstance().update(template);
                 }
                 else{
                     //if this template was already stored in db, we should cache the db-version, since it has the correct time-stamp
@@ -93,9 +96,9 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                 getCache().put(template.getUnversionedId(), template);
                 return true;
             }
-//            else if(getCache().get(template.getUnversionedId()).getLanguages().contains(template.getLanguages())) {
-//
-//            }
+            //            else if(getCache().get(template.getUnversionedId()).getLanguages().contains(template.getLanguages())) {
+            //
+            //            }
             else{
                 return false;
             }
@@ -120,10 +123,13 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             else{
                 AbstractTemplate cachedTemplate = getCache().get(template.getUnversionedId());
                 if(!template.equals(cachedTemplate)){
-                    RedisID lastVersion = new RedisID(template.getId().getUrl(), RedisID.LAST_VERSION, false);
-                    AbstractTemplate storedTemplate = Redis.getInstance().fetchTemplate(lastVersion, this.getCachedClass());
-                    if (!template.equals(storedTemplate)){
-                        Redis.getInstance().save(template);
+                    BlocksID lastVersion = new BlocksID(template.getId().getUrl(), BlocksID.NO_VERSION, false);
+                    AbstractTemplate storedTemplate = (AbstractTemplate) Redis.getInstance().fetchLastVersion(lastVersion, this.getCachedClass());
+                    if(storedTemplate == null){
+                        Redis.getInstance().create(template);
+                    }
+                    else if (!template.equals(storedTemplate)){
+                        Redis.getInstance().update(template);
                     }
                     getCache().put(template.getUnversionedId(), template);
                 }
@@ -228,14 +234,6 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
         }
         Collections.sort(keysList);
         return keysList;
-    }
-
-    /**
-     *
-     * @return true if this cache is (not yet) totally filled up with all templates from disk
-     */
-    public boolean isFillingUp(){
-        return runningTroughHtmlTemplates;
     }
 
     /**

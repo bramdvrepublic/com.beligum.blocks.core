@@ -1,15 +1,8 @@
 package com.beligum.blocks.core.internationalization;
 
 import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.dbs.Redis;
-import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.LanguageException;
-import com.beligum.blocks.core.exceptions.ParseException;
-import com.beligum.blocks.core.identifiers.RedisID;
-import org.apache.commons.beanutils.converters.ArrayConverter;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.SetUtils;
-import org.apache.commons.lang3.ArrayUtils;
+import com.beligum.blocks.core.identifiers.BlocksID;
 import org.apache.commons.lang3.StringUtils;
 
 import java.net.URI;
@@ -123,10 +116,10 @@ public class Languages
      * This method uses the preferred order of languages specified in the configuration-xml.
      * @param languageIds a set of languages to choose from, if this set is empty, null will be returned
      */
-    public static RedisID determinePrimaryLanguageId(Set<RedisID> languageIds)
+    public static BlocksID determinePrimaryLanguageId(Set<BlocksID> languageIds)
     {
-        Map<String, RedisID> languages = new HashMap();
-        for(RedisID languageId : languageIds){
+        Map<String, BlocksID> languages = new HashMap();
+        for(BlocksID languageId : languageIds){
             languages.put(languageId.getLanguage(), languageId);
         }
         String primaryLanguage = Languages.determinePrimaryLanguage(languages.keySet());

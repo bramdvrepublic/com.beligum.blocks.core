@@ -3,13 +3,11 @@ package com.beligum.blocks.core.models.redis.templates;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.CacheConstants;
-import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
-import com.beligum.blocks.core.exceptions.SerializationException;
-import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.utils.Utils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -39,9 +37,9 @@ public class EntityTemplateClass extends AbstractTemplate
      * @param scripts the (javascript-)scripts this template needs
      * @throws IDException if no new id could be rendered using the specified name and language, or if no template of that language is present in the specified map of templates
      */
-    public EntityTemplateClass(String name, String primaryLanguage, Map<RedisID, String> templates, String pageTemplateName, List<String> links, List<String> scripts) throws IDException
+    public EntityTemplateClass(String name, String primaryLanguage, Map<BlocksID, String> templates, String pageTemplateName, List<String> links, List<String> scripts) throws IDException
     {
-        super(RedisID.renderNewEntityTemplateClassID(name, primaryLanguage), templates, links, scripts);
+        super(BlocksID.renderNewEntityTemplateClassID(name, primaryLanguage), templates, links, scripts);
         this.name = name;
         if(pageTemplateName != null) {
             this.pageTemplateName = pageTemplateName;
@@ -63,7 +61,7 @@ public class EntityTemplateClass extends AbstractTemplate
      */
     public EntityTemplateClass(String name, String language, String template, String pageTemplateName, List<String> links, List<String> scripts) throws IDException
     {
-        super(RedisID.renderNewEntityTemplateClassID(name, language), template, links, scripts);
+        super(BlocksID.renderNewEntityTemplateClassID(name, language), template, links, scripts);
         this.name = name;
         if(pageTemplateName != null) {
             this.pageTemplateName = pageTemplateName;
@@ -76,7 +74,7 @@ public class EntityTemplateClass extends AbstractTemplate
      * @param templates
      * @throws IDException
      */
-    private EntityTemplateClass(RedisID id, Map<RedisID, String> templates, List<String> links, List<String> scripts) throws IDException
+    private EntityTemplateClass(BlocksID id, Map<BlocksID, String> templates, List<String> links, List<String> scripts) throws IDException
     {
         super(id, templates, links, scripts);
         //the name of this entity-template-class doesn't start with a "/", so we split it of the given path
@@ -135,7 +133,7 @@ public class EntityTemplateClass extends AbstractTemplate
      * @throws DeserializationException when a bad hash is found
      */
     //is protected so that all classes in package can access this method
-    protected static EntityTemplateClass createInstanceFromHash(RedisID id, Map<String, String> hash) throws DeserializationException
+    protected static EntityTemplateClass createInstanceFromHash(BlocksID id, Map<String, String> hash) throws DeserializationException
     {
         try {
             if (hash == null || hash.isEmpty()) {
@@ -146,7 +144,7 @@ public class EntityTemplateClass extends AbstractTemplate
                  * Fetch all fields from the hash, removing them as they are used.
                  * Afterwards use all remaining information to be wired to the a new instance
                  */
-                Map<RedisID, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
+                Map<BlocksID, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
                 List<String> links = AbstractTemplate.fetchLinksFromHash(hash);
                 List<String> scripts = AbstractTemplate.fetchScriptsFromHash(hash);
                 EntityTemplateClass newInstance = new EntityTemplateClass(id, templates, links, scripts);

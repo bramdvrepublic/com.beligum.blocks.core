@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.models.redis.templates;
 
 import com.beligum.blocks.core.exceptions.DeserializationException;
-import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.identifiers.BlocksID;
 
 import java.util.Map;
 
@@ -16,7 +16,7 @@ public class TemplateFactory
      * @return an entity-template or throws an exception if no entity-template could be constructed from the specified hash
      * @throws DeserializationException when a bad hash is found
      */
-    public static AbstractTemplate createInstanceFromHash(RedisID id, Map<String, String> hash, Class<? extends AbstractTemplate> type) throws DeserializationException
+    public static AbstractTemplate createInstanceFromHash(BlocksID id, Map<String, String> hash, Class<? extends AbstractTemplate> type) throws DeserializationException
     {
         if(type.equals(EntityTemplate.class)){
             return EntityTemplate.createInstanceFromHash(id, hash);

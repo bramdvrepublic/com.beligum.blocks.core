@@ -9,10 +9,9 @@ import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
-import com.beligum.blocks.core.exceptions.RedisException;
-import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.exceptions.DatabaseException;
+import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
-import com.beligum.blocks.core.models.redis.Storable;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
@@ -129,11 +128,11 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
                             if (this.parsingTemplate.getName().equals(this.getParentType())) {
                                 String language = getLanguage(element, entityTemplateClass);
                                 if (needsBlueprint(element)) {
-                                    RedisID propertyId = RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
+                                    BlocksID propertyId = BlocksID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
                                     node = this.saveNewEntityClassCopy(element, propertyId, entityTemplateClass);
                                 }
                                 else {
-                                    RedisID propertyId = RedisID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
+                                    BlocksID propertyId = BlocksID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
                                     node = this.saveNewEntity(element, propertyId);
                                 }
                             }
@@ -145,17 +144,17 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
                         else if (this.parsingTemplate instanceof PageTemplate) {
                             //only entities at entity-depth 1 should be given a page-template-default id and saved to db
                             if (getParentType() == null) {
-                                RedisID defaultPageTemplateEntityId = RedisID.renderNewPageTemplateDefaultEntity(this.parsingTemplate.getName(), getProperty(element), this.language);
+                                BlocksID defaultPageTemplateEntityId = BlocksID.renderNewPageTemplateDefaultEntity(this.parsingTemplate.getName(), getProperty(element), this.language);
                                 EntityTemplate lastVersion = (EntityTemplate) Redis.getInstance().fetchLastVersion(defaultPageTemplateEntityId, EntityTemplate.class);
                                 //if no version of this entity exists yet, make a new one
                                 if (lastVersion == null) {
                                     if (needsBlueprint(element)) {
-                                        defaultPageTemplateEntityId = RedisID.renderNewPageTemplateDefaultEntity(this.parsingTemplate.getName(), getProperty(element), this.language);
+                                        defaultPageTemplateEntityId = BlocksID.renderNewPageTemplateDefaultEntity(this.parsingTemplate.getName(), getProperty(element), this.language);
                                         node = this.saveNewEntityClassCopy(element, defaultPageTemplateEntityId, entityTemplateClass);
                                     }
                                     else {
                                         defaultPageTemplateEntityId =
-                                                        RedisID.renderNewPageTemplateDefaultEntity(this.parsingTemplate.getName(), getProperty(element), entityTemplateClass.getLanguage());
+                                                        BlocksID.renderNewPageTemplateDefaultEntity(this.parsingTemplate.getName(), getProperty(element), entityTemplateClass.getLanguage());
                                         node = this.saveNewEntity(element, defaultPageTemplateEntityId);
                                     }
                                 }
@@ -209,8 +208,6 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
          */
         EntityTemplateClass entityTemplateClass = new EntityTemplateClass(parsingTemplate.getName(), this.language, root.outerHtml(), parsingTemplate.getPageTemplateName(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
         boolean added = EntityTemplateClassCache.getInstance().add(entityTemplateClass);
-        //store the fact that this entitytemplate was created by the start-up of the server
-        entityTemplateClass.setCreatedBy(DatabaseConstants.SERVER_START_UP);
         if(!added) {
             if (entityTemplateClass.getName().equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS)) {
                 if(!EntityTemplateClassCache.getInstance().get(entityTemplateClass.getName()).equals(entityTemplateClass)) {
@@ -228,8 +225,6 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
     {
         checkPropertyUniqueness(root);
         PageTemplate pageTemplate = new PageTemplate(parsingTemplate.getName(), this.language, root.outerHtml(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
-        //store the fact that this template was created by the start-up of the server
-        pageTemplate.setCreatedBy(DatabaseConstants.SERVER_START_UP);
         boolean added = PageTemplateCache.getInstance().add(pageTemplate);
         if(!added){
             if(pageTemplate.getName().equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)){
@@ -252,11 +247,11 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
      * @param entityClass
      * @throws com.beligum.blocks.core.exceptions.IDException
      */
-    private Element saveNewEntityClassCopy(Element element, RedisID id, EntityTemplateClass entityClass) throws IDException, CacheException, ParseException
+    private Element saveNewEntityClassCopy(Element element, BlocksID id, EntityTemplateClass entityClass) throws IDException, CacheException, ParseException
     {
-        Map<RedisID, String> classTemplates = entityClass.getTemplates();
-        Map<RedisID, String> copiedTemplates = new HashMap<>();
-        for(RedisID languageId : classTemplates.keySet()){
+        Map<BlocksID, String> classTemplates = entityClass.getTemplates();
+        Map<BlocksID, String> copiedTemplates = new HashMap<>();
+        for(BlocksID languageId : classTemplates.keySet()){
             Element classRoot = TemplateParser.parse(classTemplates.get(languageId)).child(0);
             classRoot.attributes().addAll(element.attributes());
             classRoot.removeAttr(ParserConstants.USE_BLUEPRINT);
@@ -286,10 +281,10 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
      * @return a referencing node to the freshly stored entity
      * @throws IDException
      * @throws CacheException
-     * @throws RedisException
+     * @throws com.beligum.blocks.core.exceptions.DatabaseException
      * @throws ParseException
      */
-    private Node saveNewEntity(Node node, RedisID id) throws IDException, CacheException, RedisException, ParseException
+    private Node saveNewEntity(Node node, BlocksID id) throws IDException, CacheException, DatabaseException, ParseException
     {
         /*
          * HtmlToStoredInstance needs a html-document to traverse correctly.

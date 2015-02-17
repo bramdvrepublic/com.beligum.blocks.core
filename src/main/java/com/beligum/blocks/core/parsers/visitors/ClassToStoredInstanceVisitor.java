@@ -6,8 +6,8 @@ import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
-import com.beligum.blocks.core.exceptions.RedisException;
-import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.exceptions.DatabaseException;
+import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
@@ -42,8 +42,8 @@ public class ClassToStoredInstanceVisitor extends SuperVisitor
     public ClassToStoredInstanceVisitor(URL pageUrl, String language) throws ParseException
     {
         try{
-            RedisID pageId = new RedisID(pageUrl, RedisID.LAST_VERSION, true);
-            EntityTemplate page = Redis.getInstance().fetchEntityTemplate(pageId);
+            BlocksID pageId = new BlocksID(pageUrl, BlocksID.LAST_VERSION, true);
+            EntityTemplate page = (EntityTemplate) Redis.getInstance().fetch(pageId, EntityTemplate.class);
             if(page != null && !page.getLanguage().equals(language)){
                 parsingNewLanguage = true;
             }
@@ -84,10 +84,10 @@ public class ClassToStoredInstanceVisitor extends SuperVisitor
                     EntityTemplateClass entityClass = EntityTemplateClassCache.getInstance().get(typeOf);
                     // If the current language is not present in the default template, copy the template in the primary-language to the new language
                     if(defaultEntityTemplate.getTemplate(this.language) == null){
-                        RedisID newLanguageId = RedisID.renderLanguagedId(defaultEntityTemplate.getId().getUrl(), RedisID.NEW_VERSION, this.language);
+                        BlocksID newLanguageId = BlocksID.renderLanguagedId(defaultEntityTemplate.getId().getUrl(), BlocksID.NEW_VERSION, this.language);
                         defaultEntityTemplate.add(newLanguageId, defaultEntityTemplate.getTemplate());
                     };
-                    EntityTemplate newEntityInstance = new EntityTemplate(RedisID.renderNewEntityTemplateID(entityClass, this.language), entityClass, defaultEntityTemplate.getTemplates());
+                    EntityTemplate newEntityInstance = new EntityTemplate(BlocksID.renderNewEntityTemplateID(entityClass, this.language), entityClass, defaultEntityTemplate.getTemplates());
                     instance = newEntityInstance;
                 }
                 node = replaceNodeWithEntity(node, instance);
@@ -109,19 +109,24 @@ public class ClassToStoredInstanceVisitor extends SuperVisitor
             Node lastInstanceNode = !newInstancesNodes.isEmpty() ? newInstancesNodes.peek() : null;
             if (node.equals(lastInstanceNode) && node instanceof Element) {
                 EntityTemplateClass entityClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
-                RedisID newEntityId;
+                BlocksID newEntityId;
                 // For the first root entity use pageUrl if available
                 if (newInstancesNodes.size() == 1 && pageUrl != null) {
-                    newEntityId = RedisID.renderLanguagedId(pageUrl, RedisID.NEW_VERSION, this.language);
+                    newEntityId = BlocksID.renderLanguagedId(pageUrl, BlocksID.NEW_VERSION, this.language);
                 }
                 //else render a new entity-template-id
                 else{
-                    newEntityId = RedisID.renderNewEntityTemplateID(entityClass, this.language);
+                    newEntityId = BlocksID.renderNewEntityTemplateID(entityClass, this.language);
                 }
                 node.removeAttr(ParserConstants.BLUEPRINT);
                 node.attr(ParserConstants.RESOURCE, newEntityId.getUrl().toString());
                 EntityTemplate newInstance = new EntityTemplate(newEntityId, entityClass, node.outerHtml());
-                Redis.getInstance().save(newInstance);
+                if(Redis.getInstance().fetchLastVersion(newEntityId, EntityTemplate.class) == null) {
+                    Redis.getInstance().create(newInstance);
+                }
+                else{
+                    Redis.getInstance().update(newInstance);
+                }
                 node = replaceElementWithEntityReference((Element) node, newInstance);
                 newInstancesNodes.pop();
             }
@@ -139,12 +144,12 @@ public class ClassToStoredInstanceVisitor extends SuperVisitor
      * Determine and fetch the default entity-template. First try to fetch the language we're parsing, if not found, fetch the primary language of the default template.
      * @param unversionedResourceId
      * @throws IDException
-     * @throws RedisException
+     * @throws com.beligum.blocks.core.exceptions.DatabaseException
      * @throws ParseException
      */
-    private EntityTemplate fetchDefaultEntityTemplate(String unversionedResourceId) throws IDException, RedisException, ParseException {
-        RedisID defaultEntityId = new RedisID(unversionedResourceId, RedisID.LAST_VERSION, this.language);
-        EntityTemplate defaultEntityTemplate = Redis.getInstance().fetchEntityTemplate(defaultEntityId);
+    private EntityTemplate fetchDefaultEntityTemplate(String unversionedResourceId) throws IDException, DatabaseException, ParseException {
+        BlocksID defaultEntityId = new BlocksID(unversionedResourceId, BlocksID.LAST_VERSION, this.language);
+        EntityTemplate defaultEntityTemplate = (EntityTemplate) Redis.getInstance().fetch(defaultEntityId, EntityTemplate.class);
         // If no such default template could be found, we're probably dealing with another language, which needs to be a copy of the primary-language
         if(defaultEntityTemplate == null){
             defaultEntityTemplate = (EntityTemplate) Redis.getInstance().fetchLastVersion(defaultEntityId, EntityTemplate.class);

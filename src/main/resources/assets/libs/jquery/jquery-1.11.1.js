@@ -5456,7 +5456,7 @@ function fixCloneNodeIssues( src, dest ) {
 		}
 
 	} else if ( nodeName === "input" && rcheckableType.test( src.type ) ) {
-		// IE6-8 fails to persist the checked state of a cloned checkbox
+		// IE6-8 fails to create the checked state of a cloned checkbox
 		// or radio button. Worse, IE6-7 fail to give the cloned element
 		// a checked appearance if the defaultChecked value isn't also set
 

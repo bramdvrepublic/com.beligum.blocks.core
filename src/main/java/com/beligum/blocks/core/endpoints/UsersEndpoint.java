@@ -55,8 +55,6 @@ public class UsersEndpoint
     private static final String CHANGE_EMAIL = "changeemail";
     private static final String FEEDBACK_MESSAGE = "feedbackMessage";
 
-    //TODO BAS!: vraag aan Bram zelfde form voor edit-user als new-user
-
     @GET
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
     public Response users(@QueryParam("sort") @DefaultValue(FIRST_NAME)

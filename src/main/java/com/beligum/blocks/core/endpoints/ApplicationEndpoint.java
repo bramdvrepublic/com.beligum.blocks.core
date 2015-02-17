@@ -4,7 +4,7 @@ import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
-import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.blocks.core.parsers.TemplateParser;
@@ -63,7 +63,7 @@ public class ApplicationEndpoint
             }
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
             if(version == null){
-                version = RedisID.LAST_VERSION;
+                version = BlocksID.LAST_VERSION;
             }
             else{
                 if(!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)){
@@ -71,9 +71,9 @@ public class ApplicationEndpoint
                 }
             }
             //if no language info is specified in the url, or if the specified language doesn't exist, the default language will still be shown
-            RedisID id = new RedisID(url, version, false);
+            BlocksID id = new BlocksID(url, version, false);
             //if no such page is present in db, ask if user wants to create a new page
-            if(id.getVersion() == RedisID.NO_VERSION) {
+            if(id.getVersion() == BlocksID.NO_VERSION) {
                 if(!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)){
                     throw new NotFoundException("Page does not exist: " + url);
                 }
@@ -82,7 +82,7 @@ public class ApplicationEndpoint
             }
             //if a version is present in db, try to fetch the page from db
             else if(!id.hasLanguage()) {
-                RedisID primaryLanguageId = new RedisID(id, RedisID.PRIMARY_LANGUAGE);
+                BlocksID primaryLanguageId = new BlocksID(id, BlocksID.PRIMARY_LANGUAGE);
                 //if no primary language can be found in db, it means the page is not present in db
                 if (!primaryLanguageId.hasLanguage()) {
                     throw new NotFoundException("Couldn't find " + primaryLanguageId.getUrl());
@@ -93,7 +93,7 @@ public class ApplicationEndpoint
             //if the url contains both version and language-information, try to render the entity
             else {
                 version = id.getVersion();
-                EntityTemplate entityTemplate = Redis.getInstance().fetchEntityTemplate(id);
+                EntityTemplate entityTemplate = (EntityTemplate) Redis.getInstance().fetch(id, EntityTemplate.class);
                 //if no entity-template is returned from db, the specified language doesn't exist
                 if(entityTemplate == null){
                     //since a last version was found, it must be present in db
@@ -173,10 +173,6 @@ public class ApplicationEndpoint
     {
         //the first time the server is started, we need to wait for the cache to be proparly filled, so all classes will be shown the very first time a new page is made.
         EntityTemplateClassCache entityTemplateClassCache = EntityTemplateClassCache.getInstance();
-        while(entityTemplateClassCache.isFillingUp()){
-            Thread.sleep(100);
-            entityTemplateClassCache = EntityTemplateClassCache.getInstance();
-        }
         List<EntityTemplateClass> entityTemplateClasses = entityTemplateClassCache.values();
         //TODO BAS!2: find general way to split entity-classes to be shown when creating a new page and when creating a new block in frontend -> page-block or block-block-attribute opslaan in db
         List<EntityTemplateClass> pageClasses = new ArrayList<>();

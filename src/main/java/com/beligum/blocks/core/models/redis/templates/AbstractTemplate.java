@@ -2,12 +2,13 @@ package com.beligum.blocks.core.models.redis.templates;
 
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.DatabaseConstants;
+import com.beligum.blocks.core.dbs.Database;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.SerializationException;
-import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.Storable;
 import com.beligum.blocks.core.parsers.TemplateParser;
@@ -24,7 +25,7 @@ import java.util.*;
 public abstract class AbstractTemplate extends Storable implements Comparable<AbstractTemplate>
 {
     /**string representing the html-template of this element, once the template has been set, it cannot be changed*/
-    protected Map<RedisID, String> templates;
+    protected Map<BlocksID, String> templates;
     /**the (css-)linked files this abstract template needs*/
     protected Set<String> links = new HashSet<>();
     protected List<String> linksInOrder = new ArrayList<>();
@@ -40,7 +41,7 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
      * @param links the (css-)linked files this abstract template needs
      * @param scripts the (javascript-)scripts this abstract template needs
      */
-    protected AbstractTemplate(RedisID id, Map<RedisID, String> templates, List<String> links, List<String> scripts)
+    protected AbstractTemplate(BlocksID id, Map<BlocksID, String> templates, List<String> links, List<String> scripts)
     {
         super(id);
         this.templates = templates;
@@ -72,7 +73,7 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
      * @param scripts the (javascript-)scripts this template needs
      * @throws NullPointerException if the template is null
      */
-    protected AbstractTemplate(RedisID id, String template, List<String> links, List<String> scripts){
+    protected AbstractTemplate(BlocksID id, String template, List<String> links, List<String> scripts){
         this(id, (Map) null, links, scripts);
         this.templates = new HashMap<>();
         if(template == null){
@@ -95,7 +96,7 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
      *
      * @return the template of this viewable
      */
-    public Map<RedisID, String> getTemplates()
+    public Map<BlocksID, String> getTemplates()
     {
         return templates;
     }
@@ -106,7 +107,7 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
      */
     public Set<String> getLanguages(){
         Set<String> languages = new HashSet<>();
-        for(RedisID languageId : this.templates.keySet()){
+        for(BlocksID languageId : this.templates.keySet()){
             languages.add(languageId.getLanguage());
         }
         return languages;
@@ -119,7 +120,7 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
      */
     public String getTemplate(String language){
         Map<String, String> templates = new HashMap<>();
-        for(RedisID languageID : this.templates.keySet()){
+        for(BlocksID languageID : this.templates.keySet()){
             templates.put(languageID.getLanguage(), this.templates.get(languageID));
         }
         String template = templates.get(language);
@@ -160,7 +161,7 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
      * @return false if the language-code is not correct, if the html-string is empty or if the same template is already present in the same language
      * true otherwise, which means the template has been added
      */
-    public boolean add(RedisID languageID, String html){
+    public boolean add(BlocksID languageID, String html){
         if(StringUtils.isEmpty(html)){
             return false;
         }
@@ -175,7 +176,7 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
             }
             else{
                 boolean added = false;
-                for(RedisID languageIdIntern : templates.keySet()){
+                for(BlocksID languageIdIntern : templates.keySet()){
                     if(languageIdIntern.getLanguage().equals(languageID.getLanguage()) && languageID.getVersion() >= languageIdIntern.getVersion()){
                         templates.remove(languageIdIntern);
                         templates.put(languageID, html);
@@ -223,7 +224,7 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
             hash.remove("linksInOrder");
             hash.remove("scripts");
             hash.remove("scriptsInOrder");
-            for (RedisID languageId : this.templates.keySet()) {
+            for (BlocksID languageId : this.templates.keySet()) {
                 hash.put(languageId.getLanguage(), languageId.toString());
             }
             String links = "";
@@ -251,17 +252,23 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
      * @param hash
      * @throws IDException if a bad id is found in the specified hash
      */
-    static protected Map<RedisID, String> fetchLanguageTemplatesFromHash(Map<String, String> hash) throws DeserializationException
+    static protected Map<BlocksID, String> fetchLanguageTemplatesFromHash(Map<String, String> hash) throws DeserializationException
     {
         try {
             Set<String> keys = hash.keySet();
             Set<String> permittedLanguages = Languages.getPermittedLanguageCodes();
-            Map<RedisID, String> templates = new HashMap<>();
+            Map<BlocksID, String> templates = new HashMap<>();
             Set<String> keysToBeRemoved = new HashSet<>();
             for (String key : keys) {
                 if (permittedLanguages.contains(key)) {
-                    RedisID languageId = new RedisID(hash.get(key));
-                    templates.put(languageId, Redis.getInstance().fetchStringForId(languageId));
+                    BlocksID languageId = new BlocksID(hash.get(key));
+                    Database redis = Redis.getInstance();
+                    if(redis instanceof Redis) {
+                        templates.put(languageId,((Redis) redis).fetchStringForId(languageId));
+                    }
+                    else{
+                        throw new DeserializationException("Could not fetch language string from database. Unknown database type found: " + redis.getClass().getName());
+                    }
                     keysToBeRemoved.add(key);
                 }
             }
@@ -330,12 +337,10 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
         //7 and 31 are two randomly chosen prime numbers, needed for building hashcodes, ideally, these are different for each class
         HashCodeBuilder significantFieldsSet = new HashCodeBuilder(7, 31);
         significantFieldsSet = significantFieldsSet.append(this.getUnversionedId())
-                                                   .append(this.createdBy)
-                                                   .append(this.updatedBy)
                                                    .append(this.applicationVersion)
                                                    .append(this.deleted);
         //all map-pairs "language -> template" must be added to the hashcode, we do this by customly specifying a string containing both
-        for(RedisID languageId : templates.keySet()){
+        for(BlocksID languageId : templates.keySet()){
             String language = languageId.getLanguage();
             significantFieldsSet = significantFieldsSet.append(language + "->" + templates.get(languageId));
         }
@@ -367,13 +372,11 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
                 AbstractTemplate abstractTemplateObj = (AbstractTemplate) obj;
                 EqualsBuilder significantFieldsSet = new EqualsBuilder();
                 significantFieldsSet = significantFieldsSet.append(this.getUnversionedId(), abstractTemplateObj.getUnversionedId())
-                                                           .append(this.createdBy, abstractTemplateObj.createdBy)
-                                                           .append(this.updatedBy, abstractTemplateObj.updatedAt)
                                                            .append(this.applicationVersion, abstractTemplateObj.applicationVersion)
                                                            .append(this.deleted, abstractTemplateObj.deleted);
                 //check if all templates in different languages are equal and that exactly the same languages are present in both objects
                 significantFieldsSet = significantFieldsSet.append(templates.size(), abstractTemplateObj.templates.size());
-                for(RedisID languageId : templates.keySet()){
+                for(BlocksID languageId : templates.keySet()){
                     String language = languageId.getLanguage();
                     significantFieldsSet = significantFieldsSet.append(this.getTemplate(language), abstractTemplateObj.getTemplate(language));
                 }

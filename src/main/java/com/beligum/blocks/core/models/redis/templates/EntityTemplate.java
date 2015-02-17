@@ -5,7 +5,7 @@ import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.*;
-import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.utils.Utils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -35,13 +35,13 @@ public class EntityTemplate extends AbstractTemplate
      *                  this can be used to copy one template's language-templates to another one
      * @throws IDException if no template in the language specified by the id could be found in the templates-map, or if that map was empty
      */
-    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, Map<RedisID, String> templatesToBeCopied) throws IDException, CacheException
+    public EntityTemplate(BlocksID id, EntityTemplateClass entityTemplateClass, Map<BlocksID, String> templatesToBeCopied) throws IDException, CacheException
     {
         //no scripts or links are specified for an entity-template (this could be implemented later, if wanted)
         super(id, (Map) null, null, null);
         this.templates = new HashMap<>();
-        for(RedisID classTemplateId : templatesToBeCopied.keySet()){
-            this.templates.put(new RedisID(id, classTemplateId.getLanguage()), templatesToBeCopied.get(classTemplateId));
+        for(BlocksID classTemplateId : templatesToBeCopied.keySet()){
+            this.templates.put(new BlocksID(id, classTemplateId.getLanguage()), templatesToBeCopied.get(classTemplateId));
         }
         this.entityTemplateClassName = entityTemplateClass.getName();
         this.pageTemplateName = entityTemplateClass.getPageTemplateName();
@@ -56,7 +56,7 @@ public class EntityTemplate extends AbstractTemplate
      * @param entityTemplateClass the class of which this entity is a entity-instance
      * @param template the html-template of this template
      */
-    public EntityTemplate(RedisID id, EntityTemplateClass entityTemplateClass, String template) throws CacheException
+    public EntityTemplate(BlocksID id, EntityTemplateClass entityTemplateClass, String template) throws CacheException
     {
         super(id, template, null, null);
         this.entityTemplateClassName = entityTemplateClass.getName();
@@ -70,7 +70,7 @@ public class EntityTemplate extends AbstractTemplate
      * @param templates
      * @throw IDException if no template in the language specified by the id could be found in the templates-map
      */
-    private EntityTemplate(RedisID id, String entityTemplateClassName, Map<RedisID, String> templates) throws IDException
+    private EntityTemplate(BlocksID id, String entityTemplateClassName, Map<BlocksID, String> templates) throws IDException
     {
         super(id, templates, null, null);
         this.entityTemplateClassName = entityTemplateClassName;
@@ -86,7 +86,7 @@ public class EntityTemplate extends AbstractTemplate
      * @throws DeserializationException when a bad hash is found
      */
     //is protected so that all classes in package can access this method
-    protected static EntityTemplate createInstanceFromHash(RedisID id, Map<String, String> hash) throws DeserializationException
+    protected static EntityTemplate createInstanceFromHash(BlocksID id, Map<String, String> hash) throws DeserializationException
     {
         try{
             if(hash != null && !hash.isEmpty() && hash.containsKey(DatabaseConstants.ENTITY_TEMPLATE_CLASS_NAME)) {
@@ -94,7 +94,7 @@ public class EntityTemplate extends AbstractTemplate
                  * Fetch all fields from the hash, removing them as they are used.
                  * Afterwards use all remaining information to be wired to the a new instance
                  */
-                Map<RedisID, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
+                Map<BlocksID, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
                 String entityTemplateClassName = hash.get(DatabaseConstants.ENTITY_TEMPLATE_CLASS_NAME);
                 hash.remove(DatabaseConstants.ENTITY_TEMPLATE_CLASS_NAME);
                 EntityTemplate newInstance = new EntityTemplate(id, entityTemplateClassName, templates);
@@ -110,7 +110,7 @@ public class EntityTemplate extends AbstractTemplate
         }
     }
 
-    public static EntityTemplate copyToNewId(EntityTemplate original, RedisID newId) throws Exception
+    public static EntityTemplate copyToNewId(EntityTemplate original, BlocksID newId) throws Exception
     {
         try {
             Map<String, String> hash = original.toHash();

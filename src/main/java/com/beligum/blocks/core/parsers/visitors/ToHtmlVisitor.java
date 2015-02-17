@@ -4,7 +4,7 @@ import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.ParseException;
-import com.beligum.blocks.core.identifiers.RedisID;
+import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
@@ -292,8 +292,8 @@ public class ToHtmlVisitor extends SuperVisitor
      */
     private Element replaceWithNewDefaultCopy(Node classProperty, String referenceId) throws Exception
     {
-        RedisID defaultClassPropertyId = new RedisID(getReferencedId(classProperty), RedisID.LAST_VERSION, language);
-        EntityTemplate defaultClassPropertyTemplate = Redis.getInstance().fetchEntityTemplate(defaultClassPropertyId);
+        BlocksID defaultClassPropertyId = new BlocksID(getReferencedId(classProperty), BlocksID.LAST_VERSION, language);
+        EntityTemplate defaultClassPropertyTemplate = (EntityTemplate) Redis.getInstance().fetch(defaultClassPropertyId, EntityTemplate.class);
         if(defaultClassPropertyTemplate == null){
             defaultClassPropertyTemplate = (EntityTemplate) Redis.getInstance().fetchLastVersion(defaultClassPropertyId, EntityTemplate.class);
             if(defaultClassPropertyTemplate == null) {
@@ -307,7 +307,7 @@ public class ToHtmlVisitor extends SuperVisitor
         }
         Element defaultClassPropertyRoot = TemplateParser.parse(defaultClassPropertyHtml).child(0);
         String referencedInstanceId = referenceId;
-        RedisID id = new RedisID(referencedInstanceId, RedisID.LAST_VERSION, language);
+        BlocksID id = new BlocksID(referencedInstanceId, BlocksID.LAST_VERSION, language);
         defaultClassPropertyRoot.attr(ParserConstants.RESOURCE, id.getUrl().toString());
         classProperty.replaceWith(defaultClassPropertyRoot);
         return defaultClassPropertyRoot;
@@ -319,8 +319,8 @@ public class ToHtmlVisitor extends SuperVisitor
         try {
             String id = getReferencedId(instanceRootNode);
             if (!StringUtils.isEmpty(id)) {
-                RedisID referencedId = new RedisID(id, RedisID.LAST_VERSION, language);
-                EntityTemplate instanceTemplate = Redis.getInstance().fetchEntityTemplate(referencedId);
+                BlocksID referencedId = new BlocksID(id, BlocksID.LAST_VERSION, language);
+                EntityTemplate instanceTemplate = (EntityTemplate) Redis.getInstance().fetch(referencedId, EntityTemplate.class);
                 if(instanceTemplate == null){
                     //the specified language could not be found in db, fetch last version in primary langugae
                     instanceTemplate = (EntityTemplate) Redis.getInstance().fetchLastVersion(referencedId, EntityTemplate.class);
