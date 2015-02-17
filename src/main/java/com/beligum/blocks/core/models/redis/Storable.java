@@ -21,14 +21,13 @@ public class Storable{
     protected final BlocksID id;
     /**the version of the application this template is supposed to interact with*/
     protected String applicationVersion;
-    //TODO BAS!: fix date-format and user-format for storage and comment this here
-    /**the creator of this template*/
+    /**the creator of this template, it is the username of a Shiro principal*/
     protected String createdBy;
-    /**the updater of this template*/
+    /**the updater of this template, it is the username of a Shiro principal*/
     protected String updatedBy;
-    /**the moment of creation of this template*/
+    /**the moment of creation of this template, formatted as f.i. 2015-02-17T13:38:21.170*/
     protected String createdAt;
-    /**the moment of last update of this template*/
+    /**the moment of last update of this template, formatted as f.i. 2015-02-17T13:38:21.170*/
     protected String updatedAt;
     /**deletion flag*/
     protected Boolean deleted = false;

@@ -1,17 +1,21 @@
-#ID
-The ID-class is a wrapper around a URI. This allows us to make subclasses of an ID. (URI is a final class and cannot be extended.)
+#BlocksID
+The BlocksID-class is a wrapper around a URI, which holds functionalities for communication with the database:
 
-One subclass is the RedisID, which holds functionalities for communication with the Redis-server:
-
- - It holds a version-field, constructed using the current time of the System. Redis.LAST_VERSION or Redis.NO_VERSION should be used form last version or unversioned id.
+ - It holds a version-field, constructed using the current time of the System. Redis.LAST_VERSION or Redis.NO_VERSION should be used for last version or unversioned id.
  - It can return the name of the list with all the versions of the object corresponding with that ID (= id.getUnversionedId())
  - It can transform a URL into an id suited for actually saving an object to the db
  
 Two ID's are **equal** when their string-representation is equal (for RedisID's this includes timestamp-versioning)
 
+#Redis and Storable
+ - Extends interface Database<Storable>
+ - The method 'toHash()' in Storable decides which info is saved to db in hash-form. This method should be overwritten manually. (It is saved under "[storableId]:[version]")
+ - A storable holds creation and update information
+ - All fields that need to be saved to db, should be publicly accessible through public field declaration or get- and set-method.
 
 All ID's used in Redis, are URI's mapping one-to-one on the object in question:
 
+ - The id of the html-content in a certain language looks like this: "blocks://[db-site-alias]/[entityId]:[version]/[languageCode]"
  - The ID of the redis-hash representing an EntityTemplate looks like this: "blocks://[db-site-alias]/[entityId]:[version]"
  - The list of all versions of a certain EntityTemplate has an id looking like this: "blocks://[db-site-alias]/[entityId]"
  - The ID of the redis-hash representing an EntityTemplateClass looks like this= "blocks://[db-site-alias]/[entityClassName]:[version]"
@@ -20,14 +24,16 @@ All ID's used in Redis, are URI's mapping one-to-one on the object in question:
  - the list of all versions of a property of a certain EntityTemplateClass has an id lookin like this: "blocks://[db-site-alias]/[entityClassName]#[propertyName]"
  - The set with all instances of a certain EntityTemplateClass has an id looking like this: "blocks://[db-site-allias]/[entityClassName]Set"
 
- 
-#Elements
+
+#Templates
  - Template is a super-name for entity-templates, entity-class-templates and page-templates. 
- - Two templates are **equal** when their content, meta-data (application version, creator, ...) and id (this doesn't include timestamp-versioning!) are equal
+ - Two templates are **equal** when their content, meta-data (application version and deletion-flag) and id (this doesn't include timestamp-versioning!) are equal. Creation- and update-info is not brought into the mix!
+ - Creation- and update-info is being handled in the Storable constructor and Database.update(Storable storable) method.
   
 #Parsing
-Is done in 4 visiting-lines:
- - From files to entity-classes in cacher (ON SERVER START UP)
+Is done in 5 visiting-lines:
+ - From files to a list of all entity-classes and all page-templates found (ON SERVER START UP)
+ - That list is given to a second visitor which in turn makes default instances where necessary and caches all classes (ON SERVER START UP)
  - From entity-classes in cacher to new stored entity-instances in db (ON ENTITY CREATION)
  - From stored entity-templates in db to html (ON READ)
  - From html received from client to updated instances in db (ON UPDATE)
@@ -35,14 +41,9 @@ Is done in 4 visiting-lines:
 ##Html- and CSS-'rules'
  - Only page-templates can hold bootstrap-containers (entities should never be containers, and no containers should ever be used in entities)
  - No bootstrap-layout should be added to a typeof- or property-tag (= entity-tag)
- - If a entity-tag has can-layout, then the first elementy inside the entity must be a row
+ - If a entity-tag has can-layout, then the first element inside the entity must be a row
  - CSS-id's should only be used in page-templates, never inside entities. All css-styling should be achieved without use of id's
  - The css-rules for a certain entity will probably be grouped inside a class with the same name as the entity-class. These rules should be able to properly render the entity independently of any other css-rules. This also means no bootstrap-classes can be used to render good design.
-
-
-#Redis
- - Only Storables can be saved to db
- - The method 'toHash()' in Storable decides which info is saved to db in hash-form. This method should be overwritten manually. (It is saved under "[templateId]:[version]")
 
 
 #Exceptions
