@@ -73,23 +73,60 @@ jQuery(document).ready(function($) {
 
 
 function deleteUser(userId){
-    $.ajax({
-        url: "/users/" + userId,
-        type: 'delete',
-        success: function(response){
-            var modalData = {
-                bodyText: response ? response : "The user has been deleted.",
-                onConfirm: "toUsersIndex()"
-            };
-            MODALS.show(MODALS.SUCCESS, modalData);
-        },
-        error: function(response){
-            var modalData = {
-                bodyText: response.status == 403 ? response.responseText : "An error occurred while deleting the user."
-            };
-            MODALS.show(MODALS.ERROR, modalData);
-        }
-    });
+    var deleteDialog = new BootstrapDialog()
+        .setTitle('Delete')
+        .setMessage('Do you want to delete this user?')
+        .setType(BootstrapDialog.TYPE_DANGER)
+        .setButtons([
+            {
+                label: 'Cancel',
+                action: function(deleteDialog){
+                    deleteDialog.close();
+                }
+            },
+            {
+                label: 'Delete',
+                cssClass: 'btn-danger',
+                action: function(deleteDialog){
+                    $.ajax({
+                        url: "/users/" + userId,
+                        type: 'delete',
+                        success: function(response){
+                            deleteDialog.close();
+                            var message = response ? response : "The user has been deleted.";
+                            var successModal = new BootstrapDialog()
+                                .setTitle("Deleted")
+                                .setType(BootstrapDialog.TYPE_SUCCESS)
+                                .setMessage(message)
+                                .setButtons([{
+                                    label : 'OK',
+                                    action: function(successModal){
+                                        successModal.close();
+                                        toUsersIndex()
+                                    }
+                                }])
+                                .open();
+                        },
+                        error: function(response){
+                            deleteDialog.close();
+                            var message = response.status == 403 ? response.responseText : "An error occurred while deleting the user."
+                            var errorModal = new BootstrapDialog()
+                                .setTitle("Error")
+                                .setType(BootstrapDialog.TYPE_DANGER)
+                                .setMessage(message)
+                                .setButtons({
+                                    label : 'OK',
+                                    action: function(errorModal){
+                                        errorModal.close();
+                                    }
+                                })
+                                .open();
+                        }
+                    });
+                }
+            }
+        ])
+        .open();
 }
 
 function toUsersIndex(){
