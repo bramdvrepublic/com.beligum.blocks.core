@@ -1,4 +1,4 @@
-blocks.plugin("blocks.core.image", ["blocks.core.Edit", "blocks.core.Notification", "blocks.core.Broadcaster", function(Edit, Notification, Broadcaster) {
+blocks.plugin("blocks.core.image", ["blocks.finder", "blocks.core.Edit", "blocks.core.Notification", "blocks.core.Broadcaster", function(Finder, Edit, Notification, Broadcaster) {
     var dialogContent = $('<div class="form-inline" role="form"><div class="form-group">' +
         '<label for="imagelabel" class="sr-only">Geef de url van een afbeelding: </label>'  +
         '<input type="text"  class="form-control"  placeholder="Geef een url" id="imageselect" />'+
@@ -10,13 +10,11 @@ blocks.plugin("blocks.core.image", ["blocks.core.Edit", "blocks.core.Notificatio
     var editImage = function(blockEvent) {
         var element = blockEvent.property.current.element;
         if (element.prop("tagName") == "IMG") {
-            Notification.dialog("Change image", dialogContent.html(), function(body) {
-                var imageSrc= $(body).find("#imageselect").val();
-                element.attr("src", imageSrc);
+
+            Finder.open({callback: function(file) {
+                element.attr("src", "/media/public/" + file);
                 Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-            }, function() {
-                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-            })
+            }});
         }
 
 
