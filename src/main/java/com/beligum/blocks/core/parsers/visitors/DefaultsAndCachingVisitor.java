@@ -208,7 +208,7 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
          */
         boolean isAddableBlock = isAddableBlock(root);
         boolean isPageBlock = isPageBlock(root);
-        root.removeAttr(ParserConstants.ADDABLE_BLOCK);
+        root.removeAttr(ParserConstants.NOT_ADDABLE_BLOCK);
         root.removeAttr(ParserConstants.PAGE_BLOCK);
         EntityTemplateClass entityTemplateClass = new EntityTemplateClass(parsingTemplate.getName(), this.language, root.outerHtml(), parsingTemplate.getPageTemplateName(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
         entityTemplateClass.setAddableBlock(isAddableBlock);

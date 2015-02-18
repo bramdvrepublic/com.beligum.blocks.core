@@ -9,7 +9,6 @@ import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.utils.Logger;
-import com.sun.org.apache.xalan.internal.xsltc.DOM;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Document;
@@ -540,7 +539,7 @@ public class SuperVisitor
     }
 
     public boolean isAddableBlock(Node node){
-        return node.hasAttr(ParserConstants.ADDABLE_BLOCK);
+        return !node.hasAttr(ParserConstants.NOT_ADDABLE_BLOCK);
     }
 
 }

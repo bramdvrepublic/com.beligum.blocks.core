@@ -13,9 +13,9 @@ import java.util.Set;
  */
 public interface Database<T extends Storable> extends Closeable
 {
-    void create(T storable) throws DatabaseException;
+    public void create(T storable) throws DatabaseException;
 
-    void update(T storable) throws DatabaseException;
+    public void update(T storable) throws DatabaseException;
 
     /**
      * Fetch a {@link Storable} from db.
@@ -24,18 +24,18 @@ public interface Database<T extends Storable> extends Closeable
      * @return an object of the type specified, so casting is save
      * @throws DatabaseException
      */
-    T fetch(BlocksID id, Class<? extends T> type) throws DatabaseException;
+    public T fetch(BlocksID id, Class<? extends T> type) throws DatabaseException;
 
-    T fetchLastVersion(BlocksID id, Class<? extends T> type) throws DatabaseException;
+    public T fetchLastVersion(BlocksID id, Class<? extends T> type) throws DatabaseException;
 
-    List<T> fetchVersionList(BlocksID id, Class<? extends T> type) throws DatabaseException;
+    public List<T> fetchVersionList(BlocksID id, Class<? extends T> type) throws DatabaseException;
 
-    boolean trash(BlocksID id) throws DatabaseException;
+    public boolean trash(BlocksID id) throws DatabaseException;
 
-    void flushDB();
+    public void flushDB();
 
     @Override
-    void close();
+    public void close();
 
     /**
      * Get the last saved version number of a storable with a certain id.

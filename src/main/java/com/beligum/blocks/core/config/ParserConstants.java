@@ -60,7 +60,7 @@ public class ParserConstants
     public static final String USE_BLUEPRINT = "use-blueprint";
 
     public static final String PAGE_BLOCK = "page-block";
-    public static final String ADDABLE_BLOCK = "addable-block";
+    public static final String NOT_ADDABLE_BLOCK = "not-addable-block";
 
     /**
      * Dynamic blocks

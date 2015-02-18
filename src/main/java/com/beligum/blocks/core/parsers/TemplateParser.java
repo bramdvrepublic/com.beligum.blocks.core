@@ -33,7 +33,7 @@ import java.util.*;
 public class TemplateParser
 {
 
-    //TODO BAS: complete rdfa enablement (rel for same property-names, about for entity-injection)
+    //TODO BAS!: complete rdfa enablement (rel for same property-names, about for entity-injection)
 
     /**
      * Parse all templates found in the specified html and cache them in the specified collection.
