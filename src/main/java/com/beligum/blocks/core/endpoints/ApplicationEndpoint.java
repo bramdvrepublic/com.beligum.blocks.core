@@ -24,6 +24,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.*;
 
 @Path("/")
 public class ApplicationEndpoint
@@ -34,13 +35,6 @@ public class ApplicationEndpoint
         return Response.seeOther(new URI("/index")).build();
     }
 
-    @Path("/finder")
-    @GET
-    public Response finder()
-    {
-        Template indexTemplate = R.templateEngine().getEmptyTemplate("/views/finder.html");
-        return Response.ok(indexTemplate).build();
-    }
 
     @Path("/mot/{name}")
     @GET
