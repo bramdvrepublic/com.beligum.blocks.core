@@ -41,7 +41,7 @@ public class DebugEndpoint
     {
         this.resetCache();
         Redis.getInstance().flushDB();
-        Logger.warn("Database been flushed by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
+        Logger.warn("Database has been flushed by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
         return Response.ok("<ul><li>Cache reset</li><li>Database emptied</li></ul>").build();
     }
 
@@ -51,6 +51,8 @@ public class DebugEndpoint
     {
         EntityTemplateClassCache.getInstance().reset();
         PageTemplateCache.getInstance().reset();
+        EntityTemplateClassCache.getInstance();
+        PageTemplateCache.getInstance();
         Logger.warn("Cache has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
         return Response.ok("Cache reset").build();
     }

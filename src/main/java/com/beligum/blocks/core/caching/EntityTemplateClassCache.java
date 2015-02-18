@@ -32,7 +32,7 @@ public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTempl
      * @return a singleton instance of PageClassCache
      * @throws NullPointerException if no application cache could be found
      */
-    public static EntityTemplateClassCache getInstance() throws CacheException
+    synchronized public static EntityTemplateClassCache getInstance() throws CacheException
     {
         try {
             if (instance == null) {

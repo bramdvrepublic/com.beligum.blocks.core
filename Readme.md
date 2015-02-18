@@ -79,3 +79,5 @@ Is done in 5 visiting-lines:
      4. scripts of page-template
      5. scripts of blueprints
      6. scripts of dynamic blocks
+     (7. links of blocks core frontend)
+     (8. scripts of blocks core frontend)

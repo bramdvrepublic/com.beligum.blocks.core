@@ -174,10 +174,9 @@ public class ApplicationEndpoint
         //the first time the server is started, we need to wait for the cache to be proparly filled, so all classes will be shown the very first time a new page is made.
         EntityTemplateClassCache entityTemplateClassCache = EntityTemplateClassCache.getInstance();
         List<EntityTemplateClass> entityTemplateClasses = entityTemplateClassCache.values();
-        //TODO BAS!2: find general way to split entity-classes to be shown when creating a new page and when creating a new block in frontend -> page-block or block-block-attribute opslaan in db
         List<EntityTemplateClass> pageClasses = new ArrayList<>();
         for (EntityTemplateClass entityTemplateClass : entityTemplateClasses) {
-            if (entityTemplateClass.getName().contains("-page")) {
+            if (entityTemplateClass.isPageBlock()) {
                 pageClasses.add(entityTemplateClass);
             }
         }

@@ -25,10 +25,7 @@ import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by wouter on 21/11/14.
@@ -236,7 +233,7 @@ public class TemplateParser
             }
             //inject frontend links and scripts if logged in as administrator
             if(SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
-                addFrontendScripts(DOM);
+                addFrontendScripts(DOM, visitor.getLinks(), visitor.getScripts());
             }
             return DOM.outerHtml();
         }
@@ -297,12 +294,49 @@ public class TemplateParser
         return retVal;
     }
 
-    private static void addFrontendScripts(Document DOM) throws IOException, ParseException
+    /**
+     *
+     * @param DOM the DOM in which the blocks frontend scripts should be injected
+     * @param presentLinks the links which are already present in the DOM
+     * @param presentScripts the scripts which are already present in the DOM
+     * @throws IOException
+     * @throws ParseException
+     */
+    private static void addFrontendScripts(Document DOM, List<Node> presentLinks, List<Node> presentScripts) throws IOException, ParseException
     {
-        String frontendScriptsSource = BlocksConfig.getFrontEndScripts();
+        //find all sources that are already being loaded by the DOM
+        Set<String> presentSources = new HashSet<>();
+        for(Node link : presentLinks){
+            presentSources.add(link.attr("href"));
+        }
+        for(Node script : presentScripts){
+            presentSources.add(script.attr("src"));
+        }
+
+        //get all links and scripts from the front-end file
+        SuperVisitor visitor = new SuperVisitor();
+        Document frontend = visitor.getSource(BlocksConfig.getFrontEndScripts());
+        Elements frontendLinks = frontend.select("link");
+        Elements frontendScripts = frontend.select("script");
+
+        //select all links and scripts whose source isn't present in the DOM yet
+        Document frontendToBeAdded = new Document(BlocksConfig.getSiteDomain());
+        for(Element link : frontendLinks){
+            if(!presentSources.contains(link.attr("href"))){
+                frontendToBeAdded.appendChild(link);
+            }
+        }
+        for(Element script : frontendScripts){
+            if(!presentSources.contains(script.attr("src"))){
+                frontendToBeAdded.appendChild(script);
+            }
+        }
+
+        //append all to the specified DOM
         Element head = DOM.head();
-        Element link = head.appendElement("link");
-        new SuperVisitor().includeSource(link, frontendScriptsSource);
+        Element includeAt = head.appendElement("link");
+        visitor.includeSource(includeAt, frontendToBeAdded);
+
     }
 
 }

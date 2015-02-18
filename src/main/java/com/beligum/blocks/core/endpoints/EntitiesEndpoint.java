@@ -136,24 +136,9 @@ public class EntitiesEndpoint
          */
     public Response listEntities() throws CacheException
     {
-        //TODO BAS: this should not be hard-coded
-        Set<String> addableBlocks = new HashSet<>();
-        addableBlocks.add("bordered-link");
-        addableBlocks.add("building");
-        addableBlocks.add("button");
-        addableBlocks.add("exhibition");
-        addableBlocks.add("experience");
-        addableBlocks.add("image");
-        addableBlocks.add("link-container");
-        addableBlocks.add("pagetitle");
-        addableBlocks.add("sectiontitle");
-        addableBlocks.add("text-block");
-        addableBlocks.add("text-with-border");
-        addableBlocks.add("unkown");
-        addableBlocks.add("whitespace");
         List<String> entityNames = new ArrayList<String>();
         for (EntityTemplateClass e : EntityTemplateClassCache.getInstance().values()) {
-            if(!e.getName().equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS) && addableBlocks.contains(e.getName())){
+            if(!e.getName().equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS) && e.isAddableBlock()){
                 entityNames.add(e.getName());
             }
         }

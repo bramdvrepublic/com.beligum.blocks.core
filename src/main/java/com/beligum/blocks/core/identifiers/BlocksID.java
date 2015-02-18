@@ -502,7 +502,7 @@ public class BlocksID
      * @return a new property-id to be used as a reference in a entity-class
      * @throws IDException
      */
-    public static BlocksID renderNewPropertyId(String owningEntityClassName, String property, String propertyName, String language) throws IDException
+    public static BlocksID renderClassPropertyId(String owningEntityClassName, String property, String propertyName, String language) throws IDException
     {
         try{
             if(owningEntityClassName == null){

@@ -87,7 +87,8 @@ public class FindTemplatesVisitor extends SuperVisitor
                 if(node.hasAttr("href") && node.attr("rel").equals(ParserConstants.INCLUDE)){
                     Element element = (Element) node;
                     String source = node.attr("href");
-                    node = includeSource(element, source);
+                    Document sourceDOM = getSource(source);
+                    node = includeSource(element, sourceDOM);
                 }
                 //if not, add the link to the links-stack
                 else {

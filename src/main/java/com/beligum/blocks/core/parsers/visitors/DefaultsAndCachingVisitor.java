@@ -3,7 +3,6 @@ package com.beligum.blocks.core.parsers.visitors;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
@@ -128,11 +127,11 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
                             if (this.parsingTemplate.getName().equals(this.getParentType())) {
                                 String language = getLanguage(element, entityTemplateClass);
                                 if (needsBlueprint(element)) {
-                                    BlocksID propertyId = BlocksID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
+                                    BlocksID propertyId = BlocksID.renderClassPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
                                     node = this.saveNewEntityClassCopy(element, propertyId, entityTemplateClass);
                                 }
                                 else {
-                                    BlocksID propertyId = BlocksID.renderNewPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
+                                    BlocksID propertyId = BlocksID.renderClassPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
                                     node = this.saveNewEntity(element, propertyId);
                                 }
                             }
@@ -204,9 +203,17 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
         EntityTemplateClass parsingTemplate = (EntityTemplateClass) this.parsingTemplate;
         /*
          * Use all info from the template we're parsing to make a real entity-template-class to be cached.
-         * The correct template of this class to be cached has just been created in this defaults-visitor and can thus be found at element.outerHtml().
+         * The correct template of this class to be cached has just been created in this defaults-visitor and can thus be found at root.outerHtml().
+         * Add addability information (as a block or as a page) to the class.
          */
+        boolean isAddableBlock = isAddableBlock(root);
+        boolean isPageBlock = isPageBlock(root);
+        root.removeAttr(ParserConstants.ADDABLE_BLOCK);
+        root.removeAttr(ParserConstants.PAGE_BLOCK);
         EntityTemplateClass entityTemplateClass = new EntityTemplateClass(parsingTemplate.getName(), this.language, root.outerHtml(), parsingTemplate.getPageTemplateName(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
+        entityTemplateClass.setAddableBlock(isAddableBlock);
+        entityTemplateClass.setPageBlock(isPageBlock);
+
         boolean added = EntityTemplateClassCache.getInstance().add(entityTemplateClass);
         if(!added) {
             if (entityTemplateClass.getName().equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS)) {

@@ -59,6 +59,9 @@ public class ParserConstants
     /**the keyword indicating a certain entity is a copy of the entity-class (blueprint)*/
     public static final String USE_BLUEPRINT = "use-blueprint";
 
+    public static final String PAGE_BLOCK = "page-block";
+    public static final String ADDABLE_BLOCK = "addable-block";
+
     /**
      * Dynamic blocks
      */

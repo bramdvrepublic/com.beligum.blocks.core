@@ -113,11 +113,33 @@ public class Utils
                 catch (Exception e){
                     try {
                         String fieldValueString = hash.get(field.getName());
-                        Object fieldValue = field.getType().getConstructor(String.class).newInstance(fieldValueString);
+                        Object fieldValue = null;
+                        Class type = field.getType();
+                        if (type.isPrimitive()) {
+                            if (type == Boolean.TYPE)
+                                fieldValue = Boolean.parseBoolean(fieldValueString);
+                            else if (type == Byte.TYPE)
+                                Byte.parseByte(fieldValueString);
+                            else if (type == Short.TYPE)
+                                fieldValue = Short.parseShort(fieldValueString);
+                            else if (type == Integer.TYPE)
+                                fieldValue = Integer.parseInt(fieldValueString);
+                            else if (type == Long.TYPE)
+                                fieldValue = Long.parseLong(fieldValueString);
+                            else if (type == Float.TYPE)
+                                fieldValue = Float.parseFloat(fieldValueString);
+                            else if (type == Double.TYPE)
+                                fieldValue = Double.parseDouble(fieldValueString);
+                            else
+                                throw new Exception("Unknown primitive type?");
+                        }
+                        else {
+                            fieldValue = type.getConstructor(String.class).newInstance(fieldValueString);
+                        }
                         PropertyUtils.setProperty(model, field.getName(), fieldValue);
                     }
                     catch (Exception ex){
-                        //no getter or setter found for the property, so
+                        //no getter or setter found for the property, so cannot wire it
                     }
                 }
             }

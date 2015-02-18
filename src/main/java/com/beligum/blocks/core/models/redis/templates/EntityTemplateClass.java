@@ -1,8 +1,6 @@
 package com.beligum.blocks.core.models.redis.templates;
 
 import com.beligum.blocks.core.caching.PageTemplateCache;
-import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.DeserializationException;
@@ -12,8 +10,6 @@ import com.beligum.blocks.core.utils.Utils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
@@ -26,28 +22,34 @@ public class EntityTemplateClass extends AbstractTemplate
     private String pageTemplateName = ParserConstants.DEFAULT_PAGE_TEMPLATE;
     /**string the name of this entity-class*/
     private String name;
+    /**true if this is a class which can be created as a new page*/
+    private boolean pageBlock;
+    /**true if this is a class which can be added as a new block*/
+    private boolean addableBlock;
 
-    /**
-     *
-     * @param name the name of this entity-class
-     * @param primaryLanguage the language this entity-template-class will always fall back to if needed
-     * @param templates A map relating languages to template-strings corresponding to the most outer layer of the element-tree in this entity. At least one template in the primary-language should be present.
-     * @param pageTemplateName the default page-template this entity-class should be rendered in
-     * @param links the (css-)linked files this template needs
-     * @param scripts the (javascript-)scripts this template needs
-     * @throws IDException if no new id could be rendered using the specified name and language, or if no template of that language is present in the specified map of templates
-     */
-    public EntityTemplateClass(String name, String primaryLanguage, Map<BlocksID, String> templates, String pageTemplateName, List<String> links, List<String> scripts) throws IDException
-    {
-        super(BlocksID.renderNewEntityTemplateClassID(name, primaryLanguage), templates, links, scripts);
-        this.name = name;
-        if(pageTemplateName != null) {
-            this.pageTemplateName = pageTemplateName;
-        }
-        if(!templates.containsKey(primaryLanguage)){
-            throw new IDException("No html-template in language '" + primaryLanguage + "' found between templates.");
-        }
-    }
+//    /**
+//     *
+//     * @param name the name of this entity-class
+//     * @param primaryLanguage the language this entity-template-class will always fall back to if needed
+//     * @param templates A map relating languages to template-strings corresponding to the most outer layer of the element-tree in this entity. At least one template in the primary-language should be present.
+//     * @param pageTemplateName the default page-template this entity-class should be rendered in
+//     * @param links the (css-)linked files this template needs
+//     * @param scripts the (javascript-)scripts this template needs
+//     * @throws IDException if no new id could be rendered using the specified name and language, or if no template of that language is present in the specified map of templates
+//     */
+//    public EntityTemplateClass(String name, String primaryLanguage, Map<BlocksID, String> templates, String pageTemplateName, List<String> links, List<String> scripts) throws IDException
+//    {
+//        super(BlocksID.renderNewEntityTemplateClassID(name, primaryLanguage), templates, links, scripts);
+//        this.name = name;
+//        if(pageTemplateName != null) {
+//            this.pageTemplateName = pageTemplateName;
+//        }
+//        if(!templates.containsKey(primaryLanguage)){
+//            throw new IDException("No html-template in language '" + primaryLanguage + "' found between templates.");
+//        }
+//        this.pageBlock = false;
+//        this.addableBlock = false;
+//    }
 
     /**
      * Constructor for an entity-template-class with one language and a template in that language. (Other language-templates could be added later if wanted.)
@@ -66,6 +68,8 @@ public class EntityTemplateClass extends AbstractTemplate
         if(pageTemplateName != null) {
             this.pageTemplateName = pageTemplateName;
         }
+        this.pageBlock = false;
+        this.addableBlock = false;
     }
 
     /**
@@ -116,14 +120,21 @@ public class EntityTemplateClass extends AbstractTemplate
         return PageTemplateCache.getInstance().get(pageTemplateName);
     }
 
-
-    /**
-     * returns the base-url for the entity-class
-     * @param entityClassName the name of the entity-class (f.i. "default" for a entityClass filtered from the file "entities/default/index.html")
-     */
-    public static URL getBaseUrl(String entityClassName) throws MalformedURLException
+    public boolean isPageBlock()
     {
-        return new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.ENTITY_CLASS_ID_PREFIX + "/" + entityClassName);
+        return pageBlock;
+    }
+    public void setPageBlock(boolean pageBlock)
+    {
+        this.pageBlock = pageBlock;
+    }
+    public boolean isAddableBlock()
+    {
+        return addableBlock;
+    }
+    public void setAddableBlock(boolean addableBlock)
+    {
+        this.addableBlock = addableBlock;
     }
 
     /**
@@ -174,7 +185,9 @@ public class EntityTemplateClass extends AbstractTemplate
         int hashCode = super.hashCode();
         HashCodeBuilder significantFieldsSet = new HashCodeBuilder(9, 17);
         significantFieldsSet = significantFieldsSet.appendSuper(hashCode)
-                                                   .append(this.pageTemplateName);
+                                                   .append(this.pageTemplateName)
+                                                   .append(this.addableBlock)
+                                                   .append(this.pageBlock);
         return significantFieldsSet.toHashCode();
     }
 
@@ -198,7 +211,9 @@ public class EntityTemplateClass extends AbstractTemplate
             else{
                 EntityTemplateClass templObj = (EntityTemplateClass) obj;
                 EqualsBuilder significantFieldsSet = new EqualsBuilder();
-                significantFieldsSet = significantFieldsSet.append(pageTemplateName, templObj.pageTemplateName);
+                significantFieldsSet = significantFieldsSet.append(pageTemplateName, templObj.pageTemplateName)
+                                                           .append(addableBlock, templObj.addableBlock)
+                                                           .append(pageBlock, templObj.pageBlock);
                 return significantFieldsSet.isEquals();
             }
         }

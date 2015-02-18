@@ -34,7 +34,7 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
      * @return a singleton instance of PageClassCache
      * @throws NullPointerException if no application cache could be found
      */
-    public static PageTemplateCache getInstance() throws CacheException
+    synchronized public static PageTemplateCache getInstance() throws CacheException
     {
         try {
             if (instance == null) {

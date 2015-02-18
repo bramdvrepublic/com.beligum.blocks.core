@@ -8,6 +8,8 @@ import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.core.framework.utils.Logger;
+import com.sun.org.apache.xalan.internal.xsltc.DOM;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Document;
@@ -171,31 +173,39 @@ public class SuperVisitor
     /**
      * Include the html found in the file found at {@param sourcePath} and replace the element {@param at} by the found tags.
      * @param at
-     * @param sourcePath
+     * @param source
      * @throws java.io.IOException
      * @throws ParseException
      */
-    public Node includeSource(Element at, String sourcePath) throws IOException, ParseException
+    public Node includeSource(Element at, Document source) throws IOException, ParseException
     {
-        try(InputStream input = this.getClass().getResourceAsStream(sourcePath)){
+        if(source.childNodes().isEmpty()){
+            throw new ParseException("Cannot include an empty file.");
+        }
+        Node firstChild = source.childNode(0);
+        Element parent = at.parent();
+        if(parent == null){
+            throw new ParseException("Cannot use an include as a root-node. Found at \n\n" + at + "\n\n");
+        }
+        int siblingIndex = at.siblingIndex();
+        parent.insertChildren(siblingIndex, source.childNodes());
+        at.remove();
+        return firstChild;
+    }
+
+    public Document getSource(String sourcePath) throws IOException
+    {
+        try(InputStream input = this.getClass().getResourceAsStream(sourcePath)) {
             String content = "";
             List<String> lines = IOUtils.readLines(input);
-            for(String line : lines){
+            for (String line : lines) {
                 content += line + "\n";
             }
-            Document DOM = TemplateParser.parse(content);
-            if(DOM.childNodes().isEmpty()){
-                throw new ParseException("Found empty file at '" + sourcePath + "'. Cannot include an empty file.");
+            Document source = TemplateParser.parse(content);
+            if(source.childNodes().isEmpty()){
+                Logger.warn("Found empty file at '" + sourcePath + "'.");
             }
-            Node firstChild = DOM.childNode(0);
-            Element parent = at.parent();
-            if(parent == null){
-                throw new ParseException("Cannot use an include as a root-node. Found at \n\n" + at + "\n\n");
-            }
-            int siblingIndex = at.siblingIndex();
-            parent.insertChildren(siblingIndex,DOM.childNodes());
-            at.remove();
-            return firstChild;
+            return source;
         }
     }
 
@@ -460,7 +470,7 @@ public class SuperVisitor
                     return null;
                 }
                 try {
-                    return BlocksID.renderNewPropertyId(parentEntityClassName, propertyValue, getPropertyName(node), BlocksID.NO_LANGUAGE).getUnversionedId();
+                    return BlocksID.renderClassPropertyId(parentEntityClassName, propertyValue, getPropertyName(node), BlocksID.NO_LANGUAGE).getUnversionedId();
 
                 }catch(Exception e){
                     throw new ParseException("Could not render new property-id.", e);
@@ -523,6 +533,14 @@ public class SuperVisitor
         }
         language = Languages.getStandardizedLanguage(language);
         return language;
+    }
+
+    public boolean isPageBlock(Node node){
+        return node.hasAttr(ParserConstants.PAGE_BLOCK);
+    }
+
+    public boolean isAddableBlock(Node node){
+        return node.hasAttr(ParserConstants.ADDABLE_BLOCK);
     }
 
 }

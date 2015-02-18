@@ -121,10 +121,12 @@ public class ClassToStoredInstanceVisitor extends SuperVisitor
                 node.removeAttr(ParserConstants.BLUEPRINT);
                 node.attr(ParserConstants.RESOURCE, newEntityId.getUrl().toString());
                 EntityTemplate newInstance = new EntityTemplate(newEntityId, entityClass, node.outerHtml());
-                if(Redis.getInstance().fetchLastVersion(newEntityId, EntityTemplate.class) == null) {
+                //for default instances, a version could already be present in db, which is equal to this one
+                EntityTemplate storedInstance = (EntityTemplate) Redis.getInstance().fetchLastVersion(newEntityId, EntityTemplate.class);
+                if(storedInstance == null) {
                     Redis.getInstance().create(newInstance);
                 }
-                else{
+                else if(!newInstance.equals(storedInstance)){
                     Redis.getInstance().update(newInstance);
                 }
                 node = replaceElementWithEntityReference((Element) node, newInstance);
