@@ -11,6 +11,8 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     btnList.append(saveBtn);
     var deleteBtn = $('<a class="btn  btn-default" href="#">Delete</a>');
     btnList.append(deleteBtn);
+    var translateBtn = $('<a class="btn  btn-default" href="#">Translate url</a>');
+    btnList.append(translateBtn);
 
 
     menuBtn.on("click", function(event) {
@@ -26,11 +28,9 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     saveBtn.on("click", function() {
         menuBar.removeClass("open");
         var page = $("html")[0].outerHTML;
-        var o = JSON.stringify({"url": document.URL, "page": page});
-        var test = JSON.stringify({t: [{x: 1, y:2}, {x: 1}]});
-        $.ajax({type: 'POST',
-                url: "/entities/save",
-                data: o,
+        $.ajax({type: 'PUT',
+                url: "/entities/" + window.location.pathname,
+                data: page,
                 contentType: 'application/json; charset=UTF-8',
                 success: function(url, textStatus, response) {
                     if(url){
@@ -67,6 +67,32 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
         };
         Notification.dialog("Delete page", "<div>Do you want to delete this page and all it's translations?</div>", onConfirm);
     });
+
+    translateBtn.on("click", function() {
+        var translateDialog = new BootstrapDialog()
+            .setTitle('Translate')
+            .setMessage($('<div></div>').load('/modals/translation?original=' + window.location.href))
+            .setType(BootstrapDialog.TYPE_INFO)
+            .setButtons([
+                {
+                    label: 'Cancel',
+                    action: function (translateDialog) {
+                        translateDialog.close();
+                    }
+                },
+                {
+                    label: 'Translate',
+                    cssClass: 'btn-info',
+                    action: function (translateDialog) {
+                        translateDialog.close();
+                        $.ajax({
+                            type: 'POST',
+                            url: "/translations?language=" + $("#language").val() + "&original=" + window.location.href + "&translation=" + $("#translation").val()
+                        })
+                    }
+                }])
+            .open();
+        });
 
 
     var create = function() {

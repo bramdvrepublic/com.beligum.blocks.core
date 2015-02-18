@@ -2,13 +2,14 @@ package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
+import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Database;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.exceptions.DatabaseException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
-import com.beligum.blocks.core.exceptions.DatabaseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
@@ -26,7 +27,10 @@ import javax.ws.rs.core.Response;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Created by bas on 07.10.14.
@@ -51,21 +55,23 @@ public class EntitiesEndpoint
     {
         EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(entityClassName);
         URL entityUrl = new URL(pageUrl);
-        BlocksID id = new BlocksID(entityUrl, BlocksID.LAST_VERSION, false);
-        EntityTemplate lastVersion = (EntityTemplate) Redis.getInstance().fetch(id, EntityTemplate.class);
+        BlocksID id = new BlocksID(entityUrl, BlocksID.LAST_VERSION, true);
+        EntityTemplate lastVersion = (EntityTemplate) Redis.getInstance().fetchLastVersion(id, EntityTemplate.class);
         URL newEntityUrl = null;
-        /*
-         * if no version was already present in db or if the url did not hold language-information,
-         * render the language-information using the site's default values
-         */
-        if(lastVersion == null || !id.hasLanguage()) {
-            id = new BlocksID(entityUrl, BlocksID.LAST_VERSION, true);
-        }
-        else if(lastVersion.getLanguages().contains(id.getLanguage()) && lastVersion.getDeleted() == false){
-            throw new Exception("Cannot create an entity-language which already exists! This should not happen.");
-        }
-        else{
-            //do nothing, since this just means we're adding a new language to an entity or we are reviving an old version
+
+        //if a not-deleted version exists in db, check if the url is free for use or not
+        if(!(lastVersion == null || lastVersion.getDeleted())){
+             //TODO BAS SH: this means an active db version exists of the wanted url, so we need to check if it's litteral url is still in use, and if not, we can couple that url to a new 'randomly' generated id
+//            //if the url to the template did not hold language-information,
+//            if (!id.hasLanguage()) {
+//                id = new BlocksID(entityUrl, BlocksID.LAST_VERSION, true);
+//            }
+//            else if (lastVersion.getLanguages().contains(id.getLanguage()) && lastVersion.getDeleted() == false) {
+//                throw new Exception("Cannot create an entity-language which already exists! This should not happen.");
+//            }
+//            else {
+//
+//            }
         }
         newEntityUrl = TemplateParser.saveNewEntityTemplateToDb(entityUrl, id.getLanguage(), entityTemplateClass);
 
@@ -87,24 +93,23 @@ public class EntitiesEndpoint
     }
 
 
-    @POST
-    @Path("/save")
+    @PUT
+    @Path("/{entityUrlPath:.+}")
     @Consumes(MediaType.APPLICATION_JSON)
     /*
      * update a page-instance with id 'entityId' to be the html specified
      */
-    public Response updateEntity(Map<String, String> data)
+    public Response updateEntity(@PathParam("entityUrlPath") String entityUrlPath, String pageHtml)
     {
         try{
-            String url = data.get("url");
-            if(url.endsWith("#")){
-                url = url.substring(0, url.length()-1);
+            if(entityUrlPath.endsWith("#")){
+                entityUrlPath = entityUrlPath.substring(0, entityUrlPath.length()-1);
             }
-            URL entityUrl = new URL(url);
+            URL entityUrl = new URL(new URL(BlocksConfig.getSiteDomain()), entityUrlPath);
             //ignore the query-part of the url to fetch an entity from db, use only the path of the url
             entityUrl = new URL(entityUrl, entityUrl.getPath());
             EntityTemplate entity = (EntityTemplate) Redis.getInstance().fetchLastVersion(new BlocksID(entityUrl, BlocksID.LAST_VERSION, true), EntityTemplate.class);
-            TemplateParser.updateEntity(entityUrl, data.get("page"));
+            TemplateParser.updateEntity(entityUrl, pageHtml);
             return Response.ok(entityUrl.getPath()).build();
         }catch (Exception e){
             return Response.status(Response.Status.BAD_REQUEST).entity(I18n.instance().getMessage("entitySaveFailed")).build();

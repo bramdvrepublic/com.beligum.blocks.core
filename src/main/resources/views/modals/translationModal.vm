@@ -1,0 +1,14 @@
+#define($body-html)
+<div>
+    <span>Enter a translation for <span style="font-style: italic">$!originalUrl</span> to
+        <select id="language">
+            #foreach($language in $languages)
+            <option>$language</option>
+            #end
+        </select>
+    </span></span>
+    <input style="text" id="translation">
+</div>
+#end
+
+#parse("/views/modals/modal-main.html")
