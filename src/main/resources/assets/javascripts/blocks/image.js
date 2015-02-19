@@ -16,8 +16,6 @@ blocks.plugin("blocks.core.image", ["blocks.finder", "blocks.core.Edit", "blocks
                 Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
             }});
         }
-
-
     };
 
 

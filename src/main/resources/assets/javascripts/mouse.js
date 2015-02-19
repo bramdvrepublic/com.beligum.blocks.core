@@ -261,7 +261,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         sel.removeAllRanges();
         var html = $("html");
         html.addClass("no-select");
-
+        window.ondragstart = function() {return false;};
 
     };
 
@@ -269,7 +269,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         //http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
         var html = $("html");
         html.removeClass("no-select");
-
+        window.ondragstart = function() {return true;};
 
     }
 
@@ -331,12 +331,6 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
     };
 
 
-
-
-
-
-
-    window.ondragstart = function() {return false;};
 
 
 }])
