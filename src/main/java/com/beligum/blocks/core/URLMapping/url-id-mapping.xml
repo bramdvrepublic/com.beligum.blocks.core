@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<urls>
+    <path id="1" blocks-id="blocks://LOC/14252354">
+        <translations>
+            <translation lang="en">museum</translation>
+            <translation lang="nl">museum</translation>
+            <translation lang="fr">musée</translation>
+        </translations>
+    </path>
+    <path id="2" blocks-id="blocks://LOC/14252354">
+        <translations>
+            <translation lang="en">home</translation>
+            <translation lang="nl">thuis</translation>
+            <translation lang="fr">maison</translation>
+        </translations>
+        <paths>
+            <path id="1" blocks-id="blocks://LOC/1427524578">
+                <translations>
+                    <translation lang="en">bla</translation>
+                </translations>
+            </path>
+        </paths>
+    </path>
+</urls>

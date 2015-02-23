@@ -1,5 +1,7 @@
 package com.beligum.blocks.core.endpoints;
 
+import com.beligum.blocks.core.URLMapping.URLMapper;
+import com.beligum.blocks.core.URLMapping.XMLMapper;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
@@ -17,9 +19,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.joda.time.LocalDateTime;
+import org.xml.sax.SAXException;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
@@ -229,4 +235,12 @@ public class DebugEndpoint
         }
         return type;
     }
+
+    @Path("start")
+    @GET
+    public Response debugMain() throws ParserConfigurationException, SAXException, IOException
+    {
+        return Response.ok().build();
+    }
+
 }
