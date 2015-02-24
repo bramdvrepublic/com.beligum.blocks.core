@@ -1,17 +1,12 @@
 package com.beligum.blocks.core.endpoints;
 
-import com.beligum.blocks.core.URLMapping.URLMapper;
-import com.beligum.blocks.core.URLMapping.XMLMapper;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.*;
 import com.beligum.blocks.core.identifiers.BlocksID;
-import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
-import com.beligum.blocks.core.models.redis.templates.PageTemplate;
+import com.beligum.blocks.core.models.redis.templates.*;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.utils.Logger;
@@ -19,16 +14,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.joda.time.LocalDateTime;
-import org.xml.sax.SAXException;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.File;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by bas on 27.01.15.
@@ -40,14 +34,15 @@ public class DebugEndpoint
     public static final String ENTTIY_INSTANCE_TYPE = "instance";
     public static final String ENTITY_CLASS_TYPE = "class";
     public static final String PAGE_TEMPLATE_TYPE = "template";
+    public static final String XML_TEMPLATE_TYPE = "xml";
 
     @GET
     @Path("/flush")
     public Response flushEntities() throws CacheException
     {
-        this.resetCache();
         Redis.getInstance().flushDB();
         Logger.warn("Database has been flushed by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
+        this.resetCache();
         return Response.ok("<ul><li>Cache reset</li><li>Database emptied</li></ul>").build();
     }
 
@@ -225,6 +220,9 @@ public class DebugEndpoint
                 case PAGE_TEMPLATE_TYPE:
                     type = PageTemplate.class;
                     break;
+                case XML_TEMPLATE_TYPE:
+                    type = XMLTemplate.class;
+                    break;
                 default:
                     type = EntityTemplate.class;
                     break;
@@ -234,13 +232,6 @@ public class DebugEndpoint
             type = EntityTemplate.class;
         }
         return type;
-    }
-
-    @Path("start")
-    @GET
-    public Response debugMain() throws ParserConfigurationException, SAXException, IOException
-    {
-        return Response.ok().build();
     }
 
 }

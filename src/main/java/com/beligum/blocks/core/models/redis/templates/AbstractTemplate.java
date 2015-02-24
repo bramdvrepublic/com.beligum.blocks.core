@@ -199,7 +199,7 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
 
     /**
      *
-     * @return the language stored in the id of this template
+     * @return the name this template
      */
     abstract public String getName();
 
@@ -338,7 +338,8 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
         HashCodeBuilder significantFieldsSet = new HashCodeBuilder(7, 31);
         significantFieldsSet = significantFieldsSet.append(this.getUnversionedId())
                                                    .append(this.applicationVersion)
-                                                   .append(this.deleted);
+                                                   .append(this.deleted)
+                                                   .append(this.getName());
         //all map-pairs "language -> template" must be added to the hashcode, we do this by customly specifying a string containing both
         for(BlocksID languageId : templates.keySet()){
             String language = languageId.getLanguage();
@@ -373,7 +374,8 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
                 EqualsBuilder significantFieldsSet = new EqualsBuilder();
                 significantFieldsSet = significantFieldsSet.append(this.getUnversionedId(), abstractTemplateObj.getUnversionedId())
                                                            .append(this.applicationVersion, abstractTemplateObj.applicationVersion)
-                                                           .append(this.deleted, abstractTemplateObj.deleted);
+                                                           .append(this.deleted, abstractTemplateObj.deleted)
+                                                           .append(this.getName(), abstractTemplateObj.getName());
                 //check if all templates in different languages are equal and that exactly the same languages are present in both objects
                 significantFieldsSet = significantFieldsSet.append(templates.size(), abstractTemplateObj.templates.size());
                 for(BlocksID languageId : templates.keySet()){

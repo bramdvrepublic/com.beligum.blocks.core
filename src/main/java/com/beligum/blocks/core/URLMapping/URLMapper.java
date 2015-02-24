@@ -1,5 +1,6 @@
 package com.beligum.blocks.core.URLMapping;
 
+import com.beligum.blocks.core.exceptions.LanguageException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 
 import java.net.URL;
@@ -15,7 +16,13 @@ public interface URLMapper
 
     public URL getUrl(BlocksID id);
 
-    public void addUrl(URL url, String language, BlocksID id);
+    /**
+     * Add a url-id pair to the mapping
+     * @param languagedUrl an url holding language-information
+     * @param id
+     * @throws LanguageException
+     */
+    public void add(URL languagedUrl, BlocksID id) throws LanguageException;
 
-    public void addTranslation(Path path, String language);
+    public void addTranslation(URL url, String language);
 }

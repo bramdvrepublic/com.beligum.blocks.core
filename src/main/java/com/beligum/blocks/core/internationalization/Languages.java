@@ -25,7 +25,7 @@ public class Languages
      * @return a standardized language-code for the language-code specified, or the no-language-string if no language-code was specified
      */
     static public String getStandardizedLanguage(String languageCode){
-        if(containsLanguageCode(languageCode)){
+        if(isLanguageCode(languageCode)){
             return new Locale(languageCode).getLanguage();
         }
         else{
@@ -38,7 +38,7 @@ public class Languages
      * @param s
      * @return true if the specified string contains a preferred language or another ISO-standard language-code
      */
-    static public boolean containsLanguageCode(String s){
+    static public boolean isLanguageCode(String s){
         if(StringUtils.isEmpty(s) || s.equals(NO_LANGUAGE)){
             return false;
         }
@@ -127,17 +127,46 @@ public class Languages
     }
 
     /**
-     * Method translating the string representation of a url to the specified language. Relative url's must start with a '/' for them to be properly translated.
-     * Relative urls without '/' will not be translated, nor will absolute urls to other sites then the one specified in the configuration xml.
-     * @param urlString a url absolute or relative (and starting with '/'), to be translated
-     * @param language the language to be added to the url
-     * @return a string-representation of the absolute or relative url, or the urlString itself if it is empty (or null)
+     * Determines the language present in the url specified.
+     * @param urlString
+     * @return the found language, or an empty string if no language was found
      * @throws LanguageException
      */
-    static public String translateUrl(String urlString, String language) throws LanguageException{
+    static public String determineLanguage(String urlString) throws LanguageException
+    {
+        String nolanguageUrl = translateUrl(urlString, Languages.NO_LANGUAGE);
+        int index = 0;
+        char[] language = new char[100];
+        for(int i = 0; i<urlString.length(); i++){
+            if(urlString.charAt(i) == nolanguageUrl.charAt(index)){
+                index++;
+            }
+            else{
+                language[i-index] = urlString.charAt(i);
+            }
+        }
+        String stringLanguage = new String(language);
+        stringLanguage = stringLanguage.replace("/", "");
+        return stringLanguage;
+    }
+
+    /**
+     * Method translating the string representation of a url to the specified language. Relative url's must start with a '/' for them to be properly translated.
+     * Relative urls without '/' will not be translated, nor will absolute urls to other sites then the one specified in the configuration xml.
+     * User Languages.NO_LANGUAGE to remove the language.
+     * @param urlString a url absolute or relative (and starting with '/'), to be translated
+     * @param language the language to be added to the url
+     * @return A string-representation of the absolute or relative url, or the urlString itself if it is empty (or null), found in first position of an array. The second position holds the original language or an empty string if no language was found.
+     * @throws LanguageException
+     */
+    static public String[] translateUrl(String urlString, String language) throws LanguageException{
         try {
+            String[] urlAndLanguage = new String[2];
             if(StringUtils.isEmpty(urlString)){
-                return urlString;
+                //TODO BAS SH: need the language to be returned by this method also, to use in the addUrl-method
+                urlAndLanguage[0] = urlString;
+                urlAndLanguage[1] = "";
+                return urlAndLanguage;
             }
             /*
              * Check language

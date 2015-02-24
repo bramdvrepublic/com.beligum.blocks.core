@@ -148,7 +148,7 @@ public class TemplateParser
     {
         String pageStringId = "";
         try {
-            if(!Languages.containsLanguageCode(language)){
+            if(!Languages.isLanguageCode(language)){
                 language = entityTemplateClass.getLanguage();
             }
             String html = entityTemplateClass.getTemplate(language);
