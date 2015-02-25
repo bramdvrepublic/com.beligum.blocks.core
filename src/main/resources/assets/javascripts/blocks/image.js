@@ -11,10 +11,14 @@ blocks.plugin("blocks.core.image", ["blocks.finder", "blocks.core.Edit", "blocks
         var element = blockEvent.property.current.element;
         if (element.prop("tagName") == "IMG") {
 
-            Finder.open({callback: function(file) {
-                element.attr("src", "/media/public/" + file);
-                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-            }});
+            Finder.open({
+                onSelect: function(file) {
+                    element.attr("src", "/media/public/" + file);
+                },
+                onClose: function() {
+                    Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+                }
+            });
         }
     };
 

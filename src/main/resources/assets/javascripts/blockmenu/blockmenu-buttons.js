@@ -29,11 +29,24 @@ blocks.plugin("blocks.core.BlockMenu.delete", ["blocks.core.BlockMenu", "blocks.
         action: function(event) {
             event.stopPropagation();
             var currentBlock = Menu.currentBlock();
-            Notification.dialog("Delete", "<p>You will now delete this block!</p><p>Are you sure?</p>", function() {
-                Layouter.removeBlock(currentBlock);
-            },function() {
-
-            });
+            BootstrapDialog.confirm({
+                title: 'WARNING',
+                message: 'Warning! Drop your banana?',
+                type: BootstrapDialog.TYPE_WARNING, // <-- Default value is BootstrapDialog.TYPE_PRIMARY
+                closable: true, // <-- Default value is false
+                draggable: true, // <-- Default value is false
+                btnCancelLabel: 'Do not drop it!', // <-- Default value is 'Cancel',
+                btnOKLabel: 'Drop it!', // <-- Default value is 'OK',
+                btnOKClass: 'btn-warning', // <-- If you didn't specify it, dialog type will be used,
+                callback: function(result) {
+                    // result will be true if button was click, while it will be false if users close the dialog directly.
+                    if(result) {
+                        alert('Yup.');
+                    }else {
+                        alert('Nope.');
+                    }
+                }
+            })
         }
     });
 

@@ -29,11 +29,11 @@ import java.util.*;
 @Path("/")
 public class ApplicationEndpoint
 {
-    @GET
-    public Response index() throws URISyntaxException
-    {
-        return Response.seeOther(new URI("/index")).build();
-    }
+//    @GET
+//    public Response index() throws URISyntaxException
+//    {
+//        return Response.seeOther(new URI("/index")).build();
+//    }
 
 
     @Path("/mot/{name}")
@@ -46,15 +46,15 @@ public class ApplicationEndpoint
 
 
     //using regular expression to let all requests to undefined paths end up here
-    @Path("/{randomPage:.+}")
+    @Path("/{randomPage:.*}")
     @GET
     public Response getPageWithId(@PathParam("randomPage") String randomURLPath, @QueryParam("version") Long version)
     {
         //TODO BAS!3: make site-map with language-tree
         try{
-            if(randomURLPath != null && (randomURLPath.equals("") || randomURLPath.equals("/"))){
-                return Response.seeOther(URI.create(ApplicationEndpointRoutes.index().getPath())).build();
-            }
+//            if(randomURLPath != null && (randomURLPath.equals("") || randomURLPath.equals("/"))){
+//                return Response.seeOther(URI.create(ApplicationEndpointRoutes.index().getPath())).build();
+//            }
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
             if(version == null){
                 version = BlocksID.LAST_VERSION;

@@ -15,9 +15,11 @@ import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.i18n.I18n;
 import com.beligum.core.framework.utils.Logger;
 import gen.com.beligum.blocks.core.endpoints.ApplicationEndpointRoutes;
+import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.hibernate.validator.constraints.NotBlank;
 
 import javax.ws.rs.*;
@@ -32,6 +34,7 @@ import java.util.*;
  * Created by bas on 07.10.14.
  */
 @Path("/entities")
+@RequiresRoles(Permissions.ADMIN_ROLE_NAME)
 public class EntitiesEndpoint
 {
 

@@ -177,6 +177,7 @@ public class BlocksID
              */
             URI urlUri = new URI(unversionedId);
             String urlPath = urlUri.getPath();
+
             //remove the beginning-"/" from the path
             String relativePath = urlPath.substring(1);
             if(!StringUtils.isEmpty(urlUri.getFragment())){
@@ -277,6 +278,7 @@ public class BlocksID
     public URL getLanguagedUrl() throws IDException {
         try {
             String newPath = this.url.getPath();
+            if(newPath.length() == 0 || newPath.indexOf('/') != 0) newPath = "/" + newPath;
             newPath = "/" + this.language + newPath;
             if(!StringUtils.isEmpty(this.url.getQuery())){
                 newPath += "?" + this.url.getQuery();
@@ -303,7 +305,11 @@ public class BlocksID
      * @return the name of the version-list of this id in the Redis-db
      */
     public String getUnversionedId(){
-        return idUri.toString();
+        String retVal = idUri.toString();
+        if (StringUtils.isEmpty(idUri.getPath())) {
+            retVal += "/";
+        }
+        return retVal;
     }
 
 
@@ -355,6 +361,10 @@ public class BlocksID
                         urlPath += "/" + splitted[j];
                     }
                 }
+            } else if (splitted.length == 1) {
+                urlPath = "/" + splitted[0];
+            } else {
+                urlPath = "/";
             }
             //if no language could be successfully parsed from the url, we use the site's preferred languages
             if(this.language == null) {

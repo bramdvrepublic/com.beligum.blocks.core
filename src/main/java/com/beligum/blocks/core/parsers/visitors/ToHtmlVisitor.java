@@ -82,6 +82,7 @@ public class ToHtmlVisitor extends SuperVisitor
                 this.addScripts(entityTemplateClass.getScripts());
                 String entityTemplateClassHtml = entityTemplateClass.getTemplate(language);
                 //if no template could be found for the current language, fall back to the primary language
+
                 if (entityTemplateClassHtml == null) {
                     entityTemplateClassHtml = entityTemplateClass.getTemplate();
                 }
