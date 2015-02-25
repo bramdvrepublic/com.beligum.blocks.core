@@ -58,6 +58,8 @@ public class ParserConstants
     public static final String BLUEPRINT = "blueprint";
     /**the keyword indicating a certain entity is a copy of the entity-class (blueprint)*/
     public static final String USE_BLUEPRINT = "use-blueprint";
+    /**the keyword indicating a certain property value is a copy of the property in the entity-class (blueprint)*/
+    public static final String USE_DEFAULT = "use-default";
 
     public static final String PAGE_BLOCK = "page-block";
     public static final String NOT_ADDABLE_BLOCK = "not-addable-block";

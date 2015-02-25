@@ -73,7 +73,9 @@ public class ToHtmlVisitor extends SuperVisitor
             node = super.head(node, depth);
             if(isEntity(node) && node instanceof Element) {
                 //if this is a referencing block, replace it
+//                if (getParent() == null)
                 node = replaceWithReferencedInstance(node);
+
 
                 //now check if the properties found in the entity should be copied to the class-template
                 Element entityRoot = (Element) node;
@@ -211,6 +213,95 @@ public class ToHtmlVisitor extends SuperVisitor
         }
     }
 
+
+    /**
+     * Copy the (editable) properties from the instance-template to the class-template
+     * @param fromInstanceRoot
+     * @param toClassRoot
+     * @throws ParseException
+     */
+    private Node copyProperties(Element fromInstanceRoot, Element toClassRoot) throws ParseException
+    {
+        try {
+            Elements instanceReferencingElementsList = fromInstanceRoot.select("[" + ParserConstants.REFERENCE_TO + "]");
+            //            Elements instancePropertiesList =  instanceReferencingElementsList.select("[" + ParserConstants.PROPERTY + "]");
+
+            HashMap<String, Element> instanceProperties = new HashMap<String, Element>();
+            for (Element property: instanceReferencingElementsList) {
+                if (property.hasAttr(ParserConstants.PROPERTY)) {
+                    instanceProperties.put(property.attr(ParserConstants.PROPERTY), property);
+                }
+            }
+
+            Elements classReferencingElementsList = toClassRoot.select("[" + ParserConstants.REFERENCE_TO + "]");
+            //            Elements classPropertiesList = classReferencingElementsList.select("[" + ParserConstants.PROPERTY + "]");
+
+            HashMap<String, Element> classProperties = new HashMap<String, Element>();
+            for (Element property: instanceReferencingElementsList) {
+                if (property.hasAttr(ParserConstants.PROPERTY)) {
+                    classProperties.put(property.attr(ParserConstants.PROPERTY), property);
+                }
+            }
+
+
+            //if referencing, editable properties are present in the class-template, they are proper properties and they should be filled in from the entity-instance we are parsing now
+            if (!instanceProperties.keySet().isEmpty() && !classProperties.keySet().isEmpty()) {
+                //copy all properties of the instance to the class
+                for (Element classProperty : classProperties.values()) {
+                    //                    for (Element instanceProperty : instancePropertiesList) {
+                    //                        if (getPropertyId(instanceProperty).equals(getPropertyId(classProperty))) {
+                    Element instanceProperty = instanceProperties.get(classProperty.attr(ParserConstants.PROPERTY));
+
+                    Element element = null;
+                    //If the classproperty is modifiable, we replace it with the instance's property
+                    if (isModifiable(classProperty)) {
+                        Element instancePropertyCopy = instanceProperty.clone();
+                        classProperty.replaceWith(instancePropertyCopy);
+                        element = instancePropertyCopy;
+                    }
+                    //If the class-defaults should be used for this class-property, we fetch the default from db and add it, using the original instance's property's resource-id.
+                    else {
+                        element = replaceWithNewDefaultCopy(classProperty, getReferencedId(instanceProperty));
+                    }
+                    copyModificationLevel(classProperty, element);
+                    instanceReferencingElementsList.remove(instanceProperty);
+                    classReferencingElementsList.remove(classProperty);
+
+                }
+                //all remaining class-properties are rendered, since we are starting from the class anyway
+                for(Element remainingClassReferencingElement : classReferencingElementsList){
+                    if(!remainingClassReferencingElement.hasAttr(ParserConstants.PROPERTY)) {
+                        throw new ParseException("Found entity which is not a property in class '" + toClassRoot.attr(ParserConstants.TYPE_OF) + "' at: \n \n " + classReferencingElementsList+ "\n \n");
+                    }
+                    Logger.debug("Found class property which was not replaced by an instance property of class '" + toClassRoot.attr(ParserConstants.TYPE_OF) + "' at: " +
+                                 remainingClassReferencingElement);
+                }
+                //all remaining instance-properties are reported in debug-mode, but are ignore for the rest
+                for(Element remainingInstanceReferencingElement : instanceReferencingElementsList){
+                    if(!remainingInstanceReferencingElement.hasAttr(ParserConstants.PROPERTY)) {
+                        throw new ParseException("Found entity which is not a property of class '" + toClassRoot.attr(ParserConstants.TYPE_OF) + "' at \n \n " + classReferencingElementsList+ "\n \n");
+                    }
+                    Logger.debug("Found instance property which was not copied to the class of type '" + toClassRoot.attr(ParserConstants.TYPE_OF) + "' at: " + remainingInstanceReferencingElement);
+                }
+                Node returnRoot = toClassRoot;
+                for (Attribute attribute : fromInstanceRoot.attributes()) {
+                    returnRoot.attr(attribute.getKey(), attribute.getValue());
+                }
+                returnRoot.removeAttr(ParserConstants.BLUEPRINT);
+                fromInstanceRoot.replaceWith(returnRoot);
+                return returnRoot;
+            }
+            else {
+                return fromInstanceRoot;
+            }
+        }
+        catch(ParseException e){
+            throw e;
+        }
+        catch(Exception e){
+            throw new ParseException("Couldn't deduce an entity-instance from it's entity-class at \n \n" + fromInstanceRoot + "\n \n", e);
+        }
+    }
 
 
     /**
