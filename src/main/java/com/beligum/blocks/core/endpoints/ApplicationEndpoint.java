@@ -56,7 +56,7 @@ public class ApplicationEndpoint
     @GET
     public Response getPageWithId(@PathParam("randomPage") String randomURLPath, @QueryParam("version") Long version)
     {
-        //TODO BAS!3: make site-map with language-tree
+        //TODO BAS: need to check url-id mapping for existence of url
         try{
             if(randomURLPath != null && (randomURLPath.equals("") || randomURLPath.equals("/"))){
                 return Response.seeOther(URI.create(ApplicationEndpointRoutes.index().getPath())).build();

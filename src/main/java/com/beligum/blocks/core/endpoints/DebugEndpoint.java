@@ -1,5 +1,6 @@
 package com.beligum.blocks.core.endpoints;
 
+import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
@@ -38,12 +39,15 @@ public class DebugEndpoint
 
     @GET
     @Path("/flush")
-    public Response flushEntities() throws CacheException
+    public Response flushEntities() throws Exception
     {
         Redis.getInstance().flushDB();
         Logger.warn("Database has been flushed by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
+        XMLUrlIdMapper.getInstance().reset();
+        XMLUrlIdMapper.getInstance();
+        Logger.warn("Url-id mapping has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
         this.resetCache();
-        return Response.ok("<ul><li>Cache reset</li><li>Database emptied</li></ul>").build();
+        return Response.ok("<ul><li>Database emptied</li><li>Cache reset</li><li>Url-id mapping reset</li></ul>").build();
     }
 
     @GET
@@ -199,6 +203,42 @@ public class DebugEndpoint
         return Response.ok(retVal).build();
     }
 
+    @GET
+    @Path("/src/allversions/{resourcePath:.+}")
+    @Produces("text/plain")
+    public Response getTemplateSrcForAllVersions(@PathParam("resourcePath")
+                                                  @DefaultValue("")
+                                                  String resourcePath,
+                                                  @QueryParam("fragment")
+                                                  @DefaultValue("")
+                                                  String fragment,
+                                                  @QueryParam("type")
+                                                  String typeName) throws MalformedURLException, IDException, DatabaseException, SerializationException
+    {
+        Class<? extends AbstractTemplate> type = determineType(typeName);
+        URL url = renderUrl(resourcePath, fragment);
+        List<AbstractTemplate> versions = Redis.getInstance().fetchVersionList(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
+        String retVal = "";
+        for(AbstractTemplate template : versions) {
+            if(template != null) {
+                retVal += "----------------------------------" + template.getId() + "---------------------------------- \n \n";
+                Map<BlocksID, String> languageTemplates = template.getTemplates();
+                for(BlocksID languagedId : languageTemplates.keySet()){
+                    retVal += "----------------------------------" + languagedId.getLanguage() + "----------------------------------  \n";
+                    String toBeAdded = languageTemplates.get(languagedId);
+                    retVal += toBeAdded;
+                }
+
+                retVal += "\n\n\n";
+            }
+            else{
+                retVal += "----------------------------------FOUND NULL TEMPLATE----------------------------------";
+                retVal += "\n\n\n\n\n";
+            }
+        }
+        return Response.ok(retVal).build();
+    }
+
     private URL renderUrl(String resourcePath, String fragment) throws MalformedURLException
     {
         if(!StringUtils.isEmpty(fragment)){
@@ -221,7 +261,7 @@ public class DebugEndpoint
                     type = PageTemplate.class;
                     break;
                 case XML_TEMPLATE_TYPE:
-                    type = XMLTemplate.class;
+                    type = UrlIdMapping.class;
                     break;
                 default:
                     type = EntityTemplate.class;

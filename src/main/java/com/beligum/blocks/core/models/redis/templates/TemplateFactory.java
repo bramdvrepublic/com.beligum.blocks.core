@@ -27,8 +27,8 @@ public class TemplateFactory
         else if(type.equals(PageTemplate.class)){
             return PageTemplate.createInstanceFromHash(id, hash);
         }
-        else if(type.equals(XMLTemplate.class)){
-            return XMLTemplate.createInstanceFromHash(id, hash);
+        else if(type.equals(UrlIdMapping.class)){
+            return UrlIdMapping.createInstanceFromHash(id, hash);
         }
         else{
             throw new DeserializationException("Unknown " + AbstractTemplate.class.getSimpleName() + "-type: " + type);

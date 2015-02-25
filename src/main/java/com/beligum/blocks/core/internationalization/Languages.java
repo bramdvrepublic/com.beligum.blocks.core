@@ -134,20 +134,8 @@ public class Languages
      */
     static public String determineLanguage(String urlString) throws LanguageException
     {
-        String nolanguageUrl = translateUrl(urlString, Languages.NO_LANGUAGE);
-        int index = 0;
-        char[] language = new char[100];
-        for(int i = 0; i<urlString.length(); i++){
-            if(urlString.charAt(i) == nolanguageUrl.charAt(index)){
-                index++;
-            }
-            else{
-                language[i-index] = urlString.charAt(i);
-            }
-        }
-        String stringLanguage = new String(language);
-        stringLanguage = stringLanguage.replace("/", "");
-        return stringLanguage;
+        String[] urlAndLanguage = translateUrl(urlString, Languages.NO_LANGUAGE);
+        return urlAndLanguage[1];
     }
 
     /**
@@ -162,10 +150,9 @@ public class Languages
     static public String[] translateUrl(String urlString, String language) throws LanguageException{
         try {
             String[] urlAndLanguage = new String[2];
+            urlAndLanguage[1] = "";
             if(StringUtils.isEmpty(urlString)){
-                //TODO BAS SH: need the language to be returned by this method also, to use in the addUrl-method
                 urlAndLanguage[0] = urlString;
-                urlAndLanguage[1] = "";
                 return urlAndLanguage;
             }
             /*
@@ -189,7 +176,8 @@ public class Languages
                 //only http-protocols will be translated (so f.i. a mailto-protocol will stay unchanged)
                 //only absolute links of this very site will be translated
                 if(!"http".equals(url.getProtocol()) || !new URL(BlocksConfig.getSiteDomain()).getAuthority().equals(url.getAuthority())){
-                    return urlString;
+                    urlAndLanguage[0] = urlString;
+                    return urlAndLanguage;
                 }
             }
             //relative urls are first turned into absolute one's
@@ -198,7 +186,8 @@ public class Languages
                 isAbsolute = false;
                 startsWithSlash = urlString.startsWith("/");
                 if(!isAbsolute && !startsWithSlash){
-                    return urlString;
+                    urlAndLanguage[0] = urlString;
+                    return urlAndLanguage;
                 }
             }
             /*
@@ -213,6 +202,7 @@ public class Languages
             if (splitted.length > 1) {
                 String foundLanguage = splitted[1];
                 if (permittedLanguages.contains(foundLanguage)) {
+                    urlAndLanguage[1] = foundLanguage;
                     //remove the language-information from the middle of the id
                     urlPath = "";
                     for (int j = 2; j < splitted.length; j++) {
@@ -227,11 +217,12 @@ public class Languages
              * Revert the absolute to relative urls, if needed
              */
             if(isAbsolute) {
-                return new URL(url.getProtocol(), url.getHost(), url.getPort(), urlPath).toString();
+                urlAndLanguage[0] = new URL(url.getProtocol(), url.getHost(), url.getPort(), urlPath).toString();
             }
             else{
-                return urlPath;
+                urlAndLanguage[0] = urlPath;
             }
+            return urlAndLanguage;
         }catch(Exception e){
             throw new LanguageException("Could not translate url '" + urlString + "' into '" + language + "'.", e);
         }

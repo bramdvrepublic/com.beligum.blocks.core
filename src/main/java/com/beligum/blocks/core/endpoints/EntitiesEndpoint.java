@@ -1,5 +1,6 @@
 package com.beligum.blocks.core.endpoints;
 
+import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
@@ -61,7 +62,7 @@ public class EntitiesEndpoint
 
         //if a not-deleted version exists in db, check if the url is free for use or not
         if(!(lastVersion == null || lastVersion.getDeleted())){
-             //TODO BAS SH: this means an active db version exists of the wanted url, so we need to check if it's litteral url is still in use, and if not, we can couple that url to a new 'randomly' generated id
+             //TODO BAS!: this means an active db version exists of the wanted url, so we need to check if it's litteral url is still in use, and if not, we can couple that url to a new 'randomly' generated id, but we won't use this if we use hexadecimal BlocksIDs
 //            //if the url to the template did not hold language-information,
 //            if (!id.hasLanguage()) {
 //                id = new BlocksID(entityUrl, BlocksID.LAST_VERSION, true);
@@ -74,7 +75,6 @@ public class EntitiesEndpoint
 //            }
         }
         newEntityUrl = TemplateParser.saveNewEntityTemplateToDb(entityUrl, id.getLanguage(), entityTemplateClass);
-
         /*
          * Redirect the client to the newly created entity's page
          */
@@ -110,6 +110,7 @@ public class EntitiesEndpoint
             entityUrl = new URL(entityUrl, entityUrl.getPath());
             EntityTemplate entity = (EntityTemplate) Redis.getInstance().fetchLastVersion(new BlocksID(entityUrl, BlocksID.LAST_VERSION, true), EntityTemplate.class);
             TemplateParser.updateEntity(entityUrl, pageHtml);
+            XMLUrlIdMapper.getInstance().add(entityUrl, entity.getId());
             return Response.ok(entityUrl.getPath()).build();
         }catch (Exception e){
             return Response.status(Response.Status.BAD_REQUEST).entity(I18n.instance().getMessage("entitySaveFailed")).build();
@@ -124,6 +125,7 @@ public class EntitiesEndpoint
             Redis.getInstance().trash(new BlocksID(new URL(url), BlocksID.NO_VERSION, false));
             URL entityUrl = new URL(url);
             entityUrl = new URL(entityUrl, entityUrl.getPath());
+            //TODO BAS: url-id mapping needs to be removed here
             return Response.ok(entityUrl.toString()).build();
         }
         catch(Exception e){

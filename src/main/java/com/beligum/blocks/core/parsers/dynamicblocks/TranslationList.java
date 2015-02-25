@@ -89,7 +89,7 @@ public class TranslationList implements DynamicBlock
     private String getListItem(String language) throws LanguageException
     {
         //if we're dealing with a translation list, we simple want the links to be a link of this page, translated into the specified language
-        String link = Languages.translateUrl(this.pageUrl.toString(), language);
+        String link = Languages.translateUrl(this.pageUrl.toString(), language)[0];
         if(language.equals(activeLanguage)){
             return "<li><a href=\"" + link +"\" class=\"" + ACTIVE_CLASS + "\" title=\"\" >" + language + "</a></li>\n";
         }

@@ -15,7 +15,7 @@ import java.io.IOException;
 * Class extending assets-endpoint to enable template-loading from the "templates"-package instead of from the "assets"-package
 */
 @Path("/templates")
-public class LoadEndpoint extends AssetsEndpoint
+public class TemplatesEndpoint extends AssetsEndpoint
 {
 
     @GET

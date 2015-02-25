@@ -1,10 +1,10 @@
 package com.beligum.blocks.core.parsers;
 
+import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
-import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
@@ -161,10 +161,11 @@ public class TemplateParser
             traversor.traverse(doc);
             pageStringId = visitor.getReferencedId(doc.child(0));
             BlocksID pageId = new BlocksID(pageStringId, BlocksID.NO_VERSION, language);
+            XMLUrlIdMapper.getInstance().add(pageURL, pageId);
             return pageId.getLanguagedUrl();
         }
-        catch(IDException e){
-            throw new ParseException("Couldn't construct url for new " + EntityTemplate.class.getSimpleName() + "-instance: " + pageStringId, e);
+        catch(Exception e){
+            throw new ParseException("Couldn't save new template instance to db", e);
         }
 
     }

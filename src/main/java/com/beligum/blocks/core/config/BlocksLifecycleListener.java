@@ -1,6 +1,6 @@
 package com.beligum.blocks.core.config;
 
-import com.beligum.blocks.core.URLMapping.XMLMapper;
+import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.dbs.Redis;
@@ -34,7 +34,7 @@ public class BlocksLifecycleListener implements ServerLifecycleListener
 
         //initialize url-id-mapping
         try {
-            XMLMapper.getInstance();
+            XMLUrlIdMapper.getInstance();
         }
         catch (Exception e) {
             Logger.error("Could not initialize url mapping.", e);
