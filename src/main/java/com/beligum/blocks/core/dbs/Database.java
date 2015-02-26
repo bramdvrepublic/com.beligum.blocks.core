@@ -30,7 +30,13 @@ public interface Database<T extends Storable> extends Closeable
 
     public List<T> fetchVersionList(BlocksID id, Class<? extends T> type) throws DatabaseException;
 
-    public boolean trash(BlocksID id) throws DatabaseException;
+    /**
+     * Trashes the specified id.
+     * @param id
+     * @return true if the entity has been trashed
+     * @throws DatabaseException
+     */
+    public T trash(BlocksID id) throws DatabaseException;
 
     public void flushDB();
 

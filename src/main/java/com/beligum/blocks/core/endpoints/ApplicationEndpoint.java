@@ -1,5 +1,6 @@
 package com.beligum.blocks.core.endpoints;
 
+import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.RedisDatabase;
@@ -56,7 +57,6 @@ public class ApplicationEndpoint
     @GET
     public Response getPageWithId(@PathParam("randomPage") String randomURLPath, @QueryParam("version") Long version)
     {
-        //TODO BAS: need to check url-id mapping for existence of url
         try{
             if(randomURLPath != null && (randomURLPath.equals("") || randomURLPath.equals("/"))){
                 return Response.seeOther(URI.create(ApplicationEndpointRoutes.index().getPath())).build();
@@ -71,9 +71,11 @@ public class ApplicationEndpoint
                 }
             }
             //if no language info is specified in the url, or if the specified language doesn't exist, the default language will still be shown
-            BlocksID id = new BlocksID(url, version, false);
+            BlocksID id = XMLUrlIdMapper.getInstance().getId(url);
+            //TODO BAS SH: Er moet nog altijd een id teruggegeven worden voor getrashte urls. Nu worden ze verwijderd uit de url-id mapping en wordt dan bij het bezoeken van die verwijderde pagina niet langer de keuze gegeven om van een verwijderde versie te vertrekken. Vragen aan Wouter wat de beste oplossing is: de verwijderde url bijhouden in apparte XMLTemplate of in de huidige url-id-mapping.
+            //TODO BAS SH 2: alle TODO BAS! opmerkingen moeten nog gedaan worden voor dinsdag
             //if no such page is present in db, ask if user wants to create a new page
-            if(id.getVersion() == BlocksID.NO_VERSION) {
+            if(id == null || version == BlocksID.NO_VERSION) {
                 if(!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)){
                     throw new NotFoundException("Page does not exist: " + url);
                 }
@@ -82,6 +84,7 @@ public class ApplicationEndpoint
             }
             //if a version is present in db, try to fetch the page from db
             else if(!id.hasLanguage()) {
+                id.setVersion(version);
                 BlocksID primaryLanguageId = new BlocksID(id, BlocksID.PRIMARY_LANGUAGE);
                 //if no primary language can be found in db, it means the page is not present in db
                 if (!primaryLanguageId.hasLanguage()) {
@@ -90,9 +93,9 @@ public class ApplicationEndpoint
                 return Response.seeOther(primaryLanguageId.getLanguagedUrl().toURI()).build();
 
             }
-            //if the url contains both version and language-information, try to render the entity
+            //if we have both version and language-information, try to render the entity
             else {
-                version = id.getVersion();
+                id.setVersion(version);
                 EntityTemplate entityTemplate = (EntityTemplate) RedisDatabase.getInstance().fetch(id, EntityTemplate.class);
                 //if no entity-template is returned from db, the specified language doesn't exist
                 if(entityTemplate == null){
@@ -124,8 +127,8 @@ public class ApplicationEndpoint
                 }
                 else {
                     //if the page is deleted, it should not be shown (method throws NotFoundException)
-                    boolean needsToBehandled = this.handleTrashedEntity(entityTemplate);
-                    if(needsToBehandled) {
+                    boolean needsToBeHandled = this.handleTrashedEntity(entityTemplate);
+                    if(needsToBeHandled) {
                         Template template = R.templateEngine().getEmptyTemplate("/views/deleted-page.vm");
                         return injectParameters(template);
                     }

@@ -97,27 +97,6 @@ public class XMLUrlIdMapper implements UrlIdMapper
                     instance.pathIds = pathIds;
                 }
                 instance.writeOut();
-                instance.put(new BlocksID("blocks://LOC/index:123123/nl"), new URL(BlocksConfig.getSiteDomain()));
-                Logger.info("check put index");
-                instance.put(new BlocksID("blocks://LOC/hexadecimal:123123/en"), new URL(BlocksConfig.getSiteDomain() + "/en/home/waterwell"));
-                Logger.info("check put /en/home/waterwell");
-                instance.put(new BlocksID("blocks://LOC/hexadecimal:1231213/nl"), new URL(BlocksConfig.getSiteDomain() + "/nl/thuis/waterput"));
-                Logger.info("check put /nl/thuis/waterput");
-                instance.put(new BlocksID("blocks://LOC/hexadecimal:1231213/fr"), new URL(BlocksConfig.getSiteDomain() + "/fr/maison/source"));
-                Logger.info("check put /fr/maison/source");
-                instance.put(new BlocksID("blocks://LOC/hexadecimal:1231213/nl"), new URL(BlocksConfig.getSiteDomain() + "/nl/thuis/eenanderevertaling"));
-                Logger.info("check put /nl/thuis/eenanderevertaling");
-                instance.put(new BlocksID("blocks://LOC/hexadecimal:1231213/nl"), new URL(BlocksConfig.getSiteDomain() + "/nl/thuis/een/andere/vertaling"));
-                Logger.info("check put /nl/thuis/een/andere/vertaling");
-                instance.put(new BlocksID("blocks://LOC/hexadecimal:1231213/nl"), new URL(BlocksConfig.getSiteDomain() + "/nl/thuis/ietsanders"));
-                Logger.info("check put /nl/thuis/ietsanders");
-                instance.put(new BlocksID("blocks://LOC/hexadecimal:1231213/fr"), new URL(BlocksConfig.getSiteDomain() + "/fr/maison/une/nouvelle/translation"));
-                Logger.info("check put /fr/maison/une/nouvelle/translation");
-
-                instance.remove(new URL("http://localhost:8080/fr/maison/une/nouvelle/translation"));
-                Logger.info("check remove http://localhost:8080/fr/maison/une/nouvelle/translation");
-                instance.remove(new URL("http://localhost:8080/nl/thuis/een/andere/vertaling"));
-                Logger.info("check remove http://localhost:8080/nl/thuis/een/andere/vertaling");
             }
             return instance;
 

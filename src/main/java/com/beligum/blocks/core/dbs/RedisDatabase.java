@@ -380,13 +380,13 @@ public class RedisDatabase implements Database<AbstractTemplate>
     }
 
     /**
-     * Trashes the url connected to the specified id.
+     * Trashes the specified id.
      * @param id
-     * @return true if the entity has been trashed
+     * @return the last version of the template that has been trashed
      * @throws DatabaseException
      */
     @Override
-    public boolean trash(BlocksID id) throws DatabaseException
+    public AbstractTemplate trash(BlocksID id) throws DatabaseException
     {
         try{
             URL url = id.getUrl();
@@ -402,14 +402,14 @@ public class RedisDatabase implements Database<AbstractTemplate>
                 throw new NullPointerException("Cannot trash '" + id + "', since no previous version of that entity was found in db.");
             }
             BlocksID newId = new BlocksID(url, BlocksID.NEW_VERSION, true);
-            //if the language of the url to be trashed is not present in db, we're dealing with a not yet saved language af an entity, so we trash the whole entity
+            //if the language of the url to be trashed is not present in db, we're dealing with a not yet saved language of an entity, so we trash the whole entity
             if(storedVersion.getTemplate(newId.getLanguage()) == null){
                 newId = new BlocksID(newId, storedVersion.getLanguage());
             }
             EntityTemplate newVersion = EntityTemplate.copyToNewId(storedVersion, newId);
             newVersion.setDeleted(true);
             this.update(newVersion);
-            return true;
+            return storedVersion;
         }catch (Exception e){
             throw new DatabaseException("Could not trash entity at '" + id + "'.", e);
         }

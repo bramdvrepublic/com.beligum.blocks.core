@@ -4,13 +4,14 @@ import com.beligum.blocks.core.exceptions.UrlIdMappingException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 
 import java.net.URL;
-import java.util.Set;
 
 /**
  * Created by bas on 23.02.15.
  */
 public interface UrlIdMapper
 {
+    //TODO BAS!: als er 100 waterputten onder [site-domain]/waterput/[id] zitten, en ik wil het woord 'waterput' veranderen naar 'waterputten', dan moet ik surfen naar [site-domain]/waterput waar ik een keuze krijg uit 'wilt u een nieuwe pagina aanmaken' of 'wilt u url veranderen van 100 waterputten?'.
+
     public BlocksID getId(URL url) throws UrlIdMappingException;
 
     public URL getUrl(BlocksID id) throws UrlIdMappingException;

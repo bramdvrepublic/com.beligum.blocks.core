@@ -28,10 +28,7 @@ import javax.ws.rs.core.Response;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by bas on 07.10.14.
@@ -56,13 +53,13 @@ public class EntitiesEndpoint
     {
         EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(entityClassName);
         URL entityUrl = new URL(pageUrl);
+        //TODO BAS!: the XMLUrlIdMapper should be used here to determine the id
         BlocksID id = new BlocksID(entityUrl, BlocksID.LAST_VERSION, true);
         EntityTemplate lastVersion = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(id, EntityTemplate.class);
         URL newEntityUrl = null;
 
         //if a not-deleted version exists in db, check if the url is free for use or not
         if(!(lastVersion == null || lastVersion.getDeleted())){
-             //TODO BAS!: this means an active db version exists of the wanted url, so we need to check if it's litteral url is still in use, and if not, we can couple that url to a new 'randomly' generated id, but we won't use this if we use hexadecimal BlocksIDs
 //            //if the url to the template did not hold language-information,
 //            if (!id.hasLanguage()) {
 //                id = new BlocksID(entityUrl, BlocksID.LAST_VERSION, true);
@@ -122,10 +119,15 @@ public class EntitiesEndpoint
     public Response deleteEntity(String url)
     {
         try {
-            RedisDatabase.getInstance().trash(new BlocksID(new URL(url), BlocksID.NO_VERSION, false));
             URL entityUrl = new URL(url);
             entityUrl = new URL(entityUrl, entityUrl.getPath());
-            //TODO BAS: url-id mapping needs to be removed here
+            BlocksID id = XMLUrlIdMapper.getInstance().getId(entityUrl);
+            AbstractTemplate lastVersion = (AbstractTemplate) RedisDatabase.getInstance().trash(id);
+            Set<BlocksID> languagedIds = lastVersion.getTemplates().keySet();
+            for(BlocksID languageId : languagedIds){
+                //TODO BAS!: gebruiker zou moeten gewaarschuwd worden over al de urls die verwijderd zullen worden
+                URL deletedUrl = XMLUrlIdMapper.getInstance().remove(languageId);
+            }
             return Response.ok(entityUrl.toString()).build();
         }
         catch(Exception e){

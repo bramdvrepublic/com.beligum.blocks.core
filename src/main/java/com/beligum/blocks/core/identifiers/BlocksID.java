@@ -253,6 +253,7 @@ public class BlocksID
         return language;
     }
 
+    //TODO BAS!: all uses of this method should be checked with XMLUrlIdMapping...
     public URL getUrl(){
         return url;
     }

@@ -1,5 +1,6 @@
 package com.beligum.blocks.core.parsers.visitors;
 
+import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.RedisDatabase;
@@ -308,7 +309,16 @@ public class ToHtmlVisitor extends SuperVisitor
         Element defaultClassPropertyRoot = TemplateParser.parse(defaultClassPropertyHtml).child(0);
         String referencedInstanceId = referenceId;
         BlocksID id = new BlocksID(referencedInstanceId, BlocksID.LAST_VERSION, language);
-        defaultClassPropertyRoot.attr(ParserConstants.RESOURCE, id.getUrl().toString());
+
+        /*
+         * Check the url-id mapping if this id has an url.
+         * If not, use the id-url: [site-domain]/[entity-id]
+         */
+        URL url = XMLUrlIdMapper.getInstance().getUrl(id);
+        if(url == null) {
+            url = id.getUrl();
+        }
+        defaultClassPropertyRoot.attr(ParserConstants.RESOURCE, url.toString());
         classProperty.replaceWith(defaultClassPropertyRoot);
         return defaultClassPropertyRoot;
     }
@@ -338,7 +348,15 @@ public class ToHtmlVisitor extends SuperVisitor
                     if (StringUtils.isEmpty(getResource(instanceTemplateRoot)) &&
                         //when referencing to a class-default, we don't want the resource to show up in the browser
                         StringUtils.isEmpty(referencedId.getUrl().toURI().getFragment())) {
-                        instanceTemplateRoot.attr(ParserConstants.RESOURCE, referencedId.getUrl().toString());
+                        /*
+                         * Check the url-id mapping if this id has an url.
+                         * If not, use the id-url: [site-domain]/[entity-id]
+                         */
+                        URL url = XMLUrlIdMapper.getInstance().getUrl(referencedId);
+                        if(url == null) {
+                            url = referencedId.getUrl();
+                        }
+                        instanceTemplateRoot.attr(ParserConstants.RESOURCE, url.toString());
                     }
                     instanceRootNode.replaceWith(instanceTemplateRoot);
                     instanceRootNode.removeAttr(ParserConstants.REFERENCE_TO);
