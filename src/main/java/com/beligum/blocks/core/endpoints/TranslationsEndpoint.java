@@ -23,7 +23,7 @@ public class TranslationsEndpoint
         URL translation = new URL(urlTranslation);
         URL original = new URL(originalUrl);
         BlocksID id = XMLUrlIdMapper.getInstance().getId(original);
-        XMLUrlIdMapper.getInstance().add(translation, id);
+        XMLUrlIdMapper.getInstance().put(id, translation);
         return Response.ok().build();
     }
 }

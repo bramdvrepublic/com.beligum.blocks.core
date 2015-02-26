@@ -161,7 +161,7 @@ public class TemplateParser
             traversor.traverse(doc);
             pageStringId = visitor.getReferencedId(doc.child(0));
             BlocksID pageId = new BlocksID(pageStringId, BlocksID.NO_VERSION, language);
-            XMLUrlIdMapper.getInstance().add(pageURL, pageId);
+            XMLUrlIdMapper.getInstance().put(pageId, pageURL);
             return pageId.getLanguagedUrl();
         }
         catch(Exception e){

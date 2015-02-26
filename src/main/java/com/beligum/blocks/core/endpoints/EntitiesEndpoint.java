@@ -110,7 +110,7 @@ public class EntitiesEndpoint
             entityUrl = new URL(entityUrl, entityUrl.getPath());
             EntityTemplate entity = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(new BlocksID(entityUrl, BlocksID.LAST_VERSION, true), EntityTemplate.class);
             TemplateParser.updateEntity(entityUrl, pageHtml);
-            XMLUrlIdMapper.getInstance().add(entityUrl, entity.getId());
+            XMLUrlIdMapper.getInstance().put(entity.getId(), entityUrl);
             return Response.ok(entityUrl.getPath()).build();
         }catch (Exception e){
             return Response.status(Response.Status.BAD_REQUEST).entity(I18n.instance().getMessage("entitySaveFailed")).build();
