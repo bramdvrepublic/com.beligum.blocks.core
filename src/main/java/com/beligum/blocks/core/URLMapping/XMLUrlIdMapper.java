@@ -14,6 +14,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -102,14 +103,13 @@ public class XMLUrlIdMapper implements UrlIdMapper
                 instance.add(new URL(BlocksConfig.getSiteDomain()), new BlocksID("blocks://LOC/index:123123/nl"));
                 instance.add(new URL(BlocksConfig.getSiteDomain() + "/en/home/waterwell"), new BlocksID("blocks://LOC/hexadecimal:123123/en"));
                 instance.add(new URL(BlocksConfig.getSiteDomain() + "/nl/thuis/waterput"), new BlocksID("blocks://LOC/hexadecimal:1231213/nl"));
-                //            instance.add(new URL(BlocksConfig.getSiteDomain() + "/fr/maison/source"), new BlocksID("blocks://LOC/hexadecimal:1231213/fr"));
+                instance.add(new URL(BlocksConfig.getSiteDomain() + "/fr/maison/source"), new BlocksID("blocks://LOC/hexadecimal:1231213/fr"));
                 instance.add(new URL(BlocksConfig.getSiteDomain() + "/nl/thuis/eenanderevertaling"), new BlocksID("blocks://LOC/hexadecimal:1231213/nl"));
                 instance.add(new URL(BlocksConfig.getSiteDomain() + "/nl/thuis/een/andere/vertaling"), new BlocksID("blocks://LOC/hexadecimal:1231213/nl"));
-                //            instance.add(new URL(BlocksConfig.getSiteDomain() + "/fr/maison/une/nouvelle/translation"), new BlocksID("blocks://LOC/hexadecimal:1231213/nl"));
-                try {
-                    BlocksID id = instance.getId(new URL("http://localhost:8080/fr/home/waterwell"));
-                    Logger.info("Found id " + id);
-                }catch (Exception e){}
+                instance.add(new URL(BlocksConfig.getSiteDomain() + "/fr/maison/une/nouvelle/translation"), new BlocksID("blocks://LOC/hexadecimal:1231213/nl"));
+
+                instance.remove(new URL("http://localhost:8080/fr/maison/une/nouvelle/translation"));
+                instance.remove(new URL("http://localhost:8080/nl/thuis/een/andere/vertaling"));
             }
             return instance;
 
@@ -282,6 +282,52 @@ public class XMLUrlIdMapper implements UrlIdMapper
     {
         //TODO BAS!: implement remove
     }
+
+    @Override
+    public void remove(URL languagedUrl) throws UrlIdMappingException
+    {
+        try {
+            String[] urlAndLanguage = Languages.translateUrl(languagedUrl.toString(), Languages.NO_LANGUAGE);
+            String urlNoLanguageString = urlAndLanguage[0];
+            String language = urlAndLanguage[1];
+            if(StringUtils.isEmpty(language)){
+                throw new UrlIdMappingException("Cannot remove an url without language information: '" + languagedUrl + "'.");
+            }
+            BlocksID id = this.getId(languagedUrl);
+            List<Element> ancestors = this.getOrCreatePathAncestors(id);
+            int i = ancestors.size()-1;
+            XPathExpression translationExpr = XPathFactory.newInstance().newXPath().compile("child::" + TRANSLATIONS + "/child::" + TRANSLATION + "[@"+LANGUAGE+"='"+language+"']");
+            while(i>=0){
+                Element ancestor = ancestors.get(i);
+                //remove the wanted translation, or if it does not exists, do nothing
+                Element translation = (Element) translationExpr.evaluate(ancestor, XPathConstants.NODE);
+                if(translation != null) {
+                    Node translationsElement = translation.getParentNode();
+                    translationsElement.removeChild(translation);
+                    NodeList children = translationsElement.getChildNodes();
+                    boolean hasElementChild = false;
+                    int j = 0;
+                    while(!hasElementChild && j<children.getLength()){
+                        hasElementChild = children.item(j) instanceof Element;
+                    }
+                    //if no other translation nodes are found, we can remove this 'translations' node and thus also this path node
+                    if(!hasElementChild){
+                        Node path = translationsElement.getParentNode();
+                        Node pathParent = path.getParentNode();
+                        pathParent.removeChild(path);
+                    }
+                }
+                i--;
+            }
+            this.writeOut();
+        }
+        catch (UrlIdMappingException e){
+            throw e;
+        }
+        catch(Exception e){
+            throw new UrlIdMappingException("Could not remove url '" + languagedUrl + "' from mapping.");
+        }
+    }
     /**
      * Remove the mapping from cache.
      */
@@ -351,11 +397,11 @@ public class XMLUrlIdMapper implements UrlIdMapper
         return this.getOrCreatePathAncestors(idNodesExpr);
     }
 
-//    private List<Element> getOrCreatePathAncestors(String pathId) throws Exception
-//    {
-//        XPathExpression idNodesExpr = XPathFactory.newInstance().newXPath().compile("//" + PATH + "[@" + PATH_ID + "='" + pathId + "']");
-//        return this.getOrCreatePathAncestors(idNodesExpr);
-//    }
+    //    private List<Element> getOrCreatePathAncestors(String pathId) throws Exception
+    //    {
+    //        XPathExpression idNodesExpr = XPathFactory.newInstance().newXPath().compile("//" + PATH + "[@" + PATH_ID + "='" + pathId + "']");
+    //        return this.getOrCreatePathAncestors(idNodesExpr);
+    //    }
 
     private List<Element> getOrCreatePathAncestors(XPathExpression expression) throws Exception
     {

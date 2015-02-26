@@ -24,6 +24,8 @@ public interface UrlIdMapper
 
     public void remove(BlocksID id);
 
+    public void remove(URL url) throws UrlIdMappingException;
+
     /**
      * Remove the mapping from cache.
      */
