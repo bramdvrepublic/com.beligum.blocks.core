@@ -5,7 +5,7 @@ import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.dbs.Database;
-import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.DatabaseException;
 import com.beligum.blocks.core.internationalization.Languages;
@@ -68,7 +68,7 @@ public class BlocksID
         this.idUri = initializeLanguageAndUrl(url, useDefaultLanguage);
         if(version == LAST_VERSION){
             BlocksID wrongVersionId = new BlocksID(this.url, BlocksID.NO_VERSION, false);
-            this.version = Redis.getInstance().getLastVersionNumber(wrongVersionId.getUnversionedId());
+            this.version = RedisDatabase.getInstance().getLastVersionNumber(wrongVersionId.getUnversionedId());
         }
         else if(version == NEW_VERSION){
             this.version = System.currentTimeMillis();
@@ -162,7 +162,7 @@ public class BlocksID
              * Initialize version
              */
             if (version == LAST_VERSION) {
-                this.version = Redis.getInstance().getLastVersionNumber(unversionedId);
+                this.version = RedisDatabase.getInstance().getLastVersionNumber(unversionedId);
             }
             else if(version == NEW_VERSION) {
                 this.version = System.currentTimeMillis();
@@ -189,7 +189,7 @@ public class BlocksID
              * Initialize language
              */
             if(language.equals(PRIMARY_LANGUAGE)){
-                this.language = Languages.determinePrimaryLanguage(Redis.getInstance().fetchLanguageAlternatives(new BlocksID(this.url, this.version, false)));
+                this.language = Languages.determinePrimaryLanguage(RedisDatabase.getInstance().fetchLanguageAlternatives(new BlocksID(this.url, this.version, false)));
                 if(this.language.equals(NO_LANGUAGE)){
                     this.idUri = initializeLanguageAndUrl(this.url, true);
                 }
@@ -220,7 +220,7 @@ public class BlocksID
     {
         this(versionedDbId);
         if(language.equals(BlocksID.PRIMARY_LANGUAGE)){
-            Set<String> languageAlternatives = Redis.getInstance().fetchLanguageAlternatives(this);
+            Set<String> languageAlternatives = RedisDatabase.getInstance().fetchLanguageAlternatives(this);
             language = Languages.determinePrimaryLanguage(languageAlternatives);
         }
         if(!Languages.isNonEmptyLanguageCode(language) && !language.equals(BlocksID.NO_LANGUAGE)){
@@ -395,9 +395,9 @@ public class BlocksID
      */
     public static BlocksID renderNewEntityTemplateID(EntityTemplateClass entityTemplateClass, String language) throws IDException
     {
-        Database redis = Redis.getInstance();
-        if(redis instanceof  Redis) {
-            return ((Redis) redis).renderNewEntityTemplateID(entityTemplateClass, language);
+        Database redis = RedisDatabase.getInstance();
+        if(redis instanceof RedisDatabase) {
+            return ((RedisDatabase) redis).renderNewEntityTemplateID(entityTemplateClass, language);
         }
         else{
             throw new IDException("Cannot render " + EntityTemplate.class.getSimpleName() + " id, since an unknown database type was found: " + redis.getClass().getName());
@@ -413,7 +413,7 @@ public class BlocksID
     {
         try{
             BlocksID newID = new BlocksID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName + "#" + property), NEW_VERSION, true);
-            while(Redis.getInstance().fetch(newID, EntityTemplateClass.class) != null) {
+            while(RedisDatabase.getInstance().fetch(newID, EntityTemplateClass.class) != null) {
                 newID = new BlocksID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName + "#" + property), NEW_VERSION, true);
             }
             newID.language = language;
@@ -435,7 +435,7 @@ public class BlocksID
         //we're not actually going to the db to determine a new redis-id for a class, it will use a new versioning (current time millis) to get a new version, so we don't actually need to check for that version in db
         try{
             BlocksID newID = new BlocksID(new URL(BlocksConfig.getSiteDomain() +  "/" + entityTemplateClassName), NEW_VERSION, true);
-            while(Redis.getInstance().fetch(newID, EntityTemplateClass.class) != null){
+            while(RedisDatabase.getInstance().fetch(newID, EntityTemplateClass.class) != null){
                 newID = new BlocksID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClassName), NEW_VERSION, true);
             }
             newID.language = language;
@@ -469,7 +469,7 @@ public class BlocksID
     {
         try{
             BlocksID newId = new BlocksID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName), NEW_VERSION, true);
-            while(Redis.getInstance().fetch(newId, PageTemplate.class) != null){
+            while(RedisDatabase.getInstance().fetch(newId, PageTemplate.class) != null){
                 newId = new BlocksID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName), NEW_VERSION, true);
             }
             newId.language = language;
@@ -520,7 +520,7 @@ public class BlocksID
                 url += "/" + propertyName;
             }
             BlocksID newID = new BlocksID(new URL(url), NEW_VERSION, false);
-            while(Redis.getInstance().fetch(newID, EntityTemplate.class) != null){
+            while(RedisDatabase.getInstance().fetch(newID, EntityTemplate.class) != null){
                 newID = new BlocksID(new URL(url), NEW_VERSION, false);
             }
             if(!newID.hasLanguage()) {

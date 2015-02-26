@@ -1,6 +1,6 @@
 package com.beligum.blocks.core.URLMapping;
 
-import com.beligum.blocks.core.exceptions.LanguageException;
+import com.beligum.blocks.core.exceptions.UrlIdMappingException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 
 import java.net.URL;
@@ -12,7 +12,7 @@ public interface UrlIdMapper
 {
     public BlocksID getId(URL url);
 
-    public URL getUrl(BlocksID id);
+    public URL getUrl(BlocksID id) throws UrlIdMappingException;
 
     /**
      * Add a url-id pair to the mapping.
@@ -20,7 +20,7 @@ public interface UrlIdMapper
      * @param url
      * @param id
      */
-    public void add(URL url, BlocksID id) throws Exception;
+    public void add(URL url, BlocksID id) throws UrlIdMappingException;
 
     public void remove(BlocksID id);
 

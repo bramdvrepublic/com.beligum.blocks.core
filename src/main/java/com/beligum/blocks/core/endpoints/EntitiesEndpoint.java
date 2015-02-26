@@ -6,7 +6,7 @@ import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Database;
-import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.DatabaseException;
 import com.beligum.blocks.core.exceptions.IDException;
@@ -57,7 +57,7 @@ public class EntitiesEndpoint
         EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(entityClassName);
         URL entityUrl = new URL(pageUrl);
         BlocksID id = new BlocksID(entityUrl, BlocksID.LAST_VERSION, true);
-        EntityTemplate lastVersion = (EntityTemplate) Redis.getInstance().fetchLastVersion(id, EntityTemplate.class);
+        EntityTemplate lastVersion = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(id, EntityTemplate.class);
         URL newEntityUrl = null;
 
         //if a not-deleted version exists in db, check if the url is free for use or not
@@ -108,7 +108,7 @@ public class EntitiesEndpoint
             URL entityUrl = new URL(new URL(BlocksConfig.getSiteDomain()), entityUrlPath);
             //ignore the query-part of the url to fetch an entity from db, use only the path of the url
             entityUrl = new URL(entityUrl, entityUrl.getPath());
-            EntityTemplate entity = (EntityTemplate) Redis.getInstance().fetchLastVersion(new BlocksID(entityUrl, BlocksID.LAST_VERSION, true), EntityTemplate.class);
+            EntityTemplate entity = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(new BlocksID(entityUrl, BlocksID.LAST_VERSION, true), EntityTemplate.class);
             TemplateParser.updateEntity(entityUrl, pageHtml);
             XMLUrlIdMapper.getInstance().add(entityUrl, entity.getId());
             return Response.ok(entityUrl.getPath()).build();
@@ -122,7 +122,7 @@ public class EntitiesEndpoint
     public Response deleteEntity(String url)
     {
         try {
-            Redis.getInstance().trash(new BlocksID(new URL(url), BlocksID.NO_VERSION, false));
+            RedisDatabase.getInstance().trash(new BlocksID(new URL(url), BlocksID.NO_VERSION, false));
             URL entityUrl = new URL(url);
             entityUrl = new URL(entityUrl, entityUrl.getPath());
             //TODO BAS: url-id mapping needs to be removed here
@@ -175,7 +175,7 @@ public class EntitiesEndpoint
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response changeTemplate(@FormParam("template") String templateName, @FormParam("id") String id) throws CacheException, MalformedURLException, IDException, DatabaseException, ParseException {
-        Database<AbstractTemplate> redis = Redis.getInstance();
+        Database<AbstractTemplate> redis = RedisDatabase.getInstance();
         URL url = new URL(id);
         BlocksID lastVersionId = new BlocksID(url, BlocksID.LAST_VERSION, false);
         EntityTemplate entityTemplate = (EntityTemplate) redis.fetch(lastVersionId, EntityTemplate.class);
@@ -189,7 +189,7 @@ public class EntitiesEndpoint
     @Path("/deletedversion")
     public Response showDeletedVersion(@FormParam("page-url") String pageUrl) throws MalformedURLException, CacheException, ParseException, IDException, DatabaseException
     {
-        List<AbstractTemplate> versionList = Redis.getInstance().fetchVersionList(new BlocksID(new URL(pageUrl), BlocksID.LAST_VERSION, true), EntityTemplate.class);
+        List<AbstractTemplate> versionList = RedisDatabase.getInstance().fetchVersionList(new BlocksID(new URL(pageUrl), BlocksID.LAST_VERSION, true), EntityTemplate.class);
         EntityTemplate lastAccessibleVersion = null;
         Iterator<AbstractTemplate> it = versionList.iterator();
         while(lastAccessibleVersion == null && it.hasNext()){

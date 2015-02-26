@@ -20,7 +20,7 @@ import java.util.*;
  * Wrapper class for talking to the redis-db
  * At the end of the application it has to be closed
  */
-public class Redis implements Database<AbstractTemplate>
+public class RedisDatabase implements Database<AbstractTemplate>
 {
     /*
      * Note: check/boost redis-performance with http://redis.io/topics/benchmarks
@@ -33,12 +33,12 @@ public class Redis implements Database<AbstractTemplate>
     private final JedisPool pool;
 
     //the instance of this singleton
-    private static Redis instance = null;
+    private static RedisDatabase instance = null;
 
     /**
      * private constructor for singleton-use
      */
-    private Redis(){
+    private RedisDatabase(){
         //create a thread-save pool of Jedis-instances, using default configuration
         //        TODO: put Redis back to Sentinel-state
         //        String[] sentinelHostsAndPorts = BlocksConfig.getRedisSentinels();
@@ -57,7 +57,7 @@ public class Redis implements Database<AbstractTemplate>
     public static Database getInstance()
     {
         if(instance == null){
-            instance = new Redis();
+            instance = new RedisDatabase();
         }
         return instance;
     }

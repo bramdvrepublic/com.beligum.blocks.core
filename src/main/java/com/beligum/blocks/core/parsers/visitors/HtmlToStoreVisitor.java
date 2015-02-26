@@ -2,11 +2,10 @@ package com.beligum.blocks.core.parsers.visitors;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
-import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
-import com.beligum.blocks.core.models.redis.Storable;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import org.apache.commons.lang3.StringUtils;
@@ -81,17 +80,17 @@ public class HtmlToStoreVisitor extends SuperVisitor
                 else{
                     resourceId = BlocksID.renderLanguagedId(new URL(resourceUrl), BlocksID.LAST_VERSION, this.language);
                 }
-                EntityTemplate storedEntityTemplate = (EntityTemplate) Redis.getInstance().fetchLastVersion(resourceId, EntityTemplate.class);
+                EntityTemplate storedEntityTemplate = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(resourceId, EntityTemplate.class);
                 BlocksID newVersionId = BlocksID.renderLanguagedId(new URL(resourceUrl), BlocksID.NEW_VERSION, this.language);
                 EntityTemplate currentEntityTemplate = new EntityTemplate(newVersionId, entityTemplateClass, node.outerHtml());
                 if (currentEntityTemplate.equals(storedEntityTemplate)) {
                     currentEntityTemplate = storedEntityTemplate;
                 }
                 else if(storedEntityTemplate == null) {
-                    Redis.getInstance().create(currentEntityTemplate);
+                    RedisDatabase.getInstance().create(currentEntityTemplate);
                 }
                 else{
-                    Redis.getInstance().update(currentEntityTemplate);
+                    RedisDatabase.getInstance().update(currentEntityTemplate);
                 }
                 node = replaceElementWithEntityReference((Element) node, currentEntityTemplate);
             }

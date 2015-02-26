@@ -4,7 +4,7 @@ import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.*;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.models.redis.templates.*;
@@ -41,7 +41,7 @@ public class DebugEndpoint
     @Path("/flush")
     public Response flushEntities() throws Exception
     {
-        Redis.getInstance().flushDB();
+        RedisDatabase.getInstance().flushDB();
         Logger.warn("Database has been flushed by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
         XMLUrlIdMapper.getInstance().reset();
         XMLUrlIdMapper.getInstance();
@@ -106,7 +106,7 @@ public class DebugEndpoint
     {
         URL url = renderUrl(resourcePath,fragment);
         Class<? extends AbstractTemplate> type = determineType(typeName);
-        AbstractTemplate template = (AbstractTemplate) Redis.getInstance().fetchLastVersion(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
+        AbstractTemplate template = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
         return Response.ok(template.toString()).build();
     }
 
@@ -126,7 +126,7 @@ public class DebugEndpoint
     {
         URL url = renderUrl(resourcePath, fragment);
         Class<? extends AbstractTemplate> type = determineType(typeName);
-        AbstractTemplate template = (AbstractTemplate) Redis.getInstance().fetchLastVersion(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
+        AbstractTemplate template = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
         if(template instanceof EntityTemplate) {
             return Response.ok(((EntityTemplate) template).renderEntityInPageTemplate(template.getLanguage())).build();
         }
@@ -151,7 +151,7 @@ public class DebugEndpoint
     {
         URL url = renderUrl(resourcePath, fragment);
         Class<? extends AbstractTemplate> type = this.determineType(typeName);
-        AbstractTemplate template = (AbstractTemplate) Redis.getInstance().fetchLastVersion(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
+        AbstractTemplate template = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
         String retVal = "";
         Map<String, String> hash = template.toHash();
         List<String> keys = new ArrayList<>(hash.keySet());
@@ -179,7 +179,7 @@ public class DebugEndpoint
     {
         Class<? extends AbstractTemplate> type = determineType(typeName);
         URL url = renderUrl(resourcePath, fragment);
-        List<AbstractTemplate> versions = Redis.getInstance().fetchVersionList(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
+        List<AbstractTemplate> versions = RedisDatabase.getInstance().fetchVersionList(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
         String retVal = "";
         for(AbstractTemplate template : versions) {
             if(template != null) {
@@ -217,7 +217,7 @@ public class DebugEndpoint
     {
         Class<? extends AbstractTemplate> type = determineType(typeName);
         URL url = renderUrl(resourcePath, fragment);
-        List<AbstractTemplate> versions = Redis.getInstance().fetchVersionList(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
+        List<AbstractTemplate> versions = RedisDatabase.getInstance().fetchVersionList(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
         String retVal = "";
         for(AbstractTemplate template : versions) {
             if(template != null) {

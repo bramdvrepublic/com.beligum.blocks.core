@@ -2,7 +2,7 @@ package com.beligum.blocks.core.parsers.visitors;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
-import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
@@ -43,7 +43,7 @@ public class ClassToStoredInstanceVisitor extends SuperVisitor
     {
         try{
             BlocksID pageId = new BlocksID(pageUrl, BlocksID.LAST_VERSION, true);
-            EntityTemplate page = (EntityTemplate) Redis.getInstance().fetch(pageId, EntityTemplate.class);
+            EntityTemplate page = (EntityTemplate) RedisDatabase.getInstance().fetch(pageId, EntityTemplate.class);
             if(page != null && !page.getLanguage().equals(language)){
                 parsingNewLanguage = true;
             }
@@ -122,12 +122,12 @@ public class ClassToStoredInstanceVisitor extends SuperVisitor
                 node.attr(ParserConstants.RESOURCE, newEntityId.getUrl().toString());
                 EntityTemplate newInstance = new EntityTemplate(newEntityId, entityClass, node.outerHtml());
                 //for default instances, a version could already be present in db, which is equal to this one
-                EntityTemplate storedInstance = (EntityTemplate) Redis.getInstance().fetchLastVersion(newEntityId, EntityTemplate.class);
+                EntityTemplate storedInstance = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(newEntityId, EntityTemplate.class);
                 if(storedInstance == null) {
-                    Redis.getInstance().create(newInstance);
+                    RedisDatabase.getInstance().create(newInstance);
                 }
                 else if(!newInstance.equals(storedInstance)){
-                    Redis.getInstance().update(newInstance);
+                    RedisDatabase.getInstance().update(newInstance);
                 }
                 node = replaceElementWithEntityReference((Element) node, newInstance);
                 newInstancesNodes.pop();
@@ -151,10 +151,10 @@ public class ClassToStoredInstanceVisitor extends SuperVisitor
      */
     private EntityTemplate fetchDefaultEntityTemplate(String unversionedResourceId) throws IDException, DatabaseException, ParseException {
         BlocksID defaultEntityId = new BlocksID(unversionedResourceId, BlocksID.LAST_VERSION, this.language);
-        EntityTemplate defaultEntityTemplate = (EntityTemplate) Redis.getInstance().fetch(defaultEntityId, EntityTemplate.class);
+        EntityTemplate defaultEntityTemplate = (EntityTemplate) RedisDatabase.getInstance().fetch(defaultEntityId, EntityTemplate.class);
         // If no such default template could be found, we're probably dealing with another language, which needs to be a copy of the primary-language
         if(defaultEntityTemplate == null){
-            defaultEntityTemplate = (EntityTemplate) Redis.getInstance().fetchLastVersion(defaultEntityId, EntityTemplate.class);
+            defaultEntityTemplate = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(defaultEntityId, EntityTemplate.class);
             if(defaultEntityTemplate == null) {
                 throw new ParseException("Found bad reference. Not present in db: " + defaultEntityId);
             }

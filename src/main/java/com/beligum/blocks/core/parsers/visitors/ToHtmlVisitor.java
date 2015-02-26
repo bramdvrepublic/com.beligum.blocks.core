@@ -2,7 +2,7 @@ package com.beligum.blocks.core.parsers.visitors;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
-import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
@@ -293,9 +293,9 @@ public class ToHtmlVisitor extends SuperVisitor
     private Element replaceWithNewDefaultCopy(Node classProperty, String referenceId) throws Exception
     {
         BlocksID defaultClassPropertyId = new BlocksID(getReferencedId(classProperty), BlocksID.LAST_VERSION, language);
-        EntityTemplate defaultClassPropertyTemplate = (EntityTemplate) Redis.getInstance().fetch(defaultClassPropertyId, EntityTemplate.class);
+        EntityTemplate defaultClassPropertyTemplate = (EntityTemplate) RedisDatabase.getInstance().fetch(defaultClassPropertyId, EntityTemplate.class);
         if(defaultClassPropertyTemplate == null){
-            defaultClassPropertyTemplate = (EntityTemplate) Redis.getInstance().fetchLastVersion(defaultClassPropertyId, EntityTemplate.class);
+            defaultClassPropertyTemplate = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(defaultClassPropertyId, EntityTemplate.class);
             if(defaultClassPropertyTemplate == null) {
                 throw new ParseException("Couldn't find last version of class-default property '" + defaultClassPropertyId + "' in db.");
             }
@@ -320,10 +320,10 @@ public class ToHtmlVisitor extends SuperVisitor
             String id = getReferencedId(instanceRootNode);
             if (!StringUtils.isEmpty(id)) {
                 BlocksID referencedId = new BlocksID(id, BlocksID.LAST_VERSION, language);
-                EntityTemplate instanceTemplate = (EntityTemplate) Redis.getInstance().fetch(referencedId, EntityTemplate.class);
+                EntityTemplate instanceTemplate = (EntityTemplate) RedisDatabase.getInstance().fetch(referencedId, EntityTemplate.class);
                 if(instanceTemplate == null){
                     //the specified language could not be found in db, fetch last version in primary langugae
-                    instanceTemplate = (EntityTemplate) Redis.getInstance().fetchLastVersion(referencedId, EntityTemplate.class);
+                    instanceTemplate = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(referencedId, EntityTemplate.class);
                     if(instanceTemplate == null) {
                         throw new ParseException("Found bad reference. Not found in db: " + referencedId);
                     }

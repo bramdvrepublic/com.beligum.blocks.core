@@ -3,7 +3,7 @@ package com.beligum.blocks.core.config;
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
-import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.core.framework.base.ifaces.ServerLifecycleListener;
 import com.beligum.core.framework.utils.Logger;
@@ -21,7 +21,7 @@ public class BlocksLifecycleListener implements ServerLifecycleListener
     public void onServerStarted(Server server, ServletContextEvent event)
     {
         //initialize the Redis-singleton on server start-up
-        Redis.getInstance();
+        RedisDatabase.getInstance();
 
         //initialize template-cache
         try {
@@ -45,6 +45,6 @@ public class BlocksLifecycleListener implements ServerLifecycleListener
     {
         //close the Redis-singleton on server-end (this destroys the Jedis-pool)
         //TODO: when does server pass here?
-        Redis.getInstance().close();
+        RedisDatabase.getInstance().close();
     }
 }

@@ -2,7 +2,7 @@ package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
-import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
@@ -93,11 +93,11 @@ public class ApplicationEndpoint
             //if the url contains both version and language-information, try to render the entity
             else {
                 version = id.getVersion();
-                EntityTemplate entityTemplate = (EntityTemplate) Redis.getInstance().fetch(id, EntityTemplate.class);
+                EntityTemplate entityTemplate = (EntityTemplate) RedisDatabase.getInstance().fetch(id, EntityTemplate.class);
                 //if no entity-template is returned from db, the specified language doesn't exist
                 if(entityTemplate == null){
                     //since a last version was found, it must be present in db
-                    EntityTemplate storedInstance = (EntityTemplate) Redis.getInstance().fetchLastVersion(id, EntityTemplate.class);
+                    EntityTemplate storedInstance = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(id, EntityTemplate.class);
                     if(storedInstance == null){
                         throw new Exception("Received null from db, after asking for last version of '" + id +"'. This should not happen!");
                     }

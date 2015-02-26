@@ -3,7 +3,7 @@ package com.beligum.blocks.core.models.redis.templates;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.dbs.Database;
-import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
@@ -262,9 +262,9 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
             for (String key : keys) {
                 if (permittedLanguages.contains(key)) {
                     BlocksID languageId = new BlocksID(hash.get(key));
-                    Database redis = Redis.getInstance();
-                    if(redis instanceof Redis) {
-                        templates.put(languageId,((Redis) redis).fetchStringForId(languageId));
+                    Database redis = RedisDatabase.getInstance();
+                    if(redis instanceof RedisDatabase) {
+                        templates.put(languageId,((RedisDatabase) redis).fetchStringForId(languageId));
                     }
                     else{
                         throw new DeserializationException("Could not fetch language string from database. Unknown database type found: " + redis.getClass().getName());
