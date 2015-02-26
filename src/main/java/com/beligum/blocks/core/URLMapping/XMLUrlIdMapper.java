@@ -10,7 +10,6 @@ import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.UrlIdMapping;
 import com.beligum.core.framework.utils.Logger;
-import com.sun.crypto.provider.BlowfishKeyGenerator;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
@@ -31,7 +30,10 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * Created by bas on 23.02.15.
@@ -55,6 +57,8 @@ public class XMLUrlIdMapper implements UrlIdMapper
     private XPathExpression pathAncestorsExpr;
     /**pre compiled xpath expression for fetching the 'translations' child element*/
     private XPathExpression translationsElementExpr;
+    /**pre compiled xpath expression for fetching the path parent of an element*/
+    private XPathExpression pathParentExpr;
 
     private XMLUrlIdMapper(Document urlIdMapping) throws XPathExpressionException
     {
@@ -63,53 +67,108 @@ public class XMLUrlIdMapper implements UrlIdMapper
         //precompile some xpath expressions
         this.pathAncestorsExpr = xPath.compile("ancestor-or-self::" + PATH);
         this.translationsElementExpr = xPath.compile("child::" + TRANSLATIONS);
+        this.pathParentExpr = xPath.compile("ancestor::" + PATH);
     }
 
     public static XMLUrlIdMapper getInstance()
-                    throws Exception
+                    throws UrlIdMappingException
     {
-        if(instance == null){
-            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            BlocksID xmlMappingId = getNewVersionXMLMappingId();
-            UrlIdMapping storedXml = (UrlIdMapping) RedisDatabase.getInstance().fetchLastVersion(xmlMappingId, UrlIdMapping.class);
-            Document document;
-            if(storedXml == null){
-                //start with an empty url-mapping xml-string
-                document = builder.parse(IOUtils.toInputStream("<?xml version=\"1.0\"?>\n" +
-                                                               "<urls>\n" +
-                                                               "</urls>"));
-                instance = new XMLUrlIdMapper(document);
-            }
-            else{
-                document = builder.parse(IOUtils.toInputStream(storedXml.getTemplate()));
-                XPathExpression assignedIdsExpr = XPathFactory.newInstance().newXPath().compile("//" + PATH + "[@"+PATH_ID+"]");
-                NodeList assignedPaths = (NodeList) assignedIdsExpr.evaluate(document, XPathConstants.NODESET);
-                SortedSet<String> pathIds = new TreeSet<>(new PathIdComparator());
-                for(int i = 0; i<assignedPaths.getLength(); i++){
-                    Element pathElement = (Element) assignedPaths.item(i);
-                    pathIds.add(pathElement.getAttribute(PATH_ID));
+        try{
+            if(instance == null){
+                DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+                BlocksID xmlMappingId = getNewVersionXMLMappingId();
+                UrlIdMapping storedXml = (UrlIdMapping) RedisDatabase.getInstance().fetchLastVersion(xmlMappingId, UrlIdMapping.class);
+                Document document;
+                if(storedXml == null){
+                    //start with an empty url-mapping xml-string
+                    document = builder.parse(IOUtils.toInputStream("<?xml version=\"1.0\"?>\n" +
+                                                                   "<urls>\n" +
+                                                                   "</urls>"));
+                    instance = new XMLUrlIdMapper(document);
                 }
-                instance = new XMLUrlIdMapper(document);
-                instance.pathIds = pathIds;
+                else{
+                    document = builder.parse(IOUtils.toInputStream(storedXml.getTemplate()));
+                    XPathExpression assignedIdsExpr = XPathFactory.newInstance().newXPath().compile("//" + PATH + "[@"+PATH_ID+"]");
+                    NodeList assignedPaths = (NodeList) assignedIdsExpr.evaluate(document, XPathConstants.NODESET);
+                    SortedSet<String> pathIds = new TreeSet<>(new PathIdComparator());
+                    for(int i = 0; i<assignedPaths.getLength(); i++){
+                        Element pathElement = (Element) assignedPaths.item(i);
+                        pathIds.add(pathElement.getAttribute(PATH_ID));
+                    }
+                    instance = new XMLUrlIdMapper(document);
+                    instance.pathIds = pathIds;
+                }
+                instance.writeOut();
+                instance.add(new URL(BlocksConfig.getSiteDomain()), new BlocksID("blocks://LOC/index:123123/nl"));
+                instance.add(new URL(BlocksConfig.getSiteDomain() + "/en/home/waterwell"), new BlocksID("blocks://LOC/hexadecimal:123123/en"));
+                instance.add(new URL(BlocksConfig.getSiteDomain() + "/nl/thuis/waterput"), new BlocksID("blocks://LOC/hexadecimal:1231213/nl"));
+                //            instance.add(new URL(BlocksConfig.getSiteDomain() + "/fr/maison/source"), new BlocksID("blocks://LOC/hexadecimal:1231213/fr"));
+                instance.add(new URL(BlocksConfig.getSiteDomain() + "/nl/thuis/eenanderevertaling"), new BlocksID("blocks://LOC/hexadecimal:1231213/nl"));
+                instance.add(new URL(BlocksConfig.getSiteDomain() + "/nl/thuis/een/andere/vertaling"), new BlocksID("blocks://LOC/hexadecimal:1231213/nl"));
+                //            instance.add(new URL(BlocksConfig.getSiteDomain() + "/fr/maison/une/nouvelle/translation"), new BlocksID("blocks://LOC/hexadecimal:1231213/nl"));
+                try {
+                    BlocksID id = instance.getId(new URL("http://localhost:8080/fr/home/waterwell"));
+                    Logger.info("Found id " + id);
+                }catch (Exception e){}
             }
-            instance.writeOut();
-            instance.add(new URL(BlocksConfig.getSiteDomain() + "/en/home/waterwell"), new BlocksID("blocks://LOC/hexadecimal:123123/en"));
-            instance.add(new URL(BlocksConfig.getSiteDomain() + "/nl/thuis/waterput"), new BlocksID("blocks://LOC/hexadecimal:1231213/nl"));
-//            instance.add(new URL(BlocksConfig.getSiteDomain() + "/fr/maison/source"), new BlocksID("blocks://LOC/hexadecimal:1231213/fr"));
-            instance.add(new URL(BlocksConfig.getSiteDomain() + "/nl/thuis/eenanderevertaling"), new BlocksID("blocks://LOC/hexadecimal:1231213/nl"));
-            instance.add(new URL(BlocksConfig.getSiteDomain() + "/nl/thuis/een/andere/vertaling"), new BlocksID("blocks://LOC/hexadecimal:1231213/nl"));
-//            instance.add(new URL(BlocksConfig.getSiteDomain() + "/fr/maison/une/nouvelle/translation"), new BlocksID("blocks://LOC/hexadecimal:1231213/nl"));
-            URL url = instance.getUrl(new BlocksID("blocks://LOC/hexadecimal:123112213/fr"));
-            Logger.info("Found url " + url);
+            return instance;
+
+        }catch (Exception e){
+            throw new UrlIdMappingException("Could not initialize url-id mapping.", e);
         }
-        return instance;
     }
 
     @Override
-    public BlocksID getId(URL url)
+    public BlocksID getId(URL url) throws UrlIdMappingException
     {
-        //TODO BAS: implement getId
-        return null;
+        try {
+            if (url == null) {
+                return null;
+            }
+            else {
+                String[] urlAndLanguage = Languages.translateUrl(url.toString(), Languages.NO_LANGUAGE);
+                URL urlNoLanguage = new URL(urlAndLanguage[0]);
+                String language = urlAndLanguage[1];
+                String[] splittedPath = urlNoLanguage.getPath().split("/");
+                Element path = this.urlIdMapping.getDocumentElement();
+                int i;
+                //if no parts are splitted of, we are dealing with the baseurl, so we start with i = 0
+                if(splittedPath.length == 1){
+                    i = 0;
+                }
+                //if parts are splitted of the url path, we start from the first interesting part (splittedPath = [ "", "the first word after the /", "the second word delimited by a /", ...])
+                else{
+                    i = 1;
+                }
+                while(path != null && i<splittedPath.length){
+                    XPathExpression translationExpr = XPathFactory.newInstance().newXPath().compile("child::" + PATH + "/child::" + TRANSLATIONS + "/child::" + TRANSLATION + "[text()='"+splittedPath[i]+"']");
+                    Element translationElement = (Element) translationExpr.evaluate(path, XPathConstants.NODE);
+                    if(translationElement != null){
+                        path = this.getPathParent(translationElement);
+                    }
+                    else{
+                        path = null;
+                    }
+                    i++;
+                }
+                //we have the end of the path, here we should find the id
+                if(path != null){
+                    String blocksId = path.getAttribute(BLOCKS_ID);
+                    if(StringUtils.isEmpty(language)){
+                        return new BlocksID(blocksId, BlocksID.LAST_VERSION, BlocksID.PRIMARY_LANGUAGE);
+                    }
+                    else{
+                        return new BlocksID(blocksId, BlocksID.LAST_VERSION, language);
+                    }
+                }
+                else{
+                    return null;
+                }
+
+            }
+        }catch (Exception e){
+            throw new UrlIdMappingException("Could not get id for url '" + url + "'.");
+        }
     }
     @Override
     public URL getUrl(BlocksID id) throws UrlIdMappingException
@@ -165,17 +224,25 @@ public class XMLUrlIdMapper implements UrlIdMapper
             }
             URL urlNoLanguage = new URL(urlAndLanguage[0]);
 
-        /*
-         * Determine if this id is already present in the mapping, and if so, return it's ancestors.
-         * If it is not present in the mapping, the only element in the list will be the document-root.
-         */
+            /*
+             * Determine if this id is already present in the mapping, and if so, return it's ancestors.
+             * If it is not present in the mapping, the only element in the list will be the document-root.
+             */
             List<Element> ancestors = this.getOrCreatePathAncestors(id);
 
-        /*
-         * Split the url in it's path-parts and add it to the mapping
-         */
+            /*
+             * Split the url in it's path-parts and add them to the mapping
+             */
             String[] splittedPath = urlNoLanguage.getPath().split("/");
-            int i = 1;
+            int i;
+            //if no parts are splitted of, we are dealing with the baseurl, so we start with i = 0
+            if(splittedPath.length == 1){
+                i = 0;
+            }
+            //if parts are splitted of the url path, we start from the first interesting part (splittedPath = [ "", "the first word after the /", "the second word delimited by a /", ...])
+            else{
+                i = 1;
+            }
             Element parent = ancestors.get(0);
             while (i < splittedPath.length) {
                 Element translations = this.getTranslationsElement(parent);
@@ -203,7 +270,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
                 i++;
             }
 
-            //TODO BAS: this should not be done all the time, use threading for that?
+            //TODO BAS!: this should not be done all the time, use threading for that?
             this.writeOut();
         }catch (Exception e){
             throw new UrlIdMappingException("Could not add url-id pair to mapping: (" + url + "," + id + ")" );
@@ -213,7 +280,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
     @Override
     public void remove(BlocksID id)
     {
-        //TODO BAS: implement remove
+        //TODO BAS!: implement remove
     }
     /**
      * Remove the mapping from cache.
@@ -284,11 +351,11 @@ public class XMLUrlIdMapper implements UrlIdMapper
         return this.getOrCreatePathAncestors(idNodesExpr);
     }
 
-    private List<Element> getOrCreatePathAncestors(String pathId) throws Exception
-    {
-        XPathExpression idNodesExpr = XPathFactory.newInstance().newXPath().compile("//" + PATH + "[@" + PATH_ID + "='" + pathId + "']");
-        return this.getOrCreatePathAncestors(idNodesExpr);
-    }
+//    private List<Element> getOrCreatePathAncestors(String pathId) throws Exception
+//    {
+//        XPathExpression idNodesExpr = XPathFactory.newInstance().newXPath().compile("//" + PATH + "[@" + PATH_ID + "='" + pathId + "']");
+//        return this.getOrCreatePathAncestors(idNodesExpr);
+//    }
 
     private List<Element> getOrCreatePathAncestors(XPathExpression expression) throws Exception
     {
@@ -327,6 +394,22 @@ public class XMLUrlIdMapper implements UrlIdMapper
         }
         else{
             return new ArrayList<>();
+        }
+    }
+
+    private Element getPathParent(Element element) throws XPathExpressionException
+    {
+        if(element != null){
+            NodeList ancestors = (NodeList) this.pathParentExpr.evaluate(element, XPathConstants.NODESET);
+            if(ancestors.getLength()>0){
+                return (Element) ancestors.item(ancestors.getLength()-1);
+            }
+            else{
+                return null;
+            }
+        }
+        else{
+            return null;
         }
     }
 

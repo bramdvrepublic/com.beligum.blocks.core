@@ -10,7 +10,7 @@ import java.net.URL;
  */
 public interface UrlIdMapper
 {
-    public BlocksID getId(URL url);
+    public BlocksID getId(URL url) throws UrlIdMappingException;
 
     public URL getUrl(BlocksID id) throws UrlIdMappingException;
 
