@@ -9,6 +9,7 @@ import com.beligum.blocks.core.dbs.Database;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.*;
 import com.beligum.blocks.core.identifiers.BlocksID;
+import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
@@ -49,15 +50,14 @@ public class EntitiesEndpoint
 
     {
         EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(entityClassName);
-        URL entityUrl = new URL(pageUrl);
-        BlocksID existingId = XMLUrlIdMapper.getInstance().getId(entityUrl);
+        URL pageURL = new URL(pageUrl);
+        BlocksID existingId = XMLUrlIdMapper.getInstance().getId(pageURL);
         EntityTemplate lastVersion = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(existingId, EntityTemplate.class);
-        URL newEntityUrl = null;
 
         BlocksID newId = null;
         //if a not-deleted version exists in db, throw error
         if(lastVersion != null && !lastVersion.getDeleted()){
-            throw new Exception("Cannot create already existing entity '" + lastVersion.getId().getUrl() + "' with url '" + pageUrl + "'.");
+            throw new Exception("Cannot create already existing entity '" + lastVersion.getId().getUrl() + "' with url '" + pageURL + "'.");
 //            //if the url to the template did not hold language-information,
 //            if (!id.hasLanguage()) {
 //                id = new BlocksID(entityUrl, BlocksID.LAST_VERSION, true);
@@ -77,14 +77,16 @@ public class EntitiesEndpoint
         else{
             newId = existingId;
         }
-        newEntityUrl = TemplateParser.saveNewEntityTemplateToDb(newId, entityTemplateClass);
-        if(!existingId.getUrl().equals(newEntityUrl)){
-            XMLUrlIdMapper.getInstance().put(newId, existingId.getUrl());
+        TemplateParser.saveNewEntityTemplateToDb(newId, entityTemplateClass);
+        String unlanguagedPageUrl = Languages.translateUrl(pageURL.toString(), Languages.NO_LANGUAGE)[0];
+        String unlanguagedIdUrl = Languages.translateUrl(newId.getUrl().toString(), Languages.NO_LANGUAGE)[0];
+        if(!unlanguagedPageUrl.equals(unlanguagedIdUrl)){
+            XMLUrlIdMapper.getInstance().put(newId, pageURL);
         }
         /*
          * Redirect the client to the newly created entity's page
          */
-        return Response.seeOther(existingId.getUrl().toURI()).build();
+        return Response.seeOther(pageURL.toURI()).build();
     }
 
     @GET
@@ -136,11 +138,7 @@ public class EntitiesEndpoint
             entityUrl = new URL(entityUrl, entityUrl.getPath());
             BlocksID id = XMLUrlIdMapper.getInstance().getId(entityUrl);
             AbstractTemplate lastVersion = (AbstractTemplate) RedisDatabase.getInstance().trash(id);
-//            Set<BlocksID> languagedIds = lastVersion.getTemplates().keySet();
-//            for(BlocksID languageId : languagedIds){
-//                //TODO BAS!: gebruiker zou moeten gewaarschuwd worden over al de urls die verwijderd zullen worden
-//                URL deletedUrl = XMLUrlIdMapper.getInstance().remove(languageId);
-//            }
+            //TODO BAS!: gebruiker zou moeten gewaarschuwd worden over al de urls die verwijderd zullen worden
             return Response.ok(entityUrl.toString()).build();
         }
         catch(Exception e){

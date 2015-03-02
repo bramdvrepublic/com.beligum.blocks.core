@@ -142,9 +142,8 @@ public class TemplateParser
      * @param entityTemplateClass
      * @return the url of the freshly saved template
      */
-    public static URL saveNewEntityTemplateToDb(BlocksID id, AbstractTemplate entityTemplateClass) throws ParseException
+    public static void saveNewEntityTemplateToDb(BlocksID id, AbstractTemplate entityTemplateClass) throws ParseException
     {
-        String entityStringId = "";
         try {
             String language = id.getLanguage();
             if(!Languages.isLanguageCode(language)){
@@ -158,9 +157,6 @@ public class TemplateParser
             ClassToStoredInstanceVisitor visitor = new ClassToStoredInstanceVisitor(id.getUrl(), language);
             Traversor traversor = new Traversor(visitor);
             traversor.traverse(doc);
-            entityStringId = visitor.getReferencedId(doc.child(0));
-            BlocksID entityId = new BlocksID(entityStringId, BlocksID.NO_VERSION, language);
-            return entityId.getLanguagedUrl();
         }
         catch(Exception e){
             throw new ParseException("Couldn't save new template instance to db", e);
@@ -237,7 +233,7 @@ public class TemplateParser
             return DOM.outerHtml();
         }
         catch (Exception e){
-            throw new ParseException("Exception while rendering entity '" + entityTemplate.getName() + "' in tempalte '" + pageTemplate.getName() + "'.", e);
+            throw new ParseException("Exception while rendering entity '" + entityTemplate.getName() + "' in template '" + pageTemplate.getName() + "'.", e);
         }
     }
 
