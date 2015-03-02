@@ -2,6 +2,7 @@ package com.beligum.blocks.core.parsers.visitors;
 
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.ParseException;
@@ -128,8 +129,19 @@ public class ToHtmlVisitor extends SuperVisitor
             }
             if(node.hasAttr("href")){
                 String url = node.attr("href");
-                url = Languages.translateUrl(url, this.language)[0];
-                node.attr("href", url);
+                //the url "" does not need to be replaced
+                if(!StringUtils.isEmpty(url)) {
+                    //make relative urls absolute
+                    URL absoluteUrl = new URL(new URL(BlocksConfig.getSiteDomain()), url);
+                    //only urls from the sites domain need to be translated
+                    if (absoluteUrl.toString().startsWith(BlocksConfig.getSiteDomain())) {
+                        BlocksID id = XMLUrlIdMapper.getInstance().getId(absoluteUrl);
+                        id = new BlocksID(id, this.language);
+                        URL translatedUrl = XMLUrlIdMapper.getInstance().getUrl(id);
+                        translatedUrl = new URL(Languages.translateUrl(translatedUrl.toString(), this.language)[0]);
+                        node.attr("href", translatedUrl.toString());
+                    }
+                }
             }
             return node;
         }

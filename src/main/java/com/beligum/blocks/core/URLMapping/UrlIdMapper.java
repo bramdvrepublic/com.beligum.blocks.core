@@ -30,8 +30,6 @@ public interface UrlIdMapper
 
     /**
      * Add a url-id pair to the mapping. If a previous pairing was present, it will be replaced.
-     * If no language information can be found in the specified url, the language of the id is used to add a translation to the mapping.
-     * This could be seen as a one to many relation, with the id being the one and the url the many
      * @param id id holding language information
      * @param url url to be put as the key for the id using the language specified in the id
      * @return The {@link URL} and {@link BlocksID} that were replaced, wrapped in a {@link UrlIdPair}. Both the {@link URL} or {@link BlocksID} will be null if none were replaced

@@ -4,7 +4,6 @@ import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.templating.ifaces.Template;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
 import javax.ws.rs.GET;
@@ -12,7 +11,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Arrays;
 
 /**
@@ -21,19 +21,27 @@ import java.util.Arrays;
 @Path("/modals")
 public class ModalsEndpoint
 {
-    public static final String TRANSLATION_MODAL = "translationModal.vm";
+    public static final String CHANGE_URL_MODAL = "changeUrlModal.vm";
 
     @GET
-    @Path("/translation")
+    @Path("/changeurl")
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
     public Response getModalView(
                     @PathParam("name")
                     String name,
                     @QueryParam("original")
-                    String originalUrl)
+                    String originalUrl) throws MalformedURLException
     {
-        Template template = R.templateEngine().getEmptyTemplate("/views/modals/" + TRANSLATION_MODAL);
-        template.set("originalUrl", originalUrl);
+        Template template = R.templateEngine().getEmptyTemplate("/views/modals/" + CHANGE_URL_MODAL);
+        String originalPath = new URL(originalUrl).getPath();
+        String [] splitted = originalPath.split("/");
+        //TODO BAS!: test everything with for the empty path case (http://localhost:8080)
+        if(splitted.length>0) {
+            template.set("originalUrlPathEnd", "/" + splitted[splitted.length - 1]);
+        }
+        else{
+            template.set("originalUrlPathEnd", "");
+        }
         template.set("languages", Arrays.asList(BlocksConfig.getLanguages()));
         return Response.ok(template.render()).build();
     }

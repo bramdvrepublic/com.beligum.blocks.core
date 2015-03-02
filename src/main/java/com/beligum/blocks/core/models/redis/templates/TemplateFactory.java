@@ -1,5 +1,6 @@
 package com.beligum.blocks.core.models.redis.templates;
 
+import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 
@@ -19,7 +20,12 @@ public class TemplateFactory
     public static AbstractTemplate createInstanceFromHash(BlocksID id, Map<String, String> hash, Class<? extends AbstractTemplate> type) throws DeserializationException
     {
         if(type.equals(EntityTemplate.class)){
-            return EntityTemplate.createInstanceFromHash(id, hash);
+            if(hash.containsKey(DatabaseConstants.ENTITY_TEMPLATE_CLASS_NAME)) {
+                return EntityTemplate.createInstanceFromHash(id, hash);
+            }
+            else{
+                return null;
+            }
         }
         else if(type.equals(EntityTemplateClass.class)){
             return EntityTemplateClass.createInstanceFromHash(id, hash);

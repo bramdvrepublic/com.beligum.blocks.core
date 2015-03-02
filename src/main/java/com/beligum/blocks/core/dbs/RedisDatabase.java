@@ -1,6 +1,7 @@
 package com.beligum.blocks.core.dbs;
 
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.DatabaseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
@@ -293,7 +294,13 @@ public class RedisDatabase implements Database<AbstractTemplate>
             if(entityHash.isEmpty()){
                 return null;
             }
-            return TemplateFactory.createInstanceFromHash(lastVersion, entityHash, type);
+            else if(this.isOfType(entityHash, type))
+            {
+                return TemplateFactory.createInstanceFromHash(lastVersion, entityHash, type);
+            }
+            else{
+                return null;
+            }
         }catch (Exception e){
             throw new DatabaseException("Could not fetch last version from db: " + id, e);
         }
@@ -430,6 +437,15 @@ public class RedisDatabase implements Database<AbstractTemplate>
         }
         catch (Exception e){
             throw new DatabaseException("Could not get version-list for '" + id + "' from db.", e);
+        }
+    }
+
+    private boolean isOfType(Map<String, String> hash, Class<? extends AbstractTemplate> type){
+        if(type.equals(EntityTemplate.class)){
+            return hash.containsKey(DatabaseConstants.ENTITY_TEMPLATE_CLASS_NAME);
+        }
+        else{
+            return true;
         }
     }
 

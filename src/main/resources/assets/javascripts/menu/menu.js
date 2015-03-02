@@ -11,8 +11,8 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     btnList.append(saveBtn);
     var deleteBtn = $('<a class="btn  btn-default" href="#">Delete</a>');
     btnList.append(deleteBtn);
-    var translateBtn = $('<a class="btn  btn-default" href="#">Translate url</a>');
-    btnList.append(translateBtn);
+    var changeUrlBtn = $('<a class="btn  btn-default" href="#">Change url</a>');
+    btnList.append(changeUrlBtn);
 
 
     menuBtn.on("click", function(event) {
@@ -68,26 +68,37 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
         Notification.dialog("Delete page", "<div>Do you want to delete this page and all it's translations?</div>", onConfirm);
     });
 
-    translateBtn.on("click", function() {
+    changeUrlBtn.on("click", function() {
         var translateDialog = new BootstrapDialog()
-            .setTitle('Translate')
-            .setMessage($('<div></div>').load('/modals/translation?original=' + window.location.href))
+            .setTitle('Change url')
+            .setMessage($('<div></div>').load('/modals/changeurl?original=' + window.location.href))
             .setType(BootstrapDialog.TYPE_INFO)
             .setButtons([
                 {
                     label: 'Cancel',
-                    action: function (translateDialog) {
-                        translateDialog.close();
+                    action: function (changeUrlDialog) {
+                        changeUrlDialog.close();
                     }
                 },
                 {
-                    label: 'Translate',
+                    label: 'Change',
                     cssClass: 'btn-info',
-                    action: function (translateDialog) {
-                        translateDialog.close();
+                    action: function (changeUrlDialog) {
+                        changeUrlDialog.close();
                         $.ajax({
                             type: 'POST',
-                            url: "/translations?language=" + $("#language").val() + "&original=" + window.location.href + "&translation=" + $("#translation").val()
+                            url: "/urls?original=" + window.location.href + "&newpath=" + $("#new").val(),
+                            success: function(url, textStatus, response){
+                                if(url){
+                                    window.location = url;
+                                }else{
+                                    location.reload();
+                                }
+                            },
+                            error: function(response, textStatus, errorThrown){
+                                var message = response.status == 400 ? response.responseText : "An error occurred while changing the url.";
+                                Notification.dialog("Error", "<div>" + message + "</div>", function(){});
+                            }
                         })
                     }
                 }])

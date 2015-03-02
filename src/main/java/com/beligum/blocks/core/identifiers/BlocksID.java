@@ -219,7 +219,7 @@ public class BlocksID
     public BlocksID(String versionedDbId, String language) throws IDException
     {
         this(versionedDbId);
-        if(language.equals(BlocksID.PRIMARY_LANGUAGE)){
+        if(language == null || language.equals(BlocksID.PRIMARY_LANGUAGE)){
             Set<String> languageAlternatives = RedisDatabase.getInstance().fetchLanguageAlternatives(this);
             language = Languages.determinePrimaryLanguage(languageAlternatives);
         }

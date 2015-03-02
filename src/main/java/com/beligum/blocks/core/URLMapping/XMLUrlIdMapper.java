@@ -345,7 +345,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
             if(StringUtils.isEmpty(language)){
                 throw new UrlIdMappingException("Cannot remove an url without language information: '" + languagedUrl + "'.");
             }
-            BlocksID id = this.getId(languagedUrl);
+            BlocksID id = this.fetchId(languagedUrl);
             boolean changed = this.removePathForId(id);
             if(changed){
                 if(writeOut) this.writeOut();
@@ -600,6 +600,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
             List<Element> ancestors = this.getOrCreatePathAncestors(id);
             int i = ancestors.size()-1;
             XPathExpression translationExpr = XPathFactory.newInstance().newXPath().compile("child::" + TRANSLATIONS + "/child::" + TRANSLATION + "[@"+LANGUAGE+"='"+id.getLanguage()+"']");
+            boolean changed = false;
             while(i>=0){
                 Element ancestor = ancestors.get(i);
                 //remove the wanted translation, or if it does not exists, do nothing
@@ -607,6 +608,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
                 if(translation != null) {
                     Node translationsElement = translation.getParentNode();
                     translationsElement.removeChild(translation);
+                    changed = !changed ? true : changed;
                     NodeList children = translationsElement.getChildNodes();
                     boolean hasElementChild = false;
                     int j = 0;
@@ -623,7 +625,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
                 }
                 i--;
             }
-            return true;
+            return changed;
         }
         else{
             return false;
