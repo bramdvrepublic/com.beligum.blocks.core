@@ -59,8 +59,8 @@ public class ToHtmlVisitor extends SuperVisitor
      * @param language the preferred language we want to render html in
      * @throws ParseException if no known language was specified
      */
-    public ToHtmlVisitor(URL pageUrl, String language) throws ParseException {
-        this.pageUrl = pageUrl;
+    public ToHtmlVisitor(URL entityUrl, String language) throws ParseException {
+        this.entityUrl = entityUrl;
         this.language = Languages.getStandardizedLanguage(language);
         if(!Languages.isNonEmptyLanguageCode(this.language)){
             throw new ParseException("Found unknown language '" + this.language + "'.");
@@ -108,7 +108,7 @@ public class ToHtmlVisitor extends SuperVisitor
             if(isEntity(node) && node instanceof Element) {
                 Element element = (Element) node;
                 //TODO BAS: here we should use a listener to check for all dynamic blocks
-                DynamicBlock translationList = new TranslationList(this.language, this.pageUrl);
+                DynamicBlock translationList = new TranslationList(this.language, this.entityUrl);
                 if (translationList.getTypeOf().equals(this.getTypeOf(element))) {
                     element = translationList.generateBlock(element);
                     for(Element link : translationList.getLinks()) {
@@ -125,6 +125,11 @@ public class ToHtmlVisitor extends SuperVisitor
                     }
                 }
                 node = element;
+            }
+            if(node.hasAttr("href")){
+                String url = node.attr("href");
+                url = Languages.translateUrl(url, this.language)[0];
+                node.attr("href", url);
             }
             return node;
         }
@@ -310,14 +315,7 @@ public class ToHtmlVisitor extends SuperVisitor
         String referencedInstanceId = referenceId;
         BlocksID id = new BlocksID(referencedInstanceId, BlocksID.LAST_VERSION, language);
 
-        /*
-         * Check the url-id mapping if this id has an url.
-         * If not, use the id-url: [site-domain]/[entity-id]
-         */
         URL url = XMLUrlIdMapper.getInstance().getUrl(id);
-        if(url == null) {
-            url = id.getUrl();
-        }
         defaultClassPropertyRoot.attr(ParserConstants.RESOURCE, url.toString());
         classProperty.replaceWith(defaultClassPropertyRoot);
         return defaultClassPropertyRoot;
@@ -348,14 +346,8 @@ public class ToHtmlVisitor extends SuperVisitor
                     if (StringUtils.isEmpty(getResource(instanceTemplateRoot)) &&
                         //when referencing to a class-default, we don't want the resource to show up in the browser
                         StringUtils.isEmpty(referencedId.getUrl().toURI().getFragment())) {
-                        /*
-                         * Check the url-id mapping if this id has an url.
-                         * If not, use the id-url: [site-domain]/[entity-id]
-                         */
+
                         URL url = XMLUrlIdMapper.getInstance().getUrl(referencedId);
-                        if(url == null) {
-                            url = referencedId.getUrl();
-                        }
                         instanceTemplateRoot.attr(ParserConstants.RESOURCE, url.toString());
                     }
                     instanceRootNode.replaceWith(instanceTemplateRoot);

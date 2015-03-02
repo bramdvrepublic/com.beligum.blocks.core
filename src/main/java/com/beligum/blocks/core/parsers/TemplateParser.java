@@ -138,16 +138,15 @@ public class TemplateParser
 
     /**
      * Save a new entity-template-instance of class 'entityTemplateClass' to db, and also all it's children.
-     * @param language the language the new entity is written in (must be the same as specified in pageUrl-parameter,
-     *                 if one is present there), if no such language is specified the primary language
-     *                 of the entity-class is used
+     * @param id the id the new template will be given
      * @param entityTemplateClass
      * @return the url of the freshly saved template
      */
-    public static URL saveNewEntityTemplateToDb(URL pageURL, String language, AbstractTemplate entityTemplateClass) throws ParseException
+    public static URL saveNewEntityTemplateToDb(BlocksID id, AbstractTemplate entityTemplateClass) throws ParseException
     {
-        String pageStringId = "";
+        String entityStringId = "";
         try {
+            String language = id.getLanguage();
             if(!Languages.isLanguageCode(language)){
                 language = entityTemplateClass.getLanguage();
             }
@@ -156,13 +155,12 @@ public class TemplateParser
                 html = entityTemplateClass.getTemplate();
             }
             Element doc = parse(html);
-            ClassToStoredInstanceVisitor visitor = new ClassToStoredInstanceVisitor(pageURL, language);
+            ClassToStoredInstanceVisitor visitor = new ClassToStoredInstanceVisitor(id.getUrl(), language);
             Traversor traversor = new Traversor(visitor);
             traversor.traverse(doc);
-            pageStringId = visitor.getReferencedId(doc.child(0));
-            BlocksID pageId = new BlocksID(pageStringId, BlocksID.NO_VERSION, language);
-            XMLUrlIdMapper.getInstance().put(pageId, pageURL);
-            return pageId.getLanguagedUrl();
+            entityStringId = visitor.getReferencedId(doc.child(0));
+            BlocksID entityId = new BlocksID(entityStringId, BlocksID.NO_VERSION, language);
+            return entityId.getLanguagedUrl();
         }
         catch(Exception e){
             throw new ParseException("Couldn't save new template instance to db", e);
@@ -257,10 +255,10 @@ public class TemplateParser
         return classDOM.outerHtml();
     }
 
-    public static void updateEntity(URL entityUrl, String html) throws ParseException
+    public static void updateEntity(BlocksID id, String html) throws ParseException
     {
         Document newDOM = parse(html);
-        Traversor traversor = new Traversor(new HtmlToStoreVisitor(entityUrl, newDOM));
+        Traversor traversor = new Traversor(new HtmlToStoreVisitor(id.getUrl(), id.getLanguage(), newDOM));
         traversor.traverse(newDOM);
     }
 

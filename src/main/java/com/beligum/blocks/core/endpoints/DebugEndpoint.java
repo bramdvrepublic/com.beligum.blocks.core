@@ -102,11 +102,12 @@ public class DebugEndpoint
                     String fragment,
                     @QueryParam("type")
                     String typeName)
-                    throws MalformedURLException, IDException, DatabaseException, CacheException, ParseException
+                    throws Exception
     {
         URL url = renderUrl(resourcePath,fragment);
         Class<? extends AbstractTemplate> type = determineType(typeName);
-        AbstractTemplate template = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
+        BlocksID id = XMLUrlIdMapper.getInstance().getId(url);
+        AbstractTemplate template = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(id, type);
         return Response.ok(template.toString()).build();
     }
 
@@ -122,11 +123,12 @@ public class DebugEndpoint
                     String fragment,
                     @QueryParam("type")
                     String typeName)
-                    throws MalformedURLException, IDException, DatabaseException, CacheException, ParseException
+                    throws Exception
     {
         URL url = renderUrl(resourcePath, fragment);
         Class<? extends AbstractTemplate> type = determineType(typeName);
-        AbstractTemplate template = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
+        BlocksID id = XMLUrlIdMapper.getInstance().getId(url);
+        AbstractTemplate template = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(id, type);
         if(template instanceof EntityTemplate) {
             return Response.ok(((EntityTemplate) template).renderEntityInPageTemplate(template.getLanguage())).build();
         }
@@ -147,11 +149,12 @@ public class DebugEndpoint
                     String fragment,
                     @QueryParam("type")
                     String typeName)
-                    throws MalformedURLException, IDException, DatabaseException, CacheException, ParseException, SerializationException
+                    throws Exception
     {
         URL url = renderUrl(resourcePath, fragment);
         Class<? extends AbstractTemplate> type = this.determineType(typeName);
-        AbstractTemplate template = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
+        BlocksID id = XMLUrlIdMapper.getInstance().getId(url);
+        AbstractTemplate template = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(id, type);
         String retVal = "";
         Map<String, String> hash = template.toHash();
         List<String> keys = new ArrayList<>(hash.keySet());
@@ -175,11 +178,12 @@ public class DebugEndpoint
                                                   @DefaultValue("")
                                                   String fragment,
                                                   @QueryParam("type")
-                                                  String typeName) throws MalformedURLException, IDException, DatabaseException, SerializationException
+                                                  String typeName) throws Exception
     {
         Class<? extends AbstractTemplate> type = determineType(typeName);
         URL url = renderUrl(resourcePath, fragment);
-        List<AbstractTemplate> versions = RedisDatabase.getInstance().fetchVersionList(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
+        BlocksID id = XMLUrlIdMapper.getInstance().getId(url);
+        List<AbstractTemplate> versions = RedisDatabase.getInstance().fetchVersionList(id, type);
         String retVal = "";
         for(AbstractTemplate template : versions) {
             if(template != null) {
@@ -213,11 +217,12 @@ public class DebugEndpoint
                                                   @DefaultValue("")
                                                   String fragment,
                                                   @QueryParam("type")
-                                                  String typeName) throws MalformedURLException, IDException, DatabaseException, SerializationException
+                                                  String typeName) throws Exception
     {
         Class<? extends AbstractTemplate> type = determineType(typeName);
         URL url = renderUrl(resourcePath, fragment);
-        List<AbstractTemplate> versions = RedisDatabase.getInstance().fetchVersionList(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
+        BlocksID id = XMLUrlIdMapper.getInstance().getId(url);
+        List<AbstractTemplate> versions = RedisDatabase.getInstance().fetchVersionList(id, type);
         String retVal = "";
         for(AbstractTemplate template : versions) {
             if(template != null) {

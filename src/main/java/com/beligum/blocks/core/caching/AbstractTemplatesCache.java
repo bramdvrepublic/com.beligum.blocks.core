@@ -123,8 +123,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             else{
                 AbstractTemplate cachedTemplate = getCache().get(template.getUnversionedId());
                 if(!template.equals(cachedTemplate)){
-                    BlocksID lastVersion = new BlocksID(template.getId().getUrl(), BlocksID.NO_VERSION, false);
-                    AbstractTemplate storedTemplate = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(lastVersion, this.getCachedClass());
+                    AbstractTemplate storedTemplate = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(template.getId(), this.getCachedClass());
                     if(storedTemplate == null){
                         RedisDatabase.getInstance().create(template);
                     }

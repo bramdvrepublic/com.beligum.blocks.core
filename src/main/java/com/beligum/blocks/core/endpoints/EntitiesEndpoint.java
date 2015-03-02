@@ -7,10 +7,7 @@ import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Database;
 import com.beligum.blocks.core.dbs.RedisDatabase;
-import com.beligum.blocks.core.exceptions.CacheException;
-import com.beligum.blocks.core.exceptions.DatabaseException;
-import com.beligum.blocks.core.exceptions.IDException;
-import com.beligum.blocks.core.exceptions.ParseException;
+import com.beligum.blocks.core.exceptions.*;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
@@ -53,13 +50,14 @@ public class EntitiesEndpoint
     {
         EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(entityClassName);
         URL entityUrl = new URL(pageUrl);
-        //TODO BAS!: the XMLUrlIdMapper should be used here to determine the id
-        BlocksID id = new BlocksID(entityUrl, BlocksID.LAST_VERSION, true);
-        EntityTemplate lastVersion = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(id, EntityTemplate.class);
+        BlocksID existingId = XMLUrlIdMapper.getInstance().getId(entityUrl);
+        EntityTemplate lastVersion = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(existingId, EntityTemplate.class);
         URL newEntityUrl = null;
 
-        //if a not-deleted version exists in db, check if the url is free for use or not
-        if(!(lastVersion == null || lastVersion.getDeleted())){
+        BlocksID newId = null;
+        //if a not-deleted version exists in db, throw error
+        if(lastVersion != null && !lastVersion.getDeleted()){
+            throw new Exception("Cannot create already existing entity '" + lastVersion.getId().getUrl() + "' with url '" + pageUrl + "'.");
 //            //if the url to the template did not hold language-information,
 //            if (!id.hasLanguage()) {
 //                id = new BlocksID(entityUrl, BlocksID.LAST_VERSION, true);
@@ -71,11 +69,22 @@ public class EntitiesEndpoint
 //
 //            }
         }
-        newEntityUrl = TemplateParser.saveNewEntityTemplateToDb(entityUrl, id.getLanguage(), entityTemplateClass);
+        //if the url isn't taken yet, render a new id
+        else if(lastVersion == null){
+            newId = BlocksID.renderNewEntityTemplateID(entityTemplateClass, existingId.getLanguage());
+        }
+        //if a deleted version is being revived, readd it to the mapping
+        else{
+            newId = existingId;
+        }
+        newEntityUrl = TemplateParser.saveNewEntityTemplateToDb(newId, entityTemplateClass);
+        if(!existingId.getUrl().equals(newEntityUrl)){
+            XMLUrlIdMapper.getInstance().put(newId, existingId.getUrl());
+        }
         /*
          * Redirect the client to the newly created entity's page
          */
-        return Response.seeOther(newEntityUrl.toURI()).build();
+        return Response.seeOther(existingId.getUrl().toURI()).build();
     }
 
     @GET
@@ -96,19 +105,23 @@ public class EntitiesEndpoint
     /*
      * update a page-instance with id 'entityId' to be the html specified
      */
-    public Response updateEntity(@PathParam("entityUrlPath") String entityUrlPath, String pageHtml)
+    public Response updateEntity(@PathParam("entityUrlPath") String pageUrlPath, String pageHtml)
     {
         try{
-            if(entityUrlPath.endsWith("#")){
-                entityUrlPath = entityUrlPath.substring(0, entityUrlPath.length()-1);
+            if(pageUrlPath.endsWith("#")){
+                pageUrlPath = pageUrlPath.substring(0, pageUrlPath.length()-1);
             }
-            URL entityUrl = new URL(new URL(BlocksConfig.getSiteDomain()), entityUrlPath);
+            URL pageUrl = new URL(new URL(BlocksConfig.getSiteDomain()), pageUrlPath);
             //ignore the query-part of the url to fetch an entity from db, use only the path of the url
-            entityUrl = new URL(entityUrl, entityUrl.getPath());
-            EntityTemplate entity = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(new BlocksID(entityUrl, BlocksID.LAST_VERSION, true), EntityTemplate.class);
-            TemplateParser.updateEntity(entityUrl, pageHtml);
-            XMLUrlIdMapper.getInstance().put(entity.getId(), entityUrl);
-            return Response.ok(entityUrl.getPath()).build();
+            pageUrl = new URL(pageUrl, pageUrl.getPath());
+            BlocksID entityId = XMLUrlIdMapper.getInstance().getId(pageUrl);
+            EntityTemplate entity = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(entityId, EntityTemplate.class);
+            if(entity == null){
+                throw new Exception("Cannot update entity which doesn't exist: '" + pageUrl + ".");
+            }
+            TemplateParser.updateEntity(entity.getId(), pageHtml);
+            XMLUrlIdMapper.getInstance().put(entity.getId(), pageUrl);
+            return Response.ok(pageUrl.getPath()).build();
         }catch (Exception e){
             return Response.status(Response.Status.BAD_REQUEST).entity(I18n.instance().getMessage("entitySaveFailed")).build();
         }
@@ -123,11 +136,11 @@ public class EntitiesEndpoint
             entityUrl = new URL(entityUrl, entityUrl.getPath());
             BlocksID id = XMLUrlIdMapper.getInstance().getId(entityUrl);
             AbstractTemplate lastVersion = (AbstractTemplate) RedisDatabase.getInstance().trash(id);
-            Set<BlocksID> languagedIds = lastVersion.getTemplates().keySet();
-            for(BlocksID languageId : languagedIds){
-                //TODO BAS!: gebruiker zou moeten gewaarschuwd worden over al de urls die verwijderd zullen worden
-                URL deletedUrl = XMLUrlIdMapper.getInstance().remove(languageId);
-            }
+//            Set<BlocksID> languagedIds = lastVersion.getTemplates().keySet();
+//            for(BlocksID languageId : languagedIds){
+//                //TODO BAS!: gebruiker zou moeten gewaarschuwd worden over al de urls die verwijderd zullen worden
+//                URL deletedUrl = XMLUrlIdMapper.getInstance().remove(languageId);
+//            }
             return Response.ok(entityUrl.toString()).build();
         }
         catch(Exception e){
@@ -176,11 +189,13 @@ public class EntitiesEndpoint
     @Path("/template")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response changeTemplate(@FormParam("template") String templateName, @FormParam("id") String id) throws CacheException, MalformedURLException, IDException, DatabaseException, ParseException {
+    public Response changeTemplate(@FormParam("template") String templateName, @FormParam("id") String id)
+                    throws CacheException, MalformedURLException, IDException, DatabaseException, ParseException, UrlIdMappingException
+    {
         Database<AbstractTemplate> redis = RedisDatabase.getInstance();
         URL url = new URL(id);
-        BlocksID lastVersionId = new BlocksID(url, BlocksID.LAST_VERSION, false);
-        EntityTemplate entityTemplate = (EntityTemplate) redis.fetch(lastVersionId, EntityTemplate.class);
+        BlocksID blocksId = XMLUrlIdMapper.getInstance().getId(url);
+        EntityTemplate entityTemplate = (EntityTemplate) redis.fetchLastVersion(blocksId, EntityTemplate.class);
         //TODO BAS: must make BeanValidation checking that PageTemplateCache.getInstance().contains(templateName)
         entityTemplate.setPageTemplateName(templateName);
         String entity = entityTemplate.renderEntityInPageTemplate(entityTemplate.getLanguage());
@@ -189,9 +204,10 @@ public class EntitiesEndpoint
 
     @POST
     @Path("/deletedversion")
-    public Response showDeletedVersion(@FormParam("page-url") String pageUrl) throws MalformedURLException, CacheException, ParseException, IDException, DatabaseException
+    public Response showDeletedVersion(@FormParam("page-url") String pageUrl) throws MalformedURLException, CacheException, ParseException, IDException, DatabaseException, UrlIdMappingException
     {
-        List<AbstractTemplate> versionList = RedisDatabase.getInstance().fetchVersionList(new BlocksID(new URL(pageUrl), BlocksID.LAST_VERSION, true), EntityTemplate.class);
+        BlocksID id = XMLUrlIdMapper.getInstance().getId(new URL(pageUrl));
+        List<AbstractTemplate> versionList = RedisDatabase.getInstance().fetchVersionList(id, EntityTemplate.class);
         EntityTemplate lastAccessibleVersion = null;
         Iterator<AbstractTemplate> it = versionList.iterator();
         while(lastAccessibleVersion == null && it.hasNext()){

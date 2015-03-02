@@ -12,8 +12,20 @@ public interface UrlIdMapper
 {
     //TODO BAS!: als er 100 waterputten onder [site-domain]/waterput/[id] zitten, en ik wil het woord 'waterput' veranderen naar 'waterputten', dan moet ik surfen naar [site-domain]/waterput waar ik een keuze krijg uit 'wilt u een nieuwe pagina aanmaken' of 'wilt u url veranderen van 100 waterputten?'.
 
+    /**
+     *
+     * @param url
+     * @return The id this url is paired to (including language) or if no pairing exists, returns an id (with a new version) holding the specified url as internal url.
+     * @throws UrlIdMappingException
+     */
     public BlocksID getId(URL url) throws UrlIdMappingException;
 
+    /**
+     *
+     * @param id
+     * @return The url this id is paired to (including language) or if no pairing exists, returns the id's internal url.
+     * @throws UrlIdMappingException
+     */
     public URL getUrl(BlocksID id) throws UrlIdMappingException;
 
     /**

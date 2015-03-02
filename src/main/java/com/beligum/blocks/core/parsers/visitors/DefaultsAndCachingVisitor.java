@@ -300,7 +300,7 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
         Document entityRoot = new Document(BlocksConfig.getSiteDomain());
         entityRoot.appendChild(node.clone());
         //traverse the entity-root and save new instances to db
-        Traversor traversor = new Traversor(new HtmlToStoreVisitor(id.getLanguagedUrl(), entityRoot));
+        Traversor traversor = new Traversor(new HtmlToStoreVisitor(id.getUrl(), id.getLanguage(), entityRoot));
         traversor.traverse(entityRoot);
         Node entityReference = entityRoot.child(0);
         node.replaceWith(entityReference);

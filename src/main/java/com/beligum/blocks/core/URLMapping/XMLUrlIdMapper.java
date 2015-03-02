@@ -9,7 +9,6 @@ import com.beligum.blocks.core.exceptions.UrlIdMappingException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.UrlIdMapping;
-import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
@@ -109,6 +108,23 @@ public class XMLUrlIdMapper implements UrlIdMapper
     public BlocksID getId(URL url) throws UrlIdMappingException
     {
         try {
+            BlocksID id = this.fetchId(url);
+            if(id == null){
+                return new BlocksID(url, BlocksID.NEW_VERSION, true);
+            }
+            else{
+                return id;
+            }
+        }catch(UrlIdMappingException e){
+            throw e;
+        }
+        catch(Exception e){
+            throw new UrlIdMappingException("Could not get id for url '" + url + "'.", e);
+        }
+    }
+    private BlocksID fetchId(URL url) throws UrlIdMappingException
+    {
+        try {
             if (url == null) {
                 return null;
             }
@@ -161,6 +177,28 @@ public class XMLUrlIdMapper implements UrlIdMapper
     public URL getUrl(BlocksID id) throws UrlIdMappingException
     {
         try {
+            URL url = this.fetchUrl(id);
+            if (url == null) {
+                return id.getUrl();
+            }
+            else {
+                return url;
+            }
+        }catch(UrlIdMappingException e){
+            throw e;
+        }
+        catch(Exception e){
+            throw new UrlIdMappingException("Could not fetch an url for '" + id + "'.", e);
+        }
+    }
+    /**
+     * @param id
+     * @return Return the url the specified id is paired to (language inclusive), or null if no pairing exists.
+     * @throws UrlIdMappingException
+     */
+    private URL fetchUrl(BlocksID id) throws UrlIdMappingException
+    {
+        try {
             XPath xPath = XPathFactory.newInstance().newXPath();
             XPathExpression idNodesExpr = xPath.compile("//" + PATH + "[@" + BLOCKS_ID + "='" + id.getUnversionedId() + "']");
             NodeList blocksIdElements = (NodeList) idNodesExpr.evaluate(this.urlIdMapping, XPathConstants.NODESET);
@@ -194,6 +232,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
             throw new UrlIdMappingException("Could not fetch an url for '" + id + "'.", e);
         }
     }
+
     @Override
     public UrlIdPair put(BlocksID id, URL url) throws UrlIdMappingException
     {
@@ -278,7 +317,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
     private URL remove(BlocksID languagedId, boolean writeOut) throws UrlIdMappingException
     {
         try{
-            URL previousUrl = this.getUrl(languagedId);
+            URL previousUrl = this.fetchUrl(languagedId);
             boolean changed = this.removePathForId(languagedId);
             if(changed){
                 if(writeOut) this.writeOut();

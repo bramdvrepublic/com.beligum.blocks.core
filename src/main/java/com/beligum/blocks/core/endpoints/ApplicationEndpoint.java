@@ -63,7 +63,7 @@ public class ApplicationEndpoint
             }
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
             if(version == null){
-                version = BlocksID.LAST_VERSION;
+                version = BlocksID.NO_VERSION;
             }
             else{
                 if(!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)){
@@ -72,70 +72,43 @@ public class ApplicationEndpoint
             }
             //if no language info is specified in the url, or if the specified language doesn't exist, the default language will still be shown
             BlocksID id = XMLUrlIdMapper.getInstance().getId(url);
-            //TODO BAS SH: Er moet nog altijd een id teruggegeven worden voor getrashte urls. Nu worden ze verwijderd uit de url-id mapping en wordt dan bij het bezoeken van die verwijderde pagina niet langer de keuze gegeven om van een verwijderde versie te vertrekken. Vragen aan Wouter wat de beste oplossing is: de verwijderde url bijhouden in apparte XMLTemplate of in de huidige url-id-mapping.
+            EntityTemplate lastStoredVersion = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(id, EntityTemplate.class);
+            //TODO BAS SH: Er moet nog altijd een id teruggegeven worden voor getrashte urls. Nu worden ze verwijderd uit de url-id mapping en wordt dan bij het bezoeken van die verwijderde pagina niet langer de keuze gegeven om van een verwijderde versie te vertrekken. Vragen aan Wouter wat de beste oplossing is: de verwijderde url bijhouden in apparte XMLTemplate of in de huidige url-id-mapping, of niet langer de mogelijkheid geven om een verwijderde versie opnieuw op te halen
             //TODO BAS SH 2: alle TODO BAS! opmerkingen moeten nog gedaan worden voor dinsdag
             //if no such page is present in db, ask if user wants to create a new page
-            if(id == null || version == BlocksID.NO_VERSION) {
+            if(lastStoredVersion == null) {
                 if(!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)){
                     throw new NotFoundException("Page does not exist: " + url);
                 }
                 Template template = R.templateEngine().getEmptyTemplate("/views/new-page.vm");
                 return injectParameters(template);
             }
-            //if a version is present in db, try to fetch the page from db
-            else if(!id.hasLanguage()) {
-                id.setVersion(version);
-                BlocksID primaryLanguageId = new BlocksID(id, BlocksID.PRIMARY_LANGUAGE);
-                //if no primary language can be found in db, it means the page is not present in db
-                if (!primaryLanguageId.hasLanguage()) {
-                    throw new NotFoundException("Couldn't find " + primaryLanguageId.getUrl());
-                }
-                return Response.seeOther(primaryLanguageId.getLanguagedUrl().toURI()).build();
-
-            }
-            //if we have both version and language-information, try to render the entity
+            //render the entity
             else {
                 id.setVersion(version);
                 EntityTemplate entityTemplate = (EntityTemplate) RedisDatabase.getInstance().fetch(id, EntityTemplate.class);
-                //if no entity-template is returned from db, the specified language doesn't exist
+                //if no entity-template is returned from db, the specified language or version don't exist, so we use the last stored version to render the page
                 if(entityTemplate == null){
-                    //since a last version was found, it must be present in db
-                    EntityTemplate storedInstance = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(id, EntityTemplate.class);
-                    if(storedInstance == null){
-                        throw new Exception("Received null from db, after asking for last version of '" + id +"'. This should not happen!");
-                    }
-                    //if the page is deleted, it should not be shown (method throws NotFoundException)
-                    boolean needsToBehandled = this.handleTrashedEntity(storedInstance);
-                    //if the current user may modify entities, a choice is given to create a new page, or revive the deleted page
-                    if(needsToBehandled && version.equals(storedInstance.getVersion())) {
-                        Template template = R.templateEngine().getEmptyTemplate("/views/deleted-page.vm");
-                        return injectParameters(template);
-                    }
-                    //if the page is reachable, render it
-                    else {
-                        //if the requested language already exists in db, render and show it
-                        if (storedInstance.getLanguages().contains(id.getLanguage())) {
-                            String page = storedInstance.renderEntityInPageTemplate(id.getLanguage());
-                            return Response.ok(page).build();
-                        }
-                        //show the default language, but act as if it is the requested language
-                        else {
-                            String lastVersionHtml = TemplateParser.renderEntityInsidePageTemplate(storedInstance.getPageTemplate(), storedInstance, id.getLanguage());
-                            return Response.ok(lastVersionHtml).build();
-                        }
-                    }
+                    entityTemplate = lastStoredVersion;
                 }
+                //if the page is deleted, it should not be shown (method throws NotFoundException)
+                boolean needsToBehandled = this.handleTrashedEntity(entityTemplate);
+                //if the current user may modify entities, a choice is given to create a new page, or revive the deleted page
+                if(needsToBehandled) {
+                    Template template = R.templateEngine().getEmptyTemplate("/views/deleted-page.vm");
+                    return injectParameters(template);
+                }
+                //if the page is reachable, render it
                 else {
-                    //if the page is deleted, it should not be shown (method throws NotFoundException)
-                    boolean needsToBeHandled = this.handleTrashedEntity(entityTemplate);
-                    if(needsToBeHandled) {
-                        Template template = R.templateEngine().getEmptyTemplate("/views/deleted-page.vm");
-                        return injectParameters(template);
-                    }
-                    //if the page is reachable, render it
-                    else {
-                        String page = entityTemplate.renderEntityInPageTemplate(entityTemplate.getLanguage());
+                    //if the requested language already exists in db, render and show it
+                    if (entityTemplate.getLanguages().contains(id.getLanguage())) {
+                        String page = entityTemplate.renderEntityInPageTemplate(id.getLanguage());
                         return Response.ok(page).build();
+                    }
+                    //show the default language, but act as if it is the requested language
+                    else {
+                        String lastVersionHtml = TemplateParser.renderEntityInsidePageTemplate(entityTemplate.getPageTemplate(), entityTemplate, id.getLanguage());
+                        return Response.ok(lastVersionHtml).build();
                     }
                 }
             }

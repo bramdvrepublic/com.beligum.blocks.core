@@ -253,7 +253,6 @@ public class BlocksID
         return language;
     }
 
-    //TODO BAS!: all uses of this method should be checked with XMLUrlIdMapping...
     public URL getUrl(){
         return url;
     }
@@ -287,7 +286,7 @@ public class BlocksID
             }
             return new URL(this.url.getProtocol(), this.url.getHost(), this.url.getPort(), newPath);
         }catch (Exception e){
-            throw new IDException("Could not generate url with proper language-references using url '" + this.url + "' and language '" + this.language + "'.");
+            throw new IDException("Could not generate url with proper language references using url '" + this.url + "' and language '" + this.language + "'.");
         }
     }
 

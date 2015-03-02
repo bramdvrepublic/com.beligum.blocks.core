@@ -1,5 +1,6 @@
 package com.beligum.blocks.core.parsers.visitors;
 
+import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.RedisDatabase;
@@ -35,24 +36,24 @@ public class ClassToStoredInstanceVisitor extends SuperVisitor
 
     /**
      *
-     * @param pageUrl
+     * @param entityUrl the url of an entity (that is the url of it's id, not the human readable url)
      * @param language the language the new instance will have, if this is not a correct language, the default language will be used
-     * @throws IDException if the specified page-url cannot be used as an id
+     * @throws IDException if the specified entity url cannot be used as an id
      */
-    public ClassToStoredInstanceVisitor(URL pageUrl, String language) throws ParseException
+    public ClassToStoredInstanceVisitor(URL entityUrl, String language) throws ParseException
     {
         try{
-            BlocksID pageId = new BlocksID(pageUrl, BlocksID.LAST_VERSION, true);
-            EntityTemplate page = (EntityTemplate) RedisDatabase.getInstance().fetch(pageId, EntityTemplate.class);
-            if(page != null && !page.getLanguage().equals(language)){
+            BlocksID entityId = XMLUrlIdMapper.getInstance().getId(entityUrl);
+            EntityTemplate entity = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(entityId, EntityTemplate.class);
+            if(entity != null && !entity.getLanguage().equals(language)){
                 parsingNewLanguage = true;
             }
-            this.pageUrl = pageId.getUrl();
+            this.entityUrl = entityId.getUrl();
             if(Languages.isNonEmptyLanguageCode(language)) {
                 this.language = language;
             }
             else{
-                this.language = pageId.getLanguage();
+                this.language = entityId.getLanguage();
             }
         }catch(Exception e){
             throw new ParseException("Could not initialize " + ClassToStoredInstanceVisitor.class.getSimpleName() + ".", e);
@@ -110,16 +111,16 @@ public class ClassToStoredInstanceVisitor extends SuperVisitor
             if (node.equals(lastInstanceNode) && node instanceof Element) {
                 EntityTemplateClass entityClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
                 BlocksID newEntityId;
-                // For the first root entity use pageUrl if available
-                if (newInstancesNodes.size() == 1 && pageUrl != null) {
-                    newEntityId = BlocksID.renderLanguagedId(pageUrl, BlocksID.NEW_VERSION, this.language);
+                // For the first root entity use entityUrl if available
+                if (newInstancesNodes.size() == 1 && entityUrl != null) {
+                    newEntityId = BlocksID.renderLanguagedId(entityUrl, BlocksID.NEW_VERSION, this.language);
                 }
                 //else render a new entity-template-id
                 else{
                     newEntityId = BlocksID.renderNewEntityTemplateID(entityClass, this.language);
                 }
                 node.removeAttr(ParserConstants.BLUEPRINT);
-                node.attr(ParserConstants.RESOURCE, newEntityId.getUrl().toString());
+                node.attr(ParserConstants.RESOURCE, XMLUrlIdMapper.getInstance().getUrl(newEntityId).toString());
                 EntityTemplate newInstance = new EntityTemplate(newEntityId, entityClass, node.outerHtml());
                 //for default instances, a version could already be present in db, which is equal to this one
                 EntityTemplate storedInstance = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(newEntityId, EntityTemplate.class);
