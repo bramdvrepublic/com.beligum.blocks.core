@@ -122,7 +122,6 @@ public class EntitiesEndpoint
                 throw new Exception("Cannot update entity which doesn't exist: '" + pageUrl + ".");
             }
             TemplateParser.updateEntity(entityId, pageHtml);
-            XMLUrlIdMapper.getInstance().put(entityId, pageUrl);
             return Response.ok(pageUrl.getPath()).build();
         }catch (Exception e){
             return Response.status(Response.Status.BAD_REQUEST).entity(I18n.instance().getMessage("entitySaveFailed")).build();
