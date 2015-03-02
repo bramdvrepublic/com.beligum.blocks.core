@@ -419,7 +419,7 @@ public class SuperVisitor
             return false;
         }
         boolean retVal = false;
-        if (element.hasAttr(ParserConstants.CAN_EDIT)) {
+        if (element.hasAttr(ParserConstants.CAN_EDIT_PROPERTY)) {
             retVal = true;
         }
         return retVal;

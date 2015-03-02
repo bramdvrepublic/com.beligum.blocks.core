@@ -12,6 +12,7 @@ import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.base.RequestContext;
 import com.beligum.core.framework.templating.ifaces.Template;
+import com.beligum.core.framework.utils.Logger;
 import gen.com.beligum.blocks.core.endpoints.ApplicationEndpointRoutes;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.AuthorizationException;
@@ -61,7 +62,9 @@ public class ApplicationEndpoint
             }
             else{
                 if(!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)){
-                    throw new UnauthorizedException("User is not allowed to see versioned entity: url = " + randomURLPath + ", version=" +version);
+//                    throw new UnauthorizedException("User is not allowed to see versioned entity: url = " + randomURLPath + ", version=" +version);
+                    version = BlocksID.LAST_VERSION;
+                    Logger.debug("Unauthorized user tried to view older version of page");
                 }
             }
             //if no language info is specified in the url, or if the specified language doesn't exist, the default language will still be shown

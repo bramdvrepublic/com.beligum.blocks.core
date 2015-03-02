@@ -10,7 +10,7 @@ public class ParserConstants
     {
         NONE(0, ""),
         CAN_LAYOUT(1, ParserConstants.CAN_LAYOUT),
-        CAN_EDIT(2, ParserConstants.CAN_EDIT);
+        CAN_EDIT(2, ParserConstants.CAN_EDIT_PROPERTY);
 
         private int permissionLevel;
         private String cssClass;
@@ -26,7 +26,8 @@ public class ParserConstants
 
 
     public final static String CAN_LAYOUT = "can-layout";
-    public final static String CAN_EDIT = "can-edit";
+    public final static String CAN_EDIT_PROPERTY = "can-edit";
+    public final static String CAN_NOT_EDIT_PROPERTY = "can-edit";
     public final static String CAN_CHANGE = "can-change";
 
     public final static String INCLUDE = "include";
