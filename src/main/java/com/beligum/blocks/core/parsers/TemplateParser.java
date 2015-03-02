@@ -215,8 +215,9 @@ public class TemplateParser
                 if(entityHtml == null){
                     entityHtml = entityTemplate.getTemplate();
                 }
-                Element entityRoot = TemplateParser.parse(entityHtml).child(0);
-                reference.replaceWith(entityRoot);
+//                Element entityRoot = TemplateParser.parse(entityHtml).child(0);
+                reference.attr(ParserConstants.REFERENCE_TO, entityTemplate.getUnversionedId());
+                reference.attr(ParserConstants.TYPE_OF, entityTemplate.getEntityTemplateClassName());
             }
 
             ToHtmlVisitor visitor = new ToHtmlVisitor(entityTemplate.getUrl(), language, pageTemplate.getLinks(), pageTemplate.getScripts());

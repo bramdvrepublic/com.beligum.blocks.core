@@ -3,6 +3,7 @@ package com.beligum.blocks.core.parsers.visitors;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
@@ -71,31 +72,36 @@ public class ToHtmlVisitor extends SuperVisitor
     {
         try {
             node = super.head(node, depth);
+            Node retVal = node;
+
             if(isEntity(node) && node instanceof Element) {
                 //if this is a referencing block, replace it
-//                if (getParent() == null)
-                node = replaceWithReferencedInstance(node);
 
+                if (!StringUtils.isEmpty(getReferencedId(node))) {
+                    if (!hasTypeOf(node)) {
+                        retVal = getPropertyInstance((Element) retVal);
+                    }
+                    else {
+                        retVal = getTypeInstance((Element) retVal);
+                    }
+                    // Copy attributes from property but do not overwrite attributes from instance
+                    for (Attribute attribute: node.attributes()) {
+                        if (!retVal.hasAttr(attribute.getKey())) {
+                            retVal.attr(attribute.getKey(), attribute.getValue());
+                        }
+                    }
 
-                //now check if the properties found in the entity should be copied to the class-template
-                Element entityRoot = (Element) node;
-                EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
-                this.addLinks(entityTemplateClass.getLinks());
-                this.addScripts(entityTemplateClass.getScripts());
-                String entityTemplateClassHtml = entityTemplateClass.getTemplate(language);
-                //if no template could be found for the current language, fall back to the primary language
-
-                if (entityTemplateClassHtml == null) {
-                    entityTemplateClassHtml = entityTemplateClass.getTemplate();
+                    node.replaceWith(retVal);
                 }
-                Element entityClassRoot = TemplateParser.parse(entityTemplateClassHtml).child(0);
+                else {
 
+                }
                 //if no modifications can be done to the class-template, we fill in the correct property-references coming from the instance
-                if (useClass(entityRoot, entityClassRoot)) {
-                    node = copyPropertiesToClassTemplate(entityRoot, entityClassRoot);
-                }
+                //                removeInternalAttributes(renderedTemplateNode);
             }
-            return node;
+
+            return retVal;
+
         }
         catch(Exception e){
             throw new ParseException("Error while parsing node '" + node.nodeName() + "' at tree depth '" + depth + "' to html: \n \n " + node + "\n \n", e);
@@ -109,6 +115,9 @@ public class ToHtmlVisitor extends SuperVisitor
             node = super.tail(node, depth);
             if(isEntity(node) && node instanceof Element) {
                 Element element = (Element) node;
+
+                if (hasTypeOf(node) && isEditable((Element)node)) node.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
+
                 //TODO BAS: here we should use a listener to check for all dynamic blocks
                 DynamicBlock translationList = new TranslationList(this.language, this.pageUrl);
                 if (translationList.getTypeOf().equals(this.getTypeOf(element))) {
@@ -134,6 +143,7 @@ public class ToHtmlVisitor extends SuperVisitor
             throw new ParseException("Error while parsing to html at \n \n" + node + "\n \n");
         }
     }
+
 
     /**
      * Note: Use this method only after traversing the html. If not, an empty set will be returned.
@@ -193,223 +203,217 @@ public class ToHtmlVisitor extends SuperVisitor
 
 
     /**
-     * Determines wether or not the class-template should be used, or rather the instance itself. This is done using isModifiable(entityRoot) and isModifiable(entityClassRoot)
-     * @param entityRoot
-     * @param entityClassRoot
+     * Given a property node with a reference but a default type,
+     * insert the correct value (instance, default value)
+     * @param node
      */
-    private boolean useClass(Element entityRoot, Element entityClassRoot){
-        boolean entityIsModifiable = isModifiable(entityRoot);
-        boolean entityClassIsModifiable = isModifiable(entityClassRoot);
-        if(entityClassIsModifiable){
-            return false;
+    private Element getPropertyInstance(Element node) throws ParseException
+    {
+        Element retVal = null;
+        Element propertyDefault = (Element)fetchReferencedInstance(getPropertyId(node));
+        if (propertyDefault.hasAttr(ParserConstants.USE_DEFAULT)) {
+            // fetch default value
+            retVal = propertyDefault.clone();
+            retVal.removeAttr(ParserConstants.USE_DEFAULT);
+        } else {
+            retVal = (Element)fetchReferencedInstance(getReferencedId(node));
         }
-        else{
-            if(entityIsModifiable){
-                return false;
-            }
-            else{
-                return true;
-            }
+        if (isEditable(node)) {
+            retVal.attr(ParserConstants.CAN_EDIT_PROPERTY, "");
+
+        } else {
+            retVal.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
         }
+        copyAttribute(ParserConstants.RESOURCE, node, retVal);
+        return retVal;
     }
 
 
     /**
-     * Copy the (editable) properties from the instance-template to the class-template
-     * @param fromInstanceRoot
-     * @param toClassRoot
-     * @throws ParseException
+     * Given a reference node for a type, insert the correct entityTemplate (instance, class or defaulktvalue)
+     * @param node
      */
-    private Node copyProperties(Element fromInstanceRoot, Element toClassRoot) throws ParseException
+    private Element getTypeInstance(Element node) throws CacheException, ParseException
     {
-        try {
-            Elements instanceReferencingElementsList = fromInstanceRoot.select("[" + ParserConstants.REFERENCE_TO + "]");
-            //            Elements instancePropertiesList =  instanceReferencingElementsList.select("[" + ParserConstants.PROPERTY + "]");
+        // find class
+        Element retVal = null;
+        EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
 
-            HashMap<String, Element> instanceProperties = new HashMap<String, Element>();
-            for (Element property: instanceReferencingElementsList) {
-                if (property.hasAttr(ParserConstants.PROPERTY)) {
-                    instanceProperties.put(property.attr(ParserConstants.PROPERTY), property);
-                }
-            }
+        this.addLinks(entityTemplateClass.getLinks());
+        this.addScripts(entityTemplateClass.getScripts());
 
-            Elements classReferencingElementsList = toClassRoot.select("[" + ParserConstants.REFERENCE_TO + "]");
-            //            Elements classPropertiesList = classReferencingElementsList.select("[" + ParserConstants.PROPERTY + "]");
-
-            HashMap<String, Element> classProperties = new HashMap<String, Element>();
-            for (Element property: instanceReferencingElementsList) {
-                if (property.hasAttr(ParserConstants.PROPERTY)) {
-                    classProperties.put(property.attr(ParserConstants.PROPERTY), property);
-                }
-            }
-
-
-            //if referencing, editable properties are present in the class-template, they are proper properties and they should be filled in from the entity-instance we are parsing now
-            if (!instanceProperties.keySet().isEmpty() && !classProperties.keySet().isEmpty()) {
-                //copy all properties of the instance to the class
-                for (Element classProperty : classProperties.values()) {
-                    //                    for (Element instanceProperty : instancePropertiesList) {
-                    //                        if (getPropertyId(instanceProperty).equals(getPropertyId(classProperty))) {
-                    Element instanceProperty = instanceProperties.get(classProperty.attr(ParserConstants.PROPERTY));
-
-                    Element element = null;
-                    //If the classproperty is modifiable, we replace it with the instance's property
-                    if (isModifiable(classProperty)) {
-                        Element instancePropertyCopy = instanceProperty.clone();
-                        classProperty.replaceWith(instancePropertyCopy);
-                        element = instancePropertyCopy;
-                    }
-                    //If the class-defaults should be used for this class-property, we fetch the default from db and add it, using the original instance's property's resource-id.
-                    else {
-                        element = replaceWithNewDefaultCopy(classProperty, getReferencedId(instanceProperty));
-                    }
-                    copyModificationLevel(classProperty, element);
-                    instanceReferencingElementsList.remove(instanceProperty);
-                    classReferencingElementsList.remove(classProperty);
-
-                }
-                //all remaining class-properties are rendered, since we are starting from the class anyway
-                for(Element remainingClassReferencingElement : classReferencingElementsList){
-                    if(!remainingClassReferencingElement.hasAttr(ParserConstants.PROPERTY)) {
-                        throw new ParseException("Found entity which is not a property in class '" + toClassRoot.attr(ParserConstants.TYPE_OF) + "' at: \n \n " + classReferencingElementsList+ "\n \n");
-                    }
-                    Logger.debug("Found class property which was not replaced by an instance property of class '" + toClassRoot.attr(ParserConstants.TYPE_OF) + "' at: " +
-                                 remainingClassReferencingElement);
-                }
-                //all remaining instance-properties are reported in debug-mode, but are ignore for the rest
-                for(Element remainingInstanceReferencingElement : instanceReferencingElementsList){
-                    if(!remainingInstanceReferencingElement.hasAttr(ParserConstants.PROPERTY)) {
-                        throw new ParseException("Found entity which is not a property of class '" + toClassRoot.attr(ParserConstants.TYPE_OF) + "' at \n \n " + classReferencingElementsList+ "\n \n");
-                    }
-                    Logger.debug("Found instance property which was not copied to the class of type '" + toClassRoot.attr(ParserConstants.TYPE_OF) + "' at: " + remainingInstanceReferencingElement);
-                }
-                Node returnRoot = toClassRoot;
-                for (Attribute attribute : fromInstanceRoot.attributes()) {
-                    returnRoot.attr(attribute.getKey(), attribute.getValue());
-                }
-                returnRoot.removeAttr(ParserConstants.BLUEPRINT);
-                fromInstanceRoot.replaceWith(returnRoot);
-                return returnRoot;
-            }
-            else {
-                return fromInstanceRoot;
-            }
+        String entityTemplateClassHtml = entityTemplateClass.getTemplate(language);
+        //if no template could be found for the current language, fall back to the primary language
+        if (entityTemplateClassHtml == null) {
+            entityTemplateClassHtml = entityTemplateClass.getTemplate();
         }
-        catch(ParseException e){
-            throw e;
+        Element entityClassElement = TemplateParser.parse(entityTemplateClassHtml).child(0);
+
+        // Default setting. First Type found is editable
+        if (this.typeOfStack.size() == 1) node.attr(ParserConstants.CAN_EDIT_PROPERTY, "");
+
+        retVal = entityClassElement.clone();
+        Element reference = (Element) fetchReferencedInstance(getReferencedId(node));
+        HashMap<String, Element> classProperties = getProperties(entityClassElement, false);
+//        HashMap<String, Element> referenceProperties = ;
+        boolean propertyIsEditable = node.hasAttr(ParserConstants.CAN_EDIT_PROPERTY);
+        if (node.hasAttr(ParserConstants.USE_DEFAULT)) {
+            retVal = (Element) fetchReferencedInstance(getPropertyId(node));
+            setPropertiesEditable(entityClassElement, classProperties, getProperties(retVal, false), propertyIsEditable);
+        } else if (isLayoutable(entityClassElement)) {
+            retVal = reference;
+            if (propertyIsEditable) {
+                copyAttribute(ParserConstants.CAN_LAYOUT, entityClassElement, retVal);
+            } else {
+                retVal.removeAttr(ParserConstants.CAN_LAYOUT);
+            }
+            setPropertiesEditable(entityClassElement, classProperties, getProperties(reference, false), propertyIsEditable);
+
+        } else {
+            HashMap<String, Element> properties = getProperties(retVal, false);
+            setPropertiesEditable(entityClassElement, classProperties, getProperties(retVal, false), propertyIsEditable);
+            setReferences(getProperties(reference, false), properties);
         }
-        catch(Exception e){
-            throw new ParseException("Couldn't deduce an entity-instance from it's entity-class at \n \n" + fromInstanceRoot + "\n \n", e);
-        }
+
+
+
+        return retVal;
     }
 
 
     /**
-     * Copy the (editable) properties from the instance-template to the class-template
-     * @param fromInstanceRoot
-     * @param toClassRoot
-     * @throws ParseException
+     * Copy attribute from one node to another
+     * @param attribute
+     * @param from
+     * @param to
      */
-    private Node copyPropertiesToClassTemplate(Element fromInstanceRoot, Element toClassRoot) throws ParseException
+    private void copyAttribute(String attribute, Element from, Element to)
     {
-        try {
-            Elements instanceReferencingElements = fromInstanceRoot.select("[" + ParserConstants.REFERENCE_TO + "]");
-            Elements instanceProperties =  instanceReferencingElements.select("[" + ParserConstants.PROPERTY + "]");
-            Elements classReferencingElements = toClassRoot.select("[" + ParserConstants.REFERENCE_TO + "]");
-            Elements classProperties = classReferencingElements.select("[" + ParserConstants.PROPERTY + "]");
-
-            //if referencing, editable properties are present in the class-template, they are proper properties and they should be filled in from the entity-instance we are parsing now
-            if (!instanceProperties.isEmpty() && !classProperties.isEmpty()) {
-                //copy all properties of the instance to the class
-                for (Element classProperty : classProperties) {
-                    for (Element instanceProperty : instanceProperties) {
-                        if (getPropertyId(instanceProperty).equals(getPropertyId(classProperty))) {
-                            Element element = null;
-                            //If the classproperty is modifiable, we replace it with the instance's property
-                            if (isModifiable(classProperty)) {
-                                Element instancePropertyCopy = instanceProperty.clone();
-                                classProperty.replaceWith(instancePropertyCopy);
-                                element = instancePropertyCopy;
-                            }
-                            //If the class-defaults should be used for this class-property, we fetch the default from db and add it, using the original instance's property's resource-id.
-                            else {
-                                element = replaceWithNewDefaultCopy(classProperty, getReferencedId(instanceProperty));
-                            }
-                            copyModificationLevel(classProperty, element);
-                            instanceReferencingElements.remove(instanceProperty);
-                            classReferencingElements.remove(classProperty);
-                        }
-                    }
-                }
-                //all remaining class-properties are rendered, since we are starting from the class anyway
-                for(Element remainingClassReferencingElement : classReferencingElements){
-                    if(!remainingClassReferencingElement.hasAttr(ParserConstants.PROPERTY)) {
-                        throw new ParseException("Found entity which is not a property in class '" + toClassRoot.attr(ParserConstants.TYPE_OF) + "' at: \n \n " + classReferencingElements+ "\n \n");
-                    }
-                    Logger.debug("Found class property which was not replaced by an instance property of class '" + toClassRoot.attr(ParserConstants.TYPE_OF) + "' at: " +
-                                 remainingClassReferencingElement);
-                }
-                //all remaining instance-properties are reported in debug-mode, but are ignore for the rest
-                for(Element remainingInstanceReferencingElement : instanceReferencingElements){
-                    if(!remainingInstanceReferencingElement.hasAttr(ParserConstants.PROPERTY)) {
-                        throw new ParseException("Found entity which is not a property of class '" + toClassRoot.attr(ParserConstants.TYPE_OF) + "' at \n \n " + classReferencingElements+ "\n \n");
-                    }
-                    Logger.debug("Found instance property which was not copied to the class of type '" + toClassRoot.attr(ParserConstants.TYPE_OF) + "' at: " + remainingInstanceReferencingElement);
-                }
-                Node returnRoot = toClassRoot;
-                for (Attribute attribute : fromInstanceRoot.attributes()) {
-                    returnRoot.attr(attribute.getKey(), attribute.getValue());
-                }
-                returnRoot.removeAttr(ParserConstants.BLUEPRINT);
-                fromInstanceRoot.replaceWith(returnRoot);
-                return returnRoot;
-            }
-            else {
-                return fromInstanceRoot;
-            }
-        }
-        catch(ParseException e){
-            throw e;
-        }
-        catch(Exception e){
-            throw new ParseException("Couldn't deduce an entity-instance from it's entity-class at \n \n" + fromInstanceRoot + "\n \n", e);
-        }
+        if (from.hasAttr(attribute)) to.attr(attribute, from.attr(attribute));
     }
 
     /**
      * Replace the class-property with a new copy of the default-value's of the class, referencing to the specified entity
-     * @param classProperty
-     * @param referenceId entity-id this default-copy should be a new version of
+     * @param node
+     * @param failOnMissingReference throw error if property without reference is found
      * @throws Exception
      */
-    private Element replaceWithNewDefaultCopy(Node classProperty, String referenceId) throws Exception
+    private HashMap<String, Element> getProperties(Element node, boolean failOnMissingReference) throws ParseException
     {
-        BlocksID defaultClassPropertyId = new BlocksID(getReferencedId(classProperty), BlocksID.LAST_VERSION, language);
-        EntityTemplate defaultClassPropertyTemplate = (EntityTemplate) Redis.getInstance().fetch(defaultClassPropertyId, EntityTemplate.class);
-        if(defaultClassPropertyTemplate == null){
-            defaultClassPropertyTemplate = (EntityTemplate) Redis.getInstance().fetchLastVersion(defaultClassPropertyId, EntityTemplate.class);
-            if(defaultClassPropertyTemplate == null) {
-                throw new ParseException("Couldn't find last version of class-default property '" + defaultClassPropertyId + "' in db.");
+        Elements propertyList = node.select("[" + ParserConstants.REFERENCE_TO + "]");
+        HashMap<String, Element> retVal = new HashMap<String, Element>();
+        for (Element property: propertyList) {
+            if (property.hasAttr(ParserConstants.PROPERTY)) {
+
+                retVal.put(getUniquePropertyName(property), property);
+            } else if (failOnMissingReference) {
+                throw new ParseException("Found entity which is not a property of class '" + node.attr(ParserConstants.TYPE_OF) + "' as " + property.attr(ParserConstants.TYPE_OF)+ "\n");
+            } else {
+                Logger.debug("Found class property which was not replaced by an instance property of class '" + node.attr(ParserConstants.TYPE_OF) + "' as: " + property.attr(ParserConstants.TYPE_OF));
             }
         }
-        String defaultClassPropertyHtml = defaultClassPropertyTemplate.getTemplate(language);
-        //if no template could be found for the current language, fall back to the primary language
-        if(defaultClassPropertyHtml == null){
-            defaultClassPropertyHtml = defaultClassPropertyTemplate.getTemplate();
+        return retVal;
+    }
+
+    private String getUniquePropertyName(Element property) {
+        String name=  property.hasAttr(ParserConstants.PROPERTY_NAME) ? property.attr(ParserConstants.PROPERTY_NAME) : null;
+        return name == null ? property.attr(ParserConstants.PROPERTY) : property.attr(ParserConstants.PROPERTY) + "#" + property.attr(ParserConstants.PROPERTY_NAME);
+    }
+
+    /**
+     * Make the new node editable based on current property and the classTemplate
+     * @param entityClass
+     * @param fromProperties
+     * @param toProperties
+     * @throws ParseException
+     */
+    private void setPropertiesEditable(Element entityClass, HashMap<String,Element> fromProperties, HashMap<String,Element>  toProperties, boolean canEdit) throws ParseException
+    {
+        try {
+
+            //if referencing, editable properties are present in the class-template, they are proper properties and they should be filled in from the entity-instance we are parsing now
+
+            //copy all properties of the instance to the class
+            for (Element fromProperty : fromProperties.values()) {
+                //                    for (Element instanceProperty : instancePropertiesList) {
+                //                        if (getPropertyId(instanceProperty).equals(getPropertyId(classProperty))) {
+                Element toProperty = toProperties.get(getUniquePropertyName(fromProperty));
+
+                Element element = null;
+
+                // if instance set can-edit by class and parent for each property
+
+                // if class set reference_to and resource and check if parent allows editing
+                if (toProperty != null) {
+                    if (canEdit) {
+                        if (isEditable(fromProperty) || isEditable(entityClass)) {
+                            toProperty.attr(ParserConstants.CAN_EDIT_PROPERTY, "");
+                        }
+                        else if (fromProperty.hasAttr(ParserConstants.CAN_NOT_EDIT_PROPERTY)) {
+                            toProperty.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
+                            toProperty.removeAttr(ParserConstants.CAN_NOT_EDIT_PROPERTY);
+                        }
+                        else {
+                            toProperty.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
+                        }
+                    } else {
+                        toProperty.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
+                        toProperty.removeAttr(ParserConstants.CAN_NOT_EDIT_PROPERTY);
+                    }
+
+                    if (fromProperty.hasAttr(ParserConstants.USE_DEFAULT)) {
+                        toProperty.attr(ParserConstants.USE_DEFAULT, "");
+                        toProperty.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
+                    }
+                }
+
+                // TODO Wouter: What with properties we could not find in source
+            }
+
         }
-        Element defaultClassPropertyRoot = TemplateParser.parse(defaultClassPropertyHtml).child(0);
-        String referencedInstanceId = referenceId;
-        BlocksID id = new BlocksID(referencedInstanceId, BlocksID.LAST_VERSION, language);
-        defaultClassPropertyRoot.attr(ParserConstants.RESOURCE, id.getUrl().toString());
-        classProperty.replaceWith(defaultClassPropertyRoot);
-        return defaultClassPropertyRoot;
+        catch(Exception e){
+            throw new ParseException("Could not set editability(!?) for property  \n", e);
+        }
+    }
+
+    /**
+     * Copy the (editable) references from the instance-template to the class-template
+     * @param fromProperties
+     * @param toProperties
+     * @throws ParseException
+     */
+    private void setReferences(HashMap<String,Element> fromProperties, HashMap<String,Element>  toProperties) throws ParseException
+    {
+        try {
+
+            //if referencing, editable properties are present in the class-template, they are proper properties and they should be filled in from the entity-instance we are parsing now
+
+            //copy all properties of the instance to the class
+            for (Element fromProperty : fromProperties.values()) {
+                //                    for (Element instanceProperty : instancePropertiesList) {
+                //                        if (getPropertyId(instanceProperty).equals(getPropertyId(classProperty))) {
+                Element toProperty = toProperties.get(getUniquePropertyName(fromProperty));
+                if (toProperty != null) {
+                    copyAttribute(ParserConstants.REFERENCE_TO, fromProperty, toProperty);
+                    copyAttribute(ParserConstants.RESOURCE, fromProperty, toProperty);
+                }
+                // TODO Wouter: What with properties we could not find in source? Create new resource and could/should/might this even hapen?
+
+            }
+        }
+        catch(Exception e){
+            throw new ParseException("Could not set reference for property  \n", e);
+        }
     }
 
 
-    private Node replaceWithReferencedInstance(Node instanceRootNode) throws ParseException
+
+
+
+    private Node fetchReferencedInstance(String id) throws ParseException
     {
+        Node retVal = null;
         try {
-            String id = getReferencedId(instanceRootNode);
             if (!StringUtils.isEmpty(id)) {
                 BlocksID referencedId = new BlocksID(id, BlocksID.LAST_VERSION, language);
                 EntityTemplate instanceTemplate = (EntityTemplate) Redis.getInstance().fetch(referencedId, EntityTemplate.class);
@@ -420,6 +424,7 @@ public class ToHtmlVisitor extends SuperVisitor
                         throw new ParseException("Found bad reference. Not found in db: " + referencedId);
                     }
                 }
+
                 if(!instanceTemplate.getDeleted()) {
                     String instanceHtml = instanceTemplate.getTemplate(language);
                     //if no template could be found for the current language, fall back to the primary language
@@ -432,24 +437,18 @@ public class ToHtmlVisitor extends SuperVisitor
                         StringUtils.isEmpty(referencedId.getUrl().toURI().getFragment())) {
                         instanceTemplateRoot.attr(ParserConstants.RESOURCE, referencedId.getUrl().toString());
                     }
-                    instanceRootNode.replaceWith(instanceTemplateRoot);
-                    instanceRootNode.removeAttr(ParserConstants.REFERENCE_TO);
-                    return instanceTemplateRoot;
-                }
-                else{
-                    instanceRootNode.removeAttr(ParserConstants.REFERENCE_TO);
-                    return instanceRootNode;
+
+                    retVal = instanceTemplateRoot;
                 }
             }
-            else{
-                return instanceRootNode;
-            }
+            return retVal;
+
         }catch(Exception e){
             if(e instanceof ParseException){
                 throw (ParseException) e;
             }
             else{
-                throw new ParseException("Could not replace node by referenced entity-instance: \n \n" + instanceRootNode + "\n\n", e);
+                throw new ParseException("Could not replace node by referenced instance with id: \n \n" + id + "\n\n", e);
             }
         }
     }
