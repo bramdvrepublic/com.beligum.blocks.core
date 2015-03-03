@@ -10,8 +10,8 @@ import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.blocks.core.parsers.TemplateParser;
-import com.beligum.blocks.core.parsers.dynamicblocks.DynamicBlock;
-import com.beligum.blocks.core.parsers.dynamicblocks.TranslationList;
+import com.beligum.blocks.core.dynamic.DynamicBlockListener;
+import com.beligum.blocks.core.dynamic.TranslationList;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Attribute;
@@ -97,7 +97,7 @@ public class ToHtmlVisitor extends SuperVisitor
 
                 }
                 //if no modifications can be done to the class-template, we fill in the correct property-references coming from the instance
-                //                removeInternalAttributes(renderedTemplateNode);
+//                                removeInternalAttributes(renderedTemplateNode);
             }
 
             return retVal;
@@ -119,9 +119,9 @@ public class ToHtmlVisitor extends SuperVisitor
                 if (hasTypeOf(node) && isEditable((Element)node)) node.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
 
                 //TODO BAS: here we should use a listener to check for all dynamic blocks
-                DynamicBlock translationList = new TranslationList(this.language, this.pageUrl);
+                DynamicBlockListener translationList = new TranslationList(this.language, this.pageUrl);
                 if (translationList.getTypeOf().equals(this.getTypeOf(element))) {
-                    element = translationList.generateBlock(element);
+                    element = translationList.onShow(element);
                     for(Element link : translationList.getLinks()) {
                         boolean added = this.links.add(link.outerHtml());
                         if(added){
@@ -257,9 +257,10 @@ public class ToHtmlVisitor extends SuperVisitor
         HashMap<String, Element> classProperties = getProperties(entityClassElement, false);
 //        HashMap<String, Element> referenceProperties = ;
         boolean propertyIsEditable = node.hasAttr(ParserConstants.CAN_EDIT_PROPERTY);
+
         if (node.hasAttr(ParserConstants.USE_DEFAULT)) {
             retVal = (Element) fetchReferencedInstance(getPropertyId(node));
-            setPropertiesEditable(entityClassElement, classProperties, getProperties(retVal, false), propertyIsEditable);
+//            setPropertiesEditable(entityClassElement, classProperties, getProperties(retVal, false), propertyIsEditable);
         } else if (isLayoutable(entityClassElement)) {
             retVal = reference;
             if (propertyIsEditable) {
@@ -267,13 +268,13 @@ public class ToHtmlVisitor extends SuperVisitor
             } else {
                 retVal.removeAttr(ParserConstants.CAN_LAYOUT);
             }
-            setPropertiesEditable(entityClassElement, classProperties, getProperties(reference, false), propertyIsEditable);
+//            setPropertiesEditable(entityClassElement, classProperties, getProperties(retVal, false), propertyIsEditable);
 
         } else {
             HashMap<String, Element> properties = getProperties(retVal, false);
-            setPropertiesEditable(entityClassElement, classProperties, getProperties(retVal, false), propertyIsEditable);
             setReferences(getProperties(reference, false), properties);
         }
+        setPropertiesEditable(entityClassElement, classProperties, getProperties(retVal, false), propertyIsEditable);
 
 
 

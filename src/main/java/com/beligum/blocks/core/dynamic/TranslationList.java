@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.parsers.dynamicblocks;
+package com.beligum.blocks.core.dynamic;
 
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
@@ -7,20 +7,16 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Node;
-import org.jsoup.select.Elements;
 
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Created by bas on 15.01.15.
  * Class representing a dynamic block, which will generate translation-urls for all preferred languages.
  */
-public class TranslationList implements DynamicBlock
+public class TranslationList implements DynamicBlockListener
 {
     private static final String ACTIVE_CLASS = "active";
 
@@ -44,7 +40,7 @@ public class TranslationList implements DynamicBlock
      * @return The specified node, now with a list as it's only child
      * @throws ParseException
      */
-    public Element generateBlock(Element rootElement) throws ParseException
+    public Element onShow(Element rootElement) throws ParseException
     {
         try {
             String template = "<ul>\n";
@@ -62,6 +58,10 @@ public class TranslationList implements DynamicBlock
         }catch(Exception e){
             throw new ParseException("Could not generate a translation-block at \n \n" + rootElement + "\n \n", e);
         }
+    }
+
+    public Element onSave(Element element) {
+        return element;
     }
 
     public String getTypeOf(){

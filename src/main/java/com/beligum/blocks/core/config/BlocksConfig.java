@@ -70,6 +70,8 @@ public class BlocksConfig
         return getConfiguration("blocks.scripts.frontend");
     }
 
+    public static String getSolrServerUrl() {return getConfiguration("blocks.solr.url");}
+
     public static String getProjectVersion(){
         if(projectVersion == null) {
             Properties prop = new Properties();
