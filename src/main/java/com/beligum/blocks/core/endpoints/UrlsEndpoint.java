@@ -2,6 +2,7 @@ package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.identifiers.BlocksID;
+import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.core.framework.i18n.I18n;
 
 import javax.ws.rs.POST;
@@ -23,16 +24,22 @@ public class UrlsEndpoint
                     @QueryParam("newpath")
                     String newPath) throws Exception
     {
+        String[] originalUrlAndLanguage = Languages.translateUrl(originalUrl, Languages.NO_LANGUAGE);
+        String language = originalUrlAndLanguage[1];
+        if(language.equals(Languages.NO_LANGUAGE)){
+            language="";
+        }
+        else{
+            language = "/" + language;
+        }
+        if(!newPath.startsWith("/")){
+            newPath = "/" + newPath;
+        }
+        newPath = language + newPath;
         URL newURL = null;
         URL original = null;
         try {
             original = new URL(originalUrl);
-            //if no user filled in "/" is present in the newPath, we need to add one
-            if(!newPath.startsWith("/")){
-                newPath = "/" + newPath;
-            }
-            //construct the new url relative to the old one (so http://www.beligum.com/home/apage becomes http://www.beligum.com/home/anotherpage when the new path is "anotherpage")
-            newPath = "." + newPath;
             newURL = new URL(original, newPath);
         }catch(Exception e){
             return Response.status(Response.Status.BAD_REQUEST).entity(I18n.instance().getMessage("badChangeUrl")).build();

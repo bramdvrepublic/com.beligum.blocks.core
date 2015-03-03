@@ -6,7 +6,9 @@ import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.exceptions.LanguageException;
 import com.beligum.blocks.core.identifiers.BlocksID;
+import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.blocks.core.parsers.TemplateParser;
@@ -19,17 +21,13 @@ import gen.com.beligum.blocks.core.endpoints.ApplicationEndpointRoutes;
 import gen.com.beligum.blocks.core.endpoints.UsersEndpointRoutes;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.AuthorizationException;
-import org.apache.shiro.authz.UnauthorizedException;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.*;
 
 @Path("/")
 public class ApplicationEndpoint
@@ -51,6 +49,9 @@ public class ApplicationEndpoint
     {
         try{
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
+            if(!this.hasLanguage(url)){
+                return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId(BlocksConfig.getDefaultLanguage()+url.getPath(), version).getPath())).build();
+            }
             if(version == null){
                 version = BlocksID.NO_VERSION;
             }
@@ -106,7 +107,7 @@ public class ApplicationEndpoint
         catch(NotFoundException e){
             String url = RequestContext.getRequest().getRequestURL().toString();
             try {
-                if(url != null && (url.toString().equals(new URL(BlocksConfig.getSiteDomain()).toString()) || url.toString().equals(new URL(BlocksConfig.getSiteDomain() + "/").toString()))){
+                if(url != null && (url.toString().equals(new URL(BlocksConfig.getSiteDomain() + "/" + BlocksConfig.getDefaultLanguage()).toString()) || url.toString().equals(new URL(BlocksConfig.getSiteDomain() + "/" + BlocksConfig.getDefaultLanguage() + "/").toString()))){
                     return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
                 }
                 else{
@@ -151,18 +152,16 @@ public class ApplicationEndpoint
      */
     private Response injectParameters(Template newPageTemplate) throws InterruptedException, CacheException
     {
-        //the first time the server is started, we need to wait for the cache to be proparly filled, so all classes will be shown the very first time a new page is made.
-        EntityTemplateClassCache entityTemplateClassCache = EntityTemplateClassCache.getInstance();
-        List<EntityTemplateClass> entityTemplateClasses = entityTemplateClassCache.values();
-        List<EntityTemplateClass> pageClasses = new ArrayList<>();
-        for (EntityTemplateClass entityTemplateClass : entityTemplateClasses) {
-            if (entityTemplateClass.isPageBlock()) {
-                pageClasses.add(entityTemplateClass);
-            }
-        }
+        List<EntityTemplateClass> pageClasses = EntityTemplateClassCache.getInstance().getPageClasses();
         newPageTemplate.set(ParserConstants.ENTITY_URL, RequestContext.getRequest().getRequestURL().toString());
         newPageTemplate.set(ParserConstants.ENTITY_CLASSES, pageClasses);
         return Response.ok(newPageTemplate).build();
+    }
+
+    private boolean hasLanguage(URL url) throws LanguageException
+    {
+        String[] urlAndLanguage = Languages.translateUrl(url.toString(), Languages.NO_LANGUAGE);
+        return !"".equals(urlAndLanguage[1]);
     }
 
 }

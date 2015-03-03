@@ -1,6 +1,8 @@
 package com.beligum.blocks.core.endpoints;
 
+import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.templating.ifaces.Template;
@@ -21,14 +23,13 @@ import java.util.Arrays;
 @Path("/modals")
 public class ModalsEndpoint
 {
-    public static final String CHANGE_URL_MODAL = "changeUrlModal.vm";
+    public static final String CHANGE_URL_MODAL = "change-url-modal.vm";
+    public static final String NEW_PAGE_MODAL = "new-page.vm";
 
     @GET
     @Path("/changeurl")
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
-    public Response getModalView(
-                    @PathParam("name")
-                    String name,
+    public Response getChangeUrlModal(
                     @QueryParam("original")
                     String originalUrl) throws MalformedURLException
     {
@@ -42,6 +43,19 @@ public class ModalsEndpoint
             template.set("originalUrlPathEnd", "");
         }
         template.set("languages", Arrays.asList(BlocksConfig.getLanguages()));
+        return Response.ok(template.render()).build();
+    }
+
+    @GET
+    @Path("/newpage")
+    @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
+    public Response getNewPageModal(
+                    @QueryParam("entityurl")
+                    String entityUrl) throws MalformedURLException, CacheException
+    {
+        Template template = R.templateEngine().getEmptyTemplate("/views/modals/" + NEW_PAGE_MODAL);
+        template.set("entityClasses", EntityTemplateClassCache.getInstance().getPageClasses());
+        template.set("entityUrl", entityUrl);
         return Response.ok(template.render()).build();
     }
 }
