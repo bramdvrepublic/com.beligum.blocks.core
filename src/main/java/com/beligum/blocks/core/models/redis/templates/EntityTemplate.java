@@ -164,7 +164,6 @@ public class EntityTemplate extends AbstractTemplate
      *
      * @return a url to the latest version of this entity
      */
-    //TODO BAS!: check this methods uses
     public URL getUrl(){
         return this.getId().getUrl();
     }

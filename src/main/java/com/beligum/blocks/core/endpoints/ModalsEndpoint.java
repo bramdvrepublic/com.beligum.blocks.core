@@ -35,7 +35,6 @@ public class ModalsEndpoint
         Template template = R.templateEngine().getEmptyTemplate("/views/modals/" + CHANGE_URL_MODAL);
         String originalPath = new URL(originalUrl).getPath();
         String [] splitted = originalPath.split("/");
-        //TODO BAS!: test everything with for the empty path case (http://localhost:8080)
         if(splitted.length>0) {
             template.set("originalUrlPathEnd", "/" + splitted[splitted.length - 1]);
         }

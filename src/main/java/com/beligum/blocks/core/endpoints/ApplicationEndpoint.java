@@ -64,8 +64,6 @@ public class ApplicationEndpoint
             //if no language info is specified in the url, or if the specified language doesn't exist, the default language will still be shown
             BlocksID id = XMLUrlIdMapper.getInstance().getId(url);
             EntityTemplate lastStoredVersion = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(id, EntityTemplate.class);
-            //TODO BAS SH: Er moet nog altijd een id teruggegeven worden voor getrashte urls. Nu worden ze verwijderd uit de url-id mapping en wordt dan bij het bezoeken van die verwijderde pagina niet langer de keuze gegeven om van een verwijderde versie te vertrekken. Vragen aan Wouter wat de beste oplossing is: de verwijderde url bijhouden in apparte XMLTemplate of in de huidige url-id-mapping, of niet langer de mogelijkheid geven om een verwijderde versie opnieuw op te halen
-            //TODO BAS SH 2: alle TODO BAS! opmerkingen moeten nog gedaan worden voor dinsdag
             //if no such page is present in db, ask if user wants to create a new page
             if(lastStoredVersion == null) {
                 if(!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)){

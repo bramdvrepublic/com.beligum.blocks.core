@@ -28,7 +28,6 @@ import java.util.Set;
  */
 public class BlocksID
 {
-    //TODO BAS: make the constructor (or static method) which takes a URL, a version and a language the standard!
 
     /**constant used to indicate a redis-id has no version attached*/
     public static final Long NO_VERSION = new Long(-1);

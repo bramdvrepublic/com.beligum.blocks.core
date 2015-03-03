@@ -140,7 +140,6 @@ public class EntitiesEndpoint
             entityUrl = new URL(entityUrl, entityUrl.getPath());
             BlocksID id = XMLUrlIdMapper.getInstance().getId(entityUrl);
             AbstractTemplate lastVersion = (AbstractTemplate) RedisDatabase.getInstance().trash(id);
-            //TODO BAS!: gebruiker zou moeten gewaarschuwd worden over al de urls die verwijderd zullen worden
             return Response.ok(entityUrl.toString()).build();
         }
         catch(Exception e){

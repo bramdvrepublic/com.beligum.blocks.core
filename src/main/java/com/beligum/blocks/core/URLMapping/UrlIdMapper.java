@@ -10,7 +10,8 @@ import java.net.URL;
  */
 public interface UrlIdMapper
 {
-    //TODO BAS!: als er 100 waterputten onder [site-domain]/waterput/[id] zitten, en ik wil het woord 'waterput' veranderen naar 'waterputten', dan moet ik surfen naar [site-domain]/waterput waar ik een keuze krijg uit 'wilt u een nieuwe pagina aanmaken' of 'wilt u url veranderen van 100 waterputten?'.
+    //TODO BAS SH: do merge with master branch (ask Wouter)
+    //TODO BAS SH 2: als er 100 waterputten onder [site-domain]/waterput/[id] zitten, en ik wil het woord 'waterput' veranderen naar 'waterputten', dan moet ik surfen naar [site-domain]/waterput waar ik een keuze krijg uit 'wilt u een nieuwe pagina aanmaken' of 'wilt u url veranderen van 100 waterputten?'.
 
     /**
      *

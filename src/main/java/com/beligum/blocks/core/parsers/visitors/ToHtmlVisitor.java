@@ -307,7 +307,7 @@ public class ToHtmlVisitor extends SuperVisitor
      */
     private void copyAttribute(String attribute, Element from, Element to)
     {
-        if (from.hasAttr(attribute)) to.attr(attribute, from.attr(attribute));
+        if (to!=null && from!= null && from.hasAttr(attribute)) to.attr(attribute, from.attr(attribute));
     }
 
     /**
@@ -458,6 +458,11 @@ public class ToHtmlVisitor extends SuperVisitor
                         instanceTemplateRoot.attr(ParserConstants.RESOURCE, url.toString());
                     }
 
+                    retVal = instanceTemplateRoot;
+                }
+                else {
+                    Element instanceTemplateRoot = TemplateParser.parse(instanceTemplate.getTemplate()).child(0);
+                    instanceTemplateRoot.removeAttr(ParserConstants.REFERENCE_TO);
                     retVal = instanceTemplateRoot;
                 }
             }
