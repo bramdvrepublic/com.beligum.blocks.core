@@ -1,12 +1,12 @@
 package com.beligum.blocks.core.parsers.visitors;
 
+import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
-import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
-import com.beligum.blocks.core.models.redis.Storable;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import org.apache.commons.lang3.StringUtils;
@@ -30,9 +30,10 @@ public class HtmlToStoreVisitor extends SuperVisitor
     /**
      *
      * @param entityUrl The url of the entity of which a certain language will be updated.
+     * @param language The language that will be used, if no language info can be found in the specified url
      * @throws ParseException If no language-information is specified in the entityUrl.
      */
-    public HtmlToStoreVisitor(URL entityUrl, Document root) throws ParseException {
+    public HtmlToStoreVisitor(URL entityUrl, String language, Document root) throws ParseException {
         try {
             if(entityUrl == null){
                 throw new NullPointerException("Found empty entity-url.");
@@ -40,14 +41,20 @@ public class HtmlToStoreVisitor extends SuperVisitor
             if(root == null){
                 throw new NullPointerException("Found null-root.");
             }
-            this.pageUrl = entityUrl;
+            this.entityUrl = entityUrl;
             this.root = root;
-            this.language = new BlocksID(this.pageUrl, BlocksID.NO_VERSION, false).getLanguage();
-            if(!Languages.isNonEmptyLanguageCode(this.language)){
-                throw new ParseException("Cannot update entity '" + entityUrl + "'. It's url does not hold language-information.");
+            String foundLanguage = Languages.determineLanguage(this.entityUrl.toString());
+            if(Languages.isNonEmptyLanguageCode(foundLanguage)) {
+                this.language = foundLanguage;
+            }
+            else if(Languages.isNonEmptyLanguageCode(language)){
+                this.language = language;
+            }
+            else{
+                throw new ParseException("Cannot update entity '" + entityUrl + "'. It's url does not hold language-information and the unknown language '" + language + "' has been specified as a backup");
             }
         }catch (Exception e){
-            throw new ParseException("Could not parse language from page-url '" + this.pageUrl + "'.");
+            throw new ParseException("Could not parse language from entity url '" + this.entityUrl + "'.");
         }
     }
 
@@ -64,34 +71,34 @@ public class HtmlToStoreVisitor extends SuperVisitor
             node = super.tail(node, depth);
             if (isEntity(node) && node instanceof Element) {
                 /*
-                 * If we reached an entity, which was the root of the received html, this entity should have the page-url as resource.
+                 * If we reached an entity, which was the root of the received html, this entity should have the entity url as resource.
                  * This is done so we can parse entities which aren't imbedded in a html-page
                  */
                 if(root.equals(node.parent())){
-                    node.attr(ParserConstants.RESOURCE, pageUrl.toString());
+                    node.attr(ParserConstants.RESOURCE, entityUrl.toString());
                 }
                 String resourceUrl = getResource(node);
                 EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
                 BlocksID resourceId;
                 if(StringUtils.isEmpty(resourceUrl)) {
                     resourceId = BlocksID.renderNewEntityTemplateID(entityTemplateClass, this.language);
-                    resourceUrl = resourceId.getUrl().toString();
+                    resourceUrl = XMLUrlIdMapper.getInstance().getUrl(resourceId).toString();
                     node.attr(ParserConstants.RESOURCE, resourceUrl);
                 }
                 else{
                     resourceId = BlocksID.renderLanguagedId(new URL(resourceUrl), BlocksID.LAST_VERSION, this.language);
                 }
-                EntityTemplate storedEntityTemplate = (EntityTemplate) Redis.getInstance().fetchLastVersion(resourceId, EntityTemplate.class);
+                EntityTemplate storedEntityTemplate = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(resourceId, EntityTemplate.class);
                 BlocksID newVersionId = BlocksID.renderLanguagedId(new URL(resourceUrl), BlocksID.NEW_VERSION, this.language);
                 EntityTemplate currentEntityTemplate = new EntityTemplate(newVersionId, entityTemplateClass, node.outerHtml());
                 if (currentEntityTemplate.equals(storedEntityTemplate)) {
                     currentEntityTemplate = storedEntityTemplate;
                 }
                 else if(storedEntityTemplate == null) {
-                    Redis.getInstance().create(currentEntityTemplate);
+                    RedisDatabase.getInstance().create(currentEntityTemplate);
                 }
                 else{
-                    Redis.getInstance().update(currentEntityTemplate);
+                    RedisDatabase.getInstance().update(currentEntityTemplate);
                 }
                 node = replaceElementWithEntityReference((Element) node, currentEntityTemplate);
             }

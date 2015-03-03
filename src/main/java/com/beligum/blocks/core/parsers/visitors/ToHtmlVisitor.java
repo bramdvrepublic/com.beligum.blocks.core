@@ -1,9 +1,11 @@
 package com.beligum.blocks.core.parsers.visitors;
 
+import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
-import com.beligum.blocks.core.dbs.Redis;
 import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
@@ -59,8 +61,8 @@ public class ToHtmlVisitor extends SuperVisitor
      * @param language the preferred language we want to render html in
      * @throws ParseException if no known language was specified
      */
-    public ToHtmlVisitor(URL pageUrl, String language) throws ParseException {
-        this.pageUrl = pageUrl;
+    public ToHtmlVisitor(URL entityUrl, String language) throws ParseException {
+        this.entityUrl = entityUrl;
         this.language = Languages.getStandardizedLanguage(language);
         if(!Languages.isNonEmptyLanguageCode(this.language)){
             throw new ParseException("Found unknown language '" + this.language + "'.");
@@ -119,7 +121,7 @@ public class ToHtmlVisitor extends SuperVisitor
                 if (hasTypeOf(node) && isEditable((Element)node)) node.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
 
                 //TODO BAS: here we should use a listener to check for all dynamic blocks
-                DynamicBlock translationList = new TranslationList(this.language, this.pageUrl);
+                DynamicBlock translationList = new TranslationList(this.language, this.entityUrl);
                 if (translationList.getTypeOf().equals(this.getTypeOf(element))) {
                     element = translationList.generateBlock(element);
                     for(Element link : translationList.getLinks()) {
@@ -136,6 +138,22 @@ public class ToHtmlVisitor extends SuperVisitor
                     }
                 }
                 node = element;
+            }
+            if(node.hasAttr("href")){
+                String url = node.attr("href");
+                //the url "" does not need to be replaced
+                if(!StringUtils.isEmpty(url)) {
+                    //make relative urls absolute
+                    URL absoluteUrl = new URL(new URL(BlocksConfig.getSiteDomain()), url);
+                    //only urls from the sites domain need to be translated
+                    if (absoluteUrl.toString().startsWith(BlocksConfig.getSiteDomain())) {
+                        BlocksID id = XMLUrlIdMapper.getInstance().getId(absoluteUrl);
+                        id = new BlocksID(id, this.language);
+                        URL translatedUrl = XMLUrlIdMapper.getInstance().getUrl(id);
+                        translatedUrl = new URL(Languages.translateUrl(translatedUrl.toString(), this.language)[0]);
+                        node.attr("href", translatedUrl.toString());
+                    }
+                }
             }
             return node;
         }
@@ -416,10 +434,10 @@ public class ToHtmlVisitor extends SuperVisitor
         try {
             if (!StringUtils.isEmpty(id)) {
                 BlocksID referencedId = new BlocksID(id, BlocksID.LAST_VERSION, language);
-                EntityTemplate instanceTemplate = (EntityTemplate) Redis.getInstance().fetch(referencedId, EntityTemplate.class);
+                EntityTemplate instanceTemplate = (EntityTemplate) RedisDatabase.getInstance().fetch(referencedId, EntityTemplate.class);
                 if(instanceTemplate == null){
                     //the specified language could not be found in db, fetch last version in primary langugae
-                    instanceTemplate = (EntityTemplate) Redis.getInstance().fetchLastVersion(referencedId, EntityTemplate.class);
+                    instanceTemplate = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(referencedId, EntityTemplate.class);
                     if(instanceTemplate == null) {
                         throw new ParseException("Found bad reference. Not found in db: " + referencedId);
                     }
@@ -435,7 +453,9 @@ public class ToHtmlVisitor extends SuperVisitor
                     if (StringUtils.isEmpty(getResource(instanceTemplateRoot)) &&
                         //when referencing to a class-default, we don't want the resource to show up in the browser
                         StringUtils.isEmpty(referencedId.getUrl().toURI().getFragment())) {
-                        instanceTemplateRoot.attr(ParserConstants.RESOURCE, referencedId.getUrl().toString());
+
+                        URL url = XMLUrlIdMapper.getInstance().getUrl(referencedId);
+                        instanceTemplateRoot.attr(ParserConstants.RESOURCE, url.toString());
                     }
 
                     retVal = instanceTemplateRoot;

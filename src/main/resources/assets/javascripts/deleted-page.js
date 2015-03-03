@@ -11,3 +11,7 @@ function showSelection(){
     $("#placeholder").hide();
     $("#class-selection").show();
 }
+
+function reactivateUrl(){
+
+}

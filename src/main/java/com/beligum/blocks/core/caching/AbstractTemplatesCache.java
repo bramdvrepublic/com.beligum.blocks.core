@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.caching;
 
 import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
@@ -82,12 +82,12 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             }
             //TODO BAS: when adding possibility to parse multiple entity-class-languages from file to cache, multiple languages should be able to be added. This class should have the functionality to put two different languages together in one entity-template-class
             if(!getCache().containsKey(template.getUnversionedId())) {
-                AbstractTemplate storedTemplate = (AbstractTemplate) Redis.getInstance().fetchLastVersion(template.getId(), this.getCachedClass());
+                AbstractTemplate storedTemplate = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(template.getId(), this.getCachedClass());
                 if(storedTemplate == null){
-                    Redis.getInstance().create(template);
+                    RedisDatabase.getInstance().create(template);
                 }
                 else if(!template.equals(storedTemplate)){
-                    Redis.getInstance().update(template);
+                    RedisDatabase.getInstance().update(template);
                 }
                 else{
                     //if this template was already stored in db, we should cache the db-version, since it has the correct time-stamp
@@ -123,13 +123,12 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             else{
                 AbstractTemplate cachedTemplate = getCache().get(template.getUnversionedId());
                 if(!template.equals(cachedTemplate)){
-                    BlocksID lastVersion = new BlocksID(template.getId().getUrl(), BlocksID.NO_VERSION, false);
-                    AbstractTemplate storedTemplate = (AbstractTemplate) Redis.getInstance().fetchLastVersion(lastVersion, this.getCachedClass());
+                    AbstractTemplate storedTemplate = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(template.getId(), this.getCachedClass());
                     if(storedTemplate == null){
-                        Redis.getInstance().create(template);
+                        RedisDatabase.getInstance().create(template);
                     }
                     else if (!template.equals(storedTemplate)){
-                        Redis.getInstance().update(template);
+                        RedisDatabase.getInstance().update(template);
                     }
                     getCache().put(template.getUnversionedId(), template);
                 }

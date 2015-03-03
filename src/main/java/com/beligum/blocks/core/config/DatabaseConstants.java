@@ -25,6 +25,8 @@ public class DatabaseConstants
     /**the suffix for the set of all entity-templates of a certain class*/
     public static final String ENTITY_TEMPLATE_CLASS_SET_SUFFIX = "Set";
 
+    public static final String URL_ID_MAPPING = "urlidmapping";
+
     public static final String SERVER_USER_NAME = "blocksServer";
     public static final String SERVER_START_UP = "blocksServerStartUp";
 }

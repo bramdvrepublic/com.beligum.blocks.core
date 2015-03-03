@@ -29,7 +29,7 @@ public class SuperVisitor
 {
     protected Stack<Node> typeOfStack = new Stack<>();
     protected URL parentUrl = null;
-    protected URL pageUrl = null;
+    protected URL entityUrl = null;
 
 
     public Node head(Node node, int depth) throws ParseException

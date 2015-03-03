@@ -4,7 +4,7 @@ import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
-import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
@@ -144,7 +144,7 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
                             //only entities at entity-depth 1 should be given a page-template-default id and saved to db
                             if (getParentType() == null) {
                                 BlocksID defaultPageTemplateEntityId = BlocksID.renderNewPageTemplateDefaultEntity(this.parsingTemplate.getName(), getProperty(element), this.language);
-                                EntityTemplate lastVersion = (EntityTemplate) Redis.getInstance().fetchLastVersion(defaultPageTemplateEntityId, EntityTemplate.class);
+                                EntityTemplate lastVersion = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(defaultPageTemplateEntityId, EntityTemplate.class);
                                 //if no version of this entity exists yet, make a new one
                                 if (lastVersion == null) {
                                     if (needsBlueprint(element)) {
@@ -300,7 +300,7 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
         Document entityRoot = new Document(BlocksConfig.getSiteDomain());
         entityRoot.appendChild(node.clone());
         //traverse the entity-root and save new instances to db
-        Traversor traversor = new Traversor(new HtmlToStoreVisitor(id.getLanguagedUrl(), entityRoot));
+        Traversor traversor = new Traversor(new HtmlToStoreVisitor(id.getUrl(), id.getLanguage(), entityRoot));
         traversor.traverse(entityRoot);
         Node entityReference = entityRoot.child(0);
         node.replaceWith(entityReference);
