@@ -1,9 +1,13 @@
 package com.beligum.blocks.core.dynamic;
 
+import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
+import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.LanguageException;
 import com.beligum.blocks.core.exceptions.ParseException;
+import com.beligum.blocks.core.exceptions.UrlIdMappingException;
+import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import org.jsoup.nodes.Element;
@@ -20,17 +24,17 @@ public class TranslationList implements DynamicBlockListener
 {
     private static final String ACTIVE_CLASS = "active";
 
-    private URL pageUrl;
+    private URL entityUrl;
     private String activeLanguage;
 
     /**
      *
      * @param activeLanguage the language to be shown as 'active' in the generated html
-     * @param pageUrl the url we want a list of translation-links of
+     * @param entityUrl the url we want a list of translation-links of
      */
-    public TranslationList(String activeLanguage, URL pageUrl)
+    public TranslationList(String activeLanguage, URL entityUrl)
     {
-        this.pageUrl = pageUrl;
+        this.entityUrl = entityUrl;
         this.activeLanguage = activeLanguage;
     }
 
@@ -86,10 +90,12 @@ public class TranslationList implements DynamicBlockListener
         //a translation-list doesn't need any javascript-files to be rendered
         return  new ArrayList<>();
     }
-    private String getListItem(String language) throws LanguageException
+    private String getListItem(String language) throws LanguageException, UrlIdMappingException, IDException
     {
         //if we're dealing with a translation list, we simple want the links to be a link of this page, translated into the specified language
-        String link = Languages.translateUrl(this.pageUrl.toString(), language);
+        BlocksID id = BlocksID.renderLanguagedId(this.entityUrl, BlocksID.NO_VERSION, language);
+        URL url = XMLUrlIdMapper.getInstance().getUrl(id);
+        String link = Languages.translateUrl(url.toString(), language)[0];
         if(language.equals(activeLanguage)){
             return "<li><a href=\"" + link +"\" class=\"" + ACTIVE_CLASS + "\" title=\"\" >" + language + "</a></li>\n";
         }

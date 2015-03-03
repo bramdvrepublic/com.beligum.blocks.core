@@ -224,7 +224,7 @@ public class UsersEndpoint
         Response retVal = null;
         URI referer = URI.create(RequestContext.getRequest().getHeader(HttpHeaders.REFERER));
         if (referer.getPath().equalsIgnoreCase(UsersEndpointRoutes.login().getPath())) {
-            retVal = Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId("/", null).getPath())).build();
+            retVal = Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId("", null).getPath())).build();
         } else {
             retVal = Response.seeOther(referer).build();
         }
@@ -244,7 +244,7 @@ public class UsersEndpoint
          */
         SecurityUtils.getSubject().logout();
 
-        return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId("/", null).getPath())).build();
+        return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId("", null).getPath())).build();
     }
 
     @GET
@@ -467,7 +467,7 @@ public class UsersEndpoint
             }
         }
         else{
-            return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId("/", null).getPath())).build();
+            return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId("", null).getPath())).build();
         }
     }
 

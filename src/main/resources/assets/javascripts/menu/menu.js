@@ -11,6 +11,8 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     btnList.append(saveBtn);
     var deleteBtn = $('<a class="btn  btn-default" href="#">Delete</a>');
     btnList.append(deleteBtn);
+    var changeUrlBtn = $('<a class="btn  btn-default" href="#">Change url</a>');
+    btnList.append(changeUrlBtn);
 
 
     menuBtn.on("click", function(event) {
@@ -26,11 +28,9 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     saveBtn.on("click", function() {
         menuBar.removeClass("open");
         var page = $("html")[0].outerHTML;
-        var o = JSON.stringify({"url": document.URL, "page": page});
-        var test = JSON.stringify({t: [{x: 1, y:2}, {x: 1}]});
-        $.ajax({type: 'POST',
-                url: "/entities/save",
-                data: o,
+        $.ajax({type: 'PUT',
+                url: "/entities/" + window.location.pathname,
+                data: page,
                 contentType: 'application/json; charset=UTF-8',
                 success: function(url, textStatus, response) {
                     if(url){
@@ -67,6 +67,43 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
         };
         Notification.dialog("Delete page", "<div>Do you want to delete this page and all it's translations?</div>", onConfirm);
     });
+
+    changeUrlBtn.on("click", function() {
+        var translateDialog = new BootstrapDialog()
+            .setTitle('Change url')
+            .setMessage($('<div></div>').load('/modals/changeurl?original=' + window.location.href))
+            .setType(BootstrapDialog.TYPE_INFO)
+            .setButtons([
+                {
+                    label: 'Cancel',
+                    action: function (changeUrlDialog) {
+                        changeUrlDialog.close();
+                    }
+                },
+                {
+                    label: 'Change',
+                    cssClass: 'btn-info',
+                    action: function (changeUrlDialog) {
+                        changeUrlDialog.close();
+                        $.ajax({
+                            type: 'POST',
+                            url: "/urls?original=" + window.location.href + "&newpath=" + $("#new").val(),
+                            success: function(url, textStatus, response){
+                                if(url){
+                                    window.location = url;
+                                }else{
+                                    location.reload();
+                                }
+                            },
+                            error: function(response, textStatus, errorThrown){
+                                var message = response.status == 400 ? response.responseText : "An error occurred while changing the url.";
+                                Notification.dialog("Error", "<div>" + message + "</div>", function(){});
+                            }
+                        })
+                    }
+                }])
+            .open();
+        });
 
 
     var create = function() {

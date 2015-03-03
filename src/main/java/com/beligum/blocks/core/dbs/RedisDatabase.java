@@ -1,6 +1,7 @@
 package com.beligum.blocks.core.dbs;
 
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.DatabaseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
@@ -20,7 +21,7 @@ import java.util.*;
  * Wrapper class for talking to the redis-db
  * At the end of the application it has to be closed
  */
-public class Redis implements Database<AbstractTemplate>
+public class RedisDatabase implements Database<AbstractTemplate>
 {
     /*
      * Note: check/boost redis-performance with http://redis.io/topics/benchmarks
@@ -33,12 +34,12 @@ public class Redis implements Database<AbstractTemplate>
     private final JedisPool pool;
 
     //the instance of this singleton
-    private static Redis instance = null;
+    private static RedisDatabase instance = null;
 
     /**
      * private constructor for singleton-use
      */
-    private Redis(){
+    private RedisDatabase(){
         //create a thread-save pool of Jedis-instances, using default configuration
         //        TODO: put Redis back to Sentinel-state
         //        String[] sentinelHostsAndPorts = BlocksConfig.getRedisSentinels();
@@ -57,7 +58,7 @@ public class Redis implements Database<AbstractTemplate>
     public static Database getInstance()
     {
         if(instance == null){
-            instance = new Redis();
+            instance = new RedisDatabase();
         }
         return instance;
     }
@@ -293,7 +294,13 @@ public class Redis implements Database<AbstractTemplate>
             if(entityHash.isEmpty()){
                 return null;
             }
-            return TemplateFactory.createInstanceFromHash(lastVersion, entityHash, type);
+            else if(this.isOfType(entityHash, type))
+            {
+                return TemplateFactory.createInstanceFromHash(lastVersion, entityHash, type);
+            }
+            else{
+                return null;
+            }
         }catch (Exception e){
             throw new DatabaseException("Could not fetch last version from db: " + id, e);
         }
@@ -380,13 +387,13 @@ public class Redis implements Database<AbstractTemplate>
     }
 
     /**
-     * Trashes the url connected to the specified id.
+     * Trashes the specified id.
      * @param id
-     * @return true if the entity has been trashed
+     * @return the last version of the template that has been trashed
      * @throws DatabaseException
      */
     @Override
-    public boolean trash(BlocksID id) throws DatabaseException
+    public AbstractTemplate trash(BlocksID id) throws DatabaseException
     {
         try{
             URL url = id.getUrl();
@@ -402,14 +409,14 @@ public class Redis implements Database<AbstractTemplate>
                 throw new NullPointerException("Cannot trash '" + id + "', since no previous version of that entity was found in db.");
             }
             BlocksID newId = new BlocksID(url, BlocksID.NEW_VERSION, true);
-            //if the language of the url to be trashed is not present in db, we're dealing with a not yet saved language af an entity, so we trash the whole entity
+            //if the language of the url to be trashed is not present in db, we're dealing with a not yet saved language of an entity, so we trash the whole entity
             if(storedVersion.getTemplate(newId.getLanguage()) == null){
                 newId = new BlocksID(newId, storedVersion.getLanguage());
             }
             EntityTemplate newVersion = EntityTemplate.copyToNewId(storedVersion, newId);
             newVersion.setDeleted(true);
             this.update(newVersion);
-            return true;
+            return storedVersion;
         }catch (Exception e){
             throw new DatabaseException("Could not trash entity at '" + id + "'.", e);
         }
@@ -430,6 +437,15 @@ public class Redis implements Database<AbstractTemplate>
         }
         catch (Exception e){
             throw new DatabaseException("Could not get version-list for '" + id + "' from db.", e);
+        }
+    }
+
+    private boolean isOfType(Map<String, String> hash, Class<? extends AbstractTemplate> type){
+        if(type.equals(EntityTemplate.class)){
+            return hash.containsKey(DatabaseConstants.ENTITY_TEMPLATE_CLASS_NAME);
+        }
+        else{
+            return true;
         }
     }
 

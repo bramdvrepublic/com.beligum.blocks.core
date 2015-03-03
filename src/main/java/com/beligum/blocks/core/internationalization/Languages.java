@@ -25,7 +25,7 @@ public class Languages
      * @return a standardized language-code for the language-code specified, or the no-language-string if no language-code was specified
      */
     static public String getStandardizedLanguage(String languageCode){
-        if(containsLanguageCode(languageCode)){
+        if(isLanguageCode(languageCode)){
             return new Locale(languageCode).getLanguage();
         }
         else{
@@ -38,7 +38,7 @@ public class Languages
      * @param s
      * @return true if the specified string contains a preferred language or another ISO-standard language-code
      */
-    static public boolean containsLanguageCode(String s){
+    static public boolean isLanguageCode(String s){
         if(StringUtils.isEmpty(s) || s.equals(NO_LANGUAGE)){
             return false;
         }
@@ -127,17 +127,33 @@ public class Languages
     }
 
     /**
-     * Method translating the string representation of a url to the specified language. Relative url's must start with a '/' for them to be properly translated.
-     * Relative urls without '/' will not be translated, nor will absolute urls to other sites then the one specified in the configuration xml.
-     * @param urlString a url absolute or relative (and starting with '/'), to be translated
-     * @param language the language to be added to the url
-     * @return a string-representation of the absolute or relative url, or the urlString itself if it is empty (or null)
+     * Determines the language present in the url specified.
+     * @param urlString
+     * @return the found language, or an empty string if no language was found
      * @throws LanguageException
      */
-    static public String translateUrl(String urlString, String language) throws LanguageException{
+    static public String determineLanguage(String urlString) throws LanguageException
+    {
+        String[] urlAndLanguage = translateUrl(urlString, Languages.NO_LANGUAGE);
+        return urlAndLanguage[1];
+    }
+
+    /**
+     * Method translating the string representation of a url to the specified language. Relative url's must start with a '/' for them to be properly translated.
+     * Relative urls without '/' will not be translated, nor will absolute urls to other sites then the one specified in the configuration xml.
+     * User Languages.NO_LANGUAGE to remove the language.
+     * @param urlString a url absolute or relative (and starting with '/'), to be translated
+     * @param language the language to be added to the url
+     * @return A string-representation of the absolute or relative url, or the urlString itself if it is empty (or null), found in first position of an array. The second position holds the original language or an empty string if no language was found.
+     * @throws LanguageException
+     */
+    static public String[] translateUrl(String urlString, String language) throws LanguageException{
         try {
+            String[] urlAndLanguage = new String[2];
+            urlAndLanguage[1] = "";
             if(StringUtils.isEmpty(urlString)){
-                return urlString;
+                urlAndLanguage[0] = urlString;
+                return urlAndLanguage;
             }
             /*
              * Check language
@@ -160,7 +176,8 @@ public class Languages
                 //only http-protocols will be translated (so f.i. a mailto-protocol will stay unchanged)
                 //only absolute links of this very site will be translated
                 if(!"http".equals(url.getProtocol()) || !new URL(BlocksConfig.getSiteDomain()).getAuthority().equals(url.getAuthority())){
-                    return urlString;
+                    urlAndLanguage[0] = urlString;
+                    return urlAndLanguage;
                 }
             }
             //relative urls are first turned into absolute one's
@@ -169,7 +186,8 @@ public class Languages
                 isAbsolute = false;
                 startsWithSlash = urlString.startsWith("/");
                 if(!isAbsolute && !startsWithSlash){
-                    return urlString;
+                    urlAndLanguage[0] = urlString;
+                    return urlAndLanguage;
                 }
             }
             /*
@@ -184,6 +202,7 @@ public class Languages
             if (splitted.length > 1) {
                 String foundLanguage = splitted[1];
                 if (permittedLanguages.contains(foundLanguage)) {
+                    urlAndLanguage[1] = foundLanguage;
                     //remove the language-information from the middle of the id
                     urlPath = "";
                     for (int j = 2; j < splitted.length; j++) {
@@ -198,11 +217,12 @@ public class Languages
              * Revert the absolute to relative urls, if needed
              */
             if(isAbsolute) {
-                return new URL(url.getProtocol(), url.getHost(), url.getPort(), urlPath).toString();
+                urlAndLanguage[0] = new URL(url.getProtocol(), url.getHost(), url.getPort(), urlPath).toString();
             }
             else{
-                return urlPath;
+                urlAndLanguage[0] = urlPath;
             }
+            return urlAndLanguage;
         }catch(Exception e){
             throw new LanguageException("Could not translate url '" + urlString + "' into '" + language + "'.", e);
         }
