@@ -9,7 +9,9 @@ import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.core.framework.base.R;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -93,5 +95,27 @@ public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTempl
     protected String getDefaultTemplateName()
     {
         return ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS;
+    }
+
+    public List<EntityTemplateClass> getPageClasses(){
+        List<EntityTemplateClass> entityTemplateClasses = this.values();
+        List<EntityTemplateClass> pageClasses = new ArrayList<>();
+        for (EntityTemplateClass entityTemplateClass : entityTemplateClasses) {
+            if (entityTemplateClass.isPageBlock()) {
+                pageClasses.add(entityTemplateClass);
+            }
+        }
+        return pageClasses;
+    }
+
+    public List<EntityTemplateClass> getAddableClasses(){
+        List<EntityTemplateClass> entityTemplateClasses = this.values();
+        List<EntityTemplateClass> addableClasses = new ArrayList<>();
+        for (EntityTemplateClass entityTemplateClass : entityTemplateClasses) {
+            if (entityTemplateClass.isAddableBlock()) {
+                addableClasses.add(entityTemplateClass);
+            }
+        }
+        return addableClasses;
     }
 }

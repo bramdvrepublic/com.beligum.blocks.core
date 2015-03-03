@@ -151,15 +151,7 @@ public class ApplicationEndpoint
      */
     private Response injectParameters(Template newPageTemplate) throws InterruptedException, CacheException
     {
-        //the first time the server is started, we need to wait for the cache to be proparly filled, so all classes will be shown the very first time a new page is made.
-        EntityTemplateClassCache entityTemplateClassCache = EntityTemplateClassCache.getInstance();
-        List<EntityTemplateClass> entityTemplateClasses = entityTemplateClassCache.values();
-        List<EntityTemplateClass> pageClasses = new ArrayList<>();
-        for (EntityTemplateClass entityTemplateClass : entityTemplateClasses) {
-            if (entityTemplateClass.isPageBlock()) {
-                pageClasses.add(entityTemplateClass);
-            }
-        }
+        List<EntityTemplateClass> pageClasses = EntityTemplateClassCache.getInstance().getPageClasses();
         newPageTemplate.set(ParserConstants.ENTITY_URL, RequestContext.getRequest().getRequestURL().toString());
         newPageTemplate.set(ParserConstants.ENTITY_CLASSES, pageClasses);
         return Response.ok(newPageTemplate).build();

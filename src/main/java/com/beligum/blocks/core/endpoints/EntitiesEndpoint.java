@@ -158,8 +158,9 @@ public class EntitiesEndpoint
     public Response listEntities() throws CacheException
     {
         List<String> entityNames = new ArrayList<String>();
-        for (EntityTemplateClass e : EntityTemplateClassCache.getInstance().values()) {
-            if(!e.getName().equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS) && e.isAddableBlock()){
+        List<EntityTemplateClass> addableClasses = EntityTemplateClassCache.getInstance().getAddableClasses();
+        for (EntityTemplateClass e : addableClasses) {
+            if(!e.getName().equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS)){
                 entityNames.add(e.getName());
             }
         }
