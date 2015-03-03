@@ -29,59 +29,31 @@ blocks.plugin("blocks.core.BlockMenu.delete", ["blocks.core.BlockMenu", "blocks.
         action: function(event) {
             event.stopPropagation();
             var currentBlock = Menu.currentBlock();
-            BootstrapDialog.confirm({
+            BootstrapDialog.show({
                 title: 'WARNING',
-                message: 'Warning! Drop your banana?',
-                type: BootstrapDialog.TYPE_WARNING, // <-- Default value is BootstrapDialog.TYPE_PRIMARY
-                closable: true, // <-- Default value is false
-                draggable: true, // <-- Default value is false
-                btnCancelLabel: 'Do not drop it!', // <-- Default value is 'Cancel',
-                btnOKLabel: 'Drop it!', // <-- Default value is 'OK',
-                btnOKClass: 'btn-warning', // <-- If you didn't specify it, dialog type will be used,
-                callback: function(result) {
-                    // result will be true if button was click, while it will be false if users close the dialog directly.
-                    if(result) {
-                        alert('Yup.');
-                    }else {
-                        alert('Nope.');
-                    }
-                }
+                message: 'Are you sure you want to delete this block?',
+                type: BootstrapDialog.TYPE_DANGER, // <-- Default value is BootstrapDialog.TYPE_PRIMARY
+                buttons: [
+                    {id: 'btn-close',
+                    label: 'Cancel',
+                    action: function(dialogRef){
+                        dialogRef.close();
+                    }},
+                    {
+                        id: 'btn-ok',
+                        icon: 'glyphicon glyphicon-check',
+                        label: 'Ok',
+                        cssClass: 'btn-primary',
+                        action: function(dialogRef){
+                            Layouter.removeBlock(currentBlock);
+                            dialogRef.close();
+                        }
+
+                }]
+
             })
         }
     });
 
 }]);
 
-
-
-//blocks.plugin("blocks.core.BlockMenu.zoom", ["blocks.core.BlockMenu", "blocks.core.Layouter", "blocks.core.Notification", "blocks.core.DomManipulation", "blocks.core.Broadcaster", "blocks.core.Overlay", function(Menu, Layouter, Notification, DOM, Broadcaster, Overlay) {
-//    var button = $('<div><i class="glyphicon glyphicon-trash"></i> Zoom</div>')
-//    Menu.addButton({
-//        element: button,
-//        priority: 105,
-//        enabled : function(block) {
-//            var retVal = false
-//            if (DOM.canLayout(block.element)) retVal = true;
-//            return retVal;
-//        }
-//    });
-//
-//
-//
-//    button.on("click", function(event) {
-//        event.stopPropagation();
-//        var currentBlock = Menu.currentBlock();
-//
-//        var clonedElement = Overlay.overlayForElement(currentBlock.element, function() {
-//            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
-//            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, lastParent);
-//            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-//        });
-//
-//        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
-//        Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, clonedElement);
-//        Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-//
-//
-//    })
-//}]);

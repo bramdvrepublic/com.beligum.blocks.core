@@ -65,7 +65,32 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
                 }
             )
         };
-        Notification.dialog("Delete page", "<div>Do you want to delete this page and all it's translations?</div>", onConfirm);
+
+        BootstrapDialog.show({
+            title: "Delete page",
+            message: "<div>Do you want to delete this page and all it's translations?</div>",
+            buttons: [
+                {id: 'btn-close',
+                    label: 'Cancel',
+                    action: function(dialogRef){
+                        dialogRef.close();
+                        Broadcaster.send(Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE));
+                    }},
+                {
+                    id: 'btn-ok',
+                    icon: 'glyphicon glyphicon-check',
+                    label: 'Ok',
+                    cssClass: 'btn-primary',
+                    action: function(dialogRef){
+                        onConfirm();
+                        dialogRef.close();
+                        Broadcaster.send(Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE));
+                    }
+
+                }
+            ]
+        });
+       
     });
 
     changeUrlBtn.on("click", function() {

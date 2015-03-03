@@ -121,7 +121,7 @@ public class ToHtmlVisitor extends SuperVisitor
                 if (hasTypeOf(node) && isEditable((Element)node)) node.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
 
                 //TODO BAS: here we should use a listener to check for all dynamic blocks
-                DynamicBlockListener translationList = new TranslationList(this.language, this.pageUrl);
+                DynamicBlockListener translationList = new TranslationList(this.language, this.entityUrl);
                 if (translationList.getTypeOf().equals(this.getTypeOf(element))) {
                     element = translationList.onShow(element);
                     for(Element link : translationList.getLinks()) {
@@ -323,8 +323,14 @@ public class ToHtmlVisitor extends SuperVisitor
         HashMap<String, Element> retVal = new HashMap<String, Element>();
         for (Element property: propertyList) {
             if (property.hasAttr(ParserConstants.PROPERTY)) {
-
-                retVal.put(getUniquePropertyName(property), property);
+                String name = property.attr(ParserConstants.PROPERTY);
+                String uniqueName = name;
+                int counter = 0;
+                while (retVal.containsKey(uniqueName)) {
+                    counter++;
+                    uniqueName = name + counter;
+                }
+                retVal.put(uniqueName, property);
             } else if (failOnMissingReference) {
                 throw new ParseException("Found entity which is not a property of class '" + node.attr(ParserConstants.TYPE_OF) + "' as " + property.attr(ParserConstants.TYPE_OF)+ "\n");
             } else {
@@ -353,17 +359,17 @@ public class ToHtmlVisitor extends SuperVisitor
             //if referencing, editable properties are present in the class-template, they are proper properties and they should be filled in from the entity-instance we are parsing now
 
             //copy all properties of the instance to the class
-            for (Element fromProperty : fromProperties.values()) {
+            for (Element toProperty : toProperties.values()) {
                 //                    for (Element instanceProperty : instancePropertiesList) {
                 //                        if (getPropertyId(instanceProperty).equals(getPropertyId(classProperty))) {
-                Element toProperty = toProperties.get(getUniquePropertyName(fromProperty));
+                Element fromProperty = fromProperties.get(toProperty.attr(ParserConstants.PROPERTY));
 
                 Element element = null;
 
                 // if instance set can-edit by class and parent for each property
 
                 // if class set reference_to and resource and check if parent allows editing
-                if (toProperty != null) {
+                if (fromProperty != null) {
                     if (canEdit) {
                         if (isEditable(fromProperty) || isEditable(entityClass)) {
                             toProperty.attr(ParserConstants.CAN_EDIT_PROPERTY, "");
@@ -384,6 +390,10 @@ public class ToHtmlVisitor extends SuperVisitor
                         toProperty.attr(ParserConstants.USE_DEFAULT, "");
                         toProperty.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
                     }
+                } else if (canEdit) {
+                    toProperty.attr(ParserConstants.CAN_EDIT_PROPERTY, "");
+                } else {
+                    toProperty.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
                 }
 
                 // TODO Wouter: What with properties we could not find in source

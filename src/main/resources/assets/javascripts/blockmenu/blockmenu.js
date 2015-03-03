@@ -13,7 +13,7 @@
 * */
 // TODO refactor, put some things in config (element classes etc)
 // TODO when showing menu set height block double of menu
-blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.Overlay", function(Broadcaster, Overlay) {
+blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.Overlay", function(Broadcaster, Overlay, Admin) {
     var BlockMenu = this;
     var hoverOverMenu = false;
     var menuElement = $('<div class="block-menu"></div>');
@@ -26,10 +26,13 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
             $.each(buttons, function(index, button) {
                 if (button.enabled != null && !button.enabled(activeBlock)) {
                     $(button.element).addClass("disabled");
+                    $(button.element).removeClass("enabled");
                     $(button.element).off("mouseup.block-menu-action")
                 } else {
+                    $(button.element).removeClass("disabled");
                     $(button.element).addClass("enabled");
                     $(button.element).off("mouseup.block-menu-action")
+
                     $(button.element).on("mouseup.block-menu-action", function(event) {
                         $(document).off("mousedown.remove_block_menu");
                         button.action(event);
@@ -39,13 +42,10 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
 
             });
 
-
-
-
             menuElement.addClass("open");
             Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
 
-            // Handler to close the manu on click
+            // Handler to close the menu on click
             $(document).on("mousedown.remove_block_menu", function (event) {
                 var target = $(event.target);
                 if (!target.hasClass("block-menu-item") && !target.closest("block-menu-item").length > 0) {
