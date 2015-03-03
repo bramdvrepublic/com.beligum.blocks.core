@@ -1,5 +1,8 @@
 #define($body-html)
-<span>Change <span style="font-style: italic">' $!originalUrlPathEnd '</span> to </span></span> <input style="text" id="new" placeholder="/...">
+    <div class="form-group">
+        <label for="new"><span>Change <span style="font-style: italic">' $!originalUrlPathEnd '</span> to </span></span></label>
+        <input class="form-control" style="text" id="new" placeholder="/...">
+    </div>
 #end
 
 #parse("/views/modals/modal-main.html")

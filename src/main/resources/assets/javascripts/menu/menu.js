@@ -47,25 +47,41 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     });
 
     deleteBtn.on("click", function() {
-        var onConfirm = function(){
-            $.ajax({type: 'POST',
-                    url: "/entities/delete",
-                    data: document.URL,
-                    success: function(url, textStatus, response) {
-                        if(url){
-                            window.location = url;
-                        }else{
-                            location.reload();
-                        }
-                    },
-                    error: function(response, textStatus, errorThrown) {
-                        var message = response.status == 400 ? response.responseText : "An error occurred while deleting the page.";
-                        Notification.dialog("Error", "<div>" + message + "</div>", function(){});
+        var deleteDialog = new BootstrapDialog()
+            .setTitle('Delete page')
+            .setMessage("Do you want to delete this page and all it's translations?")
+            .setType(BootstrapDialog.TYPE_DANGER)
+            .setButtons([
+                {
+                    label: 'Cancel',
+                    action: function (dialog) {
+                        dialog.close();
                     }
-                }
-            )
-        };
-        Notification.dialog("Delete page", "<div>Do you want to delete this page and all it's translations?</div>", onConfirm);
+                },
+                {
+                    label: 'Delete',
+                    cssClass: 'btn-danger',
+                    action: function (dialog) {
+                        dialog.close();
+                        $.ajax({type: 'POST',
+                                url: "/entities/delete",
+                                data: document.URL,
+                                success: function(url, textStatus, response) {
+                                    if(url){
+                                        window.location = url;
+                                    }else{
+                                        location.reload();
+                                    }
+                                },
+                                error: function(response, textStatus, errorThrown) {
+                                    var message = response.status == 400 ? response.responseText : "An error occurred while deleting the page.";
+                                    Notification.dialog("Error", "<div>" + message + "</div>", function(){});
+                                }
+                            }
+                        )
+                    }
+                }])
+            .open();
     });
 
     changeUrlBtn.on("click", function() {
