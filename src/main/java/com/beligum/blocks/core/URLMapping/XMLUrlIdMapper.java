@@ -141,7 +141,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
                     splittedPath = new String[1];
                     splittedPath[0] = "";
                 }
-                else if(splittedPath.length <= 1){
+                else if(splittedPath.length == 1){
                     i = 0;
                 }
                 //if parts are splitted of the url path, we start from the first interesting part (splittedPath = [ "", "the first word after the /", "the second word delimited by a /", ...])
