@@ -136,7 +136,12 @@ public class XMLUrlIdMapper implements UrlIdMapper
                 Element path = this.urlIdMapping.getDocumentElement();
                 int i;
                 //if no parts are splitted of, we are dealing with the baseurl, so we start with i = 0
-                if(splittedPath.length == 1){
+                if(splittedPath.length == 0){
+                    i=0;
+                    splittedPath = new String[1];
+                    splittedPath[0] = "";
+                }
+                else if(splittedPath.length <= 1){
                     i = 0;
                 }
                 //if parts are splitted of the url path, we start from the first interesting part (splittedPath = [ "", "the first word after the /", "the second word delimited by a /", ...])
@@ -155,7 +160,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
                     i++;
                 }
                 //we have the end of the path, here we should find the id
-                if(path != null){
+                if(path != null && !path.equals(this.urlIdMapping.getDocumentElement())){
                     String blocksId = path.getAttribute(BLOCKS_ID);
                     if(StringUtils.isEmpty(language)){
                         return new BlocksID(blocksId, BlocksID.LAST_VERSION, BlocksID.PRIMARY_LANGUAGE);
@@ -170,7 +175,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
 
             }
         }catch (Exception e){
-            throw new UrlIdMappingException("Could not get id for url '" + url + "'.");
+            throw new UrlIdMappingException("Could not get id for url '" + url + "'.", e);
         }
     }
     @Override
@@ -269,7 +274,12 @@ public class XMLUrlIdMapper implements UrlIdMapper
             String[] splittedPath = urlNoLanguage.getPath().split("/");
             int i;
             //if no parts are splitted of, we are dealing with the baseurl, so we start with i = 0
-            if(splittedPath.length == 1){
+            if(splittedPath.length == 0){
+                splittedPath = new String[1];
+                splittedPath[0] = "";
+                i=0;
+            }
+            else if(splittedPath.length == 1){
                 i = 0;
             }
             //if parts are splitted of the url path, we start from the first interesting part (splittedPath = [ "", "the first word after the /", "the second word delimited by a /", ...])

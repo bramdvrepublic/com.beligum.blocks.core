@@ -2,6 +2,7 @@ package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.CacheException;
@@ -15,12 +16,14 @@ import com.beligum.core.framework.base.RequestContext;
 import com.beligum.core.framework.templating.ifaces.Template;
 import com.beligum.core.framework.utils.Logger;
 import gen.com.beligum.blocks.core.endpoints.ApplicationEndpointRoutes;
+import gen.com.beligum.blocks.core.endpoints.UsersEndpointRoutes;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.AuthorizationException;
 import org.apache.shiro.authz.UnauthorizedException;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -31,12 +34,6 @@ import java.util.*;
 @Path("/")
 public class ApplicationEndpoint
 {
-//    @GET
-//    public Response index() throws URISyntaxException
-//    {
-//        return Response.seeOther(new URI("/index")).build();
-//    }
-
 
     @Path("/mot/{name}")
     @GET
@@ -53,9 +50,6 @@ public class ApplicationEndpoint
     public Response getPageWithId(@PathParam("randomPage") String randomURLPath, @QueryParam("version") Long version)
     {
         try{
-//            if(randomURLPath != null && (randomURLPath.equals("") || randomURLPath.equals("/"))){
-//                return Response.seeOther(URI.create(ApplicationEndpointRoutes.index().getPath())).build();
-//            }
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
             if(version == null){
                 version = BlocksID.NO_VERSION;
@@ -108,6 +102,21 @@ public class ApplicationEndpoint
                         return Response.ok(lastVersionHtml).build();
                     }
                 }
+            }
+        }
+        //if the index was not found, redirect to user login, else throw exception
+        catch(NotFoundException e){
+            String url = RequestContext.getRequest().getRequestURL().toString();
+            try {
+                if(url != null && (url.toString().equals(new URL(BlocksConfig.getSiteDomain()).toString()) || url.toString().equals(new URL(BlocksConfig.getSiteDomain() + "/").toString()))){
+                    return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
+                }
+                else{
+                    throw e;
+                }
+            }
+            catch (MalformedURLException e1) {
+                throw e;
             }
         }
         catch(AuthorizationException e){

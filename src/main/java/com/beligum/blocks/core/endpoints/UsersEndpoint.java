@@ -244,7 +244,7 @@ public class UsersEndpoint
          */
         SecurityUtils.getSubject().logout();
 
-        return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId("/", null).getPath())).build();
+        return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId("", null).getPath())).build();
     }
 
     @GET
@@ -467,7 +467,7 @@ public class UsersEndpoint
             }
         }
         else{
-            return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId("/", null).getPath())).build();
+            return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId("", null).getPath())).build();
         }
     }
 
