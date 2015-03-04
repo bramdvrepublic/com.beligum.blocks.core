@@ -576,7 +576,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
             id = depth + "." + nextNumber;
         }
         Element path = this.urlIdMapping.createElement(PATH);
-        path.setAttribute(PATH_ID, id);
+//        path.setAttribute(PATH_ID, id);
         boolean added = this.pathIds.add(id);
         if(!added){
             throw new Exception("Could not add freshly rendered path id. This should not happen!");

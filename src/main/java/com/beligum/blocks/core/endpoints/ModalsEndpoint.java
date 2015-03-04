@@ -3,9 +3,11 @@ package com.beligum.blocks.core.endpoints;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.templating.ifaces.Template;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
 import javax.ws.rs.GET;
@@ -36,8 +38,16 @@ public class ModalsEndpoint
         Template template = R.templateEngine().getEmptyTemplate("/views/modals/" + CHANGE_URL_MODAL);
         String originalPath = new URL(originalUrl).getPath();
         String [] splitted = originalPath.split("/");
-        if(splitted.length>0) {
+        if(splitted.length>2) {
             template.set("originalUrlPathEnd", "/" + splitted[splitted.length - 1]);
+        }
+        else if(splitted.length == 2){
+            if(Languages.isNonEmptyLanguageCode(splitted[1])){
+                template.set("originalUrlPathEnd", "");
+            }
+            else{
+                template.set("originalUrlPathEnd", "/" + splitted[splitted.length - 1]);
+            }
         }
         else{
             template.set("originalUrlPathEnd", "");
