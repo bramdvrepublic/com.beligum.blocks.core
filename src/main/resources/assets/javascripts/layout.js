@@ -49,6 +49,10 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.C
         return retVal;
     };
 
+    /*
+    * Wrap (if necessary)  so a correct bootstrap layout is preserved.
+    * This allows us to drop on columns and rows and not only on blocks
+    * */
     var dropOnFunctions = {
         "drop-vertical-on-block": function (droppedElement, dropLocationElement, side) {
             // do nothing?
@@ -86,6 +90,10 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.C
         }
     }
 
+    /*
+     * Wrap (if necessary) the droppedElement so a correct bootstrap layout is preserved.
+     * This allows us to drop on columns and rows and not only on blocks
+     * */
     var droppedFunctions = {
 
         "drop-block-vertical" : function(droppedElement, dropLocationElement, side) {
@@ -120,6 +128,10 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.C
         }
     }
 
+    /*
+    * Function to call to add a block relative to a block
+    * This function changes the dom
+    * */
     var drop =  function(droppedElement, dropLocationElement, side) {
         // If we drop on the edge of the container, wrap the container so we drop inside
         // (because we drop always outside the droplocation)
@@ -148,7 +160,11 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.C
 
     };
 
-    // remove block and add it at side of droplocation
+
+    /*
+    * This is the external interface to drop a block.
+    * First it removes the dropped block and then adds it relative to the droplocation
+    * */
     this.changeBlockLocation = function (block, dropLocation, side) {
         // remove dropped block
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);

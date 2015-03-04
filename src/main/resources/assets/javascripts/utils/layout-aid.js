@@ -1,12 +1,12 @@
 /*
 * For simple layout helpers
 *
-* - show frame of all blocks on hoover.
+* - highlights blocks and properties on hover
 *
 *
 * */
 
-blocks.plugin("blocks.core.Highlighter", ["blocks.core.Layouter", "blocks.core.Broadcaster", "blocks.core.Elements", "blocks.core.Constants", "blocks.core.Overlay", "blocks.core.BlockMenu", function(Layouter, Broadcaster, Elements, Constants, Overlay, BlockMenu) {
+blocks.plugin("blocks.core.Highlighter", ["blocks.core.Layouter", "blocks.core.Broadcaster", "blocks.core.Elements", "blocks.core.Constants", function(Layouter, Broadcaster, Elements, Constants) {
     var Highlighter = this;
     this.removePropertyOverlay = function() {
         $("." + Constants.PROPERTY_CLASS).removeClass(Constants.PROPERTY_CLASS);

@@ -97,7 +97,7 @@ blocks
             makeTriggers: function(x, y, direction) {
                 var BORDER_THRESHOLD = 15;
                 if (this.side != direction && this.side != Constants.OPPOSITE_DIRECTION[direction]) {
-                    Logger.debug("exit because drop[loc not on this side " + direction);
+                    Logger.debug("exit because droploc not on this side " + direction);
                     return false;
                 }
                 var left = 0;

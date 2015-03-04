@@ -1,12 +1,5 @@
 /*
-*
-* Buttons for a blockMenu.
-* Add a button by calling addButton (of a blockMenu) with an object () the button
-*
-* Button object:
-*   - element: jQuery element that is the button, normally a bootstrap button (with class btn)
-*   - priority: sets the priority of the button. Button with higher priority will be placed more to the left (front)
-*
+* The delete button for the block menu
 * */
 // TODO add button to layout inside a parsedContent block
 // block-parsedContent class

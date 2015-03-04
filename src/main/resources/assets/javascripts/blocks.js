@@ -2,6 +2,7 @@
 //Logger.debug = function() {};
 //Logger.error = function() {};
 
+// The modulke loader
 function blocksLoader(window) {
     /*Simple helper functions copied from angular*/
 

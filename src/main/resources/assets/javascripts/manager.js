@@ -1,5 +1,7 @@
 /**
  * Created by wouter on 19/01/15.
+ *
+ * The manager is the central point. here we catch all the events to keep an overview
  */
 blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.BlockMenu", "blocks.core.Highlighter", "blocks.core.Edit",  function(Constants, Broadcaster, Mouse, DragDrop, Resizer, BlockMenu, Highlighter, Edit) {
 

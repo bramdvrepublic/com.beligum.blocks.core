@@ -1,3 +1,6 @@
+/*
+* Allows editiong of an image when youy click on it
+* */
 blocks.plugin("blocks.core.image", ["blocks.finder", "blocks.core.Edit", "blocks.core.Notification", "blocks.core.Broadcaster", function(Finder, Edit, Notification, Broadcaster) {
     var dialogContent = $('<div class="form-inline" role="form"><div class="form-group">' +
         '<label for="imagelabel" class="sr-only">Geef de url van een afbeelding: </label>'  +

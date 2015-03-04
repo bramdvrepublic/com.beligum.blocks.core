@@ -1,8 +1,14 @@
 /**
  * Created by wouter on 19/12/14.
+ *
+ * Test for plugin. Edit a MOT block link
  */
 
 blocks.plugin("blocks.core.bloklink", ["blocks.core.Admin", function(Admin) {
+
+    /*
+    * The content for the dialog: for testing written in jquery
+    * */
     var dialogContent = $('<div class="form" role="form"><div class="form-group">' +
         '<label for="colorselect">Kleur</label>' +
         '<select class="form-control" id="colorselect">' +
@@ -23,6 +29,11 @@ blocks.plugin("blocks.core.bloklink", ["blocks.core.Admin", function(Admin) {
 
 
 
+    /*
+    * We register for editing. When clicked in the blocksmenu our dialog will be shown (element),
+    * when clicked ok in the dialog our callback is called.
+    * enabled checks if we want to edit this block. This is used by the dispatcher to call our plugin for the right block
+    * */
     Admin.register(
         {
             enabled: function(block) {
