@@ -5,6 +5,7 @@ import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.DatabaseException;
 import com.beligum.blocks.core.exceptions.IDException;
+import com.beligum.blocks.core.exceptions.LanguageException;
 import com.beligum.blocks.core.exceptions.UrlIdMappingException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
@@ -45,8 +46,6 @@ public class XMLUrlIdMapper implements UrlIdMapper
     public static final String PATH_ID = "path-id";
     public static final String BLOCKS_ID = "blocks-id";
 
-    public SiteMap cachedSiteMap = null;
-
 
     private static XMLUrlIdMapper instance;
 
@@ -61,6 +60,9 @@ public class XMLUrlIdMapper implements UrlIdMapper
     private XPathExpression pathParentExpr;
     /**pre compiled xpath expression for fetching the path children of an element*/
     private XPathExpression pathChildrenExpr;
+
+    private HashMap<String, SiteMap> cachedSiteMaps = new HashMap<>();
+
 
     private XMLUrlIdMapper(Document urlIdMapping) throws XPathExpressionException
     {
@@ -312,8 +314,8 @@ public class XMLUrlIdMapper implements UrlIdMapper
                     path = null;
                 }
                 //if still some ancestors haven't been used, proceed along the ancestorial branch
-                else if (i < ancestors.size()-1 && ancestors.get(i) != null) {
-                    path = ancestors.get(i);
+                else if (i + 1 < ancestors.size() && ancestors.get(i) != null) {
+                    path = ancestors.get(i + 1);
                 }
                 //if no ancestors are left, a new path needs to be created at depth 'i'
                 else {
@@ -323,7 +325,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
                 parent = path;
                 i++;
             }
-            this.cachedSiteMap = null;
+            this.cachedSiteMaps.clear();
             this.writeOut();
             return new UrlIdPair(previousUrl, previousId);
         }catch (Exception e){
@@ -343,7 +345,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
             boolean changed = this.removePathForId(languagedId);
             if(changed){
                 if(writeOut) this.writeOut();
-                this.cachedSiteMap = null;
+                this.cachedSiteMaps.clear();
                 return previousUrl;
             }
             else{
@@ -372,7 +374,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
             boolean changed = this.removePathForId(id);
             if(changed){
                 if(writeOut) this.writeOut();
-                this.cachedSiteMap = null;
+                this.cachedSiteMaps.clear();
                 return id;
             }
             else{
@@ -395,33 +397,62 @@ public class XMLUrlIdMapper implements UrlIdMapper
         this.instance = null;
     }
     @Override
-    public SiteMap renderSiteMap() throws UrlIdMappingException
+    public SiteMap renderSiteMap(String language) throws UrlIdMappingException
     {
         try {
-            if(cachedSiteMap == null) {
+            if(!Languages.isNonEmptyLanguageCode(language)){
+                throw new LanguageException("Unknown language found '" + language + "'.");
+            }
+            if(!this.cachedSiteMaps.containsKey(language)) {
                 //TODO BAS SH: we willen een sitemap object maken met simpelweg urls in met kinderen en vertalingen
                 //TODO BAS SH 2: dan willen we een sitemap viewable maken en daar kun je dan urls aanpassen, vertalen of verplaatsen (kan dat in 1 methode?)
                 //TODO BAS SH 3: de gedelete pagina's moeten uit de sitemap verwijderd worden
                 //TODO BAS SH 4: een gedelete pagina reviven doe je door naar voorgaande versies van de url-mapping te kijken
-                SiteMap siteMap = new SiteMap();
-                SiteMapNode root = siteMap.getRoot();
-                //                this.fillSiteMapNode(root, );
-                this.cachedSiteMap = siteMap;
+                SiteMapNode root = this.createSiteMapNode(this.urlIdMapping.getDocumentElement(), language);
+                SiteMap siteMap = new SiteMap(root, language);
+                this.cachedSiteMaps = new HashMap<>();
+                this.cachedSiteMaps.put(language, siteMap);
             }
-            return cachedSiteMap;
+            return this.cachedSiteMaps.get(language);
         }
         catch (Exception e) {
             throw new UrlIdMappingException("Could not render site map.", e);
         }
     }
 
-    //    private SiteMapNode fillSiteMapNode(SiteMapNode node, Element path){
-    //        URL url = null;
-    //        NodeList pathChildren = (NodeList) this.pathChildrenExpr.evaluate(this.urlIdMapping.getDocumentElement(), XPathConstants.NODESET);
-    //        for(int i = 0; i<pathChildren.getLength(); i++){
-    //            node.addChild(fillSiteMapNode((Element) pathChildren.item(i)));
-    //        }
-    //    }
+    private SiteMapNode createSiteMapNode(Element path, String language) throws MalformedURLException, IDException, UrlIdMappingException, XPathExpressionException, LanguageException
+    {
+        URL url = null;
+        String entityId = path.getAttribute(BLOCKS_ID);
+        boolean hasEntity = !StringUtils.isEmpty(entityId);
+        if(hasEntity){
+            url = this.fetchUrl(new BlocksID(entityId, BlocksID.NO_VERSION, language));
+        }
+        else if(path.equals(this.urlIdMapping.getDocumentElement())) {
+            url = new URL(this.urlIdMapping.getDocumentElement().getAttribute(ROOT));
+        }
+        else {
+            List<Element> ancestors = this.getPathAncestors(path);
+            String urlPath = "";
+            int i = 1;
+            while(i<ancestors.size()){
+                Element p = ancestors.get(i);
+                String translation = this.getTranslation(p, language);
+                if(!StringUtils.isEmpty(translation)) {
+                    urlPath += "/" + translation;
+                }
+                i++;
+            }
+            url = new URL(new URL(BlocksConfig.getSiteDomain()), urlPath);
+        }
+        url = new URL(Languages.translateUrl(url.toString(), language)[0]);
+        SiteMapNode retVal = new SiteMapNode(url, hasEntity);
+        NodeList pathChildren = (NodeList) this.pathChildrenExpr.evaluate(path, XPathConstants.NODESET);
+        for(int i = 0; i<pathChildren.getLength(); i++){
+            retVal.addChild(createSiteMapNode((Element) pathChildren.item(i), language));
+        }
+        return retVal;
+    }
 
     //______________________PRIVATE_METHODS___________________
 
@@ -681,7 +712,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
         List<Element> existingPathParts = new ArrayList<>();
         Element path = this.urlIdMapping.getDocumentElement();
         existingPathParts.add(path);
-        int i = 0;
+        int i = 1;
         while(path != null && i<splittedPath.length) {
             XPathExpression pathPartExpr = XPathFactory.newInstance().newXPath().compile(
                             "child::" + PATH + "/child::" + TRANSLATIONS + "/child::" + TRANSLATION + "[@"+ LANGUAGE +"='" + language + "' and text()='" + splittedPath[i] + "']");

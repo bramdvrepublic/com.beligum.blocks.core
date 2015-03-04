@@ -8,16 +8,22 @@ import java.util.List;
  * Created by bas on 04.03.15.
  */
 public class SiteMapNode{
-    List<URL> translations = new ArrayList<>();
-    List<SiteMapNode> children = new ArrayList<>();
+    private URL url;
+    /**true if this site map node points to an actual entity, false otherwise*/
+    private boolean hasEntity;
+    private List<SiteMapNode> children = new ArrayList<>();
 
-    public SiteMapNode(URL url){
-        this.translations.add(url);
+    public SiteMapNode(URL url, boolean hasEntity){
+        this.url = url;
+        this.hasEntity = hasEntity;
     }
-
-    public List<URL> getTranslations()
+    public URL getUrl()
     {
-        return translations;
+        return url;
+    }
+    public boolean isHasEntity()
+    {
+        return hasEntity;
     }
     public List<SiteMapNode> getChildren()
     {

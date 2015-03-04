@@ -1,22 +1,24 @@
 package com.beligum.blocks.core.URLMapping;
 
-import com.beligum.blocks.core.config.BlocksConfig;
-
 import java.net.MalformedURLException;
-import java.net.URL;
 
 /**
  * Created by bas on 03.03.15.
  */
 public class SiteMap
 {
+    private String language;
     private SiteMapNode root;
 
-    public SiteMap() throws MalformedURLException
+    public SiteMap(SiteMapNode root, String language) throws MalformedURLException
     {
-        this.root = new SiteMapNode(new URL(BlocksConfig.getSiteDomain() + "/" + BlocksConfig.getDefaultLanguage()));
+        this.root = root;
+        this.language = language;
     }
-
+    public String getLanguage()
+    {
+        return language;
+    }
     public SiteMapNode getRoot()
     {
         return root;

@@ -54,5 +54,5 @@ public interface UrlIdMapper
      */
     public void reset();
 
-    public SiteMap renderSiteMap() throws UrlIdMappingException;
+    public SiteMap renderSiteMap(String language) throws UrlIdMappingException;
 }

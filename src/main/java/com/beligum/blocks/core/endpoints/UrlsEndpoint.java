@@ -45,8 +45,8 @@ public class UrlsEndpoint
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public SiteMap getSiteMap() throws UrlIdMappingException
+    public SiteMap getSiteMap(@QueryParam("lang") String language) throws UrlIdMappingException
     {
-        return XMLUrlIdMapper.getInstance().renderSiteMap();
+        return XMLUrlIdMapper.getInstance().renderSiteMap(language);
     }
 }
