@@ -162,11 +162,16 @@ public class XMLUrlIdMapper implements UrlIdMapper
                 //we have the end of the path, here we should find the id
                 if(path != null && !path.equals(this.urlIdMapping.getDocumentElement())){
                     String blocksId = path.getAttribute(BLOCKS_ID);
-                    if(StringUtils.isEmpty(language)){
-                        return new BlocksID(blocksId, BlocksID.LAST_VERSION, BlocksID.PRIMARY_LANGUAGE);
+                    if(!StringUtils.isEmpty(blocksId)) {
+                        if (StringUtils.isEmpty(language)) {
+                            return new BlocksID(blocksId, BlocksID.LAST_VERSION, BlocksID.PRIMARY_LANGUAGE);
+                        }
+                        else {
+                            return new BlocksID(blocksId, BlocksID.LAST_VERSION, language);
+                        }
                     }
                     else{
-                        return new BlocksID(blocksId, BlocksID.LAST_VERSION, language);
+                        return null;
                     }
                 }
                 else{
@@ -250,7 +255,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
             }
             String[] urlAndLanguage = Languages.translateUrl(url.toString(), Languages.NO_LANGUAGE);
             String language = urlAndLanguage[1];
-            if (StringUtils.isEmpty(language)) {
+            if (!Languages.isNonEmptyLanguageCode(language)) {
                 language = id.getLanguage();
             }
             URL urlNoLanguage = new URL(urlAndLanguage[0]);
@@ -263,30 +268,32 @@ public class XMLUrlIdMapper implements UrlIdMapper
             BlocksID previousId = this.remove(new URL(Languages.translateUrl(urlNoLanguage.toString(), language)[0]), false);
 
             /*
-             * Determine if this id is already present in the mapping, and if so, return it's ancestors.
-             * If it is not present in the mapping, the only element in the list will be the document-root.
-             */
-            List<Element> ancestors = this.getOrCreatePathAncestors(id);
-
-            /*
              * Split the url in it's path-parts and add them to the mapping
              */
             String[] splittedPath = urlNoLanguage.getPath().split("/");
-            int i;
-            //if no parts are splitted of, we are dealing with the baseurl, so we start with i = 0
-            if(splittedPath.length == 0){
-                splittedPath = new String[1];
-                splittedPath[0] = "";
-                i=0;
+
+
+            /*
+             * Determine if part of this url is already present in the mapping, and if so, return it's ancestors.
+             * If no parts of the url can be found, make sure the id is not already in the mapping. If so, return it's ancestors
+             * If it not present in the mapping, create a new path element to start from.
+             */
+
+            Element parent = null;
+            List<Element> ancestors = this.getExistingPathParts(splittedPath, language);
+            if(ancestors.isEmpty()){
+                ancestors = this.getPathAncestors(id);
+                if(ancestors.isEmpty()) {
+                    //no such path exists yet, so we create its root at depth 1
+                    Element path = this.createNewPathElement(1);
+                    this.urlIdMapping.getDocumentElement().appendChild(path);
+                    ancestors.add(path);
+                }
             }
-            else if(splittedPath.length == 1){
-                i = 0;
-            }
-            //if parts are splitted of the url path, we start from the first interesting part (splittedPath = [ "", "the first word after the /", "the second word delimited by a /", ...])
-            else{
-                i = 1;
-            }
-            Element parent = ancestors.get(0);
+
+            parent = ancestors.get(0);
+
+            int i = this.determineBeginPosition(splittedPath);
             while (i < splittedPath.length) {
                 Element translations = this.getTranslationsElement(parent);
                 if (translations == null) {
@@ -380,8 +387,22 @@ public class XMLUrlIdMapper implements UrlIdMapper
     {
         this.instance = null;
     }
+    @Override
+    public SiteMap renderSiteMap() throws UrlIdMappingException
+    {
+        try {
+            //TODO BAS SH: we willen een sitemap object maken met simpelweg urls in met kinderen en vertalingen
+            //TODO BAS SH 2: dan willen we een sitemap viewable maken en daar kun je dan urls aanpassen, vertalen of verplaatsen (kan dat in 1 methode?)
+            //TODO BAS SH 3: de gedelete pagina's moeten uit de sitemap verwijderd worden
+            //TODO BAS SH 4: een gedelete pagina reviven doe je door naar voorgaande versies van de url-mapping te kijken
+            SiteMap siteMap = new SiteMap();
 
-
+            return siteMap;
+        }
+        catch(Exception e){
+            throw new UrlIdMappingException("Could not render site map.", e);
+        }
+    }
 
     //______________________PRIVATE_METHODS___________________
 
@@ -428,6 +449,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
         return new BlocksID(new URL(BlocksConfig.getSiteDomain() + "/" + DatabaseConstants.URL_ID_MAPPING), BlocksID.NEW_VERSION, true);
     }
 
+
     /**
      * Returns a list with all path-elements which are an ancestor of the path-leave holding the specified blocks-id, in order from the root on forward.
      * If the id is present in the mapping, the list also holds the node itself.
@@ -435,24 +457,11 @@ public class XMLUrlIdMapper implements UrlIdMapper
      * @param blocksId
      * @throws XPathExpressionException
      */
-    private List<Element> getOrCreatePathAncestors(BlocksID blocksId) throws Exception
+    private List<Element> getPathAncestors(BlocksID blocksId) throws Exception
     {
+
         XPathExpression idNodesExpr = XPathFactory.newInstance().newXPath().compile("//" + PATH + "[@" + BLOCKS_ID + "='" + blocksId.getUnversionedId() + "']");
-        return this.getOrCreatePathAncestors(idNodesExpr);
-    }
-
-    //    private List<Element> getOrCreatePathAncestors(String pathId) throws Exception
-    //    {
-    //        XPathExpression idNodesExpr = XPathFactory.newInstance().newXPath().compile("//" + PATH + "[@" + PATH_ID + "='" + pathId + "']");
-    //        return this.getOrCreatePathAncestors(idNodesExpr);
-    //    }
-
-    private List<Element> getOrCreatePathAncestors(XPathExpression expression) throws Exception
-    {
-        if(expression == null) {
-            throw new NullPointerException("Cannot evaluate null-expression.");
-        }
-        NodeList blockIdElements = (NodeList) expression.evaluate(this.urlIdMapping, XPathConstants.NODESET);
+        NodeList blockIdElements = (NodeList) idNodesExpr.evaluate(this.urlIdMapping, XPathConstants.NODESET);
         //get the last (i.e. the deepest) occurrence of an element with the specified id
         Element idPath = blockIdElements.getLength() > 0 ? (Element) blockIdElements.item(blockIdElements.getLength()-1) : null;
         NodeList ancestors;
@@ -460,10 +469,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
             ancestors = (NodeList) this.pathAncestorsExpr.evaluate(idPath, XPathConstants.NODESET);
         }
         else{
-            //no such path exists yet, so we create its root at depth 1
-            Element path = this.createNewPathElement(1);
-            this.urlIdMapping.getDocumentElement().appendChild(path);
-            ancestors = (NodeList) this.pathAncestorsExpr.evaluate(path, XPathConstants.NODESET);
+            return new ArrayList<>();
         }
         List<Element> ancestorList = new ArrayList<>();
         for(int i = 0; i<ancestors.getLength(); i++){
@@ -607,31 +613,38 @@ public class XMLUrlIdMapper implements UrlIdMapper
     {
         //if no id is found, nothing needs to be done
         if(id != null){
-            List<Element> ancestors = this.getOrCreatePathAncestors(id);
+            List<Element> ancestors = this.getPathAncestors(id);
             int i = ancestors.size()-1;
             XPathExpression translationExpr = XPathFactory.newInstance().newXPath().compile("child::" + TRANSLATIONS + "/child::" + TRANSLATION + "[@"+LANGUAGE+"='"+id.getLanguage()+"']");
             boolean changed = false;
             while(i>=0){
                 Element ancestor = ancestors.get(i);
-                //remove the wanted translation, or if it does not exists, do nothing
-                Element translation = (Element) translationExpr.evaluate(ancestor, XPathConstants.NODE);
-                if(translation != null) {
-                    Node translationsElement = translation.getParentNode();
-                    translationsElement.removeChild(translation);
-                    changed = !changed ? true : changed;
-                    NodeList children = translationsElement.getChildNodes();
-                    boolean hasElementChild = false;
-                    int j = 0;
-                    while(!hasElementChild && j<children.getLength()){
-                        hasElementChild = children.item(j) instanceof Element;
-                        j++;
+                String blocksid = ancestor.getAttribute(BLOCKS_ID);
+                //only pathpart without a blocksid should be removed
+                if(StringUtils.isEmpty(blocksid) || blocksid.equals(id.getUnversionedId())) {
+                    //remove the wanted translation, or if it does not exists, do nothing
+                    Element translation = (Element) translationExpr.evaluate(ancestor, XPathConstants.NODE);
+                    if (translation != null) {
+                        Node translationsElement = translation.getParentNode();
+                        translationsElement.removeChild(translation);
+                        changed = !changed ? true : changed;
+                        NodeList children = translationsElement.getChildNodes();
+                        boolean hasElementChild = false;
+                        int j = 0;
+                        while (!hasElementChild && j < children.getLength()) {
+                            hasElementChild = children.item(j) instanceof Element;
+                            j++;
+                        }
+                        //if no other translation nodes are found, we can remove this 'translations' node and thus also this path node
+                        if (!hasElementChild) {
+                            Node path = translationsElement.getParentNode();
+                            Node pathParent = path.getParentNode();
+                            pathParent.removeChild(path);
+                        }
                     }
-                    //if no other translation nodes are found, we can remove this 'translations' node and thus also this path node
-                    if(!hasElementChild){
-                        Node path = translationsElement.getParentNode();
-                        Node pathParent = path.getParentNode();
-                        pathParent.removeChild(path);
-                    }
+                }
+                else{
+                    i = -1;
                 }
                 i--;
             }
@@ -639,6 +652,42 @@ public class XMLUrlIdMapper implements UrlIdMapper
         }
         else{
             return false;
+        }
+    }
+
+    private List<Element> getExistingPathParts(String[] splittedPath, String language) throws XPathExpressionException
+    {
+        List<Element> existingPathParts = new ArrayList<>();
+        Element path = this.urlIdMapping.getDocumentElement();
+        int i = this.determineBeginPosition(splittedPath);
+        while(path != null && i<splittedPath.length) {
+            XPathExpression pathPartExpr = XPathFactory.newInstance().newXPath().compile(
+                            "child::" + PATH + "/child::" + TRANSLATIONS + "/child::" + TRANSLATION + "[@"+ LANGUAGE +"='" + language + "' and text()='" + splittedPath[i] + "']");
+            Element translation = (Element) pathPartExpr.evaluate(path, XPathConstants.NODE);
+            if(translation != null){
+                Element pathPart = (Element) translation.getParentNode().getParentNode();
+                existingPathParts.add(pathPart);
+                path = pathPart;
+            }
+            i++;
+        }
+        return existingPathParts;
+    }
+
+    private int determineBeginPosition(String[] splittedPath){
+        int i;
+        //if no parts are splitted of, we are dealing with the baseurl, so we start with i = 0
+        if(splittedPath.length == 0){
+            splittedPath = new String[1];
+            splittedPath[0] = "";
+            return 0;
+        }
+        else if(splittedPath.length == 1){
+            return 0;
+        }
+        //if parts are splitted of the url path, we start from the first interesting part (splittedPath = [ "", "the first word after the /", "the second word delimited by a /", ...])
+        else{
+            return 1;
         }
     }
 }

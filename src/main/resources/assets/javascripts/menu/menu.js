@@ -100,11 +100,10 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
                     label: 'Change',
                     cssClass: 'btn-info',
                     action: function (changeUrlDialog) {
-                        var newPath = $("#new1").val() + "/" + $("#new2").val() + "/" + $("#new3").val();
                         changeUrlDialog.close();
                         $.ajax({
                             type: 'POST',
-                            url: "/urls?original=" + window.location.href + "&newpath=" + newPath,
+                            url: "/urls?original=" + window.location.href + "&newpath=" + $("#new").val(),
                             success: function(url, textStatus, response){
                                 if(url){
                                     window.location = url;
@@ -120,7 +119,7 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
                     }
                 }])
             .open();
-    });
+        });
 
 
     var create = function() {
