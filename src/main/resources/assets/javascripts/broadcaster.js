@@ -110,6 +110,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     var limit = 20;
     var variance = 0;
     var prevTime = new Date().getTime();
+
     function updateDistanceAndDirection(curX, curY){
         var angle = Math.atan2(prevY - curY, prevX - curX);
         sins[index] = Math.sin(angle);
@@ -287,6 +288,93 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
 
 
 
+
+
+    /*
+     * Container is the block IN which we are dragging.
+     * If we set this to null then then the top level block(s) are  the container
+     * */
+
+    this.setContainer = function(value) {
+        layoutTree = value
+    };
+
+    this.getContainer = function() {
+        return layoutTree;
+    };
+
+    var isContainer = function(element) {
+        return DOM.canLayout(element);
+    };
+
+
+    /*
+     We create some sort of a heat map. We define boxes for all draggable blocks
+     we can add left and right from each column
+     and left and right from container if container has more than 1 row
+     select each row and add bottom
+     if row has +1 colunms, we can add also to bottom of columns
+     except if column has +1 rows
+     */
+
+
+
+
+    var oldLayoutTree = null;
+    var oldContainerParent = null;
+
+    this.buildLayoutTree = function () {
+        oldLayoutTree = null;
+        oldContainerParent = null;
+        layoutTree = new blocks.elements.Container( $("body"), null);
+        Broadcaster.resetHover();
+        lastMoveEvent.block = Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
+    };
+
+    // We set the current block as the new container
+    // this enables us to drag only inside this block
+    this.zoom = function() {
+        if (oldLayoutTree == null) {
+            oldLayoutTree = layoutTree;
+            var current = hoveredBlocks.current;
+            if (current != null) {
+
+
+                layoutTree = current.getContainer();
+                oldContainerParent = layoutTree.parent;
+                layoutTree.parent = null;
+            }
+        }
+    };
+
+    // reset container to whole page
+    this.unzoom = function() {
+        if (oldLayoutTree != null) {
+            layoutTree.parent = oldContainerParent;
+            oldContainerParent = null;
+            layoutTree = oldLayoutTree;
+            oldLayoutTree = null;
+        }
+    };
+
+
+    // On Boot
+    var resizeTimeout = null
+    $(window).on("resize.blocks_broadcaster", function () {
+
+        if (resizeTimeout != null) {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = null;
+            Logger.debug("timeout cleared")
+        } else {
+            Logger.debug("timeout not cleared")
+        }
+        var layoutContainer = Broadcaster.getContainer() == null ? null : Broadcaster.getContainer().element;
+        resizeTimeout = setTimeout(function(){ Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, layoutContainer);}, 200);
+
+    });
+
+
     this.EVENTS = {};
     // EVents with callback
 
@@ -342,98 +430,4 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     this.EVENTS.DID_SAVE = "DID_SAVE";
 
 
-    // The parent element where the tree is build
-    // if null this is automatically set to the container
-
-    this.setContainer = function(value) {
-        layoutTree = value
-    };
-
-    this.getContainer = function() {
-        return layoutTree;
-    };
-
-    /*
-     We create some sort of a heat map. We define boxes for all draggable blocks
-     we can add left and right from each column
-     and left and right from container if container has more than 1 row
-     select each row and add bottom
-     if row has +1 colunms, we can add also to bottom of columns
-     except if column has +1 rows
-     */
-
-    var isContainer = function(element) {
-        return DOM.canLayout(element);
-    };
-
-
-    var findContainers = function(element) {
-        var retVal = [];
-        if (isContainer(element)) {
-            retVal.push(element);
-        } else {
-            var children = element.children();
-            for(var i=0; i < children.length; i++) {
-                var block = $(children[i]);
-                if (isContainer(block)) {
-                    retVal.push(block)
-                } else {
-                    retval.push.apply(retval, findContainers(block));
-                }
-            }
-        }
-        return retVal;
-    };
-
-
-    this.buildLayoutTree = function () {
-        hoveredBlocks.previous = null;
-        hoveredBlocks.current = null;
-
-        layoutTree = new blocks.elements.Container( $("body"), null);
-        Broadcaster.resetHover();
-        lastMoveEvent.block = Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
-    };
-
-    var oldLayoutTree = null
-    var oldContainerParent = null;
-
-    this.zoom = function() {
-        if (oldLayoutTree == null) {
-            oldLayoutTree = layoutTree;
-            var current = hoveredBlocks.current;
-            if (current != null) {
-                layoutTree = current.getContainer();
-                oldContainerParent = layoutTree.parent;
-                layoutTree.parent = null;
-            }
-        }
-    }
-
-    this.unzoom = function() {
-        if (oldLayoutTree != null) {
-            layoutTree.parent = oldContainerParent;
-            oldContainerParent = null;
-            layoutTree = oldLayoutTree;
-            oldLayoutTree = null;
-        }
-    };
-
-
-    // On Boot
-    var resizeTimeout = null
-    $(window).on("resize.blocks_broadcaster", function () {
-
-        if (resizeTimeout != null) {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = null;
-            Logger.debug("timeout cleared")
-        } else {
-            Logger.debug("timeout not cleared")
-        }
-        var layoutContainer = Broadcaster.getContainer() == null ? null : Broadcaster.getContainer().element;
-        resizeTimeout = setTimeout(function(){ Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, layoutContainer);}, 200);
-
-    });
-
-}])
+}]);

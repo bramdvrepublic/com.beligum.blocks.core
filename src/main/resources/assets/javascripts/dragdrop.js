@@ -42,7 +42,7 @@ blocks.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.L
 //        Broadcaster.zoom();
         old_direction = Constants.DIRECTION.NONE;
         currentDraggedBlock = Broadcaster.getHooveredBlockForPosition(blockEvent.custom.draggingStart.pageX, blockEvent.custom.draggingStart.pageY).current;
-        if (draggingEnabled && currentDraggedBlock != null && currentDraggedBlock.canDrag) {
+        if (draggingEnabled && currentDraggedBlock != null && currentDraggedBlock.canDrag && currentDraggedBlock.getTotalBlocks() > 1) {
             hideAll(Broadcaster.getContainer().element);
             currentDraggedBlock.getContainer().createAllDropspots();
             createDraggedOverlay(currentDraggedBlock);
