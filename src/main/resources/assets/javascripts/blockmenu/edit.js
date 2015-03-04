@@ -9,13 +9,12 @@
  *  - registerByTag(TAG_IN_UPPERCASE, function to call)
  *  - registerByType(type, function to call)
  *
- *  functions are called with the current blockevent (START_EDIT_FIELD_EVENT) as parameter
+ *  functions are called with the current blockevent (START_EDIT_FIELD EVENT) as parameter
 *
 * */
 blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Constants", "blocks.core.Overlay", "blocks.core.DomManipulation", function(Broadcaster, Constants, Overlay, DOM) {
     var Edit = this;
-    var editors = [];
-    var lastPoint = {x:0, y:0};
+    var currentlyEditedElement = null;
 
     CKEDITOR.disableAutoInline = true;
 
@@ -52,8 +51,18 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
 
             if (doEdit != null) {
                 Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+                element.addClass(Constants.PROPERTY_EDIT_CLASS);
+                currentlyEditedElement = element;
                 doEdit(event);
             }
+    };
+
+    /*
+    * Clean up after edit. Called on END_EDIT_FIELD_EVENT;
+    * */
+    Edit.endEdit = function() {
+        currentlyEditedElement.removeClass(Constants.PROPERTY_EDIT_CLASS);
+        currentlyEditedElement = null;
     };
 
 

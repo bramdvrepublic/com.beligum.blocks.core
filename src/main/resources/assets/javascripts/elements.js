@@ -687,7 +687,6 @@ blocks
         var block = Class.create(layoutElement, {
             constructor: function (top, bottom, left, right, element, parent, index) {
                 block.Super.call(this, top, bottom, this.calculateLeft(element), this.calculateRight(element), element, parent, index);
-                element.removeAttr(Constants.FAKE_BLOCK);
                 // if a block is editable does not depend on the parent
 
                 this.dropspots = {};

@@ -45,10 +45,10 @@ blocks.plugin("blocks.core.Constants", function() {
         0: 0
     };
 
-    this.CONTAINER_CLASS = "container"
+    this.CONTAINER_CLASS = "container";
     this.ROW_CLASS = "row";
     this.BLOCK_CLASS = "block";
-    this.FAKE_BLOCK = "fake-block";
+
 
     // Must be ordered from small to big
     this.COLUMN_WIDTH_CLASS = [
@@ -65,25 +65,13 @@ blocks.plugin("blocks.core.Constants", function() {
 
     this.MAX_COLUMNS = 12;
 
-
-    this.OVERLAY_CLASS = "blocks-overlay";
-    this.OVERLAY_BACKGROUND_CLASS = "block-hover";
     this.COLUMN_RESIZER_CLASS = "column-resize-handle";
-    this.BLOCK_CLASS = "block-hover";
-    this.PROPERTY_CLASS = "property-hover";
+    this.BLOCK_HOVER_CLASS = "block-hover";
+    this.PROPERTY_HOVER_CLASS = "property-hover";
+    this.PROPERTY_EDIT_CLASS = "property-edit";
     this.RESIZING_CLASS = "blocks-resizing";
-    this.OVERLAY_BACKGROUND_CLASS = "block-overlay-background";
-    this.ADMIN_ANIMATION_FRONT = "admin-animation-front";
-    this.ADMIN_ANIMATION_BACK = "admin-animation-back";
-    this.ADMIN_ANIMATION_MASTER = "admin-animation-master";
 
 
-    this.BLOCK_OVERLAY_INDEX = 2000;
-    this.SELECTED_BLOCK_INDEX = 2050;
-    this.SELECTED_BLOCK_BACKGROUND_INDEX = 2040;
-    this.DIALOG_INDEX = 4000;
-    this.DIALOG_OVERLAY_INDEX = 3000;
-    this.RESIZEHANDLE_INDEX = 2500;
 
 
 });

@@ -19,7 +19,7 @@ blocks.plugin("blocks.core.image", ["blocks.finder", "blocks.core.Edit", "blocks
                     element.attr("src", "/media/public/" + file);
                 },
                 onClose: function() {
-                    Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+                    Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
                 }
             });
         }
