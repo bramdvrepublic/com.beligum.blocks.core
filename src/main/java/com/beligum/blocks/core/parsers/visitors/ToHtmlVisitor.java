@@ -77,15 +77,17 @@ public class ToHtmlVisitor extends SuperVisitor
             Node retVal = node;
 
             if(isEntity(node) && node instanceof Element) {
-                //if this is a referencing block, replace it
+
 
                 if (!StringUtils.isEmpty(getReferencedId(node))) {
+                    // We make a distinctions between properties and properties with typeof
                     if (!hasTypeOf(node)) {
                         retVal = getPropertyInstance((Element) retVal);
                     }
                     else {
                         retVal = getTypeInstance((Element) retVal);
                     }
+
                     // Copy attributes from property but do not overwrite attributes from instance
                     for (Attribute attribute: node.attributes()) {
                         if (!retVal.hasAttr(attribute.getKey())) {
@@ -236,7 +238,7 @@ public class ToHtmlVisitor extends SuperVisitor
         } else {
             retVal = (Element)fetchReferencedInstance(getReferencedId(node));
         }
-        if (isEditable(node)) {
+        if (!isNotEditable(node)) {
             retVal.attr(ParserConstants.CAN_EDIT_PROPERTY, "");
 
         } else {
@@ -247,13 +249,36 @@ public class ToHtmlVisitor extends SuperVisitor
     }
 
 
-    /**
-     * Given a reference node for a type, insert the correct entityTemplate (instance, class or defaulktvalue)
-     * @param node
+ /*
+    # Editable pages
+     - a page, when loaded, is automatically set to editable
+     - All blocks on the first level in the page are editable
+     - EXCEPT if the blueprint of this block defines it as not editable with the attribute CAN_NOT_EDIT
+     - if a block is editable, then it's properties are editable too
+     - EXCEPT if the property is marked with CAN-NOT-EDIT attribute
+     - If a property is editable but the blueprint is marked as not editable, then the property becomes not editable
+     - When a propertie is not editable, the all content (properties) on a deeper level becomes not editable
+
+     If we say a block is editable, it has a double meaning. If available, plugins will be loaded to make
+    the properies editable in the client. (e.g. a text editor). It also means that the content from the database is used
+    to show in the fields. If a property of a block is marked as not editable, then the content from the blueprint will be used
+    even if there is content available in the database.
+
+    For a property that is a blueprint it self, the blueprint will be loaded and not the content from the database
+    EXCEPT if this blueprint has the can-layout property. Then the html from the database will be loaded for this
+    brueprint and the properties for this blueprint will be filled from DB (if property is editable) or from the blueprint
+    (if property is not editable)
+
+    In short: a blueprint is a template. This template has fields that are editable. A field can also  use a
+    template that also conatins properties. A template is always recovered from disk (the template of the designer) exceopt
+    if this template has the CAN_LAYOUT property. Then the template is (within limits) changeable and saved and
+    restored from the database
+
+     @param node
      */
     private Element getTypeInstance(Element node) throws CacheException, ParseException
     {
-        // find class
+        // Find the class of this node
         Element retVal = null;
         EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
 
@@ -273,12 +298,13 @@ public class ToHtmlVisitor extends SuperVisitor
         retVal = entityClassElement.clone();
         Element reference = (Element) fetchReferencedInstance(getReferencedId(node));
         HashMap<String, Element> classProperties = getProperties(entityClassElement, false);
-//        HashMap<String, Element> referenceProperties = ;
+
         boolean propertyIsEditable = node.hasAttr(ParserConstants.CAN_EDIT_PROPERTY);
 
+        // Use property from blueprint
         if (node.hasAttr(ParserConstants.USE_DEFAULT)) {
             retVal = (Element) fetchReferencedInstance(getPropertyId(node));
-//            setPropertiesEditable(entityClassElement, classProperties, getProperties(retVal, false), propertyIsEditable);
+        // use template from database
         } else if (isLayoutable(entityClassElement)) {
             retVal = reference;
             if (propertyIsEditable) {
@@ -286,12 +312,13 @@ public class ToHtmlVisitor extends SuperVisitor
             } else {
                 retVal.removeAttr(ParserConstants.CAN_LAYOUT);
             }
-//            setPropertiesEditable(entityClassElement, classProperties, getProperties(retVal, false), propertyIsEditable);
-
+        // use blueprint as template
         } else {
             HashMap<String, Element> properties = getProperties(retVal, false);
             setReferences(getProperties(reference, false), properties);
         }
+
+        // Set properties as editable based on properties in blueprint (class)
         setPropertiesEditable(entityClassElement, classProperties, getProperties(retVal, false), propertyIsEditable);
 
 
@@ -347,40 +374,58 @@ public class ToHtmlVisitor extends SuperVisitor
 
     /**
      * Make the new node editable based on current property and the classTemplate
-     * @param entityClass
+     *
+     * Set the properties in a block as editable
+     * This block is loaded in a property inside another blueprint. If this property inside this parent blueprint
+     * is not editable then our properties also become not editable. -> canEditParent
+     *
+     * Our blueprint defines if properties are editable
+     *
+     * In this method we compare the settings in the blueprint with the setting of the property where we are loaded (the current situation)
+     *
+     * @param entityClass: our blueprint. This defines if the properties are editable
      * @param fromProperties
      * @param toProperties
+     * @param canEditParent Is the property where we are loaded editable?
      * @throws ParseException
      */
-    private void setPropertiesEditable(Element entityClass, HashMap<String,Element> fromProperties, HashMap<String,Element>  toProperties, boolean canEdit) throws ParseException
+    private void setPropertiesEditable(Element entityClass, HashMap<String,Element> fromProperties, HashMap<String,Element>  toProperties, boolean canEditParent) throws ParseException
     {
         try {
 
-            //if referencing, editable properties are present in the class-template, they are proper properties and they should be filled in from the entity-instance we are parsing now
-
-            //copy all properties of the instance to the class
+            // Set all properties as editable/not editable
             for (Element toProperty : toProperties.values()) {
-                //                    for (Element instanceProperty : instancePropertiesList) {
-                //                        if (getPropertyId(instanceProperty).equals(getPropertyId(classProperty))) {
+
                 Element fromProperty = fromProperties.get(toProperty.attr(ParserConstants.PROPERTY));
 
                 Element element = null;
 
                 // if instance set can-edit by class and parent for each property
 
-                // if class set reference_to and resource and check if parent allows editing
+                // Check if we find this property in the blueprint
                 if (fromProperty != null) {
-                    if (canEdit) {
-                        if (isEditable(fromProperty) || isEditable(entityClass)) {
+                    // Our blueprint is loaded in a property that is editable
+                    if (canEditParent) {
+                        // blueprint is not editable but property is then property is editable
+                        if (isNotEditable(entityClass) && isEditable(fromProperty)) {
                             toProperty.attr(ParserConstants.CAN_EDIT_PROPERTY, "");
                         }
-                        else if (fromProperty.hasAttr(ParserConstants.CAN_NOT_EDIT_PROPERTY)) {
+                        // blueprint is editable but property is not then property is not editable
+                        else if (!isNotEditable(entityClass) && isNotEditable(fromProperty)) {
                             toProperty.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
                             toProperty.removeAttr(ParserConstants.CAN_NOT_EDIT_PROPERTY);
                         }
-                        else {
+                        // class is not editable and property not explicitly set as editable then not editable
+                        else if (isNotEditable(entityClass) && !isEditable(fromProperty)) {
                             toProperty.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
+                            toProperty.removeAttr(ParserConstants.CAN_NOT_EDIT_PROPERTY);
                         }
+                        // make editable
+                        else {
+                            toProperty.attr(ParserConstants.CAN_EDIT_PROPERTY);
+                        }
+                    // the parent property in the blueprint is not editable so no matter what,
+                    // this property is also not editable
                     } else {
                         toProperty.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
                         toProperty.removeAttr(ParserConstants.CAN_NOT_EDIT_PROPERTY);
@@ -390,13 +435,15 @@ public class ToHtmlVisitor extends SuperVisitor
                         toProperty.attr(ParserConstants.USE_DEFAULT, "");
                         toProperty.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
                     }
-                } else if (canEdit) {
+                // property is not found in blueprint and parent property is editable then this is editable
+                } else if (canEditParent) {
                     toProperty.attr(ParserConstants.CAN_EDIT_PROPERTY, "");
+                // property is not found in blueprint and parent property is not editable then this is not editable
                 } else {
                     toProperty.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
+                    toProperty.removeAttr(ParserConstants.CAN_NOT_EDIT_PROPERTY);
                 }
 
-                // TODO Wouter: What with properties we could not find in source
             }
 
         }

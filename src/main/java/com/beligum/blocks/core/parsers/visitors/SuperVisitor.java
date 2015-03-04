@@ -425,6 +425,17 @@ public class SuperVisitor
         return retVal;
     }
 
+    public boolean isNotEditable(Element element) {
+        if(element == null){
+            return false;
+        }
+        boolean retVal = false;
+        if (element.hasAttr(ParserConstants.CAN_NOT_EDIT_PROPERTY)) {
+            retVal = true;
+        }
+        return retVal;
+    }
+
     public boolean isChangable(Element element) {
         if(element == null){
             return false;

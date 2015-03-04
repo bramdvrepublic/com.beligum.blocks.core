@@ -1,4 +1,4 @@
-#BlocksID
+# BlocksID
 The BlocksID-class is a wrapper around a URI, which holds functionalities for communication with the database:
 
  - It holds a version-field, constructed using the current time of the System. Redis.LAST_VERSION or Redis.NO_VERSION should be used for last version or unversioned id.
@@ -7,7 +7,7 @@ The BlocksID-class is a wrapper around a URI, which holds functionalities for co
  
 Two ID's are **equal** when their string-representation is equal (for RedisID's this includes timestamp-versioning)
 
-#Redis and Storable
+# Redis and Storable
  - Extends interface Database<Storable>
  - The method 'toHash()' in Storable decides which info is saved to db in hash-form. This method should be overwritten manually. (It is saved under "[storableId]:[version]")
  - A storable holds creation and update information
@@ -25,12 +25,12 @@ All ID's used in Redis, are URI's mapping one-to-one on the object in question:
  - The set with all instances of a certain EntityTemplateClass has an id looking like this: "blocks://[db-site-allias]/[entityClassName]Set"
 
 
-#Templates
+# Templates
  - Template is a super-name for entity-templates, entity-class-templates and page-templates. 
  - Two templates are **equal** when their content, meta-data (application version and deletion-flag) and id (this doesn't include timestamp-versioning!) are equal. Creation- and update-info is not brought into the mix!
  - Creation- and update-info is being handled in the Storable constructor and Database.update(Storable storable) method.
   
-#Parsing
+# Parsing
 Is done in 5 visiting-lines:
  - From files to a list of all entity-classes and all page-templates found (ON SERVER START UP)
  - That list is given to a second visitor which in turn makes default instances where necessary and caches all classes (ON SERVER START UP)
@@ -38,7 +38,7 @@ Is done in 5 visiting-lines:
  - From stored entity-templates in db to html (ON READ)
  - From html received from client to updated instances in db (ON UPDATE)
 
-##Html- and CSS-'rules'
+## Html- and CSS-'rules'
  - Only page-templates can hold bootstrap-containers (entities should never be containers, and no containers should ever be used in entities)
  - No bootstrap-layout should be added to a typeof- or property-tag (= entity-tag)
  - If a entity-tag has can-layout, then the first element inside the entity must be a row
@@ -46,14 +46,14 @@ Is done in 5 visiting-lines:
  - The css-rules for a certain entity will probably be grouped inside a class with the same name as the entity-class. These rules should be able to properly render the entity independently of any other css-rules. This also means no bootstrap-classes can be used to render good design.
 
 
-#Exceptions
+# Exceptions
  - The only exceptions Redis.class throws (publicly) are RedisExceptions. Their cause can of course be all sorts of other exceptions.
  - The only exceptions TemplateParser.class throws (publicly) are ParseExceptions. Their cause can of course be all sorts of other exceptions.
  - The only exceptions AbstractTemplatesCache.class throws (publicly) are CacheExceptions. Their cause can of course be all sorts of other exceptions.
  - The only exceptions RedisID.class throws (publicly) are IDExceptions. Their cause can of course be all sorts of other exceptions.
  - The toHash()-method in all Storables can throw SerializationExceptions, the createInstanceFromHash()-methods in all templates can throw DeserializationExceptions.
  
-#Page-templates
+# Page-templates
  - Should be defined using "template=..."- and "template-content"-attributes
  - The last found "default"-template (a html-file starting with \<html template="default"\>) is used as the default-template. If no such html-file is found in the templates-directory, we use: 
   \<!DOCTYPE\>
@@ -64,13 +64,13 @@ Is done in 5 visiting-lines:
   \</body\>
   \</html\>
 
-#Internationalization
+# Internationalization
  - Preferred languages can be specified in the configuration-xml under "blocks.site.languages", as a list, in order from most preferred language to least preferred language.
  - Languages should always be represented as a (2 letter) ISO 639 language-code.
  - If a url needs to be translated, it needs to be an absolute url of this site-domain or a relative url starting with a '/'. Relative urls without '/' will not be translated!
 
-#Script- and style-injection
- - Scripts and links (f.i. css-files) can be added to page-templates, class bleuprints and dynamic blocks
+# Script- and style-injection
+ - Scripts and links (f.i. css-files) can be added to page-templates, class blueprints and dynamic blocks
  - Scripts of page-templates and entity-classes are saved to db as a html-blob
  - When a page is send to the client, the scripts and links are injected in this order:
      1. links of page-template
@@ -81,3 +81,19 @@ Is done in 5 visiting-lines:
      6. scripts of dynamic blocks
      (7. links of blocks core frontend)
      (8. scripts of blocks core frontend)
+
+# Editable pages
+- a page, when loaded, is automatically set to editable
+- All blocks on the first level in the page are editable
+    - EXCEPT if the blueprint of this block defines it as not editable with the attribute CAN_NOT_EDIT
+- if a block is editable, then it's properties are editable too
+    - EXCEPT if the property is marked with CAN-NOT-EDIT attribute
+- If a property is editable but the blueprint is marked as not editable, then the property becomes not editable
+- When a propertie is not editable, the all content (properties) on a deeper level becomes not editable
+
+If we say a block is editable, it has a double meaning. If available, plugins will be loaded to make
+the properies editable in the client. (e.g. a text editor). It also means that the content from the database is used
+to show in the fields. If a property of a block is marked as not editable, then the content from the blueprint will be used
+even if there is content available in the database.
+
+This way we have full control of the shown content, based on the blueprints
