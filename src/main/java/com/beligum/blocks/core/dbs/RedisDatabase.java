@@ -283,6 +283,9 @@ public class RedisDatabase implements Database<AbstractTemplate>
     public AbstractTemplate fetchLastVersion(BlocksID id, Class<? extends AbstractTemplate> type) throws DatabaseException
     {
         try(Jedis redisClient = pool.getResource()) {
+            if(id == null){
+                return null;
+            }
             if (!redisClient.exists(id.getUnversionedId())) {
                 return null;
             }
@@ -425,6 +428,9 @@ public class RedisDatabase implements Database<AbstractTemplate>
     @Override
     public List<AbstractTemplate> fetchVersionList(BlocksID id, Class<? extends AbstractTemplate> type) throws DatabaseException
     {
+        if(id == null){
+            return new ArrayList<>();
+        }
         try(Jedis redisClient = pool.getResource()){
             List<AbstractTemplate> versionList = new ArrayList<>();
             List<String> versionedIds = redisClient.lrange(id.getUnversionedId(), 0, -1);

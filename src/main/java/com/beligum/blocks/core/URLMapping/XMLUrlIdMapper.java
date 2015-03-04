@@ -16,9 +16,12 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+import sun.org.mozilla.javascript.ast.Block;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
@@ -27,11 +30,13 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.*;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.LinkedBlockingDeque;
 
 /**
  * Created by bas on 23.02.15.
@@ -63,6 +68,8 @@ public class XMLUrlIdMapper implements UrlIdMapper
 
     private HashMap<String, SiteMap> cachedSiteMaps = new HashMap<>();
 
+    private Deque<XMLUrlIdMapper> cachedMappingVersions = new LinkedBlockingDeque<>(3);
+
 
     private XMLUrlIdMapper(Document urlIdMapping) throws XPathExpressionException
     {
@@ -80,35 +87,41 @@ public class XMLUrlIdMapper implements UrlIdMapper
     {
         try{
             if(instance == null){
-                DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-                BlocksID xmlMappingId = getNewVersionXMLMappingId();
-                UrlIdMapping storedXml = (UrlIdMapping) RedisDatabase.getInstance().fetchLastVersion(xmlMappingId, UrlIdMapping.class);
-                Document document;
-                if(storedXml == null){
-                    //start with an empty url-mapping xml-string
-                    document = builder.parse(IOUtils.toInputStream("<?xml version=\"1.0\"?>\n" +
-                                                                   "<" + PATH + " " + ROOT +"='"+BlocksConfig.getSiteDomain()+"'>\n" +
-                                                                   "</"+PATH +">"));
-                    instance = new XMLUrlIdMapper(document);
-                }
-                else{
-                    document = builder.parse(IOUtils.toInputStream(storedXml.getTemplate()));
-                    XPathExpression assignedIdsExpr = XPathFactory.newInstance().newXPath().compile("//" + PATH + "[@"+PATH_ID+"]");
-                    NodeList assignedPaths = (NodeList) assignedIdsExpr.evaluate(document, XPathConstants.NODESET);
-                    SortedSet<String> pathIds = new TreeSet<>(new PathIdComparator());
-                    for(int i = 0; i<assignedPaths.getLength(); i++){
-                        Element pathElement = (Element) assignedPaths.item(i);
-                        pathIds.add(pathElement.getAttribute(PATH_ID));
-                    }
-                    instance = new XMLUrlIdMapper(document);
-                    instance.pathIds = pathIds;
-                }
+                BlocksID xmlMappingId = getXMLMappingId(BlocksID.NO_VERSION);
+                UrlIdMapping storedMapping = (UrlIdMapping) RedisDatabase.getInstance().fetchLastVersion(xmlMappingId, UrlIdMapping.class);
+                instance = renderInstance(storedMapping);
                 instance.writeOut();
             }
             return instance;
 
         }catch (Exception e){
             throw new UrlIdMappingException("Could not initialize url-id mapping.", e);
+        }
+    }
+
+    private static XMLUrlIdMapper renderInstance(UrlIdMapping mapping) throws ParserConfigurationException, IOException, SAXException, XPathExpressionException
+    {
+        DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+        Document document;
+        if(mapping == null){
+            //start with an empty url-mapping xml-string
+            document = builder.parse(IOUtils.toInputStream("<?xml version=\"1.0\"?>\n" +
+                                                           "<" + PATH + " " + ROOT +"='"+BlocksConfig.getSiteDomain()+"'>\n" +
+                                                           "</"+PATH +">"));
+            return new XMLUrlIdMapper(document);
+        }
+        else{
+            document = builder.parse(IOUtils.toInputStream(mapping.getTemplate()));
+            XPathExpression assignedIdsExpr = XPathFactory.newInstance().newXPath().compile("//" + PATH + "[@"+PATH_ID+"]");
+            NodeList assignedPaths = (NodeList) assignedIdsExpr.evaluate(document, XPathConstants.NODESET);
+            SortedSet<String> pathIds = new TreeSet<>(new PathIdComparator());
+            for(int i = 0; i<assignedPaths.getLength(); i++){
+                Element pathElement = (Element) assignedPaths.item(i);
+                pathIds.add(pathElement.getAttribute(PATH_ID));
+            }
+            XMLUrlIdMapper mapper = new XMLUrlIdMapper(document);
+            mapper.pathIds = pathIds;
+            return mapper;
         }
     }
 
@@ -130,6 +143,12 @@ public class XMLUrlIdMapper implements UrlIdMapper
             throw new UrlIdMappingException("Could not get id for url '" + url + "'.", e);
         }
     }
+    /**
+     *
+     * @param url
+     * @return null if no id can be found for the url
+     * @throws UrlIdMappingException
+     */
     private BlocksID fetchId(URL url) throws UrlIdMappingException
     {
         try {
@@ -388,6 +407,37 @@ public class XMLUrlIdMapper implements UrlIdMapper
             throw new UrlIdMappingException("Could not remove url '" + languagedUrl + "' from mapping.", e);
         }
     }
+
+    @Override
+    public BlocksID getLastId(URL url) throws UrlIdMappingException
+    {
+        try{
+            //TODO BAS SH: je bent bezig met het checken van the volgorde bij de deque van de mappings (.iterator() of .descendingIterator()?), zet dan de capacity op 10 of zo
+            //TODO BAS SH 2: we willen een sitemap viewable maken en daar kun je dan urls aanpassen, vertalen of verplaatsen (kan dat in 1 methode?)
+            BlocksID retVal = null;
+            Iterator<XMLUrlIdMapper> it = this.cachedMappingVersions.iterator();
+            while(retVal == null && it.hasNext()){
+                XMLUrlIdMapper mapper = it.next();
+                retVal = mapper.fetchId(url);
+            }
+            if(retVal != null){
+                return retVal;
+            }
+            else {
+                BlocksID mapperId = getXMLMappingId(BlocksID.NO_VERSION);
+                List<UrlIdMapping> mappings = RedisDatabase.getInstance().fetchVersionList(mapperId, UrlIdMapping.class);
+                int i = this.cachedMappingVersions.size();
+                while (retVal == null && i < mappings.size()) {
+                    XMLUrlIdMapper mapper = this.addMappingToDeque(mappings.get(i));
+                    retVal = mapper.fetchId(url);
+                    i++;
+                }
+                return retVal;
+            }
+        }catch(Exception e){
+            throw new UrlIdMappingException("Could not fetch the last id that was not deleted for url '" + url + "'.", e);
+        }
+    }
     /**
      * Remove the mapping from cache.
      */
@@ -404,10 +454,6 @@ public class XMLUrlIdMapper implements UrlIdMapper
                 throw new LanguageException("Unknown language found '" + language + "'.");
             }
             if(!this.cachedSiteMaps.containsKey(language)) {
-                //TODO BAS SH: we willen een sitemap object maken met simpelweg urls in met kinderen en vertalingen
-                //TODO BAS SH 2: dan willen we een sitemap viewable maken en daar kun je dan urls aanpassen, vertalen of verplaatsen (kan dat in 1 methode?)
-                //TODO BAS SH 3: de gedelete pagina's moeten uit de sitemap verwijderd worden
-                //TODO BAS SH 4: een gedelete pagina reviven doe je door naar voorgaande versies van de url-mapping te kijken
                 SiteMapNode root = this.createSiteMapNode(this.urlIdMapping.getDocumentElement(), language);
                 SiteMap siteMap = new SiteMap(root, language);
                 this.cachedSiteMaps = new HashMap<>();
@@ -456,7 +502,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
 
     //______________________PRIVATE_METHODS___________________
 
-    private void writeOut() throws TransformerException, FileNotFoundException, MalformedURLException, IDException, DatabaseException
+    private void writeOut() throws TransformerException, IOException, IDException, DatabaseException, ParserConfigurationException, SAXException, XPathExpressionException
     {
         /*
          * Writing xml as found in  'Core Java - Volume II - Advanced Features - ninth edition' by 'Cay S. Horstman, Gay Cornell', p 161
@@ -477,16 +523,18 @@ public class XMLUrlIdMapper implements UrlIdMapper
         /*
          * Save new version to db
          */
-        BlocksID xmlId = getNewVersionXMLMappingId();
+        BlocksID xmlId = getXMLMappingId(BlocksID.NEW_VERSION);
         UrlIdMapping treeTemplate = new UrlIdMapping(xmlId, result.toString());
         //make sure only one thread is reading or writing from or to db
         synchronized(this) {
             UrlIdMapping storedXML = (UrlIdMapping) RedisDatabase.getInstance().fetchLastVersion(xmlId, UrlIdMapping.class);
             if (storedXML == null) {
                 RedisDatabase.getInstance().create(treeTemplate);
+                this.addMappingToDeque(treeTemplate);
             }
             else if (!treeTemplate.equals(storedXML)) {
                 RedisDatabase.getInstance().update(treeTemplate);
+                this.addMappingToDeque(treeTemplate);
             }
             else {
                 //no need to save to db, since this is an unchanged version
@@ -494,9 +542,9 @@ public class XMLUrlIdMapper implements UrlIdMapper
         }
     }
 
-    private static BlocksID getNewVersionXMLMappingId() throws MalformedURLException, IDException
+    private static BlocksID getXMLMappingId(long version) throws MalformedURLException, IDException
     {
-        return new BlocksID(new URL(BlocksConfig.getSiteDomain() + "/" + DatabaseConstants.URL_ID_MAPPING), BlocksID.NEW_VERSION, true);
+        return new BlocksID(new URL(BlocksConfig.getSiteDomain() + "/" + DatabaseConstants.URL_ID_MAPPING), version, true);
     }
 
 
@@ -725,5 +773,16 @@ public class XMLUrlIdMapper implements UrlIdMapper
             i++;
         }
         return existingPathParts;
+    }
+
+
+    private XMLUrlIdMapper addMappingToDeque(UrlIdMapping mapping) throws ParserConfigurationException, SAXException, XPathExpressionException, IOException
+    {
+        XMLUrlIdMapper mapper = renderInstance(mapping);
+        if(!this.cachedMappingVersions.offerLast(mapper)){
+            this.cachedMappingVersions.removeFirst();
+            this.cachedMappingVersions.addLast(mapper);
+        }
+        return mapper;
     }
 }

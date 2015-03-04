@@ -57,6 +57,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                     return template;
                 }
                 else{
+                    //TODO BAS: if this is null, check Redis for last version
                     return applicationCache.get(getTemplateKey(getDefaultTemplateName()));
                 }
             }

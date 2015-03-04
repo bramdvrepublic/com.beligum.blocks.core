@@ -25,11 +25,30 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
         }
     });
 
+    function queryParam(paramName) {
+        var query = window.location.search.split("?");
+        if (query.length > 1) {
+            var paramPairs = query[1].split("&");
+            var i;
+            for (i = 0; i < paramPairs.length; i++) {
+                var paramPair = paramPairs[i];
+                var pair = paramPair.split("=");
+                if (pair[0] == paramName) {
+                    return pair[1];
+                }
+            }
+        }
+        return null;
+    }
     saveBtn.on("click", function() {
         menuBar.removeClass("open");
         var page = $("html")[0].outerHTML;
+        var deleted = queryParam("deleted")
+        if(!deleted){
+            deleted = false;
+        }
         $.ajax({type: 'PUT',
-                url: "/entities/" + window.location.pathname,
+                url: "/entities/" + window.location.pathname + "?deleted=" + deleted,
                 data: page,
                 contentType: 'application/json; charset=UTF-8',
                 success: function(url, textStatus, response) {

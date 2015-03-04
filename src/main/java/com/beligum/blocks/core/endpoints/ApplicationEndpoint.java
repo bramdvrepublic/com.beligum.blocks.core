@@ -45,12 +45,16 @@ public class ApplicationEndpoint
     //using regular expression to let all requests to undefined paths end up here
     @Path("/{randomPage:.*}")
     @GET
-    public Response getPageWithId(@PathParam("randomPage") String randomURLPath, @QueryParam("version") Long version)
+    public Response getPageWithId(@PathParam("randomPage") String randomURLPath, @QueryParam("version") Long version, @QueryParam("deleted") @DefaultValue("false") boolean fetchDeleted)
     {
         try{
+            if(fetchDeleted && !SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)){
+                Logger.debug("Unauthorized user tried to view deleted version of page '" + randomURLPath + "'.");
+                fetchDeleted = false;
+            }
             URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
             if(!this.hasLanguage(url)){
-                return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId(BlocksConfig.getDefaultLanguage()+url.getPath(), version).getPath())).build();
+                return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId(BlocksConfig.getDefaultLanguage()+url.getPath(), version, fetchDeleted).getPath())).build();
             }
             if(version == null){
                 version = BlocksID.NO_VERSION;
@@ -59,19 +63,36 @@ public class ApplicationEndpoint
                 if(!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)){
 //                    throw new UnauthorizedException("User is not allowed to see versioned entity: url = " + randomURLPath + ", version=" +version);
                     version = BlocksID.LAST_VERSION;
-                    Logger.debug("Unauthorized user tried to view older version of page");
+                    Logger.debug("Unauthorized user tried to view older version of page '" + randomURLPath + "'.");
                 }
             }
             //if no language info is specified in the url, or if the specified language doesn't exist, the default language will still be shown
-            BlocksID id = XMLUrlIdMapper.getInstance().getId(url);
+            BlocksID id = null;
+            if(!fetchDeleted){
+                id = XMLUrlIdMapper.getInstance().getId(url);
+            }
+            else{
+                id = XMLUrlIdMapper.getInstance().getLastId(url);
+            }
             EntityTemplate lastStoredVersion = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(id, EntityTemplate.class);
             //if no such page is present in db, ask if user wants to create a new page
             if(lastStoredVersion == null) {
                 if(!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)){
                     throw new NotFoundException("Page does not exist: " + url);
                 }
-                Template template = R.templateEngine().getEmptyTemplate("/views/new-page.vm");
-                return injectParameters(template);
+                //check if this url has ever before had an id mapped to it
+                if(!fetchDeleted) {
+                    id = XMLUrlIdMapper.getInstance().getLastId(url);
+                }
+                lastStoredVersion = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(id, EntityTemplate.class);
+                if(lastStoredVersion == null || !lastStoredVersion.getDeleted()) {
+                    Template template = R.templateEngine().getEmptyTemplate("/views/new-page.vm");
+                    return injectParameters(template);
+                }
+                else{
+                    Template template = R.templateEngine().getEmptyTemplate("/views/deleted-page.vm");
+                    return injectParameters(template);
+                }
             }
             //render the entity
             else {
@@ -82,9 +103,9 @@ public class ApplicationEndpoint
                     entityTemplate = lastStoredVersion;
                 }
                 //if the page is deleted, it should not be shown (method throws NotFoundException)
-                boolean needsToBehandled = this.handleTrashedEntity(entityTemplate);
+                boolean needsToBeHandled = this.handleTrashedEntity(entityTemplate);
                 //if the current user may modify entities, a choice is given to create a new page, or revive the deleted page
-                if(needsToBehandled) {
+                if(needsToBeHandled) {
                     Template template = R.templateEngine().getEmptyTemplate("/views/deleted-page.vm");
                     return injectParameters(template);
                 }

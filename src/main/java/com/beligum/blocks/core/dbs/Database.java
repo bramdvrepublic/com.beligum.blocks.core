@@ -28,6 +28,13 @@ public interface Database<T extends Storable> extends Closeable
 
     public T fetchLastVersion(BlocksID id, Class<? extends T> type) throws DatabaseException;
 
+    /**
+     *
+     * @param id
+     * @param type
+     * @return A list with all stored versions of a certain id, ordered from last version to newest version.
+     * @throws DatabaseException
+     */
     public List<T> fetchVersionList(BlocksID id, Class<? extends T> type) throws DatabaseException;
 
     /**

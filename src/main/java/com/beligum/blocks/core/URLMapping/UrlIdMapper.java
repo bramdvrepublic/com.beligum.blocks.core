@@ -50,6 +50,14 @@ public interface UrlIdMapper
     public BlocksID remove(URL languagedUrl) throws UrlIdMappingException;
 
     /**
+     *
+     * @param url
+     * @return The last id that was previously mapped to this url, or null if this url was never paired to an id before.
+     * @throws UrlIdMappingException
+     */
+    public BlocksID getLastId(URL url) throws UrlIdMappingException;
+
+    /**
      * Remove the mapping from cache.
      */
     public void reset();
