@@ -1,10 +1,10 @@
 package com.beligum.blocks.core.parsers;
 
+import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
-import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
@@ -33,7 +33,7 @@ import java.util.*;
 public class TemplateParser
 {
 
-    //TODO BAS!: complete rdfa enablement (rel for same property-names, about for entity-injection)
+    //TODO BAS: complete rdfa enablement (rel for same property-names, about for entity-injection)
 
     /**
      * Parse all templates found in the specified html and cache them in the specified collection.
@@ -138,17 +138,15 @@ public class TemplateParser
 
     /**
      * Save a new entity-template-instance of class 'entityTemplateClass' to db, and also all it's children.
-     * @param language the language the new entity is written in (must be the same as specified in pageUrl-parameter,
-     *                 if one is present there), if no such language is specified the primary language
-     *                 of the entity-class is used
+     * @param id the id the new template will be given
      * @param entityTemplateClass
      * @return the url of the freshly saved template
      */
-    public static URL saveNewEntityTemplateToDb(URL pageURL, String language, AbstractTemplate entityTemplateClass) throws ParseException
+    public static void saveNewEntityTemplateToDb(BlocksID id, AbstractTemplate entityTemplateClass) throws ParseException
     {
-        String pageStringId = "";
         try {
-            if(!Languages.containsLanguageCode(language)){
+            String language = id.getLanguage();
+            if(!Languages.isLanguageCode(language)){
                 language = entityTemplateClass.getLanguage();
             }
             String html = entityTemplateClass.getTemplate(language);
@@ -156,15 +154,12 @@ public class TemplateParser
                 html = entityTemplateClass.getTemplate();
             }
             Element doc = parse(html);
-            ClassToStoredInstanceVisitor visitor = new ClassToStoredInstanceVisitor(pageURL, language);
+            ClassToStoredInstanceVisitor visitor = new ClassToStoredInstanceVisitor(id.getUrl(), language);
             Traversor traversor = new Traversor(visitor);
             traversor.traverse(doc);
-            pageStringId = visitor.getReferencedId(doc.child(0));
-            BlocksID pageId = new BlocksID(pageStringId, BlocksID.NO_VERSION, language);
-            return pageId.getLanguagedUrl();
         }
-        catch(IDException e){
-            throw new ParseException("Couldn't construct url for new " + EntityTemplate.class.getSimpleName() + "-instance: " + pageStringId, e);
+        catch(Exception e){
+            throw new ParseException("Couldn't save new template instance to db", e);
         }
 
     }
@@ -239,7 +234,7 @@ public class TemplateParser
             return DOM.outerHtml();
         }
         catch (Exception e){
-            throw new ParseException("Exception while rendering entity '" + entityTemplate.getName() + "' in tempalte '" + pageTemplate.getName() + "'.", e);
+            throw new ParseException("Exception while rendering entity '" + entityTemplate.getName() + "' in template '" + pageTemplate.getName() + "'.", e);
         }
     }
 
@@ -257,10 +252,10 @@ public class TemplateParser
         return classDOM.outerHtml();
     }
 
-    public static void updateEntity(URL entityUrl, String html) throws ParseException
+    public static void updateEntity(BlocksID id, String html) throws ParseException
     {
         Document newDOM = parse(html);
-        Traversor traversor = new Traversor(new HtmlToStoreVisitor(entityUrl, newDOM));
+        Traversor traversor = new Traversor(new HtmlToStoreVisitor(id.getUrl(), id.getLanguage(), newDOM));
         traversor.traverse(newDOM);
     }
 

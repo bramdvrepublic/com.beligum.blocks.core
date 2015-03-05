@@ -12,32 +12,16 @@
             </div>
         </div>
     </div>
-    <div class="row">
+    <div class="row red-form">
         <div class="col-md-offset-1 col-md-5">
-            <div class="row">
-                <div class="col-md-12 red-form" id="placeholder">
-                    <div onclick="showSelection()" class="form-control btn btn-primary" >New page</div>
-                </div>
-            </div>
             <div class="row" id="class-selection">
                 <div class="col-md-12">
-                    <form method="POST" action="/entities" id="new" class="red-form">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <button type="submit" form="new" class="form-control btn btn-primary">New page</button>
-                            </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <button onclick="showSelectionModal()" class="form-control btn btn-primary">New page</button>
                         </div>
-                        <div class="row">
-                            <div class="col-md-12">
-                                <input type="hidden" name="page-url" value="$entityUrl"/>
-                                <select name="page-class-name" class="form-control">
-                                    #foreach($entityClass in $entityClasses)
-                                        <option value="$entityClass.getName()">$!entityClass.getName()</option>
-                                    #end
-                                </select>
-                            </div>
-                        </div>
-                    </form>
+                    </div>
+
                 </div>
             </div>
         </div>

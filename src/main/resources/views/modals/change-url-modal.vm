@@ -1,0 +1,23 @@
+#define($body-html)
+<div class="form-group">
+    <div class="row">
+        <div class="col-md-3">
+            <input class="form-control" style="text" id="new1" placeholder="...">
+        </div>
+        <div class="col-md-1">
+            <span style="font-size: large; font-style: oblique">/</span>
+        </div>
+        <div class="col-md-3">
+            <input class="form-control" style="text" id="new2" placeholder="...">
+        </div>
+        <div class="col-md-1">
+            <span style="font-size: large; font-style: oblique">/</span>
+        </div>
+        <div class="col-md-3">
+            <input class="form-control" style="text" id="new3" placeholder="...">
+        </div>
+    </div>
+</div>
+#end
+
+#parse("/views/modals/modal-main.html")

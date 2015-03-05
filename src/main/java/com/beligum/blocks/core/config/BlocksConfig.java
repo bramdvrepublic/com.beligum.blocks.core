@@ -5,7 +5,6 @@ import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.configuration.ConfigurationRuntimeException;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.DateFormat;
@@ -70,6 +69,8 @@ public class BlocksConfig
         return getConfiguration("blocks.scripts.frontend");
     }
 
+    public static String getSolrServerUrl() {return getConfiguration("blocks.solr.url");}
+
     public static String getProjectVersion(){
         if(projectVersion == null) {
             Properties prop = new Properties();
@@ -129,7 +130,7 @@ public class BlocksConfig
                 for(int i=0; i<cachedLanguages.length; i++){
                     Locale locale = new Locale(cachedLanguages[i]);
                     String language = locale.getLanguage();
-                    if(!Languages.containsLanguageCode(language)){
+                    if(!Languages.isLanguageCode(language)){
                         throw new ConfigurationRuntimeException("Found language-code which doesn't follow the proper standard (ISO 639).");
                     }
                     cachedLanguages[i] = language;

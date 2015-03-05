@@ -4,7 +4,11 @@
  * Layouter builds a virtual tree from these objects for easy searching and triggering
  * and to take some load of the dom while calculating
  *
- *
+ * The layout tree starts from a container ( = element)
+ *  - if this container has a can-layout attribute we build a tree with children
+ *  - if not, we search all first level properties in this container
+ *      - if this property is can-layout then the property creates a new container
+ *      - etc ...
  * */
 blocks
     .plugin("blocks.core.Elements", ["blocks.core.Class", "blocks.core.Constants", "blocks.core.DomManipulation", "blocks.core.Edit", function (Class, Constants, DOM, Edit) {
@@ -18,7 +22,7 @@ blocks
 
 
 
-        // smallest elemet with 4 corner
+        // smallest element with 4 corners
         // and a function to check if x,y is inside the surface
         var surface = Class.create({
             calculateTop: function (element) {
@@ -97,7 +101,7 @@ blocks
             makeTriggers: function(x, y, direction) {
                 var BORDER_THRESHOLD = 15;
                 if (this.side != direction && this.side != Constants.OPPOSITE_DIRECTION[direction]) {
-                    Logger.debug("exit because drop[loc not on this side " + direction);
+                    Logger.debug("exit because droploc not on this side " + direction);
                     return false;
                 }
                 var left = 0;
@@ -256,8 +260,8 @@ blocks
                 }
 
                 this.parent = parent;
-                this.index = index;
-                this.element = element;
+                this.index = index; // index in the parent
+                this.element = element; // jquery element
                 this.children = [];
                 this.resizeHandles = [];
                 this.totalBlocks = null;
@@ -298,6 +302,7 @@ blocks
                 return retVal;
             },
             // returns true if this block has no sibling on his left/right/top/bottom
+            // to be overridden by subclasse
             isOuterLeft: function () {return true},
             isOuterRight: function () { return true },
             isOuterTop: function () { return true },
@@ -340,7 +345,7 @@ blocks
                 }
             },
 
-            // TODO: check if deprecated
+            // find most left and right column and use them to calculate the width of the parent
             getFullWidth: function () {
                 var retVal = 0;
                 if (this.parent != null) {
@@ -374,6 +379,7 @@ blocks
                 }
             },
 
+            // Creates rows or blocks inside a column
             generateChildrenForColumn: function () {
                 var childType = Constants.ROW_CLASS;
                 var rows = this.element.children("." + Constants.ROW_CLASS);
@@ -598,10 +604,11 @@ blocks
             }
         });
 
+        // A container contains properties
+        // A property can contain a new contianer itself to go up the tree
         var property = Class.create(layoutElement, {
             constructor: function (element, parent) {
                 property.Super.call(this, this.calculateTop(element), this.calculateBottom(element), this.calculateLeft(element), this.calculateRight(element), element, parent, 0);
-                this.container = null;
                 if (DOM.canEdit(element)) {
                     this.canEdit = true;
                 }
@@ -648,15 +655,6 @@ blocks
                 return dropspots;
             },
 
-//
-//            getProperty: function(x, y) {
-//                for(var i=0; i< this.properties.length; i++) {
-//                    if (this.properties[i].isTriggered(x, y)) {
-//                        return this.properties[i];
-//                    }
-//                }
-//                return null;
-//            },
 
             generateProperties: function(element) {
                 var prop = null;
@@ -683,22 +681,22 @@ blocks
 
         });
 
-        // Special kind of row that can contain template
+        // Special kind of row that can contain a template
+        // Blocks are the elements inside a column
         var block = Class.create(layoutElement, {
             constructor: function (top, bottom, left, right, element, parent, index) {
                 block.Super.call(this, top, bottom, this.calculateLeft(element), this.calculateRight(element), element, parent, index);
-                element.removeAttr(Constants.FAKE_BLOCK);
                 // if a block is editable does not depend on the parent
 
                 this.dropspots = {};
-                if (this.canDrag) {
-                    this.verticalMiddle = this.left + ((this.right - this.left) / 2);
-                    this.horizontalMiddle = this.top + ((this.bottom - this.top) / 2);
-                }
+
                 var ct = this.getContainer()
                 ct.blocks.push(this);
+                // if our container is layoutable then we are draggable
                 this.canDrag = ct.canLayout;
                 this.container = new container(this.element, this);
+
+
             },
 
             findActiveElement: function (x, y) {
@@ -845,19 +843,9 @@ blocks
                 if (direction == Constants.DIRECTION.UP || direction == Constants.DIRECTION.DOWN) {
                     co = y;
                     dp = this.verticalDropspots;
-//                    if (y < this.horizontalMiddle) {
-//                        side = Constants.SIDE.TOP;
-//                    } else {
-//                        side = Constants.SIDE.BOTTOM;
-//                    }
                 } else if (direction == Constants.DIRECTION.LEFT || direction == Constants.DIRECTION.RIGHT) {
                     co = x;
                     dp = this.horizontalDropspots;
-//                    if (x < this.verticalMiddle) {
-//                        side = Constants.SIDE.LEFT;
-//                    } else {
-//                        side = Constants.SIDE.RIGHT;
-//                    }
                 }
                 if (dp != null) {
                     for (var i = 0; i < dp.length; i++) {
@@ -906,6 +894,7 @@ blocks
                 return dropspots;
             },
 
+            // Container is a LayoutElement without a parent
             getContainer: function() {
                 var parent = this.parent;
                 while (parent != null && !(parent instanceof blocks.elements.Container)) {

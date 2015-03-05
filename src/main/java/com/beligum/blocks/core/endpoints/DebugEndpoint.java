@@ -1,15 +1,13 @@
 package com.beligum.blocks.core.endpoints;
 
+import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.dbs.Redis;
+import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.*;
 import com.beligum.blocks.core.identifiers.BlocksID;
-import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
-import com.beligum.blocks.core.models.redis.templates.PageTemplate;
+import com.beligum.blocks.core.models.redis.templates.*;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.utils.Logger;
@@ -22,7 +20,10 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by bas on 27.01.15.
@@ -34,15 +35,19 @@ public class DebugEndpoint
     public static final String ENTTIY_INSTANCE_TYPE = "instance";
     public static final String ENTITY_CLASS_TYPE = "class";
     public static final String PAGE_TEMPLATE_TYPE = "template";
+    public static final String XML_TEMPLATE_TYPE = "xml";
 
     @GET
     @Path("/flush")
-    public Response flushEntities() throws CacheException
+    public Response flushEntities() throws Exception
     {
-        this.resetCache();
-        Redis.getInstance().flushDB();
+        RedisDatabase.getInstance().flushDB();
         Logger.warn("Database has been flushed by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
-        return Response.ok("<ul><li>Cache reset</li><li>Database emptied</li></ul>").build();
+        XMLUrlIdMapper.getInstance().reset();
+        XMLUrlIdMapper.getInstance();
+        Logger.warn("Url-id mapping has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
+        this.resetCache();
+        return Response.ok("<ul><li>Database emptied</li><li>Cache reset</li><li>Url-id mapping reset</li></ul>").build();
     }
 
     @GET
@@ -97,11 +102,12 @@ public class DebugEndpoint
                     String fragment,
                     @QueryParam("type")
                     String typeName)
-                    throws MalformedURLException, IDException, DatabaseException, CacheException, ParseException
+                    throws Exception
     {
         URL url = renderUrl(resourcePath,fragment);
         Class<? extends AbstractTemplate> type = determineType(typeName);
-        AbstractTemplate template = (AbstractTemplate) Redis.getInstance().fetchLastVersion(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
+        BlocksID id = XMLUrlIdMapper.getInstance().getId(url);
+        AbstractTemplate template = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(id, type);
         return Response.ok(template.toString()).build();
     }
 
@@ -117,11 +123,12 @@ public class DebugEndpoint
                     String fragment,
                     @QueryParam("type")
                     String typeName)
-                    throws MalformedURLException, IDException, DatabaseException, CacheException, ParseException
+                    throws Exception
     {
         URL url = renderUrl(resourcePath, fragment);
         Class<? extends AbstractTemplate> type = determineType(typeName);
-        AbstractTemplate template = (AbstractTemplate) Redis.getInstance().fetchLastVersion(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
+        BlocksID id = XMLUrlIdMapper.getInstance().getId(url);
+        AbstractTemplate template = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(id, type);
         if(template instanceof EntityTemplate) {
             return Response.ok(((EntityTemplate) template).renderEntityInPageTemplate(template.getLanguage())).build();
         }
@@ -142,11 +149,12 @@ public class DebugEndpoint
                     String fragment,
                     @QueryParam("type")
                     String typeName)
-                    throws MalformedURLException, IDException, DatabaseException, CacheException, ParseException, SerializationException
+                    throws Exception
     {
         URL url = renderUrl(resourcePath, fragment);
         Class<? extends AbstractTemplate> type = this.determineType(typeName);
-        AbstractTemplate template = (AbstractTemplate) Redis.getInstance().fetchLastVersion(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
+        BlocksID id = XMLUrlIdMapper.getInstance().getId(url);
+        AbstractTemplate template = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(id, type);
         String retVal = "";
         Map<String, String> hash = template.toHash();
         List<String> keys = new ArrayList<>(hash.keySet());
@@ -170,11 +178,12 @@ public class DebugEndpoint
                                                   @DefaultValue("")
                                                   String fragment,
                                                   @QueryParam("type")
-                                                  String typeName) throws MalformedURLException, IDException, DatabaseException, SerializationException
+                                                  String typeName) throws Exception
     {
         Class<? extends AbstractTemplate> type = determineType(typeName);
         URL url = renderUrl(resourcePath, fragment);
-        List<AbstractTemplate> versions = Redis.getInstance().fetchVersionList(new BlocksID(url, BlocksID.LAST_VERSION, false), type);
+        BlocksID id = XMLUrlIdMapper.getInstance().getId(url);
+        List<AbstractTemplate> versions = RedisDatabase.getInstance().fetchVersionList(id, type);
         String retVal = "";
         for(AbstractTemplate template : versions) {
             if(template != null) {
@@ -193,6 +202,43 @@ public class DebugEndpoint
             else{
                 retVal += "----------------------------------FOUND NULL TEMPLATE----------------------------------";
                 retVal += "<br/><br/><br/><br/><br/>";
+            }
+        }
+        return Response.ok(retVal).build();
+    }
+
+    @GET
+    @Path("/src/allversions/{resourcePath:.+}")
+    @Produces("text/plain")
+    public Response getTemplateSrcForAllVersions(@PathParam("resourcePath")
+                                                  @DefaultValue("")
+                                                  String resourcePath,
+                                                  @QueryParam("fragment")
+                                                  @DefaultValue("")
+                                                  String fragment,
+                                                  @QueryParam("type")
+                                                  String typeName) throws Exception
+    {
+        Class<? extends AbstractTemplate> type = determineType(typeName);
+        URL url = renderUrl(resourcePath, fragment);
+        BlocksID id = XMLUrlIdMapper.getInstance().getId(url);
+        List<AbstractTemplate> versions = RedisDatabase.getInstance().fetchVersionList(id, type);
+        String retVal = "";
+        for(AbstractTemplate template : versions) {
+            if(template != null) {
+                retVal += "----------------------------------" + template.getId() + "---------------------------------- \n \n";
+                Map<BlocksID, String> languageTemplates = template.getTemplates();
+                for(BlocksID languagedId : languageTemplates.keySet()){
+                    retVal += "----------------------------------" + languagedId.getLanguage() + "----------------------------------  \n";
+                    String toBeAdded = languageTemplates.get(languagedId);
+                    retVal += toBeAdded;
+                }
+
+                retVal += "\n\n\n";
+            }
+            else{
+                retVal += "----------------------------------FOUND NULL TEMPLATE----------------------------------";
+                retVal += "\n\n\n\n\n";
             }
         }
         return Response.ok(retVal).build();
@@ -219,6 +265,9 @@ public class DebugEndpoint
                 case PAGE_TEMPLATE_TYPE:
                     type = PageTemplate.class;
                     break;
+                case XML_TEMPLATE_TYPE:
+                    type = UrlIdMapping.class;
+                    break;
                 default:
                     type = EntityTemplate.class;
                     break;
@@ -229,4 +278,5 @@ public class DebugEndpoint
         }
         return type;
     }
+
 }

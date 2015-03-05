@@ -29,7 +29,7 @@ public class SuperVisitor
 {
     protected Stack<Node> typeOfStack = new Stack<>();
     protected URL parentUrl = null;
-    protected URL pageUrl = null;
+    protected URL entityUrl = null;
 
 
     public Node head(Node node, int depth) throws ParseException
@@ -420,6 +420,17 @@ public class SuperVisitor
         }
         boolean retVal = false;
         if (element.hasAttr(ParserConstants.CAN_EDIT_PROPERTY)) {
+            retVal = true;
+        }
+        return retVal;
+    }
+
+    public boolean isNotEditable(Element element) {
+        if(element == null){
+            return false;
+        }
+        boolean retVal = false;
+        if (element.hasAttr(ParserConstants.CAN_NOT_EDIT_PROPERTY)) {
             retVal = true;
         }
         return retVal;
