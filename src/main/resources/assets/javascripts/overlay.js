@@ -93,6 +93,7 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broa
     };
 
     var overlayList = [];
+
     this.overlayForElement = function (element, allowRemove, callback) {
         if (overlayList.length == 0 || overlayList[overlayList.length-1].element != element) {
             hideAll(element);
@@ -122,23 +123,9 @@ blocks.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broa
         }
     });
 
-//    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
-//        for (var i = 0; i < 4; i++) {
-//            $("body").append(highlightBorder[i].remove());
-//        }
-//    })
-//
-//    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
-//        for (var i = 0; i < 4; i++) {
-//            highlightBorder[i].remove();
-//        }
-//    });
 
     var Overlay = this;
 
-    $(document).on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, function(event) {
-
-    });
 
 
 

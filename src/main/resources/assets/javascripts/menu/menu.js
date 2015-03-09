@@ -1,12 +1,13 @@
 blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notification", function(Broadcaster, Notification) {
     this.MainMenu = this;
 
+    /*
+    * Create the html for top bar
+    * */
     var menuBtn = $('<div class="blocks-main-edit-button"><i class="glyphicon glyphicon-cog"></i></div>');
     var menuBar = $('<div class="blocks-main-menu"><div class="main-menu-items"></div></div>');
     var btnList = menuBar;
 
-//    var templateBtn = $('<a class="btn  btn-default" href="#">Change template</a>');
-//    btnList.append(templateBtn);
     var saveBtn = $('<a class="btn  btn-default" href="#">Save</a>');
     btnList.append(saveBtn);
     var deleteBtn = $('<a class="btn  btn-default" href="#">Delete</a>');
@@ -15,6 +16,9 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     btnList.append(changeUrlBtn);
 
 
+    /*
+    * Hide show bar on click of menu button
+    * */
     menuBtn.on("click", function(event) {
         if (menuBar.hasClass("open")) {
             menuBar.removeClass("open");
@@ -40,6 +44,9 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
         }
         return null;
     }
+    /*
+    * Save button: saves the page
+    * */
     saveBtn.on("click", function() {
         menuBar.removeClass("open");
         var page = $("html")[0].outerHTML;
@@ -65,42 +72,54 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
         )
     });
 
+    /*
+    * Delete button: deletes the page
+    * */
     deleteBtn.on("click", function() {
-        var deleteDialog = new BootstrapDialog()
-            .setTitle('Delete page')
-            .setMessage("Do you want to delete this page and all it's translations?")
-            .setType(BootstrapDialog.TYPE_DANGER)
-            .setButtons([
-                {
+        var onConfirm = function(){
+            $.ajax({type: 'POST',
+                    url: "/entities/delete",
+                    data: document.URL,
+                    success: function(url, textStatus, response) {
+                        if(url){
+                            window.location = url;
+                        }else{
+                            location.reload();
+                        }
+                    },
+                    error: function(response, textStatus, errorThrown) {
+                        var message = response.status == 400 ? response.responseText : "An error occurred while deleting the page.";
+                        Notification.dialog("Error", "<div>" + message + "</div>", function(){});
+                    }
+                }
+            )
+        };
+
+        BootstrapDialog.show({
+            title: "Delete page",
+            message: "<div>Do you want to delete this page and all it's translations?</div>",
+            buttons: [
+                {id: 'btn-close',
                     label: 'Cancel',
-                    action: function (dialog) {
-                        dialog.close();
-                    }
-                },
+                    action: function(dialogRef){
+                        dialogRef.close();
+                        Broadcaster.send(Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE));
+                    }},
                 {
-                    label: 'Delete',
-                    cssClass: 'btn-danger',
-                    action: function (dialog) {
-                        dialog.close();
-                        $.ajax({type: 'POST',
-                                url: "/entities/delete",
-                                data: document.URL,
-                                success: function(url, textStatus, response) {
-                                    if(url){
-                                        window.location = url;
-                                    }else{
-                                        location.reload();
-                                    }
-                                },
-                                error: function(response, textStatus, errorThrown) {
-                                    var message = response.status == 400 ? response.responseText : "An error occurred while deleting the page.";
-                                    Notification.dialog("Error", "<div>" + message + "</div>", function(){});
-                                }
-                            }
-                        )
+                    id: 'btn-ok',
+                    icon: 'glyphicon glyphicon-check',
+                    label: 'Ok',
+                    cssClass: 'btn-primary',
+                    action: function(dialogRef){
+                        onConfirm();
+                        dialogRef.close();
+                        Broadcaster.send(Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE));
                     }
-                }])
-            .open();
+
+                }
+            ]
+        });
+       
     });
 
     changeUrlBtn.on("click", function() {
@@ -146,76 +165,10 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
         $("body").append(menuBtn);
     };
 
-    var remove = function() {
-        menuBar.remove();
-        menuBtn.remove();
-    };
 
     create();
 
 
-
-    var modalText = '<div class="form-inline" role="form"><div class="form-group"></div></div>';
-//
-//    templateBtn.on("click", function() {
-//        // show dialog with all templates
-//        event.stopPropagation();
-//        $.getJSON("/entities/template").success(function(data) {
-//            var optionList = $('<select class="form-control" id="blocktypeselect"></div>');
-//            var label = '<label for="inputPassword2" class="sr-only">Type block : </label>';
-//            for(var i=0; i< data.length; i++) {
-//                optionList.append('<option value="'+data[i]+'">'+data[i]+'</option>');
-//            }
-//            var list = $(modalText);
-//            list.find(".form-group").empty().append(label).append(optionList);
-//            Notification.alert("Set template", list.html(), function(content) {
-//                var value = content.find("#blocktypeselect").val();
-//                if (value != null && value != "") {
-//                    $.ajax({
-//                        url: "/entities/template",
-//                        type: "PUT",
-//                        contentType: "application/json",
-//                        data: {template: value, id: location.href}
-//                    }).success(function(data) {
-//                        //var newBlock = blocks[value];
-//                        Logger.debug("Template changed")
-//                    });
-//                }
-//
-//            });
-//        });
-//        // choose and click
-//    });
-
-//    templateBtn.on("click", function() {
-//        // show dialog with all templates
-//        event.stopPropagation();
-//        $.getJSON("/entities/template").success(function(data) {
-//            var optionList = $('<select class="form-control" id="blocktypeselect"></div>');
-//            var label = '<label for="inputPassword2" class="sr-only">Type block : </label>';
-//            for(var i=0; i< data.length; i++) {
-//                optionList.append('<option value="'+data[i]+'">'+data[i]+'</option>');
-//            }
-//            var list = $(modalText);
-//            list.find(".form-group").empty().append(label).append(optionList);
-//            Notification.alert("Set template", list.html(), function(content) {
-//                var value = content.find("#blocktypeselect").val();
-//                if (value != null && value != "") {
-//                    $.ajax({
-//                        url: "/entities/template",
-//                        type: "PUT",
-//                        contentType: "application/json",
-//                        data: {template: value, id: location.href}
-//                    }).success(function(data) {
-//                        //var newBlock = blocks[value];
-//                        Logger.debug("Template changed")
-//                    });
-//                }
-//
-//            });
-//        });
-//        // choose and click
-//    });
 
 
 }]);

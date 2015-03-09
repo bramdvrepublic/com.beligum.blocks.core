@@ -1,30 +1,30 @@
 /*
 * For simple layout helpers
 *
-* - show frame of all blocks on hoover.
+* - highlights blocks and properties on hover
 *
 *
 * */
 
-blocks.plugin("blocks.core.Highlighter", ["blocks.core.Layouter", "blocks.core.Broadcaster", "blocks.core.Elements", "blocks.core.Constants", "blocks.core.Overlay", "blocks.core.BlockMenu", function(Layouter, Broadcaster, Elements, Constants, Overlay, BlockMenu) {
+blocks.plugin("blocks.core.Highlighter", ["blocks.core.Layouter", "blocks.core.Broadcaster", "blocks.core.Elements", "blocks.core.Constants", function(Layouter, Broadcaster, Elements, Constants) {
     var Highlighter = this;
     this.removePropertyOverlay = function() {
-        $("." + Constants.PROPERTY_CLASS).removeClass(Constants.PROPERTY_CLASS);
+        $("." + Constants.PROPERTY_HOVER_CLASS).removeClass(Constants.PROPERTY_HOVER_CLASS);
     }
 
     this.showPropertyOverlay = function(property) {
         if (property != null) {
-            property.element.addClass(Constants.PROPERTY_CLASS);
+            property.element.addClass(Constants.PROPERTY_HOVER_CLASS);
         }
     };
 
     this.removeBlockOverlay = function() {
-        $("." + Constants.BLOCK_CLASS).removeClass(Constants.BLOCK_CLASS);
+        $("." + Constants.BLOCK_HOVER_CLASS).removeClass(Constants.BLOCK_HOVER_CLASS);
     };
 
     this.showBlockOverlay = function(block) {
         if (block != null) {
-            block.element.addClass(Constants.BLOCK_CLASS);
+            block.element.addClass(Constants.BLOCK_HOVER_CLASS);
         }
     }
 

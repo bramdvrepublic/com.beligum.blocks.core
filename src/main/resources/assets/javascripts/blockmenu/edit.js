@@ -1,7 +1,20 @@
+
+/*
+* This is the dispatcher for the edit functionality
+* When the START_EDIT_FIELD_EVENT is send, we check here which field has to be edited,
+* and we start the correct editing functionality.
+*
+* This plugins only provides text editing. Inline (medium editor) and full text (ckeditor)
+* Other plugins can register here by calling:
+ *  - registerByTag(TAG_IN_UPPERCASE, function to call)
+ *  - registerByType(type, function to call)
+ *
+ *  functions are called with the current blockevent (START_EDIT_FIELD EVENT) as parameter
+*
+* */
 blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Constants", "blocks.core.Overlay", "blocks.core.DomManipulation", function(Broadcaster, Constants, Overlay, DOM) {
     var Edit = this;
-    var editors = [];
-    var lastPoint = {x:0, y:0};
+    var currentlyEditedElement = null;
 
     CKEDITOR.disableAutoInline = true;
 
@@ -26,6 +39,9 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
         return range;
     }
 
+    /*
+    * This function is called when we want to enable editing on a property
+    * */
     Edit.makeEditable = function(event) {
             var element = event.property.current.element;
             var doEdit = null;
@@ -35,11 +51,24 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
 
             if (doEdit != null) {
                 Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+                element.addClass(Constants.PROPERTY_EDIT_CLASS);
+                currentlyEditedElement = element;
                 doEdit(event);
             }
     };
 
+    /*
+    * Clean up after edit. Called on END_EDIT_FIELD_EVENT;
+    * */
+    Edit.endEdit = function() {
+        currentlyEditedElement.removeClass(Constants.PROPERTY_EDIT_CLASS);
+        currentlyEditedElement = null;
+    };
 
+
+    /*
+    * Start full text editing on a block (start ckeditor)
+    * */
     var doEditText = function(blockEvent) {
         var element = blockEvent.property.current.element;
         // Preparation
@@ -79,7 +108,9 @@ blocks.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "blocks.core.Const
 
     };
 
-
+    /*
+     * Start full inline editing on a block (start medium editor)
+     * */
     var doEditTextInline = function(blockEvent) {
         element = blockEvent.property.current.element;
 

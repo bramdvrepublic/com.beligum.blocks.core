@@ -21,17 +21,47 @@ blocks.plugin("blocks.core.BlockMenu.new", ["blocks.core.BlockMenu", "blocks.cor
                 }
                 var list = $(modalText);
                 list.find(".form-group").empty().append(label).append(optionList);
-                Notification.alert("Add new block", list.html(), function(content) {
-                    var value = content.find("#blocktypeselect").val();
-                    if (value != null && value != "") {
-                        $.getJSON("/entities/class/" + value).success(function(data) {
-                            //var newBlock = blocks[value];
-                            var x= 0;
-                            Layouter.addNewBlockAtLocation($(data.template), currentBlock);
-                        });
-                    }
 
-                });
+                BootstrapDialog.show({
+                    title: 'Add a custom block',
+                    message: list,
+                    buttons: [
+                        {id: 'btn-close',
+                            label: 'Cancel',
+                            action: function(dialogRef){
+                                dialogRef.close();
+                            }},
+                        {
+                            id: 'btn-ok',
+                            icon: 'glyphicon glyphicon-check',
+                            label: 'Ok',
+                            cssClass: 'btn-primary',
+                            action: function(dialogRef){
+                                var value = dialogRef.$modalBody.find("#blocktypeselect").val();
+                                if (value != null && value != "") {
+                                    $.getJSON("/entities/class/" + value).success(function(data) {
+                                        var x= 0;
+                                        Layouter.addNewBlockAtLocation($(data.template), currentBlock);
+                                    });
+                                }
+                                dialogRef.close();
+                            }
+
+                        }]
+
+                })
+                //
+                //Notification.alert("Add new block", list.html(), function(content) {
+                //    var value = content.find("#blocktypeselect").val();
+                //    if (value != null && value != "") {
+                //        $.getJSON("/entities/class/" + value).success(function(data) {
+                //            //var newBlock = blocks[value];
+                //            var x= 0;
+                //            Layouter.addNewBlockAtLocation($(data.template), currentBlock);
+                //        });
+                //    }
+                //
+                //});
             });
 
         }

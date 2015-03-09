@@ -335,7 +335,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
 
 }])
     .config("blocks.core.Mouse", {
-        DRAGGING_THRESHOLD: 50,
+        DRAGGING_THRESHOLD: 15,
         CLICK_TIMEOUT: 500,
         ACTIVATE_AT_BOOT: true
     });

@@ -110,6 +110,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     var limit = 20;
     var variance = 0;
     var prevTime = new Date().getTime();
+
     function updateDistanceAndDirection(curX, curY){
         var angle = Math.atan2(prevY - curY, prevX - curX);
         sins[index] = Math.sin(angle);
@@ -135,8 +136,11 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
             s += array[i];
         }
         return s;
-    }
+    };
 
+    /*
+    * Gives the current direction of the mouse in degrees
+    * */
     var calculateDirection = function(event) {
         updateDistanceAndDirection(event.pageX, event.pageY);
         directionVector.x1 = event.pageX;
@@ -154,7 +158,10 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         return direction;
     };
 
-
+/*
+* Rests all parameters for the hoovering.
+* This means that the next mousemove will trigger a HOOVER_ENTER_EVENT
+* */
     this.resetHover = function() {
         fields = {current: null, previous: null};
         hoveredBlocks = {current: null, previous: null};
@@ -164,7 +171,9 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
 
     };
 
-    // sets the current active block
+    /*
+    * sets the current hovered block based on teh mouse coordinates
+    * */
     this.getHooveredBlockForPosition = function (x, y) {
         var currentField = fields.current;
         fields.current = null;
@@ -232,6 +241,12 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     };
 
 
+    /*
+    * This function sends an event and automatically creates a blockevent with all current paramaters
+    * GIves us the location on the page for the mouse, the smallest block we hover over (and the previous one),
+    * the property we hover over (and the previous one)
+    * custom is the paramter used with the send function. The event is triggered on the document
+    * */
     this.send = function(eventName, custom) {
         if (eventName == Broadcaster.EVENTS.START_BLOCKS) {
             Broadcaster.active = true;
@@ -273,56 +288,12 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
 
 
 
-    this.EVENTS = {};
-    // EVents with callback
-
-    // Owner is a string that identifies the owner of the request
-    this.EVENTS.ENABLE_BLOCK_DRAG = "ENABLE_DRAG";
-    this.EVENTS.DISABLE_BLOCK_DRAG = "DISABLE_DRAG";
-
-    // Events with blockEvent as argument
-    this.EVENTS.START_DRAG = "START_DRAG";
-    this.EVENTS.END_DRAG = "END_DRAG";
-    this.EVENTS.ABORT_DRAG = "ABORT_DRAG";
-    this.EVENTS.DRAG_LEAVE_BLOCK = "DRAG_LEAVE_BLOCK";
-    this.EVENTS.DRAG_ENTER_BLOCK = "DRAG_ENTER_BLOCK";
-    this.EVENTS.DRAG_OVER_BLOCK = "DRAG_OVER_BLOCK";
-    this.EVENTS.HOOVER_LEAVE_BLOCK = "HOOVER_LEAVE_BLOCK";
-    this.EVENTS.HOOVER_ENTER_BLOCK = "HOOVER_ENTER_BLOCK";
-    this.EVENTS.HOOVER_OVER_BLOCK = "HOOVER_OVER_BLOCK";
-
-    this.EVENTS.HOOVER_LEAVE_PROPERTY = "HOOVER_LEAVE_PROPERTY";
-    this.EVENTS.HOOVER_ENTER_PROPERTY = "HOOVER_ENTER_PROPERTY";
-    this.EVENTS.HOOVER_OVER_PROPERTY = "HOOVER_OVER_PROPERTY";
-
-    this.EVENTS.END_HOOVER = "END_HOOVER";
-    this.EVENTS.BLOCKS_CLICK = "BLOCKS_CLICK";
-
-    this.EVENTS.START_EDIT_FIELD = "START_EDIT_FIELD";
-    this.EVENTS.END_EDIT_FIELD = "END_EDIT_FIELDS";
 
 
-    this.EVENTS.ENABLE_SELECTION = "ENABLE_SELECTION";
-    this.EVENTS.DISABLE_SELECTION = "DISABLE_SELECTION";
-
-    // Notifications
-    this.EVENTS.DO_ALLOW_DRAG = "ALLOW_DRAG";
-    this.EVENTS.DO_NOT_ALLOW_DRAG = "DO_NOT_ALLOW_DRAG";
-    this.EVENTS.ACTIVATE_MOUSE = "ACTIVATE_MOUSE";
-    this.EVENTS.DEACTIVATE_MOUSE = "DEACTIVATE_MOUSE";
-    this.EVENTS.DO_REFRESH_LAYOUT = "DO_REFRESH_LAYOUT";
-    this.EVENTS.WILL_REFRESH_LAYOUT = "WILL_REFRESH_LAYOUT";
-    this.EVENTS.DID_REFRESH_LAYOUT = "DID_REFRESH_LAYOUT";
-    this.EVENTS.DOM_WILL_CHANGE = "DOM_WILL_CHANGE";
-    this.EVENTS.DOM_DID_CHANGE = "DOM_DID_CHANGE";
-    this.EVENTS.STOP_BLOCKS = "STOP_BLOCKS";
-    this.EVENTS.START_BLOCKS = "START_BLOCKS";
-    this.EVENTS.WILL_SAVE = "WILL_SAVE";
-    this.EVENTS.DID_SAVE = "DID_SAVE";
-
-
-    // The parent element where the tree is build
-    // if null this is automatically set to the container
+    /*
+     * Container is the block IN which we are dragging.
+     * If we set this to null then then the top level block(s) are  the container
+     * */
 
     this.setContainer = function(value) {
         layoutTree = value
@@ -331,6 +302,11 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
     this.getContainer = function() {
         return layoutTree;
     };
+
+    var isContainer = function(element) {
+        return DOM.canLayout(element);
+    };
+
 
     /*
      We create some sort of a heat map. We define boxes for all draggable blocks
@@ -341,54 +317,37 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
      except if column has +1 rows
      */
 
-    var isContainer = function(element) {
-        return DOM.canLayout(element);
-    };
 
 
-    var findContainers = function(element) {
-        var retVal = [];
-        if (isContainer(element)) {
-            retVal.push(element);
-        } else {
-            var children = element.children();
-            for(var i=0; i < children.length; i++) {
-                var block = $(children[i]);
-                if (isContainer(block)) {
-                    retVal.push(block)
-                } else {
-                    retval.push.apply(retval, findContainers(block));
-                }
-            }
-        }
-        return retVal;
-    };
 
+    var oldLayoutTree = null;
+    var oldContainerParent = null;
 
     this.buildLayoutTree = function () {
-        hoveredBlocks.previous = null;
-        hoveredBlocks.current = null;
-
+        oldLayoutTree = null;
+        oldContainerParent = null;
         layoutTree = new blocks.elements.Container( $("body"), null);
         Broadcaster.resetHover();
         lastMoveEvent.block = Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
     };
 
-    var oldLayoutTree = null
-    var oldContainerParent = null;
-
+    // We set the current block as the new container
+    // this enables us to drag only inside this block
     this.zoom = function() {
         if (oldLayoutTree == null) {
             oldLayoutTree = layoutTree;
             var current = hoveredBlocks.current;
             if (current != null) {
+
+
                 layoutTree = current.getContainer();
                 oldContainerParent = layoutTree.parent;
                 layoutTree.parent = null;
             }
         }
-    }
+    };
 
+    // reset container to whole page
     this.unzoom = function() {
         if (oldLayoutTree != null) {
             layoutTree.parent = oldContainerParent;
@@ -415,4 +374,60 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
 
     });
 
-}])
+
+    this.EVENTS = {};
+    // EVents with callback
+
+    // This enables/disables the drag functionality. But all mouse ecvents are still send
+    // This way you can implement your own drag without diabling the whole blocks event system
+    this.EVENTS.ENABLE_BLOCK_DRAG = "ENABLE_DRAG";
+    this.EVENTS.DISABLE_BLOCK_DRAG = "DISABLE_DRAG";
+
+    // Events with blockEvent as argument
+    this.EVENTS.START_DRAG = "START_DRAG";
+    this.EVENTS.END_DRAG = "END_DRAG";
+    this.EVENTS.ABORT_DRAG = "ABORT_DRAG";
+    this.EVENTS.DRAG_LEAVE_BLOCK = "DRAG_LEAVE_BLOCK";
+    this.EVENTS.DRAG_ENTER_BLOCK = "DRAG_ENTER_BLOCK";
+    this.EVENTS.DRAG_OVER_BLOCK = "DRAG_OVER_BLOCK";
+    this.EVENTS.HOOVER_LEAVE_BLOCK = "HOOVER_LEAVE_BLOCK";
+    this.EVENTS.HOOVER_ENTER_BLOCK = "HOOVER_ENTER_BLOCK";
+    this.EVENTS.HOOVER_OVER_BLOCK = "HOOVER_OVER_BLOCK";
+
+    this.EVENTS.HOOVER_LEAVE_PROPERTY = "HOOVER_LEAVE_PROPERTY";
+    this.EVENTS.HOOVER_ENTER_PROPERTY = "HOOVER_ENTER_PROPERTY";
+    this.EVENTS.HOOVER_OVER_PROPERTY = "HOOVER_OVER_PROPERTY";
+
+    this.EVENTS.END_HOOVER = "END_HOOVER";
+    this.EVENTS.BLOCKS_CLICK = "BLOCKS_CLICK";
+
+    // Send when clicked on a property
+    // is like focus/blur on a text input
+    // Allows plugins to hook on
+    this.EVENTS.START_EDIT_FIELD = "START_EDIT_FIELD";
+    this.EVENTS.END_EDIT_FIELD = "END_EDIT_FIELDS";
+
+    this.EVENTS.DISABLE_SELECTION = "DISABLE_SELECTION";
+
+    // Notifications
+    this.EVENTS.DO_ALLOW_DRAG = "ALLOW_DRAG";
+    this.EVENTS.DO_NOT_ALLOW_DRAG = "DO_NOT_ALLOW_DRAG";
+    // Thsi (de)activates the mouse cf pauzes the blocks layouter (used during dialogs)
+    this.EVENTS.ACTIVATE_MOUSE = "ACTIVATE_MOUSE";
+    this.EVENTS.DEACTIVATE_MOUSE = "DEACTIVATE_MOUSE";
+    // Events send when the the blocks DOM tree in memory will/is/did rebuild
+    this.EVENTS.DO_REFRESH_LAYOUT = "DO_REFRESH_LAYOUT";
+    this.EVENTS.WILL_REFRESH_LAYOUT = "WILL_REFRESH_LAYOUT";
+    this.EVENTS.DID_REFRESH_LAYOUT = "DID_REFRESH_LAYOUT";
+    // Announce that we changed someting to the dom
+    // this will automatically trigger DO_REFRESH_LAYOUT
+    this.EVENTS.DOM_WILL_CHANGE = "DOM_WILL_CHANGE";
+    this.EVENTS.DOM_DID_CHANGE = "DOM_DID_CHANGE";
+    // on/off
+    this.EVENTS.STOP_BLOCKS = "STOP_BLOCKS";
+    this.EVENTS.START_BLOCKS = "START_BLOCKS";
+    this.EVENTS.WILL_SAVE = "WILL_SAVE";
+    this.EVENTS.DID_SAVE = "DID_SAVE";
+
+
+}]);

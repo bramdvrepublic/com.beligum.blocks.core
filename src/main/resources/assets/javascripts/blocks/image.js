@@ -1,3 +1,6 @@
+/*
+* Allows editiong of an image when youy click on it
+* */
 blocks.plugin("blocks.core.image", ["blocks.finder", "blocks.core.Edit", "blocks.core.Notification", "blocks.core.Broadcaster", function(Finder, Edit, Notification, Broadcaster) {
     var dialogContent = $('<div class="form-inline" role="form"><div class="form-group">' +
         '<label for="imagelabel" class="sr-only">Geef de url van een afbeelding: </label>'  +
@@ -16,7 +19,7 @@ blocks.plugin("blocks.core.image", ["blocks.finder", "blocks.core.Edit", "blocks
                     element.attr("src", "/media/public/" + file);
                 },
                 onClose: function() {
-                    Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+                    Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
                 }
             });
         }
