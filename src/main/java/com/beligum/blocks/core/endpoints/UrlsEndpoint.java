@@ -2,6 +2,7 @@ package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.URLMapping.SiteMap;
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
+import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.UrlIdMappingException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.core.framework.i18n.I18n;
@@ -47,6 +48,11 @@ public class UrlsEndpoint
     @Produces(MediaType.APPLICATION_JSON)
     public SiteMap getSiteMap(@QueryParam("lang") String language) throws UrlIdMappingException
     {
+        if(language == null){
+            language = BlocksConfig.getDefaultLanguage();
+        }
         return XMLUrlIdMapper.getInstance().renderSiteMap(language);
     }
+
+
 }

@@ -414,8 +414,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
     public BlocksID getLastId(URL url) throws UrlIdMappingException
     {
         try{
-            //TODO BAS SH: je bent bezig met het checken van the volgorde bij de deque van de mappings (.iterator() of .descendingIterator()?), zet dan de capacity op 10 of zo
-            //TODO BAS SH 2: we willen een sitemap viewable maken en daar kun je dan urls aanpassen, vertalen of verplaatsen (kan dat in 1 methode?)
+            //TODO BAS SH: we willen een sitemap viewable maken en daar kun je dan urls aanpassen, vertalen of verplaatsen (kan dat in 1 methode?)
             BlocksID retVal = null;
             Iterator<XMLUrlIdMapper> it = this.cachedMapperVersions.iterator();
             while(retVal == null && it.hasNext()){
