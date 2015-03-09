@@ -359,9 +359,9 @@ public class ToHtmlVisitor extends SuperVisitor
                 }
                 retVal.put(uniqueName, property);
             } else if (failOnMissingReference) {
-                throw new ParseException("Found entity which is not a property of class '" + node.attr(ParserConstants.TYPE_OF) + "' as " + property.attr(ParserConstants.TYPE_OF)+ "\n");
+                throw new ParseException("Found entity which is not a property of class '" + node.attr(ParserConstants.TYPE_OF_OLD) + "' as " + property.attr(ParserConstants.TYPE_OF_OLD)+ "\n");
             } else {
-                Logger.debug("Found class property which was not replaced by an instance property of class '" + node.attr(ParserConstants.TYPE_OF) + "' as: " + property.attr(ParserConstants.TYPE_OF));
+                Logger.debug("Found class property which was not replaced by an instance property of class '" + node.attr(ParserConstants.TYPE_OF_OLD) + "' as: " + property.attr(ParserConstants.TYPE_OF_OLD));
             }
         }
         return retVal;

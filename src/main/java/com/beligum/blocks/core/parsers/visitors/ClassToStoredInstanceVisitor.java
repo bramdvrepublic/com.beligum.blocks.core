@@ -119,7 +119,7 @@ public class ClassToStoredInstanceVisitor extends SuperVisitor
                 else{
                     newEntityId = BlocksID.renderNewEntityTemplateID(entityClass, this.language);
                 }
-                node.removeAttr(ParserConstants.BLUEPRINT);
+                node.removeAttr(ParserConstants.BLUEPRINT_OLD);
                 node.attr(ParserConstants.RESOURCE, XMLUrlIdMapper.getInstance().getUrl(newEntityId).toString());
                 EntityTemplate newInstance = new EntityTemplate(newEntityId, entityClass, node.outerHtml());
                 //for default instances, a version could already be present in db, which is equal to this one

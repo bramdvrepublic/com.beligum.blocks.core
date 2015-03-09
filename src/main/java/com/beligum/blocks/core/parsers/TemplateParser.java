@@ -1,6 +1,5 @@
 package com.beligum.blocks.core.parsers;
 
-import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
@@ -24,7 +23,6 @@ import org.jsoup.parser.Parser;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.*;
 
 /**
@@ -212,7 +210,7 @@ public class TemplateParser
                 }
 //                Element entityRoot = TemplateParser.parse(entityHtml).child(0);
                 reference.attr(ParserConstants.REFERENCE_TO, entityTemplate.getUnversionedId());
-                reference.attr(ParserConstants.TYPE_OF, entityTemplate.getEntityTemplateClassName());
+                reference.attr(ParserConstants.TYPE_OF_OLD, entityTemplate.getEntityTemplateClassName());
             }
 
             ToHtmlVisitor visitor = new ToHtmlVisitor(entityTemplate.getUrl(), language, pageTemplate.getLinks(), pageTemplate.getScripts());

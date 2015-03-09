@@ -137,8 +137,8 @@ public class SuperVisitor
         if(element!=null){
             Element replacement = new Element(element.tag(), BlocksConfig.getSiteDomain());
             replacement.attributes().addAll(element.attributes());
-            replacement.removeAttr(ParserConstants.BLUEPRINT);
-            replacement.attr(ParserConstants.USE_BLUEPRINT, "");
+            replacement.removeAttr(ParserConstants.BLUEPRINT_OLD);
+            replacement.attr(ParserConstants.USE_BLUEPRINT_OLD, "");
             element.replaceWith(replacement);
             return replacement;
         }
@@ -256,7 +256,7 @@ public class SuperVisitor
             return false;
         }
         boolean retVal = false;
-        if (node.hasAttr(ParserConstants.TYPE_OF)) {
+        if (node.hasAttr(ParserConstants.TYPE_OF_OLD)) {
             retVal = true;
         }
         return retVal;
@@ -313,7 +313,7 @@ public class SuperVisitor
      */
     public String getTypeOf(Node entityNode) {
         if (hasTypeOf(entityNode)) {
-            return entityNode.attr(ParserConstants.TYPE_OF);
+            return entityNode.attr(ParserConstants.TYPE_OF_OLD);
         }
         else if(isProperty(entityNode)){
             return ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS;
@@ -397,7 +397,7 @@ public class SuperVisitor
             return false;
         }
         boolean retVal = false;
-        if (node.hasAttr(ParserConstants.BLUEPRINT)) {
+        if (node.hasAttr(ParserConstants.BLUEPRINT_OLD)) {
             retVal = true;
         }
         return retVal;
@@ -523,7 +523,7 @@ public class SuperVisitor
             return false;
         }
         else{
-            return node.hasAttr(ParserConstants.USE_BLUEPRINT);
+            return node.hasAttr(ParserConstants.USE_BLUEPRINT_OLD);
         }
     }
 

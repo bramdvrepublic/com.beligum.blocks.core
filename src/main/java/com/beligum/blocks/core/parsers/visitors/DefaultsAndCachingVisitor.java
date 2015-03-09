@@ -199,7 +199,7 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
     private void cacheEntityTemplateClass(Element root) throws ParseException, CacheException, IDException
     {
         checkPropertyUniqueness(root);
-        root.removeAttr(ParserConstants.BLUEPRINT);
+        root.removeAttr(ParserConstants.BLUEPRINT_OLD);
         EntityTemplateClass parsingTemplate = (EntityTemplateClass) this.parsingTemplate;
         /*
          * Use all info from the template we're parsing to make a real entity-template-class to be cached.
@@ -261,7 +261,7 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
         for(BlocksID languageId : classTemplates.keySet()){
             Element classRoot = TemplateParser.parse(classTemplates.get(languageId)).child(0);
             classRoot.attributes().addAll(element.attributes());
-            classRoot.removeAttr(ParserConstants.USE_BLUEPRINT);
+            classRoot.removeAttr(ParserConstants.USE_BLUEPRINT_OLD);
             //a copy of an entity-class, also means a copy of all of it's children, so we need to traverse all templates to create entity-copies of all it's children
             Traversor traversor = new Traversor(new ClassToStoredInstanceVisitor(id.getUrl(), id.getLanguage()));
             traversor.traverse(classRoot);
@@ -271,12 +271,12 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
             //a copy of an entity-class, also means a copy of all of it's children, so we need to traverse all templates to create entity-copies of all it's children
             Element classRoot = TemplateParser.parse(entityClass.getTemplate()).child(0);
             classRoot.attributes().addAll(element.attributes());
-            classRoot.removeAttr(ParserConstants.USE_BLUEPRINT);
+            classRoot.removeAttr(ParserConstants.USE_BLUEPRINT_OLD);
             Traversor traversor = new Traversor(new ClassToStoredInstanceVisitor(id.getUrl(), id.getLanguage()));
             traversor.traverse(classRoot);
             copiedTemplates.put(id, entityClass.getTemplate());
         }
-        element.removeAttr(ParserConstants.USE_BLUEPRINT);
+        element.removeAttr(ParserConstants.USE_BLUEPRINT_OLD);
         element = replaceElementWithEntityReference(element, new EntityTemplate(id, entityClass, copiedTemplates));
         return element;
     }
