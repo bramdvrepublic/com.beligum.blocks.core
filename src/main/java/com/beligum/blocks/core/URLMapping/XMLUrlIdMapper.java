@@ -17,7 +17,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
-import sun.org.mozilla.javascript.ast.Block;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -29,14 +28,12 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.*;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
-import java.util.concurrent.LinkedBlockingDeque;
 
 /**
  * Created by bas on 23.02.15.
@@ -54,7 +51,8 @@ public class XMLUrlIdMapper implements UrlIdMapper
 
     private static XMLUrlIdMapper instance;
 
-    private Document urlIdMapping;
+    private Document urlIdXML;
+    private UrlIdMapping urlIdMapping;
     /**all path ids assigned, ordered by depth and from first assigned to last assigned (f.i. 1.1, 1.2, 1.3, 1.4, 2.1, 3.1, 3.2, 3.3)*/
     private SortedSet<String> pathIds = new TreeSet<>(new PathIdComparator());
     /**pre compiled xpath expression for fetching all path ancestors of an element*/
@@ -68,12 +66,15 @@ public class XMLUrlIdMapper implements UrlIdMapper
 
     private HashMap<String, SiteMap> cachedSiteMaps = new HashMap<>();
 
-    private Deque<XMLUrlIdMapper> cachedMappingVersions = new LinkedBlockingDeque<>(3);
+    //must always be bigger than 0
+    private final static int MAPPING_CAPACITY = 20;
+    private Set<UrlIdMapping> cachedMappingVersions = new HashSet();
+    private List<XMLUrlIdMapper> cachedMapperVersions = new LinkedList<>();
 
 
-    private XMLUrlIdMapper(Document urlIdMapping) throws XPathExpressionException
+    private XMLUrlIdMapper(Document urlIdXML) throws XPathExpressionException
     {
-        this.urlIdMapping = urlIdMapping;
+        this.urlIdXML = urlIdXML;
         XPath xPath = XPathFactory.newInstance().newXPath();
         //precompile some xpath expressions
         this.pathAncestorsExpr = xPath.compile("ancestor-or-self::" + PATH);
@@ -121,6 +122,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
             }
             XMLUrlIdMapper mapper = new XMLUrlIdMapper(document);
             mapper.pathIds = pathIds;
+            mapper.urlIdMapping = mapping;
             return mapper;
         }
     }
@@ -160,7 +162,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
                 URL urlNoLanguage = new URL(urlAndLanguage[0]);
                 String language = urlAndLanguage[1];
                 String[] splittedPath = urlNoLanguage.getPath().split("/");
-                Element path = this.urlIdMapping.getDocumentElement();
+                Element path = this.urlIdXML.getDocumentElement();
                 //if no parts are splitted of, we are dealing with the baseurl
                 if(splittedPath.length == 0){
                     splittedPath = new String[1];
@@ -236,7 +238,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
         try {
             XPath xPath = XPathFactory.newInstance().newXPath();
             XPathExpression idNodesExpr = xPath.compile("//" + PATH + "[@" + BLOCKS_ID + "='" + id.getUnversionedId() + "']");
-            NodeList blocksIdElements = (NodeList) idNodesExpr.evaluate(this.urlIdMapping, XPathConstants.NODESET);
+            NodeList blocksIdElements = (NodeList) idNodesExpr.evaluate(this.urlIdXML, XPathConstants.NODESET);
             if (blocksIdElements.getLength() == 0) {
                 return null;
             }
@@ -322,7 +324,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
             while (i < splittedPath.length) {
                 Element translations = this.getTranslationsElement(parent);
                 if (translations == null) {
-                    translations = this.urlIdMapping.createElement(TRANSLATIONS);
+                    translations = this.urlIdXML.createElement(TRANSLATIONS);
                     parent.appendChild(translations);
                 }
                 translations = this.addTranslationElement(translations, language, splittedPath[i]);
@@ -415,7 +417,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
             //TODO BAS SH: je bent bezig met het checken van the volgorde bij de deque van de mappings (.iterator() of .descendingIterator()?), zet dan de capacity op 10 of zo
             //TODO BAS SH 2: we willen een sitemap viewable maken en daar kun je dan urls aanpassen, vertalen of verplaatsen (kan dat in 1 methode?)
             BlocksID retVal = null;
-            Iterator<XMLUrlIdMapper> it = this.cachedMappingVersions.iterator();
+            Iterator<XMLUrlIdMapper> it = this.cachedMapperVersions.iterator();
             while(retVal == null && it.hasNext()){
                 XMLUrlIdMapper mapper = it.next();
                 retVal = mapper.fetchId(url);
@@ -423,16 +425,24 @@ public class XMLUrlIdMapper implements UrlIdMapper
             if(retVal != null){
                 return retVal;
             }
+            /*
+             * If the url wasn't found in the already cached mapping, clear cache and check versions in db and add them to the cache for as long as the cache isn't full.
+             */
             else {
-                BlocksID mapperId = getXMLMappingId(BlocksID.NO_VERSION);
-                List<UrlIdMapping> mappings = RedisDatabase.getInstance().fetchVersionList(mapperId, UrlIdMapping.class);
-                int i = this.cachedMappingVersions.size();
-                while (retVal == null && i < mappings.size()) {
-                    XMLUrlIdMapper mapper = this.addMappingToDeque(mappings.get(i));
-                    retVal = mapper.fetchId(url);
-                    i++;
+                synchronized (this) {
+                    BlocksID mapperId = getXMLMappingId(BlocksID.NO_VERSION);
+                    List<UrlIdMapping> mappings = RedisDatabase.getInstance().fetchVersionList(mapperId, UrlIdMapping.class);
+                    int i = 0;
+                    while (retVal == null && i < mappings.size()) {
+                        //only check the mappings that weren't checked before (from cache)
+                        if(!this.cachedMappingVersions.contains(mappings.get(i))) {
+                            XMLUrlIdMapper mapper = this.offerMappingLast(mappings.get(i));
+                            retVal = mapper.fetchId(url);
+                        }
+                        i++;
+                    }
+                    return retVal;
                 }
-                return retVal;
             }
         }catch(Exception e){
             throw new UrlIdMappingException("Could not fetch the last id that was not deleted for url '" + url + "'.", e);
@@ -454,7 +464,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
                 throw new LanguageException("Unknown language found '" + language + "'.");
             }
             if(!this.cachedSiteMaps.containsKey(language)) {
-                SiteMapNode root = this.createSiteMapNode(this.urlIdMapping.getDocumentElement(), language);
+                SiteMapNode root = this.createSiteMapNode(this.urlIdXML.getDocumentElement(), language);
                 SiteMap siteMap = new SiteMap(root, language);
                 this.cachedSiteMaps = new HashMap<>();
                 this.cachedSiteMaps.put(language, siteMap);
@@ -474,8 +484,8 @@ public class XMLUrlIdMapper implements UrlIdMapper
         if(hasEntity){
             url = this.fetchUrl(new BlocksID(entityId, BlocksID.NO_VERSION, language));
         }
-        else if(path.equals(this.urlIdMapping.getDocumentElement())) {
-            url = new URL(this.urlIdMapping.getDocumentElement().getAttribute(ROOT));
+        else if(path.equals(this.urlIdXML.getDocumentElement())) {
+            url = new URL(this.urlIdXML.getDocumentElement().getAttribute(ROOT));
         }
         else {
             List<Element> ancestors = this.getPathAncestors(path);
@@ -516,7 +526,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
         //set indent to 2 for a good debug view
         t.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
         // apply the do-nothing transformation and send the output to a file
-        DOMSource source = new DOMSource(urlIdMapping);
+        DOMSource source = new DOMSource(urlIdXML);
         Writer result = new StringWriter();
         t.transform(source, new StreamResult(result));
 
@@ -530,11 +540,11 @@ public class XMLUrlIdMapper implements UrlIdMapper
             UrlIdMapping storedXML = (UrlIdMapping) RedisDatabase.getInstance().fetchLastVersion(xmlId, UrlIdMapping.class);
             if (storedXML == null) {
                 RedisDatabase.getInstance().create(treeTemplate);
-                this.addMappingToDeque(treeTemplate);
+                this.addMappingFirst(treeTemplate);
             }
             else if (!treeTemplate.equals(storedXML)) {
                 RedisDatabase.getInstance().update(treeTemplate);
-                this.addMappingToDeque(treeTemplate);
+                this.addMappingFirst(treeTemplate);
             }
             else {
                 //no need to save to db, since this is an unchanged version
@@ -559,7 +569,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
     {
 
         XPathExpression idNodesExpr = XPathFactory.newInstance().newXPath().compile("//" + PATH + "[@" + BLOCKS_ID + "='" + blocksId.getUnversionedId() + "']");
-        NodeList blockIdElements = (NodeList) idNodesExpr.evaluate(this.urlIdMapping, XPathConstants.NODESET);
+        NodeList blockIdElements = (NodeList) idNodesExpr.evaluate(this.urlIdXML, XPathConstants.NODESET);
         //get the last (i.e. the deepest) occurrence of an element with the specified id
         Element idPath = blockIdElements.getLength() > 0 ? (Element) blockIdElements.item(blockIdElements.getLength()-1) : null;
         NodeList ancestors;
@@ -568,7 +578,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
         }
         else{
             List<Element> retVal = new ArrayList<>();
-            retVal.add(this.urlIdMapping.getDocumentElement());
+            retVal.add(this.urlIdXML.getDocumentElement());
             return retVal;
         }
         List<Element> ancestorList = new ArrayList<>();
@@ -647,7 +657,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
     private Element addTranslationElement(Element translationsElement, String language, String content) throws Exception
     {
         //create a new translation element
-        Element translation = this.urlIdMapping.createElement(TRANSLATION);
+        Element translation = this.urlIdXML.createElement(TRANSLATION);
         translation.setAttribute(LANGUAGE, language);
         translation.setTextContent(content);
 
@@ -675,7 +685,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
             int nextNumber = Integer.parseInt(lastAssignedId.split("\\.")[1])+1;
             id = depth + "." + nextNumber;
         }
-        Element path = this.urlIdMapping.createElement(PATH);
+        Element path = this.urlIdXML.createElement(PATH);
         //        path.setAttribute(PATH_ID, id);
         boolean added = this.pathIds.add(id);
         if(!added){
@@ -758,7 +768,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
     private List<Element> getExistingPathParts(String[] splittedPath, String language) throws XPathExpressionException
     {
         List<Element> existingPathParts = new ArrayList<>();
-        Element path = this.urlIdMapping.getDocumentElement();
+        Element path = this.urlIdXML.getDocumentElement();
         existingPathParts.add(path);
         int i = 1;
         while(path != null && i<splittedPath.length) {
@@ -775,14 +785,50 @@ public class XMLUrlIdMapper implements UrlIdMapper
         return existingPathParts;
     }
 
-
-    private XMLUrlIdMapper addMappingToDeque(UrlIdMapping mapping) throws ParserConfigurationException, SAXException, XPathExpressionException, IOException
+    /**
+     * Adds the mapping to the cache if some capacity is still available and the mapping isn't present in the cache yet, if not, nothing is added.
+     * @param mapping
+     * @return a mapper of the offered mapping
+     * @throws ParserConfigurationException
+     * @throws SAXException
+     * @throws XPathExpressionException
+     * @throws IOException
+     */
+    private XMLUrlIdMapper offerMappingLast(UrlIdMapping mapping) throws ParserConfigurationException, SAXException, XPathExpressionException, IOException
     {
         XMLUrlIdMapper mapper = renderInstance(mapping);
-        if(!this.cachedMappingVersions.offerLast(mapper)){
-            this.cachedMappingVersions.removeFirst();
-            this.cachedMappingVersions.addLast(mapper);
+        //this method will only add the mapper if the capacity of the deque isn't full and the offered mapping isn't present yet
+        if(this.cachedMapperVersions.size()<MAPPING_CAPACITY) {
+            if(this.cachedMappingVersions.add(mapping)) {
+                this.cachedMapperVersions.add(mapper);
+            }
         }
         return mapper;
+    }
+
+    /**
+     * Adds the mapping to the deque (as a new version).
+     * @param mapping
+     * @return a mapper of the added mapping
+     * @throws ParserConfigurationException
+     * @throws SAXException
+     * @throws XPathExpressionException
+     * @throws IOException
+     */
+    private XMLUrlIdMapper addMappingFirst(UrlIdMapping mapping) throws ParserConfigurationException, SAXException, XPathExpressionException, IOException
+    {
+        XMLUrlIdMapper mapper = renderInstance(mapping);
+        if(this.cachedMappingVersions.add(mapping)) {
+            if (this.cachedMapperVersions.size() >= MAPPING_CAPACITY) {
+                XMLUrlIdMapper removed = this.cachedMapperVersions.remove(this.cachedMapperVersions.size()-1);
+                this.cachedMappingVersions.remove(removed.getMapping());
+            }
+            this.cachedMapperVersions.add(0, mapper);
+        }
+        return mapper;
+    }
+
+    private UrlIdMapping getMapping(){
+        return this.urlIdMapping;
     }
 }
