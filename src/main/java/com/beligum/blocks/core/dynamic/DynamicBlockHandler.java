@@ -1,10 +1,11 @@
 package com.beligum.blocks.core.dynamic;
 
+import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.ParseException;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
+import com.beligum.core.framework.utils.Logger;
 import org.jsoup.nodes.Element;
 
-import java.util.ArrayList;
+import java.net.MalformedURLException;
 import java.util.HashMap;
 
 /**
@@ -14,8 +15,22 @@ public class DynamicBlockHandler
 {
     HashMap<String, DynamicBlockListener> listeners = new HashMap<String, DynamicBlockListener>();
 
-    public DynamicBlockHandler() {
+    private static DynamicBlockHandler instance = null;
 
+    private DynamicBlockHandler() {
+        try {
+            //TODO: use an Annotation to discover all dynamic blocks and register them here
+            register(new TranslationList(BlocksConfig.getDefaultLanguage(), BlocksConfig.getSiteDomainUrl()));
+        }catch(MalformedURLException e){
+            Logger.error("Found bad site domain: " + BlocksConfig.getSiteDomain());
+        }
+    }
+
+    public static DynamicBlockHandler getInstance() {
+        if(instance == null){
+            instance = new DynamicBlockHandler();
+        }
+        return instance;
     }
 
     public Element onShow(String type, Element element) throws ParseException
@@ -34,6 +49,14 @@ public class DynamicBlockHandler
             retVal = listeners.get(type).onSave(element);
         }
         return retVal;
+    }
+
+    public void register(DynamicBlockListener blockListener) {
+        listeners.put(blockListener.getType(), blockListener);
+    }
+
+    public boolean isDynamicBlock(String type){
+        return listeners.containsKey(type);
     }
 
 }

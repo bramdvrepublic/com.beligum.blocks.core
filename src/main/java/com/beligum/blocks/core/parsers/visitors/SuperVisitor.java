@@ -11,6 +11,7 @@ import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.velocity.runtime.directive.Parse;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
@@ -27,15 +28,15 @@ import java.util.Stack;
  */
 public class SuperVisitor
 {
-    protected Stack<Node> typeOfStack = new Stack<>();
+    protected Stack<Node> blueprintTypeStack = new Stack<>();
     protected URL parentUrl = null;
     protected URL entityUrl = null;
 
 
     public Node head(Node node, int depth) throws ParseException
     {
-        if (hasTypeOf(node)) {
-            typeOfStack.push(node);
+        if (hasBleuprintType(node)) {
+            blueprintTypeStack.push(node);
         }
         return node;
     }
@@ -43,9 +44,9 @@ public class SuperVisitor
     public Node tail(Node node, int depth) throws ParseException
     {
         try {
-            if (hasTypeOf(node)) {
-                typeOfStack.pop();
-                if (parentUrl == null && typeOfStack.isEmpty() && hasResource(node)) {
+            if (hasBleuprintType(node)) {
+                blueprintTypeStack.pop();
+                if (parentUrl == null && blueprintTypeStack.isEmpty() && hasResource(node)) {
                     parentUrl = new URL(getResource(node));
                 }
             }
@@ -68,8 +69,8 @@ public class SuperVisitor
      * @return the node containing the type of the last typed parent visited
      */
     protected String getParentType() {
-        if (!this.typeOfStack.empty()) {
-            return getTypeOf(this.typeOfStack.peek());
+        if (!this.blueprintTypeStack.empty()) {
+            return getBlueprintType(this.blueprintTypeStack.peek());
         } else {
             return null;
         }
@@ -80,8 +81,8 @@ public class SuperVisitor
      * @return the last typed parent-node visited
      */
     protected Node getParent(){
-        if(!this.typeOfStack.empty()){
-            return this.typeOfStack.peek();
+        if(!this.blueprintTypeStack.empty()){
+            return this.blueprintTypeStack.peek();
         }
         else{
             return null;
@@ -133,12 +134,12 @@ public class SuperVisitor
      * @param element
      * @return the replacement-element
      */
-    protected Element replaceNodeWithUseBlueprintTag(Element element){
+    protected Element replaceNodeWithUseBlueprintTag(Element element, String entityClassName){
         if(element!=null){
             Element replacement = new Element(element.tag(), BlocksConfig.getSiteDomain());
             replacement.attributes().addAll(element.attributes());
-            replacement.removeAttr(ParserConstants.BLUEPRINT_OLD);
-            replacement.attr(ParserConstants.USE_BLUEPRINT_OLD, "");
+            replacement.removeAttr(ParserConstants.BLUEPRINT);
+            replacement.attr(ParserConstants.USE_BLUEPRINT, entityClassName);
             element.replaceWith(replacement);
             return replacement;
         }
@@ -208,6 +209,15 @@ public class SuperVisitor
         }
     }
 
+    public Node setUseBlueprintType(Node node){
+        String type = node.attr(ParserConstants.BLUEPRINT);
+        node.removeAttr(ParserConstants.BLUEPRINT);
+        if(!StringUtils.isEmpty(type) && !node.hasAttr(ParserConstants.USE_BLUEPRINT)) {
+            node.attr(ParserConstants.USE_BLUEPRINT, type);
+        }
+        return node;
+    }
+
 
 
 
@@ -243,7 +253,7 @@ public class SuperVisitor
      */
     public boolean isEntity(Node node)
     {
-        return hasTypeOf(node) || isProperty(node);
+        return hasBleuprintType(node) || isProperty(node);
     }
 
     /**
@@ -251,15 +261,13 @@ public class SuperVisitor
      * @param node
      * @return true if the specified element has a rdf-"typeof" attribute, false otherwise
      */
-    public boolean hasTypeOf(Node node) {
+    public boolean hasBleuprintType(Node node) {
         if(node == null){
             return false;
         }
-        boolean retVal = false;
-        if (node.hasAttr(ParserConstants.TYPE_OF_OLD)) {
-            retVal = true;
+        else {
+            return node.hasAttr(ParserConstants.BLUEPRINT) || node.hasAttr(ParserConstants.USE_BLUEPRINT);
         }
-        return retVal;
     }
 
     /**
@@ -311,9 +319,13 @@ public class SuperVisitor
      * @param entityNode the root node of an entity
      * @return return the rdf "typeof" value of a node, the default "typeof" if it is a property-node or null if it is not an entity
      */
-    public String getTypeOf(Node entityNode) {
-        if (hasTypeOf(entityNode)) {
-            return entityNode.attr(ParserConstants.TYPE_OF_OLD);
+    public String getBlueprintType(Node entityNode) {
+        if (hasBleuprintType(entityNode)) {
+            String retVal =  entityNode.attr(ParserConstants.BLUEPRINT);
+            if(StringUtils.isEmpty(retVal)){
+                retVal = entityNode.attr(ParserConstants.USE_BLUEPRINT);
+            }
+            return retVal;
         }
         else if(isProperty(entityNode)){
             return ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS;
@@ -397,7 +409,7 @@ public class SuperVisitor
             return false;
         }
         boolean retVal = false;
-        if (node.hasAttr(ParserConstants.BLUEPRINT_OLD)) {
+        if (node.hasAttr(ParserConstants.BLUEPRINT)) {
             retVal = true;
         }
         return retVal;
@@ -518,12 +530,28 @@ public class SuperVisitor
         return to;
     }
 
-    public boolean needsBlueprint(Node node){
+    public boolean needsBlueprintCopy(Node node){
         if(node == null){
             return false;
         }
+        else if(!node.hasAttr(ParserConstants.USE_BLUEPRINT)){
+            return false;
+        }
         else{
-            return node.hasAttr(ParserConstants.USE_BLUEPRINT_OLD);
+            //empty tags need a blueprint copy, when other elements are already inside the node, no blueprint copy is needed
+            List<Node> childNodes = node.childNodes();
+            if(childNodes.isEmpty()){
+                return true;
+            }
+            else {
+                boolean needsBlueprint = true;
+                int i = 0;
+                while (needsBlueprint && i < childNodes.size()) {
+                    needsBlueprint = !(childNodes.get(i) instanceof Element);
+                    i++;
+                }
+                return needsBlueprint;
+            }
         }
     }
 

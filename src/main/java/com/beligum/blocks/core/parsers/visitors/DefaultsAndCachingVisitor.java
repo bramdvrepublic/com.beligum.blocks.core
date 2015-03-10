@@ -5,6 +5,7 @@ import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.RedisDatabase;
+import com.beligum.blocks.core.dynamic.DynamicBlockHandler;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
@@ -106,74 +107,82 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
                      * However if this is the root-node (of the document being parsed), the presence of a property-attribute only means the blueprint of a certain class was defined inside another one.
                      */
                     if (isProperty(element) && !root.equals(element.parent())) {
-                        String typeOf = getTypeOf(element);
-                        EntityTemplateClass entityTemplateClass = allEntityClasses.get(typeOf);
+                        String blueprintType = getBlueprintType(element);
+                        EntityTemplateClass entityTemplateClass = allEntityClasses.get(blueprintType);
                         if (entityTemplateClass == null) {
-                            throw new ParseException("Found unknown entity-class '" + typeOf + "' at node \n \n " + element + "\n \n");
-                        }
-                        //we found an uncached entity-template-class, so we cache it
-                        if (!EntityTemplateClassCache.getInstance().contains(typeOf) && !parsingTemplate.getName().equals(typeOf)) {
-                            Document entityTemplateClassDOM = TemplateParser.parse(entityTemplateClass.getTemplate());
-                            Traversor
-                                            traversor =
-                                            new Traversor(new DefaultsAndCachingVisitor(entityTemplateClass.getLanguage(), entityTemplateClassDOM, entityTemplateClass, allEntityClasses,
-                                                                                        allPageTemplates));
-                            traversor.traverse(entityTemplateClassDOM);
-                        }
-                        //we want to use the cached entity-template-class
-                        entityTemplateClass = EntityTemplateClassCache.getInstance().get(typeOf);
-                        //for entity-template-classes, new default-properties should be constructed
-                        if (this.parsingTemplate instanceof EntityTemplateClass) {
-                            if (this.parsingTemplate.getName().equals(this.getParentType())) {
-                                String language = getLanguage(element, entityTemplateClass);
-                                if (needsBlueprint(element)) {
-                                    BlocksID propertyId = BlocksID.renderClassPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
-                                    node = this.saveNewEntityClassCopy(element, propertyId, entityTemplateClass);
-                                }
-                                else {
-                                    BlocksID propertyId = BlocksID.renderClassPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
-                                    node = this.saveNewEntity(element, propertyId);
-                                }
+                            if(!DynamicBlockHandler.getInstance().isDynamicBlock(blueprintType)) {
+                                throw new ParseException("Found unknown entity-class '" + blueprintType + "' at node \n \n " + element + "\n \n");
                             }
-                            else {
-                                //do nothing, since we have found an entity that is not a direct child of the template being parsed, this sort of entity will be taken care of while saving a new entity-default
+                            else{
+                                //do nothing with dynamic block type, since it will be handled on show
                             }
                         }
-                        //if we're parsing entities belonging to a page-template, we want to create a reproducable id, so we can permanently save changes in db
-                        else if (this.parsingTemplate instanceof PageTemplate) {
-                            //only entities at entity-depth 1 should be given a page-template-default id and saved to db
-                            if (getParentType() == null) {
-                                BlocksID defaultPageTemplateEntityId = BlocksID.renderNewPageTemplateDefaultEntity(this.parsingTemplate.getName(), getProperty(element), this.language);
-                                EntityTemplate lastVersion = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(defaultPageTemplateEntityId, EntityTemplate.class);
-                                //if no version of this entity exists yet, make a new one
-                                if (lastVersion == null) {
-                                    if (needsBlueprint(element)) {
-                                        defaultPageTemplateEntityId = BlocksID.renderNewPageTemplateDefaultEntity(this.parsingTemplate.getName(), getProperty(element), this.language);
-                                        node = this.saveNewEntityClassCopy(element, defaultPageTemplateEntityId, entityTemplateClass);
+                        else {
+                            //we found an uncached entity-template-class, so we cache it
+                            if (!EntityTemplateClassCache.getInstance().contains(blueprintType) && !parsingTemplate.getName().equals(blueprintType)) {
+                                Document entityTemplateClassDOM = TemplateParser.parse(entityTemplateClass.getTemplate());
+                                Traversor
+                                                traversor =
+                                                new Traversor(new DefaultsAndCachingVisitor(entityTemplateClass.getLanguage(), entityTemplateClassDOM, entityTemplateClass, allEntityClasses,
+                                                                                            allPageTemplates));
+                                traversor.traverse(entityTemplateClassDOM);
+                            }
+                            //we want to use the cached entity-template-class
+                            entityTemplateClass = EntityTemplateClassCache.getInstance().get(blueprintType);
+                            //for entity-template-classes, new default-properties should be constructed
+                            if (this.parsingTemplate instanceof EntityTemplateClass) {
+                                if (this.parsingTemplate.getName().equals(this.getParentType())) {
+                                    String language = getLanguage(element, entityTemplateClass);
+                                    if (needsBlueprintCopy(element)) {
+                                        BlocksID propertyId = BlocksID.renderClassPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
+                                        node = this.saveNewEntityClassCopy(element, propertyId, entityTemplateClass);
                                     }
                                     else {
-                                        defaultPageTemplateEntityId =
-                                                        BlocksID.renderNewPageTemplateDefaultEntity(this.parsingTemplate.getName(), getProperty(element), entityTemplateClass.getLanguage());
-                                        node = this.saveNewEntity(element, defaultPageTemplateEntityId);
+                                        BlocksID propertyId = BlocksID.renderClassPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
+                                        node = this.saveNewEntity(element, propertyId);
                                     }
                                 }
-                                //if a version has been stored in db before, use that version as page-template-entity (f.i. a menu that has been changed by the user, should stay changed after server-start-up)
                                 else {
-                                    node = replaceElementWithEntityReference(element, lastVersion);
+                                    //do nothing, since we have found an entity that is not a direct child of the template being parsed, this sort of entity will be taken care of while saving a new entity-default
                                 }
                             }
-                            else {
-                                //do nothing, since we have found an entity that is not a direct child of the template being parsed, this sort of entity will be taken care of while saving a new entity-default
+                            //if we're parsing entities belonging to a page-template, we want to create a reproducable id, so we can permanently save changes in db
+                            else if (this.parsingTemplate instanceof PageTemplate) {
+                                //only entities at entity-depth 1 should be given a page-template-default id and saved to db
+                                if (getParentType() == null) {
+                                    BlocksID defaultPageTemplateEntityId = BlocksID.renderNewPageTemplateDefaultEntity(this.parsingTemplate.getName(), getProperty(element), this.language);
+                                    EntityTemplate lastVersion = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(defaultPageTemplateEntityId, EntityTemplate.class);
+                                    //if no version of this entity exists yet, make a new one
+                                    if (lastVersion == null) {
+                                        if (needsBlueprintCopy(element)) {
+                                            defaultPageTemplateEntityId = BlocksID.renderNewPageTemplateDefaultEntity(this.parsingTemplate.getName(), getProperty(element), this.language);
+                                            node = this.saveNewEntityClassCopy(element, defaultPageTemplateEntityId, entityTemplateClass);
+                                        }
+                                        else {
+                                            defaultPageTemplateEntityId =
+                                                            BlocksID.renderNewPageTemplateDefaultEntity(this.parsingTemplate.getName(), getProperty(element), entityTemplateClass.getLanguage());
+                                            node = this.saveNewEntity(element, defaultPageTemplateEntityId);
+                                        }
+                                    }
+                                    //if a version has been stored in db before, use that version as page-template-entity (f.i. a menu that has been changed by the user, should stay changed after server-start-up)
+                                    else {
+                                        node = replaceElementWithEntityReference(element, lastVersion);
+                                    }
+                                }
+                                else {
+                                    //do nothing, since we have found an entity that is not a direct child of the template being parsed, this sort of entity will be taken care of while saving a new entity-default
+                                }
                             }
                         }
                     }
-                    else if (this.typeOfStack.size() > 0) {
+                    else if (this.blueprintTypeStack.size() > 0) {
                     /*
                      * If we find an entity which is not a property, we throw an exception, since this makes no rdf-sense.
                      * However, if the node is the head-node of a class-blueprint, no property-attribute is expected, and so then no error is thrown
                      */
-                        if (!(this.typeOfStack.size() == 1 && isBlueprint(this.typeOfStack.peek()))) {
-                            throw new ParseException("Found entity-child with typeof-attribute, but no property-attribute at \n \n " + element + "\n \n");
+                        //TODO BAS!: here a property should be present, but it could be a property we added ourselves during the blueprints check
+                        if (!(this.blueprintTypeStack.size() == 1 && isBlueprint(this.blueprintTypeStack.peek()))) {
+                            throw new ParseException("Found entity-child with " + ParserConstants.BLUEPRINT + "-attribute, but no property-attribute at \n \n " + element + "\n \n");
                         }
                     }
                     //we reached the tail of the outer-most tag of an entity-template-class, so we cache it to the application-cache
@@ -191,6 +200,9 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
             }
             return node;
         }
+        catch(ParseException e){
+            throw e;
+        }
         catch (Exception e) {
             throw new ParseException("Could not parse an " + EntityTemplateClass.class.getSimpleName() + " from " + Node.class.getSimpleName() + ": \n \n" + node + "\n \n", e);
         }
@@ -199,7 +211,6 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
     private void cacheEntityTemplateClass(Element root) throws ParseException, CacheException, IDException
     {
         checkPropertyUniqueness(root);
-        root.removeAttr(ParserConstants.BLUEPRINT_OLD);
         EntityTemplateClass parsingTemplate = (EntityTemplateClass) this.parsingTemplate;
         /*
          * Use all info from the template we're parsing to make a real entity-template-class to be cached.
@@ -261,7 +272,7 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
         for(BlocksID languageId : classTemplates.keySet()){
             Element classRoot = TemplateParser.parse(classTemplates.get(languageId)).child(0);
             classRoot.attributes().addAll(element.attributes());
-            classRoot.removeAttr(ParserConstants.USE_BLUEPRINT_OLD);
+            classRoot = (Element) setUseBlueprintType(classRoot);
             //a copy of an entity-class, also means a copy of all of it's children, so we need to traverse all templates to create entity-copies of all it's children
             Traversor traversor = new Traversor(new ClassToStoredInstanceVisitor(id.getUrl(), id.getLanguage()));
             traversor.traverse(classRoot);
@@ -271,12 +282,11 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
             //a copy of an entity-class, also means a copy of all of it's children, so we need to traverse all templates to create entity-copies of all it's children
             Element classRoot = TemplateParser.parse(entityClass.getTemplate()).child(0);
             classRoot.attributes().addAll(element.attributes());
-            classRoot.removeAttr(ParserConstants.USE_BLUEPRINT_OLD);
+            classRoot.removeAttr(ParserConstants.USE_BLUEPRINT);
             Traversor traversor = new Traversor(new ClassToStoredInstanceVisitor(id.getUrl(), id.getLanguage()));
             traversor.traverse(classRoot);
             copiedTemplates.put(id, entityClass.getTemplate());
         }
-        element.removeAttr(ParserConstants.USE_BLUEPRINT_OLD);
         element = replaceElementWithEntityReference(element, new EntityTemplate(id, entityClass, copiedTemplates));
         return element;
     }

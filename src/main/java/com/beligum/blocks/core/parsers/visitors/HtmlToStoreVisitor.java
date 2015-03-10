@@ -78,7 +78,7 @@ public class HtmlToStoreVisitor extends SuperVisitor
                     node.attr(ParserConstants.RESOURCE, entityUrl.toString());
                 }
                 String resourceUrl = getResource(node);
-                EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
+                EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getBlueprintType(node));
                 BlocksID resourceId;
                 if(StringUtils.isEmpty(resourceUrl)) {
                     resourceId = BlocksID.renderNewEntityTemplateID(entityTemplateClass, this.language);

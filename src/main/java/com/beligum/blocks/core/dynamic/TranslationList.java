@@ -68,7 +68,7 @@ public class TranslationList implements DynamicBlockListener
         return element;
     }
 
-    public String getTypeOf(){
+    public String getType(){
         return ParserConstants.DynamicBlocks.TRANSLATION_LIST;
     }
 

@@ -69,7 +69,7 @@ public class ClassToStoredInstanceVisitor extends SuperVisitor
             try {
                 String unversionedResourceId = getReferencedId(node);
                 String defaultPropertyId = getPropertyId(node);
-                String typeOf = getTypeOf(node);
+                String blueprintType = getBlueprintType(node);
                 EntityTemplate instance = null;
                 // this element has a reference to an instance, it is a property of an entity(-class) and the referenced id is the one of a default-property
                 // => this is a reference to the default value of the property
@@ -78,11 +78,11 @@ public class ClassToStoredInstanceVisitor extends SuperVisitor
                     instance = defaultPropertyTemplate;
                 }
                 // this is not a default property but still an entity and has an id
-                else if(!StringUtils.isEmpty(unversionedResourceId) && !StringUtils.isEmpty(typeOf)){
+                else if(!StringUtils.isEmpty(unversionedResourceId) && !StringUtils.isEmpty(blueprintType)){
                     // Fetch the default value in the db for this resource
                     EntityTemplate defaultEntityTemplate = this.fetchDefaultEntityTemplate(unversionedResourceId);
                     // Make a new entity-template-instance, which is a copy of the default-tempalte
-                    EntityTemplateClass entityClass = EntityTemplateClassCache.getInstance().get(typeOf);
+                    EntityTemplateClass entityClass = EntityTemplateClassCache.getInstance().get(blueprintType);
                     // If the current language is not present in the default template, copy the template in the primary-language to the new language
                     if(defaultEntityTemplate.getTemplate(this.language) == null){
                         BlocksID newLanguageId = BlocksID.renderLanguagedId(defaultEntityTemplate.getId().getUrl(), BlocksID.NEW_VERSION, this.language);
@@ -91,7 +91,12 @@ public class ClassToStoredInstanceVisitor extends SuperVisitor
                     EntityTemplate newEntityInstance = new EntityTemplate(BlocksID.renderNewEntityTemplateID(entityClass, this.language), entityClass, defaultEntityTemplate.getTemplates());
                     instance = newEntityInstance;
                 }
-                node = replaceNodeWithEntity(node, instance);
+                if(instance != null) {
+                    node = replaceNodeWithEntity(node, instance);
+                }
+                else{
+                    node = setUseBlueprintType(node);
+                }
                 newInstancesNodes.push(node);
             }
             catch (Exception e) {
@@ -109,7 +114,7 @@ public class ClassToStoredInstanceVisitor extends SuperVisitor
             node = super.tail(node, depth);
             Node lastInstanceNode = !newInstancesNodes.isEmpty() ? newInstancesNodes.peek() : null;
             if (node.equals(lastInstanceNode) && node instanceof Element) {
-                EntityTemplateClass entityClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
+                EntityTemplateClass entityClass = EntityTemplateClassCache.getInstance().get(getBlueprintType(node));
                 BlocksID newEntityId;
                 // For the first root entity use entityUrl if available
                 if (newInstancesNodes.size() == 1 && entityUrl != null) {
@@ -119,7 +124,6 @@ public class ClassToStoredInstanceVisitor extends SuperVisitor
                 else{
                     newEntityId = BlocksID.renderNewEntityTemplateID(entityClass, this.language);
                 }
-                node.removeAttr(ParserConstants.BLUEPRINT_OLD);
                 node.attr(ParserConstants.RESOURCE, XMLUrlIdMapper.getInstance().getUrl(newEntityId).toString());
                 EntityTemplate newInstance = new EntityTemplate(newEntityId, entityClass, node.outerHtml());
                 //for default instances, a version could already be present in db, which is equal to this one
@@ -139,7 +143,7 @@ public class ClassToStoredInstanceVisitor extends SuperVisitor
             throw e;
         }
         catch (Exception e) {
-            throw new ParseException("Could not parse an " + EntityTemplate.class.getSimpleName() + "-instance from " + Node.class.getSimpleName() + " " + node, e);
+            throw new ParseException("Could not parse an " + EntityTemplate.class.getSimpleName() + "-instance from " + Node.class.getSimpleName() + " \n\n" + node + "\n\n", e);
         }
     }
 
@@ -173,7 +177,7 @@ public class ClassToStoredInstanceVisitor extends SuperVisitor
     {
         String entityClassName = "";
         try {
-            entityClassName = this.getTypeOf(node);
+            entityClassName = this.getBlueprintType(node);
             if(entityClassName != null) {
                 return EntityTemplateClassCache.getInstance().get(entityClassName);
             }

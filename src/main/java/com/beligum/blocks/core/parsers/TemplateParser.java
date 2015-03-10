@@ -31,8 +31,6 @@ import java.util.*;
 public class TemplateParser
 {
 
-    //TODO BAS: complete rdfa enablement (rel for same property-names, about for entity-injection)
-
     /**
      * Parse all templates found in the specified html and cache them in the specified collection.
      * @param fileHtml the html to be parsed
@@ -43,7 +41,7 @@ public class TemplateParser
     public static void findTemplatesFromFile(String fileHtml, List<AbstractTemplate> cache, Set<String> foundEntityClassNames) throws ParseException
     {
         Document doc = parse(fileHtml);
-        Traversor traversor = new Traversor(new FindTemplatesVisitor(cache, foundEntityClassNames));
+        Traversor traversor = new Traversor(new CheckBlueprintsVisitor(cache, foundEntityClassNames));
         traversor.traverse(doc);
     }
 
@@ -60,6 +58,7 @@ public class TemplateParser
             allPageTemplates.put(ParserConstants.DEFAULT_PAGE_TEMPLATE, PageTemplateCache.getInstance().get(ParserConstants.DEFAULT_PAGE_TEMPLATE));
             Map<String, EntityTemplateClass> allEntityClasses = new HashMap<>();
             allEntityClasses.put(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS, EntityTemplateClassCache.getInstance().get(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS));
+            //TODO BAS: all dynamic block names should be added to allEntityClasses
             //split the list of templates up into page-templates and entity-classes
             for (AbstractTemplate template : foundTemplates) {
                 if (template instanceof PageTemplate) {
@@ -87,6 +86,7 @@ public class TemplateParser
                         Map<BlocksID, String> replacedTemplates = replacedTemplate.getTemplates();
                         boolean isBlueprint = false;
                         for (BlocksID languageId : replacedTemplates.keySet()) {
+                            //TODO BAS!: here also the "typeof"-attribute should be checked for presence
                             isBlueprint = new SuperVisitor().isBlueprint(TemplateParser.parse(replacedTemplates.get(languageId)).child(0));
                             if (isBlueprint) {
                                 throw new ParseException("An " + EntityTemplateClass.class.getSimpleName() + " of type '" + replacedTemplate.getName() +
@@ -210,7 +210,7 @@ public class TemplateParser
                 }
 //                Element entityRoot = TemplateParser.parse(entityHtml).child(0);
                 reference.attr(ParserConstants.REFERENCE_TO, entityTemplate.getUnversionedId());
-                reference.attr(ParserConstants.TYPE_OF_OLD, entityTemplate.getEntityTemplateClassName());
+                reference.attr(ParserConstants.USE_BLUEPRINT, entityTemplate.getEntityTemplateClassName());
             }
 
             ToHtmlVisitor visitor = new ToHtmlVisitor(entityTemplate.getUrl(), language, pageTemplate.getLinks(), pageTemplate.getScripts());

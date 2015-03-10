@@ -1,5 +1,9 @@
 package com.beligum.blocks.core.config;
 
+import org.apache.commons.lang3.StringUtils;
+
+import java.lang.reflect.Field;
+
 /**
  * Created by bas on 03.11.14.
  * CSS-class-names used while parsing html to blocks
@@ -55,10 +59,10 @@ public class ParserConstants
 
     /**the form a reference-node takes inside parsed templates*/
     public static final String REFERENCE_TO = "reference-to";
-    /**the keyword (attribute) indicating a certain template-class should be used as blueprint for all instances*/
-    public static final String BLUEPRINT_OLD = "blueprint-old";
     /**the keyword indicating a certain entity is a copy of the entity-class (blueprint)*/
-    public static final String USE_BLUEPRINT_OLD = "use-blueprint-old";
+    public static final String USE_BLUEPRINT = "use-blueprint";
+    /**the keyword indicating a certain html element defines a class blueprint*/
+    public static final String BLUEPRINT = "blueprint";
     /**the keyword indicating a certain property value is a copy of the property in the entity-class (blueprint)*/
     public static final String USE_DEFAULT = "use-default";
 
@@ -69,7 +73,7 @@ public class ParserConstants
      * Dynamic blocks
      */
     public class DynamicBlocks{
-        /**the typeof indicating a block is a translation-block*/
+        /**the type indicating a block is a translation-block*/
         public static final String TRANSLATION_LIST = "translation-list";
     }
 
@@ -80,6 +84,7 @@ public class ParserConstants
     public static final String RESOURCE = "resource";
     public static final String PROPERTY = "property";
     public static final String PROPERTY_NAME = "name";
-    public static final String TYPE_OF_OLD = "blueprint";
+    public static final String TYPE_OF = "typeof";
+
 
 }

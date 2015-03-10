@@ -81,7 +81,7 @@ public class ToHtmlVisitor extends SuperVisitor
 
                 if (!StringUtils.isEmpty(getReferencedId(node))) {
                     // We make a distinctions between properties and properties with typeof
-                    if (!hasTypeOf(node)) {
+                    if (!hasBleuprintType(node)) {
                         retVal = getPropertyInstance((Element) retVal);
                     }
                     else {
@@ -94,7 +94,6 @@ public class ToHtmlVisitor extends SuperVisitor
                             retVal.attr(attribute.getKey(), attribute.getValue());
                         }
                     }
-
                     node.replaceWith(retVal);
                 }
                 else {
@@ -120,11 +119,11 @@ public class ToHtmlVisitor extends SuperVisitor
             if(isEntity(node) && node instanceof Element) {
                 Element element = (Element) node;
 
-                if (hasTypeOf(node) && isEditable((Element)node)) node.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
+                if (hasBleuprintType(node) && isEditable((Element)node)) node.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
 
-                //TODO BAS: here we should use a listener to check for all dynamic blocks
+                //TODO: here all dynamic blocks should be checked
                 DynamicBlockListener translationList = new TranslationList(this.language, this.entityUrl);
-                if (translationList.getTypeOf().equals(this.getTypeOf(element))) {
+                if (translationList.getType().equals(this.getBlueprintType(element))) {
                     element = translationList.onShow(element);
                     for(Element link : translationList.getLinks()) {
                         boolean added = this.links.add(link.outerHtml());
@@ -146,7 +145,7 @@ public class ToHtmlVisitor extends SuperVisitor
                 //the url "" does not need to be replaced
                 if(!StringUtils.isEmpty(url)) {
                     //make relative urls absolute
-                    URL absoluteUrl = new URL(new URL(BlocksConfig.getSiteDomain()), url);
+                    URL absoluteUrl = new URL(BlocksConfig.getSiteDomainUrl(), url);
                     //only urls from the sites domain need to be translated
                     if (absoluteUrl.toString().startsWith(BlocksConfig.getSiteDomain())) {
                         BlocksID id = XMLUrlIdMapper.getInstance().getId(absoluteUrl);
@@ -280,7 +279,7 @@ public class ToHtmlVisitor extends SuperVisitor
     {
         // Find the class of this node
         Element retVal = null;
-        EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
+        EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getBlueprintType(node));
 
         this.addLinks(entityTemplateClass.getLinks());
         this.addScripts(entityTemplateClass.getScripts());
@@ -293,9 +292,11 @@ public class ToHtmlVisitor extends SuperVisitor
         Element entityClassElement = TemplateParser.parse(entityTemplateClassHtml).child(0);
 
         // Default setting. First Type found is editable
-        if (this.typeOfStack.size() == 1) node.attr(ParserConstants.CAN_EDIT_PROPERTY, "");
+        if (this.blueprintTypeStack.size() == 1) node.attr(ParserConstants.CAN_EDIT_PROPERTY, "");
 
         retVal = entityClassElement.clone();
+        retVal.removeAttr(ParserConstants.BLUEPRINT);
+
         Element reference = (Element) fetchReferencedInstance(getReferencedId(node));
         HashMap<String, Element> classProperties = getProperties(entityClassElement, false);
 
@@ -359,9 +360,9 @@ public class ToHtmlVisitor extends SuperVisitor
                 }
                 retVal.put(uniqueName, property);
             } else if (failOnMissingReference) {
-                throw new ParseException("Found entity which is not a property of class '" + node.attr(ParserConstants.TYPE_OF_OLD) + "' as " + property.attr(ParserConstants.TYPE_OF_OLD)+ "\n");
+                throw new ParseException("Found entity which is not a property of class '" + node.attr(ParserConstants.BLUEPRINT) + "' as " + property.attr(ParserConstants.BLUEPRINT)+ "\n");
             } else {
-                Logger.debug("Found class property which was not replaced by an instance property of class '" + node.attr(ParserConstants.TYPE_OF_OLD) + "' as: " + property.attr(ParserConstants.TYPE_OF_OLD));
+                Logger.debug("Found class property which was not replaced by an instance property of class '" + node.attr(ParserConstants.BLUEPRINT) + "' as: " + property.attr(ParserConstants.BLUEPRINT));
             }
         }
         return retVal;

@@ -33,6 +33,8 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
     protected Set<String> scripts = new HashSet<>();
     protected List<String> scriptsInOrder = new ArrayList<>();
 
+    protected Map<String, EntityTemplate> properties = new HashMap<>();
+
 
     /**
      * Constructor taking a unique id.
@@ -134,7 +136,7 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
      * @return the template in the language specified by this template's id, or if this language is not present, the first preferred language is returned
      */
     public String getTemplate(){
-        String template = this.templates.get(this.getLanguage());
+        String template = this.getTemplate(this.getLanguage());
         if(template == null){
             String[] preferredLanguages = BlocksConfig.getLanguages();
             int i = 0;

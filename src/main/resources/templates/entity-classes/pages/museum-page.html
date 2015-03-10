@@ -1,7 +1,7 @@
-<div blueprint="museum-page" blueprint-old template="menu-footer" can-edit can-layout page-block not-addable-block>
+<div blueprint="museum-page" template="menu-footer" can-edit can-layout page-block not-addable-block>
     <div class="row">
         <div class="col-md-12">
-            <div property="title" name="museum-title" blueprint="pagetitle" class="pagetitle">
+            <div property="title" name="museum-title" use-blueprint="pagetitle" class="pagetitle">
                 <div class="row">
                     <header class="col-md-12">
                         <nav class="breadcrumb">
@@ -14,19 +14,19 @@
                     </header>
                 </div>
             </div>
-            <div property="sectiontitle" name="tentoonstellingen" blueprint="sectiontitle" class="sectiontitle">
+            <div property="sectiontitle" name="tentoonstellingen" use-blueprint="sectiontitle" class="sectiontitle">
                 <div class="row">
                     <header class="col-md-12">
                         <h3 class="red" property="title" can-edit>Onze tentoonstellingen</h3>
                     </header>
                 </div>
             </div>
-            <div property="exhibitions" class="link-container" blueprint="link-container" can-layout>
+            <div property="exhibitions" class="link-container" use-blueprint="link-container" can-layout>
                 <div class="row">
                     <div class="column col-md-12">
                         <div class="row">
                             <div class="col-md-4">
-                                <article id="houtbewerking" property="exhibition" name="houtbewerking" blueprint="exhibition" class="column exhibition square">
+                                <article id="houtbewerking" property="exhibition" name="houtbewerking" use-blueprint="exhibition" class="column exhibition square">
                                     <a href="" title="">
                             <span class="square-inner bgbrown">
                                 <header>
@@ -38,7 +38,7 @@
                                 </article>
                             </div>
                             <div class="col-md-4">
-                                <article id="was" property="exhibition" name="was" blueprint="exhibition" class="column exhibition square">
+                                <article id="was" property="exhibition" name="was" use-blueprint="exhibition" class="column exhibition square">
                                     <a href="" title="">
                             <span class="square-inner bgorange">
                                 <header>
@@ -50,7 +50,7 @@
                                 </article>
                             </div>
                             <div class="col-md-4">
-                                <article id="smid" property="exhibition" name="smid" blueprint="exhibition" class="column exhibition square">
+                                <article id="smid" property="exhibition" name="smid" use-blueprint="exhibition" class="column exhibition square">
                                     <a href="" title="">
                             <span class="square-inner bgdarkblue">
                                 <header>
@@ -64,7 +64,7 @@
                         </div>
                         <div class="row" >
                             <div class="col-md-4">
-                                <article id="rijstteelt" property="exhibition" name="rijstteelt" blueprint="exhibition" class="column exhibition square">
+                                <article id="rijstteelt" property="exhibition" name="rijstteelt" use-blueprint="exhibition" class="column exhibition square">
                                     <a href="" title="">
                             <span class="square-inner bggreen">
                                 <header>
@@ -76,7 +76,7 @@
                                 </article>
                             </div>
                             <div class="col-md-4">
-                                <article id="molen" property="exhibition" name="molen" blueprint="exhibition" class="column exhibition square">
+                                <article id="molen" property="exhibition" name="molen" use-blueprint="exhibition" class="column exhibition square">
                                     <a href="" title="">
                             <span class="square-inner bgblue">
                                 <header>
@@ -88,7 +88,7 @@
                                 </article>
                             </div>
                             <div class="col-md-4">
-                                <article property="exhibition" name="what-button" blueprint="exhibition" class="column what-button square">
+                                <article property="exhibition" name="what-button" use-blueprint="exhibition" class="column what-button square">
                                     <a href="" title="">
                             <span class="square-inner">
                                 <header can-edit>
@@ -103,23 +103,23 @@
                     </div>
                 </div>
             </div>
-            <div property="layout" blueprint="whitespace" class="whitespace">
+            <div property="layout" use-blueprint="whitespace" class="whitespace">
                 <div class="row">
                     <div class="col-md-12">
                     </div>
                 </div>
             </div>
-            <div property="sectiontitle" name="gebouwen" blueprint="sectiontitle" class="sectiontitle">
+            <div property="sectiontitle" name="gebouwen" use-blueprint="sectiontitle" class="sectiontitle">
                 <div class="row">
                     <header class="col-md-12">
                         <h3 class="red" property="title" can-edit>Onze gebouwen</h3>
                     </header>
                 </div>
             </div>
-            <div property="buildings" class="link-container" blueprint="link-container" can-layout>
+            <div property="buildings" class="link-container" use-blueprint="link-container" can-layout>
                 <div class="row">
                     <div class="col-md-3">
-                        <article property="building" name="guldenhal" blueprint="building" class="building">
+                        <article property="building" name="guldenhal" use-blueprint="building" class="building">
                             <a href="" title="">
                                 <img property="building-image" alt="" src="/assets/media/images/guldendal.jpg"/>
                                 <header>
@@ -133,7 +133,7 @@
                         </article>
                     </div>
                     <div class="col-md-3">
-                        <article property="building" name="tommenmolen" blueprint="building" class="building">
+                        <article property="building" name="tommenmolen" use-blueprint="building" class="building">
                             <a href="" title="">
                                 <img property="building-image" alt="" src="/assets/media/images/tommenmolen.jpg" can-edit/>
                                 <header>
@@ -147,7 +147,7 @@
                         </article>
                     </div>
                     <div class="col-md-3">
-                        <article property="building" name="liermolen"blueprint="building" class="building">
+                        <article property="building" name="liermolen"use-blueprint="building" class="building">
                             <a href="" title="">
                                 <img property="building-image" alt="" src="/assets/media/images/liermolen.jpg" can-edit/>
                                 <header>
@@ -161,7 +161,7 @@
                         </article>
                     </div>
                     <div class="col-md-3">
-                        <article property="building" name="prinsenkasteel" blueprint="building" class="building">
+                        <article property="building" name="prinsenkasteel" use-blueprint="building" class="building">
                             <a href="" title="">
                                 <img property="building-image" alt="" src="/assets/media/images/prinsenkasteel.jpg" can-edit/>
                                 <header>

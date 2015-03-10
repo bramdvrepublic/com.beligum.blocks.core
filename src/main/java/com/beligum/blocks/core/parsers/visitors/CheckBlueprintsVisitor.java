@@ -1,6 +1,5 @@
 package com.beligum.blocks.core.parsers.visitors;
 
-import com.beligum.blocks.core.caching.EntityTemplateClassCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
@@ -8,16 +7,12 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
-import com.beligum.blocks.core.parsers.TemplateParser;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -27,8 +22,10 @@ import java.util.Stack;
  * Created by wouter on 22/11/14.
  * Visitor holding all functionalities to parse a html-file to entity-classes stored in cache
  */
-public class FindTemplatesVisitor extends SuperVisitor
+public class CheckBlueprintsVisitor extends SuperVisitor
 {
+
+    //TODO BAS SH: je hebt net deze klasse hernoemt van FindTemplatesVisitor naar CheckBlueprintsVisitor, en dat is wat deze klasse nu ook zou moeten doen
 
     private String pageTemplateName = null;
     /**flag for indicating if the current traverse has encountered a tag indicating a page-template is being parsed*/
@@ -49,7 +46,7 @@ public class FindTemplatesVisitor extends SuperVisitor
      * @param foundTemplates the list to be filled up with entity-template-classes and page-templates
      * @throws NullPointerException if no cache is specified
      */
-    public FindTemplatesVisitor(List<AbstractTemplate> foundTemplates, Set<String> foundEntityClassNames)
+    public CheckBlueprintsVisitor(List<AbstractTemplate> foundTemplates, Set<String> foundEntityClassNames)
     {
         if(foundTemplates == null){
             throw new NullPointerException("Cannot cache to null-collection.");
@@ -74,7 +71,15 @@ public class FindTemplatesVisitor extends SuperVisitor
             else if (parsingPageTemplate && isPageTemplateContentNode(node) && node instanceof Element) {
                 pageTemplateContentNode = (Element) node;
             }
-            if(hasTypeOf(node)) {
+
+            //TODO: check if it is a typeof, then a bleuprint attr should be added
+            //TODO: if blueprintTypeStack.size()>0 en bleuprint heeft geen property -> property op zetten
+            //TODO: css class blocks-entityClassName er bij zetten indien nodig
+            //TODO: fill children (properties: propertyValue/propertyName of propertyValue/number-> EtntityTemplate) vb building en building/1 en building/2...
+
+
+
+            if(hasBleuprintType(node)) {
                 boolean containsClassToBeCached = containsClassToBeCached(node);
                 if(containsClassToBeCached) {
                     linksStack.push(new ArrayList<String>());
@@ -138,8 +143,9 @@ public class FindTemplatesVisitor extends SuperVisitor
                      * If we have cached an new entity-template-class which is a property of a parent entity,
                      * we switch it by a use-blueprint-tag, to be filled in again when the defaults are made (in DefaultVisitor)
                      */
+                    //TODO BAS!: check if this still works when no property-attribute was placed on an blueprint inside another blueprint
                     if(isProperty(element) && isBlueprint(element) && entityTemplateClass != null){
-                        node = replaceNodeWithUseBlueprintTag(element);
+                        node = replaceNodeWithUseBlueprintTag(element, entityTemplateClass.getName());
                     }
                 }
 
@@ -157,25 +163,16 @@ public class FindTemplatesVisitor extends SuperVisitor
     /**
      *
      * @param node
-     * @return true if the node is the root-node of a class that should be cached (that is, when it is a blueprint, or when no class with that name is present in cache yet), false otherwise
+     * @return true if the node is the root-node of a class that should be cached (that is, when it is a blueprint), false otherwise
      */
     private boolean containsClassToBeCached(Node node) throws CacheException, IDException
     {
         if(!isEntity(node)){
             return false;
         }
-        if(isBlueprint(node)) {
-            return true;
-        }
+        //TODO BAS!: here also the "typeof"-attribute should be checked
         else{
-            String typeOf = getTypeOf(node);
-            //if no class of this type has be found yet, we use the found html as blueprint
-            if(!typeOf.equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS) && !this.foundEntityClassNames.contains(typeOf)){
-                return true;
-            }
-            else{
-                return false;
-            }
+            return isBlueprint(node);
         }
     }
 
@@ -190,7 +187,7 @@ public class FindTemplatesVisitor extends SuperVisitor
     {
         String entityClassName = "";
         try {
-            entityClassName = this.getTypeOf(classRoot);
+            entityClassName = this.getBlueprintType(classRoot);
             if(!StringUtils.isEmpty(entityClassName)) {
                 //if a template is explicitly mentioned, that one is used, otherwise we use the page-template from the file we are parsing (specified at <html tempalte="name">), or the default if no page-template is currently being parsed
                 String pageTemplateName = getPageTemplateName(classRoot);

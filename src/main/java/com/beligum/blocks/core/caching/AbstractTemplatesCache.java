@@ -174,6 +174,11 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                 //set which will be filled up with all class-names found in all files in the templates-folder
                 final Set<String> foundEntityClassNames = new HashSet<>();
 
+                /*
+                 * Add all dynamic blocks to the found entity-classes first
+                 */
+
+
                 //first fetch all blueprints from all files
                 FileVisitor<Path> visitor = new SimpleFileVisitor<Path>()
                 {

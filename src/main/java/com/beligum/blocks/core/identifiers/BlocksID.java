@@ -182,7 +182,7 @@ public class BlocksID
             if(!StringUtils.isEmpty(urlUri.getFragment())){
                 relativePath += "#" + urlUri.getFragment();
             }
-            this.url = new URL(new URL(BlocksConfig.getSiteDomain()), relativePath);
+            this.url = new URL(BlocksConfig.getSiteDomainUrl(), relativePath);
             this.idUri = transformIntoUri(this.url);
 
             /*
@@ -381,7 +381,7 @@ public class BlocksID
             /*
              * Construct the url for this id, using the site-domain specified in the configuration-xml and the previously parsed path (no more language-info is present in it)
              */
-            URL siteDomain = new URL(BlocksConfig.getSiteDomain());
+            URL siteDomain = BlocksConfig.getSiteDomainUrl();
             this.url = new URL(siteDomain.getProtocol(), siteDomain.getHost(), siteDomain.getPort(), urlPath);
             return transformIntoUri(this.url);
         }catch(Exception e){

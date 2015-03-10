@@ -116,7 +116,7 @@ public class EntitiesEndpoint
             if(pageUrlPath.endsWith("#")){
                 pageUrlPath = pageUrlPath.substring(0, pageUrlPath.length()-1);
             }
-            URL pageUrl = new URL(new URL(BlocksConfig.getSiteDomain()), pageUrlPath);
+            URL pageUrl = new URL(BlocksConfig.getSiteDomainUrl(), pageUrlPath);
             //ignore the query-part of the url to fetch an entity from db, use only the path of the url
             pageUrl = new URL(pageUrl, pageUrl.getPath());
             BlocksID entityId = null;
