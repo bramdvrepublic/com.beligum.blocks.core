@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
-import com.beligum.blocks.core.caching.BleuprintsCache;
+import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.RedisDatabase;
@@ -173,7 +173,7 @@ public class ApplicationEndpoint
      */
     private Response injectParameters(Template newPageTemplate) throws InterruptedException, CacheException
     {
-        List<Blueprint> pageClasses = BleuprintsCache.getInstance().getPageClasses();
+        List<Blueprint> pageClasses = BlueprintsCache.getInstance().getPageClasses();
         newPageTemplate.set(ParserConstants.ENTITY_URL, RequestContext.getRequest().getRequestURL().toString());
         newPageTemplate.set(ParserConstants.BLUEPRINTS, pageClasses);
         return Response.ok(newPageTemplate).build();

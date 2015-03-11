@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.parsers.visitors;
 
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
-import com.beligum.blocks.core.caching.BleuprintsCache;
+import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
@@ -81,7 +81,7 @@ public class ToHtmlVisitor extends SuperVisitor
 
                 if (!StringUtils.isEmpty(getReferencedId(node))) {
                     // We make a distinctions between properties and properties with typeof
-                    if (!hasBleuprintType(node)) {
+                    if (!hasBlueprintType(node)) {
                         retVal = getPropertyInstance((Element) retVal);
                     }
                     else {
@@ -119,7 +119,7 @@ public class ToHtmlVisitor extends SuperVisitor
             if(isEntity(node) && node instanceof Element) {
                 Element element = (Element) node;
 
-                if (hasBleuprintType(node) && isEditable((Element)node)) node.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
+                if (hasBlueprintType(node) && isEditable((Element)node)) node.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
 
                 //TODO: here all dynamic blocks should be checked
                 DynamicBlockListener translationList = new TranslationList(this.language, this.entityUrl);
@@ -279,7 +279,7 @@ public class ToHtmlVisitor extends SuperVisitor
     {
         // Find the class of this node
         Element retVal = null;
-        Blueprint blueprint = BleuprintsCache.getInstance().get(getBlueprintType(node));
+        Blueprint blueprint = BlueprintsCache.getInstance().get(getBlueprintType(node));
 
         this.addLinks(blueprint.getLinks());
         this.addScripts(blueprint.getScripts());

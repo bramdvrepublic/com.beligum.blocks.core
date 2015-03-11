@@ -220,12 +220,12 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
              * The templates are separately saved per language, not under the key "templates".
              * Links and scripts field should only be saved when present.
              */
-            hash.remove(EntityTemplate.class.getField("id").getName());
-            hash.remove(EntityTemplate.class.getField("templates").getName());
-            hash.remove(EntityTemplate.class.getField("links").getName());
-            hash.remove(EntityTemplate.class.getField("linksInOrder").getName());
-            hash.remove(EntityTemplate.class.getField("scripts").getName());
-            hash.remove(EntityTemplate.class.getField("scriptsInOrder").getName());
+            hash.remove(Storable.class.getDeclaredField("id").getName());
+            hash.remove(AbstractTemplate.class.getDeclaredField("templates").getName());
+            hash.remove(AbstractTemplate.class.getDeclaredField("links").getName());
+            hash.remove(AbstractTemplate.class.getDeclaredField("linksInOrder").getName());
+            hash.remove(AbstractTemplate.class.getDeclaredField("scripts").getName());
+            hash.remove(AbstractTemplate.class.getDeclaredField("scriptsInOrder").getName());
             for (BlocksID languageId : this.templates.keySet()) {
                 hash.put(languageId.getLanguage(), languageId.toString());
             }

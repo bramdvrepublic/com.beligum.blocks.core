@@ -1,6 +1,6 @@
 package com.beligum.blocks.core.parsers;
 
-import com.beligum.blocks.core.caching.BleuprintsCache;
+import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
@@ -57,7 +57,7 @@ public class TemplateParser
             Map<String, PageTemplate> allPageTemplates = new HashMap<>();
             allPageTemplates.put(ParserConstants.DEFAULT_PAGE_TEMPLATE, PageTemplateCache.getInstance().get(ParserConstants.DEFAULT_PAGE_TEMPLATE));
             Map<String, Blueprint> allBlueprints = new HashMap<>();
-            allBlueprints.put(ParserConstants.DEFAULT_BLUEPRINT, BleuprintsCache.getInstance().get(ParserConstants.DEFAULT_BLUEPRINT));
+            allBlueprints.put(ParserConstants.DEFAULT_BLUEPRINT, BlueprintsCache.getInstance().get(ParserConstants.DEFAULT_BLUEPRINT));
             //split the list of templates up into page-templates and entity-classes
             for (AbstractTemplate template : foundTemplates) {
                 if (template instanceof PageTemplate) {
@@ -88,7 +88,7 @@ public class TemplateParser
                             //TODO BAS!: here also the "typeof"-attribute should be checked for presence
                             isBlueprint = new SuperVisitor().isBlueprint(TemplateParser.parse(replacedTemplates.get(languageId)).child(0));
                             if (isBlueprint) {
-                                throw new ParseException("An " + Blueprint.class.getSimpleName() + " of type '" + replacedTemplate.getName() +
+                                throw new ParseException("A " + Blueprint.class.getSimpleName() + " of type '" + replacedTemplate.getName() +
                                                          "' was already present in cache. Cannot have two blueprints for the same type. Found two! First encountered \n \n " + replacedTemplate +
                                                          "\n \n  and then \n \n" + template + "\n \n");
                             }
@@ -104,7 +104,7 @@ public class TemplateParser
             //create defaults for all found entity-classes and cache to application-cache
             for (String templateName : allBlueprints.keySet()) {
                 //during traversal of a template, all it's child-types are cached too
-                if(!BleuprintsCache.getInstance().contains(templateName) || templateName.equals(ParserConstants.DEFAULT_BLUEPRINT)) {
+                if(!BlueprintsCache.getInstance().contains(templateName) || templateName.equals(ParserConstants.DEFAULT_BLUEPRINT)) {
                     AbstractTemplate template = allBlueprints.get(templateName);
                     Map<BlocksID, String> htmlTemplates = template.getTemplates();
                     for (BlocksID language : htmlTemplates.keySet()) {

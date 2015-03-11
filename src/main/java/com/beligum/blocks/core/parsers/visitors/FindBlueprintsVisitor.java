@@ -73,11 +73,21 @@ public class FindBlueprintsVisitor extends SuperVisitor
                     pageTemplateContentNode = (Element) node;
                 }
 
-                //TODO BAS!: check if it is a typeof, then a bleuprint attr should be added
+                boolean hasBlueprintType = hasBlueprintType(node);
+                if(hasTypeOf(node)) {
+                    if (!hasBlueprintType) {
+                        node.attr(ParserConstants.BLUEPRINT, getTypeOf(node));
+                        hasBlueprintType = true;
+                        this.blueprintTypeStack.push(node);
+                    }
+                    else if(!getBlueprintType(node).equals(getTypeOf(node))){
+                        throw new ParseException("Cannot deal with entity of type '" + getTypeOf(node) + "' and blueprint type '" + getBlueprintType(node) + "'. For now those types should be equal. Found at node \n\n" +node + "\n\n");
+                    }
+                }
                 //TODO BAS!: css class blocks-entityClassName er bij zetten indien nodig
                 //TODO BAS!: fill children (properties: propertyValue/propertyName of propertyValue/number-> EtntityTemplate) vb building en building/1 en building/2...
 
-                if (hasBleuprintType(node)) {
+                if (hasBlueprintType) {
                     //if a blueprint should be cached, set a links- and a scripts-list ready to be filled during next steps
                     boolean containsClassToBeCached = containsClassToBeCached(node);
                     if (containsClassToBeCached) {
@@ -113,7 +123,7 @@ public class FindBlueprintsVisitor extends SuperVisitor
             return node;
         }
         catch (Exception e){
-            throw new ParseException("Could not parse tag-head while looking for blueprints and page-templates at " + node, e);
+            throw new ParseException("Could not parse tag-head while looking for blueprints and page-templates at \n\n" + node + "\n\n", e);
         }
     }
 
@@ -149,7 +159,7 @@ public class FindBlueprintsVisitor extends SuperVisitor
                 }
 
                 //if a blueprint node is not a property of it's parent, place a property on it using it's blueprint type
-                if(hasBleuprintType(element) && !isProperty(element) && this.blueprintTypeStack.size()>0){
+                if(hasBlueprintType(element) && !isProperty(element) && this.blueprintTypeStack.size()>0){
                     String type = getBlueprintType(element);
                     node.attr(ParserConstants.PROPERTY, type);
                 }
@@ -170,7 +180,7 @@ public class FindBlueprintsVisitor extends SuperVisitor
      * @param node
      * @return true if the node is the root-node of a class that should be cached (that is, when it is a blueprint), false otherwise
      */
-    private boolean containsClassToBeCached(Node node) throws CacheException, IDException
+    private boolean containsClassToBeCached(Node node) throws CacheException, IDException, ParseException
     {
         if(!isEntity(node)){
             return false;
@@ -183,7 +193,7 @@ public class FindBlueprintsVisitor extends SuperVisitor
 
     /**
      * Caches the entity-template parsed from the root-element specified. If a certain (non-blueprint) implementation of this entity-class is already present in cache, it is replaced.
-     * If a bleuprint was already present, an exception is thrown.
+     * If a blueprint was already present, an exception is thrown.
      * @param classRoot node defining an blueprint
      * @return the blueprint defined by the node
      * @throws ParseException

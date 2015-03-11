@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.parsers.visitors;
 
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
-import com.beligum.blocks.core.caching.BleuprintsCache;
+import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.CacheException;
@@ -82,7 +82,7 @@ public class BlueprintToStoredInstanceVisitor extends SuperVisitor
                     // Fetch the default value in the db for this resource
                     EntityTemplate defaultEntityTemplate = this.fetchDefaultEntityTemplate(unversionedResourceId);
                     // Make a new entity-template-instance, which is a copy of the default-tempalte
-                    Blueprint entityClass = BleuprintsCache.getInstance().get(blueprintType);
+                    Blueprint entityClass = BlueprintsCache.getInstance().get(blueprintType);
                     // If the current language is not present in the default template, copy the template in the primary-language to the new language
                     if(defaultEntityTemplate.getTemplate(this.language) == null){
                         BlocksID newLanguageId = BlocksID.renderLanguagedId(defaultEntityTemplate.getId().getUrl(), BlocksID.NEW_VERSION, this.language);
@@ -114,7 +114,7 @@ public class BlueprintToStoredInstanceVisitor extends SuperVisitor
             node = super.tail(node, depth);
             Node lastInstanceNode = !newInstancesNodes.isEmpty() ? newInstancesNodes.peek() : null;
             if (node.equals(lastInstanceNode) && node instanceof Element) {
-                Blueprint entityClass = BleuprintsCache.getInstance().get(getBlueprintType(node));
+                Blueprint entityClass = BlueprintsCache.getInstance().get(getBlueprintType(node));
                 BlocksID newEntityId;
                 // For the first root entity use entityUrl if available
                 if (newInstancesNodes.size() == 1 && entityUrl != null) {
@@ -179,7 +179,7 @@ public class BlueprintToStoredInstanceVisitor extends SuperVisitor
         try {
             entityClassName = this.getBlueprintType(node);
             if(entityClassName != null) {
-                return BleuprintsCache.getInstance().get(entityClassName);
+                return BlueprintsCache.getInstance().get(entityClassName);
             }
             else{
                 throw new Exception(Node.class.getSimpleName() + " '" + node + "' does not define an entity.");

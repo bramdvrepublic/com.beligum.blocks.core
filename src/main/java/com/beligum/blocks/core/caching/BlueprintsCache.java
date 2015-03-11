@@ -18,15 +18,15 @@ import java.util.Map;
  * Created by bas on 07.10.14.
  * Singleton for interacting with the applications blueprint-cache, containing pairs of (blueprint-type, blueprint)
  */
-public class BleuprintsCache extends AbstractTemplatesCache<Blueprint>
+public class BlueprintsCache extends AbstractTemplatesCache<Blueprint>
 {
     //the instance of this singleton
-    private static BleuprintsCache instance = null;
+    private static BlueprintsCache instance = null;
 
     /**
      * private constructor for singleton-use
      */
-    private BleuprintsCache(){
+    private BlueprintsCache(){
     }
 
     /**
@@ -34,7 +34,7 @@ public class BleuprintsCache extends AbstractTemplatesCache<Blueprint>
      * @return a singleton instance of PageClassCache
      * @throws NullPointerException if no application cache could be found
      */
-    synchronized public static BleuprintsCache getInstance() throws CacheException
+    synchronized public static BlueprintsCache getInstance() throws CacheException
     {
         try {
             if (instance == null) {
@@ -42,9 +42,10 @@ public class BleuprintsCache extends AbstractTemplatesCache<Blueprint>
                 if (R.cacheManager() != null && R.cacheManager().getApplicationCache() != null) {
                     //TODO: make sure that CacheKeys.BLUEPRINTS isn't deleted by ApplicationCacher
                     R.cacheManager().getApplicationCache().put(CacheKeys.BLUEPRINTS, new HashMap<String, Blueprint>());
-                    instance = new BleuprintsCache();
+                    instance = new BlueprintsCache();
                     //insert most basic possible blueprint, it is not saved to db
-                    Blueprint blueprint = new Blueprint(instance.getDefaultTemplateName(), BlocksConfig.getDefaultLanguage(), "<div " + ParserConstants.BLUEPRINT + "=\"" + ParserConstants.DEFAULT_BLUEPRINT + "\" "+ ParserConstants.CAN_EDIT_PROPERTY +"=\"\"></div>", ParserConstants.DEFAULT_PAGE_TEMPLATE, null, null);
+                    Blueprint
+                                    blueprint = new Blueprint(instance.getDefaultTemplateName(), BlocksConfig.getDefaultLanguage(), "<div " + ParserConstants.BLUEPRINT + "=\"" + ParserConstants.DEFAULT_BLUEPRINT + "\" "+ ParserConstants.CAN_EDIT_PROPERTY +"=\"\"></div>", ParserConstants.DEFAULT_PAGE_TEMPLATE, null, null);
                     instance.getCache().put(instance.getTemplateKey(instance.getDefaultTemplateName()), blueprint);
                     instance.fillCache();
                 }

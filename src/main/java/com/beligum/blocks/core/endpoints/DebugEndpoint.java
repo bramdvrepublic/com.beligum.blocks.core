@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
-import com.beligum.blocks.core.caching.BleuprintsCache;
+import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.dbs.RedisDatabase;
@@ -54,9 +54,9 @@ public class DebugEndpoint
     @Path("/reset")
     public Response resetCache() throws CacheException
     {
-        BleuprintsCache.getInstance().reset();
+        BlueprintsCache.getInstance().reset();
         PageTemplateCache.getInstance().reset();
-        BleuprintsCache.getInstance();
+        BlueprintsCache.getInstance();
         PageTemplateCache.getInstance();
         Logger.warn("Cache has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
         return Response.ok("Cache reset").build();
@@ -65,10 +65,10 @@ public class DebugEndpoint
     @GET
     @Path("/blueprints")
     @Produces("text/plain")
-    public Response getBleuprintsCache() throws CacheException
+    public Response getBlueprintsCache() throws CacheException
     {
-        List<String> blueprintKeys = BleuprintsCache.getInstance().keys();
-        List<Blueprint> blueprint = BleuprintsCache.getInstance().values();
+        List<String> blueprintKeys = BlueprintsCache.getInstance().keys();
+        List<Blueprint> blueprint = BlueprintsCache.getInstance().values();
         String cache = "";
         for(int i = 0; i< blueprint.size(); i++){
             cache += "----------------------------------" + blueprintKeys.get(i) + "---------------------------------- \n\n" + blueprint.get(i).toString() + "\n\n\n\n\n\n";

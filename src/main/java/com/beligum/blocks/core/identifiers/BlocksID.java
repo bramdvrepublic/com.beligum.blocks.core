@@ -1,6 +1,6 @@
 package com.beligum.blocks.core.identifiers;
 
-import com.beligum.blocks.core.caching.BleuprintsCache;
+import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.config.DatabaseConstants;
@@ -533,7 +533,7 @@ public class BlocksID
                 newID = new BlocksID(new URL(url), NEW_VERSION, false);
             }
             if(!newID.hasLanguage()) {
-                Blueprint blueprint = BleuprintsCache.getInstance().get(owningEntityClassName);
+                Blueprint blueprint = BlueprintsCache.getInstance().get(owningEntityClassName);
                 newID.language = blueprint.getLanguage();
             }
             return newID;

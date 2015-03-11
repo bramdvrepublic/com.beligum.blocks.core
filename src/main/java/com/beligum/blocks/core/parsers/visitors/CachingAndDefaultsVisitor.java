@@ -1,6 +1,6 @@
 package com.beligum.blocks.core.parsers.visitors;
 
-import com.beligum.blocks.core.caching.BleuprintsCache;
+import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
@@ -119,7 +119,7 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
                         }
                         else {
                             //we found an uncached blueprint, so we cache it
-                            if (!BleuprintsCache.getInstance().contains(blueprintType) && !parsingTemplate.getName().equals(blueprintType)) {
+                            if (!BlueprintsCache.getInstance().contains(blueprintType) && !parsingTemplate.getName().equals(blueprintType)) {
                                 Document entityTemplateClassDOM = TemplateParser.parse(blueprint.getTemplate());
                                 Traversor
                                                 traversor =
@@ -128,7 +128,7 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
                                 traversor.traverse(entityTemplateClassDOM);
                             }
                             //we want to use the cached blueprint
-                            blueprint = BleuprintsCache.getInstance().get(blueprintType);
+                            blueprint = BlueprintsCache.getInstance().get(blueprintType);
                             //for blueprints, new default-properties should be constructed
                             if (this.parsingTemplate instanceof Blueprint) {
                                 if (this.parsingTemplate.getName().equals(this.getParentType())) {
@@ -219,11 +219,11 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
         blueprint.setAddableBlock(isAddableBlock);
         blueprint.setPageBlock(isPageBlock);
 
-        boolean added = BleuprintsCache.getInstance().add(blueprint);
+        boolean added = BlueprintsCache.getInstance().add(blueprint);
         if(!added) {
             if (blueprint.getName().equals(ParserConstants.DEFAULT_BLUEPRINT)) {
-                if(!BleuprintsCache.getInstance().get(blueprint.getName()).equals(blueprint)) {
-                    BleuprintsCache.getInstance().replace(blueprint);
+                if(!BlueprintsCache.getInstance().get(blueprint.getName()).equals(blueprint)) {
+                    BlueprintsCache.getInstance().replace(blueprint);
                     Logger.warn("Replaced default-" + Blueprint.class.getSimpleName() + ".");
                 }
             }

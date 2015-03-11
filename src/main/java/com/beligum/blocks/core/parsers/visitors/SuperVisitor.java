@@ -34,7 +34,7 @@ public class SuperVisitor
 
     public Node head(Node node, int depth) throws ParseException
     {
-        if (hasBleuprintType(node)) {
+        if (hasBlueprintType(node)) {
             blueprintTypeStack.push(node);
         }
         return node;
@@ -43,7 +43,7 @@ public class SuperVisitor
     public Node tail(Node node, int depth) throws ParseException
     {
         try {
-            if (hasBleuprintType(node)) {
+            if (hasBlueprintType(node)) {
                 blueprintTypeStack.pop();
                 if (parentUrl == null && blueprintTypeStack.isEmpty() && hasResource(node)) {
                     parentUrl = new URL(getResource(node));
@@ -67,7 +67,8 @@ public class SuperVisitor
      *
      * @return the node containing the type of the last typed parent visited
      */
-    protected String getParentType() {
+    protected String getParentType() throws ParseException
+    {
         if (!this.blueprintTypeStack.empty()) {
             return getBlueprintType(this.blueprintTypeStack.peek());
         } else {
@@ -100,7 +101,8 @@ public class SuperVisitor
         return replaceElementWithReference(element, getPropertyId(element));
     }
 
-    protected Element replaceElementWithEntityReference(Element element, EntityTemplate entity){
+    protected Element replaceElementWithEntityReference(Element element, EntityTemplate entity) throws ParseException
+    {
         if(isEntity(element) && StringUtils.isEmpty(getResource(element))){
             element.attr(ParserConstants.RESOURCE, entity.getUrl().toString());
         }
@@ -250,22 +252,40 @@ public class SuperVisitor
      * @param node
      * @return true if this node is the root node of an entity, false otherwise
      */
-    public boolean isEntity(Node node)
+    public boolean isEntity(Node node) throws ParseException
     {
-        return hasBleuprintType(node) || isProperty(node);
+        return hasBlueprintType(node) || isProperty(node);
     }
 
     /**
      *
      * @param node
      * @return true if the specified element has a rdf-"typeof" attribute, false otherwise
+     * @throws com.beligum.blocks.core.exceptions.ParseException if an empty blueprint or use-blueprint attribute was found
      */
-    public boolean hasBleuprintType(Node node) {
-        if(node == null){
+    public boolean hasBlueprintType(Node node) throws ParseException
+    {
+        if (node == null) {
             return false;
         }
-        else {
-            return !StringUtils.isEmpty(node.attr(ParserConstants.BLUEPRINT)) || !StringUtils.isEmpty(node.attr(ParserConstants.USE_BLUEPRINT));
+        else if(node.hasAttr(ParserConstants.BLUEPRINT)){
+            if (StringUtils.isEmpty(node.attr(ParserConstants.BLUEPRINT))) {
+                throw new ParseException("Found empty blueprint type at node \n\n" + node + "\n\n");
+            }
+            else{
+                return true;
+            }
+        }
+        else if(node.hasAttr(ParserConstants.USE_BLUEPRINT)){
+            if (StringUtils.isEmpty(node.attr(ParserConstants.USE_BLUEPRINT))) {
+                throw new ParseException("Found empty use-blueprint type at node \n\n" + node + "\n\n");
+            }
+            else{
+                return true;
+            }
+        }
+        else{
+            return false;
         }
     }
 
@@ -318,8 +338,9 @@ public class SuperVisitor
      * @param entityNode the root node of an entity
      * @return return the rdf "typeof" value of a node, the default "typeof" if it is a property-node or null if it is not an entity
      */
-    public String getBlueprintType(Node entityNode) {
-        if (hasBleuprintType(entityNode)) {
+    public String getBlueprintType(Node entityNode) throws ParseException
+    {
+        if (hasBlueprintType(entityNode)) {
             String retVal =  entityNode.attr(ParserConstants.BLUEPRINT);
             if(StringUtils.isEmpty(retVal)){
                 retVal = entityNode.attr(ParserConstants.USE_BLUEPRINT);
@@ -344,6 +365,33 @@ public class SuperVisitor
             retVal = true;
         }
         return retVal;
+    }
+
+    public boolean hasTypeOf(Node node) throws ParseException
+    {
+        if(node == null){
+            return false;
+        }
+        else if(node.hasAttr(ParserConstants.TYPE_OF)){
+            if(StringUtils.isEmpty(node.attr(ParserConstants.TYPE_OF))){
+                throw new ParseException("Found empty typeof attribute at node \n\n" + node + "\n\n");
+            }
+            else{
+                return true;
+            }
+        }
+        else{
+            return false;
+        }
+    }
+
+    public String getTypeOf(Node node){
+        if(node == null){
+            return null;
+        }
+        else{
+            return node.attr(ParserConstants.TYPE_OF);
+        }
     }
 
     /**

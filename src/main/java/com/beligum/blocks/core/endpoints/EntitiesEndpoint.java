@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
-import com.beligum.blocks.core.caching.BleuprintsCache;
+import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
@@ -52,7 +52,7 @@ public class EntitiesEndpoint
                     throws Exception
 
     {
-        Blueprint blueprint = BleuprintsCache.getInstance().get(entityClassName);
+        Blueprint blueprint = BlueprintsCache.getInstance().get(entityClassName);
         URL pageURL = new URL(pageUrl);
         BlocksID existingId = XMLUrlIdMapper.getInstance().getId(pageURL);
         EntityTemplate lastVersion = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(existingId, EntityTemplate.class);
@@ -97,7 +97,7 @@ public class EntitiesEndpoint
     @Produces(MediaType.APPLICATION_JSON)
     public Response getClassTemplate(@PathParam("blueprintType") String entityTemplateClasName) throws CacheException, ParseException
     {
-        String classHtml = TemplateParser.renderTemplate(BleuprintsCache.getInstance().get(entityTemplateClasName));
+        String classHtml = TemplateParser.renderTemplate(BlueprintsCache.getInstance().get(entityTemplateClasName));
         HashMap<String, String> json = new HashMap<String, String>();
         json.put("template", classHtml);
         return Response.ok(json).build();
@@ -171,7 +171,7 @@ public class EntitiesEndpoint
     public Response listEntities() throws CacheException
     {
         List<String> entityNames = new ArrayList<String>();
-        List<Blueprint> addableClasses = BleuprintsCache.getInstance().getAddableClasses();
+        List<Blueprint> addableClasses = BlueprintsCache.getInstance().getAddableClasses();
         for (Blueprint e : addableClasses) {
             if(!e.getName().equals(ParserConstants.DEFAULT_BLUEPRINT)){
                 entityNames.add(e.getName());

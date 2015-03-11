@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.parsers.visitors;
 
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
-import com.beligum.blocks.core.caching.BleuprintsCache;
+import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.ParseException;
@@ -78,7 +78,7 @@ public class HtmlToStoreVisitor extends SuperVisitor
                     node.attr(ParserConstants.RESOURCE, entityUrl.toString());
                 }
                 String resourceUrl = getResource(node);
-                Blueprint blueprint = BleuprintsCache.getInstance().get(getBlueprintType(node));
+                Blueprint blueprint = BlueprintsCache.getInstance().get(getBlueprintType(node));
                 BlocksID resourceId;
                 if(StringUtils.isEmpty(resourceUrl)) {
                     resourceId = BlocksID.renderNewEntityTemplateID(blueprint, this.language);

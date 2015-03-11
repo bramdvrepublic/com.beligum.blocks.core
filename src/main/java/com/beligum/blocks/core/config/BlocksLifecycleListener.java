@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.config;
 
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
-import com.beligum.blocks.core.caching.BleuprintsCache;
+import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.dynamic.DynamicBlockHandler;
@@ -29,7 +29,7 @@ public class BlocksLifecycleListener implements ServerLifecycleListener
 
         //initialize template-cache
         try {
-            BleuprintsCache.getInstance();
+            BlueprintsCache.getInstance();
             PageTemplateCache.getInstance();
         }
         catch (CacheException e){

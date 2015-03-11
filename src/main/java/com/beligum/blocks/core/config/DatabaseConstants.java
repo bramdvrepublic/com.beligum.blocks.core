@@ -10,10 +10,7 @@ public class DatabaseConstants
 {
     /**name of the scheme used for uri-identification of objects in the blocks-project*/
     public static final String SCHEME_NAME = "blocks";
-    /**
-     * name of the blueprint-field in db
-     * Note: the value of this string should always be the name of the field of an {@link com.beligum.blocks.core.models.redis.templates.EntityTemplate} holding the type of that template
-     */
+    /*name of the blueprint-field in db*/
     public final static String BLUEPRINT_TYPE = "blueprintType";
     /**the (javascript-)script-tags*/
     public final static String SCRIPTS = "scripts";

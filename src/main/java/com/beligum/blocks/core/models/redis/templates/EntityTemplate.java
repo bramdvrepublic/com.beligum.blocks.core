@@ -1,6 +1,6 @@
 package com.beligum.blocks.core.models.redis.templates;
 
-import com.beligum.blocks.core.caching.BleuprintsCache;
+import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.config.ParserConstants;
@@ -149,7 +149,7 @@ public class EntityTemplate extends AbstractTemplate
      */
     public Blueprint getEntityTemplateClass() throws CacheException
     {
-        return BleuprintsCache.getInstance().get(this.blueprintType);
+        return BlueprintsCache.getInstance().get(this.blueprintType);
     }
 
     public String getBlueprintType()
@@ -221,11 +221,17 @@ public class EntityTemplate extends AbstractTemplate
     @Override
     public Map<String, String> toHash() throws SerializationException
     {
-        Map<String, String> hash = super.toHash();
-        //an entity-template doesn't have links and scripts (for the moment, this could be implemented later)
-        hash.remove(DatabaseConstants.SCRIPTS);
-        hash.remove(DatabaseConstants.LINKS);
-        return hash;
+        try {
+            Map<String, String> hash = super.toHash();
+            String blueprintType = hash.remove(EntityTemplate.class.getDeclaredField("blueprintType").getName());
+            hash.put(DatabaseConstants.BLUEPRINT_TYPE, blueprintType);
+            //an entity-template doesn't have links and scripts (for the moment, this could be implemented later)
+            hash.remove(DatabaseConstants.SCRIPTS);
+            hash.remove(DatabaseConstants.LINKS);
+            return hash;
+        }catch(NoSuchFieldException e){
+            throw new SerializationException("Could not transform " + EntityTemplate.class.getName() + " into hash.", e);
+        }
     }
 
     //___________OVERRIDE OF OBJECT_____________//

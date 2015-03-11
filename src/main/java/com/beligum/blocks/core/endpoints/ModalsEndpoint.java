@@ -1,6 +1,6 @@
 package com.beligum.blocks.core.endpoints;
 
-import com.beligum.blocks.core.caching.BleuprintsCache;
+import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.internationalization.Languages;
@@ -62,7 +62,7 @@ public class ModalsEndpoint
                     String entityUrl) throws MalformedURLException, CacheException
     {
         Template template = R.templateEngine().getEmptyTemplate("/views/modals/" + NEW_PAGE_MODAL);
-        template.set("entityClasses", BleuprintsCache.getInstance().getPageClasses());
+        template.set("entityClasses", BlueprintsCache.getInstance().getPageClasses());
         template.set("entityUrl", entityUrl);
         return Response.ok(template.render()).build();
     }
