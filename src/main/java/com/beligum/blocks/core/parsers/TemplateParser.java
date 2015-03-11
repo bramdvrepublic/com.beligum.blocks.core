@@ -51,87 +51,81 @@ public class TemplateParser
      * @param foundTemplates a list of templates, containing all templates found while visiting the template-files on disk
      * @throws ParseException
      */
-    public static void injectDefaultsInFoundTemplatesAndCache(List<? extends AbstractTemplate> foundTemplates) throws ParseException
-    {
-        try {
-            Map<String, PageTemplate> allPageTemplates = new HashMap<>();
-            allPageTemplates.put(ParserConstants.DEFAULT_PAGE_TEMPLATE, PageTemplateCache.getInstance().get(ParserConstants.DEFAULT_PAGE_TEMPLATE));
-            Map<String, Blueprint> allBlueprints = new HashMap<>();
-            allBlueprints.put(ParserConstants.DEFAULT_BLUEPRINT, BlueprintsCache.getInstance().get(ParserConstants.DEFAULT_BLUEPRINT));
-            //split the list of templates up into page-templates and entity-classes
-            for (AbstractTemplate template : foundTemplates) {
-                if (template instanceof PageTemplate) {
-                    PageTemplate replacedTemplate = allPageTemplates.put(template.getName(), (PageTemplate) template);
-                    //default page-templates should be added to the cache no matter what, so the last one encountered is kept
-                    if (replacedTemplate != null && replacedTemplate.getName().contentEquals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
-                        Logger.warn("Default-" + PageTemplate.class.getSimpleName() + " will be replaced. This should only happen once!");
-                    }
-                    //no two page-templates with the same name can be defined
-                    else if (replacedTemplate != null) {
-                        throw new ParseException(
-                                        "Cannot add two " + PageTemplate.class.getSimpleName() + "s with the same name '" + template.getName() + "' to the cache. First found \n \n" +
-                                        replacedTemplate +
-                                        "\n \n and then \n \n" + template + "\n \n");
-                    }
+    public static void injectDefaultsInFoundTemplatesAndCache(List<? extends AbstractTemplate> foundTemplates) throws Exception
+    {Map<String, PageTemplate> allPageTemplates = new HashMap<>();
+        allPageTemplates.put(ParserConstants.DEFAULT_PAGE_TEMPLATE, PageTemplateCache.getInstance().get(ParserConstants.DEFAULT_PAGE_TEMPLATE));
+        Map<String, Blueprint> allBlueprints = new HashMap<>();
+        allBlueprints.put(ParserConstants.DEFAULT_BLUEPRINT, BlueprintsCache.getInstance().get(ParserConstants.DEFAULT_BLUEPRINT));
+        //split the list of templates up into page-templates and entity-classes
+        for (AbstractTemplate template : foundTemplates) {
+            if (template instanceof PageTemplate) {
+                PageTemplate replacedTemplate = allPageTemplates.put(template.getName(), (PageTemplate) template);
+                //default page-templates should be added to the cache no matter what, so the last one encountered is kept
+                if (replacedTemplate != null && replacedTemplate.getName().contentEquals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
+                    Logger.warn("Default-" + PageTemplate.class.getSimpleName() + " will be replaced. This should only happen once!");
                 }
-                else if (template instanceof Blueprint) {
-                    Blueprint replacedTemplate = allBlueprints.put(template.getName(), (Blueprint) template);
-                    //default blueprints should be added to the cache no matter what, so the last one encountered is kept
-                    if (replacedTemplate != null && replacedTemplate.getName().contentEquals(ParserConstants.DEFAULT_BLUEPRINT)) {
-                        Logger.warn("Default-" + Blueprint.class.getSimpleName() + " will be replaced. This should only happen once!");
-                    }
-                    //if an entity-class with this name was already present, check if it was a non-blueprint, if not, throw an exception since only one blueprint can be defined per class
-                    else if (replacedTemplate != null) {
-                        Map<BlocksID, String> replacedTemplates = replacedTemplate.getTemplates();
-                        boolean isBlueprint = false;
-                        for (BlocksID languageId : replacedTemplates.keySet()) {
-                            //TODO BAS!: here also the "typeof"-attribute should be checked for presence
-                            isBlueprint = new SuperVisitor().isBlueprint(TemplateParser.parse(replacedTemplates.get(languageId)).child(0));
-                            if (isBlueprint) {
-                                throw new ParseException("A " + Blueprint.class.getSimpleName() + " of type '" + replacedTemplate.getName() +
-                                                         "' was already present in cache. Cannot have two blueprints for the same type. Found two! First encountered \n \n " + replacedTemplate +
-                                                         "\n \n  and then \n \n" + template + "\n \n");
-                            }
+                //no two page-templates with the same name can be defined
+                else if (replacedTemplate != null) {
+                    throw new ParseException(
+                                    "Cannot add two " + PageTemplate.class.getSimpleName() + "s with the same name '" + template.getName() + "' to the cache. First found \n \n" +
+                                    replacedTemplate +
+                                    "\n \n and then \n \n" + template + "\n \n");
+                }
+            }
+            else if (template instanceof Blueprint) {
+                Blueprint replacedTemplate = allBlueprints.put(template.getName(), (Blueprint) template);
+                //default blueprints should be added to the cache no matter what, so the last one encountered is kept
+                if (replacedTemplate != null && replacedTemplate.getName().contentEquals(ParserConstants.DEFAULT_BLUEPRINT)) {
+                    Logger.warn("Default-" + Blueprint.class.getSimpleName() + " will be replaced. This should only happen once!");
+                }
+                //if an entity-class with this name was already present, check if it was a non-blueprint, if not, throw an exception since only one blueprint can be defined per class
+                else if (replacedTemplate != null) {
+                    Map<BlocksID, String> replacedTemplates = replacedTemplate.getTemplates();
+                    boolean isBlueprint = false;
+                    for (BlocksID languageId : replacedTemplates.keySet()) {
+                        isBlueprint = new SuperVisitor().isBlueprint(TemplateParser.parse(replacedTemplates.get(languageId)).child(0));
+                        if (isBlueprint) {
+                            throw new ParseException("An " + Blueprint.class.getSimpleName() + " of type '" + replacedTemplate.getName() +
+                                                     "' was already present in cache. Cannot have two blueprints for the same type. Found two! First encountered \n \n " + replacedTemplate +
+                                                     "\n \n  and then \n \n" + template + "\n \n");
                         }
                     }
                 }
-                //only page-templates and blueprintes should be present in the list of found templates
-                else {
-                    throw new ParseException("Found unsupported " + AbstractTemplate.class.getSimpleName() + "-type " + template.getClass().getSimpleName() + ".");
-                }
             }
-
-            //create defaults for all found entity-classes and cache to application-cache
-            for (String templateName : allBlueprints.keySet()) {
-                //during traversal of a template, all it's child-types are cached too
-                if(!BlueprintsCache.getInstance().contains(templateName) || templateName.equals(ParserConstants.DEFAULT_BLUEPRINT)) {
-                    AbstractTemplate template = allBlueprints.get(templateName);
-                    Map<BlocksID, String> htmlTemplates = template.getTemplates();
-                    for (BlocksID language : htmlTemplates.keySet()) {
-                        Document doc = parse(htmlTemplates.get(language));
-                        Traversor traversor = new Traversor(new CachingAndDefaultsVisitor(language.getLanguage(), doc, template, allBlueprints, allPageTemplates));
-                        traversor.traverse(doc);
-                    }
-                }
+            //only page-templates and blueprintes should be present in the list of found templates
+            else {
+                throw new ParseException("Found unsupported " + AbstractTemplate.class.getSimpleName() + "-type " + template.getClass().getSimpleName() + ".");
             }
+        }
 
-            //create defaults for all found page-templates and cache to application-cache
-            for (String templateName : allPageTemplates.keySet()) {
-                if(!PageTemplateCache.getInstance().contains(templateName) || templateName.equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
-                    AbstractTemplate template = allPageTemplates.get(templateName);
-                    Map<BlocksID, String> htmlTemplates = template.getTemplates();
-                    for (BlocksID language : htmlTemplates.keySet()) {
-                        Document doc = parse(htmlTemplates.get(language));
-                        Traversor traversor = new Traversor(new CachingAndDefaultsVisitor(language.getLanguage(), doc, template, allBlueprints, allPageTemplates));
-                        traversor.traverse(doc);
-                    }
+        //create defaults for all found entity-classes and cache to application-cache
+        for (String templateName : allBlueprints.keySet()) {
+            //during traversal of a template, all it's child-types are cached too
+            if(!BlueprintsCache.getInstance().contains(templateName) || templateName.equals(ParserConstants.DEFAULT_BLUEPRINT)) {
+                AbstractTemplate template = allBlueprints.get(templateName);
+                Map<BlocksID, String> htmlTemplates = template.getTemplates();
+                for (BlocksID language : htmlTemplates.keySet()) {
+                    Document doc = parse(htmlTemplates.get(language));
+                    Traversor traversor = new Traversor(new CachingAndDefaultsVisitor(language.getLanguage(), doc, template, allBlueprints, allPageTemplates));
+                    traversor.traverse(doc);
                 }
             }
         }
-        catch (Exception e){
-            throw new ParseException("Error while injecting defaults into templates to be cached.", e);
+
+        //create defaults for all found page-templates and cache to application-cache
+        for (String templateName : allPageTemplates.keySet()) {
+            if(!PageTemplateCache.getInstance().contains(templateName) || templateName.equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
+                AbstractTemplate template = allPageTemplates.get(templateName);
+                Map<BlocksID, String> htmlTemplates = template.getTemplates();
+                for (BlocksID language : htmlTemplates.keySet()) {
+                    Document doc = parse(htmlTemplates.get(language));
+                    Traversor traversor = new Traversor(new CachingAndDefaultsVisitor(language.getLanguage(), doc, template, allBlueprints, allPageTemplates));
+                    traversor.traverse(doc);
+                }
+            }
         }
     }
+
 
     /**
      * Save a new entity-template-instance of class 'entityTemplateClass' to db, and also all it's children.
@@ -154,6 +148,9 @@ public class TemplateParser
             BlueprintToStoredInstanceVisitor visitor = new BlueprintToStoredInstanceVisitor(id.getUrl(), language);
             Traversor traversor = new Traversor(visitor);
             traversor.traverse(doc);
+        }
+        catch(ParseException e){
+            throw e;
         }
         catch(Exception e){
             throw new ParseException("Couldn't save new template instance to db", e);
@@ -207,7 +204,7 @@ public class TemplateParser
                 if(entityHtml == null){
                     entityHtml = entityTemplate.getTemplate();
                 }
-//                Element entityRoot = TemplateParser.parse(entityHtml).child(0);
+                //                Element entityRoot = TemplateParser.parse(entityHtml).child(0);
                 reference.attr(ParserConstants.REFERENCE_TO, entityTemplate.getUnversionedId());
                 reference.attr(ParserConstants.USE_BLUEPRINT, entityTemplate.getBlueprintType());
             }

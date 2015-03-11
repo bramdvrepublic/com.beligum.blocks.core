@@ -6,6 +6,7 @@ import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.dynamic.DynamicBlockHandler;
 import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.core.framework.base.ifaces.ServerLifecycleListener;
 import com.beligum.core.framework.utils.Logger;
 import org.eclipse.jetty.server.Server;
@@ -32,7 +33,12 @@ public class BlocksLifecycleListener implements ServerLifecycleListener
             BlueprintsCache.getInstance();
             PageTemplateCache.getInstance();
         }
-        catch (CacheException e){
+        catch (ParseException e){
+            String errorMessage = "Parse error while initializing cache. \n";
+            errorMessage += e.getMessage();
+            Logger.error(errorMessage, e.getCause());
+        }
+        catch (Exception e){
             Logger.error("Could not initialize cache.", e);
         }
 

@@ -107,7 +107,7 @@ public class ToHtmlVisitor extends SuperVisitor
 
         }
         catch(Exception e){
-            throw new ParseException("Error while parsing node '" + node.nodeName() + "' at tree depth '" + depth + "' to html: \n \n " + node + "\n \n", e);
+            throw new ParseException("Error while parsing node '" + node.nodeName() + "' at tree depth '" + depth + "' to html.", e, node);
         }
     }
 
@@ -159,7 +159,7 @@ public class ToHtmlVisitor extends SuperVisitor
             return node;
         }
         catch(Exception e){
-            throw new ParseException("Error while parsing to html at \n \n" + node + "\n \n");
+            throw new ParseException("Error while parsing to html.", node);
         }
     }
 
@@ -275,7 +275,7 @@ public class ToHtmlVisitor extends SuperVisitor
 
      @param node
      */
-    private Element getTypeInstance(Element node) throws CacheException, ParseException
+    private Element getTypeInstance(Element node) throws Exception
     {
         // Find the class of this node
         Element retVal = null;
@@ -449,7 +449,7 @@ public class ToHtmlVisitor extends SuperVisitor
 
         }
         catch(Exception e){
-            throw new ParseException("Could not set editability(!?) for property  \n", e);
+            throw new ParseException("Could not set editability(!?) for properties of class.", e, entityClass);
         }
     }
 

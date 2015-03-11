@@ -95,7 +95,7 @@ public class EntitiesEndpoint
     @GET
     @Path("/class/{blueprintType}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getClassTemplate(@PathParam("blueprintType") String entityTemplateClasName) throws CacheException, ParseException
+    public Response getClassTemplate(@PathParam("blueprintType") String entityTemplateClasName) throws Exception
     {
         String classHtml = TemplateParser.renderTemplate(BlueprintsCache.getInstance().get(entityTemplateClasName));
         HashMap<String, String> json = new HashMap<String, String>();
@@ -168,7 +168,7 @@ public class EntitiesEndpoint
         /*
          * Return a list of strings of all available entities
          */
-    public Response listEntities() throws CacheException
+    public Response listEntities() throws Exception
     {
         List<String> entityNames = new ArrayList<String>();
         List<Blueprint> addableClasses = BlueprintsCache.getInstance().getAddableClasses();
@@ -187,7 +187,7 @@ public class EntitiesEndpoint
         /*
          * Return a list of strings of all available page-templates
          */
-    public Response listTemplates() throws CacheException
+    public Response listTemplates() throws Exception
     {
         List<String> templateNames = new ArrayList<String>();
         for (PageTemplate e : PageTemplateCache.getInstance().values()) {
@@ -203,7 +203,7 @@ public class EntitiesEndpoint
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response changeTemplate(@FormParam("template") String templateName, @FormParam("id") String id)
-                    throws CacheException, MalformedURLException, IDException, DatabaseException, ParseException, UrlIdMappingException
+                    throws Exception
     {
         Database<AbstractTemplate> redis = RedisDatabase.getInstance();
         URL url = new URL(id);
@@ -217,7 +217,7 @@ public class EntitiesEndpoint
 
     @POST
     @Path("/deletedversion")
-    public Response showDeletedVersion(@FormParam("page-url") String pageUrl) throws MalformedURLException, CacheException, ParseException, IDException, DatabaseException, UrlIdMappingException
+    public Response showDeletedVersion(@FormParam("page-url") String pageUrl) throws Exception
     {
         BlocksID id = XMLUrlIdMapper.getInstance().getLastId(new URL(pageUrl));
         List<AbstractTemplate> versionList = RedisDatabase.getInstance().fetchVersionList(id, EntityTemplate.class);

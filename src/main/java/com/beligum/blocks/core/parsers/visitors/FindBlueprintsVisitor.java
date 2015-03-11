@@ -7,6 +7,7 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.Blueprint;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
+import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -84,6 +85,7 @@ public class FindBlueprintsVisitor extends SuperVisitor
                         throw new ParseException("Cannot deal with entity of type '" + getTypeOf(node) + "' and blueprint type '" + getBlueprintType(node) + "'. For now those types should be equal. Found at node \n\n" +node + "\n\n");
                     }
                 }
+
                 //TODO BAS!: css class blocks-entityClassName er bij zetten indien nodig
                 //TODO BAS!: fill children (properties: propertyValue/propertyName of propertyValue/number-> EtntityTemplate) vb building en building/1 en building/2...
 
@@ -95,6 +97,12 @@ public class FindBlueprintsVisitor extends SuperVisitor
                         scriptsStack.push(new ArrayList<String>());
                     }
                 }
+
+                //if we find a use-blueprint attribute which does not have an entity parent, warn user for data loss, since that html will not be picked up (since no blueprint is defined)
+                if(node.hasAttr(ParserConstants.USE_BLUEPRINT) && this.blueprintTypeStack.size() < 2 && !parsingPageTemplate){
+                    Logger.warn("Found a " + ParserConstants.USE_BLUEPRINT + " attribute which is not a child of an entity. The layer will be ignored: \n\n" + node + "\n\n");
+                }
+
                 //add links and scripts to the stack and remove them from the html (to be re-injected later)
                 if (node.nodeName().equals("link")) {
                     //if an include has been found, import the wanted html-file
@@ -185,7 +193,6 @@ public class FindBlueprintsVisitor extends SuperVisitor
         if(!isEntity(node)){
             return false;
         }
-        //TODO BAS!: here also the "typeof"-attribute should be checked
         else{
             return isBlueprint(node);
         }
@@ -219,8 +226,11 @@ public class FindBlueprintsVisitor extends SuperVisitor
                 return blueprint;
             }
             else{
-                throw new ParseException("Found + " + Node.class.getSimpleName() + " which doesn't define an entity. At: \n \n" + classRoot + " \n \n");
+                throw new ParseException("Found + " + Node.class.getSimpleName() + " which doesn't define an entity.", classRoot);
             }
+        }
+        catch(ParseException e){
+            throw e;
         }
         catch(Exception e){
             throw new ParseException("Error while creating new entity-class '" + entityClassName +"'.", e);

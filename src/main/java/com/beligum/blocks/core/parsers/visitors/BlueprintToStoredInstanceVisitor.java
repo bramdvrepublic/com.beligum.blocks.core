@@ -55,7 +55,8 @@ public class BlueprintToStoredInstanceVisitor extends SuperVisitor
             else{
                 this.language = entityId.getLanguage();
             }
-        }catch(Exception e){
+        }
+        catch(Exception e){
             throw new ParseException("Could not initialize " + BlueprintToStoredInstanceVisitor.class.getSimpleName() + ".", e);
         }
     }

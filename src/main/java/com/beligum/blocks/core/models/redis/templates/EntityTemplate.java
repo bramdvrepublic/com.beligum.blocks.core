@@ -125,7 +125,7 @@ public class EntityTemplate extends AbstractTemplate
     }
 
     @Override
-    public List<String> getScripts() throws CacheException
+    public List<String> getScripts() throws Exception
     {
         List<String> scripts = super.getScripts();
         if(scripts == null){
@@ -134,7 +134,7 @@ public class EntityTemplate extends AbstractTemplate
         return scripts;
     }
     @Override
-    public List<String> getLinks() throws CacheException
+    public List<String> getLinks() throws Exception
     {
 
         List<String> links = super.getLinks();
@@ -147,7 +147,7 @@ public class EntityTemplate extends AbstractTemplate
      *
      * @return the entity-class of this entity-instance
      */
-    public Blueprint getEntityTemplateClass() throws CacheException
+    public Blueprint getEntityTemplateClass() throws Exception
     {
         return BlueprintsCache.getInstance().get(this.blueprintType);
     }
@@ -172,7 +172,7 @@ public class EntityTemplate extends AbstractTemplate
      *
      * @return the default page-template this entity-template should be rendered in, fetched from cache
      */
-    public PageTemplate getPageTemplate() throws CacheException
+    public PageTemplate getPageTemplate() throws Exception
     {
         return PageTemplateCache.getInstance().get(pageTemplateName);
     }
@@ -194,7 +194,7 @@ public class EntityTemplate extends AbstractTemplate
     /**
      * render the html of this entity-template, using it's page-template (or, if it is the default-page-template, use the page-template of the class) and class-template
      */
-    public String renderEntityInPageTemplate(String language) throws CacheException, ParseException
+    public String renderEntityInPageTemplate(String language) throws Exception
     {
         PageTemplate pageTemplate = getPageTemplate();
         PageTemplate classPageTemplate = this.getEntityTemplateClass().getPageTemplate();

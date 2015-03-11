@@ -104,7 +104,7 @@ public class HtmlToStoreVisitor extends SuperVisitor
             }
             return node;
         }catch(Exception e){
-            throw new ParseException("Could not parse resource-node: \n \n " + node, e);
+            throw new ParseException("Could not parse resource-node.", e, node);
         }
     }
 }

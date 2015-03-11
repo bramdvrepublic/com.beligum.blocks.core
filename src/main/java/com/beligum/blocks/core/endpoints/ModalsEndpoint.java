@@ -3,6 +3,7 @@ package com.beligum.blocks.core.endpoints;
 import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.base.R;
@@ -59,7 +60,7 @@ public class ModalsEndpoint
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
     public Response getNewPageModal(
                     @QueryParam("entityurl")
-                    String entityUrl) throws MalformedURLException, CacheException
+                    String entityUrl) throws Exception
     {
         Template template = R.templateEngine().getEmptyTemplate("/views/modals/" + NEW_PAGE_MODAL);
         template.set("entityClasses", BlueprintsCache.getInstance().getPageClasses());

@@ -203,7 +203,7 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
         }
     }
 
-    private void cacheEntityTemplateClass(Element root) throws ParseException, CacheException, IDException
+    private void cacheEntityTemplateClass(Element root) throws Exception
     {
         checkPropertyUniqueness(root);
         Blueprint parsingTemplate = (Blueprint) this.parsingTemplate;
@@ -233,7 +233,7 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
         }
     }
 
-    private void cachePageTemplate(Element root) throws ParseException, CacheException, IDException
+    private void cachePageTemplate(Element root) throws Exception
     {
         checkPropertyUniqueness(root);
         PageTemplate pageTemplate = new PageTemplate(parsingTemplate.getName(), this.language, root.outerHtml(), parsingTemplate.getLinks(), parsingTemplate.getScripts());

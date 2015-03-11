@@ -17,6 +17,7 @@ import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.joda.time.LocalDateTime;
 
 import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -52,20 +53,30 @@ public class DebugEndpoint
 
     @GET
     @Path("/reset")
-    public Response resetCache() throws CacheException
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response resetCache() throws Exception
     {
-        BlueprintsCache.getInstance().reset();
-        PageTemplateCache.getInstance().reset();
-        BlueprintsCache.getInstance();
-        PageTemplateCache.getInstance();
-        Logger.warn("Cache has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
-        return Response.ok("Cache reset").build();
+        try {
+            BlueprintsCache.getInstance().reset();
+            PageTemplateCache.getInstance().reset();
+            BlueprintsCache.getInstance();
+            PageTemplateCache.getInstance();
+            Logger.warn("Cache has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
+            //TODO: if parse errors occurred, display a log file to user
+            return Response.ok("Cache reset").build();
+        }
+        catch(ParseException e){
+            String errorMessage = "Error while resetting: \n";
+            errorMessage += e.getMessage();
+            Logger.error(errorMessage, e.getCause());
+            return Response.ok(errorMessage).build();
+        }
     }
 
     @GET
     @Path("/blueprints")
     @Produces("text/plain")
-    public Response getBlueprintsCache() throws CacheException
+    public Response getBlueprintsCache() throws Exception
     {
         List<String> blueprintKeys = BlueprintsCache.getInstance().keys();
         List<Blueprint> blueprint = BlueprintsCache.getInstance().values();
@@ -79,7 +90,7 @@ public class DebugEndpoint
     @GET
     @Path("/pagetemplates")
     @Produces("text/plain")
-    public Response getPageTemplateCache() throws CacheException
+    public Response getPageTemplateCache() throws Exception
     {
         List<String> pageTemplateKeys = PageTemplateCache.getInstance().keys();
         List<PageTemplate> pageTemplates = PageTemplateCache.getInstance().values();
@@ -211,13 +222,13 @@ public class DebugEndpoint
     @Path("/src/allversions/{resourcePath:.+}")
     @Produces("text/plain")
     public Response getTemplateSrcForAllVersions(@PathParam("resourcePath")
-                                                  @DefaultValue("")
-                                                  String resourcePath,
-                                                  @QueryParam("fragment")
-                                                  @DefaultValue("")
-                                                  String fragment,
-                                                  @QueryParam("type")
-                                                  String typeName) throws Exception
+                                                 @DefaultValue("")
+                                                 String resourcePath,
+                                                 @QueryParam("fragment")
+                                                 @DefaultValue("")
+                                                 String fragment,
+                                                 @QueryParam("type")
+                                                 String typeName) throws Exception
     {
         Class<? extends AbstractTemplate> type = determineType(typeName);
         URL url = renderUrl(resourcePath, fragment);

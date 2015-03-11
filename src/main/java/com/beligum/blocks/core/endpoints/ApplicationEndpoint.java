@@ -7,6 +7,7 @@ import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.LanguageException;
+import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
@@ -171,7 +172,7 @@ public class ApplicationEndpoint
      * @throws InterruptedException
      * @throws CacheException
      */
-    private Response injectParameters(Template newPageTemplate) throws InterruptedException, CacheException
+    private Response injectParameters(Template newPageTemplate) throws Exception
     {
         List<Blueprint> pageClasses = BlueprintsCache.getInstance().getPageClasses();
         newPageTemplate.set(ParserConstants.ENTITY_URL, RequestContext.getRequest().getRequestURL().toString());

@@ -160,7 +160,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
      * Fill up the page-cache with all template found in file-system
      * @throws com.beligum.blocks.core.exceptions.CacheException
      */
-    protected void fillCache() throws CacheException
+    protected void fillCache() throws Exception
     {
         if(!runningTroughHtmlTemplates) {
             runningTroughHtmlTemplates = true;
@@ -192,7 +192,10 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                                 TemplateParser.findTemplatesFromFile(html, foundTemplates, foundEntityClassNames);
                             }
                             catch (ParseException e) {
-                                Logger.error("Parse error while fetching page-templates and blueprints from file '" + filePath + "'.", e);
+                                String errorMessage = "Parse error while fetching page-templates and blueprints from file '" + filePath + "': \n";
+                                errorMessage += e.getMessage();
+                                Logger.error(errorMessage, e.getCause());
+                                //TODO: create log file with wrong html and message error
                             }
                         }
                         return FileVisitResult.CONTINUE;
@@ -202,9 +205,6 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
 
                 //then add all default-value's to the found classes
                 TemplateParser.injectDefaultsInFoundTemplatesAndCache(foundTemplates);
-            }
-            catch (Exception e) {
-                throw new CacheException("Error while filling cache: " + this, e);
             }
             finally {
                 runningTroughHtmlTemplates = false;

@@ -4,10 +4,7 @@ import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.dbs.Database;
 import com.beligum.blocks.core.dbs.RedisDatabase;
-import com.beligum.blocks.core.exceptions.CacheException;
-import com.beligum.blocks.core.exceptions.DeserializationException;
-import com.beligum.blocks.core.exceptions.IDException;
-import com.beligum.blocks.core.exceptions.SerializationException;
+import com.beligum.blocks.core.exceptions.*;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.Storable;
@@ -84,12 +81,12 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
         this.templates.put(id, template);
     }
 
-    public List<String> getScripts() throws CacheException
+    public List<String> getScripts() throws Exception
     {
         return scriptsInOrder;
     }
 
-    public List<String> getLinks() throws CacheException
+    public List<String> getLinks() throws Exception
     {
         return linksInOrder;
     }

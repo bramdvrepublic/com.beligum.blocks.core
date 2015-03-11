@@ -51,7 +51,7 @@ public class SuperVisitor
             }
             return node;
         }catch(MalformedURLException e){
-            throw new ParseException("Bad resource found: " + getResource(node), e);
+            throw new ParseException("Bad resource found: " + getResource(node), e, node);
         }
     }
 
@@ -181,12 +181,12 @@ public class SuperVisitor
     public Node includeSource(Element at, Document source) throws IOException, ParseException
     {
         if(source.childNodes().isEmpty()){
-            throw new ParseException("Cannot include an empty file.");
+            throw new ParseException("Cannot include an empty file.", at);
         }
         Node firstChild = source.childNode(0);
         Element parent = at.parent();
         if(parent == null){
-            throw new ParseException("Cannot use an include as a root-node. Found at \n\n" + at + "\n\n");
+            throw new ParseException("Cannot use an include as a root-node.", at);
         }
         int siblingIndex = at.siblingIndex();
         parent.insertChildren(siblingIndex, source.childNodes());
@@ -270,7 +270,7 @@ public class SuperVisitor
         }
         else if(node.hasAttr(ParserConstants.BLUEPRINT)){
             if (StringUtils.isEmpty(node.attr(ParserConstants.BLUEPRINT))) {
-                throw new ParseException("Found empty blueprint type at node \n\n" + node + "\n\n");
+                throw new ParseException("Found empty blueprint type.", node);
             }
             else{
                 return true;
@@ -278,7 +278,7 @@ public class SuperVisitor
         }
         else if(node.hasAttr(ParserConstants.USE_BLUEPRINT)){
             if (StringUtils.isEmpty(node.attr(ParserConstants.USE_BLUEPRINT))) {
-                throw new ParseException("Found empty use-blueprint type at node \n\n" + node + "\n\n");
+                throw new ParseException("Found empty use-blueprint type.", node);
             }
             else{
                 return true;
@@ -374,7 +374,7 @@ public class SuperVisitor
         }
         else if(node.hasAttr(ParserConstants.TYPE_OF)){
             if(StringUtils.isEmpty(node.attr(ParserConstants.TYPE_OF))){
-                throw new ParseException("Found empty typeof attribute at node \n\n" + node + "\n\n");
+                throw new ParseException("Found empty typeof attribute at node", node);
             }
             else{
                 return true;
@@ -542,7 +542,7 @@ public class SuperVisitor
                     return BlocksID.renderClassPropertyId(parentEntityClassName, propertyValue, getPropertyName(node), BlocksID.NO_LANGUAGE).getUnversionedId();
 
                 }catch(Exception e){
-                    throw new ParseException("Could not render new property-id.", e);
+                    throw new ParseException("Could not render new property-id.", e, node);
                 }
             }
         }
