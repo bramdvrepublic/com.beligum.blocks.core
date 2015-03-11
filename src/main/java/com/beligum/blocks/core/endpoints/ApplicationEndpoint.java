@@ -174,9 +174,9 @@ public class ApplicationEndpoint
      */
     private Response injectParameters(Template newPageTemplate) throws Exception
     {
-        List<Blueprint> pageClasses = BlueprintsCache.getInstance().getPageClasses();
+        List<Blueprint> pageBlocks = BlueprintsCache.getInstance().getPageClasses();
         newPageTemplate.set(ParserConstants.ENTITY_URL, RequestContext.getRequest().getRequestURL().toString());
-        newPageTemplate.set(ParserConstants.BLUEPRINTS, pageClasses);
+        newPageTemplate.set(ParserConstants.BLUEPRINTS, pageBlocks);
         return Response.ok(newPageTemplate).build();
     }
 

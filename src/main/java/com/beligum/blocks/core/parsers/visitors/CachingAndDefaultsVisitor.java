@@ -218,6 +218,8 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
         Blueprint blueprint = new Blueprint(parsingTemplate.getName(), this.language, root.outerHtml(), parsingTemplate.getPageTemplateName(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
         blueprint.setAddableBlock(isAddableBlock);
         blueprint.setPageBlock(isPageBlock);
+        //TODO BAS SH: zowel BlueprintToStoredInstanceVisitor als HtmlToStoreVisitor moeten gebruik maken van een entityStack<AbstractTemplate> zodat je er een template met ingevulde kinderen kunt aan vragen (misschien gebruik maken van een tussenklasse? ChildrenVisitor?)
+        blueprint.setProperties(parsingTemplate.getProperties());
 
         boolean added = BlueprintsCache.getInstance().add(blueprint);
         if(!added) {
@@ -237,6 +239,8 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
     {
         checkPropertyUniqueness(root);
         PageTemplate pageTemplate = new PageTemplate(parsingTemplate.getName(), this.language, root.outerHtml(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
+        pageTemplate.setProperties(parsingTemplate.getProperties());
+
         boolean added = PageTemplateCache.getInstance().add(pageTemplate);
         if(!added){
             if(pageTemplate.getName().equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)){
@@ -281,7 +285,9 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
             traversor.traverse(classRoot);
             copiedTemplates.put(id, entityClass.getTemplate());
         }
-        element = replaceElementWithEntityReference(element, new EntityTemplate(id, entityClass, copiedTemplates));
+        EntityTemplate newEntity = new EntityTemplate(id, entityClass, copiedTemplates);
+        this.parsingTemplate.setProperty(getPropertyName(element), newEntity);
+        element = replaceElementWithEntityReference(element, newEntity);
         return element;
     }
 
@@ -307,6 +313,8 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
         traversor.traverse(entityRoot);
         Node entityReference = entityRoot.child(0);
         node.replaceWith(entityReference);
+        EntityTemplate newEntity = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(id, EntityTemplate.class);
+        this.parsingTemplate.setProperty(getPropertyName(node), newEntity);
         return entityReference;
     }
 

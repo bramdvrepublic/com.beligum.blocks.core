@@ -394,6 +394,17 @@ public class SuperVisitor
         }
     }
 
+    public String getBlueprintCssClass(Node node) throws ParseException
+    {
+        String type = getBlueprintType(node);
+        if(StringUtils.isEmpty(type)){
+            return null;
+        }
+        else{
+            return ParserConstants.CSS_CLASS_PREFIX + type;
+        }
+    }
+
     /**
      *
      * @param node

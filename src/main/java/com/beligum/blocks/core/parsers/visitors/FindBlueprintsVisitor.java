@@ -14,10 +14,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * Created by wouter on 22/11/14.
@@ -25,8 +22,6 @@ import java.util.Stack;
  */
 public class FindBlueprintsVisitor extends SuperVisitor
 {
-
-    //TODO BAS SH: je hebt net deze klasse hernoemt van FindTemplatesVisitor naar CheckBlueprintsVisitor, en dat is wat deze klasse nu ook zou moeten doen
 
     private String pageTemplateName = null;
     /**flag for indicating if the current traverse has encountered a tag indicating a page-template is being parsed*/
@@ -65,15 +60,15 @@ public class FindBlueprintsVisitor extends SuperVisitor
     public Node head(Node node, int depth) throws ParseException {
         try {
             node = super.head(node, depth);
-            if(node instanceof Element) {
-                if (isPageTemplateRootNode(node)) {
-                    this.pageTemplateName = getPageTemplateName(node);
-                    this.parsingPageTemplate = true;
-                }
-                else if (parsingPageTemplate && isPageTemplateContentNode(node) && node instanceof Element) {
-                    pageTemplateContentNode = (Element) node;
-                }
+            if (isPageTemplateRootNode(node)) {
+                this.pageTemplateName = getPageTemplateName(node);
+                this.parsingPageTemplate = true;
+            }
+            else if (parsingPageTemplate && isPageTemplateContentNode(node) && node instanceof Element) {
+                pageTemplateContentNode = (Element) node;
+            }
 
+            if(node instanceof Element) {
                 boolean hasBlueprintType = hasBlueprintType(node);
                 if(hasTypeOf(node)) {
                     if (!hasBlueprintType) {
@@ -86,7 +81,6 @@ public class FindBlueprintsVisitor extends SuperVisitor
                     }
                 }
 
-                //TODO BAS!: css class blocks-entityClassName er bij zetten indien nodig
                 //TODO BAS!: fill children (properties: propertyValue/propertyName of propertyValue/number-> EtntityTemplate) vb building en building/1 en building/2...
 
                 if (hasBlueprintType) {
@@ -96,6 +90,8 @@ public class FindBlueprintsVisitor extends SuperVisitor
                         linksStack.push(new ArrayList<String>());
                         scriptsStack.push(new ArrayList<String>());
                     }
+                    //inject css class 'block-[blueprintType]' if not present yet in first position
+                    node = this.addBlockCssClass((Element) node);
                 }
 
                 //if we find a use-blueprint attribute which does not have an entity parent, warn user for data loss, since that html will not be picked up (since no blueprint is defined)
@@ -274,5 +270,18 @@ public class FindBlueprintsVisitor extends SuperVisitor
         catch (Exception e) {
             throw new ParseException("Something went wrong while creating page-template.", e);
         }
+    }
+
+    private Element addBlockCssClass(Element element) throws ParseException
+    {
+        String blueprintCssClass = getBlueprintCssClass(element);
+        if(!element.classNames().contains(blueprintCssClass)){
+            Set<String> classNames = element.classNames();
+            LinkedHashSet<String> newClassNames = new LinkedHashSet<>();
+            newClassNames.add(blueprintCssClass);
+            newClassNames.addAll(classNames);
+            element.classNames(newClassNames);
+        }
+        return element;
     }
 }

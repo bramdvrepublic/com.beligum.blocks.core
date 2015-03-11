@@ -69,6 +69,9 @@ public class ParserConstants
     public static final String PAGE_BLOCK = "page-block";
     public static final String NOT_ADDABLE_BLOCK = "not-addable-block";
 
+
+    public static final String CSS_CLASS_PREFIX = "block-";
+
     /**
      * Dynamic blocks
      */

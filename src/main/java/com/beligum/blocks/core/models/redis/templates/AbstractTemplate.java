@@ -202,6 +202,17 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
      */
     abstract public String getName();
 
+    public Map<String, EntityTemplate> getProperties()
+    {
+        return properties;
+    }
+    public void setProperties(Map<String, EntityTemplate> properties)
+    {
+        this.properties = properties;
+    }
+    public void setProperty(String property, EntityTemplate resource){
+        properties.put(property, resource);
+    }
 
     /**
      * Gives a hash-representation of this storable to save to the db. This method decides what information is stored in db, and what is not.
