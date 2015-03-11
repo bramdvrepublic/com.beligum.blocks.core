@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * Created by bas on 05.11.14.
  */
-public class EntityTemplateClass extends AbstractTemplate
+public class Blueprint extends AbstractTemplate
 {
     /**the default page-template this class should be rendered in*/
     private String pageTemplateName = ParserConstants.DEFAULT_PAGE_TEMPLATE;
@@ -27,32 +27,8 @@ public class EntityTemplateClass extends AbstractTemplate
     /**true if this is a class which can be added as a new block*/
     private boolean addableBlock;
 
-//    /**
-//     *
-//     * @param name the name of this entity-class
-//     * @param primaryLanguage the language this entity-template-class will always fall back to if needed
-//     * @param templates A map relating languages to template-strings corresponding to the most outer layer of the element-tree in this entity. At least one template in the primary-language should be present.
-//     * @param pageTemplateName the default page-template this entity-class should be rendered in
-//     * @param links the (css-)linked files this template needs
-//     * @param scripts the (javascript-)scripts this template needs
-//     * @throws IDException if no new id could be rendered using the specified name and language, or if no template of that language is present in the specified map of templates
-//     */
-//    public EntityTemplateClass(String name, String primaryLanguage, Map<BlocksID, String> templates, String pageTemplateName, List<String> links, List<String> scripts) throws IDException
-//    {
-//        super(BlocksID.renderNewEntityTemplateClassID(name, primaryLanguage), templates, links, scripts);
-//        this.name = name;
-//        if(pageTemplateName != null) {
-//            this.pageTemplateName = pageTemplateName;
-//        }
-//        if(!templates.containsKey(primaryLanguage)){
-//            throw new IDException("No html-template in language '" + primaryLanguage + "' found between templates.");
-//        }
-//        this.pageBlock = false;
-//        this.addableBlock = false;
-//    }
-
     /**
-     * Constructor for an entity-template-class with one language and a template in that language. (Other language-templates could be added later if wanted.)
+     * Constructor for an blueprint with one language and a template in that language. (Other language-templates could be added later if wanted.)
      * @param name the name of this entity-class
      * @param language the language of this class
      * @param template the html-template of this class
@@ -61,7 +37,7 @@ public class EntityTemplateClass extends AbstractTemplate
      * @param scripts the (javascript-)scripts this template needs
      * @throws IDException if no new id could be rendered using the specified name
      */
-    public EntityTemplateClass(String name, String language, String template, String pageTemplateName, List<String> links, List<String> scripts) throws IDException
+    public Blueprint(String name, String language, String template, String pageTemplateName, List<String> links, List<String> scripts) throws IDException
     {
         super(BlocksID.renderNewEntityTemplateClassID(name, language), template, links, scripts);
         this.name = name;
@@ -78,10 +54,10 @@ public class EntityTemplateClass extends AbstractTemplate
      * @param templates
      * @throws IDException
      */
-    private EntityTemplateClass(BlocksID id, Map<BlocksID, String> templates, List<String> links, List<String> scripts) throws IDException
+    private Blueprint(BlocksID id, Map<BlocksID, String> templates, List<String> links, List<String> scripts) throws IDException
     {
         super(id, templates, links, scripts);
-        //the name of this entity-template-class doesn't start with a "/", so we split it of the given path
+        //the name of this blueprint doesn't start with a "/", so we split it of the given path
         String[] splitted = id.getUrl().getPath().split("/");
         if (splitted.length > 0) {
             this.name = splitted[1];
@@ -101,6 +77,10 @@ public class EntityTemplateClass extends AbstractTemplate
     public String getName()
     {
         return name;
+    }
+
+    public String getType(){
+        return this.getName();
     }
 
     /**
@@ -138,13 +118,13 @@ public class EntityTemplateClass extends AbstractTemplate
     }
 
     /**
-     * The EntityTemplateClass-class can be used as a factory, to construct entity-template-classes from data found in a hash in the redis-db
+     * The EntityTemplateClass-class can be used as a factory, to construct blueprintes from data found in a hash in the redis-db
      * @param hash a map, mapping field-names to field-values
-     * @return an entity-template-class or throws an exception if no entity-template-class could be constructed from the specified hash
+     * @return an blueprint or throws an exception if no blueprint could be constructed from the specified hash
      * @throws DeserializationException when a bad hash is found
      */
     //is protected so that all classes in package can access this method
-    protected static EntityTemplateClass createInstanceFromHash(BlocksID id, Map<String, String> hash) throws DeserializationException
+    protected static Blueprint createInstanceFromHash(BlocksID id, Map<String, String> hash) throws DeserializationException
     {
         try {
             if (hash == null || hash.isEmpty()) {
@@ -158,13 +138,13 @@ public class EntityTemplateClass extends AbstractTemplate
                 Map<BlocksID, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
                 List<String> links = AbstractTemplate.fetchLinksFromHash(hash);
                 List<String> scripts = AbstractTemplate.fetchScriptsFromHash(hash);
-                EntityTemplateClass newInstance = new EntityTemplateClass(id, templates, links, scripts);
+                Blueprint newInstance = new Blueprint(id, templates, links, scripts);
                 Utils.autowireDaoToModel(hash, newInstance);
                 return newInstance;
             }
         }
         catch(Exception e){
-            throw new DeserializationException("Could not construct an object of class '" + EntityTemplateClass.class.getName() + "' from specified hash.", e);
+            throw new DeserializationException("Could not construct an object of class '" + Blueprint.class.getName() + "' from specified hash.", e);
         }
     }
 
@@ -200,7 +180,7 @@ public class EntityTemplateClass extends AbstractTemplate
     @Override
     public boolean equals(Object obj)
     {
-        if(!(obj instanceof EntityTemplateClass)) {
+        if(!(obj instanceof Blueprint)) {
             return false;
         }
         else{
@@ -209,7 +189,7 @@ public class EntityTemplateClass extends AbstractTemplate
                 return false;
             }
             else{
-                EntityTemplateClass templObj = (EntityTemplateClass) obj;
+                Blueprint templObj = (Blueprint) obj;
                 EqualsBuilder significantFieldsSet = new EqualsBuilder();
                 significantFieldsSet = significantFieldsSet.append(pageTemplateName, templObj.pageTemplateName)
                                                            .append(addableBlock, templObj.addableBlock)

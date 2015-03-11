@@ -5,7 +5,7 @@ import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.redis.templates.Blueprint;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Document;
@@ -22,7 +22,7 @@ import java.util.Stack;
  * Created by wouter on 22/11/14.
  * Visitor holding all functionalities to parse a html-file to entity-classes stored in cache
  */
-public class CheckBlueprintsVisitor extends SuperVisitor
+public class FindBlueprintsVisitor extends SuperVisitor
 {
 
     //TODO BAS SH: je hebt net deze klasse hernoemt van FindTemplatesVisitor naar CheckBlueprintsVisitor, en dat is wat deze klasse nu ook zou moeten doen
@@ -43,10 +43,10 @@ public class CheckBlueprintsVisitor extends SuperVisitor
 
     /**
      *
-     * @param foundTemplates the list to be filled up with entity-template-classes and page-templates
+     * @param foundTemplates the list to be filled up with blueprintes and page-templates
      * @throws NullPointerException if no cache is specified
      */
-    public CheckBlueprintsVisitor(List<AbstractTemplate> foundTemplates, Set<String> foundEntityClassNames)
+    public FindBlueprintsVisitor(List<AbstractTemplate> foundTemplates, Set<String> foundEntityClassNames)
     {
         if(foundTemplates == null){
             throw new NullPointerException("Cannot cache to null-collection.");
@@ -64,53 +64,52 @@ public class CheckBlueprintsVisitor extends SuperVisitor
     public Node head(Node node, int depth) throws ParseException {
         try {
             node = super.head(node, depth);
-            if (isPageTemplateRootNode(node)) {
-                this.pageTemplateName = getPageTemplateName(node);
-                this.parsingPageTemplate = true;
-            }
-            else if (parsingPageTemplate && isPageTemplateContentNode(node) && node instanceof Element) {
-                pageTemplateContentNode = (Element) node;
-            }
-
-            //TODO: check if it is a typeof, then a bleuprint attr should be added
-            //TODO: if blueprintTypeStack.size()>0 en bleuprint heeft geen property -> property op zetten
-            //TODO: css class blocks-entityClassName er bij zetten indien nodig
-            //TODO: fill children (properties: propertyValue/propertyName of propertyValue/number-> EtntityTemplate) vb building en building/1 en building/2...
-
-
-
-            if(hasBleuprintType(node)) {
-                boolean containsClassToBeCached = containsClassToBeCached(node);
-                if(containsClassToBeCached) {
-                    linksStack.push(new ArrayList<String>());
-                    scriptsStack.push(new ArrayList<String>());
+            if(node instanceof Element) {
+                if (isPageTemplateRootNode(node)) {
+                    this.pageTemplateName = getPageTemplateName(node);
+                    this.parsingPageTemplate = true;
                 }
-            }
-            //add links and scripts to the stack and remove them from the html (to be re-injected later)
-            if(node.nodeName().equals("link")){
-                //if an include has been found, import the wanted html-file
-                if(node.hasAttr("href") && node.attr("rel").equals(ParserConstants.INCLUDE)){
-                    Element element = (Element) node;
-                    String source = node.attr("href");
-                    Document sourceDOM = getSource(source);
-                    node = includeSource(element, sourceDOM);
+                else if (parsingPageTemplate && isPageTemplateContentNode(node) && node instanceof Element) {
+                    pageTemplateContentNode = (Element) node;
                 }
-                //if not, add the link to the links-stack
-                else {
-                    this.linksStack.peek().add(node.outerHtml());
+
+                //TODO BAS!: check if it is a typeof, then a bleuprint attr should be added
+                //TODO BAS!: css class blocks-entityClassName er bij zetten indien nodig
+                //TODO BAS!: fill children (properties: propertyValue/propertyName of propertyValue/number-> EtntityTemplate) vb building en building/1 en building/2...
+
+                if (hasBleuprintType(node)) {
+                    //if a blueprint should be cached, set a links- and a scripts-list ready to be filled during next steps
+                    boolean containsClassToBeCached = containsClassToBeCached(node);
+                    if (containsClassToBeCached) {
+                        linksStack.push(new ArrayList<String>());
+                        scriptsStack.push(new ArrayList<String>());
+                    }
+                }
+                //add links and scripts to the stack and remove them from the html (to be re-injected later)
+                if (node.nodeName().equals("link")) {
+                    //if an include has been found, import the wanted html-file
+                    if (node.hasAttr("href") && node.attr("rel").equals(ParserConstants.INCLUDE)) {
+                        Element element = (Element) node;
+                        String source = node.attr("href");
+                        Document sourceDOM = getSource(source);
+                        node = includeSource(element, sourceDOM);
+                    }
+                    //if not, add the link to the links-stack
+                    else {
+                        this.linksStack.peek().add(node.outerHtml());
+                        Node emtpyNode = new TextNode("", null);
+                        node.replaceWith(emtpyNode);
+                        node = emtpyNode;
+                    }
+                }
+                //if a script has been found, add it to the scripts-stack
+                if (node.nodeName().equals("script")) {
+                    this.scriptsStack.peek().add(node.outerHtml());
                     Node emtpyNode = new TextNode("", null);
                     node.replaceWith(emtpyNode);
                     node = emtpyNode;
                 }
             }
-            //if a script has been found, add it to the scripts-stack
-            if(node.nodeName().equals("script")){
-                this.scriptsStack.peek().add(node.outerHtml());
-                Node emtpyNode = new TextNode("", null);
-                node.replaceWith(emtpyNode);
-                node = emtpyNode;
-            }
-
             return node;
         }
         catch (Exception e){
@@ -135,23 +134,29 @@ public class CheckBlueprintsVisitor extends SuperVisitor
         if (node instanceof Element && isEntity(node)) {
             try {
                 Element element = (Element) node;
-                EntityTemplateClass entityTemplateClass = null;
-                //if this element is a class-bleuprint, it must be added to the cache (even if a class with this name was cached before)
+
+                Blueprint blueprint = null;
                 if(containsClassToBeCached(element)){
-                    entityTemplateClass = cacheEntityTemplateClassFromNode(element);
+                    blueprint = cacheEntityTemplateClassFromNode(element);
                     /*
-                     * If we have cached an new entity-template-class which is a property of a parent entity,
+                     * If we have cached a new blueprint which is a child of a parent entity,
                      * we switch it by a use-blueprint-tag, to be filled in again when the defaults are made (in DefaultVisitor)
                      */
-                    //TODO BAS!: check if this still works when no property-attribute was placed on an blueprint inside another blueprint
-                    if(isProperty(element) && isBlueprint(element) && entityTemplateClass != null){
-                        node = replaceNodeWithUseBlueprintTag(element, entityTemplateClass.getName());
+                    if(this.blueprintTypeStack.size()>0 && isBlueprint(element) && blueprint != null){
+                        node = replaceNodeWithUseBlueprintTag(element, blueprint.getName());
                     }
+
+                }
+
+                //if a blueprint node is not a property of it's parent, place a property on it using it's blueprint type
+                if(hasBleuprintType(element) && !isProperty(element) && this.blueprintTypeStack.size()>0){
+                    String type = getBlueprintType(element);
+                    node.attr(ParserConstants.PROPERTY, type);
                 }
 
             }
             catch (Exception e) {
-                throw new ParseException("Could not parse an " + EntityTemplateClass.class.getSimpleName() + " from " + Node.class.getSimpleName() + ": \n \n" + node + "\n \n", e);
+                throw new ParseException("Could not parse an " + Blueprint.class.getSimpleName() + " from " + Node.class.getSimpleName() + ": \n \n" + node + "\n \n", e);
             }
         }
         return node;
@@ -179,11 +184,11 @@ public class CheckBlueprintsVisitor extends SuperVisitor
     /**
      * Caches the entity-template parsed from the root-element specified. If a certain (non-blueprint) implementation of this entity-class is already present in cache, it is replaced.
      * If a bleuprint was already present, an exception is thrown.
-     * @param classRoot node defining an entity-template-class
-     * @return the entity-template-class defined by the node
+     * @param classRoot node defining an blueprint
+     * @return the blueprint defined by the node
      * @throws ParseException
      */
-    private EntityTemplateClass cacheEntityTemplateClassFromNode(Element classRoot) throws ParseException
+    private Blueprint cacheEntityTemplateClassFromNode(Element classRoot) throws ParseException
     {
         String entityClassName = "";
         try {
@@ -198,10 +203,10 @@ public class CheckBlueprintsVisitor extends SuperVisitor
                 String language = getLanguage(classRoot, null);
                 List<String> links = this.linksStack.pop();
                 List<String> scripts = this.scriptsStack.pop();
-                EntityTemplateClass entityTemplateClass = new EntityTemplateClass(entityClassName, language, classRoot.outerHtml(), pageTemplateName, links, scripts);
-                this.foundTemplates.add(entityTemplateClass);
+                Blueprint blueprint = new Blueprint(entityClassName, language, classRoot.outerHtml(), pageTemplateName, links, scripts);
+                this.foundTemplates.add(blueprint);
                 this.foundEntityClassNames.add(entityClassName);
-                return entityTemplateClass;
+                return blueprint;
             }
             else{
                 throw new ParseException("Found + " + Node.class.getSimpleName() + " which doesn't define an entity. At: \n \n" + classRoot + " \n \n");

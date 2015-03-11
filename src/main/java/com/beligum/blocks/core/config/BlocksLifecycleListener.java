@@ -1,11 +1,10 @@
 package com.beligum.blocks.core.config;
 
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
-import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.caching.BleuprintsCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.dynamic.DynamicBlockHandler;
-import com.beligum.blocks.core.dynamic.DynamicBlockListener;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.core.framework.base.ifaces.ServerLifecycleListener;
 import com.beligum.core.framework.utils.Logger;
@@ -30,7 +29,7 @@ public class BlocksLifecycleListener implements ServerLifecycleListener
 
         //initialize template-cache
         try {
-            EntityTemplateClassCache.getInstance();
+            BleuprintsCache.getInstance();
             PageTemplateCache.getInstance();
         }
         catch (CacheException e){

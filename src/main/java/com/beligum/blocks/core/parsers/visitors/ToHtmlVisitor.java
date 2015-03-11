@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.parsers.visitors;
 
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
-import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.caching.BleuprintsCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
@@ -10,7 +10,7 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.redis.templates.Blueprint;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.dynamic.DynamicBlockListener;
 import com.beligum.blocks.core.dynamic.TranslationList;
@@ -279,15 +279,15 @@ public class ToHtmlVisitor extends SuperVisitor
     {
         // Find the class of this node
         Element retVal = null;
-        EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getBlueprintType(node));
+        Blueprint blueprint = BleuprintsCache.getInstance().get(getBlueprintType(node));
 
-        this.addLinks(entityTemplateClass.getLinks());
-        this.addScripts(entityTemplateClass.getScripts());
+        this.addLinks(blueprint.getLinks());
+        this.addScripts(blueprint.getScripts());
 
-        String entityTemplateClassHtml = entityTemplateClass.getTemplate(language);
+        String entityTemplateClassHtml = blueprint.getTemplate(language);
         //if no template could be found for the current language, fall back to the primary language
         if (entityTemplateClassHtml == null) {
-            entityTemplateClassHtml = entityTemplateClass.getTemplate();
+            entityTemplateClassHtml = blueprint.getTemplate();
         }
         Element entityClassElement = TemplateParser.parse(entityTemplateClassHtml).child(0);
 

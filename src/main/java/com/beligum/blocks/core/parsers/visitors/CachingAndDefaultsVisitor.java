@@ -1,6 +1,6 @@
 package com.beligum.blocks.core.parsers.visitors;
 
-import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.caching.BleuprintsCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
@@ -14,7 +14,7 @@ import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.redis.templates.Blueprint;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.parsers.Traversor;
@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Created by bas on 22/01/15.
  */
-public class DefaultsAndCachingVisitor extends SuperVisitor
+public class CachingAndDefaultsVisitor extends SuperVisitor
 {
     //the language we're parsing
     private String language;
@@ -39,7 +39,7 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
     //the type of template we're parsing
     private AbstractTemplate parsingTemplate;
 
-    private Map<String, EntityTemplateClass> allEntityClasses;
+    private Map<String, Blueprint> allEntityClasses;
     private Map<String, PageTemplate> allPageTemplates;
 
     /**
@@ -51,7 +51,7 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
      * @param allPageTemplates A map holding all page-templates.
      * @throws ParseException If an unknown or empty language is specified and if te type of the parsingTemplate is not supported.
      */
-    public DefaultsAndCachingVisitor(String language, Document root, AbstractTemplate parsingTemplate, Map<String, EntityTemplateClass> allEntityClasses, Map<String, PageTemplate> allPageTemplates) throws ParseException
+    public CachingAndDefaultsVisitor(String language, Document root, AbstractTemplate parsingTemplate, Map<String, Blueprint> allEntityClasses, Map<String, PageTemplate> allPageTemplates) throws ParseException
     {
         if(Languages.isNonEmptyLanguageCode(language)) {
             this.language = language;
@@ -63,7 +63,7 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
             throw new ParseException("Found null-root while initializing visitor.");
         }
         this.root = root;
-        if(parsingTemplate instanceof EntityTemplateClass) {
+        if(parsingTemplate instanceof Blueprint) {
             if(!allEntityClasses.containsKey(parsingTemplate.getName())){
                 throw new ParseException("Found unknown entity-class '" + parsingTemplate.getName() + "'.");
             }
@@ -76,7 +76,7 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
             this.parsingTemplate = parsingTemplate;
         }
         else{
-            throw new ParseException("Cannot visit a template of type " + parsingTemplate.getClass().getSimpleName() + ". Only " + EntityTemplateClass.class.getSimpleName() + " and " + PageTemplate.class + " are supported.");
+            throw new ParseException("Cannot visit a template of type " + parsingTemplate.getClass().getSimpleName() + ". Only " + Blueprint.class.getSimpleName() + " and " + PageTemplate.class + " are supported.");
         }
         this.allEntityClasses = allEntityClasses;
         this.allPageTemplates = allPageTemplates;
@@ -108,8 +108,8 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
                      */
                     if (isProperty(element) && !root.equals(element.parent())) {
                         String blueprintType = getBlueprintType(element);
-                        EntityTemplateClass entityTemplateClass = allEntityClasses.get(blueprintType);
-                        if (entityTemplateClass == null) {
+                        Blueprint blueprint = allEntityClasses.get(blueprintType);
+                        if (blueprint == null) {
                             if(!DynamicBlockHandler.getInstance().isDynamicBlock(blueprintType)) {
                                 throw new ParseException("Found unknown entity-class '" + blueprintType + "' at node \n \n " + element + "\n \n");
                             }
@@ -118,24 +118,24 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
                             }
                         }
                         else {
-                            //we found an uncached entity-template-class, so we cache it
-                            if (!EntityTemplateClassCache.getInstance().contains(blueprintType) && !parsingTemplate.getName().equals(blueprintType)) {
-                                Document entityTemplateClassDOM = TemplateParser.parse(entityTemplateClass.getTemplate());
+                            //we found an uncached blueprint, so we cache it
+                            if (!BleuprintsCache.getInstance().contains(blueprintType) && !parsingTemplate.getName().equals(blueprintType)) {
+                                Document entityTemplateClassDOM = TemplateParser.parse(blueprint.getTemplate());
                                 Traversor
                                                 traversor =
-                                                new Traversor(new DefaultsAndCachingVisitor(entityTemplateClass.getLanguage(), entityTemplateClassDOM, entityTemplateClass, allEntityClasses,
+                                                new Traversor(new CachingAndDefaultsVisitor(blueprint.getLanguage(), entityTemplateClassDOM, blueprint, allEntityClasses,
                                                                                             allPageTemplates));
                                 traversor.traverse(entityTemplateClassDOM);
                             }
-                            //we want to use the cached entity-template-class
-                            entityTemplateClass = EntityTemplateClassCache.getInstance().get(blueprintType);
-                            //for entity-template-classes, new default-properties should be constructed
-                            if (this.parsingTemplate instanceof EntityTemplateClass) {
+                            //we want to use the cached blueprint
+                            blueprint = BleuprintsCache.getInstance().get(blueprintType);
+                            //for blueprints, new default-properties should be constructed
+                            if (this.parsingTemplate instanceof Blueprint) {
                                 if (this.parsingTemplate.getName().equals(this.getParentType())) {
-                                    String language = getLanguage(element, entityTemplateClass);
+                                    String language = getLanguage(element, blueprint);
                                     if (needsBlueprintCopy(element)) {
                                         BlocksID propertyId = BlocksID.renderClassPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
-                                        node = this.saveNewEntityClassCopy(element, propertyId, entityTemplateClass);
+                                        node = this.saveNewEntityClassCopy(element, propertyId, blueprint);
                                     }
                                     else {
                                         BlocksID propertyId = BlocksID.renderClassPropertyId(this.getParentType(), getProperty(element), getPropertyName(element), language);
@@ -143,6 +143,7 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
                                     }
                                 }
                                 else {
+                                    //TODO: make sure default grandchildren of a blueprint are not instantiated over again on every server startup (could f.i. use id's of this form "blocks://LOC/[blueprint]#[propertyValue]/[propertyName];[propertyValue]/[propertyName];[propertyValue]/[propertyName]
                                     //do nothing, since we have found an entity that is not a direct child of the template being parsed, this sort of entity will be taken care of while saving a new entity-default
                                 }
                             }
@@ -156,11 +157,11 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
                                     if (lastVersion == null) {
                                         if (needsBlueprintCopy(element)) {
                                             defaultPageTemplateEntityId = BlocksID.renderNewPageTemplateDefaultEntity(this.parsingTemplate.getName(), getProperty(element), this.language);
-                                            node = this.saveNewEntityClassCopy(element, defaultPageTemplateEntityId, entityTemplateClass);
+                                            node = this.saveNewEntityClassCopy(element, defaultPageTemplateEntityId, blueprint);
                                         }
                                         else {
                                             defaultPageTemplateEntityId =
-                                                            BlocksID.renderNewPageTemplateDefaultEntity(this.parsingTemplate.getName(), getProperty(element), entityTemplateClass.getLanguage());
+                                                            BlocksID.renderNewPageTemplateDefaultEntity(this.parsingTemplate.getName(), getProperty(element), blueprint.getLanguage());
                                             node = this.saveNewEntity(element, defaultPageTemplateEntityId);
                                         }
                                     }
@@ -175,18 +176,12 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
                             }
                         }
                     }
+                    //if we find an entity which is not a property inside a parent, we throw an exception.
                     else if (this.blueprintTypeStack.size() > 0) {
-                    /*
-                     * If we find an entity which is not a property, we throw an exception, since this makes no rdf-sense.
-                     * However, if the node is the head-node of a class-blueprint, no property-attribute is expected, and so then no error is thrown
-                     */
-                        //TODO BAS!: here a property should be present, but it could be a property we added ourselves during the blueprints check
-                        if (!(this.blueprintTypeStack.size() == 1 && isBlueprint(this.blueprintTypeStack.peek()))) {
-                            throw new ParseException("Found entity-child with " + ParserConstants.BLUEPRINT + "-attribute, but no property-attribute at \n \n " + element + "\n \n");
-                        }
+                        throw new ParseException("Found entity-child with " + ParserConstants.BLUEPRINT + "-attribute, but no property-attribute at \n \n " + element + "\n \n");
                     }
-                    //we reached the tail of the outer-most tag of an entity-template-class, so we cache it to the application-cache
-                    else if (parsingTemplate instanceof EntityTemplateClass) {
+                    //we reached the tail of the outer-most tag of an blueprint, so we cache it to the application-cache
+                    else if (parsingTemplate instanceof Blueprint) {
                         this.cacheEntityTemplateClass(element);
                     }
                     else {
@@ -204,37 +199,36 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
             throw e;
         }
         catch (Exception e) {
-            throw new ParseException("Could not parse an " + EntityTemplateClass.class.getSimpleName() + " from " + Node.class.getSimpleName() + ": \n \n" + node + "\n \n", e);
+            throw new ParseException("Could not parse an " + Blueprint.class.getSimpleName() + " from " + Node.class.getSimpleName() + ": \n \n" + node + "\n \n", e);
         }
     }
 
     private void cacheEntityTemplateClass(Element root) throws ParseException, CacheException, IDException
     {
         checkPropertyUniqueness(root);
-        EntityTemplateClass parsingTemplate = (EntityTemplateClass) this.parsingTemplate;
+        Blueprint parsingTemplate = (Blueprint) this.parsingTemplate;
         /*
-         * Use all info from the template we're parsing to make a real entity-template-class to be cached.
+         * Use all info from the template we're parsing to make a real blueprint to be cached.
          * The correct template of this class to be cached has just been created in this defaults-visitor and can thus be found at root.outerHtml().
-         * Add addability information (as a block or as a page) to the class.
-         */
+         * Add addability information (as a block or as a page) to the class.*/
         boolean isAddableBlock = isAddableBlock(root);
         boolean isPageBlock = isPageBlock(root);
         root.removeAttr(ParserConstants.NOT_ADDABLE_BLOCK);
         root.removeAttr(ParserConstants.PAGE_BLOCK);
-        EntityTemplateClass entityTemplateClass = new EntityTemplateClass(parsingTemplate.getName(), this.language, root.outerHtml(), parsingTemplate.getPageTemplateName(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
-        entityTemplateClass.setAddableBlock(isAddableBlock);
-        entityTemplateClass.setPageBlock(isPageBlock);
+        Blueprint blueprint = new Blueprint(parsingTemplate.getName(), this.language, root.outerHtml(), parsingTemplate.getPageTemplateName(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
+        blueprint.setAddableBlock(isAddableBlock);
+        blueprint.setPageBlock(isPageBlock);
 
-        boolean added = EntityTemplateClassCache.getInstance().add(entityTemplateClass);
+        boolean added = BleuprintsCache.getInstance().add(blueprint);
         if(!added) {
-            if (entityTemplateClass.getName().equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS)) {
-                if(!EntityTemplateClassCache.getInstance().get(entityTemplateClass.getName()).equals(entityTemplateClass)) {
-                    EntityTemplateClassCache.getInstance().replace(entityTemplateClass);
-                    Logger.warn("Replaced default-" + EntityTemplateClass.class.getSimpleName() + ".");
+            if (blueprint.getName().equals(ParserConstants.DEFAULT_BLUEPRINT)) {
+                if(!BleuprintsCache.getInstance().get(blueprint.getName()).equals(blueprint)) {
+                    BleuprintsCache.getInstance().replace(blueprint);
+                    Logger.warn("Replaced default-" + Blueprint.class.getSimpleName() + ".");
                 }
             }
             else {
-                throw new ParseException("Could not add " + EntityTemplateClass.class.getSimpleName() + " '" + entityTemplateClass.getName() + "' to application cache. This shouldn't happen.");
+                throw new ParseException("Could not add " + Blueprint.class.getSimpleName() + " '" + blueprint.getName() + "' to application cache. This shouldn't happen.");
             }
         }
     }
@@ -265,7 +259,7 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
      * @param entityClass
      * @throws com.beligum.blocks.core.exceptions.IDException
      */
-    private Element saveNewEntityClassCopy(Element element, BlocksID id, EntityTemplateClass entityClass) throws IDException, CacheException, ParseException
+    private Element saveNewEntityClassCopy(Element element, BlocksID id, Blueprint entityClass) throws IDException, CacheException, ParseException
     {
         Map<BlocksID, String> classTemplates = entityClass.getTemplates();
         Map<BlocksID, String> copiedTemplates = new HashMap<>();
@@ -274,7 +268,7 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
             classRoot.attributes().addAll(element.attributes());
             classRoot = (Element) setUseBlueprintType(classRoot);
             //a copy of an entity-class, also means a copy of all of it's children, so we need to traverse all templates to create entity-copies of all it's children
-            Traversor traversor = new Traversor(new ClassToStoredInstanceVisitor(id.getUrl(), id.getLanguage()));
+            Traversor traversor = new Traversor(new BlueprintToStoredInstanceVisitor(id.getUrl(), id.getLanguage()));
             traversor.traverse(classRoot);
             copiedTemplates.put(languageId, classRoot.outerHtml());
         }
@@ -283,7 +277,7 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
             Element classRoot = TemplateParser.parse(entityClass.getTemplate()).child(0);
             classRoot.attributes().addAll(element.attributes());
             classRoot.removeAttr(ParserConstants.USE_BLUEPRINT);
-            Traversor traversor = new Traversor(new ClassToStoredInstanceVisitor(id.getUrl(), id.getLanguage()));
+            Traversor traversor = new Traversor(new BlueprintToStoredInstanceVisitor(id.getUrl(), id.getLanguage()));
             traversor.traverse(classRoot);
             copiedTemplates.put(id, entityClass.getTemplate());
         }
@@ -305,8 +299,7 @@ public class DefaultsAndCachingVisitor extends SuperVisitor
     {
         /*
          * HtmlToStoredInstance needs a html-document to traverse correctly.
-         * We put the root of the entity to be a default into the body and let the visitor save new instances we're needed.
-         */
+         * We put the root of the entity to be a default into the body and let the visitor save new instances we're needed.*/
         Document entityRoot = new Document(BlocksConfig.getSiteDomain());
         entityRoot.appendChild(node.clone());
         //traverse the entity-root and save new instances to db

@@ -6,12 +6,11 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.redis.templates.Blueprint;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.velocity.runtime.directive.Parse;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
@@ -266,7 +265,7 @@ public class SuperVisitor
             return false;
         }
         else {
-            return node.hasAttr(ParserConstants.BLUEPRINT) || node.hasAttr(ParserConstants.USE_BLUEPRINT);
+            return !StringUtils.isEmpty(node.attr(ParserConstants.BLUEPRINT)) || !StringUtils.isEmpty(node.attr(ParserConstants.USE_BLUEPRINT));
         }
     }
 
@@ -328,7 +327,7 @@ public class SuperVisitor
             return retVal;
         }
         else if(isProperty(entityNode)){
-            return ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS;
+            return ParserConstants.DEFAULT_BLUEPRINT;
         }
         else{
             return null;
@@ -559,12 +558,12 @@ public class SuperVisitor
      *
      * @param node
      * @return the value of the lang-attribute of the node, or the language of the specified entityTemplateClass if no lang-attribute is present,
-     * or the default-language if the entity-template-class doesn't have a language
+     * or the default-language if the blueprint doesn't have a language
      */
-    public String getLanguage(Node node, EntityTemplateClass entityTemplateClass){
+    public String getLanguage(Node node, Blueprint blueprint){
         String language = node.attr(ParserConstants.LANGUAGE);
         if(StringUtils.isEmpty(language)){
-            language = entityTemplateClass != null ? entityTemplateClass.getLanguage() : BlocksConfig.getDefaultLanguage();
+            language = blueprint != null ? blueprint.getLanguage() : BlocksConfig.getDefaultLanguage();
         }
         if(StringUtils.isEmpty(language)){
             language = BlocksConfig.getDefaultLanguage();

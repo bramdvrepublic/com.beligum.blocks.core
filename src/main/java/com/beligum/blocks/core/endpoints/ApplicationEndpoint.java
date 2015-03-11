@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
-import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.caching.BleuprintsCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.RedisDatabase;
@@ -10,7 +10,7 @@ import com.beligum.blocks.core.exceptions.LanguageException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.redis.templates.Blueprint;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.base.R;
@@ -173,9 +173,9 @@ public class ApplicationEndpoint
      */
     private Response injectParameters(Template newPageTemplate) throws InterruptedException, CacheException
     {
-        List<EntityTemplateClass> pageClasses = EntityTemplateClassCache.getInstance().getPageClasses();
+        List<Blueprint> pageClasses = BleuprintsCache.getInstance().getPageClasses();
         newPageTemplate.set(ParserConstants.ENTITY_URL, RequestContext.getRequest().getRequestURL().toString());
-        newPageTemplate.set(ParserConstants.ENTITY_CLASSES, pageClasses);
+        newPageTemplate.set(ParserConstants.BLUEPRINTS, pageClasses);
         return Response.ok(newPageTemplate).build();
     }
 

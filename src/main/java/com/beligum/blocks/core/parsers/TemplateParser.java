@@ -1,6 +1,6 @@
 package com.beligum.blocks.core.parsers;
 
-import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.caching.BleuprintsCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
@@ -9,7 +9,7 @@ import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.redis.templates.Blueprint;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.visitors.*;
 import com.beligum.blocks.core.usermanagement.Permissions;
@@ -34,14 +34,14 @@ public class TemplateParser
     /**
      * Parse all templates found in the specified html and cache them in the specified collection.
      * @param fileHtml the html to be parsed
-     * @param cache a {@link java.util.List} in which the {@link PageTemplate}s and {@link EntityTemplateClass}es should be cached
+     * @param cache a {@link java.util.List} in which the {@link PageTemplate}s and {@link com.beligum.blocks.core.models.redis.templates.Blueprint}es should be cached
      * @param foundEntityClassNames the names of all entity-classes already found
      * @throws ParseException
      */
     public static void findTemplatesFromFile(String fileHtml, List<AbstractTemplate> cache, Set<String> foundEntityClassNames) throws ParseException
     {
         Document doc = parse(fileHtml);
-        Traversor traversor = new Traversor(new CheckBlueprintsVisitor(cache, foundEntityClassNames));
+        Traversor traversor = new Traversor(new FindBlueprintsVisitor(cache, foundEntityClassNames));
         traversor.traverse(doc);
     }
 
@@ -56,9 +56,8 @@ public class TemplateParser
         try {
             Map<String, PageTemplate> allPageTemplates = new HashMap<>();
             allPageTemplates.put(ParserConstants.DEFAULT_PAGE_TEMPLATE, PageTemplateCache.getInstance().get(ParserConstants.DEFAULT_PAGE_TEMPLATE));
-            Map<String, EntityTemplateClass> allEntityClasses = new HashMap<>();
-            allEntityClasses.put(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS, EntityTemplateClassCache.getInstance().get(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS));
-            //TODO BAS: all dynamic block names should be added to allEntityClasses
+            Map<String, Blueprint> allBlueprints = new HashMap<>();
+            allBlueprints.put(ParserConstants.DEFAULT_BLUEPRINT, BleuprintsCache.getInstance().get(ParserConstants.DEFAULT_BLUEPRINT));
             //split the list of templates up into page-templates and entity-classes
             for (AbstractTemplate template : foundTemplates) {
                 if (template instanceof PageTemplate) {
@@ -75,11 +74,11 @@ public class TemplateParser
                                         "\n \n and then \n \n" + template + "\n \n");
                     }
                 }
-                else if (template instanceof EntityTemplateClass) {
-                    EntityTemplateClass replacedTemplate = allEntityClasses.put(template.getName(), (EntityTemplateClass) template);
-                    //default entity-template-classes should be added to the cache no matter what, so the last one encountered is kept
-                    if (replacedTemplate != null && replacedTemplate.getName().contentEquals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS)) {
-                        Logger.warn("Default-" + EntityTemplateClass.class.getSimpleName() + " will be replaced. This should only happen once!");
+                else if (template instanceof Blueprint) {
+                    Blueprint replacedTemplate = allBlueprints.put(template.getName(), (Blueprint) template);
+                    //default blueprints should be added to the cache no matter what, so the last one encountered is kept
+                    if (replacedTemplate != null && replacedTemplate.getName().contentEquals(ParserConstants.DEFAULT_BLUEPRINT)) {
+                        Logger.warn("Default-" + Blueprint.class.getSimpleName() + " will be replaced. This should only happen once!");
                     }
                     //if an entity-class with this name was already present, check if it was a non-blueprint, if not, throw an exception since only one blueprint can be defined per class
                     else if (replacedTemplate != null) {
@@ -89,28 +88,28 @@ public class TemplateParser
                             //TODO BAS!: here also the "typeof"-attribute should be checked for presence
                             isBlueprint = new SuperVisitor().isBlueprint(TemplateParser.parse(replacedTemplates.get(languageId)).child(0));
                             if (isBlueprint) {
-                                throw new ParseException("An " + EntityTemplateClass.class.getSimpleName() + " of type '" + replacedTemplate.getName() +
+                                throw new ParseException("An " + Blueprint.class.getSimpleName() + " of type '" + replacedTemplate.getName() +
                                                          "' was already present in cache. Cannot have two blueprints for the same type. Found two! First encountered \n \n " + replacedTemplate +
                                                          "\n \n  and then \n \n" + template + "\n \n");
                             }
                         }
                     }
                 }
-                //only page-templates and entity-template-classes should be present in the list of found templates
+                //only page-templates and blueprintes should be present in the list of found templates
                 else {
                     throw new ParseException("Found unsupported " + AbstractTemplate.class.getSimpleName() + "-type " + template.getClass().getSimpleName() + ".");
                 }
             }
 
             //create defaults for all found entity-classes and cache to application-cache
-            for (String templateName : allEntityClasses.keySet()) {
+            for (String templateName : allBlueprints.keySet()) {
                 //during traversal of a template, all it's child-types are cached too
-                if(!EntityTemplateClassCache.getInstance().contains(templateName) || templateName.equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS)) {
-                    AbstractTemplate template = allEntityClasses.get(templateName);
+                if(!BleuprintsCache.getInstance().contains(templateName) || templateName.equals(ParserConstants.DEFAULT_BLUEPRINT)) {
+                    AbstractTemplate template = allBlueprints.get(templateName);
                     Map<BlocksID, String> htmlTemplates = template.getTemplates();
                     for (BlocksID language : htmlTemplates.keySet()) {
                         Document doc = parse(htmlTemplates.get(language));
-                        Traversor traversor = new Traversor(new DefaultsAndCachingVisitor(language.getLanguage(), doc, template, allEntityClasses, allPageTemplates));
+                        Traversor traversor = new Traversor(new CachingAndDefaultsVisitor(language.getLanguage(), doc, template, allBlueprints, allPageTemplates));
                         traversor.traverse(doc);
                     }
                 }
@@ -123,7 +122,7 @@ public class TemplateParser
                     Map<BlocksID, String> htmlTemplates = template.getTemplates();
                     for (BlocksID language : htmlTemplates.keySet()) {
                         Document doc = parse(htmlTemplates.get(language));
-                        Traversor traversor = new Traversor(new DefaultsAndCachingVisitor(language.getLanguage(), doc, template, allEntityClasses, allPageTemplates));
+                        Traversor traversor = new Traversor(new CachingAndDefaultsVisitor(language.getLanguage(), doc, template, allBlueprints, allPageTemplates));
                         traversor.traverse(doc);
                     }
                 }
@@ -152,7 +151,7 @@ public class TemplateParser
                 html = entityTemplateClass.getTemplate();
             }
             Element doc = parse(html);
-            ClassToStoredInstanceVisitor visitor = new ClassToStoredInstanceVisitor(id.getUrl(), language);
+            BlueprintToStoredInstanceVisitor visitor = new BlueprintToStoredInstanceVisitor(id.getUrl(), language);
             Traversor traversor = new Traversor(visitor);
             traversor.traverse(doc);
         }
@@ -210,7 +209,7 @@ public class TemplateParser
                 }
 //                Element entityRoot = TemplateParser.parse(entityHtml).child(0);
                 reference.attr(ParserConstants.REFERENCE_TO, entityTemplate.getUnversionedId());
-                reference.attr(ParserConstants.USE_BLUEPRINT, entityTemplate.getEntityTemplateClassName());
+                reference.attr(ParserConstants.USE_BLUEPRINT, entityTemplate.getBlueprintType());
             }
 
             ToHtmlVisitor visitor = new ToHtmlVisitor(entityTemplate.getUrl(), language, pageTemplate.getLinks(), pageTemplate.getScripts());

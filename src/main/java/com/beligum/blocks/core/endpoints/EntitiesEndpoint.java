@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
-import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.caching.BleuprintsCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
@@ -12,7 +12,7 @@ import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.redis.templates.Blueprint;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.usermanagement.Permissions;
@@ -52,7 +52,7 @@ public class EntitiesEndpoint
                     throws Exception
 
     {
-        EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(entityClassName);
+        Blueprint blueprint = BleuprintsCache.getInstance().get(entityClassName);
         URL pageURL = new URL(pageUrl);
         BlocksID existingId = XMLUrlIdMapper.getInstance().getId(pageURL);
         EntityTemplate lastVersion = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(existingId, EntityTemplate.class);
@@ -74,13 +74,13 @@ public class EntitiesEndpoint
         }
         //if the url isn't taken yet, render a new id
         else if(lastVersion == null){
-            newId = BlocksID.renderNewEntityTemplateID(entityTemplateClass, existingId.getLanguage());
+            newId = BlocksID.renderNewEntityTemplateID(blueprint, existingId.getLanguage());
         }
         //if a deleted version is being revived, readd it to the mapping
         else{
             newId = existingId;
         }
-        TemplateParser.saveNewEntityTemplateToDb(newId, entityTemplateClass);
+        TemplateParser.saveNewEntityTemplateToDb(newId, blueprint);
         String unlanguagedPageUrl = Languages.translateUrl(pageURL.toString(), Languages.NO_LANGUAGE)[0];
         String unlanguagedIdUrl = Languages.translateUrl(newId.getUrl().toString(), Languages.NO_LANGUAGE)[0];
         if(!unlanguagedPageUrl.equals(unlanguagedIdUrl)){
@@ -93,11 +93,11 @@ public class EntitiesEndpoint
     }
 
     @GET
-    @Path("/class/{entityTemplateClassName}")
+    @Path("/class/{blueprintType}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getClassTemplate(@PathParam("entityTemplateClassName") String entityTemplateClasName) throws CacheException, ParseException
+    public Response getClassTemplate(@PathParam("blueprintType") String entityTemplateClasName) throws CacheException, ParseException
     {
-        String classHtml = TemplateParser.renderTemplate(EntityTemplateClassCache.getInstance().get(entityTemplateClasName));
+        String classHtml = TemplateParser.renderTemplate(BleuprintsCache.getInstance().get(entityTemplateClasName));
         HashMap<String, String> json = new HashMap<String, String>();
         json.put("template", classHtml);
         return Response.ok(json).build();
@@ -171,9 +171,9 @@ public class EntitiesEndpoint
     public Response listEntities() throws CacheException
     {
         List<String> entityNames = new ArrayList<String>();
-        List<EntityTemplateClass> addableClasses = EntityTemplateClassCache.getInstance().getAddableClasses();
-        for (EntityTemplateClass e : addableClasses) {
-            if(!e.getName().equals(ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS)){
+        List<Blueprint> addableClasses = BleuprintsCache.getInstance().getAddableClasses();
+        for (Blueprint e : addableClasses) {
+            if(!e.getName().equals(ParserConstants.DEFAULT_BLUEPRINT)){
                 entityNames.add(e.getName());
             }
         }

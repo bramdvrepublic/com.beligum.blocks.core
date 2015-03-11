@@ -36,7 +36,7 @@ public class ParserConstants
 
     public final static String INCLUDE = "include";
 
-    public final static String DEFAULT_ENTITY_TEMPLATE_CLASS = "default";
+    public final static String DEFAULT_BLUEPRINT = "default";
     public final static String DEFAULT_PAGE_TEMPLATE = "default";
 
 
@@ -49,7 +49,7 @@ public class ParserConstants
     public static final String PAGE_TEMPLATE_ENTITY_VARIABLE_NAME = "entity";
 
     /**the name of the variable in the new-page template, containing all possible entity-classes*/
-    public static final String ENTITY_CLASSES = "entityClasses";
+    public static final String BLUEPRINTS = "blueprints";
     /**the name of the variable in the new-page template, containing the url of the new Entity*/
     public static final String ENTITY_URL = "entityUrl";
 

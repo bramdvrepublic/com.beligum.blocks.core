@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
-import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.caching.BleuprintsCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.dbs.RedisDatabase;
@@ -33,7 +33,7 @@ import java.util.Map;
 public class DebugEndpoint
 {
     public static final String ENTTIY_INSTANCE_TYPE = "instance";
-    public static final String ENTITY_CLASS_TYPE = "class";
+    public static final String BLUEPRINT_TYPE = "blueprint";
     public static final String PAGE_TEMPLATE_TYPE = "template";
     public static final String XML_TEMPLATE_TYPE = "xml";
 
@@ -54,24 +54,24 @@ public class DebugEndpoint
     @Path("/reset")
     public Response resetCache() throws CacheException
     {
-        EntityTemplateClassCache.getInstance().reset();
+        BleuprintsCache.getInstance().reset();
         PageTemplateCache.getInstance().reset();
-        EntityTemplateClassCache.getInstance();
+        BleuprintsCache.getInstance();
         PageTemplateCache.getInstance();
         Logger.warn("Cache has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
         return Response.ok("Cache reset").build();
     }
 
     @GET
-    @Path("/entityclasses")
+    @Path("/blueprints")
     @Produces("text/plain")
-    public Response getEntityTemplateClassCache() throws CacheException
+    public Response getBleuprintsCache() throws CacheException
     {
-        List<String> entityTemplateClassKeys = EntityTemplateClassCache.getInstance().keys();
-        List<EntityTemplateClass> entityTemplateClass = EntityTemplateClassCache.getInstance().values();
+        List<String> blueprintKeys = BleuprintsCache.getInstance().keys();
+        List<Blueprint> blueprint = BleuprintsCache.getInstance().values();
         String cache = "";
-        for(int i = 0; i<entityTemplateClass.size(); i++){
-            cache += "----------------------------------" + entityTemplateClassKeys.get(i) + "---------------------------------- \n\n" + entityTemplateClass.get(i).toString() + "\n\n\n\n\n\n";
+        for(int i = 0; i< blueprint.size(); i++){
+            cache += "----------------------------------" + blueprintKeys.get(i) + "---------------------------------- \n\n" + blueprint.get(i).toString() + "\n\n\n\n\n\n";
         }
         return Response.ok(cache).build();
     }
@@ -259,8 +259,8 @@ public class DebugEndpoint
                 case ENTTIY_INSTANCE_TYPE:
                     type = EntityTemplate.class;
                     break;
-                case ENTITY_CLASS_TYPE:
-                    type = EntityTemplateClass.class;
+                case BLUEPRINT_TYPE:
+                    type = Blueprint.class;
                     break;
                 case PAGE_TEMPLATE_TYPE:
                     type = PageTemplate.class;

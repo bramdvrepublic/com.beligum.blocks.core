@@ -1,6 +1,6 @@
 package com.beligum.blocks.core.identifiers;
 
-import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.caching.BleuprintsCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.CacheConstants;
 import com.beligum.blocks.core.config.DatabaseConstants;
@@ -10,7 +10,7 @@ import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.DatabaseException;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.redis.templates.Blueprint;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -400,13 +400,13 @@ public class BlocksID
     /**
      * Method for getting a new randomly determined entity-uid (with versioning) for a entityTemplate-instance of an entityTemplateClass
      * @param language the language this new id should use
-     * @return a randomly generated entity-id of the form "[site-domain]/[entityTemplateClassName]/[randomInt]"
+     * @return a randomly generated entity-id of the form "[site-domain]/[blueprintType]/[randomInt]"
      */
-    public static BlocksID renderNewEntityTemplateID(EntityTemplateClass entityTemplateClass, String language) throws IDException
+    public static BlocksID renderNewEntityTemplateID(Blueprint blueprint, String language) throws IDException
     {
         Database redis = RedisDatabase.getInstance();
         if(redis instanceof RedisDatabase) {
-            return ((RedisDatabase) redis).renderNewEntityTemplateID(entityTemplateClass, language);
+            return ((RedisDatabase) redis).renderNewEntityTemplateID(blueprint, language);
         }
         else{
             throw new IDException("Cannot render " + EntityTemplate.class.getSimpleName() + " id, since an unknown database type was found: " + redis.getClass().getName());
@@ -422,7 +422,7 @@ public class BlocksID
     {
         try{
             BlocksID newID = new BlocksID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName + "#" + property), NEW_VERSION, true);
-            while(RedisDatabase.getInstance().fetch(newID, EntityTemplateClass.class) != null) {
+            while(RedisDatabase.getInstance().fetch(newID, Blueprint.class) != null) {
                 newID = new BlocksID(new URL(BlocksConfig.getSiteDomain() + "/" + CacheConstants.PAGE_TEMPLATE_ID_PREFIX + "/" + pageTemplateName + "#" + property), NEW_VERSION, true);
             }
             newID.language = language;
@@ -435,37 +435,37 @@ public class BlocksID
 
     /**
      * Method for getting a new template-class uid for a certain class.
-     * @param entityTemplateClassName the name for this entity-class
+     * @param blueprintType the name for this entity-class
      * @param language the language this entity-class is written in
-     * @return A versioned id of the form "blocks://[db-alias]/[entityTemplateClassName]"
+     * @return A versioned id of the form "blocks://[db-alias]/[blueprintType]"
      */
-    public static BlocksID renderNewEntityTemplateClassID(String entityTemplateClassName, String language) throws IDException
+    public static BlocksID renderNewEntityTemplateClassID(String blueprintType, String language) throws IDException
     {
         //we're not actually going to the db to determine a new redis-id for a class, it will use a new versioning (current time millis) to get a new version, so we don't actually need to check for that version in db
         try{
-            BlocksID newID = new BlocksID(new URL(BlocksConfig.getSiteDomain() +  "/" + entityTemplateClassName), NEW_VERSION, true);
-            while(RedisDatabase.getInstance().fetch(newID, EntityTemplateClass.class) != null){
-                newID = new BlocksID(new URL(BlocksConfig.getSiteDomain() + "/" + entityTemplateClassName), NEW_VERSION, true);
+            BlocksID newID = new BlocksID(new URL(BlocksConfig.getSiteDomain() +  "/" + blueprintType), NEW_VERSION, true);
+            while(RedisDatabase.getInstance().fetch(newID, Blueprint.class) != null){
+                newID = new BlocksID(new URL(BlocksConfig.getSiteDomain() + "/" + blueprintType), NEW_VERSION, true);
             }
             newID.language = language;
             return newID;
         }catch(MalformedURLException |DatabaseException e){
-            throw new IDException("Could not construct id from site-domain '" + BlocksConfig.getSiteDomain() + "', name '" + entityTemplateClassName + "' and language '" + language + "'.", e);
+            throw new IDException("Could not construct id from site-domain '" + BlocksConfig.getSiteDomain() + "', name '" + blueprintType + "' and language '" + language + "'.", e);
         }
     }
 
     /**
      *
-     * @param entityTemplateClassName
+     * @param blueprintType
      * @return an unversioned id for an entity-class
      * @throws IDException
      */
-    public static String renderUnversionedEntityTemplateClassID(String entityTemplateClassName) throws IDException
+    public static String renderUnversionedEntityTemplateClassID(String blueprintType) throws IDException
     {
         try{
-            return new BlocksID(new URL(BlocksConfig.getSiteDomain() +  "/" + entityTemplateClassName), NO_VERSION, true).getUnversionedId();
+            return new BlocksID(new URL(BlocksConfig.getSiteDomain() +  "/" + blueprintType), NO_VERSION, true).getUnversionedId();
         }catch(MalformedURLException e){
-            throw new IDException("Could not construct id from site-domain '" + BlocksConfig.getSiteDomain() + "' and name '" + entityTemplateClassName + "'.", e);
+            throw new IDException("Could not construct id from site-domain '" + BlocksConfig.getSiteDomain() + "' and name '" + blueprintType + "'.", e);
         }
     }
 
@@ -533,8 +533,8 @@ public class BlocksID
                 newID = new BlocksID(new URL(url), NEW_VERSION, false);
             }
             if(!newID.hasLanguage()) {
-                EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(owningEntityClassName);
-                newID.language = entityTemplateClass.getLanguage();
+                Blueprint blueprint = BleuprintsCache.getInstance().get(owningEntityClassName);
+                newID.language = blueprint.getLanguage();
             }
             return newID;
         }catch(Exception  e){
@@ -557,18 +557,18 @@ public class BlocksID
     }
 
     /**
-     * Returns the name of the set where all instance-ids of the same entity-template-class are stored, f.i. "blocks://[db-alias]/waterwells" for class typeof="waterwell".
-     * @param entityTemplateClassName
-     * @return An id of a set of entity-template-class-instances, which uses the plural form of the name of the entity-template-class.
+     * Returns the name of the set where all instance-ids of the same blueprint are stored, f.i. "blocks://[db-alias]/waterwells" for class typeof="waterwell".
+     * @param blueprintType
+     * @return An id of a set of blueprint-instances, which uses the plural form of the name of the blueprint.
      */
-    public static String getEntityTemplateClassSetId(String entityTemplateClassName) throws IDException
+    public static String getBlueprintTypeSetId(String blueprintType) throws IDException
     {
         try {
-            String entityTemplateClassSetName = entityTemplateClassName + DatabaseConstants.ENTITY_TEMPLATE_CLASS_SET_SUFFIX;
+            String entityTemplateClassSetName = blueprintType + DatabaseConstants.ENTITY_TEMPLATE_CLASS_SET_SUFFIX;
             URI entityTemplateClassSetId = new URI(DatabaseConstants.SCHEME_NAME, BlocksConfig.getSiteDBAlias(), "/" + entityTemplateClassSetName, null);
             return entityTemplateClassSetId.toString();
         }catch(URISyntaxException e){
-            throw new IDException("Cannot use entity-template class '" + entityTemplateClassName + "' for id-rendering.", e);
+            throw new IDException("Cannot use entity-template class '" + blueprintType + "' for id-rendering.", e);
         }
     }
 

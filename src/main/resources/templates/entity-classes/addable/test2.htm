@@ -1,7 +1,7 @@
 <div blueprint="home-page" template="slideshow" can-layout page-block not-addable-block>
     <div class="row">
         <div class="col-md-12">
-            <div property="welcome" blueprint="home-row" class="home-row" not-addable-block>
+            <div use-blueprint="home-row" class="home-row" not-addable-block>
                 <div class="row" style="background-color: white">
                     <div class="col-md-4 image">
                         <img property="image" src="/assets/media/images/maalsteen.jpg" alt="" can-edit/>
@@ -14,22 +14,22 @@
                         <ul property="button-list" blueprint="button-list" class="button-list" can-layout>
                             <div class="row-fluid">
                                 <div property="button" name="museum" use-blueprint="button" class="button">
-                                    <a property="button-text" href="/museum" title="" can-edit>over het museum</a>
+                                    <a property="button-text" href="/museum" title="" can-edit>boem</a>
                                 </div>
                                 <div property="button" name="experience" use-blueprint="button" class="button">
-                                    <a property="button-text" href="/beleving" title="" can-edit>beleving in het MOT</a>
+                                    <a property="button-text" href="/beleving" title="" can-edit>baf</a>
                                 </div>
                             </div>
                         </ul>
                     </div>
                 </div>
             </div>
-            <div property="color-line" blueprint="color-line" class="color-line">
+            <div blueprint="color-line" class="color-line">
                 <div class="row">
                     <div class="col-md-12">&nbsp;</div>
                 </div>
             </div>
-            <div property="search" use-blueprint="home-row" class="home-row search">
+            <div property="search" blueprint="home-row" class="home-row search">
                 <div class="row" style="background-color: #efefef">
                     <div class="col-md-4 image">
                         <img property="image" src="/assets/media/images/search.png" alt=""/>
