@@ -4,7 +4,7 @@
  * Plugin that handles the editing of blocks. This starts the correct plugin when the edit button in the BlockMenu is pushed
  */
 
-blocks.plugin("blocks.core.Admin", ["blocks.core.BlockMenu", "blocks.core.DomManipulation",  "blocks.core.Notification", "blocks.core.Broadcaster", function(Menu, DOM, Notification, Broadcaster) {
+blocks.plugin("blocks.core.EntityEdit", ["blocks.core.BlockMenu", "blocks.core.DomManipulation",  "blocks.core.Notification", "blocks.core.Broadcaster", function(Menu, DOM, Notification, Broadcaster) {
 
     var registeredPlugins = [];
     var selectedPlugin = null;
@@ -47,7 +47,7 @@ blocks.plugin("blocks.core.Admin", ["blocks.core.BlockMenu", "blocks.core.DomMan
                     label: 'Cancel',
                     action: function(dialogRef){
                         dialogRef.close();
-                        Broadcaster.send(Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE));
+                        Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
                     }},
                 {
                     id: 'btn-ok',
@@ -57,7 +57,7 @@ blocks.plugin("blocks.core.Admin", ["blocks.core.BlockMenu", "blocks.core.DomMan
                     action: function(dialogRef){
                         selectedPlugin.callback(block, el, dialogRef.$modalBody);
                         dialogRef.close();
-                        Broadcaster.send(Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE));
+                        Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
                     }
 
                 }]

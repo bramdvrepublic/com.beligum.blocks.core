@@ -7,6 +7,8 @@ import org.apache.commons.configuration.ConfigurationRuntimeException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -46,6 +48,11 @@ public class BlocksConfig
     public static String getSiteDomain()
     {
         return getConfiguration("blocks.site.domain");
+    }
+
+    public static URL getSiteDomainUrl() throws MalformedURLException
+    {
+        return new URL(getSiteDomain());
     }
 
     public static String getRedisMasterHost()

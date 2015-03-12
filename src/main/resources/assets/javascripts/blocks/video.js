@@ -1,4 +1,4 @@
-blocks.plugin("blocks.core.video", ["blocks.core.Admin", function(Admin) {
+blocks.plugin("blocks.core.video", ["blocks.core.EntityEdit", function(Edit) {
     var dialogContent = $('<h3>Select a video: </h3><div class="form" >' +
         '<div class="form-group">' +
         '<label for="videoselect" class="sr-only">Video: </label>'  +
@@ -15,7 +15,7 @@ blocks.plugin("blocks.core.video", ["blocks.core.Admin", function(Admin) {
         '</div>');
 
 
-    Admin.register(
+    Edit.register(
         {
             enabled: function(block) {
                 return block.element.attr("typeof") == "video";

@@ -1,6 +1,6 @@
 package com.beligum.blocks.core.models.redis.templates;
 
-import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.config.ParserConstants;
@@ -22,7 +22,7 @@ import java.util.Map;
 public class EntityTemplate extends AbstractTemplate
 {
     /**the class of which this viewable is a viewable-instance*/
-    protected String entityTemplateClassName = ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS;
+    protected String blueprintType = ParserConstants.DEFAULT_BLUEPRINT;
 
     private String pageTemplateName = ParserConstants.DEFAULT_PAGE_TEMPLATE;
 
@@ -35,7 +35,7 @@ public class EntityTemplate extends AbstractTemplate
      *                  this can be used to copy one template's language-templates to another one
      * @throws IDException if no template in the language specified by the id could be found in the templates-map, or if that map was empty
      */
-    public EntityTemplate(BlocksID id, EntityTemplateClass entityTemplateClass, Map<BlocksID, String> templatesToBeCopied) throws IDException, CacheException
+    public EntityTemplate(BlocksID id, Blueprint blueprint, Map<BlocksID, String> templatesToBeCopied) throws IDException, CacheException
     {
         //no scripts or links are specified for an entity-template (this could be implemented later, if wanted)
         super(id, (Map) null, null, null);
@@ -43,8 +43,8 @@ public class EntityTemplate extends AbstractTemplate
         for(BlocksID classTemplateId : templatesToBeCopied.keySet()){
             this.templates.put(new BlocksID(id, classTemplateId.getLanguage()), templatesToBeCopied.get(classTemplateId));
         }
-        this.entityTemplateClassName = entityTemplateClass.getName();
-        this.pageTemplateName = entityTemplateClass.getPageTemplateName();
+        this.blueprintType = blueprint.getName();
+        this.pageTemplateName = blueprint.getPageTemplateName();
         if(!this.getLanguages().contains(id.getLanguage()) || templatesToBeCopied.isEmpty()){
             throw new IDException("No html-template in language '" + id.getLanguage() + "' found between templates.");
         }
@@ -53,27 +53,27 @@ public class EntityTemplate extends AbstractTemplate
     /**
      * Constructor for template with one language: the one precent in the id. (Other language-templates could be added later if wanted.)
      * @param id       id for this template
-     * @param entityTemplateClass the class of which this entity is a entity-instance
+     * @param blueprint the class of which this entity is a entity-instance
      * @param template the html-template of this template
      */
-    public EntityTemplate(BlocksID id, EntityTemplateClass entityTemplateClass, String template) throws CacheException
+    public EntityTemplate(BlocksID id, Blueprint blueprint, String template) throws CacheException
     {
         super(id, template, null, null);
-        this.entityTemplateClassName = entityTemplateClass.getName();
-        this.pageTemplateName = entityTemplateClass.getPageTemplateName();
+        this.blueprintType = blueprint.getName();
+        this.pageTemplateName = blueprint.getPageTemplateName();
     }
 
     /**
      * Constructor used by static create-from-hash-function.
      * @param id
-     * @param entityTemplateClassName
+     * @param blueprintType
      * @param templates
      * @throw IDException if no template in the language specified by the id could be found in the templates-map
      */
-    private EntityTemplate(BlocksID id, String entityTemplateClassName, Map<BlocksID, String> templates) throws IDException
+    private EntityTemplate(BlocksID id, String blueprintType, Map<BlocksID, String> templates) throws IDException
     {
         super(id, templates, null, null);
-        this.entityTemplateClassName = entityTemplateClassName;
+        this.blueprintType = blueprintType;
         if(!this.getLanguages().contains(id.getLanguage())){
             throw new IDException("No html-template in language '" + id.getLanguage() + "' found between templates.");
         }
@@ -89,21 +89,21 @@ public class EntityTemplate extends AbstractTemplate
     protected static EntityTemplate createInstanceFromHash(BlocksID id, Map<String, String> hash) throws DeserializationException
     {
         try{
-            if(hash != null && !hash.isEmpty() && hash.containsKey(DatabaseConstants.ENTITY_TEMPLATE_CLASS_NAME)) {
+            if(hash != null && !hash.isEmpty() && hash.containsKey(DatabaseConstants.BLUEPRINT_TYPE)) {
                 /*
                  * Fetch all fields from the hash, removing them as they are used.
                  * Afterwards use all remaining information to be wired to the a new instance
                  */
                 Map<BlocksID, String> templates = AbstractTemplate.fetchLanguageTemplatesFromHash(hash);
-                String entityTemplateClassName = hash.get(DatabaseConstants.ENTITY_TEMPLATE_CLASS_NAME);
-                hash.remove(DatabaseConstants.ENTITY_TEMPLATE_CLASS_NAME);
-                EntityTemplate newInstance = new EntityTemplate(id, entityTemplateClassName, templates);
+                String blueprintType = hash.get(DatabaseConstants.BLUEPRINT_TYPE);
+                hash.remove(DatabaseConstants.BLUEPRINT_TYPE);
+                EntityTemplate newInstance = new EntityTemplate(id, blueprintType, templates);
                 //all the information that still remains in the hash is wired to the instance
                 Utils.autowireDaoToModel(hash, newInstance);
                 return newInstance;
             }
             else{
-                throw new DeserializationException("Hash doesn't contain key '" + DatabaseConstants.ENTITY_TEMPLATE_CLASS_NAME + "'."  + hash);
+                throw new DeserializationException("Hash doesn't contain key '" + DatabaseConstants.BLUEPRINT_TYPE + "'."  + hash);
             }
         }catch (Exception e){
             throw new DeserializationException("Could not construct an entity-template from the specified hash", e);
@@ -125,7 +125,7 @@ public class EntityTemplate extends AbstractTemplate
     }
 
     @Override
-    public List<String> getScripts() throws CacheException
+    public List<String> getScripts() throws Exception
     {
         List<String> scripts = super.getScripts();
         if(scripts == null){
@@ -134,7 +134,7 @@ public class EntityTemplate extends AbstractTemplate
         return scripts;
     }
     @Override
-    public List<String> getLinks() throws CacheException
+    public List<String> getLinks() throws Exception
     {
 
         List<String> links = super.getLinks();
@@ -147,14 +147,14 @@ public class EntityTemplate extends AbstractTemplate
      *
      * @return the entity-class of this entity-instance
      */
-    public EntityTemplateClass getEntityTemplateClass() throws CacheException
+    public Blueprint getEntityTemplateClass() throws Exception
     {
-        return EntityTemplateClassCache.getInstance().get(this.entityTemplateClassName);
+        return BlueprintsCache.getInstance().get(this.blueprintType);
     }
 
-    public String getEntityTemplateClassName()
+    public String getBlueprintType()
     {
-        return entityTemplateClassName;
+        return blueprintType;
     }
     public String getPageTemplateName()
     {
@@ -172,7 +172,7 @@ public class EntityTemplate extends AbstractTemplate
      *
      * @return the default page-template this entity-template should be rendered in, fetched from cache
      */
-    public PageTemplate getPageTemplate() throws CacheException
+    public PageTemplate getPageTemplate() throws Exception
     {
         return PageTemplateCache.getInstance().get(pageTemplateName);
     }
@@ -194,7 +194,7 @@ public class EntityTemplate extends AbstractTemplate
     /**
      * render the html of this entity-template, using it's page-template (or, if it is the default-page-template, use the page-template of the class) and class-template
      */
-    public String renderEntityInPageTemplate(String language) throws CacheException, ParseException
+    public String renderEntityInPageTemplate(String language) throws Exception
     {
         PageTemplate pageTemplate = getPageTemplate();
         PageTemplate classPageTemplate = this.getEntityTemplateClass().getPageTemplate();
@@ -221,11 +221,17 @@ public class EntityTemplate extends AbstractTemplate
     @Override
     public Map<String, String> toHash() throws SerializationException
     {
-        Map<String, String> hash = super.toHash();
-        //an entity-template doesn't have links and scripts (for the moment, this could be implemented later)
-        hash.remove(DatabaseConstants.SCRIPTS);
-        hash.remove(DatabaseConstants.LINKS);
-        return hash;
+        try {
+            Map<String, String> hash = super.toHash();
+            String blueprintType = hash.remove(EntityTemplate.class.getDeclaredField("blueprintType").getName());
+            hash.put(DatabaseConstants.BLUEPRINT_TYPE, blueprintType);
+            //an entity-template doesn't have links and scripts (for the moment, this could be implemented later)
+            hash.remove(DatabaseConstants.SCRIPTS);
+            hash.remove(DatabaseConstants.LINKS);
+            return hash;
+        }catch(NoSuchFieldException e){
+            throw new SerializationException("Could not transform " + EntityTemplate.class.getName() + " into hash.", e);
+        }
     }
 
     //___________OVERRIDE OF OBJECT_____________//

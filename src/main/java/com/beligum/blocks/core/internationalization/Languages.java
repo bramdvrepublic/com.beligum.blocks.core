@@ -182,7 +182,7 @@ public class Languages
             }
             //relative urls are first turned into absolute one's
             else{
-                url = new URL(new URL(BlocksConfig.getSiteDomain()), uri.toString());
+                url = new URL(BlocksConfig.getSiteDomainUrl(), uri.toString());
                 isAbsolute = false;
                 startsWithSlash = urlString.startsWith("/");
                 if(!isAbsolute && !startsWithSlash){

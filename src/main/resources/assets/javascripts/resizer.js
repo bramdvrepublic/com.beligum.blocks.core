@@ -12,14 +12,13 @@
  *
  * */
 
-blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broadcaster", "blocks.core.Constants", "blocks.core.DomManipulation", "blocks.core.Overlay", function (Elements, Broadcaster, Constants, DOM, Overlay) {
+blocks.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "blocks.core.Constants", "blocks.core.DomManipulation", "blocks.core.BlockMenu", function (Broadcaster, Constants, DOM, BlockMenu) {
     var Resizer = this;
     var active = false;
     var draggingEnabled = false;
     var dragging = false;
     var dragColumns;
     var currentDragColumn;
-    var resizeHandleElement;
     var activeResizeHandle;
     var minColumn;
     var maxColumn;
@@ -37,59 +36,11 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
 
 
 
-    // Check if a handle exists in the dom and if not, add 1
-    var checkIfHandleElementExists = function () {
-        if (resizeHandleElement == null) {
-            $("." + Constants.COLUMN_RESIZER_CLASS).remove();
-            resizeHandleElement = $("<div/>").addClass(Constants.COLUMN_RESIZER_CLASS);
-            resizeHandleElement.css("z-index", (Overlay.maxIndex() + 1));
-            $("html").append(resizeHandleElement);
-        }
-    };
-
-    // show the handle at the correct position
-    var showHandleElement = function (surface) {
-
-    };
-
     // update the position of the handle element in the dom
     var moveHandleElement = function () {
-//        checkIfHandleElementExists();
-//        activeResizeHandle.updateSurface();
-//        resizeHandleElement.css('left', activeResizeHandle.drawSurface.left);
+
     };
 
-    // remove the handle from the dom
-    var removeHandleElement = function () {
-        if (resizeHandleElement != null) {
-            $("." + Constants.COLUMN_RESIZER_CLASS).remove();
-            resizeHandleElement = null;
-        }
-    };
-
-    /*
-     * return the current resizehandle that we are hoovering over
-     * */
-    var findActiveResizeHandle = function(blockEvent) {
-        var retVal = null;
-        if (activeResizeHandle != null) {
-            if (activeResizeHandle.top <=  blockEvent.pageY && activeResizeHandle.bottom >= blockEvent.pageY &&
-                activeResizeHandle.left <= blockEvent.pageX && activeResizeHandle.right >= blockEvent.pageX) {
-                retVal =  activeResizeHandle;
-            }
-        } else if (blockEvent.block.current != null) {
-            // find the first parent that is a row (but not a block)
-            var activeRow = blockEvent.block.current.parent;
-            while (!(activeRow instanceof blocks.elements.Row || activeRow instanceof blocks.elements.Container ||activeRow == null)) {
-                activeRow = activeRow.parent
-            }
-
-            if (activeRow != null && activeRow instanceof blocks.elements.Row) {
-                retVal = activeRow.findTriggeredResizeHandle(blockEvent.pageX, blockEvent.pageY, blocks.elements.ResizeHandle);
-            }
-        }
-        return retVal;
-    };
 
 
     var activeRowElement = null;
@@ -103,41 +54,7 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
         }
     };
 
-    var activeResizehandleChanged = function (blocksEvent) {
-        var retVal = false;
-        var newResizeHandle = findActiveResizeHandle(blocksEvent);
-        if (activeResizeHandle != newResizeHandle) {
-            if (activeResizeHandle != null) {
-                removeHandleElement();
-                setCursor(false);
-            }
 
-            activeResizeHandle = newResizeHandle;
-
-            retVal = true;
-        }
-        return retVal;
-    }
-    /*
-     * Checks if the mouse hoovers over a handle and allows or disallows dragging
-     * */
-    this.manageActiveResizeHandle = function (blocksEvent) {
-        if (activeResizehandleChanged(blocksEvent)) {
-            if (activeResizeHandle != null && !draggingEnabled) {
-                Broadcaster.send(Broadcaster.EVENTS.DISABLE_BLOCK_DRAG);
-                draggingEnabled = true;
-                var col = activeResizeHandle.leftColumn || activeResizeHandle.rightColumn;
-
-                setCursor(false);
-                activeRowElement = col.parent.element;
-                setCursor(true);
-                showHandleElement(activeResizeHandle.drawSurface);
-            }  else if (activeResizeHandle == null && draggingEnabled) {
-                Broadcaster.send(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG);
-                draggingEnabled = false;
-            }
-        }
-    };
 
 
     /*
@@ -145,16 +62,26 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
      * show dragHandle
      * init triggerpoints to resize our column (initdrag)
      * */
-    this.startDrag = function (blocksEvent) {
-        if (active && draggingEnabled) {
-            $(document).on("mousemove.resizehandledrag", function (event) {
-                doDrag(event)
-            });
-            showHandleElement(activeResizeHandle.drawSurface);
-            initDrag(activeResizeHandle);
-            activeRowElement.find("*").addClass(Constants.RESIZING_CLASS);
-            dragging = true;
-        }
+    this.startDrag = function (handle) {
+        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+        BlockMenu.hideMenu();
+        activeResizeHandle = handle;
+        DOM.disableSelection();
+        $("." + Constants.BLOCK_OVERLAY_CLASS).hide();
+        $("." + Constants.PROPERTY_OVERLAY_CLASS).hide();
+        $("body").addClass(Constants.FORCE_RESIZE_CURSOR);
+
+        draggingEnabled = true;
+        setCursor(false);
+        activeRowElement = handle.leftColumn.parent.element;
+        setCursor(true);
+        $(document).on("mousemove.resizehandledrag", function (event) {
+            doDrag(event)
+        });
+
+        initDrag(activeResizeHandle);
+        dragging = true;
+
     };
 
     /*
@@ -162,13 +89,12 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
      * remove handle
      * send DOM_DID_CHANGE EVENT
      * */
-    this.endDrag = function (blocksEvent) {
-        if (active && dragging) {
+    this.endDrag = function (handle) {
+        if (dragging) {
             dragging = false;
-            $(document).off("mousemove.resizehandledrag");
-            removeHandleElement();
-            activeRowElement.find("*").removeClass(Constants.RESIZING_CLASS);
+            $("body").removeClass(Constants.FORCE_RESIZE_CURSOR);
             Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
+            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
         }
     };
 
@@ -223,8 +149,6 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
         var offsetRight = currentPosition + widthRightColumn;
 
 
-
-
         // min and max column that we can drag to
         // we can drag until the outer (left or right) column is 1 unit wide
         var min = offsetLeft + 1;
@@ -257,7 +181,7 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
     var checkDrag = function (event) {
         var curCol = dragColumns[currentDragColumn];
         if (curCol != null && (event.pageX > curCol.start && event.pageX < curCol.end) ) {
-            Logger.debug("No column change");
+            //Logger.debug("No column change");
             return;
         }
 
@@ -284,7 +208,7 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Elements", "blocks.core.Broad
 
                 }
                 // move resizehandle
-                moveHandleElement();
+                activeResizeHandle.update();
                 break;
             }
         }

@@ -139,10 +139,10 @@ public class RedisDatabase implements Database<AbstractTemplate>
                 try {
                     if (lastVersion == BlocksID.NO_VERSION || template.getVersion() > lastVersion) {
                         pipelinedSaveTransaction.lpush(template.getUnversionedId(), template.getVersionedId());
-                        //an EntityTemplate should also be saved in a set named after it's entityTemplateClassName
+                        //an EntityTemplate should also be saved in a set named after it's blueprintType
                         if (template instanceof EntityTemplate) {
-                            String entityTemplateClassName = ((EntityTemplate) template).getEntityTemplateClass().getName();
-                            pipelinedSaveTransaction.sadd(BlocksID.getEntityTemplateClassSetId(entityTemplateClassName), template.getUnversionedId());
+                            String blueprintType = ((EntityTemplate) template).getEntityTemplateClass().getName();
+                            pipelinedSaveTransaction.sadd(BlocksID.getBlueprintTypeSetId(blueprintType), template.getUnversionedId());
                         }
                     }
                     else {
@@ -191,14 +191,14 @@ public class RedisDatabase implements Database<AbstractTemplate>
 
     /**
      *
-     * @param entityTemplateClassName
-     * @return all entity-templates of the specified entity-template-class
+     * @param blueprintType
+     * @return all entity-templates of the specified blueprint
      * @throws com.beligum.blocks.core.exceptions.DatabaseException
      */
-    public Set<EntityTemplate> getEntityTemplatesOfClass(String entityTemplateClassName) throws DatabaseException
+    public Set<EntityTemplate> getEntityTemplatesOfBlueprint(String blueprintType) throws DatabaseException
     {
         try (Jedis redisClient = pool.getResource()){
-            Set<String> entityIds = redisClient.smembers(entityTemplateClassName);
+            Set<String> entityIds = redisClient.smembers(blueprintType);
             Set<EntityTemplate> entities = new HashSet<>();
             //TODO BAS: can we use pipelines (or transactions) here?
             for(String entityId : entityIds){
@@ -207,7 +207,7 @@ public class RedisDatabase implements Database<AbstractTemplate>
             }
             return entities;
         }catch(IDException e){
-            throw new DatabaseException("Could not construct an good id from the entity-template class-name '" + entityTemplateClassName + "'", e);
+            throw new DatabaseException("Could not construct an good id from the entity-template class-name '" + blueprintType + "'", e);
         }
     }
 
@@ -353,7 +353,7 @@ public class RedisDatabase implements Database<AbstractTemplate>
      * @param language the language this new id should use
      * @return a randomly generated entity-id of the form "[site-domain]/[entityClassName]/[randomInt]"
      */
-    public BlocksID renderNewEntityTemplateID(EntityTemplateClass entityTemplateClass, String language) throws IDException
+    public BlocksID renderNewEntityTemplateID(Blueprint blueprint, String language) throws IDException
     {
         try (Jedis redisClient = pool.getResource()){
             Random randomGenerator = new Random();
@@ -363,9 +363,9 @@ public class RedisDatabase implements Database<AbstractTemplate>
                 url += "/" + language;
             }
             else{
-                url += "/" + entityTemplateClass.getLanguage();
+                url += "/" + blueprint.getLanguage();
             }
-            url += "/" + entityTemplateClass.getName() + "/" + positiveNumber;
+            url += "/" + blueprint.getName() + "/" + positiveNumber;
             BlocksID retVal = new BlocksID(new URL(url), BlocksID.NEW_VERSION, false);
             //Check if this entity-id (url) is not already present in db, if so, re-render a random entity-id
             while (redisClient.get(retVal.getUnversionedId()) != null) {
@@ -375,17 +375,17 @@ public class RedisDatabase implements Database<AbstractTemplate>
                     url += "/" + language;
                 }
                 else{
-                    url += "/" + entityTemplateClass.getLanguage();
+                    url += "/" + blueprint.getLanguage();
                 }
-                url += "/" + entityTemplateClass.getName() + "/" + positiveNumber;
+                url += "/" + blueprint.getName() + "/" + positiveNumber;
                 retVal = new BlocksID(new URL(url), BlocksID.NEW_VERSION, false);
             }
             if(!retVal.hasLanguage()){
-                retVal = new BlocksID(retVal, entityTemplateClass.getLanguage());
+                retVal = new BlocksID(retVal, blueprint.getLanguage());
             }
             return retVal;
         }catch(MalformedURLException e){
-            throw new IDException("Cannot render proper id with entity-template-class '" + entityTemplateClass.getName() +" and site-domain '" + BlocksConfig.getSiteDomain() + "'.", e);
+            throw new IDException("Cannot render proper id with blueprint '" + blueprint.getName() +" and site-domain '" + BlocksConfig.getSiteDomain() + "'.", e);
         }
     }
 
@@ -448,7 +448,7 @@ public class RedisDatabase implements Database<AbstractTemplate>
 
     private boolean isOfType(Map<String, String> hash, Class<? extends AbstractTemplate> type){
         if(type.equals(EntityTemplate.class)){
-            return hash.containsKey(DatabaseConstants.ENTITY_TEMPLATE_CLASS_NAME);
+            return hash.containsKey(DatabaseConstants.BLUEPRINT_TYPE);
         }
         else{
             return true;

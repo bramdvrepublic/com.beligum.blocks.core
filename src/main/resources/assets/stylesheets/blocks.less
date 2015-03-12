@@ -1,16 +1,109 @@
 // Overlay when editing and for dialogs
-.blocks-overlay {
+.block-overlay {
   top: 0px;
   left: 0px;
   right: 0px;
   bottom: 0px;
-  position: fixed;
+  position: absolute;
+  border: 1px dotted rgba(100, 100, 100, 0.8);
+
+  &.left {
+    border-left: none;
+  }
+
+  &.top {
+    border-top: none;
+  }
+
+  &.block-hover {
+//    border-bottom: 3px solid rgba(66, 66, 66, 0.8);
+//    border-right: 3px solid rgba(66, 66, 66, 0.8);
+//    border: 1px solid rgba(0, 0, 0, 0.8);
+//    background-color: rgba(210, 219, 242, 0.3);
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.8);
+    border: none;
+  }
+
+  &.draggable {
+    cursor: move; /* fallback if grab cursor is unsupported */
+    cursor: grab;
+    cursor: -moz-grab;
+    cursor: -webkit-grab;
+  }
 }
 
-// Handle to resize columns
-.column-resize-handle {
-  background-color: #6fc7df;
+.dragged-block-overlay {
+  position: absolute;
+  background-color: rgba(00, 102, 204, 0.5);
 }
+
+
+.property-overlay  {
+  position: absolute;
+  border: 1px dotted rgba(100, 100, 100, 0.8);
+  cursor: text;
+
+
+  &.left {
+    border-left: none;
+  }
+
+  &.top {
+    border-top: none;
+  }
+
+  &.right {
+    border-right: none;
+  }
+
+  &.bottom {
+    border-bottom: none;
+  }
+
+  &.property-hover {
+    border: 1px solid rgba(0, 0, 0, 1);
+  }
+
+  &.property-no-text {
+    cursor: url('/assets/images/blocks/utils/pencil.png'), default;
+  }
+
+}
+
+
+.column-resize-handle {
+  position: absolute;
+  background-color: #d3d3d3;
+  cursor: col-resize;
+}
+
+// Classes for the body that force the cursor in a certain style
+.force-dragging-cursor {
+  cursor: grabbing !important;
+  cursor: -moz-grabbing !important;
+  cursor: -webkit-grabbing !important;
+}
+
+body.force-col-resize-cursor, body.force-col-resize-cursor *  {
+  cursor: col-resize !important;
+}
+
+// Class put when a property is content-editable and active
+// so when cvan set the outline we want for this property
+.property-edit {
+  outline: 1px dotted rgba(100, 100, 100, 0.8);
+}
+
+.canvas {
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  top: 0px;
+  bottom: 0px;
+  width: 100%;
+  height: 100%;
+}
+
 
 .not-visible {
   opacity: 0.2;
@@ -21,40 +114,6 @@
   filter: blur(5px) grayscale(1);
 }
 
-//// Hover with mouse over block
-//.block-hover {
-//  position:absolute;
-//  border-style: dashed;
-//  border-color: rgba(0, 0, 0, 0.8);
-//  border-width: 0px;
-//
-//  &.not-visible {
-//    opacity: 1;
-//    -webkit-filter: none;
-////    -moz-filter: blur(5px);
-////    -o-filter: blur(5px); -ms-filter: blur(5px); filter: blur(5px);
-//  }
-//
-//  &.left {
-//    width: 0px;
-//    border-left-width: 1px;
-//  }
-//
-//  &.right {
-//    width: 0px;
-//    border-right-width: 1px;
-//  }
-//
-//  &.top {
-//    height: 0px;
-//    border-top-width: 1px;
-//  }
-//
-//  &.bottom {
-//    heigh: 0px;
-//    border-bottom-width: 1px;
-//  }
-//}
 
 
 .blocks-selected-block {
@@ -72,15 +131,6 @@
 }
 
 
-.property-hover, .property-edit {
-  outline: 1px dotted rgba(99,99,99, 0.8);
-  cursor: text;
-
-}
-
-.block-hover {
-  outline: 1px dashed rgba(99,99,99, 0.8);
-}
 
 iframe {
   pointer-events: none;
@@ -104,20 +154,6 @@ iframe.cke_panel_frame  {
   padding: 10px 10px;
 }
 
-//.admin-animation-front {
-//  -webkit-transform: translateZ(50px);
-//  transform: translateZ(50px);
-//}
-//
-//.admin-animation-back {
-//  -webkit-transform: rotateX(-90deg) translateZ(-50px);
-//  transform: rotateX(-90deg) translateZ(-50px);
-//}
-//
-//.admin-flipped {
-//  -webkit-transform: rotateX(89deg);
-//  transform: rotateX(89deg);
-//}
 
 // used to flip to backend
 .flip {
@@ -127,39 +163,25 @@ iframe.cke_panel_frame  {
 }
 
 
-.modal-centered {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  width: 650px;
-  height: 240px;
-//  border: 1px solid #787878;
-}
-
 .blocks-resizing {
   cursor: col-resize;
 }
 
-// grijze vlakken die over de blocken waarnaast gedropt zal worden, wordt gelegd.
-.blocks-dropspot {
-  background-color: rgba(119, 119, 119, 0.5);
-}
+//// grijze vlakken die over de blocken waarnaast gedropt zal worden, wordt gelegd.
+//.blocks-dropspot {
+//
+//}
+//
+//// locatie container voor de pijl
+//.droppointer-arrow-container {
+//
+//}
+//// De pijltjes tijdens het draggen
+//// font size is automatisch!
+//.droppointer-arrow {
+//  color: deepskyblue;
+//}
 
-// locatie container voor de pijl
-.droppointer-arrow-container {
-
-}
-// De pijltjes tijdens het draggen
-// font size is automatisch!
-.droppointer-arrow {
-  color: deepskyblue;
-}
-
-// markering voor het blok dat versleept wordt
-.dragged-block {
-  background: url('/assets/images/blocks/stripe.png');
-//  background-color: red;
-}
 
 // container type btn-group-xs waar alle knopjes inzitten.
 // Wordt gecentreerd
@@ -203,18 +225,36 @@ iframe.cke_panel_frame  {
 
 
 .blocks-main-menu {
+  position: fixed;
+  top: 0px;
   width: 100%;
-  height: 50px;
+  min-height: 40px;
   font-size: 35px;
-  right: 10px;
-  top: 10px;
   z-index: 9999;
-  background-color: lightseagreen;
+  background-color: grey;
   display: none;
+  padding: 10px;
+
   a {
     margin-left: 10px !important;
-    margin-top: 10px;
+
   }
+
+  .drag-block-container {
+    width: 300px;
+    font-size: 12px;
+    margin-left: auto;
+    margin-right: auto;
+
+    .drag-block-text {
+      width: 100px;
+      height: 40px;
+      background-image: url("/assets/images/blocks/utils/Text-Button.svg");
+      background-position: left;
+      background-size: contain;
+    }
+  }
+
   .main-menu-items {
 
   }
@@ -227,11 +267,12 @@ iframe.cke_panel_frame  {
 
 
 .blocks-main-edit-button {
-  position: absolute;
+  position: fixed;
   font-size: 40px;
   right: 0px;
   top: 0px;
   cursor: pointer;
+  z-index: 10000;
 }
 
 .sitemap-list{

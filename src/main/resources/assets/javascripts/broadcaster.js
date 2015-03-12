@@ -190,6 +190,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         if (currentField != null) {
             var bb = currentField.findActiveElement(x, y);
             if (bb instanceof blocks.elements.Block || bb instanceof blocks.elements.Property) {
+                //Logger.debug("staying in same block");
                 fields.current = bb;
             }
         }
@@ -253,7 +254,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         }
 
         if (Broadcaster.active) {
-        Logger.debug(eventName);
+        //Logger.debug(eventName);
             var e = $.Event(eventName);
             e.pageX = lastMoveEvent.pageX;
             e.pageY = lastMoveEvent.pageY;
@@ -285,10 +286,6 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
             element.triggerHandler(e);
         }
     };
-
-
-
-
 
     /*
      * Container is the block IN which we are dragging.
@@ -329,6 +326,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
         layoutTree = new blocks.elements.Container( $("body"), null);
         Broadcaster.resetHover();
         lastMoveEvent.block = Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
+        Logger.debug(layoutTree);
     };
 
     // We set the current block as the new container
@@ -341,6 +339,7 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
 
 
                 layoutTree = current.getContainer();
+                var elements = layoutTree.findElements(0,0);
                 oldContainerParent = layoutTree.parent;
                 layoutTree.parent = null;
             }
@@ -355,24 +354,11 @@ blocks.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.
             layoutTree = oldLayoutTree;
             oldLayoutTree = null;
         }
+
     };
 
 
-    // On Boot
-    var resizeTimeout = null
-    $(window).on("resize.blocks_broadcaster", function () {
 
-        if (resizeTimeout != null) {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = null;
-            Logger.debug("timeout cleared")
-        } else {
-            Logger.debug("timeout not cleared")
-        }
-        var layoutContainer = Broadcaster.getContainer() == null ? null : Broadcaster.getContainer().element;
-        resizeTimeout = setTimeout(function(){ Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, layoutContainer);}, 200);
-
-    });
 
 
     this.EVENTS = {};

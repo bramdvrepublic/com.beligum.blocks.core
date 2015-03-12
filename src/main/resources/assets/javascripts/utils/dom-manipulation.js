@@ -443,6 +443,24 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
         return blockElement;
     };
 
+    // http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
+    this.disableSelection = function() {
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        var html = $("html");
+        html.addClass("no-select");
+        window.ondragstart = function() {return false;};
+
+    };
+
+    this.enableSelection = function() {
+        //http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
+        var html = $("html");
+        html.removeClass("no-select");
+        window.ondragstart = function() {return true;};
+
+    };
+
     var DOM = this;
 
 

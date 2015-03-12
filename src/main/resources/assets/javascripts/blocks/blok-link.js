@@ -4,7 +4,7 @@
  * Test for plugin. Edit a MOT block link
  */
 
-blocks.plugin("blocks.core.bloklink", ["blocks.core.Admin", "blocks.core.Sitemap", function(Admin, Sitemap) {
+blocks.plugin("blocks.core.bloklink", ["blocks.core.Edit", "blocks.core.Broadcaster", "blocks.core.Sitemap",  function(Edit, Broadcaster, Sitemap) {
 
     /*
     * The content for the dialog: for testing written in jquery
@@ -36,45 +36,54 @@ blocks.plugin("blocks.core.bloklink", ["blocks.core.Admin", "blocks.core.Sitemap
         Sitemap.urlsModal();
     });
 
+
+
+    var doEditBlockLink = function(blockEvent) {
+        BootstrapDialog.show({
+            title: "Change Link Block",
+            message: dialogContent,
+            buttons: [
+                {id: 'btn-close',
+                    label: 'Cancel',
+                    action: function(dialogRef){
+                        Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
+                        dialogRef.close();
+                    }},
+                {
+                    id: 'btn-ok',
+                    icon: 'glyphicon glyphicon-check',
+                    label: 'Ok',
+                    cssClass: 'btn-primary',
+                    action: function(dialogRef){
+                        var block = blockEvent.block.current;
+                        var color = dialogRef.$modalBody.find("#colorselect").val();
+                        var el = block.element.find(".square-inner");
+                        el.removeClass("bgblue");
+                        el.removeClass("bgbrown");
+                        el.removeClass("bgdarkblue");
+                        el.removeClass("bggreen");
+                        el.removeClass("bgorange");
+                        el.removeClass("bgred");
+                        el.addClass(color);
+
+
+                        var a = block.element.children("a").first();
+                        var url = dialogRef.$modalBody.find("#linkurl").val();
+                        a.attr("href", url);
+                        Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
+                        dialogRef.close();
+                    }
+
+                }]
+        })
+    };
+
     /*
     * We register for editing. When clicked in the blocksmenu our dialog will be shown (element),
     * when clicked ok in the dialog our callback is called.
     * enabled checks if we want to edit this block. This is used by the dispatcher to call our plugin for the right block
     * */
-    Admin.register(
-        {
-            enabled: function(block) {
-                var retVal = (block.element.attr("typeof") == "exhibition") || (block.element.attr("typeof") == "experience") || (block.element.attr("typeof") == "bordered-link");
-                if (retVal) {
-                    var a = block.element.children("a").first();
-                    var link = a.attr("href");
-                    var input = dialogContent.find("#linkurl");
-                    input.val(link);
-                }
-                return retVal;
-            },
+    Edit.registerByType("exhibition", doEditBlockLink);
 
-            callback: function(block, element, content) {
-                var color = content.find("#colorselect").val();
-                var el = block.element.find(".square-inner");
-                el.removeClass("bgblue");
-                el.removeClass("bgbrown");
-                el.removeClass("bgdarkblue");
-                el.removeClass("bggreen");
-                el.removeClass("bgorange");
-                el.removeClass("bgred");
-                el.addClass(color);
-
-                var a = block.element.children("a").first();
-                var url = content.find("#linkurl").val();
-                a.attr("href", url);
-
-            },
-            element: function() {
-                return dialogContent
-            },
-            title: "Kies de kleur van de blok"
-        }
-    );
 
 }]);
