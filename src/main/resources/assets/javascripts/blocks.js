@@ -124,7 +124,7 @@ function blocksLoader(window) {
                         _serviceInstances[service.dependencies[i]] = instantiateService(_serviceDefinitions[service.dependencies[i]])
                         instantiatedDependencies.push(_serviceInstances[service.dependencies[i]]);
                     } else {
-                        throw Logger.error("Could not instantiate service: Service not found");
+                        throw Logger.error("Could not instantiate service: Service not found " + service.dependencies[i]);
                     }
                 }
             }
