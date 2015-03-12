@@ -59,8 +59,9 @@ public class TranslationList implements DynamicBlockListener
             rootElement.empty();
             rootElement.appendChild(listRoot);
             return rootElement;
-        }catch(Exception e){
-            throw new ParseException("Could not generate a translation-block at \n \n" + rootElement + "\n \n", e);
+        }
+        catch(Exception e){
+            throw new ParseException("Could not generate a translation-block.", e, rootElement);
         }
     }
 
@@ -68,7 +69,7 @@ public class TranslationList implements DynamicBlockListener
         return element;
     }
 
-    public String getTypeOf(){
+    public String getType(){
         return ParserConstants.DynamicBlocks.TRANSLATION_LIST;
     }
 

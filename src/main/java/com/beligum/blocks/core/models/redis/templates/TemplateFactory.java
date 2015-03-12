@@ -20,15 +20,15 @@ public class TemplateFactory
     public static AbstractTemplate createInstanceFromHash(BlocksID id, Map<String, String> hash, Class<? extends AbstractTemplate> type) throws DeserializationException
     {
         if(type.equals(EntityTemplate.class)){
-            if(hash.containsKey(DatabaseConstants.ENTITY_TEMPLATE_CLASS_NAME)) {
+            if(hash.containsKey(DatabaseConstants.BLUEPRINT_TYPE)) {
                 return EntityTemplate.createInstanceFromHash(id, hash);
             }
             else{
                 return null;
             }
         }
-        else if(type.equals(EntityTemplateClass.class)){
-            return EntityTemplateClass.createInstanceFromHash(id, hash);
+        else if(type.equals(Blueprint.class)){
+            return Blueprint.createInstanceFromHash(id, hash);
         }
         else if(type.equals(PageTemplate.class)){
             return PageTemplate.createInstanceFromHash(id, hash);

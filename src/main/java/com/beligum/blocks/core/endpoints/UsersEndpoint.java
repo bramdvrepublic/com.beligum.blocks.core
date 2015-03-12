@@ -28,7 +28,6 @@ import org.apache.shiro.authz.UnauthorizedException;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.apache.shiro.authz.annotation.RequiresUser;
-import org.glassfish.jersey.server.internal.inject.ConfiguredValidator;
 
 import javax.naming.AuthenticationException;
 import javax.persistence.EntityManager;
@@ -37,7 +36,6 @@ import javax.validation.Valid;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.validation.Validator;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
@@ -474,7 +472,7 @@ public class UsersEndpoint
     private boolean sendChangeEmailEmail(Person person) throws EmailException
     {
         try {
-            Template emailTemplate = R.templateEngine().getEmptyTemplate("views/emails/changeemail.html");
+            Template emailTemplate = R.templateEngine().getEmptyTemplate("views/emails/changeemail.vm");
             emailTemplate.set("emailMessage",
                               //start email message
                               person.getFirstName() + " " + person.getLastName() + " has requested to change " +

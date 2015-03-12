@@ -414,7 +414,6 @@ public class XMLUrlIdMapper implements UrlIdMapper
     public BlocksID getLastId(URL url) throws UrlIdMappingException
     {
         try{
-            //TODO BAS SH: we willen een sitemap viewable maken en daar kun je dan urls aanpassen, vertalen of verplaatsen (kan dat in 1 methode?)
             BlocksID retVal = null;
             Iterator<XMLUrlIdMapper> it = this.cachedMapperVersions.iterator();
             while(retVal == null && it.hasNext()){
@@ -498,7 +497,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
                 }
                 i++;
             }
-            url = new URL(new URL(BlocksConfig.getSiteDomain()), urlPath);
+            url = new URL(BlocksConfig.getSiteDomainUrl(), urlPath);
         }
         url = new URL(Languages.translateUrl(url.toString(), language)[0]);
         SiteMapNode retVal = new SiteMapNode(url, hasEntity);

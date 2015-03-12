@@ -12,8 +12,8 @@
             <input type="hidden" name="page-url" value="$entityUrl"/>
             <div class="col-md-2">
                 <select name="page-class-name" id="class-selection" class="form-control">
-                    #foreach($entityClass in $entityClasses)
-                        <option value="$entityClass.getName()">$!entityClass.getName()</option>
+                    #foreach($blueprint in $blueprints)
+                        <option value="$blueprint.getName()">$!blueprint.getName()</option>
                     #end
                 </select>
             </div>

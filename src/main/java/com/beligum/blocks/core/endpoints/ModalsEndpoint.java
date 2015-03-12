@@ -1,18 +1,17 @@
 package com.beligum.blocks.core.endpoints;
 
-import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.CacheException;
+import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.templating.ifaces.Template;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 import java.net.MalformedURLException;
@@ -61,10 +60,10 @@ public class ModalsEndpoint
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
     public Response getNewPageModal(
                     @QueryParam("entityurl")
-                    String entityUrl) throws MalformedURLException, CacheException
+                    String entityUrl) throws Exception
     {
         Template template = R.templateEngine().getEmptyTemplate("/views/modals/" + NEW_PAGE_MODAL);
-        template.set("entityClasses", EntityTemplateClassCache.getInstance().getPageClasses());
+        template.set("entityClasses", BlueprintsCache.getInstance().getPageClasses());
         template.set("entityUrl", entityUrl);
         return Response.ok(template.render()).build();
     }

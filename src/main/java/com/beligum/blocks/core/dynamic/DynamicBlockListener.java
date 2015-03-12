@@ -28,9 +28,9 @@ public interface DynamicBlockListener
     public Element onSave(Element element) throws ParseException;
 
     /**
-     * Get the typeof corresponding to this dynamic block
+     * Get the blueprint type corresponding to this dynamic block
      */
-    public String getTypeOf();
+    public String getType();
 
     /**
      *

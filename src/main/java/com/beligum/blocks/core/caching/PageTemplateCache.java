@@ -4,6 +4,7 @@ import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
+import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
@@ -34,43 +35,38 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
      * @return a singleton instance of PageClassCache
      * @throws NullPointerException if no application cache could be found
      */
-    synchronized public static PageTemplateCache getInstance() throws CacheException
+    synchronized public static PageTemplateCache getInstance() throws Exception
     {
-        try {
-            if (instance == null) {
-                //if the application-cache doesn't exist, throw exception, else instantiate the application's page-cache with a new empty hashmap
-                if (R.cacheManager() != null && R.cacheManager().getApplicationCache() != null) {R.cacheManager().getApplicationCache().put(CacheKeys.PAGE_TEMPLATES, new HashMap<String, PageTemplate>());
-                    instance = new PageTemplateCache();
-                    //insert the most basic possible page-template, for fall-back reasons: uses bootstrap
-                    List<String> links = new ArrayList<>();
-                    List<String> scripts = new ArrayList<>();
-                    links.add("<link href=\"" + BlocksConfig.BOOSTRAP_CSS_FILEPATH + "\" rel=\"stylesheet\" />");
-                    scripts.add("<script src=\"" + BlocksConfig.BOOTSTRAP_JS_FILEPATH + "\"></script>");
-                    //Note: do not remove the comment-tag in the definition of the default page-template. The head should not be empty, if not exceptions will occur when parsing it.
-                    PageTemplate pageTemplate = new PageTemplate(instance.getDefaultTemplateName(), BlocksConfig.getDefaultLanguage(), "<!DOCTYPE html>\n" +
-                                                                                                    "<html>\n" +
-                                                                                                    "<head>\n" +
-                                                                                                    "<!--This is a rendered default page-template. If you want to use another page-template, you should overwrite it (template=\"default\").-->\n" +
-                                                                                                    "</head>\n" +
-                                                                                                    "<body>\n" +
-                                                                                                    "<div class=\"container\">\n" +
-                                                                                                    //default referencing div
-                                                                                                    "<div " + ParserConstants.PAGE_TEMPLATE_CONTENT_ATTR + "=\"\" " + ParserConstants.REFERENCE_TO + "=\""+ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME + "\"></div>\n" +
-                                                                                                    "</div>\n" +
-                                                                                                    "</body>\n" +
-                                                                                                    "</html>\n", links, scripts);
-                    instance.getCache().put(instance.getTemplateKey(instance.getDefaultTemplateName()), pageTemplate);
-                    instance.fillCache();
-                }
-                else {
-                    throw new NullPointerException("No application-cache found.");
-                }
+        if (instance == null) {
+            //if the application-cache doesn't exist, throw exception, else instantiate the application's page-cache with a new empty hashmap
+            if (R.cacheManager() != null && R.cacheManager().getApplicationCache() != null) {R.cacheManager().getApplicationCache().put(CacheKeys.PAGE_TEMPLATES, new HashMap<String, PageTemplate>());
+                instance = new PageTemplateCache();
+                //insert the most basic possible page-template, for fall-back reasons: uses bootstrap
+                List<String> links = new ArrayList<>();
+                List<String> scripts = new ArrayList<>();
+                links.add("<link href=\"" + BlocksConfig.BOOSTRAP_CSS_FILEPATH + "\" rel=\"stylesheet\" />");
+                scripts.add("<script src=\"" + BlocksConfig.BOOTSTRAP_JS_FILEPATH + "\"></script>");
+                //Note: do not remove the comment-tag in the definition of the default page-template. The head should not be empty, if not exceptions will occur when parsing it.
+                PageTemplate pageTemplate = new PageTemplate(instance.getDefaultTemplateName(), BlocksConfig.getDefaultLanguage(), "<!DOCTYPE html>\n" +
+                                                                                                                                   "<html>\n" +
+                                                                                                                                   "<head>\n" +
+                                                                                                                                   "<!--This is a rendered default page-template. If you want to use another page-template, you should overwrite it (template=\"default\").-->\n" +
+                                                                                                                                   "</head>\n" +
+                                                                                                                                   "<body>\n" +
+                                                                                                                                   "<div class=\"container\">\n" +
+                                                                                                                                   //default referencing div
+                                                                                                                                   "<div " + ParserConstants.PAGE_TEMPLATE_CONTENT_ATTR + "=\"\" " + ParserConstants.REFERENCE_TO + "=\""+ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME + "\"></div>\n" +
+                                                                                                                                   "</div>\n" +
+                                                                                                                                   "</body>\n" +
+                                                                                                                                   "</html>\n", links, scripts);
+                instance.getCache().put(instance.getTemplateKey(instance.getDefaultTemplateName()), pageTemplate);
+                instance.fillCache();
             }
-            return instance;
+            else {
+                throw new NullPointerException("No application-cache found.");
+            }
         }
-        catch(Exception e){
-            throw new CacheException("Couldn't initialize page-template-cache.", e);
-        }
+        return instance;
     }
 
     /**

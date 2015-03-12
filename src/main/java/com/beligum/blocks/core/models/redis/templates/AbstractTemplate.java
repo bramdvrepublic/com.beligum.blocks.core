@@ -4,10 +4,7 @@ import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.dbs.Database;
 import com.beligum.blocks.core.dbs.RedisDatabase;
-import com.beligum.blocks.core.exceptions.CacheException;
-import com.beligum.blocks.core.exceptions.DeserializationException;
-import com.beligum.blocks.core.exceptions.IDException;
-import com.beligum.blocks.core.exceptions.SerializationException;
+import com.beligum.blocks.core.exceptions.*;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.Storable;
@@ -18,6 +15,8 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.jsoup.nodes.Element;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by bas on 05.11.14.
@@ -32,6 +31,8 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
     /**the scripts this abstract template needs*/
     protected Set<String> scripts = new HashSet<>();
     protected List<String> scriptsInOrder = new ArrayList<>();
+
+    protected Map<String, EntityTemplate> properties = new HashMap<>();
 
 
     /**
@@ -82,12 +83,12 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
         this.templates.put(id, template);
     }
 
-    public List<String> getScripts() throws CacheException
+    public List<String> getScripts() throws Exception
     {
         return scriptsInOrder;
     }
 
-    public List<String> getLinks() throws CacheException
+    public List<String> getLinks() throws Exception
     {
         return linksInOrder;
     }
@@ -134,7 +135,7 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
      * @return the template in the language specified by this template's id, or if this language is not present, the first preferred language is returned
      */
     public String getTemplate(){
-        String template = this.templates.get(this.getLanguage());
+        String template = this.getTemplate(this.getLanguage());
         if(template == null){
             String[] preferredLanguages = BlocksConfig.getLanguages();
             int i = 0;
@@ -203,6 +204,31 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
      */
     abstract public String getName();
 
+    public Map<String, EntityTemplate> getProperties()
+    {
+        return properties;
+    }
+    public void setProperties(Map<String, EntityTemplate> properties)
+    {
+        this.properties = properties;
+    }
+    public void setProperty(String property, EntityTemplate resource){
+        if(!StringUtils.isEmpty(property)) {
+            if (properties.containsKey(property)) {
+                Pattern regularExpression = Pattern.compile(property + "/[0-9]+");
+                Set<String> propertyKeys = properties.keySet();
+                int numberOfEqualProperties = 1;
+                for (String propertyKey : propertyKeys) {
+                    Matcher propertyKeyMatcher = regularExpression.matcher(propertyKey);
+                    if (propertyKeyMatcher.matches()){
+                        numberOfEqualProperties++;
+                    }
+                }
+                property = property + "/" + numberOfEqualProperties;
+            }
+            properties.put(property, resource);
+        }
+    }
 
     /**
      * Gives a hash-representation of this storable to save to the db. This method decides what information is stored in db, and what is not.
@@ -218,12 +244,12 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
              * The templates are separately saved per language, not under the key "templates".
              * Links and scripts field should only be saved when present.
              */
-            hash.remove("id");
-            hash.remove("templates");
-            hash.remove("links");
-            hash.remove("linksInOrder");
-            hash.remove("scripts");
-            hash.remove("scriptsInOrder");
+            hash.remove(Storable.class.getDeclaredField("id").getName());
+            hash.remove(AbstractTemplate.class.getDeclaredField("templates").getName());
+            hash.remove(AbstractTemplate.class.getDeclaredField("links").getName());
+            hash.remove(AbstractTemplate.class.getDeclaredField("linksInOrder").getName());
+            hash.remove(AbstractTemplate.class.getDeclaredField("scripts").getName());
+            hash.remove(AbstractTemplate.class.getDeclaredField("scriptsInOrder").getName());
             for (BlocksID languageId : this.templates.keySet()) {
                 hash.put(languageId.getLanguage(), languageId.toString());
             }

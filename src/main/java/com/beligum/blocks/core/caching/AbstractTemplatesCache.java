@@ -5,6 +5,7 @@ import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
+import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
@@ -65,17 +66,22 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                 if (template != null) {
                     return template;
                 }
-                else {
-                    //TODO BAS: if this is null, check Redis for last version
-                    return applicationCache.get(getTemplateKey(getDefaultTemplateName()));
+                else{
+                    BlocksID id = new BlocksID(this.getTemplateKey(name), BlocksID.NO_VERSION, BlocksID.NO_LANGUAGE);
+                    template = (T) RedisDatabase.getInstance().fetchLastVersion(id, this.getCachedClass());
+                    if(template!=null) {
+                        return template;
+                    }
+                    else{
+                        return applicationCache.get(getTemplateKey(getDefaultTemplateName()));
+                    }
                 }
             }
             else {
                 return this.getCache().get(getTemplateKey(getDefaultTemplateName()));
             }
-        }
-        catch (IDException e) {
-            throw new CacheException("Could not get " + PageTemplate.class.getSimpleName() + " '" + name + "' from cache.", e);
+        }catch(Exception e){
+            throw new CacheException("Could not get "+ PageTemplate.class.getSimpleName() + " '" + name + "' from cache.", e);
         }
     }
 
@@ -92,8 +98,8 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             if (template == null) {
                 return false;
             }
-            //TODO BAS: when adding possibility to parse multiple entity-class-languages from file to cache, multiple languages should be able to be added. This class should have the functionality to put two different languages together in one entity-template-class
-            if (!getCache().containsKey(template.getUnversionedId())) {
+            //TODO BAS: when adding possibility to parse multiple entity-class-languages from file to cache, multiple languages should be able to be added. This class should have the functionality to put two different languages together in one blueprint
+            if(!getCache().containsKey(template.getUnversionedId())) {
                 AbstractTemplate storedTemplate = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(template.getId(), this.getCachedClass());
                 if (storedTemplate == null) {
                     RedisDatabase.getInstance().create(template);
@@ -103,6 +109,8 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                 }
                 else {
                     //if this template was already stored in db, we should cache the db-version, since it has the correct time-stamp
+                    //TODO: properties should be read from db, for now we use the found properties
+                    storedTemplate.setProperties(template.getProperties());
                     template = (T) storedTemplate;
                 }
                 getCache().put(template.getUnversionedId(), template);
@@ -173,7 +181,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
      *
      * @throws com.beligum.blocks.core.exceptions.CacheException
      */
-    protected void fillCache() throws CacheException
+    protected void fillCache() throws Exception
     {
         if (!runningTroughHtmlTemplates) {
             runningTroughHtmlTemplates = true;
@@ -208,7 +216,10 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                                         TemplateParser.findTemplatesFromFile(html, foundTemplates, foundEntityClassNames);
                                     }
                                     catch (ParseException e) {
-                                        Logger.error("Parse error while fetching page-templates and blueprints from file '" + filePath + "'.", e);
+                                        String errorMessage = "Parse error while fetching page-templates and blueprints from file '" + filePath + "': \n";
+                                        errorMessage += e.getMessage();
+                                        Logger.error(errorMessage, e.getCause());
+                                        //TODO: create log file with wrong html and message error
                                     }
                                 }
                                 return FileVisitResult.CONTINUE;

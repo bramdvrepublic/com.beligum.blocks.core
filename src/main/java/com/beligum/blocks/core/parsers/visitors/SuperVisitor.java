@@ -5,8 +5,9 @@ import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
+import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.redis.templates.Blueprint;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.io.IOUtils;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
@@ -27,15 +29,15 @@ import java.util.Stack;
  */
 public class SuperVisitor
 {
-    protected Stack<Node> typeOfStack = new Stack<>();
+    protected Stack<Node> blueprintTypeStack = new Stack<>();
     protected URL parentUrl = null;
     protected URL entityUrl = null;
 
 
     public Node head(Node node, int depth) throws ParseException
     {
-        if (hasTypeOf(node)) {
-            typeOfStack.push(node);
+        if (hasBlueprintType(node)) {
+            blueprintTypeStack.push(node);
         }
         return node;
     }
@@ -43,15 +45,15 @@ public class SuperVisitor
     public Node tail(Node node, int depth) throws ParseException
     {
         try {
-            if (hasTypeOf(node)) {
-                typeOfStack.pop();
-                if (parentUrl == null && typeOfStack.isEmpty() && hasResource(node)) {
+            if (hasBlueprintType(node)) {
+                blueprintTypeStack.pop();
+                if (parentUrl == null && blueprintTypeStack.isEmpty() && hasResource(node)) {
                     parentUrl = new URL(getResource(node));
                 }
             }
             return node;
         }catch(MalformedURLException e){
-            throw new ParseException("Bad resource found: " + getResource(node), e);
+            throw new ParseException("Bad resource found: " + getResource(node), e, node);
         }
     }
 
@@ -67,9 +69,10 @@ public class SuperVisitor
      *
      * @return the node containing the type of the last typed parent visited
      */
-    protected String getParentType() {
-        if (!this.typeOfStack.empty()) {
-            return getTypeOf(this.typeOfStack.peek());
+    protected String getParentType() throws ParseException
+    {
+        if (!this.blueprintTypeStack.empty()) {
+            return getBlueprintType(this.blueprintTypeStack.peek());
         } else {
             return null;
         }
@@ -80,8 +83,8 @@ public class SuperVisitor
      * @return the last typed parent-node visited
      */
     protected Node getParent(){
-        if(!this.typeOfStack.empty()){
-            return this.typeOfStack.peek();
+        if(!this.blueprintTypeStack.empty()){
+            return this.blueprintTypeStack.peek();
         }
         else{
             return null;
@@ -100,7 +103,8 @@ public class SuperVisitor
         return replaceElementWithReference(element, getPropertyId(element));
     }
 
-    protected Element replaceElementWithEntityReference(Element element, EntityTemplate entity){
+    protected Element replaceElementWithEntityReference(Element element, EntityTemplate entity) throws ParseException
+    {
         if(isEntity(element) && StringUtils.isEmpty(getResource(element))){
             element.attr(ParserConstants.RESOURCE, entity.getUrl().toString());
         }
@@ -133,12 +137,12 @@ public class SuperVisitor
      * @param element
      * @return the replacement-element
      */
-    protected Element replaceNodeWithUseBlueprintTag(Element element){
+    protected Element replaceNodeWithUseBlueprintTag(Element element, String entityClassName){
         if(element!=null){
             Element replacement = new Element(element.tag(), BlocksConfig.getSiteDomain());
             replacement.attributes().addAll(element.attributes());
             replacement.removeAttr(ParserConstants.BLUEPRINT);
-            replacement.attr(ParserConstants.USE_BLUEPRINT, "");
+            replacement.attr(ParserConstants.USE_BLUEPRINT, entityClassName);
             element.replaceWith(replacement);
             return replacement;
         }
@@ -179,12 +183,12 @@ public class SuperVisitor
     public Node includeSource(Element at, Document source) throws IOException, ParseException
     {
         if(source.childNodes().isEmpty()){
-            throw new ParseException("Cannot include an empty file.");
+            throw new ParseException("Cannot include an empty file.", at);
         }
         Node firstChild = source.childNode(0);
         Element parent = at.parent();
         if(parent == null){
-            throw new ParseException("Cannot use an include as a root-node. Found at \n\n" + at + "\n\n");
+            throw new ParseException("Cannot use an include as a root-node.", at);
         }
         int siblingIndex = at.siblingIndex();
         parent.insertChildren(siblingIndex, source.childNodes());
@@ -206,6 +210,15 @@ public class SuperVisitor
             }
             return source;
         }
+    }
+
+    public Node setUseBlueprintType(Node node){
+        String type = node.attr(ParserConstants.BLUEPRINT);
+        node.removeAttr(ParserConstants.BLUEPRINT);
+        if(!StringUtils.isEmpty(type) && !node.hasAttr(ParserConstants.USE_BLUEPRINT)) {
+            node.attr(ParserConstants.USE_BLUEPRINT, type);
+        }
+        return node;
     }
 
 
@@ -241,25 +254,41 @@ public class SuperVisitor
      * @param node
      * @return true if this node is the root node of an entity, false otherwise
      */
-    public boolean isEntity(Node node)
+    public boolean isEntity(Node node) throws ParseException
     {
-        return hasTypeOf(node) || isProperty(node);
+        return hasBlueprintType(node) || isProperty(node);
     }
 
     /**
      *
      * @param node
      * @return true if the specified element has a rdf-"typeof" attribute, false otherwise
+     * @throws com.beligum.blocks.core.exceptions.ParseException if an empty blueprint or use-blueprint attribute was found
      */
-    public boolean hasTypeOf(Node node) {
-        if(node == null){
+    public boolean hasBlueprintType(Node node) throws ParseException
+    {
+        if (node == null) {
             return false;
         }
-        boolean retVal = false;
-        if (node.hasAttr(ParserConstants.TYPE_OF)) {
-            retVal = true;
+        else if(node.hasAttr(ParserConstants.BLUEPRINT)){
+            if (StringUtils.isEmpty(node.attr(ParserConstants.BLUEPRINT))) {
+                throw new ParseException("Found empty blueprint type.", node);
+            }
+            else{
+                return true;
+            }
         }
-        return retVal;
+        else if(node.hasAttr(ParserConstants.USE_BLUEPRINT)){
+            if (StringUtils.isEmpty(node.attr(ParserConstants.USE_BLUEPRINT))) {
+                throw new ParseException("Found empty use-blueprint type.", node);
+            }
+            else{
+                return true;
+            }
+        }
+        else{
+            return false;
+        }
     }
 
     /**
@@ -311,12 +340,17 @@ public class SuperVisitor
      * @param entityNode the root node of an entity
      * @return return the rdf "typeof" value of a node, the default "typeof" if it is a property-node or null if it is not an entity
      */
-    public String getTypeOf(Node entityNode) {
-        if (hasTypeOf(entityNode)) {
-            return entityNode.attr(ParserConstants.TYPE_OF);
+    public String getBlueprintType(Node entityNode) throws ParseException
+    {
+        if (hasBlueprintType(entityNode)) {
+            String retVal =  entityNode.attr(ParserConstants.BLUEPRINT);
+            if(StringUtils.isEmpty(retVal)){
+                retVal = entityNode.attr(ParserConstants.USE_BLUEPRINT);
+            }
+            return retVal;
         }
         else if(isProperty(entityNode)){
-            return ParserConstants.DEFAULT_ENTITY_TEMPLATE_CLASS;
+            return ParserConstants.DEFAULT_BLUEPRINT;
         }
         else{
             return null;
@@ -333,6 +367,44 @@ public class SuperVisitor
             retVal = true;
         }
         return retVal;
+    }
+
+    public boolean hasTypeOf(Node node) throws ParseException
+    {
+        if(node == null){
+            return false;
+        }
+        else if(node.hasAttr(ParserConstants.TYPE_OF)){
+            if(StringUtils.isEmpty(node.attr(ParserConstants.TYPE_OF))){
+                throw new ParseException("Found empty typeof attribute at node", node);
+            }
+            else{
+                return true;
+            }
+        }
+        else{
+            return false;
+        }
+    }
+
+    public String getTypeOf(Node node){
+        if(node == null){
+            return null;
+        }
+        else{
+            return node.attr(ParserConstants.TYPE_OF);
+        }
+    }
+
+    public String getBlueprintCssClass(Node node) throws ParseException
+    {
+        String type = getBlueprintType(node);
+        if(StringUtils.isEmpty(type)){
+            return null;
+        }
+        else{
+            return ParserConstants.CSS_CLASS_PREFIX + type;
+        }
     }
 
     /**
@@ -385,6 +457,19 @@ public class SuperVisitor
     public String getProperty(Node node) {
         if(isProperty(node)) {
             return node.attr(ParserConstants.PROPERTY);
+        }
+        else{
+            return null;
+        }
+    }
+
+    public String getPropertyKey(Node node){
+        if(isProperty(node)){
+            String propertyKey = getProperty(node);
+            if(node.hasAttr(ParserConstants.PROPERTY_NAME)) {
+                propertyKey = propertyKey + "/" + node.attr(ParserConstants.PROPERTY_NAME);
+            }
+            return propertyKey;
         }
         else{
             return null;
@@ -483,7 +568,7 @@ public class SuperVisitor
                     return BlocksID.renderClassPropertyId(parentEntityClassName, propertyValue, getPropertyName(node), BlocksID.NO_LANGUAGE).getUnversionedId();
 
                 }catch(Exception e){
-                    throw new ParseException("Could not render new property-id.", e);
+                    throw new ParseException("Could not render new property-id.", e, node);
                 }
             }
         }
@@ -518,12 +603,28 @@ public class SuperVisitor
         return to;
     }
 
-    public boolean needsBlueprint(Node node){
+    public boolean needsBlueprintCopy(Node node){
         if(node == null){
             return false;
         }
+        else if(!node.hasAttr(ParserConstants.USE_BLUEPRINT)){
+            return false;
+        }
         else{
-            return node.hasAttr(ParserConstants.USE_BLUEPRINT);
+            //empty tags need a blueprint copy, when other elements are already inside the node, no blueprint copy is needed
+            List<Node> childNodes = node.childNodes();
+            if(childNodes.isEmpty()){
+                return true;
+            }
+            else {
+                boolean needsBlueprint = true;
+                int i = 0;
+                while (needsBlueprint && i < childNodes.size()) {
+                    needsBlueprint = !(childNodes.get(i) instanceof Element);
+                    i++;
+                }
+                return needsBlueprint;
+            }
         }
     }
 
@@ -531,12 +632,12 @@ public class SuperVisitor
      *
      * @param node
      * @return the value of the lang-attribute of the node, or the language of the specified entityTemplateClass if no lang-attribute is present,
-     * or the default-language if the entity-template-class doesn't have a language
+     * or the default-language if the blueprint doesn't have a language
      */
-    public String getLanguage(Node node, EntityTemplateClass entityTemplateClass){
+    public String getLanguage(Node node, Blueprint blueprint){
         String language = node.attr(ParserConstants.LANGUAGE);
         if(StringUtils.isEmpty(language)){
-            language = entityTemplateClass != null ? entityTemplateClass.getLanguage() : BlocksConfig.getDefaultLanguage();
+            language = blueprint != null ? blueprint.getLanguage() : BlocksConfig.getDefaultLanguage();
         }
         if(StringUtils.isEmpty(language)){
             language = BlocksConfig.getDefaultLanguage();
