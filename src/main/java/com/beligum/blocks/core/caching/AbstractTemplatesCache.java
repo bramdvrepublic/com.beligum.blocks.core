@@ -296,9 +296,16 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             Path metaInfPath = null;
             Path resourcePath = null;
             if (scheme.equals("jar") || metaInfResourceStr.contains("!")) {
-                String[] array = metaInfResource.getSchemeSpecificPart().split("!");
+                //this is a workaround for this java bug (note: don't know if it will work with later java versions as well)
+                //https://bugs.openjdk.java.net/browse/JDK-8014852
+                //found here: http://stackoverflow.com/questions/9873845/java-7-zip-file-system-provider-doesnt-seem-to-accept-spaces-in-uri
+                if (metaInfResourceStr.contains("%20")) {
+                    metaInfResourceStr = metaInfResourceStr.replaceAll("%20", "%2520");
+                }
 
-                URI fsUri = new URI(scheme, array[0], null);
+                String[] array = metaInfResourceStr.split("!");
+
+                URI fsUri = URI.create(array[0]);
                 FileSystem fileSystem = null;
                 try {
                     fileSystem = FileSystems.getFileSystem(fsUri);
