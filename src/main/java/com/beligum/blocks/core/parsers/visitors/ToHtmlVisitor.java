@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.parsers.visitors;
 
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
-import com.beligum.blocks.core.caching.EntityTemplateClassCache;
+import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
@@ -10,7 +10,7 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplateClass;
+import com.beligum.blocks.core.models.redis.templates.Blueprint;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.dynamic.DynamicBlockListener;
 import com.beligum.blocks.core.dynamic.TranslationList;
@@ -81,7 +81,7 @@ public class ToHtmlVisitor extends SuperVisitor
 
                 if (!StringUtils.isEmpty(getReferencedId(node))) {
                     // We make a distinctions between properties and properties with typeof
-                    if (!hasTypeOf(node)) {
+                    if (!hasBlueprintType(node)) {
                         retVal = getPropertyInstance((Element) retVal);
                     }
                     else {
@@ -94,7 +94,6 @@ public class ToHtmlVisitor extends SuperVisitor
                             retVal.attr(attribute.getKey(), attribute.getValue());
                         }
                     }
-
                     node.replaceWith(retVal);
                 }
                 else {
@@ -108,7 +107,7 @@ public class ToHtmlVisitor extends SuperVisitor
 
         }
         catch(Exception e){
-            throw new ParseException("Error while parsing node '" + node.nodeName() + "' at tree depth '" + depth + "' to html: \n \n " + node + "\n \n", e);
+            throw new ParseException("Error while parsing node '" + node.nodeName() + "' at tree depth '" + depth + "' to html.", e, node);
         }
     }
 
@@ -120,11 +119,11 @@ public class ToHtmlVisitor extends SuperVisitor
             if(isEntity(node) && node instanceof Element) {
                 Element element = (Element) node;
 
-                if (hasTypeOf(node) && isEditable((Element)node)) node.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
+                if (hasBlueprintType(node) && isEditable((Element)node)) node.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
 
-                //TODO BAS: here we should use a listener to check for all dynamic blocks
+                //TODO: here all dynamic blocks should be checked
                 DynamicBlockListener translationList = new TranslationList(this.language, this.entityUrl);
-                if (translationList.getTypeOf().equals(this.getTypeOf(element))) {
+                if (translationList.getType().equals(this.getBlueprintType(element))) {
                     element = translationList.onShow(element);
                     for(Element link : translationList.getLinks()) {
                         boolean added = this.links.add(link.outerHtml());
@@ -146,7 +145,7 @@ public class ToHtmlVisitor extends SuperVisitor
                 //the url "" does not need to be replaced
                 if(!StringUtils.isEmpty(url)) {
                     //make relative urls absolute
-                    URL absoluteUrl = new URL(new URL(BlocksConfig.getSiteDomain()), url);
+                    URL absoluteUrl = new URL(BlocksConfig.getSiteDomainUrl(), url);
                     //only urls from the sites domain need to be translated
                     if (absoluteUrl.toString().startsWith(BlocksConfig.getSiteDomain())) {
                         BlocksID id = XMLUrlIdMapper.getInstance().getId(absoluteUrl);
@@ -160,7 +159,7 @@ public class ToHtmlVisitor extends SuperVisitor
             return node;
         }
         catch(Exception e){
-            throw new ParseException("Error while parsing to html at \n \n" + node + "\n \n");
+            throw new ParseException("Error while parsing to html.", node);
         }
     }
 
@@ -276,26 +275,28 @@ public class ToHtmlVisitor extends SuperVisitor
 
      @param node
      */
-    private Element getTypeInstance(Element node) throws CacheException, ParseException
+    private Element getTypeInstance(Element node) throws Exception
     {
         // Find the class of this node
         Element retVal = null;
-        EntityTemplateClass entityTemplateClass = EntityTemplateClassCache.getInstance().get(getTypeOf(node));
+        Blueprint blueprint = BlueprintsCache.getInstance().get(getBlueprintType(node));
 
-        this.addLinks(entityTemplateClass.getLinks());
-        this.addScripts(entityTemplateClass.getScripts());
+        this.addLinks(blueprint.getLinks());
+        this.addScripts(blueprint.getScripts());
 
-        String entityTemplateClassHtml = entityTemplateClass.getTemplate(language);
+        String entityTemplateClassHtml = blueprint.getTemplate(language);
         //if no template could be found for the current language, fall back to the primary language
         if (entityTemplateClassHtml == null) {
-            entityTemplateClassHtml = entityTemplateClass.getTemplate();
+            entityTemplateClassHtml = blueprint.getTemplate();
         }
         Element entityClassElement = TemplateParser.parse(entityTemplateClassHtml).child(0);
 
         // Default setting. First Type found is editable
-        if (this.typeOfStack.size() == 1) node.attr(ParserConstants.CAN_EDIT_PROPERTY, "");
+        if (this.blueprintTypeStack.size() == 1) node.attr(ParserConstants.CAN_EDIT_PROPERTY, "");
 
         retVal = entityClassElement.clone();
+        retVal.removeAttr(ParserConstants.BLUEPRINT);
+
         Element reference = (Element) fetchReferencedInstance(getReferencedId(node));
         HashMap<String, Element> classProperties = getProperties(entityClassElement, false);
 
@@ -359,9 +360,9 @@ public class ToHtmlVisitor extends SuperVisitor
                 }
                 retVal.put(uniqueName, property);
             } else if (failOnMissingReference) {
-                throw new ParseException("Found entity which is not a property of class '" + node.attr(ParserConstants.TYPE_OF_OLD) + "' as " + property.attr(ParserConstants.TYPE_OF_OLD)+ "\n");
+                throw new ParseException("Found entity which is not a property of class '" + node.attr(ParserConstants.BLUEPRINT) + "' as " + property.attr(ParserConstants.BLUEPRINT)+ "\n");
             } else {
-                Logger.debug("Found class property which was not replaced by an instance property of class '" + node.attr(ParserConstants.TYPE_OF_OLD) + "' as: " + property.attr(ParserConstants.TYPE_OF_OLD));
+                Logger.debug("Found class property which was not replaced by an instance property of class '" + node.attr(ParserConstants.BLUEPRINT) + "' as: " + property.attr(ParserConstants.BLUEPRINT));
             }
         }
         return retVal;
@@ -448,7 +449,7 @@ public class ToHtmlVisitor extends SuperVisitor
 
         }
         catch(Exception e){
-            throw new ParseException("Could not set editability(!?) for property  \n", e);
+            throw new ParseException("Could not set editability(!?) for properties of class.", e, entityClass);
         }
     }
 

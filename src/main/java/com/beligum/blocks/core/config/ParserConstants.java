@@ -1,5 +1,9 @@
 package com.beligum.blocks.core.config;
 
+import org.apache.commons.lang3.StringUtils;
+
+import java.lang.reflect.Field;
+
 /**
  * Created by bas on 03.11.14.
  * CSS-class-names used while parsing html to blocks
@@ -32,7 +36,7 @@ public class ParserConstants
 
     public final static String INCLUDE = "include";
 
-    public final static String DEFAULT_ENTITY_TEMPLATE_CLASS = "default";
+    public final static String DEFAULT_BLUEPRINT = "default";
     public final static String DEFAULT_PAGE_TEMPLATE = "default";
 
 
@@ -45,7 +49,7 @@ public class ParserConstants
     public static final String PAGE_TEMPLATE_ENTITY_VARIABLE_NAME = "entity";
 
     /**the name of the variable in the new-page template, containing all possible entity-classes*/
-    public static final String ENTITY_CLASSES = "entityClasses";
+    public static final String BLUEPRINTS = "blueprints";
     /**the name of the variable in the new-page template, containing the url of the new Entity*/
     public static final String ENTITY_URL = "entityUrl";
 
@@ -55,21 +59,24 @@ public class ParserConstants
 
     /**the form a reference-node takes inside parsed templates*/
     public static final String REFERENCE_TO = "reference-to";
-    /**the keyword (attribute) indicating a certain template-class should be used as blueprint for all instances*/
-    public static final String BLUEPRINT_OLD = "blueprint-old";
     /**the keyword indicating a certain entity is a copy of the entity-class (blueprint)*/
-    public static final String USE_BLUEPRINT_OLD = "use-blueprint-old";
+    public static final String USE_BLUEPRINT = "use-blueprint";
+    /**the keyword indicating a certain html element defines a class blueprint*/
+    public static final String BLUEPRINT = "blueprint";
     /**the keyword indicating a certain property value is a copy of the property in the entity-class (blueprint)*/
     public static final String USE_DEFAULT = "use-default";
 
     public static final String PAGE_BLOCK = "page-block";
     public static final String NOT_ADDABLE_BLOCK = "not-addable-block";
 
+
+    public static final String CSS_CLASS_PREFIX = "block-";
+
     /**
      * Dynamic blocks
      */
     public class DynamicBlocks{
-        /**the typeof indicating a block is a translation-block*/
+        /**the type indicating a block is a translation-block*/
         public static final String TRANSLATION_LIST = "translation-list";
     }
 
@@ -80,6 +87,7 @@ public class ParserConstants
     public static final String RESOURCE = "resource";
     public static final String PROPERTY = "property";
     public static final String PROPERTY_NAME = "name";
-    public static final String TYPE_OF_OLD = "blueprint";
+    public static final String TYPE_OF = "typeof";
+
 
 }

@@ -1,4 +1,4 @@
-<div blueprint="mot-menu" lang="nl" blueprint-old not-addable-block>
+<div blueprint="mot-menu" lang="nl" not-addable-block>
     <div class="row">
         <h1 class="col-md-2" id="logo"><a href="/" title="">MOT</a></h1>
         <div class="col-md-10">
@@ -19,8 +19,7 @@
                                 <li class="larger"><a href="" title="">A</a></li>
                             </ul>
                         </div>
-                        <nav property="languages" class="languages" blueprint="translation-list" not-addable-block>
-                            <div></div>
+                        <nav property="languages" class="languages" use-blueprint="translation-list">
                         </nav>
                     </div>
                 </div>

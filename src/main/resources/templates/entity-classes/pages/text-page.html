@@ -1,7 +1,7 @@
-<div blueprint="text-page" class="textpage" blueprint-old template="menu-footer" can-layout page-block not-addable-block>
+<div blueprint="text-page" class="textpage" template="menu-footer" can-layout page-block not-addable-block>
     <div class="row">
         <div class="col-md-12">
-            <div property="title" blueprint="pagetitle" class="pagetitle">
+            <div property="title" use-blueprint="pagetitle" class="pagetitle">
                 <div class="row">
                     <header class="col-md-12">
                         <nav class="breadcrumb">
@@ -19,14 +19,14 @@
 
     <div class="row">
         <div class="col-md-2 icon">
-            <div property="icon" blueprint="image" class="image">
+            <div property="icon" use-blueprint="image" class="image">
                 <img src="/assets/media/images/smidicon.jpg" alt="" can-edit/>
             </div>
         </div>
         <div class="col-md-6">
             <div class="row">
                 <div class="col-md-12">
-                    <div property="content" blueprint="text-block" class="text text-block">
+                    <div property="content" use-blueprint="text-block" class="text text-block">
                         <div can-edit>
                             <h3>Metaal maakt al sinds de Prehistorie deel uit van onze geschiedenis. Maar wie kon dat ijzer en vuur de baas? Wie maakte zwaarden en bijlen? Wie zorgde voor sloten aan deuren en hendels aan ramen?</h3>
                             <p>Deze tentoonstelling schetst een beeld van het leven en werk van de dorpssmid, een beroep dat vandaag de dag bijna volledig verdwenen is.</p>
@@ -40,10 +40,10 @@
             </div>
             <div class="row">
                 <div class="col-md-12">
-                    <div property="text" blueprint="text-with-border" class="bordered">
+                    <div property="text" use-blueprint="text-with-border" class="bordered">
                         <div class="row">
                             <div class="col-md-12">
-                                <div property="text" class="text text-block" blueprint="text-block">
+                                <div property="text" class="text text-block" use-blueprint="text-block">
                                     <div can-edit>
                                         <h3>Info</h3>
                                         <p>Open: elke weekdag van 9 tot 17 uur, van april tot oktober ook in het weekend van 14 tot 18 uur.</p>
@@ -59,7 +59,7 @@
             </div>
         </div>
         <div class="col-md-4 images">
-            <div property="practical-page-image" blueprint="image" class="image">
+            <div property="practical-page-image" use-blueprint="image" class="image">
                 <img src="/assets/media/images/smidimg.jpg" alt="" can-edit/>
             </div>
         </div>
