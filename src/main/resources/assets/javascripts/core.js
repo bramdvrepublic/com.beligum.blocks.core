@@ -59,7 +59,7 @@ blocks.plugin("blocks.core.Constants", function() {
     ];
     this.CAN_LAYOUT_ROW_CLASS = "can-layout"; // can layout row and add and delete blocks
     this.CAN_EDIT_BLOCK_CLASS = "can-edit"; // specifies edit and delete
-    this.IS_ENTITY = "typeof";
+    this.IS_ENTITY = "use-blueprint";
     this.IS_PROPERTY = "property";
 
     this.MAX_COLUMNS = 12;

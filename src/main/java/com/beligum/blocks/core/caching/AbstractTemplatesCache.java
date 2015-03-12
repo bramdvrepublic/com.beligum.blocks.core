@@ -26,7 +26,7 @@ import java.util.*;
  */
 public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
 {
-    //TODO BAS: EntityTemplateCache for frequently visited pages
+    //TODO: EntityTemplateCache for frequently visited pages
 
     /**
      * boolean telling us whether or not one of the inheriting classes is already running through the template-html-files
@@ -98,7 +98,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             if (template == null) {
                 return false;
             }
-            //TODO BAS: when adding possibility to parse multiple entity-class-languages from file to cache, multiple languages should be able to be added. This class should have the functionality to put two different languages together in one blueprint
+            //TODO: when adding possibility to parse multiple entity-class-languages from file to cache, multiple languages should be able to be added. This class should have the functionality to put two different languages together in one blueprint
             if(!getCache().containsKey(template.getUnversionedId())) {
                 AbstractTemplate storedTemplate = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(template.getId(), this.getCachedClass());
                 if (storedTemplate == null) {
