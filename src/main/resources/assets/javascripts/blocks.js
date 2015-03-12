@@ -2,6 +2,13 @@
 //Logger.debug = function() {};
 //Logger.error = function() {};
 
+
+// Define a has Attribute function for jquery
+$.fn.hasAttribute = function(name) {
+    return this.attr(name) !== undefined;
+};
+
+
 // The modulke loader
 function blocksLoader(window) {
     /*Simple helper functions copied from angular*/
@@ -117,7 +124,7 @@ function blocksLoader(window) {
                         _serviceInstances[service.dependencies[i]] = instantiateService(_serviceDefinitions[service.dependencies[i]])
                         instantiatedDependencies.push(_serviceInstances[service.dependencies[i]]);
                     } else {
-                        throw Logger.error("Could not instantiate service: Service not found");
+                        throw Logger.error("Could not instantiate service: Service not found " + service.dependencies[i]);
                     }
                 }
             }
@@ -129,6 +136,11 @@ function blocksLoader(window) {
             var instance = new Constructor();
             service.fn.apply(instance, instantiatedDependencies);
             return _serviceInstances[service.name] = instance;
+        };
+
+
+        var getService = function(name) {
+            return _serviceInstances[service.name];
         };
 
         var run = function () {
@@ -220,6 +232,7 @@ function blocksLoader(window) {
     blocks.plugin = blocks.loader.loadService;
     blocks.config = blocks.loader.loadConfig;
     blocks.run = blocks.loader.run;
+    blocks.getPlugin = blocks.loader.getService;
 }
 
 blocksLoader(window);

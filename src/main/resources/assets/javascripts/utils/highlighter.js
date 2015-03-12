@@ -6,15 +6,15 @@
 *
 * */
 
-blocks.plugin("blocks.core.Highlighter", ["blocks.core.Layouter", "blocks.core.Broadcaster", "blocks.core.Elements", "blocks.core.Constants", function(Layouter, Broadcaster, Elements, Constants) {
+blocks.plugin("blocks.core.Highlighter", ["blocks.core.Layouter", "blocks.core.Broadcaster", "blocks.core.Constants", function(Layouter, Broadcaster, Constants) {
     var Highlighter = this;
     this.removePropertyOverlay = function() {
         $("." + Constants.PROPERTY_HOVER_CLASS).removeClass(Constants.PROPERTY_HOVER_CLASS);
-    }
+    };
 
     this.showPropertyOverlay = function(property) {
         if (property != null) {
-            property.element.addClass(Constants.PROPERTY_HOVER_CLASS);
+            property.overlay.addClass(Constants.PROPERTY_HOVER_CLASS);
         }
     };
 
@@ -24,10 +24,8 @@ blocks.plugin("blocks.core.Highlighter", ["blocks.core.Layouter", "blocks.core.B
 
     this.showBlockOverlay = function(block) {
         if (block != null) {
-            block.element.addClass(Constants.BLOCK_HOVER_CLASS);
+            block.overlay.addClass(Constants.BLOCK_HOVER_CLASS);
         }
     }
-
-
 
 }]);

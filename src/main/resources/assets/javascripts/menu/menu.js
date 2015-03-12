@@ -5,7 +5,7 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     * Create the html for top bar
     * */
     var menuBtn = $('<div class="blocks-main-edit-button"><i class="glyphicon glyphicon-cog"></i></div>');
-    var menuBar = $('<div class="blocks-main-menu"><div class="main-menu-items"></div></div>');
+    var menuBar = $('<div class="blocks-main-menu"></div>');
     var btnList = menuBar;
 
     var saveBtn = $('<a class="btn  btn-default" href="#">Save</a>');
@@ -15,17 +15,27 @@ blocks.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notif
     var changeUrlBtn = $('<a class="btn  btn-default" href="#">Change url</a>');
     btnList.append(changeUrlBtn);
 
+    var dragBlocksContainer = $('<div class="drag-block-container"></div>');
+    var dragBlockText = $('<div class="drag-block-text">Text</div>');
+    menuBar.append(dragBlocksContainer.append(dragBlockText));
 
     /*
     * Hide show bar on click of menu button
     * */
-    menuBtn.on("click", function(event) {
+    var oldBodyMargin = parseInt($("body").css("padding-top"));
+    var menuAnimationSpeed = 300;
+     menuBtn.on("click", function(event) {
         if (menuBar.hasClass("open")) {
-            menuBar.removeClass("open");
+            menuBar.animate({top: -(oldBodyMargin + menuBar.outerHeight()) + "px"}, menuAnimationSpeed, function() {menuBar.removeClass("open");});
+            $("body").animate({"margin-top": oldBodyMargin + "px"}, menuAnimationSpeed);
+
             Broadcaster.send(Broadcaster.EVENTS.STOP_BLOCKS);
         } else {
+            menuBar.css("top", -(oldBodyMargin + menuBar.outerHeight()) + "px");
             menuBar.addClass("open");
-            Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS);
+            menuBar.animate({top: "0px"}, menuAnimationSpeed, function() {Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS);});
+            $("body").animate({"margin-top": oldBodyMargin + menuBar.outerHeight() + "px"}, menuAnimationSpeed-50);
+
         }
     });
 

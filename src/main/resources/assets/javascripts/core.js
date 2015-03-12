@@ -59,7 +59,6 @@ blocks.plugin("blocks.core.Constants", function() {
     ];
     this.CAN_LAYOUT_ROW_CLASS = "can-layout"; // can layout row and add and delete blocks
     this.CAN_EDIT_BLOCK_CLASS = "can-edit"; // specifies edit and delete
-    this.CAN_CAST_BLOCK_CLASS = "can-cast-block";
     this.IS_ENTITY = "typeof";
     this.IS_PROPERTY = "property";
 
@@ -67,10 +66,28 @@ blocks.plugin("blocks.core.Constants", function() {
 
     this.COLUMN_RESIZER_CLASS = "column-resize-handle";
     this.BLOCK_HOVER_CLASS = "block-hover";
+    this.BLOCK_OVERLAY_CLASS = "block-overlay";
+    this.DRAGGED_BLOCK_OVERLAY_CLASS = "dragged-block-overlay";
+    this.PROPERTY_OVERLAY_CLASS = "property-overlay";
     this.PROPERTY_HOVER_CLASS = "property-hover";
     this.PROPERTY_EDIT_CLASS = "property-edit";
-    this.RESIZING_CLASS = "blocks-resizing";
+    this.BLOCK_DRAGGABLE_CLASS = "draggable";
+    this.FORCE_RESIZE_CURSOR = "force-col-resize-cursor";
+    this.FORCE_DRAG_CURSOR = "force-dragging-cursor";
+    this.NO_TEXT_CLASS = "property-no-text";
 
+    this.EDIT_TEXT = "edit-text";
+    this.EDIT_NONE = "edit-none";
+    this.EDIT_OTHER = "edit-other";
+
+    this.maxIndex = 0;
+    this.calculateMaxIndex = function() {
+        this.maxIndex = Math.max.apply(null,$.map($('body  *'), function(e,n){
+                if($(e).css('position')=='absolute' || $(e).css('position')=='relative')
+                    return parseInt($(e).css('z-index'))||1 ;
+            })
+        );
+    };
 
 
 

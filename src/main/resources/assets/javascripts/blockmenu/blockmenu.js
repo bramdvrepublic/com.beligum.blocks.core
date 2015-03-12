@@ -18,7 +18,7 @@
 *
 * */
 
-blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.Overlay", function(Broadcaster, Overlay, Admin) {
+blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.Constants", function(Broadcaster, Constants) {
 
     /*
     * Init Menu in html
@@ -161,11 +161,12 @@ blocks.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.
 
 
             menuElement.css("position", "absolute");
-            menuElement.css("top", activeBlock.element.offset().top + "px");
+            var menuHeight = menuElement.height();
+            menuElement.css("top", (activeBlock.top - menuHeight) + "px");
             // put menu in upper left corner of block
             var menuWidth = menuElement.width();
             menuElement.css("left", (activeBlock.right - menuWidth) + "px");
-            menuElement.css("z-index", Overlay.maxIndex() + 1);
+            menuElement.css("z-index", Constants.maxIndex + 1);
             menuElement.show();
         } else {
             menuElement.hide();
