@@ -40,6 +40,7 @@ public class EntityTemplateClassCache extends AbstractTemplatesCache<EntityTempl
             if (instance == null) {
                 //if the application-cache doesn't exist, throw exception, else instantiate the application's page-cache with a new empty hashmap
                 if (R.cacheManager() != null && R.cacheManager().getApplicationCache() != null) {
+                    //TODO: make sure that CacheKeys.ENTITY_CLASSES isn't deleted by ApplicationCacher
                     R.cacheManager().getApplicationCache().put(CacheKeys.ENTITY_CLASSES, new HashMap<String, EntityTemplateClass>());
                     instance = new EntityTemplateClassCache();
                     //insert most basic possible entity-template-class, it is not saved to db

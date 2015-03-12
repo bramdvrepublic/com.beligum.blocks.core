@@ -110,7 +110,7 @@ public class EntitiesEndpoint
     /*
      * update a page-instance with id 'entityId' to be the html specified
      */
-    public Response updateEntity(@PathParam("entityUrlPath") String pageUrlPath, String pageHtml)
+    public Response updateEntity(@PathParam("entityUrlPath") String pageUrlPath, @QueryParam("deleted") @DefaultValue("false") boolean fetchDeleted, String pageHtml)
     {
         try{
             if(pageUrlPath.endsWith("#")){
@@ -119,12 +119,21 @@ public class EntitiesEndpoint
             URL pageUrl = new URL(new URL(BlocksConfig.getSiteDomain()), pageUrlPath);
             //ignore the query-part of the url to fetch an entity from db, use only the path of the url
             pageUrl = new URL(pageUrl, pageUrl.getPath());
-            BlocksID entityId = XMLUrlIdMapper.getInstance().getId(pageUrl);
+            BlocksID entityId = null;
+            if(!fetchDeleted){
+                entityId = XMLUrlIdMapper.getInstance().getId(pageUrl);
+            }
+            else{
+                entityId = XMLUrlIdMapper.getInstance().getLastId(pageUrl);
+            }
             EntityTemplate entity = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(entityId, EntityTemplate.class);
             if(entity == null){
                 throw new Exception("Cannot update entity which doesn't exist: '" + pageUrl + ".");
             }
             TemplateParser.updateEntity(entityId, pageHtml);
+            if(fetchDeleted){
+                XMLUrlIdMapper.getInstance().put(entityId, pageUrl);
+            }
             return Response.ok(pageUrl.getPath()).build();
         }catch (Exception e){
             return Response.status(Response.Status.BAD_REQUEST).entity(I18n.instance().getMessage("entitySaveFailed")).build();
@@ -140,6 +149,10 @@ public class EntitiesEndpoint
             entityUrl = new URL(entityUrl, entityUrl.getPath());
             BlocksID id = XMLUrlIdMapper.getInstance().getId(entityUrl);
             AbstractTemplate lastVersion = (AbstractTemplate) RedisDatabase.getInstance().trash(id);
+            Set<BlocksID> languagedIds = lastVersion.getTemplates().keySet();
+            for(BlocksID languagedId : languagedIds) {
+                XMLUrlIdMapper.getInstance().remove(languagedId);
+            }
             return Response.ok(entityUrl.toString()).build();
         }
         catch(Exception e){
@@ -206,7 +219,7 @@ public class EntitiesEndpoint
     @Path("/deletedversion")
     public Response showDeletedVersion(@FormParam("page-url") String pageUrl) throws MalformedURLException, CacheException, ParseException, IDException, DatabaseException, UrlIdMappingException
     {
-        BlocksID id = XMLUrlIdMapper.getInstance().getId(new URL(pageUrl));
+        BlocksID id = XMLUrlIdMapper.getInstance().getLastId(new URL(pageUrl));
         List<AbstractTemplate> versionList = RedisDatabase.getInstance().fetchVersionList(id, EntityTemplate.class);
         EntityTemplate lastAccessibleVersion = null;
         Iterator<AbstractTemplate> it = versionList.iterator();
@@ -218,7 +231,7 @@ public class EntitiesEndpoint
         }
         if(lastAccessibleVersion != null) {
             String pageUrlPath = new URL(pageUrl).getPath().substring(1);
-            return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId(pageUrlPath, new Long(lastAccessibleVersion.getVersion())).getAbsoluteUrl())).build();
+            return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId(pageUrlPath, new Long(lastAccessibleVersion.getVersion()), true).getAbsoluteUrl())).build();
         }
         else{
             Logger.error("Bad request: cannot revive '" + pageUrl + "' to the state before it was deleted, since no version is present in db which is not deleted.");

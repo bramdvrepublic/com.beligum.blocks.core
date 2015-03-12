@@ -109,7 +109,7 @@ function deleteUser(userId){
                         },
                         error: function(response){
                             deleteDialog.close();
-                            var message = response.status == 403 ? response.responseText : "An error occurred while deleting the user."
+                            var message = response.status == 403 ? response.responseText : "An error occurred while deleting the user.";
                             var errorModal = new BootstrapDialog()
                                 .setTitle("Error")
                                 .setType(BootstrapDialog.TYPE_DANGER)

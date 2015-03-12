@@ -116,7 +116,7 @@ public class SuperVisitor
      */
     protected Element replaceElementWithReference(Element element, String referenceTo)
     {
-        if(referenceTo != null && (referenceTo.contentEquals(ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME) || BlocksID.isRedisId(referenceTo))) {
+        if(referenceTo != null && (referenceTo.contentEquals(ParserConstants.PAGE_TEMPLATE_ENTITY_VARIABLE_NAME) || BlocksID.isBlocksId(referenceTo))) {
             Element replacementNode = new Element(element.tag(), BlocksConfig.getSiteDomain());
             replacementNode.attributes().addAll(element.attributes());
             replacementNode.attr(ParserConstants.REFERENCE_TO, referenceTo);

@@ -577,7 +577,7 @@ public class BlocksID
      * @param id
      * @return whether or not the specified string is a reference to an entity or not
      */
-    public static boolean isRedisId(String id){
+    public static boolean isBlocksId(String id){
         try{
             int firstDoublePoint = id.indexOf(':');
             int lastDoublePoint = id.lastIndexOf(':');

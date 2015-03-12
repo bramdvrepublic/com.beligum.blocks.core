@@ -4,7 +4,7 @@
  * Test for plugin. Edit a MOT block link
  */
 
-blocks.plugin("blocks.core.bloklink", ["blocks.core.Edit", "blocks.core.Broadcaster", function(Edit, Broadcaster) {
+blocks.plugin("blocks.core.bloklink", ["blocks.core.Edit", "blocks.core.Broadcaster", "blocks.core.Sitemap",  function(Edit, Broadcaster, Sitemap) {
 
     /*
     * The content for the dialog: for testing written in jquery
@@ -23,11 +23,18 @@ blocks.plugin("blocks.core.bloklink", ["blocks.core.Edit", "blocks.core.Broadcas
         '' +
         '<div class="form-group">' +
         '<label for="colorselect">Url</label>' +
+        '<div class="input-group">' +
         '<input type="text" class="form-control"  id="linkurl" value="" />' +
+        '<span class="input-group-btn"><button class="btn btn-default select-url" type="button" >Select</button></span>' +
+        '</div>' +
         '</div>' +
         '</div>');
 
 
+
+    $(document).on("click", ".form-group .select-url", function() {
+        Sitemap.urlsModal();
+    });
 
 
 

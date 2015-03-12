@@ -10,9 +10,6 @@ import java.net.URL;
  */
 public interface UrlIdMapper
 {
-    //TODO BAS SH: do merge with master branch (ask Wouter)
-    //TODO BAS SH 2: als er 100 waterputten onder [site-domain]/waterput/[id] zitten, en ik wil het woord 'waterput' veranderen naar 'waterputten', dan moet ik surfen naar [site-domain]/waterput waar ik een keuze krijg uit 'wilt u een nieuwe pagina aanmaken' of 'wilt u url veranderen van 100 waterputten?'.
-
     /**
      *
      * @param url
@@ -53,7 +50,17 @@ public interface UrlIdMapper
     public BlocksID remove(URL languagedUrl) throws UrlIdMappingException;
 
     /**
+     *
+     * @param url
+     * @return The last id that was previously mapped to this url, or null if this url was never paired to an id before.
+     * @throws UrlIdMappingException
+     */
+    public BlocksID getLastId(URL url) throws UrlIdMappingException;
+
+    /**
      * Remove the mapping from cache.
      */
     public void reset();
+
+    public SiteMap renderSiteMap(String language) throws UrlIdMappingException;
 }
