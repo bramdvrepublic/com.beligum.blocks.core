@@ -57,14 +57,20 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                     return template;
                 }
                 else{
-                    //TODO BAS: if this is null, check Redis for last version
-                    return applicationCache.get(getTemplateKey(getDefaultTemplateName()));
+                    BlocksID id = new BlocksID(this.getTemplateKey(name), BlocksID.NO_VERSION, BlocksID.NO_LANGUAGE);
+                    template = (T) RedisDatabase.getInstance().fetchLastVersion(id, this.getCachedClass());
+                    if(template!=null) {
+                        return template;
+                    }
+                    else{
+                        return applicationCache.get(getTemplateKey(getDefaultTemplateName()));
+                    }
                 }
             }
             else{
                 return this.getCache().get(getTemplateKey(getDefaultTemplateName()));
             }
-        }catch(IDException e){
+        }catch(Exception e){
             throw new CacheException("Could not get "+ PageTemplate.class.getSimpleName() + " '" + name + "' from cache.", e);
         }
     }

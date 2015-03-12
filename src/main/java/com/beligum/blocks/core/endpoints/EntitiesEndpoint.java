@@ -209,7 +209,6 @@ public class EntitiesEndpoint
         URL url = new URL(id);
         BlocksID blocksId = XMLUrlIdMapper.getInstance().getId(url);
         EntityTemplate entityTemplate = (EntityTemplate) redis.fetchLastVersion(blocksId, EntityTemplate.class);
-        //TODO BAS: must make BeanValidation checking that PageTemplateCache.getInstance().contains(templateName)
         entityTemplate.setPageTemplateName(templateName);
         String entity = entityTemplate.renderEntityInPageTemplate(entityTemplate.getLanguage());
         return Response.ok(entity).build();
