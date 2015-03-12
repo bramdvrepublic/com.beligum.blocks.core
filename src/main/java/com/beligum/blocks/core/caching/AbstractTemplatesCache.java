@@ -285,9 +285,9 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             Path metaInfPath = null;
             Path resourcePath = null;
             if (scheme.equals("jar") || metaInfResourceStr.contains("!")) {
-                String[] array = metaInfResourceStr.split("!");
+                String[] array = metaInfResource.getSchemeSpecificPart().split("!");
 
-                URI fsUri = URI.create(array[0]);
+                URI fsUri = new URI(scheme, array[0], null);
                 FileSystem fileSystem = null;
                 try {
                     fileSystem = FileSystems.getFileSystem(fsUri);
