@@ -35,8 +35,7 @@ public class BlocksLifecycleListener implements ServerLifecycleListener
         }
         catch (ParseException e){
             String errorMessage = "Parse error while initializing cache. \n";
-            errorMessage += e.getMessage();
-            Logger.error(errorMessage, e.getCause());
+            Logger.error(errorMessage, e);
         }
         catch (Exception e){
             Logger.error("Could not initialize cache.", e);

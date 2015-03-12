@@ -10,6 +10,7 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.exceptions.DatabaseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
+import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.Blueprint;
 import org.apache.commons.lang3.StringUtils;
@@ -17,7 +18,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 
 import java.net.URL;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * Created by bas on 03.12.14.
@@ -27,6 +28,9 @@ public class BlueprintToStoredInstanceVisitor extends SuperVisitor
 {
     //the parent-nodes of the entity-template instances to be created
     private Stack<Node> newInstancesNodes = new Stack<>();
+
+    protected Stack<Map<String, EntityTemplate>> propertiesStack = new Stack<>();
+    private EntityTemplate foundEntityRoot = null;
 
     private boolean parsingNewLanguage = false;
 
@@ -62,10 +66,16 @@ public class BlueprintToStoredInstanceVisitor extends SuperVisitor
     @Override
     public Node head(Node node, int depth) throws ParseException
     {
+        /*
+         * In this head all is set to be able to save good entities in the tail.
+         * All to be saved instances are push on the newInstances stack.
+         */
         node = super.head(node, depth);
         // node is TypeOf or Property
         if(node instanceof Element && isEntity(node)){
             try {
+                //each entity needs a list of it's properties
+                propertiesStack.push(new HashMap<String, EntityTemplate>());
                 String unversionedResourceId = getReferencedId(node);
                 String defaultPropertyId = getPropertyId(node);
                 String blueprintType = getBlueprintType(node);
@@ -94,9 +104,10 @@ public class BlueprintToStoredInstanceVisitor extends SuperVisitor
                     node = replaceNodeWithEntity(node, instance);
                 }
                 else{
+                    //if no instance was created, this is the beginning of the blueprint and we change "blueprint" to "use-blueprint"
                     node = setUseBlueprintType(node);
                 }
-                newInstancesNodes.push(node);
+                this.newInstancesNodes.push(node);
             }
             catch (Exception e) {
                 throw new ParseException("Could not parse an " + EntityTemplate.class.getSimpleName() + " from " + Node.class.getSimpleName() + " ÷" +
@@ -113,7 +124,7 @@ public class BlueprintToStoredInstanceVisitor extends SuperVisitor
             node = super.tail(node, depth);
             Node lastInstanceNode = !newInstancesNodes.isEmpty() ? newInstancesNodes.peek() : null;
             if (node.equals(lastInstanceNode) && node instanceof Element) {
-                Blueprint entityClass = BlueprintsCache.getInstance().get(getBlueprintType(node));
+                Blueprint blueprint = BlueprintsCache.getInstance().get(getBlueprintType(node));
                 BlocksID newEntityId;
                 // For the first root entity use entityUrl if available
                 if (newInstancesNodes.size() == 1 && entityUrl != null) {
@@ -121,10 +132,10 @@ public class BlueprintToStoredInstanceVisitor extends SuperVisitor
                 }
                 //else render a new entity-template-id
                 else{
-                    newEntityId = BlocksID.renderNewEntityTemplateID(entityClass, this.language);
+                    newEntityId = BlocksID.renderNewEntityTemplateID(blueprint, this.language);
                 }
                 node.attr(ParserConstants.RESOURCE, XMLUrlIdMapper.getInstance().getUrl(newEntityId).toString());
-                EntityTemplate newInstance = new EntityTemplate(newEntityId, entityClass, node.outerHtml());
+                EntityTemplate newInstance = new EntityTemplate(newEntityId, blueprint, node.outerHtml());
                 //for default instances, a version could already be present in db, which is equal to this one
                 EntityTemplate storedInstance = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(newEntityId, EntityTemplate.class);
                 if(storedInstance == null) {
@@ -133,6 +144,20 @@ public class BlueprintToStoredInstanceVisitor extends SuperVisitor
                 else if(!newInstance.equals(storedInstance)){
                     RedisDatabase.getInstance().update(newInstance);
                 }
+                else{
+                    newInstance = storedInstance;
+                }
+                //add this entity as a property of it's parent if needed
+                newInstance.setProperties(propertiesStack.pop());
+                if(isProperty(node)) {
+                    if(propertiesStack.size()>0) {
+                        propertiesStack.peek().put(getPropertyKey(node), newInstance);
+                    }
+                    else{
+                        foundEntityRoot = newInstance;
+                    }
+                }
+
                 node = replaceElementWithEntityReference((Element) node, newInstance);
                 newInstancesNodes.pop();
             }
@@ -192,5 +217,8 @@ public class BlueprintToStoredInstanceVisitor extends SuperVisitor
         }
     }
 
-
+    public EntityTemplate getFoundEntityRoot()
+    {
+        return foundEntityRoot;
+    }
 }

@@ -205,7 +205,7 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
 
     private void cacheEntityTemplateClass(Element root) throws Exception
     {
-        checkPropertyUniqueness(root);
+//        checkPropertyUniqueness(root);
         Blueprint parsingTemplate = (Blueprint) this.parsingTemplate;
         /*
          * Use all info from the template we're parsing to make a real blueprint to be cached.
@@ -218,7 +218,6 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
         Blueprint blueprint = new Blueprint(parsingTemplate.getName(), this.language, root.outerHtml(), parsingTemplate.getPageTemplateName(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
         blueprint.setAddableBlock(isAddableBlock);
         blueprint.setPageBlock(isPageBlock);
-        //TODO BAS SH: zowel BlueprintToStoredInstanceVisitor als HtmlToStoreVisitor moeten gebruik maken van een entityStack<AbstractTemplate> zodat je er een template met ingevulde kinderen kunt aan vragen (misschien gebruik maken van een tussenklasse? ChildrenVisitor?)
         blueprint.setProperties(parsingTemplate.getProperties());
 
         boolean added = BlueprintsCache.getInstance().add(blueprint);
@@ -237,7 +236,7 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
 
     private void cachePageTemplate(Element root) throws Exception
     {
-        checkPropertyUniqueness(root);
+//        checkPropertyUniqueness(root);
         PageTemplate pageTemplate = new PageTemplate(parsingTemplate.getName(), this.language, root.outerHtml(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
         pageTemplate.setProperties(parsingTemplate.getProperties());
 
@@ -265,35 +264,38 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
      */
     private Element saveNewEntityClassCopy(Element element, BlocksID id, Blueprint entityClass) throws IDException, CacheException, ParseException
     {
-        Map<BlocksID, String> classTemplates = entityClass.getTemplates();
+        //        Map<BlocksID, String> classTemplates = entityClass.getTemplates();
         Map<BlocksID, String> copiedTemplates = new HashMap<>();
-        for(BlocksID languageId : classTemplates.keySet()){
-            Element classRoot = TemplateParser.parse(classTemplates.get(languageId)).child(0);
-            classRoot.attributes().addAll(element.attributes());
-            classRoot = (Element) setUseBlueprintType(classRoot);
-            //a copy of an entity-class, also means a copy of all of it's children, so we need to traverse all templates to create entity-copies of all it's children
-            Traversor traversor = new Traversor(new BlueprintToStoredInstanceVisitor(id.getUrl(), id.getLanguage()));
-            traversor.traverse(classRoot);
-            copiedTemplates.put(languageId, classRoot.outerHtml());
+        //        for(BlocksID languageId : classTemplates.keySet()){
+        //            Element classRoot = TemplateParser.parse(classTemplates.get(languageId)).child(0);
+        //            classRoot.attributes().addAll(element.attributes());
+        //            classRoot = (Element) setUseBlueprintType(classRoot);
+        //            //a copy of an entity-class, also means a copy of all of it's children, so we need to traverse all templates to create entity-copies of all it's children
+        //            BlueprintToStoredInstanceVisitor visitor = new BlueprintToStoredInstanceVisitor(id.getUrl(), id.getLanguage());
+        //            Traversor traversor = new Traversor(visitor);
+        //            traversor.traverse(classRoot);
+        //            copiedTemplates.put(languageId, classRoot.outerHtml());
+        //        }
+        String template = entityClass.getTemplate(id.getLanguage());
+        if(template==null) {
+            template = entityClass.getTemplate();
         }
-        if(entityClass.getTemplate(id.getLanguage())==null){
-            //a copy of an entity-class, also means a copy of all of it's children, so we need to traverse all templates to create entity-copies of all it's children
-            Element classRoot = TemplateParser.parse(entityClass.getTemplate()).child(0);
-            classRoot.attributes().addAll(element.attributes());
-            classRoot.removeAttr(ParserConstants.USE_BLUEPRINT);
-            Traversor traversor = new Traversor(new BlueprintToStoredInstanceVisitor(id.getUrl(), id.getLanguage()));
-            traversor.traverse(classRoot);
-            copiedTemplates.put(id, entityClass.getTemplate());
-        }
-        EntityTemplate newEntity = new EntityTemplate(id, entityClass, copiedTemplates);
-        this.parsingTemplate.setProperty(getPropertyName(element), newEntity);
+        //a copy of an entity-class, also means a copy of all of it's children, so we need to traverse all templates to create entity-copies of all it's children
+        Element classRoot = TemplateParser.parse(entityClass.getTemplate()).child(0);
+        classRoot.attributes().addAll(element.attributes());
+        BlueprintToStoredInstanceVisitor visitor = new BlueprintToStoredInstanceVisitor(id.getUrl(), id.getLanguage());
+        Traversor traversor = new Traversor(visitor);
+        traversor.traverse(classRoot);
+//        copiedTemplates.put(id, entityClass.getTemplate());
+        EntityTemplate newEntity = visitor.getFoundEntityRoot();
+        this.parsingTemplate.setProperty(getPropertyKey(element), newEntity);
         element = replaceElementWithEntityReference(element, newEntity);
         return element;
     }
 
     /**
      * Save the specified node as a new (default) instance to db. The typeof-attribute of the node will determine it's entity-class
-     * @param node
+     * @param element
      * @param id
      * @return a referencing node to the freshly stored entity
      * @throws IDException
@@ -301,57 +303,57 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
      * @throws com.beligum.blocks.core.exceptions.DatabaseException
      * @throws ParseException
      */
-    private Node saveNewEntity(Node node, BlocksID id) throws IDException, CacheException, DatabaseException, ParseException
+    private Node saveNewEntity(Element element, BlocksID id) throws IDException, CacheException, DatabaseException, ParseException
     {
         /*
          * HtmlToStoredInstance needs a html-document to traverse correctly.
-         * We put the root of the entity to be a default into the body and let the visitor save new instances we're needed.*/
+         * We put the root of the entity to be a default into the body and let the visitor save new instances where needed.
+         */
         Document entityRoot = new Document(BlocksConfig.getSiteDomain());
-        entityRoot.appendChild(node.clone());
+        entityRoot.appendChild(element.clone());
         //traverse the entity-root and save new instances to db
-        Traversor traversor = new Traversor(new HtmlToStoreVisitor(id.getUrl(), id.getLanguage(), entityRoot));
+        HtmlToStoreVisitor visitor = new HtmlToStoreVisitor(id.getUrl(), id.getLanguage(), entityRoot);
+        Traversor traversor = new Traversor(visitor);
         traversor.traverse(entityRoot);
-        Node entityReference = entityRoot.child(0);
-        node.replaceWith(entityReference);
-        EntityTemplate newEntity = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(id, EntityTemplate.class);
-        this.parsingTemplate.setProperty(getPropertyName(node), newEntity);
-        return entityReference;
+        EntityTemplate newEntity = visitor.getFoundEntityRoot();
+        this.parsingTemplate.setProperty(getPropertyKey(element), newEntity);
+        return this.replaceElementWithEntityReference(element, newEntity);
     }
 
-    /**
-     * Checks if the properties af a template are unique (or have a unique name if multiple equal properties are present).
-     * @param templateRoot root-node of a template
-     * @return true if all properties are unique, throws {@link ParseException} otherwise.
-     * @throws ParseException
-     */
-    private boolean checkPropertyUniqueness(Element templateRoot) throws ParseException
-    {
-        Elements properties = templateRoot.select("[" + ParserConstants.PROPERTY + "]");
-        //the class-root is not a property of this class, so if it contains the "property"-attribute, it is removed from the list
-        properties.remove(templateRoot);
-        //since we are sure to be working with class-properties, we now all of them will hold an attribute "property", so we can use this in a comparator to sort all elements according to the property-value
-        Collections.sort(properties, new Comparator<Element>() {
-            @Override
-            public int compare(Element classProperty1, Element classProperty2) {
-                return getProperty(classProperty1).compareTo(getProperty(classProperty2));
-            }
-        });
-        for(int i = 1; i<properties.size(); i++){
-            Element previousClassProperty = properties.get(i-1);
-            String previousClassPropertyValue = getProperty(previousClassProperty);
-            Element classProperty = properties.get(i);
-            String classPropertyValue = getProperty(classProperty);
-            if(previousClassPropertyValue.equals(classPropertyValue)){
-                //check if properties with the same attribute-value, have a different name (<div property="something" name="some_thing"></div> and <div property="something"  name="so_me_th_ing"></div> is a correct situation)
-                String previousClassPropertyName = getPropertyName(previousClassProperty);
-                String classPropertyName = getPropertyName(classProperty);
-                if(StringUtils.isEmpty(previousClassPropertyName) || StringUtils.isEmpty(classPropertyName)){
-                    throw new ParseException("Found two properties with same property-value '" + previousClassPropertyValue + "' and no name-attribute to distinguish them at \n \n" + templateRoot + "\n \n");
-                }
-            }
-        }
-        return true;
-    }
+//    /**
+//     * Checks if the properties af a template are unique (or have a unique name if multiple equal properties are present).
+//     * @param templateRoot root-node of a template
+//     * @return true if all properties are unique, throws {@link ParseException} otherwise.
+//     * @throws ParseException
+//     */
+//    private boolean checkPropertyUniqueness(Element templateRoot) throws ParseException
+//    {
+//        Elements properties = templateRoot.select("[" + ParserConstants.PROPERTY + "]");
+//        //the class-root is not a property of this class, so if it contains the "property"-attribute, it is removed from the list
+//        properties.remove(templateRoot);
+//        //since we are sure to be working with class-properties, we now all of them will hold an attribute "property", so we can use this in a comparator to sort all elements according to the property-value
+//        Collections.sort(properties, new Comparator<Element>() {
+//            @Override
+//            public int compare(Element classProperty1, Element classProperty2) {
+//                return getProperty(classProperty1).compareTo(getProperty(classProperty2));
+//            }
+//        });
+//        for(int i = 1; i<properties.size(); i++){
+//            Element previousClassProperty = properties.get(i-1);
+//            String previousClassPropertyValue = getProperty(previousClassProperty);
+//            Element classProperty = properties.get(i);
+//            String classPropertyValue = getProperty(classProperty);
+//            if(previousClassPropertyValue.equals(classPropertyValue)){
+//                //check if properties with the same attribute-value, have a different name (<div property="something" name="some_thing"></div> and <div property="something"  name="so_me_th_ing"></div> is a correct situation)
+//                String previousClassPropertyName = getPropertyName(previousClassProperty);
+//                String classPropertyName = getPropertyName(classProperty);
+//                if(StringUtils.isEmpty(previousClassPropertyName) || StringUtils.isEmpty(classPropertyName)){
+//                    throw new ParseException("Found two properties with same property-value '" + previousClassPropertyValue + "' and no name-attribute to distinguish them at \n \n" + templateRoot + "\n \n");
+//                }
+//            }
+//        }
+//        return true;
+//    }
 
 
 }

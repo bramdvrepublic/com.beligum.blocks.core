@@ -15,6 +15,8 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.jsoup.nodes.Element;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by bas on 05.11.14.
@@ -211,7 +213,21 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
         this.properties = properties;
     }
     public void setProperty(String property, EntityTemplate resource){
-        properties.put(property, resource);
+        if(!StringUtils.isEmpty(property)) {
+            if (properties.containsKey(property)) {
+                Pattern regularExpression = Pattern.compile(property + "/[0-9]+");
+                Set<String> propertyKeys = properties.keySet();
+                int numberOfEqualProperties = 1;
+                for (String propertyKey : propertyKeys) {
+                    Matcher propertyKeyMatcher = regularExpression.matcher(propertyKey);
+                    if (propertyKeyMatcher.matches()){
+                        numberOfEqualProperties++;
+                    }
+                }
+                property = property + "/" + numberOfEqualProperties;
+            }
+            properties.put(property, resource);
+        }
     }
 
     /**

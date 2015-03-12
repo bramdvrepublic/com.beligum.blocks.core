@@ -92,6 +92,8 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                 }
                 else{
                     //if this template was already stored in db, we should cache the db-version, since it has the correct time-stamp
+                    //TODO: properties should be read from db, for now we use the found properties
+                    storedTemplate.setProperties(template.getProperties());
                     template = (T) storedTemplate;
                 }
                 getCache().put(template.getUnversionedId(), template);

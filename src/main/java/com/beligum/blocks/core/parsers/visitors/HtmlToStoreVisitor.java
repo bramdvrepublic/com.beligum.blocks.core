@@ -15,6 +15,9 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Stack;
 
 /**
  * Created by bas on 10.12.14.
@@ -24,6 +27,10 @@ public class HtmlToStoreVisitor extends SuperVisitor
 {
     /**The root-node of the html-tree being parsed*/
     private final Document root;
+
+    protected Stack<Map<String, EntityTemplate>> propertiesStack = new Stack<>();
+
+    private EntityTemplate foundEntityRoot = null;
 
     private final String language;
 
@@ -61,7 +68,11 @@ public class HtmlToStoreVisitor extends SuperVisitor
     @Override
     public Node head(Node node, int depth) throws ParseException
     {
-        return super.head(node, depth);
+        node = super.head(node, depth);
+        if(isEntity(node)){
+            this.propertiesStack.push(new HashMap<String, EntityTemplate>());
+        }
+        return node;
     }
 
     @Override
@@ -100,11 +111,26 @@ public class HtmlToStoreVisitor extends SuperVisitor
                 else{
                     RedisDatabase.getInstance().update(currentEntityTemplate);
                 }
+
+                //add this entity as a property of it's parent if needed
+                currentEntityTemplate.setProperties(propertiesStack.pop());
+                if(isProperty(node)) {
+                    if(propertiesStack.size()>0) {
+                        propertiesStack.peek().put(getPropertyKey(node), currentEntityTemplate);
+                    }
+                    else{
+                        foundEntityRoot = currentEntityTemplate;
+                    }
+                }
                 node = replaceElementWithEntityReference((Element) node, currentEntityTemplate);
             }
             return node;
         }catch(Exception e){
             throw new ParseException("Could not parse resource-node.", e, node);
         }
+    }
+
+    public EntityTemplate getFoundEntityRoot(){
+        return foundEntityRoot;
     }
 }

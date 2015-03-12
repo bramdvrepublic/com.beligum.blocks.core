@@ -81,8 +81,6 @@ public class FindBlueprintsVisitor extends SuperVisitor
                     }
                 }
 
-                //TODO BAS!: fill children (properties: propertyValue/propertyName of propertyValue/number-> EtntityTemplate) vb building en building/1 en building/2...
-
                 if (hasBlueprintType) {
                     //if a blueprint should be cached, set a links- and a scripts-list ready to be filled during next steps
                     boolean containsClassToBeCached = containsClassToBeCached(node);
