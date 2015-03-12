@@ -1,11 +1,23 @@
 package com.beligum.blocks.core.caching;
 
+import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
+import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
+import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.core.framework.utils.Logger;
+import com.sun.nio.zipfs.ZipPath;
+import org.apache.shiro.util.AntPathMatcher;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
 /**
@@ -15,18 +27,24 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
 {
     //TODO BAS: EntityTemplateCache for frequently visited pages
 
-    /** boolean telling us whether or not one of the inheriting classes is already running through the template-html-files*/
+    /**
+     * boolean telling us whether or not one of the inheriting classes is already running through the template-html-files
+     */
     private static boolean runningTroughHtmlTemplates = false;
+
+    private AntPathMatcher pathMatcher = new AntPathMatcher();
 
     /**
      * protected constructor for singleton-use of extending classes
      */
-    protected AbstractTemplatesCache(){
+    protected AbstractTemplatesCache()
+    {
 
     }
 
     /**
      * This method returns a map with all present Cachables (value) by name (key)
+     *
      * @return a map of all the currently cached Cachables from the application cache
      */
     abstract protected Map<String, T> getCache();
@@ -34,53 +52,56 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     /**
      * Get the template with a certain name from the application cache.$
      * If that template is not present, return the default template
+     *
      * @param name the unique name of the template to get
      * @return a template from the application cache, or the default-template if no template with the specified name can be found
      */
     public T get(String name) throws CacheException
     {
         try {
-            if(name != null) {
+            if (name != null) {
                 Map<String, T> applicationCache = this.getCache();
                 T template = applicationCache.get(getTemplateKey(name));
-                if(template != null) {
+                if (template != null) {
                     return template;
                 }
-                else{
+                else {
                     //TODO BAS: if this is null, check Redis for last version
                     return applicationCache.get(getTemplateKey(getDefaultTemplateName()));
                 }
             }
-            else{
+            else {
                 return this.getCache().get(getTemplateKey(getDefaultTemplateName()));
             }
-        }catch(IDException e){
-            throw new CacheException("Could not get "+ PageTemplate.class.getSimpleName() + " '" + name + "' from cache.", e);
+        }
+        catch (IDException e) {
+            throw new CacheException("Could not get " + PageTemplate.class.getSimpleName() + " '" + name + "' from cache.", e);
         }
     }
 
     /**
      * Try to add this template to the cache. If a template with the same id is present, the template will not be added and false will be returned.
      * A version will also be stored in the redis-db if the template has be added.
+     *
      * @param template the template to be added to the applications cache, the key will be the object's unversioned id
      * @return true if the template has been added, false if not
      */
     public boolean add(T template) throws CacheException
     {
-        try{
-            if(template == null){
+        try {
+            if (template == null) {
                 return false;
             }
             //TODO BAS: when adding possibility to parse multiple entity-class-languages from file to cache, multiple languages should be able to be added. This class should have the functionality to put two different languages together in one entity-template-class
-            if(!getCache().containsKey(template.getUnversionedId())) {
+            if (!getCache().containsKey(template.getUnversionedId())) {
                 AbstractTemplate storedTemplate = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(template.getId(), this.getCachedClass());
-                if(storedTemplate == null){
+                if (storedTemplate == null) {
                     RedisDatabase.getInstance().create(template);
                 }
-                else if(!template.equals(storedTemplate)){
+                else if (!template.equals(storedTemplate)) {
                     RedisDatabase.getInstance().update(template);
                 }
-                else{
+                else {
                     //if this template was already stored in db, we should cache the db-version, since it has the correct time-stamp
                     template = (T) storedTemplate;
                 }
@@ -90,10 +111,11 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             //            else if(getCache().get(template.getUnversionedId()).getLanguages().contains(template.getLanguages())) {
             //
             //            }
-            else{
+            else {
                 return false;
             }
-        }catch (Exception e){
+        }
+        catch (Exception e) {
             throw new CacheException("Error while trying to add template with id '" + template.getId() + "'.", e);
         }
     }
@@ -101,37 +123,38 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     /**
      * Add a template to the cache. If a template with the same id is already present in the cache, it is replaced with the one specified.
      * A new version will be stored in the redis-db.
+     *
      * @param template the template to be added to the applications cache, the key will be the object's unversioned id
      * @return the template with the same unversioned id which was in the cache before, or null if no template with that id was present in cache before
      */
     public AbstractTemplate replace(T template) throws CacheException
     {
-        try{
+        try {
             boolean added = this.add(template);
-            if(added) {
+            if (added) {
                 return null;
             }
-            else{
+            else {
                 AbstractTemplate cachedTemplate = getCache().get(template.getUnversionedId());
-                if(!template.equals(cachedTemplate)){
+                if (!template.equals(cachedTemplate)) {
                     AbstractTemplate storedTemplate = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(template.getId(), this.getCachedClass());
-                    if(storedTemplate == null){
+                    if (storedTemplate == null) {
                         RedisDatabase.getInstance().create(template);
                     }
-                    else if (!template.equals(storedTemplate)){
+                    else if (!template.equals(storedTemplate)) {
                         RedisDatabase.getInstance().update(template);
                     }
                     getCache().put(template.getUnversionedId(), template);
                 }
                 return cachedTemplate;
             }
-        }catch (Exception e){
+        }
+        catch (Exception e) {
             throw new CacheException("Error while replacing template with id '" + template.getId() + "'.", e);
         }
     }
 
     /**
-     *
      * @param templateName
      * @return true if the cache contains a mapping for the specified template-name, false otherwise
      */
@@ -145,58 +168,66 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
      */
     abstract public void reset();
 
-
     /**
      * Fill up the page-cache with all template found in file-system
+     *
      * @throws com.beligum.blocks.core.exceptions.CacheException
      */
     protected void fillCache() throws CacheException
     {
-        if(!runningTroughHtmlTemplates) {
+        if (!runningTroughHtmlTemplates) {
             runningTroughHtmlTemplates = true;
-            //TODO bram what about jars?
-//            URI rootFolderUri = FileFunctions.getCurrentMavenSrcResourceFolder(this.getClass());
-//            Path rootFolder = Paths.get(rootFolderUri.getSchemeSpecificPart());
-//            Path templatesFolder = rootFolder.resolve(BlocksConfig.getTemplateFolder());
-//
-//            try {
-//                //list which will be filled up with all templates found in all files in the templates-folder
-//                final List<AbstractTemplate> foundTemplates = new ArrayList<>();
-//                //set which will be filled up with all class-names found in all files in the templates-folder
-//                final Set<String> foundEntityClassNames = new HashSet<>();
-//
-//                //first fetch all blueprints from all files
-//                FileVisitor<Path> visitor = new SimpleFileVisitor<Path>()
-//                {
-//                    @Override
-//                    public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs)
-//                                    throws IOException
-//                    {
-//                        if (filePath.getFileName().toString().endsWith("html") || filePath.getFileName().toString().endsWith("htm")) {
-//                            try {
-//                                String html = new String(Files.readAllBytes(filePath));
-//                                TemplateParser.findTemplatesFromFile(html, foundTemplates, foundEntityClassNames);
-//                            }
-//                            catch (ParseException e) {
-//                                Logger.error("Parse error while fetching page-templates and blueprints from file '" + filePath + "'.", e);
-//                            }
-//                        }
-//                        return FileVisitResult.CONTINUE;
-//                    }
-//                };
-//                Files.walkFileTree(templatesFolder, visitor);
-//
-//                //then add all default-value's to the found classes
-//                TemplateParser.injectDefaultsInFoundTemplatesAndCache(foundTemplates);
-//            }
-//            catch (Exception e) {
-//                throw new CacheException("Error while filling cache: " + this, e);
-//            }
-//            finally {
-//                runningTroughHtmlTemplates = false;
-//            }
-        }
 
+            try {
+                List<Path> allResourceFolders = findAllResourceFolders();
+
+                for (Path resourceFolder : allResourceFolders) {
+                    Path templatesFolder = resourceFolder.resolve(BlocksConfig.getTemplateFolder());
+
+                    if (!(templatesFolder instanceof ZipPath) ){
+                        Logger.debug("");
+                    }
+
+                    if (Files.exists(templatesFolder)) {
+                        //list which will be filled up with all templates found in all files in the templates-folder
+                        final List<AbstractTemplate> foundTemplates = new ArrayList<>();
+                        //set which will be filled up with all class-names found in all files in the templates-folder
+                        final Set<String> foundEntityClassNames = new HashSet<>();
+
+                        //first fetch all blueprints from all files
+                        FileVisitor<Path> visitor = new SimpleFileVisitor<Path>()
+                        {
+                            @Override
+                            public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs)
+                                            throws IOException
+                            {
+                                String path = filePath.getFileName().toString();
+                                if (pathMatcher.matches("*.html", path) || pathMatcher.match("*.htm", path)) {
+                                    try {
+                                        String html = new String(Files.readAllBytes(filePath));
+                                        TemplateParser.findTemplatesFromFile(html, foundTemplates, foundEntityClassNames);
+                                    }
+                                    catch (ParseException e) {
+                                        Logger.error("Parse error while fetching page-templates and blueprints from file '" + filePath + "'.", e);
+                                    }
+                                }
+                                return FileVisitResult.CONTINUE;
+                            }
+                        };
+                        Files.walkFileTree(templatesFolder, visitor);
+
+                        //then add all default-value's to the found classes
+                        TemplateParser.injectDefaultsInFoundTemplatesAndCache(foundTemplates);
+                    }
+                }
+            }
+            catch (Exception e) {
+                throw new CacheException("Error while filling cache: " + this, e);
+            }
+            finally {
+                runningTroughHtmlTemplates = false;
+            }
+        }
     }
 
     /**
@@ -206,7 +237,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     {
         Collection<T> templates = this.getCache().values();
         List<T> templateList = new LinkedList<>();
-        for(T template : templates){
+        for (T template : templates) {
             templateList.add(template);
         }
         Collections.sort(templateList);
@@ -220,7 +251,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     {
         Collection<String> keys = this.getCache().keySet();
         List<String> keysList = new LinkedList<>();
-        for(String key : keys){
+        for (String key : keys) {
             keysList.add(key);
         }
         Collections.sort(keysList);
@@ -228,7 +259,6 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     }
 
     /**
-     *
      * @return the object-class being stored in this cache
      */
     abstract public Class<? extends AbstractTemplate> getCachedClass();
@@ -237,4 +267,55 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
 
     abstract protected String getDefaultTemplateName();
 
+    //-----PRIVATE FUNCTIONS-----
+    protected List<Path> findAllResourceFolders() throws IOException, URISyntaxException
+    {
+        List<Path> retVal = new ArrayList<>();
+
+        //TODO change this to something more universal?
+        final String TEST_FOLDER = "com";
+        Enumeration<URL> allResourceFolders = Thread.currentThread().getContextClassLoader().getResources(TEST_FOLDER);
+        while (allResourceFolders.hasMoreElements()) {
+            URL metaInfResourceUrl = allResourceFolders.nextElement();
+
+            URI metaInfResource = metaInfResourceUrl.toURI();
+            String metaInfResourceStr = metaInfResource.toString();
+            String scheme = metaInfResource.getScheme();
+
+            Path metaInfPath = null;
+            Path resourcePath = null;
+            if (scheme.equals("jar") || metaInfResourceStr.contains("!")) {
+                String[] array = metaInfResourceStr.split("!");
+
+                URI fsUri = URI.create(array[0]);
+                FileSystem fileSystem = null;
+                try {
+                    fileSystem = FileSystems.getFileSystem(fsUri);
+                }
+                catch (FileSystemNotFoundException e) {
+                }
+                if (fileSystem == null) {
+                    Map<String, String> env = new HashMap<>();
+                    fileSystem = FileSystems.newFileSystem(fsUri, env);
+                }
+
+                metaInfPath = fileSystem.getPath(array[1]);
+                //since the URI is the META-INF folder, we're looking for it's parent, the root (resources) folder
+                resourcePath = metaInfPath.getParent();
+            }
+            //means we're dealing with a regular file
+            else {
+                metaInfPath = FileSystems.getDefault().getPath(metaInfResource.getPath());
+                //since the URI is the META-INF folder, we're looking for it's parent, the root (resources) folder
+                resourcePath = metaInfPath.getParent();
+            }
+
+            //now, we have a root path to a resource folder that can be searched for the pattern, independent of it being a jar/zip/folder
+            if (!retVal.contains(resourcePath)) {
+                retVal.add(resourcePath);
+            }
+        }
+
+        return retVal;
+    }
 }
