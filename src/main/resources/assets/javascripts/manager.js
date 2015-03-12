@@ -3,7 +3,29 @@
  *
  * The manager is the central point. here we catch all the events to keep an overview
  */
-blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.BlockMenu", "blocks.core.Highlighter", "blocks.core.Edit",  function(Constants, Broadcaster, Mouse, DragDrop, Resizer, BlockMenu, Highlighter, Edit) {
+blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.BlockMenu", "blocks.core.Highlighter", "blocks.core.Overlay", "blocks.core.Edit", "blocks.core.DomManipulation",   function(Constants, Broadcaster, Mouse, DragDrop, Resizer, BlockMenu, Highlighter, Overlay, Edit, DOM) {
+
+    // On Window resize
+    var resizeTimeout = null;
+    $(window).on("resize.blocks_broadcaster", function () {
+
+        if (resizeTimeout != null) {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = null;
+            Logger.debug("timeout cleared")
+        } else {
+            Logger.debug("timeout not cleared");
+            Overlay.removeOverlays();
+            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+        }
+        var layoutContainer = Broadcaster.getContainer() == null ? null : Broadcaster.getContainer().element;
+        resizeTimeout = setTimeout(function(){
+            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, layoutContainer);
+            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+            resizeTimeout = null;
+        }, 700);
+
+    });
 
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function() {
         Broadcaster.setContainer(null);
@@ -18,11 +40,12 @@ blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broa
         });
 
         Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-        Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, null);
+        Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE, null);
     });
 
     $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function() {
         Broadcaster.unregisterMouseMove();
+        Overlay.removeOverlays();
         Broadcaster.setContainer(null);
         BlockMenu.removeMenu();
 
@@ -34,10 +57,10 @@ blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broa
 
     $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function (event) {
         Mouse.activate();
+        DOM.disableSelection();
         Broadcaster.resetHover();
 
-        DragDrop.setActive(true)
-        Resizer.activate(true);
+        DragDrop.setActive(true);
         Highlighter.showBlockOverlay(Broadcaster.block().current);
         Highlighter.showPropertyOverlay(Broadcaster.property().current);
 
@@ -48,11 +71,8 @@ blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broa
         Mouse.deactivate();
         Broadcaster.resetHover();
 
-        DragDrop.setActive(false)
-        Resizer.activate(false);
-        Highlighter.removeBlockOverlay();
-        Highlighter.removePropertyOverlay();
-        Mouse.enableSelection();
+        DragDrop.setActive(false);
+        DOM.enableSelection();
 
     });
 
@@ -60,14 +80,21 @@ blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broa
 
     $(document).on(Broadcaster.EVENTS.DOM_DID_CHANGE, function() {
         Broadcaster.resetHover();
+        Constants.calculateMaxIndex();
         Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, null);
     });
 
     $(document).on(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, function(event) {
         Broadcaster.send(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT);
+        Overlay.removeOverlays();
         Broadcaster.buildLayoutTree();
         Highlighter.showBlockOverlay(Broadcaster.block().current);
         Highlighter.showPropertyOverlay(Broadcaster.property().current);
+        //Logger.debug("Calculate overlay: ");
+        //Logger.debug(Broadcaster.getContainer().findElements(0, 9));
+        //
+
+        Overlay.showOverlays();
         Broadcaster.send(Broadcaster.EVENTS.DID_REFRESH_LAYOUT);
     });
 
@@ -90,21 +117,18 @@ blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broa
     });
 
     $(document).on(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, function (event) {
-        Resizer.manageActiveResizeHandle(event)
         Highlighter.showBlockOverlay(event.block.current);
         BlockMenu.showMenu(event.block.current);
     });
 
     $(document).on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, function (event) {
-        Resizer.manageActiveResizeHandle(event);
-        Highlighter.removeBlockOverlay()
+        Highlighter.removeBlockOverlay();
         if(!BlockMenu.mouseOverMenu()) {
             BlockMenu.hideMenu();
         }
     });
 
     $(document).on(Broadcaster.EVENTS.HOOVER_OVER_BLOCK, function (event) {
-        Resizer.manageActiveResizeHandle(event)
     });
 
 
@@ -115,52 +139,47 @@ blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broa
     * */
 
     $(document).on(Broadcaster.EVENTS.START_DRAG, function (event) {
-        Broadcaster.zoom();
+
+        //Broadcaster.zoom();
         Mouse.disableContextMenu();
         BlockMenu.hideMenu();
         Highlighter.removeBlockOverlay();
         Highlighter.removePropertyOverlay();
-        DragDrop.dragStarted(event)
-        Resizer.startDrag(event)
+        DragDrop.dragStarted(event);
     });
 
     $(document).on(Broadcaster.EVENTS.END_DRAG, function (event) {
-        Broadcaster.unzoom();
+        //Broadcaster.unzoom();
 
         Mouse.enableContextMenu();
         DragDrop.dragEnded(event);
-        Resizer.endDrag(event);
     });
 
     $(document).on(Broadcaster.EVENTS.ABORT_DRAG, function (event) {
-        Broadcaster.unzoom();
+        //Broadcaster.unzoom();
         Mouse.enableContextMenu();
         DragDrop.dragAborted(event);
-        Resizer.endDrag(event);
         Highlighter.showBlockOverlay(Broadcaster.block().current);
         Highlighter.showPropertyOverlay(Broadcaster.property().current);
     });
 
     $(document).on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, function (event) {
-        Logger.debug("dragging not allowed");
         Mouse.disallowDrag();
-        DragDrop.setActive(false)
+        DragDrop.setActive(false);
         Resizer.activate(false);
     });
 
     $(document).on(Broadcaster.EVENTS.DO_ALLOW_DRAG, function (event) {
-        Logger.debug("dragging allowed");
         Mouse.allowDrag();
-        DragDrop.setActive(true)
+        DragDrop.setActive(true);
         Resizer.activate(true);
     });
     $(document).on(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG, function (event) {
-        DragDrop.setActive(true)
+        DragDrop.setActive(true);
         Resizer.activate(true);
     });
 
     $(document).on(Broadcaster.EVENTS.DISABLE_BLOCK_DRAG, function (event) {
-        Logger.debug("dragging disabled");
         DragDrop.setActive(false);
     });
 
@@ -179,13 +198,17 @@ blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broa
     * */
 
     $(document).on(Broadcaster.EVENTS.START_EDIT_FIELD, function(event) {
+        Highlighter.removeBlockOverlay();
+        Highlighter.removePropertyOverlay();
+        Overlay.removeOverlays();
         BlockMenu.hideMenu();
-        Edit.makeEditable(event);
+        Broadcaster.property().current.editFunction(event);
 
     });
 
     $(document).on(Broadcaster.EVENTS.END_EDIT_FIELD, function(event) {
         Edit.endEdit();
+        Overlay.showOverlays();
         Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
     });
 

@@ -4,42 +4,72 @@
  * left and rightcolumn are the columns that this handle will resize when dragged
  */
 blocks
-    .plugin("blocks.core.Elements.ResizeHandle", ["blocks.core.Class", function (Class) {
+    .plugin("blocks.core.Elements.ResizeHandle", ["blocks.core.Class", "blocks.core.Constants", "blocks.core.Resizer", function (Class, Constants, Resizer) {
 
+        var body = $("body");
         blocks.elements = blocks.elements || {};
         blocks.elements.ResizeHandle = Class.create(blocks.elements.Surface, {
             STATIC: {
                 DRAW_WIDTH: 30,
-                TRIGGER_WIDTH: 40
+                TRIGGER_WIDTH: 10
             },
 
             constructor: function (leftColumn, rightColumn) {
                 this.leftColumn = leftColumn;
                 this.rightColumn = rightColumn;
-                this.updateSurface();
+
+                this.overlay = $("<div />").addClass(Constants.COLUMN_RESIZER_CLASS);
+
+
+
+
+
+
 
             },
 
-            // calculate location by location of left and right column
-            calculateSurface: function (t, b, left, right) {
-                var l = left - blocks.elements.ResizeHandle.TRIGGER_WIDTH;
-                var r = right + blocks.elements.ResizeHandle.TRIGGER_WIDTH;
-                blocks.elements.ResizeHandle.Super.call(this, t, b, l, r);
-                this.drawSurface = new blocks.elements.Surface(t, b, l, r);
+            update: function() {
+                var left = Math.floor((this.calculateLeft(this.rightColumn.element) + this.calculateRight(this.leftColumn.element)) / 2) - Math.floor(blocks.elements.ResizeHandle.TRIGGER_WIDTH / 2)
+                this.overlay.css("left", left);
+                var siblings = this.leftColumn.parent.resizeHandles;
+                var height = this.leftColumn.parent.bottom - this.leftColumn.parent.top;
+                for (var i=0; i < siblings; i++ ) {
+                    siblings[i].overlay.css("height", height);
+                }
             },
 
-            updateSurface: function () {
-                if (this.leftColumn == null) {
-                    this.calculateSurface(this.rightColumn.top, this.rightColumn.bottom, this.rightColumn.left, this.rightColumn.left);
-                }
-                else if (this.rightColumn == null) {
-                    this.calculateSurface(this.leftColumn.top, this.leftColumn.bottom, this.leftColumn.right, this.leftColumn.right);
-                }
-                else {
+            showOverlay: function() {
+                var _this = this;
+                this.overlay.on("mousedown.resizehandle", function () {
+                    Resizer.startDrag(_this);
+                    $(document).on("mouseup.resizehandle", function () {
+                        $(document).off("mouseup.resizehandledrag");
+                        Resizer.endDrag(null);
 
-                    this.calculateSurface(Math.min(this.leftColumn.top, this.rightColumn.top), Math.max(this.leftColumn.bottom, this.rightColumn.bottom), this.leftColumn.calculateRight(this.leftColumn.element), this.leftColumn.calculateLeft(this.rightColumn.element));
-                }
+                    });
+                });
+
+                var left = 0; var width = blocks.elements.ResizeHandle.TRIGGER_WIDTH; var top = 0; var height = 0;
+                var half_width = Math.floor(blocks.elements.ResizeHandle.TRIGGER_WIDTH / 2);
+
+                var left = this.leftColumn.right - half_width;
+                var top = this.leftColumn.top;
+                var width = blocks.elements.ResizeHandle.TRIGGER_WIDTH;
+                var height = this.leftColumn.bottom - this.leftColumn.top;
+
+                this.overlay.css("top", top);
+                this.overlay.css("height", height);
+                this.overlay.css("left", left);
+                this.overlay.css("width", width);
+                this.overlay.css("z-index", Constants.maxIndex + 2);
+                body.append(this.overlay);
+            },
+
+            removeOverlay: function() {
+                this.overlay.off("mousedown.resizehandle");
+                this.overlay.remove();
             }
+
 
         });
     }]);

@@ -11,15 +11,19 @@ blocks
             constructor: function (element, parent, index) {
                 blocks.elements.Block.Super.call(this, element, parent, index);
                 // if a block is editable does not depend on the parent
+                var prev = element.prev();
+                var next = element.next();
+                if (prev.length > 0) {
+                    this.top -= Math.floor((this.calculateBottom(prev) - this.top) / 2);
+                    this.overlay.addClass("top");
+                }
+                if (next.length > 0) {
+                    this.bottom += Math.floor((this.calculateTop(next) - this.bottom) / 2);
+                }
 
+                this.canDrag = true;
+                this.overlay.addClass(Constants.BLOCK_DRAGGABLE_CLASS);
                 this.dropspots = {};
-
-
-                // if our container is layoutable then we are draggable
-
-                this.container = new blocks.elements.Container(this.element, this);
-
-
             },
 
 
@@ -91,7 +95,6 @@ blocks
                     }
                 }
                 return null;
-
             },
 
             recalculateTriggers: function (direction, x, y, currentDropspot) {

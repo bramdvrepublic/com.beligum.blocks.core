@@ -11,7 +11,12 @@ blocks
 
             constructor: function (element, parent, index) {
                 blocks.elements.Row.Super.call(this, element, parent, index);
+
+
+                this.canDrag = true;
                 this.generateChildrenForRow();
+
+                this.overlay = null;
             },
 
             isOuterTop: function () {
@@ -42,6 +47,39 @@ blocks
 
                 if (this.isOuter(side) && this.parent != null) dropspots = this.parent.calculateDropspots(side, dropspots);
                 return dropspots;
+            },
+
+            findElements: function (minSearchLevel, maxSearchLevel) {
+                minSearchLevel = minSearchLevel == null ? 0 : minSearchLevel;
+                maxSearchLevel = maxSearchLevel == null ? -1 : maxSearchLevel;
+                var retVal = [];
+                if (minSearchLevel <= 0) {
+                    retVal.push(this);
+                }
+                if (maxSearchLevel != 0) {
+                    for (var i = 0; i < this.children.length; i++) {
+                        var props = this.children[i].findElements(minSearchLevel, maxSearchLevel );
+                        for (var j = 0; j < props.length; j++) {
+                            retVal.push(props[j]);
+                        }
+                    }
+                }
+
+                return retVal;
+            },
+
+            showOverlay: function() {
+                    for (var j=0; j < this.resizeHandles.length; j++) {
+                        this.resizeHandles[j].showOverlay();
+                    }
+            },
+
+            removeOverlay: function() {
+
+                for (var j=0; j < this.resizeHandles.length; j++) {
+                    this.resizeHandles[j].removeOverlay();
+                }
+
             }
 
         });

@@ -3,7 +3,7 @@
  */
 
 blocks
-    .plugin("blocks.core.Elements.Property", ["blocks.core.Class", "blocks.core.Constants", "blocks.core.DomManipulation",  function (Class, Constants, DOM) {
+    .plugin("blocks.core.Elements.Property", ["blocks.core.Class", "blocks.core.Constants", "blocks.core.DomManipulation", "blocks.core.Edit",  function (Class, Constants, DOM, Edit) {
 
 
 // A container contains properties
@@ -14,20 +14,65 @@ blocks
                 blocks.elements.Property.Super.call(this, element, parent, index);
                 var ct = this.getContainer();
                 ct.blocks.push(this);
-                this.canDrag = ct.canLayout;
+
+                if (this.element.siblings().length == 0 && this.element.parent == parent.element) {
+                    this.left = this.parent.left;
+                    this.right = this.parent.right;
+                    this.top = this.parent.top;
+                    this.bottom = this.parent.bottom;
+                }
+
+                this.canDrag = false;
                 this.isField = !DOM.isEntity(element);
+                this.isEntity = !this.isField;
                 this.canEdit = DOM.canEdit(element);
+
+                var edit = Edit.makeEditable(this);
+                this.editFunction = edit.editFunction;
+                this.editType = edit.editType;
+
+                this.overlay = $("<div />").css("z-index", Constants.maxIndex);
+
+                var block = this.parent.parent;
+                if (this.isEntity) {
+                    this.overlay.addClass(Constants.BLOCK_OVERLAY_CLASS);
+                } else //if  (this.parent.parent.isEntity)
+                {
+                    block.overlay.append(this.overlay.addClass(Constants.PROPERTY_OVERLAY_CLASS));
+                    if (this.editType == Constants.EDIT_OTHER) {
+                        this.overlay.addClass(Constants.NO_TEXT_CLASS);
+                    }
+                }
+
+                // Remove sides of layout lines to prevent overlap
+                if (!(this instanceof blocks.elements.Block) && block != null && block.overlay != null) {
+                    if (this.isNear(block.left, this.left)) this.overlay.addClass("left");
+                    if (this.isNear(block.top, this.top)) this.overlay.addClass("top");
+                    if (this.isNear(block.right, this.right)) this.overlay.addClass("right");
+                    if (this.isNear(block.bottom, this.bottom)) this.overlay.addClass("bottom");
+                } else if (this instanceof blocks.elements.Block) {
+                    if (this.index == 0 && this.parent.parent.index == 0 && this.getContainer().parent != null && this.getContainer().parent.index > 0) {
+                        this.overlay.addClass("top");
+                    }
+                }
+
 
                 this.container = new blocks.elements.Container(element, this);
             },
 
-            findActiveElement: function (x, y, minSearchLevel, maxSearchLevel) {
-                maxSearchLevel = maxSearchLevel == null ? -1 : maxSearchLevel;
+            isNear: function(one, two) {
+                var retVal = false;
+                var THRESHOLD = 1;
+                if (Math.abs(one - two) <= THRESHOLD) {
+                    retVal = true;
+                }
+                return retVal;
+            },
+
+            findActiveElement: function (x, y) {
                 var retVal = null;
                 if (this.isTriggered(x, y)) {
-                    if (maxSearchLevel != 0) {
-                        retVal = this.container.findActiveElement(x, y, minSearchLevel - 1, maxSearchLevel - 1);
-                    }
+                    retVal = this.container.findActiveElement(x, y);
                     if (retVal == null || retVal == this.container) {
                         retVal = this;
                     }

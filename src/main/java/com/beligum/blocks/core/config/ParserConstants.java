@@ -27,7 +27,7 @@ public class ParserConstants
 
     public final static String CAN_LAYOUT = "can-layout";
     public final static String CAN_EDIT_PROPERTY = "can-edit";
-    public final static String CAN_NOT_EDIT_PROPERTY = "can-edit";
+    public final static String CAN_NOT_EDIT_PROPERTY = "can-not-edit";
     public final static String CAN_CHANGE = "can-change";
 
     public final static String INCLUDE = "include";

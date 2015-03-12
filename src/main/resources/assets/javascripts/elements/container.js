@@ -13,14 +13,25 @@ blocks
                 blocks.elements.Container.Super.call(this, element, parent, 0);
                 this.blocks = [];
 
+                if (this.parent != null && this.parent instanceof blocks.elements.Block) {
+                    this.left = this.parent.left;
+                    this.right = this.parent.right;
+                    this.top = this.parent.top;
+                    this.bottom = this.parent.bottom;
+                }
+
                 if (DOM.canLayout(element)) {
                     this.canLayout = true;
                     this.generateChildrenForColumn();
+                    this.fillRows();
+
+
                 } else {
                     for (var i = 0; i < this.element.children().length; i++) {
                         this.generateProperties($(this.element.children()[i]));
                     }
                 }
+                this.overlay = null;
             },
 
             getElementAtSide: function (side) {

@@ -8,8 +8,6 @@ blocks.plugin("blocks.core.image", ["blocks.finder", "blocks.core.Edit", "blocks
 
         '</select></div></div>');
 
-
-
     var editImage = function(blockEvent) {
         var element = blockEvent.property.current.element;
         if (element.prop("tagName") == "IMG") {
@@ -17,6 +15,7 @@ blocks.plugin("blocks.core.image", ["blocks.finder", "blocks.core.Edit", "blocks
             Finder.open({
                 onSelect: function(file) {
                     element.attr("src", "/media/public/" + file);
+                    Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
                 },
                 onClose: function() {
                     Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
@@ -24,7 +23,6 @@ blocks.plugin("blocks.core.image", ["blocks.finder", "blocks.core.Edit", "blocks
             });
         }
     };
-
 
     Edit.registerByTag("IMG", editImage);
 

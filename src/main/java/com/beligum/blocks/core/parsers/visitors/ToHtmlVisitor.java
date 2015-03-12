@@ -120,7 +120,7 @@ public class ToHtmlVisitor extends SuperVisitor
             if(isEntity(node) && node instanceof Element) {
                 Element element = (Element) node;
 
-                if (hasTypeOf(node) && isEditable((Element)node)) node.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
+//                if (hasTypeOf(node) && isEditable((Element)node)) node.removeAttr(ParserConstants.CAN_EDIT_PROPERTY);
 
                 //TODO BAS: here we should use a listener to check for all dynamic blocks
                 DynamicBlockListener translationList = new TranslationList(this.language, this.entityUrl);

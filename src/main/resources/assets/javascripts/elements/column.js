@@ -13,7 +13,12 @@ blocks
             constructor: function (element, parent, index) {
                 blocks.elements.Column.Super.call(this, element, parent, index);
 
+
+                this.canDrag = true;
                 this.generateChildrenForColumn();
+                this.overlay = null;
+
+
             },
 
             isOuterLeft: function () {

@@ -11,6 +11,10 @@
 blocks
     .plugin("blocks.core.Elements.LayoutElement", ["blocks.core.Class", "blocks.core.Constants", "blocks.core.DomManipulation",  function (Class, Constants, DOM) {
 
+        var body = $("body");
+
+
+
         blocks.elements = blocks.elements || {};
 
         blocks.elements.LayoutElement = Class.create(blocks.elements.Surface, {
@@ -25,7 +29,9 @@ blocks
             canEdit: false,
 
             constructor: function (element, parent, index) {
-                blocks.elements.LayoutElement.Super.call(this, this.calculateTop(element), this.calculateBottom(element), this.calculateLeft(element), this.calculateRight(element));
+                this.parent = parent;
+                blocks.elements.LayoutElement.Super.call(this, this.calculateTop(element, true), this.calculateBottom(element, true), this.calculateLeft(element, true), this.calculateRight(element, true));
+
                 this.el = {top: 0, bottom: 0, left: 0, right: 0};
                 if (element != null) {
                     this.el = {
@@ -36,7 +42,20 @@ blocks
                     };
                 }
 
-                this.parent = parent;
+                //// If we are the only child in the parent then our dimensions are the same as the dimensions of the parent
+                //if (parent != null && !(this instanceof blocks.elements.Container)) {
+                //    var prev = element.parent();
+                //    while (prev.siblings().length == 0 && prev[0] != parent.element[0]) {
+                //        prev = prev.parent();
+                //    }
+                //    if (prev[0] != parent.element[0]) {
+                //        this.top = parent.top;
+                //        this.left = parent.left;
+                //        this.bottom = parent.bottom;
+                //        this.right = parent.right;
+                //    }
+                //}
+
                 this.index = index; // index in the parent
                 this.element = element; // jquery element
                 this.children = [];
@@ -45,6 +64,11 @@ blocks
                 this.canLayout = false;
                 this.canDrag = false;
                 this.canEdit = false;
+                this.overlay = null;
+                this.isEntity = false;
+
+
+
 
             },
 
@@ -73,14 +97,13 @@ blocks
                 minSearchLevel = minSearchLevel == null ? 0 : minSearchLevel;
                 maxSearchLevel = maxSearchLevel == null ? -1 : maxSearchLevel;
                 var retVal = [];
-                if (maxSearchLevel != 0) {
-                    for (var i = 0; i < this.children.length; i++) {
-                        var props = this.children[i].findElements(minSearchLevel, maxSearchLevel);
-                        for (var j = 0; j < props.length; j++) {
-                            retVal.push(props[j]);
-                        }
+                for (var i = 0; i < this.children.length; i++) {
+                    var props = this.children[i].findElements(minSearchLevel, maxSearchLevel);
+                    for (var j = 0; j < props.length; j++) {
+                        retVal.push(props[j]);
                     }
                 }
+
 
                 return retVal;
             },
@@ -232,6 +255,8 @@ blocks
                         }
 
                     }
+
+
                 }
             },
 
@@ -288,14 +313,15 @@ blocks
 
                             if (oldColumn != null) {
                                 this.resizeHandles.push(new blocks.elements.ResizeHandle(oldColumn, newColumn));
-                            } else if (outside) {
-                                this.resizeHandles.push(new blocks.elements.ResizeHandle(oldColumn, newColumn));
                             }
+                            //else if (outside) {
+                            //    this.resizeHandles.push(new blocks.elements.ResizeHandle(oldColumn, newColumn));
+                            //}
 
 
-                            if (outside && i == columnCount - 1) {
-                                this.resizeHandles.push(new blocks.elements.ResizeHandle(newColumn, null));
-                            }
+                            //if (outside && i == columnCount - 1) {
+                            //    this.resizeHandles.push(new blocks.elements.ResizeHandle(newColumn, null));
+                            //}
 //
                         } else {
                             var colWidth = DOM.getColumnWidth(currentColumn);
@@ -316,6 +342,63 @@ blocks
                         this.children.push(newColumn);
                         oldColumn = newColumn;
                     }
+
+
+                }
+            },
+
+            fillRows: function() {
+                var totalChildren = this.children.length;
+                for (var i=0; i < this.children.length; i++) {
+                    var child = this.children[i];
+                    var last = i + 1 == totalChildren;
+                    child.left = this.left;
+                    child.right = this.right;
+                    if (i == 0) {
+                        child.top = this.top;
+                    }
+
+                    if (last) {
+                        child.bottom = this.bottom;
+                    } else {
+                        var next = this.children[i+1];
+                        var middle = Math.floor((child.bottom + next.top) / 2);
+                        next.top = middle;
+                        child.bottom = middle;
+
+                    }
+                    if (child instanceof  blocks.elements.Row) {
+                        child.fillColumns();
+                    }
+                    if (child instanceof blocks.elements.Block) {
+                        if (this.index > 0) child.overlay.addClass("left");
+                        if (i > 0 || this.parent.index > 0) child.overlay.addClass("top");
+
+                    }
+                }
+            },
+
+            fillColumns: function() {
+                var totalChildren = this.children.length;
+                for (var i=0; i < this.children.length; i++) {
+                    var child = this.children[i];
+                    var last = i + 1 == totalChildren;
+                    child.bottom = this.bottom;
+                    child.top = this.top;
+                    if (i == 0) {
+                        child.left = this.left;
+                    }
+
+                    if (last) {
+                        child.right = this.right;
+                    } else {
+                        var next = this.children[i+1];
+                        var middle = Math.floor((child.right + next.left) / 2);
+                        next.left = middle;
+                        child.right = middle;
+
+                    }
+                    if (child instanceof  blocks.elements.Column) child.fillRows();
                 }
             },
 
@@ -330,6 +413,30 @@ blocks
                     }
                 }
                 return this.totalBlocks;
+            },
+
+            showOverlay: function() {
+                if (this.overlay != null) {
+
+
+                    this.overlay.css("width", (this.right - this.left) + "px");
+                    this.overlay.css("height", (this.bottom - this.top) + "px");
+                    if (this.isEntity) {
+                        if (this.overlay.parent().length > 0) this.overlay.remove();
+                        this.overlay.css("left", this.left + "px");
+                        this.overlay.css("top", this.top + "px");
+                        body.append(this.overlay);
+                    } else if (this.parent.parent.isEntity) {
+                        this.overlay.css("top", this.top - this.parent.parent.top);
+                        this.overlay.css("left", this.left - this.parent.parent.left);
+                    }
+
+
+                }
+            },
+
+            removeOverlay: function() {
+                if (this.overlay != null && this.isEntity) this.overlay.remove();
             }
 
 

@@ -60,7 +60,7 @@
  *
  */
 
-blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "blocks.core.Constants", "blocks.core.DomManipulation", function (Broadcaster, Layouter, Constants, DOM) {
+blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "blocks.core.Constants", "blocks.core.BlockMenu", function (Broadcaster, Layouter, Constants, Menu) {
     // flag if this module is active
     var Mouse = this;
     var active = false;
@@ -82,7 +82,8 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         currentBlock = null;
         currentProperty = null;
         triggeredMouseDown = false;
-        var docWidth = $(document).width();
+        //var docWidth = $(document).width();
+        var docWidth = 1000;
         if (docWidth > 920) {
             Broadcaster.send(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG);
             draggingStatus = Constants.DRAGGING.NO;
@@ -110,7 +111,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
                 triggeredMouseDown = true;
                 var block = Broadcaster.getHooveredBlockForPosition(event.pageX, event.pageY);
                 if (draggingStatus == Constants.DRAGGING.NO &&
-                    block != null) {
+                    block.current != null && block.current.canDrag) {
 
                     draggingStatus = Constants.DRAGGING.WAITING;
                     draggingStart = event;
@@ -143,8 +144,9 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
                 var oldDragStatus = draggingStatus;
                 if (oldDragStatus == Constants.DRAGGING.YES) {
                     Broadcaster.send(Broadcaster.EVENTS.END_DRAG);
-                } else if (Broadcaster.property().current != null) {
+                } else if (Broadcaster.property().current != null && Broadcaster.property().current.editType != Constants.EDIT_NONE) {
                     Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
+
                 }
 
             }
@@ -170,7 +172,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
      *
      * */
     var mouseMove = function (event) {
-        if (active) {
+        if (active && !Menu.mouseOverMenu()) {
             var changedBlock = false;
             var block = Broadcaster.block();
             // check if block changed since last mouse move
@@ -237,7 +239,8 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
                         Broadcaster.send(Broadcaster.EVENTS.DRAG_ENTER_BLOCK);
                         Broadcaster.send(Broadcaster.EVENTS.DRAG_LEAVE_BLOCK);
                     }
-                } else if (block.current != null) {
+                } else // if (block.current != null)
+                 {
                     Broadcaster.send(Broadcaster.EVENTS.DRAG_OVER_BLOCK);
                 }
 
@@ -255,23 +258,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         Mouse.resetMouse(true);
     };
 
-    // http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
-    this.disableSelection = function() {
-        var sel = window.getSelection();
-        sel.removeAllRanges();
-        var html = $("html");
-        html.addClass("no-select");
-        window.ondragstart = function() {return false;};
 
-    };
-
-    this.enableSelection = function() {
-        //http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
-        var html = $("html");
-        html.removeClass("no-select");
-        window.ondragstart = function() {return true;};
-
-    }
 
     this.disableContextMenu = function() {
         $("html").attr("oncontextmenu", "return false;");
@@ -315,7 +302,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         });
 
         Mouse.resetMouse();
-        Mouse.disableSelection();
+
 
     };
 
@@ -326,7 +313,6 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         $(document).off("mouseup.blocks_core");
         $(document).off("mousemove.blocks_core");
         $(document).off("mouseleave.blocks_core");
-        Mouse.enableSelection();
 
     };
 
@@ -335,7 +321,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
 
 }])
     .config("blocks.core.Mouse", {
-        DRAGGING_THRESHOLD: 15,
+        DRAGGING_THRESHOLD: 10,
         CLICK_TIMEOUT: 500,
         ACTIVATE_AT_BOOT: true
     });

@@ -2,6 +2,13 @@
 //Logger.debug = function() {};
 //Logger.error = function() {};
 
+
+// Define a has Attribute function for jquery
+$.fn.hasAttribute = function(name) {
+    return this.attr(name) !== undefined;
+};
+
+
 // The modulke loader
 function blocksLoader(window) {
     /*Simple helper functions copied from angular*/
@@ -131,6 +138,11 @@ function blocksLoader(window) {
             return _serviceInstances[service.name] = instance;
         };
 
+
+        var getService = function(name) {
+            return _serviceInstances[service.name];
+        };
+
         var run = function () {
             instantiateAllServices();
         };
@@ -220,6 +232,7 @@ function blocksLoader(window) {
     blocks.plugin = blocks.loader.loadService;
     blocks.config = blocks.loader.loadConfig;
     blocks.run = blocks.loader.run;
+    blocks.getPlugin = blocks.loader.getService;
 }
 
 blocksLoader(window);
