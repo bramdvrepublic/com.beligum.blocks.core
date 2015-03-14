@@ -25,6 +25,8 @@ import java.util.Stack;
  */
 public class HtmlToStoreVisitor extends SuperVisitor
 {
+    //TODO: make TypeOf.class with properties (String or TypeOf, per language), fill it up and store it to a db; properties of blueprints which aren't typeofs inside a typeof are also stored in the properties, but if multiple properties are inside such a blueprint, a warning must be displayed
+
     /**The root-node of the html-tree being parsed*/
     private final Document root;
 

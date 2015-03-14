@@ -62,13 +62,13 @@ public class DebugEndpoint
             BlueprintsCache.getInstance();
             PageTemplateCache.getInstance();
             Logger.warn("Cache has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
-            //TODO: if parse errors occurred, display a log file to user
             return Response.ok("Cache reset").build();
         }
         catch(ParseException e){
             String errorMessage = "Error while resetting: \n";
             errorMessage += e.getMessage();
             Logger.error(errorMessage, e.getCause());
+            //TODO: if parse errors occurred, display a log file to user
             return Response.ok(errorMessage).build();
         }
     }

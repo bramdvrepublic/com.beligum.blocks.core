@@ -29,7 +29,6 @@ public class PageTemplate extends AbstractTemplate
         if(!this.getLanguages().contains(this.getId().getLanguage())){
             throw new IDException("No html-template in language '" + primaryLanguage + "' found between templates.");
         }
-        //TODO: should the createdBy of a page-template be the <author>-tag of the html file?, or else "server-start" or appVersion or something?
     }
 
     /**

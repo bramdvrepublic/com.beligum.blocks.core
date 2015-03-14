@@ -143,7 +143,7 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
                                     }
                                 }
                                 else {
-                                    //TODO: make sure default grandchildren of a blueprint are not instantiated over again on every server startup (could f.i. use id's of this form "blocks://LOC/[blueprint]#[propertyValue]/[propertyName];[propertyValue]/[propertyName];[propertyValue]/[propertyName]
+                                    //TODO: make sure default grandchildren of a blueprint are not instantiated over again on every server startup (use properties field)
                                     //do nothing, since we have found an entity that is not a direct child of the template being parsed, this sort of entity will be taken care of while saving a new entity-default
                                 }
                             }
