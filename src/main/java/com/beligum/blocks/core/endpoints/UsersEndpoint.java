@@ -220,7 +220,7 @@ public class UsersEndpoint
             return Response.status(Response.Status.BAD_REQUEST).entity(template).build();
         }
         Response retVal = null;
-        URI referer = URI.create(RequestContext.getRequest().getHeader(HttpHeaders.REFERER));
+        URI referer = URI.create(RequestContext.getRequest().getRequestHeaders().getFirst(HttpHeaders.REFERER));
         if (referer.getPath().equalsIgnoreCase(UsersEndpointRoutes.login().getPath())) {
             retVal = Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId("", null, false).getPath())).build();
         } else {

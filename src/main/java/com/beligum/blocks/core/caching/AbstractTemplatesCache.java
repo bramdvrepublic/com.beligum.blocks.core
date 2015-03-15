@@ -9,13 +9,10 @@ import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.utils.Logger;
-import com.sun.nio.zipfs.ZipPath;
+import com.beligum.core.framework.utils.toolkit.FileFunctions;
 import org.apache.shiro.util.AntPathMatcher;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -184,10 +181,6 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                 for (Path resourceFolder : allResourceFolders) {
                     Path templatesFolder = resourceFolder.resolve(BlocksConfig.getTemplateFolder());
 
-                    if (!(templatesFolder instanceof ZipPath) ){
-                        Logger.debug("");
-                    }
-
                     if (Files.exists(templatesFolder)) {
                         //list which will be filled up with all templates found in all files in the templates-folder
                         final List<AbstractTemplate> foundTemplates = new ArrayList<>();
@@ -268,66 +261,16 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     abstract protected String getDefaultTemplateName();
 
     //-----PRIVATE FUNCTIONS-----
-    protected List<Path> findAllResourceFolders() throws IOException, URISyntaxException
+    protected List<Path> findAllResourceFolders() throws Exception
     {
-        List<Path> retVal = new ArrayList<>();
-
-        //TODO change this to something more universal?
-        //Some explanation: to find the resources folder using ClassLoader.getResources(), we need to search for something specific
-        //this means the file or folder we're looking for needs to actually exist in every folder, jar or zip we want to iterate.
-        //Since we're searching for html files and we want to be able to include *all* html files in the classpath, we need to find
-        //a folder that's "always there", in every classpath. "com" is a good candidate, so is "META-INF". The latter is always present
-        //in jar packages, but not in regular project folders, so we switched to "com" instead. This should ideally be configurable, I guess.
-        final String TEST_FOLDER = "com";
-        Enumeration<URL> allResourceFolders = Thread.currentThread().getContextClassLoader().getResources(TEST_FOLDER);
-        while (allResourceFolders.hasMoreElements()) {
-            URL metaInfResourceUrl = allResourceFolders.nextElement();
-
-            URI metaInfResource = metaInfResourceUrl.toURI();
-            String metaInfResourceStr = metaInfResource.toASCIIString();
-            String scheme = metaInfResource.getScheme();
-
-            Path metaInfPath = null;
-            Path resourcePath = null;
-            if (scheme.equals("jar") || metaInfResourceStr.contains("!")) {
-                //this is a workaround for this java bug (note: don't know if it will work with later java versions as well)
-                //https://bugs.openjdk.java.net/browse/JDK-8014852
-                //found here: http://stackoverflow.com/questions/9873845/java-7-zip-file-system-provider-doesnt-seem-to-accept-spaces-in-uri
-                if (metaInfResourceStr.contains("%20")) {
-                    metaInfResourceStr = metaInfResourceStr.replaceAll("%20", "%2520");
-                }
-
-                String[] array = metaInfResourceStr.split("!");
-
-                URI fsUri = URI.create(array[0]);
-                FileSystem fileSystem = null;
-                try {
-                    fileSystem = FileSystems.getFileSystem(fsUri);
-                }
-                catch (FileSystemNotFoundException e) {
-                }
-                if (fileSystem == null) {
-                    Map<String, String> env = new HashMap<>();
-                    fileSystem = FileSystems.newFileSystem(fsUri, env);
-                }
-
-                metaInfPath = fileSystem.getPath(array[1]);
+        return FileFunctions.searchResourcesInClasspath(FileFunctions.getClasswideSearchFolder(), new FileFunctions.ResourceSearchPathFilter()
+        {
+            @Override
+            public Path doFilter(Path path)
+            {
                 //since the URI is the META-INF folder, we're looking for it's parent, the root (resources) folder
-                resourcePath = metaInfPath.getParent();
+                return path.getParent();
             }
-            //means we're dealing with a regular file
-            else {
-                metaInfPath = FileSystems.getDefault().getPath(metaInfResource.getPath());
-                //since the URI is the META-INF folder, we're looking for it's parent, the root (resources) folder
-                resourcePath = metaInfPath.getParent();
-            }
-
-            //now, we have a root path to a resource folder that can be searched for the pattern, independent of it being a jar/zip/folder
-            if (!retVal.contains(resourcePath)) {
-                retVal.add(resourcePath);
-            }
-        }
-
-        return retVal;
+        });
     }
 }
