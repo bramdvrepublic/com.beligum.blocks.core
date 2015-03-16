@@ -92,6 +92,11 @@ public class Blueprint extends AbstractTemplate
     {
         return pageTemplateName;
     }
+    //Setter should not be deleted, since it is used when deserializing a blueprint from db
+    public void setPageTemplateName(String pageTemplateName)
+    {
+        this.pageTemplateName = pageTemplateName;
+    }
     /**
      *
      * @return the default page-template this entity-class should be rendered in, fetched from cache

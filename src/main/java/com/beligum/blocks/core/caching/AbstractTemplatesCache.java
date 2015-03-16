@@ -90,7 +90,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                 return false;
             }
             //TODO: when adding possibility to parse multiple entity-class-languages from file to cache, multiple languages should be able to be added. This class should have the functionality to put two different languages together in one blueprint
-            if(!getCache().containsKey(template.getUnversionedId())) {
+            if(!getCache().containsKey(getTemplateKey(template.getName()))) {
                 AbstractTemplate storedTemplate = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(template.getId(), this.getCachedClass());
                 if (storedTemplate == null) {
                     RedisDatabase.getInstance().create(template);

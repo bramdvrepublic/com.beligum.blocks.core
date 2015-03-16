@@ -11,6 +11,7 @@ import com.beligum.blocks.core.models.redis.templates.*;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.base.R;
+import com.beligum.core.framework.i18n.I18n;
 import com.beligum.core.framework.templating.ifaces.Template;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
@@ -31,7 +32,7 @@ import java.util.Map;
 /**
  * Created by bas on 27.01.15.
  */
-@Path("/debug")
+@Path("dbg")
 @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
 public class DebugEndpoint
 {
@@ -81,6 +82,21 @@ public class DebugEndpoint
     {
         Template template = R.templateEngine().getEmptyTemplate("/views/admin/blueprints.vm");
         template.set("blueprints", BlueprintsCache.getInstance().values());
+        template.set("blueprintName", I18n.instance().getMessage("blueprintName"));
+        template.set("blueprintPageTemplate", I18n.instance().getMessage("blueprintPageTemplate"));
+        template.set("blueprintPageBlock", I18n.instance().getMessage("blueprintPageBlock"));
+        template.set("blueprintAddableBlock", I18n.instance().getMessage("blueprintAddableBlock"));
+        template.set("blueprintProperties", I18n.instance().getMessage("blueprintProperties"));
+        template.set("blueprintScripts", I18n.instance().getMessage("blueprintScripts"));
+        template.set("blueprintLinks", I18n.instance().getMessage("blueprintLinks"));
+        template.set("blueprintLanguages", I18n.instance().getMessage("blueprintLanguages"));
+        template.set("blueprintId", I18n.instance().getMessage("blueprintId"));
+        template.set("blueprintApplicationVersion", I18n.instance().getMessage("blueprintApplicationVersion"));
+        template.set("blueprintCreatedBy", I18n.instance().getMessage("blueprintCreatedBy"));
+        template.set("blueprintUpdatedBy", I18n.instance().getMessage("blueprintUpdatedBy"));
+        template.set("blueprintCreatedAt", I18n.instance().getMessage("blueprintCreatedAt"));
+        template.set("blueprintUpdatedAt", I18n.instance().getMessage("blueprintUpdatedAt"));
+        template.set("blueprintDeleted", I18n.instance().getMessage("blueprintDeleted"));
         return Response.ok(template).build();
     }
 
