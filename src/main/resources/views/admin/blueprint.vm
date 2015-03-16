@@ -1,0 +1,7 @@
+#define($body-html)
+
+
+
+#end
+
+#parse("/views/admin/main.html")
