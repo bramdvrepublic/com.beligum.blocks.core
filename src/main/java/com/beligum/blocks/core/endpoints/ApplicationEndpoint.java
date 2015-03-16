@@ -7,11 +7,10 @@ import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.LanguageException;
-import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.Blueprint;
+import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.base.R;
@@ -53,7 +52,7 @@ public class ApplicationEndpoint
                 Logger.debug("Unauthorized user tried to view deleted version of page '" + randomURLPath + "'.");
                 fetchDeleted = false;
             }
-            URL url = new URL(RequestContext.getRequest().getRequestURL().toString());
+            URL url = new URL(RequestContext.getRequest().getRequestUri().toString());
             if(!this.hasLanguage(url)){
                 return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId(BlocksConfig.getDefaultLanguage()+url.getPath(), version, fetchDeleted).getPath())).build();
             }
@@ -127,7 +126,7 @@ public class ApplicationEndpoint
         }
         //if the index was not found, redirect to user login, else throw exception
         catch(NotFoundException e){
-            String url = RequestContext.getRequest().getRequestURL().toString();
+            String url = RequestContext.getRequest().getRequestUri().toString();
             try {
                 if(url != null && (url.toString().equals(new URL(BlocksConfig.getSiteDomain() + "/" + BlocksConfig.getDefaultLanguage()).toString()) || url.toString().equals(new URL(BlocksConfig.getSiteDomain() + "/" + BlocksConfig.getDefaultLanguage() + "/").toString()))){
                     return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
@@ -175,7 +174,7 @@ public class ApplicationEndpoint
     private Response injectParameters(Template newPageTemplate) throws Exception
     {
         List<Blueprint> pageBlocks = BlueprintsCache.getInstance().getPageClasses();
-        newPageTemplate.set(ParserConstants.ENTITY_URL, RequestContext.getRequest().getRequestURL().toString());
+        newPageTemplate.set(ParserConstants.ENTITY_URL, RequestContext.getRequest().getRequestUri().toString());
         newPageTemplate.set(ParserConstants.BLUEPRINTS, pageBlocks);
         return Response.ok(newPageTemplate).build();
     }

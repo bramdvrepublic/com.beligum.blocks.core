@@ -5,13 +5,11 @@ import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.caching.PageTemplateCache;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.dynamic.DynamicBlockHandler;
-import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.core.framework.base.ifaces.ServerLifecycleListener;
 import com.beligum.core.framework.utils.Logger;
 import org.eclipse.jetty.server.Server;
-
-import javax.servlet.ServletContextEvent;
+import org.glassfish.jersey.server.spi.Container;
 
 /**
  * Created by bas on 24.02.15.
@@ -20,7 +18,7 @@ import javax.servlet.ServletContextEvent;
 public class BlocksLifecycleListener implements ServerLifecycleListener
 {
     @Override
-    public void onServerStarted(Server server, ServletContextEvent event)
+    public void onServerStarted(Server server, Container container)
     {
         //initialize the Redis-singleton on server start-up
         RedisDatabase.getInstance();
@@ -50,7 +48,7 @@ public class BlocksLifecycleListener implements ServerLifecycleListener
         }
     }
     @Override
-    public void onServerStopped(Server server, ServletContextEvent event)
+    public void onServerStopped(Server server, Container container)
     {
         //close the Redis-singleton on server-end (this destroys the Jedis-pool)
         //TODO: when does server pass here?

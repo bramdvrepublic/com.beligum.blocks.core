@@ -5,18 +5,14 @@ import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
-import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.utils.Logger;
-import com.sun.nio.zipfs.ZipPath;
+import com.beligum.core.framework.utils.toolkit.FileFunctions;
 import org.apache.shiro.util.AntPathMatcher;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -66,22 +62,17 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                 if (template != null) {
                     return template;
                 }
-                else{
-                    BlocksID id = new BlocksID(this.getTemplateKey(name), BlocksID.NO_VERSION, BlocksID.NO_LANGUAGE);
-                    template = (T) RedisDatabase.getInstance().fetchLastVersion(id, this.getCachedClass());
-                    if(template!=null) {
-                        return template;
-                    }
-                    else{
-                        return applicationCache.get(getTemplateKey(getDefaultTemplateName()));
-                    }
+                else {
+                    //TODO BAS: if this is null, check Redis for last version
+                    return applicationCache.get(getTemplateKey(getDefaultTemplateName()));
                 }
             }
             else {
                 return this.getCache().get(getTemplateKey(getDefaultTemplateName()));
             }
-        }catch(Exception e){
-            throw new CacheException("Could not get "+ PageTemplate.class.getSimpleName() + " '" + name + "' from cache.", e);
+        }
+        catch (IDException e) {
+            throw new CacheException("Could not get " + PageTemplate.class.getSimpleName() + " '" + name + "' from cache.", e);
         }
     }
 
@@ -109,8 +100,6 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                 }
                 else {
                     //if this template was already stored in db, we should cache the db-version, since it has the correct time-stamp
-                    //TODO: properties should be read from db, for now we use the found properties
-                    storedTemplate.setProperties(template.getProperties());
                     template = (T) storedTemplate;
                 }
                 getCache().put(template.getUnversionedId(), template);
@@ -181,7 +170,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
      *
      * @throws com.beligum.blocks.core.exceptions.CacheException
      */
-    protected void fillCache() throws Exception
+    protected void fillCache() throws CacheException
     {
         if (!runningTroughHtmlTemplates) {
             runningTroughHtmlTemplates = true;
@@ -191,10 +180,6 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
 
                 for (Path resourceFolder : allResourceFolders) {
                     Path templatesFolder = resourceFolder.resolve(BlocksConfig.getTemplateFolder());
-
-                    if (!(templatesFolder instanceof ZipPath) ){
-                        Logger.debug("");
-                    }
 
                     if (Files.exists(templatesFolder)) {
                         //list which will be filled up with all templates found in all files in the templates-folder
@@ -216,10 +201,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                                         TemplateParser.findTemplatesFromFile(html, foundTemplates, foundEntityClassNames);
                                     }
                                     catch (ParseException e) {
-                                        String errorMessage = "Parse error while fetching page-templates and blueprints from file '" + filePath + "': \n";
-                                        errorMessage += e.getMessage();
-                                        Logger.error(errorMessage, e.getCause());
-                                        //TODO: create log file with wrong html and message error
+                                        Logger.error("Parse error while fetching page-templates and blueprints from file '" + filePath + "'.", e);
                                     }
                                 }
                                 return FileVisitResult.CONTINUE;
@@ -279,61 +261,16 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     abstract protected String getDefaultTemplateName();
 
     //-----PRIVATE FUNCTIONS-----
-    protected List<Path> findAllResourceFolders() throws IOException, URISyntaxException
+    protected List<Path> findAllResourceFolders() throws Exception
     {
-        List<Path> retVal = new ArrayList<>();
-
-        //TODO change this to something more universal?
-        final String TEST_FOLDER = "com";
-        Enumeration<URL> allResourceFolders = Thread.currentThread().getContextClassLoader().getResources(TEST_FOLDER);
-        while (allResourceFolders.hasMoreElements()) {
-            URL metaInfResourceUrl = allResourceFolders.nextElement();
-
-            URI metaInfResource = metaInfResourceUrl.toURI();
-            String metaInfResourceStr = metaInfResource.toString();
-            String scheme = metaInfResource.getScheme();
-
-            Path metaInfPath = null;
-            Path resourcePath = null;
-            if (scheme.equals("jar") || metaInfResourceStr.contains("!")) {
-                //this is a workaround for this java bug (note: don't know if it will work with later java versions as well)
-                //https://bugs.openjdk.java.net/browse/JDK-8014852
-                //found here: http://stackoverflow.com/questions/9873845/java-7-zip-file-system-provider-doesnt-seem-to-accept-spaces-in-uri
-                if (metaInfResourceStr.contains("%20")) {
-                    metaInfResourceStr = metaInfResourceStr.replaceAll("%20", "%2520");
-                }
-
-                String[] array = metaInfResourceStr.split("!");
-
-                URI fsUri = URI.create(array[0]);
-                FileSystem fileSystem = null;
-                try {
-                    fileSystem = FileSystems.getFileSystem(fsUri);
-                }
-                catch (FileSystemNotFoundException e) {
-                }
-                if (fileSystem == null) {
-                    Map<String, String> env = new HashMap<>();
-                    fileSystem = FileSystems.newFileSystem(fsUri, env);
-                }
-
-                metaInfPath = fileSystem.getPath(array[1]);
+        return FileFunctions.searchResourcesInClasspath(FileFunctions.getClasswideSearchFolder(), new FileFunctions.ResourceSearchPathFilter()
+        {
+            @Override
+            public Path doFilter(Path path)
+            {
                 //since the URI is the META-INF folder, we're looking for it's parent, the root (resources) folder
-                resourcePath = metaInfPath.getParent();
+                return path.getParent();
             }
-            //means we're dealing with a regular file
-            else {
-                metaInfPath = FileSystems.getDefault().getPath(metaInfResource.getPath());
-                //since the URI is the META-INF folder, we're looking for it's parent, the root (resources) folder
-                resourcePath = metaInfPath.getParent();
-            }
-
-            //now, we have a root path to a resource folder that can be searched for the pattern, independent of it being a jar/zip/folder
-            if (!retVal.contains(resourcePath)) {
-                retVal.add(resourcePath);
-            }
-        }
-
-        return retVal;
+        });
     }
 }
