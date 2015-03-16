@@ -2,12 +2,11 @@ package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.BlueprintsCache;
-import com.beligum.blocks.core.caching.PageTemplateCache;
+import com.beligum.blocks.core.caching.PageTemplatesCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Database;
 import com.beligum.blocks.core.dbs.RedisDatabase;
-import com.beligum.blocks.core.exceptions.*;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
@@ -25,7 +24,6 @@ import org.hibernate.validator.constraints.NotBlank;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.util.*;
@@ -190,7 +188,7 @@ public class EntitiesEndpoint
     public Response listTemplates() throws Exception
     {
         List<String> templateNames = new ArrayList<String>();
-        for (PageTemplate e : PageTemplateCache.getInstance().values()) {
+        for (PageTemplate e : PageTemplatesCache.getInstance().values()) {
             if(!e.getName().equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)){
                 templateNames.add(e.getName());
             }

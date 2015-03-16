@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.parsers;
 
 import com.beligum.blocks.core.caching.BlueprintsCache;
-import com.beligum.blocks.core.caching.PageTemplateCache;
+import com.beligum.blocks.core.caching.PageTemplatesCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.ParseException;
@@ -53,7 +53,7 @@ public class TemplateParser
      */
     public static void injectDefaultsInFoundTemplatesAndCache(List<? extends AbstractTemplate> foundTemplates) throws Exception
     {Map<String, PageTemplate> allPageTemplates = new HashMap<>();
-        allPageTemplates.put(ParserConstants.DEFAULT_PAGE_TEMPLATE, PageTemplateCache.getInstance().get(ParserConstants.DEFAULT_PAGE_TEMPLATE));
+        allPageTemplates.put(ParserConstants.DEFAULT_PAGE_TEMPLATE, PageTemplatesCache.getInstance().get(ParserConstants.DEFAULT_PAGE_TEMPLATE));
         Map<String, Blueprint> allBlueprints = new HashMap<>();
         allBlueprints.put(ParserConstants.DEFAULT_BLUEPRINT, BlueprintsCache.getInstance().get(ParserConstants.DEFAULT_BLUEPRINT));
         //split the list of templates up into page-templates and entity-classes
@@ -114,7 +114,7 @@ public class TemplateParser
 
         //create defaults for all found page-templates and cache to application-cache
         for (String templateName : allPageTemplates.keySet()) {
-            if(!PageTemplateCache.getInstance().contains(templateName) || templateName.equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
+            if(!PageTemplatesCache.getInstance().contains(templateName) || templateName.equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
                 AbstractTemplate template = allPageTemplates.get(templateName);
                 Map<BlocksID, String> htmlTemplates = template.getTemplates();
                 for (BlocksID language : htmlTemplates.keySet()) {

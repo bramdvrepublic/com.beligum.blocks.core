@@ -1,0 +1,97 @@
+#define($body-html)
+<div class="container">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h1 class="panel-title">$pageTemplatesTitle</h1>
+        </div>
+##        <div class="panel-body">
+##
+##        </div>
+        <table class="table">
+            <thead>
+            <tr>
+                <th>
+                    $pageTemplateName
+                </th>
+                <th>
+                    $pageTemplateProperties
+                </th>
+                <th>
+                    $pageTemplateScripts
+                </th>
+                <th>
+                    $pageTemplateLinks
+                </th>
+                <th>
+                    $pageTemplateLanguages
+                </th>
+                <th>
+                    $pageTemplateId
+                </th>
+                <th>
+                    $pageTemplateApplicationVersion
+                </th>
+                <th>
+                    $pageTemplateCreatedBy
+                </th>
+                <th>
+                    $pageTemplateCreatedAt
+                </th>
+                <th>
+                    $pageTemplateUpdatedBy
+                </th>
+                <th>
+                    $pageTemplateUpdatedAt
+                </th>
+                <th>
+                    $pageTemplateDeleted
+                </th>
+            </tr>
+            </thead>
+            <tbody>
+                #foreach($pageTemplate in $pageTemplates)
+                <tr>
+                    <td>
+                        $!pageTemplate.getName()
+                    </td>
+                    <td>
+                        $!pageTemplate.getProperties().size()
+                    </td>
+                    <td>
+                        $!pageTemplate.getScripts().size()
+                    </td>
+                    <td>
+                        $!pageTemplate.getLinks().size()
+                    </td>
+                    <td>
+                        $!pageTemplate.getLanguages()
+                    </td>
+                    <td>
+                        $!pageTemplate.getId().getUnversionedId()
+                    </td>
+                    <td>
+                        $!pageTemplate.getApplicationVersion()
+                    </td>
+                    <td>
+                        $!pageTemplate.getCreatedBy()
+                    </td>
+                    <td>
+                        $DateTool.format($!pageTemplate.getCreatedAtDate())
+                    </td>
+                    <td>
+                        $!pageTemplate.getUpdatedBy()
+                    </td>
+                    <td>
+                        $DateTool.format($!pageTemplate.getUpdatedAtDate())
+                    </td>
+                    <td>
+                        $!pageTemplate.getDeleted()
+                    </td>
+                </tr>
+                #end
+            </tbody>
+        </table>
+    </div>
+#end
+
+#parse("/views/admin/main.html")

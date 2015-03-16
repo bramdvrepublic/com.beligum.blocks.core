@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.models.redis.templates;
 
 import com.beligum.blocks.core.caching.BlueprintsCache;
-import com.beligum.blocks.core.caching.PageTemplateCache;
+import com.beligum.blocks.core.caching.PageTemplatesCache;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.*;
@@ -174,7 +174,7 @@ public class EntityTemplate extends AbstractTemplate
      */
     public PageTemplate getPageTemplate() throws Exception
     {
-        return PageTemplateCache.getInstance().get(pageTemplateName);
+        return PageTemplatesCache.getInstance().get(pageTemplateName);
     }
 
 

@@ -1,11 +1,9 @@
 package com.beligum.blocks.core.models.redis.templates;
 
-import com.beligum.blocks.core.caching.PageTemplateCache;
+import com.beligum.blocks.core.caching.PageTemplatesCache;
 import com.beligum.blocks.core.config.ParserConstants;
-import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
-import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.utils.Utils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -103,7 +101,7 @@ public class Blueprint extends AbstractTemplate
      */
     public PageTemplate getPageTemplate() throws Exception
     {
-        return PageTemplateCache.getInstance().get(pageTemplateName);
+        return PageTemplatesCache.getInstance().get(pageTemplateName);
     }
 
     public boolean isPageBlock()

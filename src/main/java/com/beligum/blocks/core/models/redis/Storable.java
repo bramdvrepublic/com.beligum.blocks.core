@@ -9,8 +9,10 @@ import com.beligum.core.framework.security.Authentication;
 import com.beligum.core.framework.security.Principal;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.UnavailableSecurityManagerException;
+import org.joda.time.Instant;
 import org.joda.time.LocalDateTime;
 
+import java.util.Date;
 import java.util.Map;
 
 /**
@@ -110,6 +112,7 @@ public class Storable{
     {
         this.createdAt = createdAt;
     }
+
     /**
      * @return the moment of last update of this storable
      */
@@ -181,5 +184,12 @@ public class Storable{
         toBeUpdated.applicationVersion = BlocksConfig.getProjectVersion();
         toBeUpdated.updatedAt = getCurrentTime();
         toBeUpdated.updatedBy = getCurrentUserName();
+    }
+
+    public Date getCreatedAtDate(){
+        return new LocalDateTime(this.createdAt).toDate();
+    }
+    public Date getUpdatedAtDate(){
+        return new LocalDateTime(this.updatedAt).toDate();
     }
 }

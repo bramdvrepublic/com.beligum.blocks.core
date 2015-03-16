@@ -2,7 +2,7 @@ package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.BlueprintsCache;
-import com.beligum.blocks.core.caching.PageTemplateCache;
+import com.beligum.blocks.core.caching.PageTemplatesCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.*;
@@ -17,6 +17,7 @@ import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
+import org.apache.velocity.tools.generic.DateTool;
 import org.joda.time.LocalDateTime;
 
 import javax.ws.rs.*;
@@ -32,7 +33,7 @@ import java.util.Map;
 /**
  * Created by bas on 27.01.15.
  */
-@Path("dbg")
+@Path("debug")
 @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
 public class DebugEndpoint
 {
@@ -61,9 +62,9 @@ public class DebugEndpoint
     {
         try {
             BlueprintsCache.getInstance().reset();
-            PageTemplateCache.getInstance().reset();
+            PageTemplatesCache.getInstance().reset();
             BlueprintsCache.getInstance();
-            PageTemplateCache.getInstance();
+            PageTemplatesCache.getInstance();
             Logger.warn("Cache has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
             return Response.ok("Cache reset").build();
         }
@@ -77,11 +78,36 @@ public class DebugEndpoint
     }
 
     @GET
+    @Path("/pagetemplates")
+    public Response getPageTemplatesPage() throws Exception
+    {
+        Template template = R.templateEngine().getEmptyTemplate("/views/admin/pagetemplates.vm");
+        template.set("DateTool", new DateTool());
+        template.set("pageTemplates", PageTemplatesCache.getInstance().values());
+        template.set("pageTemplatesTitle", I18n.instance().getMessage("pageTemplatesTitle"));
+        template.set("pageTemplateName", I18n.instance().getMessage("pageTemplateName"));
+        template.set("pageTemplateProperties", I18n.instance().getMessage("pageTemplateProperties"));
+        template.set("pageTemplateScripts", I18n.instance().getMessage("pageTemplateScripts"));
+        template.set("pageTemplateLinks", I18n.instance().getMessage("pageTemplateLinks"));
+        template.set("pageTemplateLanguages", I18n.instance().getMessage("pageTemplateLanguages"));
+        template.set("pageTemplateId", I18n.instance().getMessage("pageTemplateId"));
+        template.set("pageTemplateApplicationVersion", I18n.instance().getMessage("pageTemplateApplicationVersion"));
+        template.set("pageTemplateCreatedBy", I18n.instance().getMessage("pageTemplateCreatedBy"));
+        template.set("pageTemplateUpdatedBy", I18n.instance().getMessage("pageTemplateUpdatedBy"));
+        template.set("pageTemplateCreatedAt", I18n.instance().getMessage("pageTemplateCreatedAt"));
+        template.set("pageTemplateUpdatedAt", I18n.instance().getMessage("pageTemplateUpdatedAt"));
+        template.set("pageTemplateDeleted", I18n.instance().getMessage("pageTemplateDeleted"));
+        return Response.ok(template).build();
+    }
+
+    @GET
     @Path("/blueprints")
     public Response getBlueprintsPage() throws Exception
     {
         Template template = R.templateEngine().getEmptyTemplate("/views/admin/blueprints.vm");
+        template.set("DateTool", new DateTool());
         template.set("blueprints", BlueprintsCache.getInstance().values());
+        template.set("blueprintsTitle", I18n.instance().getMessage("blueprintsTitle"));
         template.set("blueprintName", I18n.instance().getMessage("blueprintName"));
         template.set("blueprintPageTemplate", I18n.instance().getMessage("blueprintPageTemplate"));
         template.set("blueprintPageBlock", I18n.instance().getMessage("blueprintPageBlock"));
@@ -115,12 +141,12 @@ public class DebugEndpoint
     }
 
     @GET
-    @Path("/pagetemplates")
+    @Path("src/pagetemplates")
     @Produces("text/plain")
     public Response getPageTemplateCache() throws Exception
     {
-        List<String> pageTemplateKeys = PageTemplateCache.getInstance().keys();
-        List<PageTemplate> pageTemplates = PageTemplateCache.getInstance().values();
+        List<String> pageTemplateKeys = PageTemplatesCache.getInstance().keys();
+        List<PageTemplate> pageTemplates = PageTemplatesCache.getInstance().values();
         String cache = "";
         for(int i = 0; i<pageTemplates.size(); i++){
             cache += "----------------------------------" + pageTemplateKeys.get(i) + "---------------------------------- \n\n" + pageTemplates.get(i).toString() + "\n\n\n\n\n\n";
