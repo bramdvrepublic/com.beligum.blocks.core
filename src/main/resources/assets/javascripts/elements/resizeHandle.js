@@ -20,12 +20,6 @@ blocks
 
                 this.overlay = $("<div />").addClass(Constants.COLUMN_RESIZER_CLASS);
 
-
-
-
-
-
-
             },
 
             update: function() {
@@ -40,13 +34,16 @@ blocks
 
             showOverlay: function() {
                 var _this = this;
-                this.overlay.on("mousedown.resizehandle", function () {
-                    Resizer.startDrag(_this);
-                    $(document).on("mouseup.resizehandle", function () {
-                        $(document).off("mouseup.resizehandledrag");
-                        Resizer.endDrag(null);
+                this.overlay.on("mousedown.resizehandle", function (event) {
+                    // only start drag on left click
+                    if (event.which == 1) {
+                        Resizer.startDrag(_this);
+                        $(document).on("mouseup.resizehandle", function (event) {
+                            $(document).off("mouseup.resizehandledrag");
+                            Resizer.endDrag(null);
 
-                    });
+                        });
+                    }
                 });
 
                 var left = 0; var width = blocks.elements.ResizeHandle.TRIGGER_WIDTH; var top = 0; var height = 0;

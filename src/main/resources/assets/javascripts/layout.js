@@ -186,12 +186,12 @@ blocks.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.C
     };
 
     // Add new jquery Object at bottom of dropLocation
-    this.addNewBlockAtLocation = function(blockElement, dropLocation) {
+    this.addNewBlockAtLocation = function(side, blockElement, dropLocation) {
         dropLocationElement = dropLocation.element;
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         Broadcaster.send(Broadcaster.EVENTS.DOM_WILL_CHANGE);
 
-        drop(blockElement, dropLocationElement, Constants.SIDE.BOTTOM);
+        drop(blockElement, dropLocationElement, side);
 
         // TODO return false if invalid so we can cancel everything
     };

@@ -67,6 +67,7 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "blocks.core.Co
         BlockMenu.hideMenu();
         activeResizeHandle = handle;
         DOM.disableSelection();
+        DOM.disableContextMenu();
         $("." + Constants.BLOCK_OVERLAY_CLASS).hide();
         $("." + Constants.PROPERTY_OVERLAY_CLASS).hide();
         $("body").addClass(Constants.FORCE_RESIZE_CURSOR);
@@ -93,6 +94,7 @@ blocks.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "blocks.core.Co
         if (dragging) {
             dragging = false;
             $("body").removeClass(Constants.FORCE_RESIZE_CURSOR);
+            DOM.enableContextMenu();
             Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
         }

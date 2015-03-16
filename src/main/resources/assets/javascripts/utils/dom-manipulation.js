@@ -461,6 +461,22 @@ blocks.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function 
 
     };
 
+
+
+    this.disableContextMenu = function() {
+        $("html").attr("oncontextmenu", "return false;");
+        // IE < 10
+        $("html").attr("onselectstart", "return false;");
+    };
+
+    this.enableContextMenu = function() {
+        $("html").removeAttr("oncontextmenu", "");
+        $("html").removeAttr("onselectstart");
+    };
+
+
+
+
     var DOM = this;
 
 

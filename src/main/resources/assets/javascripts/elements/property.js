@@ -5,7 +5,7 @@
 blocks
     .plugin("blocks.core.Elements.Property", ["blocks.core.Class", "blocks.core.Constants", "blocks.core.DomManipulation", "blocks.core.Edit",  function (Class, Constants, DOM, Edit) {
 
-
+        var body = $("body");
 // A container contains properties
 // A property can contain a new container itself to go up the tree
         blocks.elements = blocks.elements || {};
@@ -38,7 +38,7 @@ blocks
                     this.overlay.addClass(Constants.BLOCK_OVERLAY_CLASS);
                 } else //if  (this.parent.parent.isEntity)
                 {
-                    block.overlay.append(this.overlay.addClass(Constants.PROPERTY_OVERLAY_CLASS));
+                    this.overlay.addClass(Constants.PROPERTY_OVERLAY_CLASS);
                     if (this.editType == Constants.EDIT_OTHER) {
                         this.overlay.addClass(Constants.NO_TEXT_CLASS);
                     }

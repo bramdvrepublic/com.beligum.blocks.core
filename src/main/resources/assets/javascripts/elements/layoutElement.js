@@ -206,6 +206,10 @@ blocks
                             this.children[i].createAllDropspots();
                         }
                     }
+
+                }
+                if (this.container != null) {
+                    this.container.createAllDropspots();
                 }
             },
 
@@ -415,28 +419,40 @@ blocks
                 return this.totalBlocks;
             },
 
+            getLayoutContainer: function() {
+                var retVal = null;
+                if (this instanceof blocks.elements.Container && this.canLayout) {
+                    return this;
+                }
+                if (this instanceof blocks.elements.Property) {
+                    retVal = this.container.getLayoutContainer();
+                } else {
+                    for (var i=0; i < this.children.length; i++) {
+                        retVal = this.children[i].getLayoutContainer();
+                        if (retVal != null) return retVal;
+                    }
+                }
+                return retVal;
+            },
+
             showOverlay: function() {
                 if (this.overlay != null) {
 
 
                     this.overlay.css("width", (this.right - this.left) + "px");
                     this.overlay.css("height", (this.bottom - this.top) + "px");
-                    if (this.isEntity) {
+
                         if (this.overlay.parent().length > 0) this.overlay.remove();
                         this.overlay.css("left", this.left + "px");
                         this.overlay.css("top", this.top + "px");
-                        body.append(this.overlay);
-                    } else if (this.parent.parent.isEntity) {
-                        this.overlay.css("top", this.top - this.parent.parent.top);
-                        this.overlay.css("left", this.left - this.parent.parent.left);
-                    }
+                    body.append(this.overlay);
 
 
                 }
             },
 
             removeOverlay: function() {
-                if (this.overlay != null && this.isEntity) this.overlay.remove();
+                if (this.overlay != null) this.overlay.remove();
             }
 
 

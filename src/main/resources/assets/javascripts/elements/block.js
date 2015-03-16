@@ -101,6 +101,7 @@ blocks
                 Logger.debug("Recalculate triggers");
                 if (currentDropspot == null || !currentDropspot.makeTriggers(x, y, direction)) {
                     var newDropspot = currentDropspot;
+                    Logger.debug("Create new trigger triggers");
                     try {
                         if (direction == Constants.DIRECTION.UP) {
                             newDropspot = this.verticalDropspots[this.verticalDropspots.length - 1];

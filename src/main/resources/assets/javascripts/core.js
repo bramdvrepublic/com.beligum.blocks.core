@@ -75,6 +75,8 @@ blocks.plugin("blocks.core.Constants", function() {
     this.FORCE_RESIZE_CURSOR = "force-col-resize-cursor";
     this.FORCE_DRAG_CURSOR = "force-dragging-cursor";
     this.NO_TEXT_CLASS = "property-no-text";
+    this.DRAG_CREATE_BLOCK = "drag-create-block";
+    this.CREATE_BLOCK_TYPE = "create-block-type";
 
     this.EDIT_TEXT = "edit-text";
     this.EDIT_NONE = "edit-none";

@@ -3,7 +3,7 @@
  *
  * The manager is the central point. here we catch all the events to keep an overview
  */
-blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.BlockMenu", "blocks.core.Highlighter", "blocks.core.Overlay", "blocks.core.Edit", "blocks.core.DomManipulation",   function(Constants, Broadcaster, Mouse, DragDrop, Resizer, BlockMenu, Highlighter, Overlay, Edit, DOM) {
+blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.BlockMenu", "blocks.core.Highlighter", "blocks.core.Overlay", "blocks.core.Edit", "blocks.core.DomManipulation", "blocks.core.DragCreate",  function(Constants, Broadcaster, Mouse, DragDrop, Resizer, BlockMenu, Highlighter, Overlay, Edit, DOM, DragCreate) {
 
     // On Window resize
     var resizeTimeout = null;
@@ -61,6 +61,7 @@ blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broa
         Broadcaster.resetHover();
 
         DragDrop.setActive(true);
+        DragCreate.activate();
         Highlighter.showBlockOverlay(Broadcaster.block().current);
         Highlighter.showPropertyOverlay(Broadcaster.property().current);
 
@@ -70,7 +71,7 @@ blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broa
     $(document).on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, function () {
         Mouse.deactivate();
         Broadcaster.resetHover();
-
+        DragCreate.deactivate()
         DragDrop.setActive(false);
         DOM.enableSelection();
 
@@ -141,7 +142,7 @@ blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broa
     $(document).on(Broadcaster.EVENTS.START_DRAG, function (event) {
 
         //Broadcaster.zoom();
-        Mouse.disableContextMenu();
+        DOM.disableContextMenu();
         BlockMenu.hideMenu();
         Highlighter.removeBlockOverlay();
         Highlighter.removePropertyOverlay();
@@ -151,13 +152,13 @@ blocks.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broa
     $(document).on(Broadcaster.EVENTS.END_DRAG, function (event) {
         //Broadcaster.unzoom();
 
-        Mouse.enableContextMenu();
+        DOM.enableContextMenu();
         DragDrop.dragEnded(event);
     });
 
     $(document).on(Broadcaster.EVENTS.ABORT_DRAG, function (event) {
         //Broadcaster.unzoom();
-        Mouse.enableContextMenu();
+        DOM.enableContextMenu();
         DragDrop.dragAborted(event);
         Highlighter.showBlockOverlay(Broadcaster.block().current);
         Highlighter.showPropertyOverlay(Broadcaster.property().current);

@@ -81,7 +81,6 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
 
         currentBlock = null;
         currentProperty = null;
-        triggeredMouseDown = false;
         //var docWidth = $(document).width();
         var docWidth = 1000;
         if (docWidth > 920) {
@@ -102,13 +101,11 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
      *   - disable selection
      *   - keep current jQuery event as startevent
      * */
-    var triggeredMouseDown = false;
     var mouseDown = function (event) {
         if (active) {
 
             // check for left mouse click
             if (event.which == 1) {
-                triggeredMouseDown = true;
                 var block = Broadcaster.getHooveredBlockForPosition(event.pageX, event.pageY);
                 if (draggingStatus == Constants.DRAGGING.NO &&
                     block.current != null && block.current.canDrag) {
@@ -138,7 +135,7 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
      * If dragging send END_OF_DRAG and reset draggingOptions
      * */
     var mouseUp = function (event) {
-        if (active && triggeredMouseDown) {
+        if (active && event.which == 1) {
             Logger.debug("MOUSE UP");
             if (draggingStatus != Constants.DRAGGING.NOT_ALLOWED) {
                 var oldDragStatus = draggingStatus;
@@ -257,20 +254,6 @@ blocks.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layo
         Logger.debug("Dragging allowed");
         Mouse.resetMouse(true);
     };
-
-
-
-    this.disableContextMenu = function() {
-        $("html").attr("oncontextmenu", "return false;");
-        // IE < 10
-        $("html").attr("onselectstart", "return false;");
-    };
-
-    this.enableContextMenu = function() {
-        $("html").removeAttr("oncontextmenu", "");
-        $("html").removeAttr("onselectstart");
-    };
-
 
 
 
