@@ -1,8 +1,7 @@
 #define($body-html)
-
+    $blueprints
 
 
 #end
-
 
 #parse("/views/admin/main.html")

@@ -10,6 +10,8 @@ import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.models.redis.templates.*;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.usermanagement.Permissions;
+import com.beligum.core.framework.base.R;
+import com.beligum.core.framework.templating.ifaces.Template;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
@@ -75,6 +77,15 @@ public class DebugEndpoint
 
     @GET
     @Path("/blueprints")
+    public Response getBlueprintsPage() throws Exception
+    {
+        Template template = R.templateEngine().getEmptyTemplate("/views/admin/blueprints.vm");
+        template.set("blueprints", BlueprintsCache.getInstance().values());
+        return Response.ok(template).build();
+    }
+
+    @GET
+    @Path("src/blueprints")
     @Produces("text/plain")
     public Response getBlueprintsCache() throws Exception
     {
