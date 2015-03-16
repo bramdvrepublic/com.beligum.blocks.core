@@ -1,7 +1,29 @@
 #define($body-html)
+<div class="container">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h2 class="panel-title">$blueprint.getName()</h2>
+        </div>
+        <div class="panel-body">
+            <h3>$I18N.getMessage("blueprintProperties")</h3>
+            <div>
+                #foreach($property in $blueprint.getProperties())
+                <div>
+                    $property.getId()
+                </div>
+                #end
+            </div>
 
+            <h3>$I18N.getMessage("blueprintOtherFields")</h3>
+            <div>
 
+            </div>
 
+            <h3>$I18N.getMessage("renderedBlueprint")</h3>
+            $src
+        </div>
+    </div>
+</div>
 #end
 
 #parse("/views/admin/main.html")

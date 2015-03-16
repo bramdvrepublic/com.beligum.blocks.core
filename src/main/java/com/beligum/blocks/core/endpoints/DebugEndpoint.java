@@ -84,19 +84,6 @@ public class DebugEndpoint
         Template template = R.templateEngine().getEmptyTemplate("/views/admin/pagetemplates.vm");
         template.set("DateTool", new DateTool());
         template.set("pageTemplates", PageTemplatesCache.getInstance().values());
-        template.set("pageTemplatesTitle", I18n.instance().getMessage("pageTemplatesTitle"));
-        template.set("pageTemplateName", I18n.instance().getMessage("pageTemplateName"));
-        template.set("pageTemplateProperties", I18n.instance().getMessage("pageTemplateProperties"));
-        template.set("pageTemplateScripts", I18n.instance().getMessage("pageTemplateScripts"));
-        template.set("pageTemplateLinks", I18n.instance().getMessage("pageTemplateLinks"));
-        template.set("pageTemplateLanguages", I18n.instance().getMessage("pageTemplateLanguages"));
-        template.set("pageTemplateId", I18n.instance().getMessage("pageTemplateId"));
-        template.set("pageTemplateApplicationVersion", I18n.instance().getMessage("pageTemplateApplicationVersion"));
-        template.set("pageTemplateCreatedBy", I18n.instance().getMessage("pageTemplateCreatedBy"));
-        template.set("pageTemplateUpdatedBy", I18n.instance().getMessage("pageTemplateUpdatedBy"));
-        template.set("pageTemplateCreatedAt", I18n.instance().getMessage("pageTemplateCreatedAt"));
-        template.set("pageTemplateUpdatedAt", I18n.instance().getMessage("pageTemplateUpdatedAt"));
-        template.set("pageTemplateDeleted", I18n.instance().getMessage("pageTemplateDeleted"));
         return Response.ok(template).build();
     }
 
@@ -107,22 +94,22 @@ public class DebugEndpoint
         Template template = R.templateEngine().getEmptyTemplate("/views/admin/blueprints.vm");
         template.set("DateTool", new DateTool());
         template.set("blueprints", BlueprintsCache.getInstance().values());
-        template.set("blueprintsTitle", I18n.instance().getMessage("blueprintsTitle"));
-        template.set("blueprintName", I18n.instance().getMessage("blueprintName"));
-        template.set("blueprintPageTemplate", I18n.instance().getMessage("blueprintPageTemplate"));
-        template.set("blueprintPageBlock", I18n.instance().getMessage("blueprintPageBlock"));
-        template.set("blueprintAddableBlock", I18n.instance().getMessage("blueprintAddableBlock"));
-        template.set("blueprintProperties", I18n.instance().getMessage("blueprintProperties"));
-        template.set("blueprintScripts", I18n.instance().getMessage("blueprintScripts"));
-        template.set("blueprintLinks", I18n.instance().getMessage("blueprintLinks"));
-        template.set("blueprintLanguages", I18n.instance().getMessage("blueprintLanguages"));
-        template.set("blueprintId", I18n.instance().getMessage("blueprintId"));
-        template.set("blueprintApplicationVersion", I18n.instance().getMessage("blueprintApplicationVersion"));
-        template.set("blueprintCreatedBy", I18n.instance().getMessage("blueprintCreatedBy"));
-        template.set("blueprintUpdatedBy", I18n.instance().getMessage("blueprintUpdatedBy"));
-        template.set("blueprintCreatedAt", I18n.instance().getMessage("blueprintCreatedAt"));
-        template.set("blueprintUpdatedAt", I18n.instance().getMessage("blueprintUpdatedAt"));
-        template.set("blueprintDeleted", I18n.instance().getMessage("blueprintDeleted"));
+        return Response.ok(template).build();
+    }
+
+    @GET
+    @Path("/blueprints/{blueprintName}")
+    public Response getBlueprintPage(@PathParam("blueprintName") String blueprintName, @QueryParam("lang") String language) throws Exception
+    {
+        if(StringUtils.isEmpty(language)){
+            language = BlocksConfig.getDefaultLanguage();
+        }
+        Blueprint blueprint = BlueprintsCache.getInstance().get(blueprintName);
+        Template template = R.templateEngine().getEmptyTemplate("/views/admin/blueprint.vm");
+        template.set("blueprint", blueprint);
+        //TODO: rendering should include links ands scripts for full view of blueprint
+        //TODO BAS SH: template properties are not saved in correct language on server blueprint start, fixing that should make the /debug/blueprints/[blueprintName]?lang=[language] endpoint work correctly
+        template.set("src", TemplateParser.renderTemplate(blueprint, language));
         return Response.ok(template).build();
     }
 

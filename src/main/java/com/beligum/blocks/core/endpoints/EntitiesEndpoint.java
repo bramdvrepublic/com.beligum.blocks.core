@@ -93,9 +93,9 @@ public class EntitiesEndpoint
     @GET
     @Path("/class/{blueprintType}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getClassTemplate(@PathParam("blueprintType") String entityTemplateClasName) throws Exception
+    public Response getClassTemplate(@PathParam("blueprintType") String blueprintName) throws Exception
     {
-        String classHtml = TemplateParser.renderTemplate(BlueprintsCache.getInstance().get(entityTemplateClasName));
+        String classHtml = TemplateParser.renderTemplate(BlueprintsCache.getInstance().get(blueprintName));
         HashMap<String, String> json = new HashMap<String, String>();
         json.put("template", classHtml);
         return Response.ok(json).build();

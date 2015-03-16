@@ -197,11 +197,13 @@ public class ToHtmlVisitor extends SuperVisitor
      * @param links
      */
     private void addLinks(List<String> links){
-        for(String link : links) {
-            boolean added = this.links.add(link);
-            //if this link wasn't present yet, add it to the list
-            if(added){
-                this.linksInOrder.add(link);
+        if(links != null) {
+            for (String link : links) {
+                boolean added = this.links.add(link);
+                //if this link wasn't present yet, add it to the list
+                if (added) {
+                    this.linksInOrder.add(link);
+                }
             }
         }
     }
@@ -211,11 +213,13 @@ public class ToHtmlVisitor extends SuperVisitor
      * @param scripts
      */
     private void addScripts(List<String> scripts){
-        for(String script : scripts) {
-            boolean added = this.scripts.add(script);
-            //if this script wasn't present yet, add it to the list
-            if(added){
-                this.scriptsInOrder.add(script);
+        if(scripts != null) {
+            for (String script : scripts) {
+                boolean added = this.scripts.add(script);
+                //if this script wasn't present yet, add it to the list
+                if (added) {
+                    this.scriptsInOrder.add(script);
+                }
             }
         }
     }

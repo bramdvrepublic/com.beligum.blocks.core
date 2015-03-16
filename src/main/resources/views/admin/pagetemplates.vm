@@ -2,50 +2,47 @@
 <div class="container">
     <div class="panel panel-default">
         <div class="panel-heading">
-            <h1 class="panel-title">$pageTemplatesTitle</h1>
+            <h1 class="panel-title">$I18N.getMessage("pageTemplatesTitle")</h1>
         </div>
-##        <div class="panel-body">
-##
-##        </div>
         <table class="table">
             <thead>
             <tr>
                 <th>
-                    $pageTemplateName
+                    $I18N.getMessage("pageTemplateName")
                 </th>
                 <th>
-                    $pageTemplateProperties
+                    $I18N.getMessage("pageTemplateProperties")
                 </th>
                 <th>
-                    $pageTemplateScripts
+                    $I18N.getMessage("pageTemplateScripts")
                 </th>
                 <th>
-                    $pageTemplateLinks
+                    $I18N.getMessage("pageTemplateLinks")
                 </th>
                 <th>
-                    $pageTemplateLanguages
+                    $I18N.getMessage("pageTemplateLanguages")
                 </th>
-                <th>
-                    $pageTemplateId
-                </th>
-                <th>
-                    $pageTemplateApplicationVersion
-                </th>
-                <th>
-                    $pageTemplateCreatedBy
-                </th>
-                <th>
-                    $pageTemplateCreatedAt
-                </th>
-                <th>
-                    $pageTemplateUpdatedBy
-                </th>
-                <th>
-                    $pageTemplateUpdatedAt
-                </th>
-                <th>
-                    $pageTemplateDeleted
-                </th>
+##                <th>
+##                    $I18N.getMessage("pageTemplateId")
+##                </th>
+##                <th>
+##                    $I18N.getMessage("pageTemplateApplicationVersion")
+##                </th>
+##                <th>
+##                    $I18N.getMessage("pageTemplateCreatedBy")
+##                </th>
+##                <th>
+##                    $I18N.getMessage("pageTemplateCreatedAt")
+##                </th>
+##                <th>
+##                    $I18N.getMessage("pageTemplateUpdatedBy")
+##                </th>
+##                <th>
+##                    $I18N.getMessage("pageTemplateUpdatedAt")
+##                </th>
+##                <th>
+##                    $I18N.getMessage("pageTemplateDeleted")
+##                </th>
             </tr>
             </thead>
             <tbody>
@@ -64,33 +61,41 @@
                         $!pageTemplate.getLinks().size()
                     </td>
                     <td>
-                        $!pageTemplate.getLanguages()
+                        #set($index = 0)
+                        #foreach($language in $pageTemplate.getLanguages())
+                            $language
+                            #set($index = $index + 1)
+                            #if($index < $pageTemplate.getLanguages().size())
+                                ,
+                            #end
+                        #end
                     </td>
-                    <td>
-                        $!pageTemplate.getId().getUnversionedId()
-                    </td>
-                    <td>
-                        $!pageTemplate.getApplicationVersion()
-                    </td>
-                    <td>
-                        $!pageTemplate.getCreatedBy()
-                    </td>
-                    <td>
-                        $DateTool.format($!pageTemplate.getCreatedAtDate())
-                    </td>
-                    <td>
-                        $!pageTemplate.getUpdatedBy()
-                    </td>
-                    <td>
-                        $DateTool.format($!pageTemplate.getUpdatedAtDate())
-                    </td>
-                    <td>
-                        $!pageTemplate.getDeleted()
-                    </td>
+##                    <td>
+##                        $!pageTemplate.getId().getUnversionedId()
+##                    </td>
+##                    <td>
+##                        $!pageTemplate.getApplicationVersion()
+##                    </td>
+##                    <td>
+##                        $!pageTemplate.getCreatedBy()
+##                    </td>
+##                    <td>
+##                        $DateTool.format($!pageTemplate.getCreatedAtDate())
+##                    </td>
+##                    <td>
+##                        $!pageTemplate.getUpdatedBy()
+##                    </td>
+##                    <td>
+##                        $DateTool.format($!pageTemplate.getUpdatedAtDate())
+##                    </td>
+##                    <td>
+##                        $!pageTemplate.getDeleted()
+##                    </td>
                 </tr>
                 #end
             </tbody>
         </table>
+    </div>
     </div>
 #end
 

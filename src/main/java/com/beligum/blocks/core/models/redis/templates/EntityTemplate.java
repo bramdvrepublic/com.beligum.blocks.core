@@ -205,15 +205,6 @@ public class EntityTemplate extends AbstractTemplate
     }
 
     /**
-     * render the html of this entity-template, without using a page-template
-     * @throws ParseException
-     */
-    public String renderEntity() throws ParseException
-    {
-        return TemplateParser.renderTemplate(this);
-    }
-
-    /**
      * Gives a hash-representation of this storable to save to the db. This method decides what information is stored in db, and what is not.
      *
      * @return a map representing the key-value structure of this element to be saved to db
