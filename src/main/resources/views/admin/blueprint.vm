@@ -159,6 +159,16 @@
                         </div>
                     </div>
 
+                    <div class="panel panel-gray">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">$I18N.getMessage("source")</h3>
+                        </div>
+
+                        <div class="panel-body">
+                            <pre>$EscapeTool.html($blueprint.getTemplate())</pre>
+                        </div>
+                    </div>
+
 
                 </div>
             </div>

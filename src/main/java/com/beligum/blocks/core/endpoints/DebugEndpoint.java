@@ -138,6 +138,7 @@ public class DebugEndpoint
         return Response.ok(template).build();
     }
 
+
     @GET
     @Path("src/blueprints")
     @Produces("text/plain")

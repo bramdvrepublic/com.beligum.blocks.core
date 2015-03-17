@@ -20,7 +20,7 @@
                     $I18N.getMessage("links")
                 </th>
                 <th>
-                    $I18N.getMessage("planguages")
+                    $I18N.getMessage("languages")
                 </th>
             </tr>
             </thead>
@@ -44,11 +44,9 @@
                     <td>
                         #set($index = 0)
                         #foreach($language in $pageTemplate.getLanguages())
-                            $language
-                            #set($index = $index + 1)
-                            #if($index < $pageTemplate.getLanguages().size())
-                                ,
-                            #end
+                            <a href="/debug/pagetemplates/$pageTemplate.getName()?lang=$language" class="admin-link">
+                                $language#set($index = $index + 1)#if($index < $pageTemplate.getLanguages().size()),#end
+                            </a>
                         #end
                     </td>
                 </tr>

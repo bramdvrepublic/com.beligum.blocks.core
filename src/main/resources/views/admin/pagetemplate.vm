@@ -117,7 +117,7 @@
                         <div class="panel-body">
                             #set($index = 0)
                             #foreach($language in $pageTemplate.getLanguages())
-                                <a href="/debug/pageTemplates/$pageTemplate.getName()?lang=$language" class="admin-link #if($language==$activeLanguage) active#else not-active#end ">
+                                <a href="/debug/pagetemplates/$pageTemplate.getName()?lang=$language" class="admin-link #if($language==$activeLanguage) active#else not-active#end ">
                                     $language#set($index = $index + 1)#if($index < $pageTemplate.getLanguages().size()),#end
                                 </a>
                             #end
@@ -136,6 +136,15 @@
                         </div>
                     </div>
 
+                    <div class="panel panel-gray">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">$I18N.getMessage("source")</h3>
+                        </div>
+
+                        <div class="panel-body">
+                            <pre>$EscapeTool.html($pageTemplate.getTemplate())</pre>
+                        </div>
+                    </div>
 
                 </div>
             </div>
