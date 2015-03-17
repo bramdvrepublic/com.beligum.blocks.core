@@ -165,6 +165,7 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
                                     }
                                     //if a version has been stored in db before, use that version as page-template-entity (f.i. a menu that has been changed by the user, should stay changed after server-start-up)
                                     else {
+                                        this.parsingTemplate.setProperty(getPropertyKey(element), lastVersion);
                                         node = replaceElementWithEntityReference(element, lastVersion);
                                     }
                                 }

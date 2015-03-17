@@ -5,7 +5,7 @@
     <title></title>
 
     <link href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
-    <link href="/assets/stylesheets/admin.less" rel="stylesheet" />
+    <link href="/assets/styles/admin.less" rel="stylesheet" />
     $!header-styles-extra
 
     <script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
@@ -14,6 +14,29 @@
 
 </head>
 <body $!body-args-extra>
+
+<nav class="navbar green-navbar">
+    <div class="container-fluid">
+        <ul class="nav navbar-nav">
+            <li>
+                <a href="/debug/blueprints">
+                    <button class="btn btn-white navbar-btn">
+                        $I18N.getMessage("blueprintsButton")
+                    </button>
+                </a>
+            </li>
+            <li>
+                <a href="/debug/pagetemplates">
+                    <button class="btn btn-white navbar-btn">
+                        $I18N.getMessage("pageTemplatesButton")
+                    </button>
+                </a>
+            </li>
+            $!navbar-extra
+        </ul>
+    </div>
+    </div>
+</nav>
 
 $!body-html
 

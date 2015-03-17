@@ -255,7 +255,7 @@ public class TemplateParser
         }
     }
 
-    private static Document renderTemplate(Document DOM, URL url, String language, List<String> foundLinks, List<String> foundScripts) throws ParseException, IOException
+    public static Document renderTemplate(Document DOM, URL url, String language, List<String> foundLinks, List<String> foundScripts) throws ParseException, IOException
     {
         ToHtmlVisitor visitor = new ToHtmlVisitor(url, language, foundLinks, foundScripts);
         Traversor traversor = new Traversor(visitor);

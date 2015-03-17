@@ -164,15 +164,19 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             try {
                 List<Path> allResourceFolders = findAllResourceFolders();
 
-                //list which will be filled up with all blueprints and page templates found in all files in the templates-folder
-                final List<AbstractTemplate> foundTemplates = new ArrayList<>();
-                //set which will be filled up with all blueprint types found in all files in the templates-folder
-                final Set<String> foundBlueprintTypes = new HashSet<>();
+                //                //list which will be filled up with all blueprints and page templates found in all files in the templates-folder
+                //                final List<AbstractTemplate> foundTemplates = new ArrayList<>();
+                //                //set which will be filled up with all blueprint types found in all files in the templates-folder
+                //                final Set<String> foundBlueprintTypes = new HashSet<>();
 
                 //first fetch all blueprints from all files
                 for (Path resourceFolder : allResourceFolders) {
                     Path templatesFolder = resourceFolder.resolve(BlocksConfig.getTemplateFolder());
 
+                    //list which will be filled up with all blueprints and page templates found in all files in the templates-folder
+                    final List<AbstractTemplate> foundTemplates = new ArrayList<>();
+                    //set which will be filled up with all blueprint types found in all files in the templates-folder
+                    final Set<String> foundBlueprintTypes = new HashSet<>();
                     if (Files.exists(templatesFolder)) {
 
                         FileVisitor<Path> visitor = new SimpleFileVisitor<Path>()
@@ -195,11 +199,14 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                             }
                         };
                         Files.walkFileTree(templatesFolder, visitor);
+
+                        //then add all default-value's to the found blueprints
+                        TemplateParser.injectDefaultsInFoundTemplatesAndCache(foundTemplates);
                     }
                 }
 
-                //then add all default-value's to the found blueprints
-                TemplateParser.injectDefaultsInFoundTemplatesAndCache(foundTemplates);
+                //                //then add all default-value's to the found blueprints
+                //                TemplateParser.injectDefaultsInFoundTemplatesAndCache(foundTemplates);
             }
             catch (Exception e) {
                 throw new CacheException("Error while filling cache: " + this, e);
