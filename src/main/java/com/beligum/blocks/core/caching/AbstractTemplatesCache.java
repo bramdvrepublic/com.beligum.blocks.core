@@ -8,11 +8,13 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.utils.Logger;
 import com.beligum.core.framework.utils.toolkit.FileFunctions;
 import org.apache.shiro.util.AntPathMatcher;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -247,7 +249,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     //-----PRIVATE FUNCTIONS-----
     protected List<Path> findAllResourceFolders() throws Exception
     {
-        return FileFunctions.searchResourcesInClasspath(FileFunctions.getClasswideSearchFolder(), new FileFunctions.ResourceSearchPathFilter()
+        List<Path> retVal = FileFunctions.searchResourcesInClasspath(FileFunctions.getClasswideSearchFolder(), new FileFunctions.ResourceSearchPathFilter()
         {
             @Override
             public Path doFilter(Path path)
@@ -256,5 +258,17 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                 return path.getParent();
             }
         });
+
+        if (!R.configuration().getProduction()) {
+            List<URI> resourceFolders = FileFunctions.getCurrentMavenSrcResourceFolders();
+            for (URI uri : resourceFolders) {
+                Path foundPath = FileFunctions.uriToPath(uri);
+                if (!retVal.contains(foundPath)) {
+                    retVal.add(foundPath);
+                }
+            }
+        }
+
+        return retVal;
     }
 }
