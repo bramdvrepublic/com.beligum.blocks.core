@@ -2,7 +2,7 @@ package com.beligum.blocks.core.endpoints;
 
 import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.BlueprintsCache;
-import com.beligum.blocks.core.caching.PageTemplateCache;
+import com.beligum.blocks.core.caching.PageTemplatesCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.*;
@@ -11,11 +11,13 @@ import com.beligum.blocks.core.models.redis.templates.*;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.base.R;
+import com.beligum.core.framework.i18n.I18n;
 import com.beligum.core.framework.templating.ifaces.Template;
 import com.beligum.core.framework.utils.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
+import org.apache.velocity.tools.generic.DateTool;
 import org.joda.time.LocalDateTime;
 
 import javax.ws.rs.*;
@@ -31,7 +33,7 @@ import java.util.Map;
 /**
  * Created by bas on 27.01.15.
  */
-@Path("/debug")
+@Path("debug")
 @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
 public class DebugEndpoint
 {
@@ -60,9 +62,9 @@ public class DebugEndpoint
     {
         try {
             BlueprintsCache.getInstance().reset();
-            PageTemplateCache.getInstance().reset();
+            PageTemplatesCache.getInstance().reset();
             BlueprintsCache.getInstance();
-            PageTemplateCache.getInstance();
+            PageTemplatesCache.getInstance();
             Logger.warn("Cache has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
             return Response.ok("Cache reset").build();
         }
@@ -76,11 +78,38 @@ public class DebugEndpoint
     }
 
     @GET
+    @Path("/pagetemplates")
+    public Response getPageTemplatesPage() throws Exception
+    {
+        Template template = R.templateEngine().getEmptyTemplate("/views/admin/pagetemplates.vm");
+        template.set("DateTool", new DateTool());
+        template.set("pageTemplates", PageTemplatesCache.getInstance().values());
+        return Response.ok(template).build();
+    }
+
+    @GET
     @Path("/blueprints")
     public Response getBlueprintsPage() throws Exception
     {
         Template template = R.templateEngine().getEmptyTemplate("/views/admin/blueprints.vm");
+        template.set("DateTool", new DateTool());
         template.set("blueprints", BlueprintsCache.getInstance().values());
+        return Response.ok(template).build();
+    }
+
+    @GET
+    @Path("/blueprints/{blueprintName}")
+    public Response getBlueprintPage(@PathParam("blueprintName") String blueprintName, @QueryParam("lang") String language) throws Exception
+    {
+        if(StringUtils.isEmpty(language)){
+            language = BlocksConfig.getDefaultLanguage();
+        }
+        Blueprint blueprint = BlueprintsCache.getInstance().get(blueprintName);
+        Template template = R.templateEngine().getEmptyTemplate("/views/admin/blueprint.vm");
+        template.set("blueprint", blueprint);
+        //TODO: rendering should include links ands scripts for full view of blueprint
+        //TODO BAS SH: template properties are not saved in correct language on server blueprint start, fixing that should make the /debug/blueprints/[blueprintName]?lang=[language] endpoint work correctly
+        template.set("src", TemplateParser.renderTemplate(blueprint, language));
         return Response.ok(template).build();
     }
 
@@ -99,12 +128,12 @@ public class DebugEndpoint
     }
 
     @GET
-    @Path("/pagetemplates")
+    @Path("src/pagetemplates")
     @Produces("text/plain")
     public Response getPageTemplateCache() throws Exception
     {
-        List<String> pageTemplateKeys = PageTemplateCache.getInstance().keys();
-        List<PageTemplate> pageTemplates = PageTemplateCache.getInstance().values();
+        List<String> pageTemplateKeys = PageTemplatesCache.getInstance().keys();
+        List<PageTemplate> pageTemplates = PageTemplatesCache.getInstance().values();
         String cache = "";
         for(int i = 0; i<pageTemplates.size(); i++){
             cache += "----------------------------------" + pageTemplateKeys.get(i) + "---------------------------------- \n\n" + pageTemplates.get(i).toString() + "\n\n\n\n\n\n";

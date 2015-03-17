@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.parsers.visitors;
 
 import com.beligum.blocks.core.caching.BlueprintsCache;
-import com.beligum.blocks.core.caching.PageTemplateCache;
+import com.beligum.blocks.core.caching.PageTemplatesCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.RedisDatabase;
@@ -19,11 +19,9 @@ import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.parsers.Traversor;
 import com.beligum.core.framework.utils.Logger;
-import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
-import org.jsoup.select.Elements;
 
 import java.util.*;
 
@@ -240,11 +238,11 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
         PageTemplate pageTemplate = new PageTemplate(parsingTemplate.getName(), this.language, root.outerHtml(), parsingTemplate.getLinks(), parsingTemplate.getScripts());
         pageTemplate.setProperties(parsingTemplate.getProperties());
 
-        boolean added = PageTemplateCache.getInstance().add(pageTemplate);
+        boolean added = PageTemplatesCache.getInstance().add(pageTemplate);
         if(!added){
             if(pageTemplate.getName().equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)){
-                if(!PageTemplateCache.getInstance().get(pageTemplate.getName()).equals(pageTemplate)){
-                    PageTemplateCache.getInstance().replace(pageTemplate);
+                if(!PageTemplatesCache.getInstance().get(pageTemplate.getName()).equals(pageTemplate)){
+                    PageTemplatesCache.getInstance().replace(pageTemplate);
                     Logger.warn("Replaced default-" + PageTemplate.class.getSimpleName() + ".");
                 }
             }

@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.parsers;
 
 import com.beligum.blocks.core.caching.BlueprintsCache;
-import com.beligum.blocks.core.caching.PageTemplateCache;
+import com.beligum.blocks.core.caching.PageTemplatesCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.ParseException;
@@ -14,6 +14,7 @@ import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.visitors.*;
 import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.utils.Logger;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -23,6 +24,7 @@ import org.jsoup.parser.Parser;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.*;
 
 /**
@@ -53,7 +55,7 @@ public class TemplateParser
      */
     public static void injectDefaultsInFoundTemplatesAndCache(List<? extends AbstractTemplate> foundTemplates) throws Exception
     {Map<String, PageTemplate> allPageTemplates = new HashMap<>();
-        allPageTemplates.put(ParserConstants.DEFAULT_PAGE_TEMPLATE, PageTemplateCache.getInstance().get(ParserConstants.DEFAULT_PAGE_TEMPLATE));
+        allPageTemplates.put(ParserConstants.DEFAULT_PAGE_TEMPLATE, PageTemplatesCache.getInstance().get(ParserConstants.DEFAULT_PAGE_TEMPLATE));
         Map<String, Blueprint> allBlueprints = new HashMap<>();
         allBlueprints.put(ParserConstants.DEFAULT_BLUEPRINT, BlueprintsCache.getInstance().get(ParserConstants.DEFAULT_BLUEPRINT));
         //split the list of templates up into page-templates and entity-classes
@@ -114,7 +116,7 @@ public class TemplateParser
 
         //create defaults for all found page-templates and cache to application-cache
         for (String templateName : allPageTemplates.keySet()) {
-            if(!PageTemplateCache.getInstance().contains(templateName) || templateName.equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
+            if(!PageTemplatesCache.getInstance().contains(templateName) || templateName.equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
                 AbstractTemplate template = allPageTemplates.get(templateName);
                 Map<BlocksID, String> htmlTemplates = template.getTemplates();
                 for (BlocksID language : htmlTemplates.keySet()) {
@@ -208,24 +210,9 @@ public class TemplateParser
                 reference.attr(ParserConstants.REFERENCE_TO, entityTemplate.getUnversionedId());
                 reference.attr(ParserConstants.USE_BLUEPRINT, entityTemplate.getBlueprintType());
             }
-
-            ToHtmlVisitor visitor = new ToHtmlVisitor(entityTemplate.getUrl(), language, pageTemplate.getLinks(), pageTemplate.getScripts());
-            Traversor traversor = new Traversor(visitor);
-            traversor.traverse(DOM);
-            //inject links and scripts found by the visitor while parsing the DOM
-            List<Node> links = visitor.getLinks();
-            List<Node> scripts = visitor.getScripts();
-            for(Node link : links){
-                DOM.head().appendChild(link);
-            }
-            for(Node script : scripts){
-                DOM.head().appendChild(script);
-            }
-            //inject frontend links and scripts if logged in as administrator
-            if(SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
-                addFrontendScripts(DOM, visitor.getLinks(), visitor.getScripts());
-            }
+            DOM = renderTemplate(DOM, entityTemplate.getUrl(), language, pageTemplate.getLinks(), pageTemplate.getScripts());
             return DOM.outerHtml();
+
         }
         catch (Exception e){
             throw new ParseException("Exception while rendering entity '" + entityTemplate.getName() + "' in template '" + pageTemplate.getName() + "'.", e);
@@ -237,13 +224,55 @@ public class TemplateParser
      * @param template
      * @throws ParseException
      */
+//    @Deprecated
     public static String renderTemplate(AbstractTemplate template) throws ParseException
     {
+        //TODO: this method should no longer be used, use renderTemplate(template, language) instead
         Element classDOM = parse(template.getTemplate());
         Traversor traversor = new Traversor(new ToHtmlVisitor(template.getId().getUrl(), template.getLanguage()));
         Node classRoot = classDOM.child(0);
         traversor.traverse(classRoot);
         return classDOM.outerHtml();
+    }
+
+    public static String renderTemplate(AbstractTemplate template, String language) throws ParseException
+    {
+        try {
+            if (StringUtils.isEmpty(language)) {
+                language = template.getLanguage();
+            }
+            Document DOM = parse(template.getTemplate(language));
+            return renderTemplate(DOM, template.getId().getUrl(), language, null, null).outerHtml();
+        }
+        catch(Exception e){
+            if(e instanceof ParseException){
+                throw (ParseException) e;
+            }
+            else{
+                throw new ParseException("Could not render template '" + template.getName() + "'.", e);
+            }
+        }
+    }
+
+    private static Document renderTemplate(Document DOM, URL url, String language, List<String> foundLinks, List<String> foundScripts) throws ParseException, IOException
+    {
+        ToHtmlVisitor visitor = new ToHtmlVisitor(url, language, foundLinks, foundScripts);
+        Traversor traversor = new Traversor(visitor);
+        traversor.traverse(DOM);
+        //inject links and scripts found by the visitor while parsing the DOM
+        List<Node> links = visitor.getLinks();
+        List<Node> scripts = visitor.getScripts();
+        for(Node link : links){
+            DOM.head().appendChild(link);
+        }
+        for(Node script : scripts){
+            DOM.head().appendChild(script);
+        }
+        //inject frontend links and scripts if logged in as administrator
+        if(SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
+            addFrontendScripts(DOM, visitor.getLinks(), visitor.getScripts());
+        }
+        return DOM;
     }
 
     public static void updateEntity(BlocksID id, String html) throws ParseException
@@ -324,7 +353,13 @@ public class TemplateParser
 
         //append all to the specified DOM
         Element head = DOM.head();
-        Element includeAt = head.appendElement("link");
+        Element includeAt;
+        if(head != null){
+            includeAt = head.appendElement("link");
+        }
+        else{
+            includeAt = DOM.appendElement("link");
+        }
         visitor.includeSource(includeAt, frontendToBeAdded);
 
     }
