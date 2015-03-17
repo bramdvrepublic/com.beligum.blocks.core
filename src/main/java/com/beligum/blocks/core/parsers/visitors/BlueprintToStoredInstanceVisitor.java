@@ -137,16 +137,7 @@ public class BlueprintToStoredInstanceVisitor extends SuperVisitor
                 node.attr(ParserConstants.RESOURCE, XMLUrlIdMapper.getInstance().getUrl(newEntityId).toString());
                 EntityTemplate newInstance = new EntityTemplate(newEntityId, blueprint, node.outerHtml());
                 //for default instances, a version could already be present in db, which is equal to this one
-                EntityTemplate storedInstance = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(newEntityId, EntityTemplate.class);
-                if(storedInstance == null) {
-                    RedisDatabase.getInstance().create(newInstance);
-                }
-                else if(!newInstance.equals(storedInstance)){
-                    RedisDatabase.getInstance().update(newInstance);
-                }
-                else{
-                    newInstance = storedInstance;
-                }
+                newInstance = (EntityTemplate) RedisDatabase.getInstance().createOrUpdate(newEntityId, newInstance, EntityTemplate.class);
                 //add this entity as a property of it's parent if needed
                 newInstance.setProperties(propertiesStack.pop());
                 if(isProperty(node)) {

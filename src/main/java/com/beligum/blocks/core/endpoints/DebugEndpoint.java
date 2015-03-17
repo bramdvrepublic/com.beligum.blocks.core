@@ -4,31 +4,33 @@ import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.caching.PageTemplatesCache;
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.*;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.models.redis.templates.*;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.usermanagement.Permissions;
+import com.beligum.blocks.core.utils.Utils;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.i18n.I18n;
 import com.beligum.core.framework.templating.ifaces.Template;
 import com.beligum.core.framework.utils.Logger;
+import gen.com.beligum.blocks.core.endpoints.DebugEndpointRoutes;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.apache.velocity.tools.generic.DateTool;
+import org.apache.velocity.tools.generic.EscapeTool;
 import org.joda.time.LocalDateTime;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by bas on 27.01.15.
@@ -82,8 +84,30 @@ public class DebugEndpoint
     public Response getPageTemplatesPage() throws Exception
     {
         Template template = R.templateEngine().getEmptyTemplate("/views/admin/pagetemplates.vm");
-        template.set("DateTool", new DateTool());
         template.set("pageTemplates", PageTemplatesCache.getInstance().values());
+        return Response.ok(template).build();
+    }
+
+    @GET
+    @Path("/pagetemplates/{pageTemplateName}")
+    public Response getPageTemplatePage(
+                    @PathParam("pageTemplateName")
+                    String pageTemplateName,
+                    @QueryParam("lang")
+                    String language) throws Exception
+    {
+        if(StringUtils.isEmpty(language)){
+            language = BlocksConfig.getDefaultLanguage();
+        }
+        PageTemplate pageTemplate = PageTemplatesCache.getInstance().get(pageTemplateName);
+        Template template = R.templateEngine().getEmptyTemplate("/views/admin/pagetemplate.vm");
+        template.set("DateTool", new DateTool());
+        template.set("EscapeTool", new EscapeTool());
+        template.set("pageTemplate", pageTemplate);
+        template.set("activeLanguage", language);
+        //TODO: rendering should include links ands scripts for full view of blueprint
+        String resourcePath = XMLUrlIdMapper.getInstance().getUrl(pageTemplate.getId()).getPath().substring(1);
+        template.set("src", DebugEndpointRoutes.showTemplate(resourcePath, null, PAGE_TEMPLATE_TYPE).getAbsoluteUrl());
         return Response.ok(template).build();
     }
 
@@ -92,7 +116,6 @@ public class DebugEndpoint
     public Response getBlueprintsPage() throws Exception
     {
         Template template = R.templateEngine().getEmptyTemplate("/views/admin/blueprints.vm");
-        template.set("DateTool", new DateTool());
         template.set("blueprints", BlueprintsCache.getInstance().values());
         return Response.ok(template).build();
     }
@@ -106,12 +129,15 @@ public class DebugEndpoint
         }
         Blueprint blueprint = BlueprintsCache.getInstance().get(blueprintName);
         Template template = R.templateEngine().getEmptyTemplate("/views/admin/blueprint.vm");
+        template.set("DateTool", new DateTool());
+        template.set("EscapeTool", new EscapeTool());
         template.set("blueprint", blueprint);
+        template.set("activeLanguage", language);
         //TODO: rendering should include links ands scripts for full view of blueprint
-        //TODO BAS SH: template properties are not saved in correct language on server blueprint start, fixing that should make the /debug/blueprints/[blueprintName]?lang=[language] endpoint work correctly
         template.set("src", TemplateParser.renderTemplate(blueprint, language));
         return Response.ok(template).build();
     }
+
 
     @GET
     @Path("src/blueprints")
@@ -165,7 +191,7 @@ public class DebugEndpoint
     @GET
     @Path("/show/{resourcePath:.+}")
     @Produces("text/html")
-    public Response showEntityTemplate(
+    public Response showTemplate(
                     @PathParam("resourcePath")
                     @DefaultValue("")
                     String resourcePath,
@@ -183,8 +209,12 @@ public class DebugEndpoint
         if(template instanceof EntityTemplate) {
             return Response.ok(((EntityTemplate) template).renderEntityInPageTemplate(template.getLanguage())).build();
         }
+        else if(template instanceof PageTemplate){
+            Blueprint defaultBlueprint = BlueprintsCache.getInstance().get(ParserConstants.DEFAULT_BLUEPRINT);
+            return Response.ok(TemplateParser.renderTemplate(TemplateParser.parse(template.getTemplate()), BlocksConfig.getSiteDomainUrl(), id.getLanguage(), template.getLinks(), template.getScripts()).outerHtml()).build();
+        }
         else{
-            return Response.ok(TemplateParser.renderTemplate(template)).build();
+            return Response.ok(TemplateParser.renderTemplate(template, id.getLanguage())).build();
         }
     }
 

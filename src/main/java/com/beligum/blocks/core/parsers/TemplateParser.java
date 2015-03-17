@@ -238,10 +238,11 @@ public class TemplateParser
     public static String renderTemplate(AbstractTemplate template, String language) throws ParseException
     {
         try {
-            if (StringUtils.isEmpty(language)) {
-                language = template.getLanguage();
+            String html = template.getTemplate(language);
+            if (StringUtils.isEmpty(html)) {
+                html = template.getTemplate();
             }
-            Document DOM = parse(template.getTemplate(language));
+            Document DOM = parse(html);
             return renderTemplate(DOM, template.getId().getUrl(), language, null, null).outerHtml();
         }
         catch(Exception e){
@@ -254,7 +255,7 @@ public class TemplateParser
         }
     }
 
-    private static Document renderTemplate(Document DOM, URL url, String language, List<String> foundLinks, List<String> foundScripts) throws ParseException, IOException
+    public static Document renderTemplate(Document DOM, URL url, String language, List<String> foundLinks, List<String> foundScripts) throws ParseException, IOException
     {
         ToHtmlVisitor visitor = new ToHtmlVisitor(url, language, foundLinks, foundScripts);
         Traversor traversor = new Traversor(visitor);

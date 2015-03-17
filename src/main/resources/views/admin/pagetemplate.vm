@@ -1,48 +1,36 @@
-#define($header-styles-extra)
-##    TODO: site-wide css classes for all blocks should be injected here (file where all block-[blueprintType] css classes are defined)
-<link href="/assets/media/less/responsive.less" rel="stylesheet" />
-<link href="/assets/media/less/screen.less" rel="stylesheet" />
-#end
-
 #define($body-html)
 <div class="container">
     <div class="row">
         <div class="col-md-12" style="margin-top: 20px">
             <div class="panel panel-gray">
                 <div class="panel-heading">
-                    <h2 class="panel-title">$I18N.getMessage("blueprint") $blueprint.getName()</h2>
+                    <h2 class="panel-title">$I18N.getMessage("pageTemplate") $pageTemplate.getName()</h2>
                 </div>
                 <div class="panel-body">
                     <div class="panel panel-gray">
                         <div class="panel-heading">
                             <h3 class="panel-title">$I18N.getMessage("properties")</h3>
                         </div>
-                        #if($blueprint.getProperties().size()==0)
+                        #if($pageTemplate.getProperties().size()==0)
                             <div class="panel-body"></div>
-                        #elseif($blueprint.getProperties().size()>0)
+                        #elseif($pageTemplate.getProperties().size()>0)
                             <table class="table">
                                 <thead>
                                 <tr>
                                     <th>$I18N.getMessage("id")</th>
-                                    <th>$I18N.getMessage("propertyType")</th>
                                     <th>$I18N.getMessage("languages")</th>
                                 </tr>
                                 </thead>
                                 <tbody>
-                                    #foreach($property in $blueprint.getProperties())
+                                    #foreach($property in $pageTemplate.getProperties())
                                     <tr>
                                         <td>
                                             $property.getUnversionedId()
                                         </td>
                                         <td>
-                                            <a href="/debug/blueprints/$property.getBlueprintType()" class="admin-link">
-                                                $property.getBlueprintType()
-                                            </a>
-                                        </td>
-                                        <td>
                                             #set($index = 0)
-                                            #foreach($language in $blueprint.getLanguages())
-                                                $language#set($index = $index + 1)#if($index < $blueprint.getLanguages().size()),#end
+                                            #foreach($language in $pageTemplate.getLanguages())
+                                                $language#set($index = $index + 1)#if($index < $pageTemplate.getLanguages().size()),#end
                                             #end
                                         </td>
                                     </tr>
@@ -57,7 +45,7 @@
                             <h3 class="panel-title">$I18N.getMessage("links")</h3>
                         </div>
                         <div class="panel-body">
-                            #foreach($link in $blueprint.getLinks())
+                            #foreach($link in $pageTemplate.getLinks())
                                 $EscapeTool.html($link)<br/>
                             #end
                         </div>
@@ -68,7 +56,7 @@
                             <h3 class="panel-title">$I18N.getMessage("scripts")</h3>
                         </div>
                         <div class="panel-body">
-                            #foreach($script in $blueprint.getScripts())
+                            #foreach($script in $pageTemplate.getScripts())
                                 $EscapeTool.html($script)<br/>
                             #end
                         </div>
@@ -88,47 +76,35 @@
                             <tbody>
                             <tr>
                                 <td>$I18N.getMessage("id")</td>
-                                <td>$!blueprint.getId().getUnversionedId()</td>
+                                <td>$!pageTemplate.getId().getUnversionedId()</td>
                             </tr>
                             <tr>
                                 <td>$I18N.getMessage("version")</td>
-                                <td>$!blueprint.getId().getVersion()</td>
-                            </tr>
-                            <tr>
-                                <td>$I18N.getMessage("blueprintPageTemplate")</td>
-                                <td>$!blueprint.getPageTemplateName()</td>
-                            </tr>
-                            <tr>
-                                <td>$I18N.getMessage("pageBlock")</td>
-                                <td>$!blueprint.isPageBlock()</td>
-                            </tr>
-                            <tr>
-                                <td>$I18N.getMessage("addableBlock")</td>
-                                <td>$!blueprint.isAddableBlock()</td>
+                                <td>$!pageTemplate.getId().getVersion()</td>
                             </tr>
                             <tr>
                                 <td>$I18N.getMessage("createdBy")</td>
-                                <td>$!blueprint.getCreatedBy()</td>
+                                <td>$!pageTemplate.getCreatedBy()</td>
                             </tr>
                             <tr>
                                 <td>$I18N.getMessage("createdAt")</td>
-                                <td>$DateTool.format($!blueprint.getCreatedAtDate())</td>
+                                <td>$DateTool.format($!pageTemplate.getCreatedAtDate())</td>
                             </tr>
                             <tr>
                                 <td>$I18N.getMessage("updatedBy")</td>
-                                <td>$!blueprint.getUpdatedBy()</td>
+                                <td>$!pageTemplate.getUpdatedBy()</td>
                             </tr>
                             <tr>
                                 <td>$I18N.getMessage("updatedAt")</td>
-                                <td>$DateTool.format($!blueprint.getUpdatedAtDate())</td>
+                                <td>$DateTool.format($!pageTemplate.getUpdatedAtDate())</td>
                             </tr>
                             <tr>
                                 <td>$I18N.getMessage("deleted")</td>
-                                <td>$!blueprint.getDeleted()</td>
+                                <td>$!pageTemplate.getDeleted()</td>
                             </tr>
                             <tr>
                                 <td>$I18N.getMessage("applicationVersion")</td>
-                                <td>$!blueprint.getApplicationVersion()</td>
+                                <td>$!pageTemplate.getApplicationVersion()</td>
                             </tr>
                             </tbody>
                         </table>
@@ -140,9 +116,9 @@
                         </div>
                         <div class="panel-body">
                             #set($index = 0)
-                            #foreach($language in $blueprint.getLanguages())
-                                <a href="/debug/blueprints/$blueprint.getName()?lang=$language" class="admin-link #if($language==$activeLanguage) active#else not-active#end ">
-                                    $language#set($index = $index + 1)#if($index < $blueprint.getLanguages().size()),#end
+                            #foreach($language in $pageTemplate.getLanguages())
+                                <a href="/debug/pagetemplates/$pageTemplate.getName()?lang=$language" class="admin-link #if($language==$activeLanguage) active#else not-active#end ">
+                                    $language#set($index = $index + 1)#if($index < $pageTemplate.getLanguages().size()),#end
                                 </a>
                             #end
                         </div>
@@ -155,7 +131,8 @@
                         </div>
 
                         <div class="panel-body">
-                            $src
+                            <iframe width="100%" height="500px" src=$src >
+                            </iframe>
                         </div>
                     </div>
 
@@ -165,10 +142,9 @@
                         </div>
 
                         <div class="panel-body">
-                            <pre>$EscapeTool.html($blueprint.getTemplate())</pre>
+                            <pre>$EscapeTool.html($pageTemplate.getTemplate())</pre>
                         </div>
                     </div>
-
 
                 </div>
             </div>

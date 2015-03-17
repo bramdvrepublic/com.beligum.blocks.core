@@ -1,6 +1,6 @@
 #define($body-html)
 <div class="container">
-    <div class="panel panel-default">
+    <div class="panel panel-gray">
         <div class="panel-heading">
             <h1 class="panel-title">$I18N.getMessage("blueprintsTitle")</h1>
         </div>
@@ -8,57 +8,36 @@
             <thead>
             <tr>
                 <th>
-                    $I18N.getMessage("blueprintName")
+                    $I18N.getMessage("name")
                 </th>
                 <th>
                     $I18N.getMessage("blueprintPageTemplate")
                 </th>
                 <th>
-                    $I18N.getMessage("blueprintPageBlock")
+                    $I18N.getMessage("pageBlock")
                 </th>
                 <th>
-                    $I18N.getMessage("blueprintAddableBlock")
+                    $I18N.getMessage("addableBlock")
                 </th>
                 <th>
-                    $I18N.getMessage("blueprintProperties")
+                    $I18N.getMessage("properties")
                 </th>
                 <th>
-                    $I18N.getMessage("blueprintScripts")
+                    $I18N.getMessage("scripts")
                 </th>
                 <th>
-                    $I18N.getMessage("blueprintLinks")
+                    $I18N.getMessage("links")
                 </th>
                 <th>
-                    $I18N.getMessage("blueprintLanguages")
+                    $I18N.getMessage("languages")
                 </th>
-            ##                <th>
-            ##                    $I18N.getMessage("blueprintId")
-            ##                </th>
-            ##                <th>
-            ##                    $I18N.getMessage("blueprintApplicationVersion")
-            ##                </th>
-            ##                <th>
-            ##                    $I18N.getMessage("blueprintCreatedBy")
-            ##                </th>
-            ##                <th>
-            ##                    $I18N.getMessage("blueprintCreatedAt")
-            ##                </th>
-            ##                <th>
-            ##                    $I18N.getMessage("blueprintUpdatedBy")
-            ##                </th>
-            ##                <th>
-            ##                    $I18N.getMessage("blueprintUpdatedAt")
-            ##                </th>
-            ##                <th>
-            ##                    $I18N.getMessage("blueprintDeleted")
-            ##                </th>
             </tr>
             </thead>
             <tbody>
                 #foreach($blueprint in $blueprints)
                 <tr>
                     <td>
-                        <a href="/debug/blueprints/$blueprint.getName()">
+                        <a href="/debug/blueprints/$blueprint.getName()" class="admin-link">
                             $!blueprint.getName()
                         </a>
                     </td>
@@ -83,34 +62,11 @@
                     <td>
                         #set($index = 0)
                         #foreach($language in $blueprint.getLanguages())
-                            <a href="/debug/blueprints/$blueprint.getName()?lang=$language">$language</a>
-                            #set($index = $index + 1)
-                            #if($index < $blueprint.getLanguages().size())
-                                ,
-                            #end
+                            <a href="/debug/blueprints/$blueprint.getName()?lang=$language" class="admin-link">
+                                $language#set($index = $index + 1)#if($index < $blueprint.getLanguages().size()),#end
+                            </a>
                         #end
                     </td>
-                ##                    <td>
-                ##                        $!blueprint.getId().getUnversionedId()
-                ##                    </td>
-                ##                    <td>
-                ##                        $!blueprint.getApplicationVersion()
-                ##                    </td>
-                ##                    <td>
-                ##                        $!blueprint.getCreatedBy()
-                ##                    </td>
-                ##                    <td>
-                ##                        $DateTool.format($!blueprint.getCreatedAtDate())
-                ##                    </td>
-                ##                    <td>
-                ##                        $!blueprint.getUpdatedBy()
-                ##                    </td>
-                ##                    <td>
-                ##                        $DateTool.format($!blueprint.getUpdatedAtDate())
-                ##                    </td>
-                ##                    <td>
-                ##                        $!blueprint.getDeleted()
-                ##                    </td>
                 </tr>
                 #end
             </tbody>

@@ -146,7 +146,7 @@ public class Utils
         }
     }
 
-    private static Field[] getAllFields(Object obj){
+    public static Field[] getAllFields(Object obj){
         Field[] fields = obj.getClass().getDeclaredFields();
         Class superClass = obj.getClass().getSuperclass();
         while(!superClass.equals(Object.class)){

@@ -1,6 +1,6 @@
 #define($body-html)
 <div class="container">
-    <div class="panel panel-default">
+    <div class="panel panel-gray">
         <div class="panel-heading">
             <h1 class="panel-title">$I18N.getMessage("pageTemplatesTitle")</h1>
         </div>
@@ -8,48 +8,29 @@
             <thead>
             <tr>
                 <th>
-                    $I18N.getMessage("pageTemplateName")
+                    $I18N.getMessage("name")
                 </th>
                 <th>
-                    $I18N.getMessage("pageTemplateProperties")
+                    $I18N.getMessage("properties")
                 </th>
                 <th>
-                    $I18N.getMessage("pageTemplateScripts")
+                    $I18N.getMessage("scripts")
                 </th>
                 <th>
-                    $I18N.getMessage("pageTemplateLinks")
+                    $I18N.getMessage("links")
                 </th>
                 <th>
-                    $I18N.getMessage("pageTemplateLanguages")
+                    $I18N.getMessage("languages")
                 </th>
-##                <th>
-##                    $I18N.getMessage("pageTemplateId")
-##                </th>
-##                <th>
-##                    $I18N.getMessage("pageTemplateApplicationVersion")
-##                </th>
-##                <th>
-##                    $I18N.getMessage("pageTemplateCreatedBy")
-##                </th>
-##                <th>
-##                    $I18N.getMessage("pageTemplateCreatedAt")
-##                </th>
-##                <th>
-##                    $I18N.getMessage("pageTemplateUpdatedBy")
-##                </th>
-##                <th>
-##                    $I18N.getMessage("pageTemplateUpdatedAt")
-##                </th>
-##                <th>
-##                    $I18N.getMessage("pageTemplateDeleted")
-##                </th>
             </tr>
             </thead>
             <tbody>
                 #foreach($pageTemplate in $pageTemplates)
                 <tr>
                     <td>
-                        $!pageTemplate.getName()
+                        <a href="/debug/pagetemplates/$pageTemplate.getName()" class="admin-link">
+                            $!pageTemplate.getName()
+                        </a>
                     </td>
                     <td>
                         $!pageTemplate.getProperties().size()
@@ -63,40 +44,17 @@
                     <td>
                         #set($index = 0)
                         #foreach($language in $pageTemplate.getLanguages())
-                            $language
-                            #set($index = $index + 1)
-                            #if($index < $pageTemplate.getLanguages().size())
-                                ,
-                            #end
+                            <a href="/debug/pagetemplates/$pageTemplate.getName()?lang=$language" class="admin-link">
+                                $language#set($index = $index + 1)#if($index < $pageTemplate.getLanguages().size()),#end
+                            </a>
                         #end
                     </td>
-##                    <td>
-##                        $!pageTemplate.getId().getUnversionedId()
-##                    </td>
-##                    <td>
-##                        $!pageTemplate.getApplicationVersion()
-##                    </td>
-##                    <td>
-##                        $!pageTemplate.getCreatedBy()
-##                    </td>
-##                    <td>
-##                        $DateTool.format($!pageTemplate.getCreatedAtDate())
-##                    </td>
-##                    <td>
-##                        $!pageTemplate.getUpdatedBy()
-##                    </td>
-##                    <td>
-##                        $DateTool.format($!pageTemplate.getUpdatedAtDate())
-##                    </td>
-##                    <td>
-##                        $!pageTemplate.getDeleted()
-##                    </td>
                 </tr>
                 #end
             </tbody>
         </table>
     </div>
-    </div>
+</div>
 #end
 
 #parse("/views/admin/main.html")

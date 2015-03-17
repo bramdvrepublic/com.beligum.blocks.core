@@ -165,6 +165,7 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
                                     }
                                     //if a version has been stored in db before, use that version as page-template-entity (f.i. a menu that has been changed by the user, should stay changed after server-start-up)
                                     else {
+                                        this.parsingTemplate.setProperty(getPropertyKey(element), lastVersion);
                                         node = replaceElementWithEntityReference(element, lastVersion);
                                     }
                                 }
@@ -262,30 +263,35 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
      */
     private Element saveNewEntityClassCopy(Element element, BlocksID id, Blueprint entityClass) throws IDException, CacheException, ParseException
     {
-        //        Map<BlocksID, String> classTemplates = entityClass.getTemplates();
+        Map<BlocksID, String> classTemplates = entityClass.getTemplates();
+        Map<String, EntityTemplate> properties = new HashMap<>();
         Map<BlocksID, String> copiedTemplates = new HashMap<>();
-        //        for(BlocksID languageId : classTemplates.keySet()){
-        //            Element classRoot = TemplateParser.parse(classTemplates.get(languageId)).child(0);
-        //            classRoot.attributes().addAll(element.attributes());
-        //            classRoot = (Element) setUseBlueprintType(classRoot);
-        //            //a copy of an entity-class, also means a copy of all of it's children, so we need to traverse all templates to create entity-copies of all it's children
-        //            BlueprintToStoredInstanceVisitor visitor = new BlueprintToStoredInstanceVisitor(id.getUrl(), id.getLanguage());
-        //            Traversor traversor = new Traversor(visitor);
-        //            traversor.traverse(classRoot);
-        //            copiedTemplates.put(languageId, classRoot.outerHtml());
-        //        }
-        String template = entityClass.getTemplate(id.getLanguage());
-        if(template==null) {
-            template = entityClass.getTemplate();
+        for(BlocksID languageId : classTemplates.keySet()){
+            Element classRoot = TemplateParser.parse(classTemplates.get(languageId)).child(0);
+            classRoot.attributes().addAll(element.attributes());
+            classRoot = (Element) setUseBlueprintType(classRoot);
+            //a copy of an entity-class, also means a copy of all of it's children, so we need to traverse all templates to create entity-copies of all it's children
+            BlueprintToStoredInstanceVisitor visitor = new BlueprintToStoredInstanceVisitor(id.getUrl(), id.getLanguage());
+            Traversor traversor = new Traversor(visitor);
+            traversor.traverse(classRoot);
+            EntityTemplate newEntity = visitor.getFoundEntityRoot();
+            copiedTemplates.put(languageId, classRoot.outerHtml());
+            properties.putAll(newEntity.getProperties());
         }
-        //a copy of an entity-class, also means a copy of all of it's children, so we need to traverse all templates to create entity-copies of all it's children
-        Element classRoot = TemplateParser.parse(entityClass.getTemplate()).child(0);
-        classRoot.attributes().addAll(element.attributes());
-        BlueprintToStoredInstanceVisitor visitor = new BlueprintToStoredInstanceVisitor(id.getUrl(), id.getLanguage());
-        Traversor traversor = new Traversor(visitor);
-        traversor.traverse(classRoot);
-//        copiedTemplates.put(id, entityClass.getTemplate());
-        EntityTemplate newEntity = visitor.getFoundEntityRoot();
+        if(entityClass.getTemplate(id.getLanguage())==null){
+            //a copy of an entity-class, also means a copy of all of it's children, so we need to traverse all templates to create entity-copies of all it's children
+            Element classRoot = TemplateParser.parse(entityClass.getTemplate()).child(0);
+            classRoot.attributes().addAll(element.attributes());
+            classRoot = (Element) setUseBlueprintType(classRoot);
+            BlueprintToStoredInstanceVisitor visitor = new BlueprintToStoredInstanceVisitor(id.getUrl(), id.getLanguage());
+            Traversor traversor = new Traversor(visitor);
+            traversor.traverse(classRoot);
+            EntityTemplate newEntity = visitor.getFoundEntityRoot();
+            copiedTemplates.put(id, entityClass.getTemplate());
+            properties.putAll(newEntity.getProperties());
+        }
+        EntityTemplate newEntity = new EntityTemplate(id, entityClass, copiedTemplates);
+        newEntity.setProperties(properties);
         this.parsingTemplate.setProperty(getPropertyKey(element), newEntity);
         element = replaceElementWithEntityReference(element, newEntity);
         return element;
@@ -310,7 +316,7 @@ public class CachingAndDefaultsVisitor extends SuperVisitor
         Document entityRoot = new Document(BlocksConfig.getSiteDomain());
         entityRoot.appendChild(element.clone());
         //traverse the entity-root and save new instances to db
-        HtmlToStoreVisitor visitor = new HtmlToStoreVisitor(id.getUrl(), id.getLanguage(), entityRoot);
+        HtmlToStoreVisitor visitor = new HtmlToStoreVisitor(id.getUrl(), this.language, entityRoot);
         Traversor traversor = new Traversor(visitor);
         traversor.traverse(entityRoot);
         EntityTemplate newEntity = visitor.getFoundEntityRoot();

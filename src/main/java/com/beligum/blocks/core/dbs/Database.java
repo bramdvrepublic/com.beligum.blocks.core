@@ -17,6 +17,8 @@ public interface Database<T extends Storable> extends Closeable
 
     public void update(T storable) throws DatabaseException;
 
+    public T createOrUpdate(BlocksID id, T newStorable, Class<? extends T> type) throws DatabaseException;
+
     /**
      * Fetch a {@link Storable} from db.
      * @param id id of the {@link Storable}
