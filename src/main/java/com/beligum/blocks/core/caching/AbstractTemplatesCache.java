@@ -14,7 +14,6 @@ import com.beligum.core.framework.utils.toolkit.FileFunctions;
 import org.apache.shiro.util.AntPathMatcher;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -276,13 +275,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
         });
 
         if (!R.configuration().getProduction()) {
-            List<URI> resourceFolders = FileFunctions.getCurrentMavenSrcResourceFolders();
-            for (URI uri : resourceFolders) {
-                Path foundPath = FileFunctions.uriToPath(uri);
-                if (!retVal.contains(foundPath)) {
-                    retVal.add(foundPath);
-                }
-            }
+            retVal.addAll(FileFunctions.getCurrentMavenSrcResourceFolders());
         }
 
         return retVal;
