@@ -108,7 +108,6 @@ public class DebugEndpoint
         Template template = R.templateEngine().getEmptyTemplate("/views/admin/blueprint.vm");
         template.set("blueprint", blueprint);
         //TODO: rendering should include links ands scripts for full view of blueprint
-        //TODO BAS SH: template properties are not saved in correct language on server blueprint start, fixing that should make the /debug/blueprints/[blueprintName]?lang=[language] endpoint work correctly
         template.set("src", TemplateParser.renderTemplate(blueprint, language));
         return Response.ok(template).build();
     }
