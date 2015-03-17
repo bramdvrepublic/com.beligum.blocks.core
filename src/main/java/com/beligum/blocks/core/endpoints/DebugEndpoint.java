@@ -10,6 +10,7 @@ import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.models.redis.templates.*;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.usermanagement.Permissions;
+import com.beligum.blocks.core.utils.Utils;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.i18n.I18n;
 import com.beligum.core.framework.templating.ifaces.Template;
@@ -18,17 +19,16 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.apache.velocity.tools.generic.DateTool;
+import org.apache.velocity.tools.generic.EscapeTool;
 import org.joda.time.LocalDateTime;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by bas on 27.01.15.
@@ -82,7 +82,6 @@ public class DebugEndpoint
     public Response getPageTemplatesPage() throws Exception
     {
         Template template = R.templateEngine().getEmptyTemplate("/views/admin/pagetemplates.vm");
-        template.set("DateTool", new DateTool());
         template.set("pageTemplates", PageTemplatesCache.getInstance().values());
         return Response.ok(template).build();
     }
@@ -92,7 +91,6 @@ public class DebugEndpoint
     public Response getBlueprintsPage() throws Exception
     {
         Template template = R.templateEngine().getEmptyTemplate("/views/admin/blueprints.vm");
-        template.set("DateTool", new DateTool());
         template.set("blueprints", BlueprintsCache.getInstance().values());
         return Response.ok(template).build();
     }
@@ -106,7 +104,10 @@ public class DebugEndpoint
         }
         Blueprint blueprint = BlueprintsCache.getInstance().get(blueprintName);
         Template template = R.templateEngine().getEmptyTemplate("/views/admin/blueprint.vm");
+        template.set("DateTool", new DateTool());
+        template.set("EscapeTool", new EscapeTool());
         template.set("blueprint", blueprint);
+        template.set("activeLanguage", language);
         //TODO: rendering should include links ands scripts for full view of blueprint
         template.set("src", TemplateParser.renderTemplate(blueprint, language));
         return Response.ok(template).build();

@@ -31,27 +31,6 @@
                 <th>
                     $I18N.getMessage("blueprintLanguages")
                 </th>
-            ##                <th>
-            ##                    $I18N.getMessage("blueprintId")
-            ##                </th>
-            ##                <th>
-            ##                    $I18N.getMessage("blueprintApplicationVersion")
-            ##                </th>
-            ##                <th>
-            ##                    $I18N.getMessage("blueprintCreatedBy")
-            ##                </th>
-            ##                <th>
-            ##                    $I18N.getMessage("blueprintCreatedAt")
-            ##                </th>
-            ##                <th>
-            ##                    $I18N.getMessage("blueprintUpdatedBy")
-            ##                </th>
-            ##                <th>
-            ##                    $I18N.getMessage("blueprintUpdatedAt")
-            ##                </th>
-            ##                <th>
-            ##                    $I18N.getMessage("blueprintDeleted")
-            ##                </th>
             </tr>
             </thead>
             <tbody>
@@ -83,34 +62,11 @@
                     <td>
                         #set($index = 0)
                         #foreach($language in $blueprint.getLanguages())
-                            <a href="/debug/blueprints/$blueprint.getName()?lang=$language">$language</a>
-                            #set($index = $index + 1)
-                            #if($index < $blueprint.getLanguages().size())
-                                ,
-                            #end
+                            <a href="/debug/blueprints/$blueprint.getName()?lang=$language">
+                                $language#set($index = $index + 1)#if($index < $blueprint.getLanguages().size()),#end
+                            </a>
                         #end
                     </td>
-                ##                    <td>
-                ##                        $!blueprint.getId().getUnversionedId()
-                ##                    </td>
-                ##                    <td>
-                ##                        $!blueprint.getApplicationVersion()
-                ##                    </td>
-                ##                    <td>
-                ##                        $!blueprint.getCreatedBy()
-                ##                    </td>
-                ##                    <td>
-                ##                        $DateTool.format($!blueprint.getCreatedAtDate())
-                ##                    </td>
-                ##                    <td>
-                ##                        $!blueprint.getUpdatedBy()
-                ##                    </td>
-                ##                    <td>
-                ##                        $DateTool.format($!blueprint.getUpdatedAtDate())
-                ##                    </td>
-                ##                    <td>
-                ##                        $!blueprint.getDeleted()
-                ##                    </td>
                 </tr>
                 #end
             </tbody>

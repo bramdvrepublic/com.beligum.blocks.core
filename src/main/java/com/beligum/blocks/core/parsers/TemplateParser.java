@@ -238,10 +238,11 @@ public class TemplateParser
     public static String renderTemplate(AbstractTemplate template, String language) throws ParseException
     {
         try {
-            if (StringUtils.isEmpty(language)) {
-                language = template.getLanguage();
+            String html = template.getTemplate(language);
+            if (StringUtils.isEmpty(html)) {
+                html = template.getTemplate();
             }
-            Document DOM = parse(template.getTemplate(language));
+            Document DOM = parse(html);
             return renderTemplate(DOM, template.getId().getUrl(), language, null, null).outerHtml();
         }
         catch(Exception e){

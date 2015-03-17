@@ -455,6 +455,25 @@ public class RedisDatabase implements Database<AbstractTemplate>
         }
     }
 
+    public AbstractTemplate createOrUpdate(BlocksID templateId, AbstractTemplate newVersion, Class<? extends AbstractTemplate> type) throws DatabaseException
+    {
+        AbstractTemplate lastStoredVersion = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(templateId, type);
+        if(lastStoredVersion == null) {
+            RedisDatabase.getInstance().create(newVersion);
+        }
+        else if(!newVersion.equals(lastStoredVersion)){
+            RedisDatabase.getInstance().update(newVersion);
+        }
+        else{
+            //if this template was already stored in db, we should cache the db-version, since it has the correct time-stamp
+            //TODO: properties should be read from db, for now we use the properties of the newVersion object
+            lastStoredVersion.setProperties(newVersion.getProperties());
+            newVersion = lastStoredVersion;
+        }
+        return newVersion;
+
+    }
+
 
 
 }

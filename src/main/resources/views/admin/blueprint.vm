@@ -1,29 +1,173 @@
+#define($header-styles-extra)
+##    TODO: site-wide css classes for all blocks should be injected here (file where all block-[blueprintType] css classes are defined)
+<link href="/assets/media/less/responsive.less" rel="stylesheet" />
+<link href="/assets/media/less/screen.less" rel="stylesheet" />
+#end
+
 #define($body-html)
 <div class="container">
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h2 class="panel-title">$blueprint.getName()</h2>
+    </div>
+<div class="panel-body">
     <div class="panel panel-default">
         <div class="panel-heading">
-            <h2 class="panel-title">$blueprint.getName()</h2>
+            <h3 class="panel-title">$I18N.getMessage("blueprintProperties")</h3>
+        </div>
+        <div class="panel-body"></div>
+        #if($blueprint.getProperties().size()>0)
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>$I18N.getMessage("blueprintPropertyId")</th>
+                    <th>$I18N.getMessage("blueprintPropertyType")</th>
+                    <th>$I18N.getMessage("blueprintPropertyLanguages")</th>
+                </tr>
+                </thead>
+                <tbody>
+                    #foreach($property in $blueprint.getProperties())
+                    <tr>
+                        <td>
+                            $property.getUnversionedId()
+                        </td>
+                        <td>
+                            $property.getBlueprintType()
+                        </td>
+                        <td>
+                            #set($index = 0)
+                            #foreach($language in $blueprint.getLanguages())
+                                $language#set($index = $index + 1)#if($index < $blueprint.getLanguages().size()),#end
+                            #end
+                        </td>
+                    </tr>
+                    #end
+                </tbody>
+            </table>
+        #end
+    </div>
+
+
+
+<div class="panel-body">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title">$I18N.getMessage("blueprintLinks")</h3>
         </div>
         <div class="panel-body">
-            <h3>$I18N.getMessage("blueprintProperties")</h3>
-            <div>
-                #foreach($property in $blueprint.getProperties())
-                <div>
-                    $property.getId()
-                </div>
-                #end
-            </div>
-
-            <h3>$I18N.getMessage("blueprintOtherFields")</h3>
-            <div>
-
-            </div>
-
-            <h3>$I18N.getMessage("renderedBlueprint")</h3>
-            $src
+            #foreach($link in $blueprint.getLinks())
+                $EscapeTool.html($link)<br/>
+            #end
         </div>
     </div>
-</div>
+
+
+<div class="panel-body">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title">$I18N.getMessage("blueprintScripts")</h3>
+        </div>
+        <div class="panel-body">
+            #foreach($script in $blueprint.getScripts())
+                $EscapeTool.html($script)<br/>
+            #end
+        </div>
+    </div>
+
+
+    <div class="panel-body">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">$I18N.getMessage("blueprintOtherFields")</h3>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>$I18N.getMessage("blueprintFieldName")</th>
+                    <th>$I18N.getMessage("blueprintFieldValue")</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>$I18N.getMessage("blueprintId")</td>
+                    <td>$!blueprint.getId().getUnversionedId()</td>
+                </tr>
+                <tr>
+                    <td>$I18N.getMessage("blueprintVersion")</td>
+                    <td>$!blueprint.getId().getVersion()</td>
+                </tr>
+                <tr>
+                    <td>$I18N.getMessage("blueprintPageTemplate")</td>
+                    <td>$!blueprint.getPageTemplateName()</td>
+                </tr>
+                <tr>
+                    <td>$I18N.getMessage("blueprintPageBlock")</td>
+                    <td>$!blueprint.isPageBlock()</td>
+                </tr>
+                <tr>
+                    <td>$I18N.getMessage("blueprintAddableBlock")</td>
+                    <td>$!blueprint.isAddableBlock()</td>
+                </tr>
+                <tr>
+                    <td>$I18N.getMessage("blueprintCreatedBy")</td>
+                    <td>$!blueprint.getCreatedBy()</td>
+                </tr>
+                <tr>
+                    <td>$I18N.getMessage("blueprintCreatedAt")</td>
+                    <td>$DateTool.format($!blueprint.getCreatedAtDate())</td>
+                </tr>
+                <tr>
+                    <td>$I18N.getMessage("blueprintUpdatedBy")</td>
+                    <td>$!blueprint.getUpdatedBy()</td>
+                </tr>
+                <tr>
+                    <td>$I18N.getMessage("blueprintUpdatedAt")</td>
+                    <td>$DateTool.format($!blueprint.getUpdatedAtDate())</td>
+                </tr>
+                <tr>
+                    <td>$I18N.getMessage("blueprintDeleted")</td>
+                    <td>$!blueprint.getDeleted()</td>
+                </tr>
+                <tr>
+                    <td>$I18N.getMessage("blueprintApplicationVersion")</td>
+                    <td>$!blueprint.getApplicationVersion()</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+
+        <div class="panel-body">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">$I18N.getMessage("blueprintLanguages")</h3>
+                </div>
+                <div class="panel-body">
+                    #set($index = 0)
+                    #foreach($language in $blueprint.getLanguages())
+                        <a href="/debug/blueprints/$blueprint.getName()?lang=$language" #if($language==$activeLanguage) class="active"#end>
+                            $language#set($index = $index + 1)#if($index < $blueprint.getLanguages().size()),#end
+                        </a>
+                    #end
+                </div>
+            </div>
+
+
+            <div class="panel-body">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">$I18N.getMessage("renderedBlueprint")</h3>
+                    </div>
+
+                    <div class="panel-body">
+                        $src
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
 #end
 
 #parse("/views/admin/main.html")
