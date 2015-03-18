@@ -8,7 +8,6 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
-import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.utils.Logger;
 import com.beligum.core.framework.utils.toolkit.FileFunctions;
 import org.apache.shiro.util.AntPathMatcher;
@@ -265,10 +264,6 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                 return path.getParent();
             }
         });
-
-        if (!R.configuration().getProduction()) {
-            retVal.addAll(FileFunctions.getCurrentMavenSrcResourceFolders());
-        }
 
         return retVal;
     }
