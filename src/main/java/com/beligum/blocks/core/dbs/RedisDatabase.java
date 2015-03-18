@@ -200,7 +200,7 @@ public class RedisDatabase implements Database<AbstractTemplate>
         try (Jedis redisClient = pool.getResource()){
             Set<String> entityIds = redisClient.smembers(blueprintType);
             Set<EntityTemplate> entities = new HashSet<>();
-            //TODO BAS: can we use pipelines (or transactions) here?
+            //TODO: can we use pipelines (or transactions) here?
             for(String entityId : entityIds){
                 EntityTemplate entityTemplate = (EntityTemplate) this.fetch(new BlocksID(entityId, this.getLastVersionNumber(entityId), BlocksID.PRIMARY_LANGUAGE), EntityTemplate.class);
                 entities.add(entityTemplate);

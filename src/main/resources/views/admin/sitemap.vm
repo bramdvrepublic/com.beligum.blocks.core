@@ -1,0 +1,35 @@
+#define($header-scripts-extra)
+<script src="/assets/javascripts/admin/sitemap.js" type="application/javascript"></script>
+#end
+
+#macro(childHtml $root)
+<a href="$root.getUrl()" class="admin-link #if(!$root.hasEntity) no-entity #end">$root.getRelativePath()</a>
+<ul class="admin-list">
+    #foreach($child in $root.getChildren())
+        <li>
+            #childHtml($child)
+        </li>
+    #end
+</ul>
+#end
+
+#define($body-html)
+<div class="container">
+    #foreach($siteMap in $siteMaps)<div class="panel panel-gray">
+        <div class="panel-heading" data-toggle="collapse" href="#panelbody-$siteMap.getLanguage()">
+            <h1 class="panel-title">
+                $I18N.getMessage("siteMap") $siteMap.getLanguage()
+                <span class="glyphicon glyphicon-chevron-up pull-right"></span>
+            </h1>
+        </div>
+        <div class="panel-collapse collapse in" id="panelbody-$siteMap.getLanguage()">
+            <div class="panel-body">
+                #childHtml($siteMap.getRoot())
+            </div>
+        </div>
+    </div>
+    #end
+</div>
+#end
+
+#parse("/views/admin/main.html")

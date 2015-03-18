@@ -1,17 +1,19 @@
-package com.beligum.blocks.core.URLMapping;
+package com.beligum.blocks.core.urlmapping;
 
 import com.beligum.blocks.core.exceptions.LanguageException;
 import com.beligum.blocks.core.internationalization.Languages;
+import org.apache.commons.lang3.StringUtils;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * Created by bas on 04.03.15.
  */
-public class SiteMapNode{
+public class SiteMapNode implements Comparable<SiteMapNode>{
     private URL url;
     /**true if this site map node points to an actual entity, false otherwise*/
     private boolean hasEntity;
@@ -33,7 +35,11 @@ public class SiteMapNode{
     {
         String unlanguagedUrl = Languages.translateUrl(this.url.toString(), Languages.NO_LANGUAGE)[0];
         URL url = new URL(unlanguagedUrl);
-        return url.getPath();
+        String absolutePath = url.getPath();
+        if("".equals(absolutePath)){
+            absolutePath = "/";
+        }
+        return absolutePath;
     }
     public String getRelativePath(){
         String path = this.url.getPath();
@@ -47,9 +53,20 @@ public class SiteMapNode{
     }
     public List<SiteMapNode> getChildren()
     {
+        Collections.sort(children);
         return children;
     }
     public void addChild(SiteMapNode child){
         this.children.add(child);
+    }
+
+    /**
+     * Compares according to relative path name
+     * @param node
+     */
+    @Override
+    public int compareTo(SiteMapNode node)
+    {
+        return this.getRelativePath().compareToIgnoreCase(node.getRelativePath());
     }
 }

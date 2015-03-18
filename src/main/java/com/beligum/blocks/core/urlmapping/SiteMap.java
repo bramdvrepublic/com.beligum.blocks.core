@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.URLMapping;
+package com.beligum.blocks.core.urlmapping;
 
 import java.net.MalformedURLException;
 
