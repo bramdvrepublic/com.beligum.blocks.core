@@ -1,4 +1,5 @@
 @green: #3fa535;
+@red: #ce0538;
 @opaque-green: rgba(63,165,53,0.8);
 @darkgray: #5d5d5d;
 @lightgray: #7e7e7e;
@@ -26,6 +27,20 @@ a.admin-link:hover{
 
 .admin-link.active{
   color: @green;
+  font-weight: 900;
+  text-decoration: underline;
+}
+a.admin-link.no-entity{
+  color: @red;
+  text-decoration: none;
+}
+a.admin-link.no-entity:hover{
+  color: @red;
+  text-decoration: underline;
+}
+
+.admin-link.no-entity.active{
+  color: @red;
   font-weight: 900;
   text-decoration: underline;
 }
@@ -59,4 +74,9 @@ a.admin-link:hover{
     }
   }
   border-color: @lightgray;
+}
+
+.admin-list{
+  color: @darkgray;
+  list-style-type: disc;
 }

@@ -1,6 +1,6 @@
 package com.beligum.blocks.core.parsers.visitors;
 
-import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
+import com.beligum.blocks.core.urlmapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.RedisDatabase;
@@ -10,7 +10,6 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.exceptions.DatabaseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
-import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.Blueprint;
 import org.apache.commons.lang3.StringUtils;

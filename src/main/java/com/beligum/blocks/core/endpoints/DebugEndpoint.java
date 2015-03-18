@@ -1,6 +1,7 @@
 package com.beligum.blocks.core.endpoints;
 
-import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
+import com.beligum.blocks.core.urlmapping.SiteMap;
+import com.beligum.blocks.core.urlmapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.caching.PageTemplatesCache;
 import com.beligum.blocks.core.config.BlocksConfig;
@@ -11,9 +12,7 @@ import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.models.redis.templates.*;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.usermanagement.Permissions;
-import com.beligum.blocks.core.utils.Utils;
 import com.beligum.core.framework.base.R;
-import com.beligum.core.framework.i18n.I18n;
 import com.beligum.core.framework.templating.ifaces.Template;
 import com.beligum.core.framework.utils.Logger;
 import gen.com.beligum.blocks.core.endpoints.DebugEndpointRoutes;
@@ -22,13 +21,14 @@ import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.apache.velocity.tools.generic.DateTool;
 import org.apache.velocity.tools.generic.EscapeTool;
+import org.apache.velocity.tools.generic.RenderTool;
 import org.joda.time.LocalDateTime;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.lang.reflect.Field;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.*;
 
@@ -43,6 +43,12 @@ public class DebugEndpoint
     public static final String BLUEPRINT_TYPE = "blueprint";
     public static final String PAGE_TEMPLATE_TYPE = "template";
     public static final String XML_TEMPLATE_TYPE = "xml";
+
+    @GET
+    public Response debugIndex()
+    {
+        return Response.seeOther(URI.create(DebugEndpointRoutes.getBlueprintsPage().getPath())).build();
+    }
 
     @GET
     @Path("/flush")
@@ -138,6 +144,21 @@ public class DebugEndpoint
         return Response.ok(template).build();
     }
 
+    @GET
+    @Path("/sitemap")
+    public Response viewSiteMap(@QueryParam("lang") String language) throws UrlIdMappingException
+    {
+        List<SiteMap> siteMaps = new ArrayList<>();
+        String[] languages = BlocksConfig.getLanguages();
+        for(int i = 0; i<languages.length; i++){
+            SiteMap siteMap = new UrlsEndpoint().getSiteMap(languages[i]);
+            siteMaps.add(siteMap);
+        }
+        Template template = R.templateEngine().getEmptyTemplate("/views/admin/sitemap.vm");
+        template.set("siteMaps", siteMaps);
+        template.set("RenderTool", new RenderTool());
+        return Response.ok(template).build();
+    }
 
     @GET
     @Path("src/blueprints")
