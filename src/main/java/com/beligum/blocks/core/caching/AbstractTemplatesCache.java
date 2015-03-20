@@ -8,8 +8,8 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.utils.Logger;
-import com.beligum.core.framework.utils.toolkit.FileFunctions;
 import org.apache.shiro.util.AntPathMatcher;
 
 import java.io.IOException;
@@ -160,7 +160,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             runningTroughHtmlTemplates = true;
 
             try {
-                List<Path> allResourceFolders = findAllResourceFolders();
+                List<Path> allResourceFolders = R.resourceLoader().getResourceFolders();
 
                 //                //list which will be filled up with all blueprints and page templates found in all files in the templates-folder
                 //                final List<AbstractTemplate> foundTemplates = new ArrayList<>();
@@ -253,18 +253,5 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     abstract protected String getDefaultTemplateName();
 
     //-----PRIVATE FUNCTIONS-----
-    protected List<Path> findAllResourceFolders() throws Exception
-    {
-        List<Path> retVal = FileFunctions.searchResourcesInClasspath(FileFunctions.getClasswideSearchFolder(), new FileFunctions.ResourceSearchPathFilter()
-        {
-            @Override
-            public Path doFilter(Path path)
-            {
-                //since the URI is the META-INF folder, we're looking for it's parent, the root (resources) folder
-                return path.getParent();
-            }
-        });
 
-        return retVal;
-    }
 }
