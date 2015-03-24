@@ -1,8 +1,14 @@
 package com.beligum.blocks.core.config;
 
+import com.beligum.blocks.core.dbs.AbstractBlockDatabase;
+import com.beligum.blocks.core.dbs.BlocksDatabase;
+import com.beligum.blocks.core.dbs.BlocksTemplateCache;
+import com.beligum.blocks.core.dbs.BlocksUrlDispatcher;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.core.framework.base.R;
+import com.beligum.core.framework.cache.CacheKey;
 import com.beligum.core.framework.utils.Logger;
+import com.beligum.core.framework.cache.CacheManager;
 import org.apache.commons.configuration.ConfigurationRuntimeException;
 
 import java.io.IOException;
@@ -20,6 +26,12 @@ import java.util.Properties;
  */
 public class BlocksConfig
 {
+    private enum BlocksConfigCacheKey implements CacheKey
+    {
+        BLOCKS_CONFIG_CACHE_KEY
+    }
+
+    private static BlocksConfig instance = null;
     /**the path to the location of bootstrap*/
     public static final String BOOTSTRAP_JS_FILEPATH = "assets/media/js/bootstrap.min.js";
     public static final String BOOSTRAP_CSS_FILEPATH = "/assets/libs/bootstrap/css/bootstrap.css";
@@ -35,6 +47,21 @@ public class BlocksConfig
 
     /**the redis-sentinels*/
     public static String[] cachedRedisSentinels;
+
+    private AbstractBlockDatabase database;
+    private BlocksUrlDispatcher urlDispatcher;
+    private BlocksTemplateCache templateCache;
+
+    private BlocksConfig() {
+
+    }
+
+    public static BlocksConfig getInstance() {
+        if (R.cacheManager().getApplicationCache().get(BlocksConfigCacheKey.BLOCKS_CONFIG_CACHE_KEY) == null) {
+            R.cacheManager().getApplicationCache().put(BlocksConfigCacheKey.BLOCKS_CONFIG_CACHE_KEY, new BlocksConfig());
+        }
+        return (BlocksConfig)R.cacheManager().getApplicationCache().get(BlocksConfigCacheKey.BLOCKS_CONFIG_CACHE_KEY);
+    }
 
     public static String getTemplateFolder()
     {
@@ -59,13 +86,18 @@ public class BlocksConfig
     {
         return getConfiguration("blocks.redis.master-host");
     }
-    public static String getRedisMasterPort()
-    {
-        return getConfiguration("blocks.redis.master-port");
-    }
     public static String getSiteDBAlias()
     {
         return getConfiguration("blocks.site.db-alias");
+    }
+
+    public static String getMongoHost()
+    {
+        return getConfiguration("blocks.mongodb.host");
+    }
+    public static int getMongoPort()
+    {
+        return Integer.parseInt(getConfiguration("blocks.mongodb.port"));
     }
 
     public static String getRedisMasterName(){
@@ -168,5 +200,30 @@ public class BlocksConfig
             }
         }
         return retVal;
+    }
+
+    public AbstractBlockDatabase getDatabase()
+    {
+        return database;
+    }
+    public void setDatabase(AbstractBlockDatabase database)
+    {
+        this.database = database;
+    }
+    public BlocksUrlDispatcher getUrlDispatcher()
+    {
+        return urlDispatcher;
+    }
+    public void setUrlDispatcher(BlocksUrlDispatcher urlDispatcher)
+    {
+        this.urlDispatcher = urlDispatcher;
+    }
+    public BlocksTemplateCache getTemplateCache()
+    {
+        return templateCache;
+    }
+    public void setTemplateCache(BlocksTemplateCache templateCache)
+    {
+        this.templateCache = templateCache;
     }
 }

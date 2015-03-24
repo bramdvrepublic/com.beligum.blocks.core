@@ -240,6 +240,10 @@ public class BlocksID
         this(baseId.getVersionedId(), language);
     }
 
+    public BlocksID() {
+
+    }
+
     public long getVersion()
     {
         return version;

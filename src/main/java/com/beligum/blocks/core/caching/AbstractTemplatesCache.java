@@ -7,6 +7,7 @@ import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
+import com.beligum.blocks.core.parsers.FileAnalyzer;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.core.framework.utils.Logger;
 import com.beligum.core.framework.utils.toolkit.FileFunctions;
@@ -196,13 +197,13 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                             {
                                 String path = filePath.getFileName().toString();
                                 if (pathMatcher.matches("*.html", path) || pathMatcher.match("*.htm", path)) {
-                                    try {
-                                        String html = new String(Files.readAllBytes(filePath));
-                                        TemplateParser.findTemplatesFromFile(html, foundTemplates, foundEntityClassNames);
-                                    }
-                                    catch (ParseException e) {
-                                        Logger.error("Parse error while fetching page-templates and blueprints from file '" + filePath + "'.", e);
-                                    }
+//                                    try {
+//                                        String html = new String(Files.readAllBytes(filePath));
+////                                        TemplateParser.findTemplatesFromFile(html, foundTemplates, foundEntityClassNames);
+//                                    }
+//                                    catch (ParseException e) {
+//                                        Logger.error("Parse error while fetching page-templates and blueprints from file '" + filePath + "'.", e);
+//                                    }
                                 }
                                 return FileVisitResult.CONTINUE;
                             }
@@ -261,6 +262,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     abstract protected String getDefaultTemplateName();
 
     //-----PRIVATE FUNCTIONS-----
+
     protected List<Path> findAllResourceFolders() throws Exception
     {
         return FileFunctions.searchResourcesInClasspath(FileFunctions.getClasswideSearchFolder(), new FileFunctions.ResourceSearchPathFilter()
@@ -273,4 +275,6 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             }
         });
     }
+
+
 }

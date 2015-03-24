@@ -28,6 +28,10 @@ public class ParserConstants
         }
     }
 
+    public final static String TEMPLATE_PROPERTY_START = "##BLOCKS-PROPERTY-START##";
+    public final static String TEMPLATE_PROPERTY_END = "##BLOCKS-PROPERTY-END##";
+    public final static String TEMPLATE_HEAD = "##BLOCKS-HEAD##";
+    public final static String TEMPLATE_CONTENT = "##BLOCKS-TEMPLATE-CONTENT##";
 
     public final static String CAN_LAYOUT = "can-layout";
     public final static String CAN_EDIT_PROPERTY = "can-edit";
@@ -52,6 +56,7 @@ public class ParserConstants
     public static final String BLUEPRINTS = "blueprints";
     /**the name of the variable in the new-page template, containing the url of the new Entity*/
     public static final String ENTITY_URL = "entityUrl";
+    public static final String SINGLETON = "singleton";
 
 
     /**the html-language attribute*/
@@ -86,6 +91,7 @@ public class ParserConstants
      */
     public static final String RESOURCE = "resource";
     public static final String PROPERTY = "property";
+    public static final String BLUEPRINT_PROPERTY = "blueprint-property";
     public static final String PROPERTY_NAME = "name";
     public static final String TYPE_OF = "typeof";
 

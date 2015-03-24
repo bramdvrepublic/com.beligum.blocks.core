@@ -36,25 +36,26 @@ public class SuperVisitor
 
     public Node head(Node node, int depth) throws ParseException
     {
-        if (hasBlueprintType(node)) {
-            blueprintTypeStack.push(node);
-        }
+//        if (hasBlueprintType(node)) {
+//            blueprintTypeStack.push(node);
+//        }
         return node;
     }
 
     public Node tail(Node node, int depth) throws ParseException
     {
-        try {
-            if (hasBlueprintType(node)) {
-                blueprintTypeStack.pop();
-                if (parentUrl == null && blueprintTypeStack.isEmpty() && hasResource(node)) {
-                    parentUrl = new URL(getResource(node));
-                }
-            }
-            return node;
-        }catch(MalformedURLException e){
-            throw new ParseException("Bad resource found: " + getResource(node), e, node);
-        }
+//        try {
+////            if (hasBlueprintType(node)) {
+////                blueprintTypeStack.pop();
+////                if (parentUrl == null && blueprintTypeStack.isEmpty() && hasResource(node)) {
+////                    parentUrl = new URL(getResource(node));
+////                }
+////            }
+//            return node;
+//        }catch(MalformedURLException e){
+//            throw new ParseException("Bad resource found: " + getResource(node), e, node);
+//        }
+        return node;
     }
 
     /**
@@ -367,6 +368,24 @@ public class SuperVisitor
             retVal = true;
         }
         return retVal;
+    }
+
+    public boolean hasBlueprint(Node node) throws ParseException
+    {
+        if(node == null){
+            return false;
+        }
+        else if(node.hasAttr(ParserConstants.BLUEPRINT)){
+            if(StringUtils.isEmpty(node.attr(ParserConstants.BLUEPRINT))){
+                throw new ParseException("Found empty typeof attribute at node", node);
+            }
+            else{
+                return true;
+            }
+        }
+        else{
+            return false;
+        }
     }
 
     public boolean hasTypeOf(Node node) throws ParseException

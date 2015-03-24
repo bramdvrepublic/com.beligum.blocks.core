@@ -8,6 +8,7 @@ import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.*;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.models.redis.templates.*;
+import com.beligum.blocks.core.mongocache.TemplateCache;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.utils.Logger;
@@ -57,14 +58,15 @@ public class DebugEndpoint
     public Response resetCache() throws Exception
     {
         try {
-            BlueprintsCache.getInstance().reset();
-            PageTemplateCache.getInstance().reset();
-            BlueprintsCache.getInstance();
-            PageTemplateCache.getInstance();
+//            BlueprintsCache.getInstance().reset();
+            //            PageTemplateCache.getInstance().reset();
+            //            BlueprintsCache.getInstance();
+            //            PageTemplateCache.getInstance();
+            BlocksConfig.getInstance().getTemplateCache().reset();
             Logger.warn("Cache has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
             return Response.ok("Cache reset").build();
         }
-        catch(ParseException e){
+        catch(CacheException e){
             String errorMessage = "Error while resetting: \n";
             errorMessage += e.getMessage();
             Logger.error(errorMessage, e.getCause());

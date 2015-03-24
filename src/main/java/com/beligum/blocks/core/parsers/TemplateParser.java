@@ -34,15 +34,13 @@ public class TemplateParser
     /**
      * Parse all templates found in the specified html and cache them in the specified collection.
      * @param fileHtml the html to be parsed
-     * @param cache a {@link java.util.List} in which the {@link PageTemplate}s and {@link com.beligum.blocks.core.models.redis.templates.Blueprint}es should be cached
-     * @param foundEntityClassNames the names of all entity-classes already found
      * @throws ParseException
      */
-    public static void findTemplatesFromFile(String fileHtml, List<AbstractTemplate> cache, Set<String> foundEntityClassNames) throws ParseException
+    public static void findTemplatesFromFile(String fileHtml) throws ParseException
     {
-        Document doc = parse(fileHtml);
-        Traversor traversor = new Traversor(new FindBlueprintsVisitor(cache, foundEntityClassNames));
-        traversor.traverse(doc);
+//        Document doc = parse(fileHtml);
+//        Traversor traversor = new Traversor(new FindBlueprintsVisitor());
+//        traversor.traverse(doc);
     }
 
     /**
@@ -270,6 +268,7 @@ public class TemplateParser
                 retVal.appendChild(child.clone());
             }
         }
+
         else if(parsed.body().childNodes().isEmpty() && !parsed.head().childNodes().isEmpty()){
             for(Node child : parsed.head().childNodes()) {
                 retVal.appendChild(child.clone());

@@ -133,7 +133,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
         try {
             BlocksID id = this.fetchId(url);
             if(id == null){
-                return new BlocksID(url, BlocksID.NEW_VERSION, true);
+                return null;
             }
             else{
                 return id;
@@ -145,6 +145,8 @@ public class XMLUrlIdMapper implements UrlIdMapper
             throw new UrlIdMappingException("Could not get id for url '" + url + "'.", e);
         }
     }
+
+
     /**
      *
      * @param url
@@ -210,6 +212,8 @@ public class XMLUrlIdMapper implements UrlIdMapper
             throw new UrlIdMappingException("Could not get id for url '" + url + "'.", e);
         }
     }
+
+
     @Override
     public URL getUrl(BlocksID id) throws UrlIdMappingException
     {
@@ -271,6 +275,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
         }
     }
 
+
     @Override
     public UrlIdPair put(BlocksID id, URL url) throws UrlIdMappingException
     {
@@ -292,8 +297,8 @@ public class XMLUrlIdMapper implements UrlIdMapper
             /*
              * Remove the url (with the found language) that was already present in the mapping with this id
              */
-            URL previousUrl = this.remove(id, false);
-            BlocksID previousId = this.remove(new URL(Languages.translateUrl(urlNoLanguage.toString(), language)[0]), false);
+//            URL previousUrl = this.remove(id, false);
+//            BlocksID previousId = this.remove(new URL(Languages.translateUrl(urlNoLanguage.toString(), language)[0]), false);
 
             /*
              * Split the url in it's path-parts and add them to the mapping
@@ -348,7 +353,8 @@ public class XMLUrlIdMapper implements UrlIdMapper
             }
             this.cachedSiteMaps.clear();
             this.writeOut();
-            return new UrlIdPair(previousUrl, previousId);
+//            return new UrlIdPair(previousUrl, previousId);
+            return null;
         }catch (Exception e){
             throw new UrlIdMappingException("Could not add url-id pair to mapping: (" + url + "," + id + ")", e);
         }

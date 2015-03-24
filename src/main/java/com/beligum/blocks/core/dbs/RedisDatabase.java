@@ -48,7 +48,7 @@ public class RedisDatabase implements Database<AbstractTemplate>
         //            sentinels.add(sentinelHostsAndPorts[i]);
         //        }
         //        pool = new JedisSentinelPool(BlocksConfig.getRedisMasterName(), sentinels);
-        pool = new JedisPool(BlocksConfig.getRedisMasterHost(), Integer.parseInt(BlocksConfig.getRedisMasterPort()));
+        pool = null; //new JedisPool(BlocksConfig.getRedisMasterHost(), Integer.parseInt(BlocksConfig.getRedisMasterPort()));
     }
 
     /**
