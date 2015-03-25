@@ -1,8 +1,8 @@
 package com.beligum.blocks.core.config;
 
-import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
+import com.beligum.blocks.core.urlmapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.BlueprintsCache;
-import com.beligum.blocks.core.caching.PageTemplateCache;
+import com.beligum.blocks.core.caching.PageTemplatesCache;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.dynamic.DynamicBlockHandler;
 import com.beligum.blocks.core.exceptions.ParseException;
@@ -29,7 +29,7 @@ public class BlocksLifecycleListener implements ServerLifecycleListener
         //initialize template-cache
         try {
             BlueprintsCache.getInstance();
-            PageTemplateCache.getInstance();
+            PageTemplatesCache.getInstance();
         }
         catch (ParseException e){
             String errorMessage = "Parse error while initializing cache. \n";

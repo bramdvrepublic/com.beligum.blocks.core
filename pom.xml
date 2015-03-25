@@ -1,5 +1,5 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
 
@@ -50,75 +50,92 @@
             <artifactId>commons-lang3</artifactId>
             <version>3.3.2</version>
         </dependency>
-       <!-- <dependency>
-            <artifactId>solr-solrj</artifactId>
-            <groupId>org.apache.solr</groupId>
-            <version>1.4.0</version>
-            <type>jar</type>
-            <scope>compile</scope>
-        </dependency>-->
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>jquery</artifactId>
+            <version>1.11.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>jquery-cookie</artifactId>
+            <version>1.4.1-1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>bootstrap</artifactId>
+            <version>3.3.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>font-awesome</artifactId>
+            <version>4.3.0-1</version>
+        </dependency>
+        <!-- <dependency>
+             <artifactId>solr-solrj</artifactId>
+             <groupId>org.apache.solr</groupId>
+             <version>1.4.0</version>
+             <type>jar</type>
+             <scope>compile</scope>
+         </dependency>-->
         <!--<dependency>-->
-            <!--<groupId>org.apache.solr</groupId>-->
-            <!--<artifactId>solr-solrj</artifactId>-->
-            <!--<version>5.0.0</version>-->
+        <!--<groupId>org.apache.solr</groupId>-->
+        <!--<artifactId>solr-solrj</artifactId>-->
+        <!--<version>5.0.0</version>-->
         <!--</dependency>-->
         <!--<dependency>-->
-            <!--<groupId>org.apache.solr</groupId>-->
-            <!--<artifactId>solr-core</artifactId>-->
-            <!--<version>5.0.0</version>-->
-            <!--<exclusions>-->
-                <!--<exclusion>-->
-                    <!--<groupId>org.eclipse.jetty</groupId>-->
-                    <!--<artifactId>jetty-http</artifactId>-->
-                <!--</exclusion>-->
-                <!--<exclusion>-->
-                    <!--<groupId>org.eclipse.jetty</groupId>-->
-                    <!--<artifactId>jetty-continuation</artifactId>-->
-                <!--</exclusion>-->
-                <!--<exclusion>-->
-                    <!--<groupId>org.eclipse.jetty</groupId>-->
-                    <!--<artifactId>jetty-io</artifactId>-->
-                <!--</exclusion>-->
-                <!--<exclusion>-->
-                    <!--<groupId>org.eclipse.jetty</groupId>-->
-                    <!--<artifactId>jetty-jmx</artifactId>-->
-                <!--</exclusion>-->
-                <!--<exclusion>-->
-                    <!--<groupId>org.eclipse.jetty</groupId>-->
-                    <!--<artifactId>jetty-security</artifactId>-->
-                <!--</exclusion>-->
-                <!--<exclusion>-->
-                    <!--<groupId>org.eclipse.jetty</groupId>-->
-                    <!--<artifactId>jetty-util</artifactId>-->
-                <!--</exclusion>-->
-                <!--<exclusion>-->
-                    <!--<groupId>org.eclipse.jetty</groupId>-->
-                    <!--<artifactId>jetty-webapp</artifactId>-->
-                <!--</exclusion>-->
-                <!--<exclusion>-->
-                    <!--<groupId>org.eclipse.jetty</groupId>-->
-                    <!--<artifactId>jetty-xml</artifactId>-->
-                <!--</exclusion>-->
-                <!--<exclusion>-->
-                    <!--<groupId>org.eclipse.jetty</groupId>-->
-                    <!--<artifactId>jetty-orbit</artifactId>-->
-                <!--</exclusion>-->
-            <!--</exclusions>-->
+        <!--<groupId>org.apache.solr</groupId>-->
+        <!--<artifactId>solr-core</artifactId>-->
+        <!--<version>5.0.0</version>-->
+        <!--<exclusions>-->
+        <!--<exclusion>-->
+        <!--<groupId>org.eclipse.jetty</groupId>-->
+        <!--<artifactId>jetty-http</artifactId>-->
+        <!--</exclusion>-->
+        <!--<exclusion>-->
+        <!--<groupId>org.eclipse.jetty</groupId>-->
+        <!--<artifactId>jetty-continuation</artifactId>-->
+        <!--</exclusion>-->
+        <!--<exclusion>-->
+        <!--<groupId>org.eclipse.jetty</groupId>-->
+        <!--<artifactId>jetty-io</artifactId>-->
+        <!--</exclusion>-->
+        <!--<exclusion>-->
+        <!--<groupId>org.eclipse.jetty</groupId>-->
+        <!--<artifactId>jetty-jmx</artifactId>-->
+        <!--</exclusion>-->
+        <!--<exclusion>-->
+        <!--<groupId>org.eclipse.jetty</groupId>-->
+        <!--<artifactId>jetty-security</artifactId>-->
+        <!--</exclusion>-->
+        <!--<exclusion>-->
+        <!--<groupId>org.eclipse.jetty</groupId>-->
+        <!--<artifactId>jetty-util</artifactId>-->
+        <!--</exclusion>-->
+        <!--<exclusion>-->
+        <!--<groupId>org.eclipse.jetty</groupId>-->
+        <!--<artifactId>jetty-webapp</artifactId>-->
+        <!--</exclusion>-->
+        <!--<exclusion>-->
+        <!--<groupId>org.eclipse.jetty</groupId>-->
+        <!--<artifactId>jetty-xml</artifactId>-->
+        <!--</exclusion>-->
+        <!--<exclusion>-->
+        <!--<groupId>org.eclipse.jetty</groupId>-->
+        <!--<artifactId>jetty-orbit</artifactId>-->
+        <!--</exclusion>-->
+        <!--</exclusions>-->
         <!--</dependency>-->
 
 
-
-
         <!--<dependency>-->
-            <!--<groupId>org.atteo</groupId>-->
-            <!--<artifactId>evo-inflector</artifactId>-->
-            <!--<version>1.2.1</version>-->
+        <!--<groupId>org.atteo</groupId>-->
+        <!--<artifactId>evo-inflector</artifactId>-->
+        <!--<version>1.2.1</version>-->
         <!--</dependency>-->
     </dependencies>
 
     <build>
-        <plugins>
-        </plugins>
+        <plugins></plugins>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>

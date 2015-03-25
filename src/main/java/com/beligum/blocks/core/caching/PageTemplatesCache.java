@@ -2,9 +2,7 @@ package com.beligum.blocks.core.caching;
 
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
-import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
-import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
@@ -18,15 +16,15 @@ import java.util.Map;
 /**
  * Created by bas on 25.11.14.
  */
-public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
+public class PageTemplatesCache extends AbstractTemplatesCache<PageTemplate>
 {
     //the instance of this singleton
-    private static PageTemplateCache instance = null;
+    private static PageTemplatesCache instance = null;
 
     /**
      * private constructor for singleton-use
      */
-    private PageTemplateCache(){
+    private PageTemplatesCache(){
 
     }
 
@@ -35,12 +33,12 @@ public class PageTemplateCache extends AbstractTemplatesCache<PageTemplate>
      * @return a singleton instance of PageClassCache
      * @throws NullPointerException if no application cache could be found
      */
-    synchronized public static PageTemplateCache getInstance() throws Exception
+    synchronized public static PageTemplatesCache getInstance() throws Exception
     {
         if (instance == null) {
             //if the application-cache doesn't exist, throw exception, else instantiate the application's page-cache with a new empty hashmap
             if (R.cacheManager() != null && R.cacheManager().getApplicationCache() != null) {R.cacheManager().getApplicationCache().put(CacheKeys.PAGE_TEMPLATES, new HashMap<String, PageTemplate>());
-                instance = new PageTemplateCache();
+                instance = new PageTemplatesCache();
                 //insert the most basic possible page-template, for fall-back reasons: uses bootstrap
                 List<String> links = new ArrayList<>();
                 List<String> scripts = new ArrayList<>();

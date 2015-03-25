@@ -641,8 +641,8 @@
                             //padding
                             style.paddingTop = qStyle('padding-top');
                             style.paddingBottom = qStyle('padding-bottom');
-                            style.paddingLeft = qStyle('padding-left');
-                            style.paddingRight = qStyle('padding-right');
+                            style.paddingLeftWidth = qStyle('padding-left');
+                            style.paddingRightWidth = qStyle('padding-right');
 
                             //border
                             style.borderTopWidth = qStyle('border-top-width');

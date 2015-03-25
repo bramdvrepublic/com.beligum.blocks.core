@@ -1,0 +1,60 @@
+#define($body-html)
+<div class="container">
+    <div class="panel panel-gray">
+        <div class="panel-heading">
+            <h1 class="panel-title">$I18N.getMessage("pageTemplatesTitle")</h1>
+        </div>
+        <table class="table">
+            <thead>
+            <tr>
+                <th>
+                    $I18N.getMessage("name")
+                </th>
+                <th>
+                    $I18N.getMessage("properties")
+                </th>
+                <th>
+                    $I18N.getMessage("scripts")
+                </th>
+                <th>
+                    $I18N.getMessage("links")
+                </th>
+                <th>
+                    $I18N.getMessage("languages")
+                </th>
+            </tr>
+            </thead>
+            <tbody>
+                #foreach($pageTemplate in $pageTemplates)
+                <tr>
+                    <td>
+                        <a href="/debug/pagetemplates/$pageTemplate.getName()" class="admin-link">
+                            $!pageTemplate.getName()
+                        </a>
+                    </td>
+                    <td>
+                        $!pageTemplate.getProperties().size()
+                    </td>
+                    <td>
+                        $!pageTemplate.getScripts().size()
+                    </td>
+                    <td>
+                        $!pageTemplate.getLinks().size()
+                    </td>
+                    <td>
+                        #set($index = 0)
+                        #foreach($language in $pageTemplate.getLanguages())
+                            <a href="/debug/pagetemplates/$pageTemplate.getName()?lang=$language" class="admin-link">
+                                $language#set($index = $index + 1)#if($index < $pageTemplate.getLanguages().size()),#end
+                            </a>
+                        #end
+                    </td>
+                </tr>
+                #end
+            </tbody>
+        </table>
+    </div>
+</div>
+#end
+
+#parse("/views/admin/main.html")

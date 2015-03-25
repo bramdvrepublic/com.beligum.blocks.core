@@ -1,6 +1,6 @@
 package com.beligum.blocks.core.parsers.visitors;
 
-import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
+import com.beligum.blocks.core.urlmapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.RedisDatabase;
@@ -101,18 +101,9 @@ public class HtmlToStoreVisitor extends SuperVisitor
                 else{
                     resourceId = BlocksID.renderLanguagedId(new URL(resourceUrl), BlocksID.LAST_VERSION, this.language);
                 }
-                EntityTemplate storedEntityTemplate = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(resourceId, EntityTemplate.class);
                 BlocksID newVersionId = BlocksID.renderLanguagedId(new URL(resourceUrl), BlocksID.NEW_VERSION, this.language);
                 EntityTemplate currentEntityTemplate = new EntityTemplate(newVersionId, blueprint, node.outerHtml());
-                if (currentEntityTemplate.equals(storedEntityTemplate)) {
-                    currentEntityTemplate = storedEntityTemplate;
-                }
-                else if(storedEntityTemplate == null) {
-                    RedisDatabase.getInstance().create(currentEntityTemplate);
-                }
-                else{
-                    RedisDatabase.getInstance().update(currentEntityTemplate);
-                }
+                currentEntityTemplate = (EntityTemplate) RedisDatabase.getInstance().createOrUpdate(resourceId, currentEntityTemplate, EntityTemplate.class);
 
                 //add this entity as a property of it's parent if needed
                 currentEntityTemplate.setProperties(propertiesStack.pop());

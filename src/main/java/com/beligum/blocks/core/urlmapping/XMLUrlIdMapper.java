@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.URLMapping;
+package com.beligum.blocks.core.urlmapping;
 
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.DatabaseConstants;
@@ -535,18 +535,7 @@ public class XMLUrlIdMapper implements UrlIdMapper
         UrlIdMapping treeTemplate = new UrlIdMapping(xmlId, result.toString());
         //make sure only one thread is reading or writing from or to db
         synchronized(this) {
-            UrlIdMapping storedXML = (UrlIdMapping) RedisDatabase.getInstance().fetchLastVersion(xmlId, UrlIdMapping.class);
-            if (storedXML == null) {
-                RedisDatabase.getInstance().create(treeTemplate);
-                this.addMappingFirst(treeTemplate);
-            }
-            else if (!treeTemplate.equals(storedXML)) {
-                RedisDatabase.getInstance().update(treeTemplate);
-                this.addMappingFirst(treeTemplate);
-            }
-            else {
-                //no need to save to db, since this is an unchanged version
-            }
+            RedisDatabase.getInstance().createOrUpdate(xmlId, treeTemplate, UrlIdMapping.class);
         }
     }
 

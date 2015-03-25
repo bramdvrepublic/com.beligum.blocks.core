@@ -1,6 +1,6 @@
 package com.beligum.blocks.core.dynamic;
 
-import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
+import com.beligum.blocks.core.urlmapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.IDException;

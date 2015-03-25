@@ -8,8 +8,8 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.utils.Logger;
-import com.beligum.core.framework.utils.toolkit.FileFunctions;
 import org.apache.shiro.util.AntPathMatcher;
 
 import java.io.IOException;
@@ -63,7 +63,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                     return template;
                 }
                 else {
-                    //TODO BAS: if this is null, check Redis for last version
+                    //TODO: if this is null, check Redis for last version
                     return applicationCache.get(getTemplateKey(getDefaultTemplateName()));
                 }
             }
@@ -90,18 +90,8 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                 return false;
             }
             //TODO: when adding possibility to parse multiple entity-class-languages from file to cache, multiple languages should be able to be added. This class should have the functionality to put two different languages together in one blueprint
-            if(!getCache().containsKey(template.getUnversionedId())) {
-                AbstractTemplate storedTemplate = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(template.getId(), this.getCachedClass());
-                if (storedTemplate == null) {
-                    RedisDatabase.getInstance().create(template);
-                }
-                else if (!template.equals(storedTemplate)) {
-                    RedisDatabase.getInstance().update(template);
-                }
-                else {
-                    //if this template was already stored in db, we should cache the db-version, since it has the correct time-stamp
-                    template = (T) storedTemplate;
-                }
+            if(!getCache().containsKey(getTemplateKey(template.getName()))) {
+                template = (T) RedisDatabase.getInstance().createOrUpdate(template.getId(), template, this.getCachedClass());
                 getCache().put(template.getUnversionedId(), template);
                 return true;
             }
@@ -134,13 +124,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             else {
                 AbstractTemplate cachedTemplate = getCache().get(template.getUnversionedId());
                 if (!template.equals(cachedTemplate)) {
-                    AbstractTemplate storedTemplate = (AbstractTemplate) RedisDatabase.getInstance().fetchLastVersion(template.getId(), this.getCachedClass());
-                    if (storedTemplate == null) {
-                        RedisDatabase.getInstance().create(template);
-                    }
-                    else if (!template.equals(storedTemplate)) {
-                        RedisDatabase.getInstance().update(template);
-                    }
+                    template = (T) RedisDatabase.getInstance().createOrUpdate(template.getId(), template, this.getCachedClass());
                     getCache().put(template.getUnversionedId(), template);
                 }
                 return cachedTemplate;
@@ -176,18 +160,19 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
             runningTroughHtmlTemplates = true;
 
             try {
-                List<Path> allResourceFolders = findAllResourceFolders();
+                List<Path> allResourceFolders = R.resourceLoader().getResourceFolders();
 
+                //list which will be filled up with all blueprints and page templates found in all files in the templates-folder
+                final List<AbstractTemplate> foundTemplates = new ArrayList<>();
+                //set which will be filled up with all blueprint types found in all files in the templates-folder
+                final Set<String> foundBlueprintTypes = new HashSet<>();
+
+                //first fetch all blueprints from all files
                 for (Path resourceFolder : allResourceFolders) {
                     Path templatesFolder = resourceFolder.resolve(BlocksConfig.getTemplateFolder());
 
                     if (Files.exists(templatesFolder)) {
-                        //list which will be filled up with all templates found in all files in the templates-folder
-                        final List<AbstractTemplate> foundTemplates = new ArrayList<>();
-                        //set which will be filled up with all class-names found in all files in the templates-folder
-                        final Set<String> foundEntityClassNames = new HashSet<>();
 
-                        //first fetch all blueprints from all files
                         FileVisitor<Path> visitor = new SimpleFileVisitor<Path>()
                         {
                             @Override
@@ -198,7 +183,7 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                                 if (pathMatcher.matches("*.html", path) || pathMatcher.match("*.htm", path)) {
                                     try {
                                         String html = new String(Files.readAllBytes(filePath));
-                                        TemplateParser.findTemplatesFromFile(html, foundTemplates, foundEntityClassNames);
+                                        TemplateParser.findTemplatesFromFile(html, foundTemplates, foundBlueprintTypes);
                                     }
                                     catch (ParseException e) {
                                         Logger.error("Parse error while fetching page-templates and blueprints from file '" + filePath + "'.", e);
@@ -209,10 +194,11 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
                         };
                         Files.walkFileTree(templatesFolder, visitor);
 
-                        //then add all default-value's to the found classes
-                        TemplateParser.injectDefaultsInFoundTemplatesAndCache(foundTemplates);
                     }
                 }
+
+                //then add all default-value's to the found blueprints
+                TemplateParser.injectDefaultsInFoundTemplatesAndCache(foundTemplates);
             }
             catch (Exception e) {
                 throw new CacheException("Error while filling cache: " + this, e);
@@ -261,16 +247,5 @@ public abstract class AbstractTemplatesCache<T extends AbstractTemplate>
     abstract protected String getDefaultTemplateName();
 
     //-----PRIVATE FUNCTIONS-----
-    protected List<Path> findAllResourceFolders() throws Exception
-    {
-        return FileFunctions.searchResourcesInClasspath(FileFunctions.getClasswideSearchFolder(), new FileFunctions.ResourceSearchPathFilter()
-        {
-            @Override
-            public Path doFilter(Path path)
-            {
-                //since the URI is the META-INF folder, we're looking for it's parent, the root (resources) folder
-                return path.getParent();
-            }
-        });
-    }
+
 }

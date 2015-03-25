@@ -1,10 +1,9 @@
 package com.beligum.blocks.core.parsers.visitors;
 
-import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
+import com.beligum.blocks.core.urlmapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
-import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlocksID;
@@ -197,11 +196,13 @@ public class ToHtmlVisitor extends SuperVisitor
      * @param links
      */
     private void addLinks(List<String> links){
-        for(String link : links) {
-            boolean added = this.links.add(link);
-            //if this link wasn't present yet, add it to the list
-            if(added){
-                this.linksInOrder.add(link);
+        if(links != null) {
+            for (String link : links) {
+                boolean added = this.links.add(link);
+                //if this link wasn't present yet, add it to the list
+                if (added) {
+                    this.linksInOrder.add(link);
+                }
             }
         }
     }
@@ -211,11 +212,13 @@ public class ToHtmlVisitor extends SuperVisitor
      * @param scripts
      */
     private void addScripts(List<String> scripts){
-        for(String script : scripts) {
-            boolean added = this.scripts.add(script);
-            //if this script wasn't present yet, add it to the list
-            if(added){
-                this.scriptsInOrder.add(script);
+        if(scripts != null) {
+            for (String script : scripts) {
+                boolean added = this.scripts.add(script);
+                //if this script wasn't present yet, add it to the list
+                if (added) {
+                    this.scriptsInOrder.add(script);
+                }
             }
         }
     }
