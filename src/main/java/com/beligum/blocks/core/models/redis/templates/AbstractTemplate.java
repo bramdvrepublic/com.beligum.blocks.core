@@ -137,12 +137,12 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
     public String getTemplate(){
         String template = this.getTemplate(this.getLanguage());
         if(template == null){
-            String[] preferredLanguages = BlocksConfig.getLanguages();
+//            String[] preferredLanguages = BlocksConfig.getLanguages();
             int i = 0;
-            while(template == null && i < preferredLanguages.length){
-                template = this.templates.get(preferredLanguages[i]);
-                i++;
-            }
+//            while(template == null && i < preferredLanguages.length){
+//                template = this.templates.get(preferredLanguages[i]);
+//                i++;
+//            }
             if(template == null){
                 Collection<String> templates = this.templates.values();
                 Iterator<String> it = templates.iterator();

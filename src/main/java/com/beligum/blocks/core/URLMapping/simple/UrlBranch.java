@@ -220,4 +220,8 @@ public class UrlBranch
     private void keepDeletedInfo(String storedTemplateId) {
         this.deleted.add(new UrlBranchHistory(storedTemplateId));
     }
+
+    protected HashSet<UrlBranchHistory> getDeleted() {
+        return this.deleted;
+    }
 }

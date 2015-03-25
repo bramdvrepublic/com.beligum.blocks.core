@@ -250,13 +250,13 @@ public class XMLUrlIdMapper implements UrlIdMapper
                 Element leave = this.selectLeave(blocksIdElements, id.getLanguage());
                 //if no translation in the wanted language was found
                 if (leave == null) {
-                    String[] languages = BlocksConfig.getLanguages();
+//                    String[] languages = BlocksConfig.getLanguages();
                     int i = 0;
-                    while (leave == null && i < languages.length) {
-                        String language = languages[i];
-                        leave = this.selectLeave(blocksIdElements, language);
-                        i++;
-                    }
+//                    while (leave == null && i < languages.length) {
+//                        String language = languages[i];
+//                        leave = this.selectLeave(blocksIdElements, language);
+//                        i++;
+//                    }
                     //if none of the preferred languages could be found, just select id path element as the leave
                     if(leave == null){
                         leave = (Element) blocksIdElements.item(0);
@@ -635,14 +635,14 @@ public class XMLUrlIdMapper implements UrlIdMapper
         Element translation = (Element) translationExpr.evaluate(pathElement, XPathConstants.NODE);
         //if the language wasn't found, return another preferred language if present
         if(translation == null) {
-            String[] languages = BlocksConfig.getLanguages();
+//            String[] languages = BlocksConfig.getLanguages();
             int i = 0;
-            while(translation == null && i<languages.length){
-                language = languages[i];
-                translationExpr = xPath.compile("child::" + TRANSLATIONS + "/child::" + TRANSLATION + "[@"+LANGUAGE+"='"+language+"']");
-                translation = (Element) translationExpr.evaluate(pathElement, XPathConstants.NODE);
-                i++;
-            }
+//            while(translation == null && i<languages.length){
+//                language = languages[i];
+//                translationExpr = xPath.compile("child::" + TRANSLATIONS + "/child::" + TRANSLATION + "[@"+LANGUAGE+"='"+language+"']");
+//                translation = (Element) translationExpr.evaluate(pathElement, XPathConstants.NODE);
+//                i++;
+//            }
             //if none of the preferred languages could be found, return the first of the present translations
             if(translation == null){
                 translationExpr = xPath.compile("child::" + TRANSLATIONS + "/child::" + TRANSLATION);

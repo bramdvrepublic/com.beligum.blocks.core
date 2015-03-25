@@ -43,11 +43,13 @@ public abstract class Blueprint extends MongoStoredTemplate
     {
         super(element, language);
         this.fullTemplate = element.outerHtml();
-        this.name = this.blueprint;
+        this.name = this.blueprintName;
         this.addableBlock = ElementParser.isAddableBlock(element);
         this.pageBlock = ElementParser.isPageBlock(element);
         this.entityName = ElementParser.getTypeOf(element);
         this.canChange = ElementParser.isCanLayout(element);
+        String pageTemplateName = ElementParser.getPagetemplateName(element);
+        this.pageTemplateName = pageTemplateName != null ? pageTemplateName : this.pageTemplateName;
     }
 
     @Override
@@ -137,5 +139,15 @@ public abstract class Blueprint extends MongoStoredTemplate
     }
 
     public String getTemplate() { return this.value;}
+
+    @Override
+    public Blueprint getBlueprint() {
+        return this;
+    }
+
+    @Override
+    protected String findPageTemplateName() {
+        return ParserConstants.DEFAULT_PAGE_TEMPLATE;
+    }
 
 }

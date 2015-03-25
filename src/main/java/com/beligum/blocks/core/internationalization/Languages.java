@@ -45,12 +45,12 @@ public class Languages
         else{
             s = new Locale(s).getLanguage();
             boolean foundLanguage = false;
-            String[] preferredLanguages = BlocksConfig.getLanguages();
+//            String[] preferredLanguages = BlocksConfig.getLanguages();
             int i = 0;
-            while(!foundLanguage && i<preferredLanguages.length){
-                foundLanguage = s.equals(new Locale(preferredLanguages[i]).getLanguage());
-                i++;
-            }
+//            while(!foundLanguage && i<preferredLanguages.length){
+//                foundLanguage = s.equals(new Locale(preferredLanguages[i]).getLanguage());
+//                i++;
+//            }
             if(!foundLanguage) {
                 i = 0;
                 String[] isoLanguages = Locale.getISOLanguages();
@@ -93,18 +93,18 @@ public class Languages
      * @param languages
      */
     static public String determinePrimaryLanguage(Set<String> languages){
-        String[] preferredLanguages = BlocksConfig.getLanguages();
+//        String[] preferredLanguages = BlocksConfig.getLanguages();
         String primaryLanguage = null;
         if(languages == null || languages.isEmpty()){
             primaryLanguage = NO_LANGUAGE;
         }
         int i = 0;
-        while(primaryLanguage == null && i<preferredLanguages.length){
-            if(languages.contains(preferredLanguages[i])){
-                primaryLanguage = preferredLanguages[i];
-            }
-            i++;
-        }
+//        while(primaryLanguage == null && i<preferredLanguages.length){
+//            if(languages.contains(preferredLanguages[i])){
+//                primaryLanguage = preferredLanguages[i];
+//            }
+//            i++;
+//        }
         if(primaryLanguage == null){
             primaryLanguage = languages.iterator().next();
         }

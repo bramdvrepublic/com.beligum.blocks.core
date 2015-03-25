@@ -37,15 +37,17 @@ import java.util.*;
 })
 public class BasicTemplate
 {
-    protected String blueprint;
+    protected String blueprintName;
     protected String name;
     protected String language;
     protected String value;
     protected HtmlElement element;
-    protected boolean templateContent = false;
+
+
     protected String singletonName;
     protected boolean singleton;
     protected boolean readOnly = false;
+
 
     protected Entity entity;
 
@@ -57,7 +59,9 @@ public class BasicTemplate
     @JsonIgnore
     protected Element renderedTransientElement;
 
-
+    // set after reading html from client to indicate this is the content element of the page
+    @JsonIgnore
+    protected boolean templateContent = false;
 
     protected LinkedHashMap<String, BasicTemplate> properties = new LinkedHashMap<>();
 
@@ -73,15 +77,18 @@ public class BasicTemplate
         this.transientElement = node;
         this.element = new HtmlElement(node);
         this.name = ElementParser.getProperty(node);
-        this.blueprint = ElementParser.getBlueprintName(node);
+        this.blueprintName = ElementParser.getBlueprintName(node);
         this.readOnly = ElementParser.isReadOnly(node);
         this.singleton = ElementParser.isSingleton(node);
         if (this.singleton) {
             this.singletonName = ElementParser.getSingletonName(node);
         }
 
+
+
         this.templateContent = false;
-        if (this.blueprint == null) {
+
+        if (this.getBlueprintName() == null) {
             this.value = node.html();
         }
         if(!(this instanceof Blueprint)) {
@@ -119,8 +126,7 @@ public class BasicTemplate
     public StringBuilder getRenderedTemplate(boolean readOnly, boolean fetchSingeltons)
     {
         StringBuilder retVal = new StringBuilder(this.value);
-        Blueprint blueprint = BlocksConfig.getInstance().getTemplateCache().getBlueprint(this.blueprint, this.language);
-        if (blueprint == null) blueprint = BlocksConfig.getInstance().getTemplateCache().getBlueprint(this.blueprint, BlocksConfig.getDefaultLanguage());
+        Blueprint blueprint = getBlueprint();
 
         // TODO fix dynamic blocks
         if (blueprint == null) {
@@ -199,6 +205,9 @@ public class BasicTemplate
                 replacePropertyWithValue(template, nextProperty, propertyValue);
                 nextProperty = findNextPropertyInTemplate(template);
 
+            } else {
+                replacePropertyWithValue(template, nextProperty, new StringBuilder());
+                nextProperty = findNextPropertyInTemplate(template);
             }
         }
         return template;
@@ -291,7 +300,7 @@ public class BasicTemplate
         StringBuilder retVal = new StringBuilder();
         retVal.append("<").append(this.element.getTag()).append(" ");
         HashSet<String> attributes = new HashSet<String>(this.element.getAttributes().keySet());
-        Blueprint blueprint = BlocksConfig.getInstance().getTemplateCache().getBlueprint(this.blueprint, this.language);
+        Blueprint blueprint = this.getBlueprint();
 
         // Set the right attributes on the element
         if (readOnly) {
@@ -380,11 +389,16 @@ public class BasicTemplate
     }
 
     public String getBlueprintName() {
-        return this.blueprint;
+        return this.blueprintName;
     }
 
-    public String getBlueprint() {
-        return this.blueprint;
+    @JsonIgnore
+    public Blueprint getBlueprint() {
+        Blueprint retVal = null;
+        if (this.getBlueprintName() != null) {
+            retVal = BlocksConfig.getInstance().getTemplateCache().getBlueprint(this.getBlueprintName(), this.language);
+        }
+        return retVal;
     }
 
     public String getName() {
@@ -404,7 +418,7 @@ public class BasicTemplate
     {
         Entity entityToFill = entity;
         // TODO blueprint should be null
-        if (this.blueprint == null || this.blueprint.equals("")) {
+        if (this.getBlueprintName() == null) {
             // this is a field so store the value
             entityToFill.addProperty(this.name, value);
         } else {

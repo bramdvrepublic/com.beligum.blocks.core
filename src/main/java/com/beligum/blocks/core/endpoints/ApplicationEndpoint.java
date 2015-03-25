@@ -25,6 +25,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 
 @Path("/")
 public class ApplicationEndpoint
@@ -45,103 +46,76 @@ public class ApplicationEndpoint
     public Response getPageWithId(@PathParam("randomPage") String randomURLPath, @QueryParam("version") Long version, @QueryParam("deleted") @DefaultValue("false") boolean fetchDeleted)
     {
 
-        try{
+        try {
 
-
-//            if(fetchDeleted && !SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)){
-//                Logger.debug("Unauthorized user tried to view deleted version of page '" + randomURLPath + "'.");
-//                fetchDeleted = false;
-//            }
+            //            if(fetchDeleted && !SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)){
+            //                Logger.debug("Unauthorized user tried to view deleted version of page '" + randomURLPath + "'.");
+            //                fetchDeleted = false;
+            //            }
             URL url = new URL(RequestContext.getRequest().getRequestUri().toString());
-//            if(!this.hasLanguage(url)){
-//                return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId(BlocksConfig.getDefaultLanguage()+url.getPath(), version, fetchDeleted).getPath())).build();
-//            }
-//
-//           if (version == null){
-//                version = BlocksID.NO_VERSION;
-//            }
-//            else{
-//                if(!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)){
-////                    throw new UnauthorizedException("User is not allowed to see versioned entity: url = " + randomURLPath + ", version=" +version);
-//                    version = BlocksID.LAST_VERSION;
-//                    Logger.debug("Unauthorized user tried to view older version of page '" + randomURLPath + "'.");
-//                }
-//            }
 
-//            //if no language info is specified in the url, or if the specified language doesn't exist, the default language will still be shown
+            // set language
+            String language = BlocksConfig.getInstance().getUrlDispatcher().getLanguageOrNull(url);
+            if (language == null) {
+                List<Locale> languages = RequestContext.getRequest().getAcceptableLanguages();
+                while (language == null && languages.iterator().hasNext()) {
+                    Locale loc = languages.iterator().next();
+                    if (BlocksConfig.getLanguages().contains(loc.getLanguage())) {
+                        language = loc.getLanguage();
+                    }
+                }
+            }
+            //
+            if (version != null && !SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
+                //                    throw new UnauthorizedException("User is not allowed to see versioned entity: url = " + randomURLPath + ", version=" +version);
+                version = null;
+                Logger.debug("Unauthorized user tried to view older version of page '" + randomURLPath + "'.");
+            }
+
+            //            //if no language info is specified in the url, or if the specified language doesn't exist, the default language will still be shown
             String id = null;
-            if(!fetchDeleted){
+            StoredTemplate storedTemplate = null;
+
+            if (!fetchDeleted) {
                 id = BlocksConfig.getInstance().getUrlDispatcher().findId(url);
+                storedTemplate = BlocksConfig.getInstance().getDatabase().fetchTemplate(BlocksConfig.getInstance().getDatabase().getIdForString(id), language);
             }
-            else{
-                id = BlocksConfig.getInstance().getUrlDispatcher().findId(url);
-            }
-
-            String language = BlocksConfig.getInstance().getUrlDispatcher().getLanguage(url);
-
-            if(id == null) {
-                Template template = R.templateEngine().getEmptyTemplate("/views/new-page.vm");
-                return injectParameters(template);
-                //                    return Response.ok(TemplateCache.getInstance().getPagetemplate("menu-footer").getTemplateAsString(true)).build();
+            else {
+                id = BlocksConfig.getInstance().getUrlDispatcher().findPreviousId(url);
             }
 
-            StoredTemplate storedTemplate = BlocksConfig.getInstance().getDatabase().fetchTemplate(new MongoID(id), language);
-            if (storedTemplate.getEntity() != null) {
-                Entity entity = BlocksConfig.getInstance().getDatabase().fetchEntity(storedTemplate.getEntity().getId(), language);
-                storedTemplate.fillTemplateValuesWithEntityValues(entity, new HashSet<String>());
-            }
 
-//
-// EntityTemplate lastStoredVersion = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(id, EntityTemplate.class);
-//            //if no such page is present in db, ask if user wants to create a new page
-//            if(lastStoredVersion == null) {
-//                if(!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)){
-//                    throw new NotFoundException("Page does not exist: " + url);
-//                }
+            if (storedTemplate == null) {
+                if (!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
+                    throw new NotFoundException("Page does not exist: " + url);
+                }
 //                //check if this url has ever before had an id mapped to it
-//                if(!fetchDeleted) {
-//                    id = XMLUrlIdMapper.getInstance().getLastId(url);
+//                if (!fetchDeleted) {
+//                    id = BlocksConfig.getInstance().getUrlDispatcher().findPreviousId(url);
 //                }
-//                lastStoredVersion = (EntityTemplate) RedisDatabase.getInstance().fetchLastVersion(id, EntityTemplate.class);
-//                if(storedTemplate == null || !lastStoredVersion.getDeleted()) {
+//                storedTemplate = BlocksConfig.getInstance().getDatabase().fetchTemplate(BlocksConfig.getInstance().getDatabase().getIdForString(id), language);
 
-//                else{
-//                    Template template = R.templateEngine().getEmptyTemplate("/views/deleted-page.vm");
-//                    return injectParameters(template);
+//                if (id == null) {
+                    Template template = R.templateEngine().getEmptyTemplate("/views/new-page.vm");
+                    return injectParameters(template);
+                    //                    return Response.ok(TemplateCache.getInstance().getPagetemplate("menu-footer").getTemplateAsString(true)).build();
 //                }
-//            }
-//            //render the entity
-//            else {
-//                id.setVersion(version);
-//                EntityTemplate entityTemplate = (EntityTemplate) RedisDatabase.getInstance().fetch(id, EntityTemplate.class);
-//                //if no entity-template is returned from db, the specified language or version don't exist, so we use the last stored version to render the page
-//                if(entityTemplate == null){
-//                    entityTemplate = lastStoredVersion;
-//                }
-//                //if the page is deleted, it should not be shown (method throws NotFoundException)
-//                boolean needsToBeHandled = this.handleTrashedEntity(entityTemplate);
-//                //if the current user may modify entities, a choice is given to create a new page, or revive the deleted page
-//                if(needsToBeHandled) {
-//                    Template template = R.templateEngine().getEmptyTemplate("/views/deleted-page.vm");
-//                    return injectParameters(template);
-//                }
-//                //if the page is reachable, render it
 //                else {
-//                    //if the requested language already exists in db, render and show it
-//                    if (entityTemplate.getLanguages().contains(id.getLanguage())) {
-//                        String page = entityTemplate.renderEntityInPageTemplate(id.getLanguage());
-//                        return Response.ok(page).build();
-//                    }
-//                    //show the default language, but act as if it is the requested language
-//                    else {
-//                        String lastVersionHtml = TemplateParser.renderEntityInsidePageTemplate(entityTemplate.getPageTemplate(), entityTemplate, id.getLanguage());
-//                        return Response.ok(lastVersionHtml).build();
-//                    }
+//                    Template template = R.templateEngine().getEmptyTemplate("/views/deleted-page.vm");
+//                    return injectParameters(template);
 //                }
-//            }
-//            List<com.beligum.blocks.core.models.nosql.Entity> entities = storedTemplate.getRootEntities();
 
-            return Response.ok(BlocksConfig.getInstance().getTemplateCache().getPagetemplate("menu-footer", language).getRenderedTemplate(false, storedTemplate)).build();
+            } else {
+
+                    if (storedTemplate.getEntity() != null) {
+                        Entity entity = BlocksConfig.getInstance().getDatabase().fetchEntity(storedTemplate.getEntity().getId(), language);
+                        storedTemplate.fillTemplateValuesWithEntityValues(entity, new HashSet<String>());
+                    }
+                return Response.ok(BlocksConfig.getInstance().getTemplateCache().getPagetemplate("menu-footer", language).getRenderedTemplate(false, storedTemplate)).build();
+                }
+                //
+
+
 
         }
         //if the index was not found, redirect to user login, else throw exception

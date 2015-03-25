@@ -17,9 +17,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * Created by bas on 08.10.14.
@@ -42,7 +40,7 @@ public class BlocksConfig
 
 
     /**the languages this site can work with, ordered from most preferred languages, to less preferred*/
-    public static String[] cachedLanguages;
+    public static ArrayList<String> cachedLanguages;
     public static String projectVersion = null;
 
     /**the redis-sentinels*/
@@ -70,6 +68,12 @@ public class BlocksConfig
     public static String getBlueprintsFolder()
     {
         return getConfiguration("blocks.blueprints-folder");
+    }
+
+    public static String getDefaultPageTitle() {
+        String retVal = getConfiguration("blocks.default-page-title");
+        if (retVal == null) retVal = "";
+        return retVal;
     }
 
     public static String getSiteDomain()
@@ -158,22 +162,22 @@ public class BlocksConfig
      *
      * @return The languages this site can work with, ordered from most preferred language, to less preferred. If no such languages are specified in the configuration xml, an array with a default language is returned.
      */
-    public static String[] getLanguages(){
+    public static ArrayList<String> getLanguages(){
         if(cachedLanguages==null){
-            cachedLanguages = R.configuration().getStringArray("blocks.site.languages");
-            if(cachedLanguages.length == 0){
-                cachedLanguages = new String[1];
-                cachedLanguages[0] = Languages.NO_LANGUAGE;
-            }
-            else{
-                for(int i=0; i<cachedLanguages.length; i++){
-                    Locale locale = new Locale(cachedLanguages[i]);
-                    String language = locale.getLanguage();
-                    if(!Languages.isLanguageCode(language)){
-                        throw new ConfigurationRuntimeException("Found language-code which doesn't follow the proper standard (ISO 639).");
-                    }
-                    cachedLanguages[i] = language;
+            cachedLanguages = new ArrayList<String>();
+            ArrayList<String> cachedLanguagesTemp = new ArrayList<String>(Arrays.asList(R.configuration().getStringArray("blocks.site.languages")));
+
+            for(String l: cachedLanguagesTemp){
+                Locale locale = new Locale(l);
+                String language = locale.getLanguage();
+                if(!Languages.isLanguageCode(language)){
+                    throw new ConfigurationRuntimeException("Found language-code which doesn't follow the proper standard (ISO 639).");
                 }
+                cachedLanguages.add(language);
+            }
+            if(cachedLanguages.size() == 0){
+                Locale locale = new Locale("en");
+                cachedLanguages.add(locale.getLanguage());
             }
         }
         return cachedLanguages;
@@ -184,7 +188,7 @@ public class BlocksConfig
      * @return The first languages in the languages-list, or the no-language-constant if no such list is present in the configuration-xml.
      */
     public static String getDefaultLanguage(){
-        return getLanguages()[0];
+        return getLanguages().get(0);
     }
 
     /**

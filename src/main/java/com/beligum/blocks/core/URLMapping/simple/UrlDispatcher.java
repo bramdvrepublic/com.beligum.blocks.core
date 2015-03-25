@@ -75,6 +75,23 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
         return retVal;
     }
 
+    public String findPreviousId(URL url) {
+        String retVal = null;
+        ArrayList<String> paths = splitUrl(url);
+        String language = getLanguage(paths);
+        paths = getUrlWithoutLanguage(paths);
+        UrlBranch branch = findBranch(paths, language, 0, false, SEARCH_OPTION.NORMAL);
+
+        if (branch != null) {
+            UrlBranchHistory[] history = (UrlBranchHistory[])branch.getDeleted().toArray();
+            if (history.length > 0) {
+                UrlBranchHistory last = history[history.length - 1];
+                retVal = last.getStoredTemplateId();
+            }
+        }
+        return retVal;
+    }
+
     public void addId(URL url, BlockId id, String language)
     {
         String retVal = null;
@@ -133,17 +150,25 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
     private boolean isPossibleLanguage(String language) {
         if (possibleLanguages == null) {
             this.possibleLanguages = new HashSet<>();
-            this.possibleLanguages.addAll(new ArrayList<String>(Arrays.asList(BlocksConfig.getLanguages())));
+            this.possibleLanguages.addAll(BlocksConfig.getLanguages());
         }
         return this.possibleLanguages.contains(language);
     }
 
     public String getLanguage(URL url) {
+        String retVal =  getLanguage(splitUrl(url));
+        if (retVal == null) {
+            retVal =  BlocksConfig.getDefaultLanguage();
+        }
+        return retVal;
+    }
+
+    public String getLanguageOrNull(URL url) {
         return getLanguage(splitUrl(url));
     }
 
     private String getLanguage(ArrayList<String> paths) {
-        if (paths.size() > 0 && isPossibleLanguage(paths.get(0))) return paths.get(0); else return BlocksConfig.getDefaultLanguage();
+        if (paths.size() > 0 && isPossibleLanguage(paths.get(0))) return paths.get(0); else return null;
     }
 
     private ArrayList<String> getUrlWithoutLanguage(ArrayList<String> paths) {

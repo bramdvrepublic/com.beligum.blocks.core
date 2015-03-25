@@ -20,4 +20,8 @@ public class UrlBranchHistory
         this.updatedAt = META.getCurrentTime();
         this.storedTemplateId = storedTemplateID;
     }
+
+    public String getStoredTemplateId() {
+        return storedTemplateId;
+    }
 }

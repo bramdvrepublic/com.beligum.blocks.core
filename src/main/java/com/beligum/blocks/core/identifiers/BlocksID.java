@@ -372,8 +372,8 @@ public class BlocksID
             //if no language could be successfully parsed from the url, we use the site's preferred languages
             if(this.language == null) {
                 if (useSitesPreferredLanguage) {
-                    String[] preferredLanguages = BlocksConfig.getLanguages();
-                    this.language = preferredLanguages[0];
+//                    String[] preferredLanguages = BlocksConfig.getLanguages();
+//                    this.language = preferredLanguages[0];
                 }
                 else {
                     this.language = Languages.NO_LANGUAGE;
