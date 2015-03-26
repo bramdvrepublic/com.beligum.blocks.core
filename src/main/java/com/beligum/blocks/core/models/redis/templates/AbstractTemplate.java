@@ -1,14 +1,13 @@
 package com.beligum.blocks.core.models.redis.templates;
 
-import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.DatabaseConstants;
-import com.beligum.blocks.core.dbs.Database;
-import com.beligum.blocks.core.dbs.RedisDatabase;
+import com.beligum.blocks.core.dbs.redis.Database;
+import com.beligum.blocks.core.dbs.redis.RedisDatabase;
 import com.beligum.blocks.core.exceptions.*;
-import com.beligum.blocks.core.identifiers.BlocksID;
+import com.beligum.blocks.core.identifiers.redis.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.Storable;
-import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.blocks.core.parsers.redis.TemplateParser;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -137,7 +136,7 @@ public abstract class AbstractTemplate extends Storable implements Comparable<Ab
     public String getTemplate(){
         String template = this.getTemplate(this.getLanguage());
         if(template == null){
-//            String[] preferredLanguages = BlocksConfig.getLanguages();
+//            String[] preferredLanguages = Blocks.config().getLanguages();
             int i = 0;
 //            while(template == null && i < preferredLanguages.length){
 //                template = this.templates.get(preferredLanguages[i]);

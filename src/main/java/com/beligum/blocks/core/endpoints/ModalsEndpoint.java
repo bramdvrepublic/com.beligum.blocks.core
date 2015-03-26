@@ -1,9 +1,7 @@
 package com.beligum.blocks.core.endpoints;
 
-import com.beligum.blocks.core.caching.BlueprintsCache;
-import com.beligum.blocks.core.config.BlocksConfig;
-import com.beligum.blocks.core.exceptions.CacheException;
-import com.beligum.blocks.core.exceptions.ParseException;
+import com.beligum.blocks.core.base.Blocks;
+import com.beligum.blocks.core.caching.redis.BlueprintsCache;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.base.R;
@@ -51,7 +49,7 @@ public class ModalsEndpoint
         else{
             template.set("originalUrlPathEnd", "");
         }
-        template.set("languages", Arrays.asList(BlocksConfig.getLanguages()));
+        template.set("languages", Arrays.asList(Blocks.config().getLanguages()));
         return Response.ok(template.render()).build();
     }
 

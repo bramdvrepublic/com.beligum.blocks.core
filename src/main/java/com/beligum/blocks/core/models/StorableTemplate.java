@@ -3,7 +3,7 @@ package com.beligum.blocks.core.models;
 import com.beligum.blocks.core.base.Blocks;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlockId;
-import com.beligum.blocks.core.models.nosql.interfaces.BlocksVersionedStorable;
+import com.beligum.blocks.core.models.interfaces.BlocksVersionedStorable;
 import com.beligum.blocks.core.parsers.ElementParser;
 import org.jsoup.nodes.Element;
 

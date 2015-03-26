@@ -1,12 +1,12 @@
 package com.beligum.blocks.core.caching.redis;
 
 import com.beligum.blocks.core.base.Blocks;
-import com.beligum.blocks.core.dbs.RedisDatabase;
+import com.beligum.blocks.core.dbs.redis.RedisDatabase;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
-import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.blocks.core.parsers.redis.TemplateParser;
 import com.beligum.core.framework.base.R;
 import org.apache.shiro.util.AntPathMatcher;
 

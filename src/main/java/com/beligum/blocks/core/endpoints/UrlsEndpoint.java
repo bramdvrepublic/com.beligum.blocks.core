@@ -1,10 +1,10 @@
 package com.beligum.blocks.core.endpoints;
 
-import com.beligum.blocks.core.urlmapping.SiteMap;
-import com.beligum.blocks.core.urlmapping.XMLUrlIdMapper;
-import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.base.Blocks;
+import com.beligum.blocks.core.urlmapping.redis.SiteMap;
+import com.beligum.blocks.core.urlmapping.redis.XMLUrlIdMapper;
 import com.beligum.blocks.core.exceptions.UrlIdMappingException;
-import com.beligum.blocks.core.identifiers.BlocksID;
+import com.beligum.blocks.core.identifiers.redis.BlocksID;
 import com.beligum.core.framework.i18n.I18n;
 
 import javax.ws.rs.*;
@@ -49,7 +49,7 @@ public class UrlsEndpoint
     public SiteMap getSiteMap(@QueryParam("lang") String language) throws UrlIdMappingException
     {
         if(language == null){
-            language = BlocksConfig.getDefaultLanguage();
+            language = Blocks.config().getDefaultLanguage();
         }
         return XMLUrlIdMapper.getInstance().renderSiteMap(language);
     }

@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.urlmapping.redis;
 
 import com.beligum.blocks.core.exceptions.UrlIdMappingException;
-import com.beligum.blocks.core.identifiers.BlocksID;
+import com.beligum.blocks.core.identifiers.redis.BlocksID;
 
 import java.net.URL;
 

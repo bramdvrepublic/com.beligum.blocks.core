@@ -1,13 +1,13 @@
 package com.beligum.blocks.core.endpoints;
 
-import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.base.Blocks;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.LanguageException;
-import com.beligum.blocks.core.identifiers.MongoID;
 import com.beligum.blocks.core.internationalization.Languages;
-import com.beligum.blocks.core.models.nosql.Entity;
-import com.beligum.blocks.core.models.nosql.StoredTemplate;
+import com.beligum.blocks.core.models.Blueprint;
+import com.beligum.blocks.core.models.Entity;
+import com.beligum.blocks.core.models.StoredTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.base.R;
@@ -55,12 +55,12 @@ public class ApplicationEndpoint
             URL url = new URL(RequestContext.getRequest().getRequestUri().toString());
 
             // set language
-            String language = BlocksConfig.getInstance().getUrlDispatcher().getLanguageOrNull(url);
+            String language = Blocks.urlDispatcher().getLanguageOrNull(url);
             if (language == null) {
                 List<Locale> languages = RequestContext.getRequest().getAcceptableLanguages();
                 while (language == null && languages.iterator().hasNext()) {
                     Locale loc = languages.iterator().next();
-                    if (BlocksConfig.getLanguages().contains(loc.getLanguage())) {
+                    if (Blocks.config().getLanguages().contains(loc.getLanguage())) {
                         language = loc.getLanguage();
                     }
                 }
@@ -77,11 +77,11 @@ public class ApplicationEndpoint
             StoredTemplate storedTemplate = null;
 
             if (!fetchDeleted) {
-                id = BlocksConfig.getInstance().getUrlDispatcher().findId(url);
-                storedTemplate = BlocksConfig.getInstance().getDatabase().fetchTemplate(BlocksConfig.getInstance().getDatabase().getIdForString(id), language);
+                id = Blocks.urlDispatcher().findId(url);
+                storedTemplate = Blocks.database().fetchTemplate(Blocks.factory().getIdForString(id), language);
             }
             else {
-                id = BlocksConfig.getInstance().getUrlDispatcher().findPreviousId(url);
+                id = Blocks.urlDispatcher().findPreviousId(url);
             }
 
 
@@ -91,9 +91,9 @@ public class ApplicationEndpoint
                 }
 //                //check if this url has ever before had an id mapped to it
 //                if (!fetchDeleted) {
-//                    id = BlocksConfig.getInstance().getUrlDispatcher().findPreviousId(url);
+//                    id = Blocks.urlDispatcher().findPreviousId(url);
 //                }
-//                storedTemplate = BlocksConfig.getInstance().getDatabase().fetchTemplate(BlocksConfig.getInstance().getDatabase().getIdForString(id), language);
+//                storedTemplate = Blocks.database().fetchTemplate(Blocks.database().getIdForString(id), language);
 
 //                if (id == null) {
                     Template template = R.templateEngine().getEmptyTemplate("/views/new-page.vm");
@@ -108,10 +108,10 @@ public class ApplicationEndpoint
             } else {
 
                     if (storedTemplate.getEntity() != null) {
-                        Entity entity = BlocksConfig.getInstance().getDatabase().fetchEntity(storedTemplate.getEntity().getId(), language);
+                        Entity entity = Blocks.database().fetchEntity(storedTemplate.getEntity().getId(), language);
                         storedTemplate.fillTemplateValuesWithEntityValues(entity, new HashSet<String>());
                     }
-                return Response.ok(BlocksConfig.getInstance().getTemplateCache().getPagetemplate("menu-footer", language).getRenderedTemplate(false, storedTemplate)).build();
+                return Response.ok(Blocks.templateCache().getPagetemplate("menu-footer", language).getRenderedTemplate(false, storedTemplate)).build();
                 }
                 //
 
@@ -122,7 +122,7 @@ public class ApplicationEndpoint
         catch(NotFoundException e){
             String url = RequestContext.getRequest().getRequestUri().toString();
             try {
-                if(url != null && (url.toString().equals(new URL(BlocksConfig.getSiteDomain() + "/" + BlocksConfig.getDefaultLanguage()).toString()) || url.toString().equals(new URL(BlocksConfig.getSiteDomain() + "/" + BlocksConfig.getDefaultLanguage() + "/").toString()))){
+                if(url != null && (url.toString().equals(new URL("" + "/" + Blocks.config().getDefaultLanguage()).toString()) || url.toString().equals(new URL(Blocks.config().getSiteDomain() + "/" + Blocks.config().getDefaultLanguage() + "/").toString()))){
                     return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
                 }
                 else{
@@ -168,7 +168,7 @@ public class ApplicationEndpoint
      */
     private Response injectParameters(Template newPageTemplate) throws Exception
     {
-        List<com.beligum.blocks.core.models.nosql.Blueprint> pageBlocks = BlocksConfig.getInstance().getTemplateCache().getPageBlocks();
+        List<Blueprint> pageBlocks = Blocks.templateCache().getPageBlocks();
         newPageTemplate.set(ParserConstants.ENTITY_URL, RequestContext.getRequest().getRequestUri().toString());
         newPageTemplate.set(ParserConstants.BLUEPRINTS, pageBlocks);
         return Response.ok(newPageTemplate).build();

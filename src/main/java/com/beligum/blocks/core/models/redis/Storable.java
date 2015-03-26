@@ -1,15 +1,13 @@
 package com.beligum.blocks.core.models.redis;
 
-import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.base.Blocks;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.exceptions.SerializationException;
-import com.beligum.blocks.core.identifiers.BlocksID;
+import com.beligum.blocks.core.identifiers.redis.BlocksID;
 import com.beligum.blocks.core.utils.Utils;
 import com.beligum.core.framework.security.Authentication;
 import com.beligum.core.framework.security.Principal;
-import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.UnavailableSecurityManagerException;
-import org.joda.time.Instant;
 import org.joda.time.LocalDateTime;
 
 import java.util.Date;
@@ -175,13 +173,13 @@ public class Storable{
     }
 
     public static void setCreation(Storable toBeUpdated){
-        toBeUpdated.applicationVersion = BlocksConfig.getProjectVersion();
+        toBeUpdated.applicationVersion = Blocks.config().getProjectVersion();
         toBeUpdated.createdAt = getCurrentTime();
         toBeUpdated.createdBy = getCurrentUserName();
     }
 
     public static void setUpdate(Storable toBeUpdated){
-        toBeUpdated.applicationVersion = BlocksConfig.getProjectVersion();
+        toBeUpdated.applicationVersion = Blocks.config().getProjectVersion();
         toBeUpdated.updatedAt = getCurrentTime();
         toBeUpdated.updatedBy = getCurrentUserName();
     }

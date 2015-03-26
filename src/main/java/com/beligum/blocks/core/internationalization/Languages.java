@@ -1,8 +1,8 @@
 package com.beligum.blocks.core.internationalization;
 
-import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.base.Blocks;
 import com.beligum.blocks.core.exceptions.LanguageException;
-import com.beligum.blocks.core.identifiers.BlocksID;
+import com.beligum.blocks.core.identifiers.redis.BlocksID;
 import org.apache.commons.lang3.StringUtils;
 
 import java.net.URI;
@@ -45,7 +45,7 @@ public class Languages
         else{
             s = new Locale(s).getLanguage();
             boolean foundLanguage = false;
-//            String[] preferredLanguages = BlocksConfig.getLanguages();
+//            String[] preferredLanguages = Blocks.config().getLanguages();
             int i = 0;
 //            while(!foundLanguage && i<preferredLanguages.length){
 //                foundLanguage = s.equals(new Locale(preferredLanguages[i]).getLanguage());
@@ -93,7 +93,7 @@ public class Languages
      * @param languages
      */
     static public String determinePrimaryLanguage(Set<String> languages){
-//        String[] preferredLanguages = BlocksConfig.getLanguages();
+//        String[] preferredLanguages = Blocks.config().getLanguages();
         String primaryLanguage = null;
         if(languages == null || languages.isEmpty()){
             primaryLanguage = NO_LANGUAGE;
@@ -175,14 +175,14 @@ public class Languages
                 isAbsolute = true;
                 //only http-protocols will be translated (so f.i. a mailto-protocol will stay unchanged)
                 //only absolute links of this very site will be translated
-                if(!"http".equals(url.getProtocol()) || !new URL(BlocksConfig.getSiteDomain()).getAuthority().equals(url.getAuthority())){
+                if(!"http".equals(url.getProtocol()) || !new URL(Blocks.config().getSiteDomain()).getAuthority().equals(url.getAuthority())){
                     urlAndLanguage[0] = urlString;
                     return urlAndLanguage;
                 }
             }
             //relative urls are first turned into absolute one's
             else{
-                url = new URL(BlocksConfig.getSiteDomainUrl(), uri.toString());
+                url = new URL(Blocks.config().getSiteDomainUrl(), uri.toString());
                 isAbsolute = false;
                 startsWithSlash = urlString.startsWith("/");
                 if(!isAbsolute && !startsWithSlash){

@@ -1,8 +1,5 @@
 package com.beligum.blocks.core.exceptions;
 
-import com.beligum.blocks.core.parsers.TemplateParser;
-import com.beligum.core.framework.templating.ifaces.Template;
-import com.beligum.core.framework.utils.Logger;
 import org.jsoup.nodes.Node;
 
 /**

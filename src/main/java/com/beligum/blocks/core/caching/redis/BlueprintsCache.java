@@ -3,7 +3,7 @@ package com.beligum.blocks.core.caching.redis;
 import com.beligum.blocks.core.base.Blocks;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.IDException;
-import com.beligum.blocks.core.identifiers.BlocksID;
+import com.beligum.blocks.core.identifiers.redis.BlocksID;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
 import com.beligum.blocks.core.models.redis.templates.Blueprint;
 import com.beligum.core.framework.base.R;

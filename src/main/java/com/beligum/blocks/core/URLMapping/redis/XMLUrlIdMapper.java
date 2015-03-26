@@ -7,7 +7,7 @@ import com.beligum.blocks.core.exceptions.DatabaseException;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.LanguageException;
 import com.beligum.blocks.core.exceptions.UrlIdMappingException;
-import com.beligum.blocks.core.identifiers.BlocksID;
+import com.beligum.blocks.core.identifiers.redis.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.UrlIdMapping;
 import org.apache.commons.io.IOUtils;

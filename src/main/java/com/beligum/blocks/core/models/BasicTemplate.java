@@ -6,7 +6,7 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlockId;
 import com.beligum.blocks.core.mongo.MongoStoredTemplate;
 import com.beligum.blocks.core.parsers.ElementParser;
-import com.beligum.blocks.core.parsers.MongoVisitor.template.PropertyVisitor;
+import com.beligum.blocks.core.parsers.visitors.template.PropertyVisitor;
 import com.beligum.blocks.core.parsers.SimpleTraversor;
 import com.beligum.core.framework.utils.Logger;
 import com.fasterxml.jackson.annotation.JsonIgnore;

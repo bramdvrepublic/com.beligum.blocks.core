@@ -2,11 +2,9 @@ package com.beligum.blocks.core.mongo;
 
 import com.beligum.blocks.core.identifiers.BlockId;
 import com.beligum.blocks.core.identifiers.MongoID;
-import com.beligum.blocks.core.models.nosql.Entity;
-import com.beligum.core.framework.models.ifaces.JsonObject;
+import com.beligum.blocks.core.models.Entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import sun.jvm.hotspot.opto.Block;
 
 /**
  * Created by wouter on 23/03/15.

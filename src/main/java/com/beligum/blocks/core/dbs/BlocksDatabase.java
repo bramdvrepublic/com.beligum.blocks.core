@@ -1,43 +1,31 @@
 package com.beligum.blocks.core.dbs;
 
-import com.beligum.blocks.core.URLMapping.simple.UrlDispatcher;
-import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.DatabaseException;
-import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlockId;
-import com.beligum.blocks.core.models.nosql.Blueprint;
-import com.beligum.blocks.core.models.nosql.Entity;
-import com.beligum.blocks.core.models.nosql.PageTemplate;
-import com.beligum.blocks.core.models.nosql.StoredTemplate;
-import com.beligum.core.framework.utils.Logger;
-import org.jongo.MongoCollection;
-import org.jsoup.nodes.Element;
-
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
+import com.beligum.blocks.core.models.Blueprint;
+import com.beligum.blocks.core.models.Entity;
+import com.beligum.blocks.core.models.StoredTemplate;
+import com.beligum.blocks.core.models.interfaces.BlocksStorable;
+import com.beligum.blocks.core.models.interfaces.BlocksVersionedStorable;
 
 /**
  * Created by wouter on 23/03/15.
  */
 public interface BlocksDatabase
 {
-    public void saveEntity(Entity entity);
-
+    public <T extends BlocksStorable> T fetch(BlockId id, Class<T> clazz);
+    public <T extends BlocksVersionedStorable> T fetch(BlockId id, String language, Class<T> clazz);
     public Entity fetchEntity(BlockId id, String language);
-
-    public void saveTemplate(StoredTemplate template) throws DatabaseException;
-
     public StoredTemplate fetchTemplate(BlockId id, String language);
+    public Blueprint fetchBlueprint(BlockId id, String language);
+    public StoredTemplate fetchPageTemplate(BlockId id, String language);
 
-    public void saveSiteMap(BlocksUrlDispatcher urlDispatcher) throws DatabaseException;
+    public void save(BlocksStorable storable) throws DatabaseException;
+    public void save(BlocksVersionedStorable storable) throws DatabaseException;
+    public void saveEntity(Entity entity) throws DatabaseException;
+    public void remove(BlocksVersionedStorable storable, boolean all) throws DatabaseException;
+    public void remove(BlocksStorable storable) throws DatabaseException;
 
-    public BlocksUrlDispatcher fetchSiteMap() throws DatabaseException;
 
-    public StoredTemplate createStoredTemplate(Element element, String language) throws ParseException;
-    public StoredTemplate createStoredTemplate(Element element, URL url) throws ParseException;
-    public Blueprint createBlueprint(Element element, String language) throws ParseException;
-    public PageTemplate createPageTemplate(Element element, String language)  throws ParseException;
-    public Entity createEntity(String name);
-    public Entity createEntity(String name, String language);
+
 }

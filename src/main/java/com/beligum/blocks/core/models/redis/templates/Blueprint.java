@@ -1,11 +1,10 @@
 package com.beligum.blocks.core.models.redis.templates;
 
-import com.beligum.blocks.core.caching.PageTemplatesCache;
+import com.beligum.blocks.core.caching.redis.PageTemplatesCache;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
-import com.beligum.blocks.core.identifiers.BlocksID;
-import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.blocks.core.identifiers.redis.BlocksID;
 import com.beligum.blocks.core.utils.Utils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;

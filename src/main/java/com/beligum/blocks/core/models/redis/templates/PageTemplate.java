@@ -2,7 +2,7 @@ package com.beligum.blocks.core.models.redis.templates;
 
 import com.beligum.blocks.core.exceptions.DeserializationException;
 import com.beligum.blocks.core.exceptions.IDException;
-import com.beligum.blocks.core.identifiers.BlocksID;
+import com.beligum.blocks.core.identifiers.redis.BlocksID;
 import com.beligum.blocks.core.utils.Utils;
 
 import java.util.List;

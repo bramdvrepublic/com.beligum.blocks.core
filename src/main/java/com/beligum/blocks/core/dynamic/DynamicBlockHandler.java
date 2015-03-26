@@ -1,6 +1,6 @@
 package com.beligum.blocks.core.dynamic;
 
-import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.base.Blocks;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.core.framework.utils.Logger;
 import org.jsoup.nodes.Element;
@@ -20,9 +20,9 @@ public class DynamicBlockHandler
     private DynamicBlockHandler() {
         try {
             //TODO: use an Annotation to discover all dynamic blocks and register them here
-            register(new TranslationList(BlocksConfig.getDefaultLanguage(), BlocksConfig.getSiteDomainUrl()));
+            register(new TranslationList(Blocks.config().getDefaultLanguage(), Blocks.config().getSiteDomainUrl()));
         }catch(MalformedURLException e){
-            Logger.error("Found bad site domain: " + BlocksConfig.getSiteDomain());
+            Logger.error("Found bad site domain: " + Blocks.config().getSiteDomain());
         }
     }
 

@@ -26,7 +26,7 @@ public class BlocksService
     }
 
     private BlocksService() {
-//        this.solrClient = new HttpSolrClient(BlocksConfig.getSolrServerUrl());
+//        this.solrClient = new HttpSolrClient(Blocks.config().getSolrServerUrl());
     }
 
     public static BlocksService instance() {

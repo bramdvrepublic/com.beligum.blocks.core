@@ -1,14 +1,13 @@
 package com.beligum.blocks.core.parsers;
 
-import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.base.Blocks;
 import com.beligum.blocks.core.exceptions.ParseException;
-import com.beligum.blocks.core.parsers.MongoVisitor.reset.HtmlFilesVisitor;
+import com.beligum.blocks.core.parsers.visitors.reset.HtmlFilesVisitor;
+import com.beligum.blocks.core.parsers.redis.Traversor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
-import org.jsoup.parser.Tag;
 
 /**
  * Created by wouter on 16/03/15.
@@ -32,8 +31,8 @@ public class FileAnalyzer
      * @param html
      */
     public static Document parse(String html){
-        Document retVal = new Document(BlocksConfig.getSiteDomain());
-        Document parsed = Jsoup.parse(html, BlocksConfig.getSiteDomain(), Parser.htmlParser());
+        Document retVal = new Document(Blocks.config().getSiteDomain());
+        Document parsed = Jsoup.parse(html, Blocks.config().getSiteDomain(), Parser.htmlParser());
         /*
          * If only part of a html-file is being parsed (which starts f.i. with a <div>-tag), Jsoup will add <html>-, <head>- and <body>-tags, which is not what we want
          * Thus if the head (or body) is empty, but the body (or head) is not, we only want the info in the body (or head).

@@ -4,7 +4,7 @@ import com.beligum.blocks.core.base.Blocks;
 import com.beligum.blocks.core.config.DatabaseConstants;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.DatabaseException;
-import com.beligum.blocks.core.identifiers.BlocksID;
+import com.beligum.blocks.core.identifiers.redis.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.Storable;
 import com.beligum.blocks.core.models.redis.templates.*;

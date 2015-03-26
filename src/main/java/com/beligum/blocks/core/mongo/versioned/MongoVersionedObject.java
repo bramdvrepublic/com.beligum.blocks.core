@@ -1,14 +1,15 @@
 package com.beligum.blocks.core.mongo.versioned;
 
-import com.beligum.blocks.core.identifiers.BlockId;
-import com.beligum.blocks.core.models.nosql.interfaces.BlocksVersionedStorable;
+import com.beligum.blocks.core.identifiers.MongoID;
+import com.beligum.blocks.core.models.interfaces.BlocksVersionedStorable;
 
 /**
  * Created by wouter on 25/03/15.
  */
 public class MongoVersionedObject
 {
-    private BlockId id;
+    private MongoID id;
+    private MongoID versionedId;
     private Long documentVersion;
     private String applicationVersion;
     private String language;
@@ -16,19 +17,30 @@ public class MongoVersionedObject
 
     public MongoVersionedObject(BlocksVersionedStorable storable) {
         this.versionedStorable = storable;
+        this.documentVersion = storable.getDocumentVersion();
+        this.applicationVersion = storable.getApplicationVersion();
+        this.language = storable.getLanguage();
+        this.versionedId = (MongoID)storable.getId();
     }
 
-    public BlockId getId()
+    public MongoID getId()
     {
         return id;
     }
 
-    public void setId(BlockId id)
+    public void setId(MongoID id)
     {
         this.id = id;
     }
 
-
+    public MongoID getVersionedId()
+    {
+        return versionedId;
+    }
+    public void setVersionedId(MongoID versionedId)
+    {
+        this.versionedId = versionedId;
+    }
     public Long getDocumentVersion()
     {
         return documentVersion;

@@ -1,10 +1,10 @@
 package com.beligum.blocks.core.models.factory;
 
-import com.beligum.blocks.core.dbs.BlocksUrlDispatcher;
+import com.beligum.blocks.core.urlmapping.BlocksUrlDispatcher;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlockId;
 import com.beligum.blocks.core.models.*;
-import com.beligum.blocks.core.urlmapping.simple.UrlDispatcher;
+import com.beligum.blocks.core.urlmapping.UrlDispatcher;
 import org.jsoup.nodes.Element;
 
 import java.net.URL;

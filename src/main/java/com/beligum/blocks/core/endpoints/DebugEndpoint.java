@@ -1,14 +1,17 @@
 package com.beligum.blocks.core.endpoints;
 
 
-import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.base.Blocks;
+import com.beligum.blocks.core.caching.redis.BlueprintsCache;
+import com.beligum.blocks.core.caching.redis.PageTemplatesCache;
 import com.beligum.blocks.core.config.ParserConstants;
-import com.beligum.blocks.core.dbs.RedisDatabase;
+import com.beligum.blocks.core.dbs.redis.RedisDatabase;
 import com.beligum.blocks.core.exceptions.*;
-import com.beligum.blocks.core.identifiers.BlocksID;
+import com.beligum.blocks.core.identifiers.redis.BlocksID;
 import com.beligum.blocks.core.models.redis.templates.*;
-import com.beligum.blocks.core.mongocache.TemplateCache;
-import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.blocks.core.parsers.redis.TemplateParser;
+import com.beligum.blocks.core.urlmapping.redis.XMLUrlIdMapper;
+import com.beligum.blocks.core.urlmapping.redis.SiteMap;
 import com.beligum.blocks.core.usermanagement.Permissions;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.templating.ifaces.Template;
@@ -54,8 +57,7 @@ public class DebugEndpoint
     {
         RedisDatabase.getInstance().flushDB();
         Logger.warn("Database has been flushed by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
-        XMLUrlIdMapper.getInstance().reset();
-        XMLUrlIdMapper.getInstance();
+
         Logger.warn("Url-id mapping has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
         this.resetCache();
         return Response.ok("<ul><li>Database emptied</li><li>Cache reset</li><li>Url-id mapping reset</li></ul>").build();
@@ -71,7 +73,7 @@ public class DebugEndpoint
             //            PageTemplateCache.getInstance().reset();
             //            BlueprintsCache.getInstance();
             //            PageTemplateCache.getInstance();
-            BlocksConfig.getInstance().getTemplateCache().reset();
+            Blocks.templateCache().reset();
             Logger.warn("Cache has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
             return Response.ok("Cache reset").build();
         }
@@ -102,7 +104,7 @@ public class DebugEndpoint
                     String language) throws Exception
     {
         if(StringUtils.isEmpty(language)){
-            language = BlocksConfig.getDefaultLanguage();
+            language = Blocks.config().getDefaultLanguage();
         }
         PageTemplate pageTemplate = PageTemplatesCache.getInstance().get(pageTemplateName);
         Template template = R.templateEngine().getEmptyTemplate("/views/admin/pagetemplate.vm");
@@ -130,7 +132,7 @@ public class DebugEndpoint
     public Response getBlueprintPage(@PathParam("blueprintName") String blueprintName, @QueryParam("lang") String language) throws Exception
     {
         if(StringUtils.isEmpty(language)){
-            language = BlocksConfig.getDefaultLanguage();
+            language = Blocks.config().getDefaultLanguage();
         }
         Blueprint blueprint = BlueprintsCache.getInstance().get(blueprintName);
         Template template = R.templateEngine().getEmptyTemplate("/views/admin/blueprint.vm");
@@ -148,9 +150,9 @@ public class DebugEndpoint
     public Response viewSiteMap(@QueryParam("lang") String language) throws UrlIdMappingException
     {
         List<SiteMap> siteMaps = new ArrayList<>();
-        String[] languages = BlocksConfig.getLanguages();
-        for(int i = 0; i<languages.length; i++){
-            SiteMap siteMap = new UrlsEndpoint().getSiteMap(languages[i]);
+        ArrayList<String> languages = Blocks.config().getLanguages();
+        for(String lang: languages){
+            SiteMap siteMap = new UrlsEndpoint().getSiteMap(lang);
             siteMaps.add(siteMap);
         }
         Template template = R.templateEngine().getEmptyTemplate("/views/admin/sitemap.vm");
@@ -231,7 +233,7 @@ public class DebugEndpoint
         }
         else if(template instanceof PageTemplate){
             Blueprint defaultBlueprint = BlueprintsCache.getInstance().get(ParserConstants.DEFAULT_BLUEPRINT);
-            return Response.ok(TemplateParser.renderTemplate(TemplateParser.parse(template.getTemplate()), BlocksConfig.getSiteDomainUrl(), id.getLanguage(), template.getLinks(), template.getScripts()).outerHtml()).build();
+            return Response.ok(TemplateParser.renderTemplate(TemplateParser.parse(template.getTemplate()), Blocks.config().getSiteDomainUrl(), id.getLanguage(), template.getLinks(), template.getScripts()).outerHtml()).build();
         }
         else{
             return Response.ok(TemplateParser.renderTemplate(template, id.getLanguage())).build();
@@ -350,7 +352,7 @@ public class DebugEndpoint
         if(!StringUtils.isEmpty(fragment)){
             resourcePath += "#" + fragment;
         }
-        return new URL(BlocksConfig.getSiteDomain() + "/" + resourcePath);
+        return new URL(Blocks.config().getSiteDomain() + "/" + resourcePath);
     }
 
     private Class<? extends AbstractTemplate> determineType(String typeName){

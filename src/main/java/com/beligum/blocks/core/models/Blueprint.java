@@ -4,7 +4,7 @@ import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.mongo.MongoStoredTemplate;
 import com.beligum.blocks.core.parsers.ElementParser;
-import com.beligum.blocks.core.parsers.MongoVisitor.template.BlueprintVisitor;
+import com.beligum.blocks.core.parsers.visitors.template.BlueprintVisitor;
 import com.beligum.core.framework.utils.Logger;
 import org.jsoup.nodes.Element;
 

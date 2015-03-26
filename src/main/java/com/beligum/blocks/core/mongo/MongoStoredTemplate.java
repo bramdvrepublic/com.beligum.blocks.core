@@ -3,14 +3,10 @@ package com.beligum.blocks.core.mongo;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlockId;
 import com.beligum.blocks.core.identifiers.MongoID;
-import com.beligum.blocks.core.models.nosql.Entity;
-import com.beligum.blocks.core.models.nosql.StoredTemplate;
-import com.beligum.core.framework.models.ifaces.JsonObject;
+import com.beligum.blocks.core.models.StoredTemplate;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.bson.types.ObjectId;
 import org.jsoup.nodes.Element;
-import sun.jvm.hotspot.opto.Block;
 
 import javax.persistence.Id;
 import java.net.URL;

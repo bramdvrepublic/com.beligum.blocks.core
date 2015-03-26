@@ -4,7 +4,7 @@ import com.beligum.blocks.core.base.Blocks;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.parsers.ElementParser;
-import com.beligum.blocks.core.parsers.MongoVisitor.template.PagetemplateVisitor;
+import com.beligum.blocks.core.parsers.visitors.template.PagetemplateVisitor;
 import com.beligum.blocks.core.usermanagement.Permissions;
 import org.apache.shiro.SecurityUtils;
 import org.jsoup.nodes.Element;

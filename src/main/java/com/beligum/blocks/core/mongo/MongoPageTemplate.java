@@ -3,7 +3,7 @@ package com.beligum.blocks.core.mongo;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlockId;
 import com.beligum.blocks.core.identifiers.MongoID;
-import com.beligum.blocks.core.models.nosql.PageTemplate;
+import com.beligum.blocks.core.models.PageTemplate;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jsoup.nodes.Element;

@@ -1,15 +1,15 @@
 package com.beligum.blocks.core.dynamic;
 
-import com.beligum.blocks.core.urlmapping.XMLUrlIdMapper;
-import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.base.Blocks;
+import com.beligum.blocks.core.urlmapping.redis.XMLUrlIdMapper;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.IDException;
 import com.beligum.blocks.core.exceptions.LanguageException;
 import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.exceptions.UrlIdMappingException;
-import com.beligum.blocks.core.identifiers.BlocksID;
+import com.beligum.blocks.core.identifiers.redis.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
-import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.blocks.core.parsers.redis.TemplateParser;
 import org.jsoup.nodes.Element;
 
 import java.net.URL;
@@ -48,7 +48,7 @@ public class TranslationList implements DynamicBlockListener
     {
         try {
             String template = "<ul>\n";
-            for(String language : BlocksConfig.getLanguages()){
+            for(String language : Blocks.config().getLanguages()){
                 template += getListItem(language);
             }
             template += "</ul>\n";

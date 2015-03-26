@@ -2,10 +2,10 @@ package com.beligum.blocks.core.base;
 
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.dbs.AbstractBlockDatabase;
-import com.beligum.blocks.core.dbs.BlocksTemplateCache;
-import com.beligum.blocks.core.dbs.BlocksUrlDispatcher;
+import com.beligum.blocks.core.caching.BlocksTemplateCache;
+import com.beligum.blocks.core.urlmapping.BlocksUrlDispatcher;
 import com.beligum.blocks.core.exceptions.CacheException;
-import com.beligum.blocks.core.mongo.BlocksFactory;
+import com.beligum.blocks.core.models.factory.BlocksFactory;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.cache.CacheKey;
 

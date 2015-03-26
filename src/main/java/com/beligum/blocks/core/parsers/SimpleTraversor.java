@@ -2,7 +2,7 @@ package com.beligum.blocks.core.parsers;
 
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.ParseException;
-import com.beligum.blocks.core.parsers.visitors.SuperVisitor;
+import com.beligum.blocks.core.parsers.redis.visitors.SuperVisitor;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 

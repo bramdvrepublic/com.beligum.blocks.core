@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.dbs.redis;
 
 import com.beligum.blocks.core.exceptions.DatabaseException;
-import com.beligum.blocks.core.identifiers.BlocksID;
+import com.beligum.blocks.core.identifiers.redis.BlocksID;
 import com.beligum.blocks.core.models.redis.Storable;
 
 import java.io.Closeable;

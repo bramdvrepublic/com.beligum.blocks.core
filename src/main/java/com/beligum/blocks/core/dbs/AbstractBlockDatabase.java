@@ -1,21 +1,18 @@
 package com.beligum.blocks.core.dbs;
 
-import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.base.Blocks;
 import com.beligum.blocks.core.exceptions.DatabaseException;
-import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlockId;
-import com.beligum.blocks.core.models.nosql.Blueprint;
-import com.beligum.blocks.core.models.nosql.Entity;
-import com.beligum.blocks.core.models.nosql.PageTemplate;
-import com.beligum.blocks.core.models.nosql.StoredTemplate;
-import com.beligum.blocks.core.mongo.MongoBlueprint;
-import com.beligum.blocks.core.mongo.MongoEntity;
-import com.beligum.blocks.core.mongo.MongoPageTemplate;
-import com.beligum.blocks.core.mongo.MongoStoredTemplate;
-import org.jsoup.nodes.Element;
+import com.beligum.blocks.core.models.Blueprint;
+import com.beligum.blocks.core.models.Entity;
+import com.beligum.blocks.core.models.StoredTemplate;
+import com.beligum.blocks.core.models.interfaces.BlocksStorable;
+import com.beligum.blocks.core.models.interfaces.BlocksVersionedStorable;
+import com.beligum.blocks.core.urlmapping.BlocksUrlDispatcher;
+import org.joda.time.LocalDateTime;
 
-import java.net.URL;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 /**
@@ -24,133 +21,142 @@ import java.util.List;
 public abstract class AbstractBlockDatabase implements BlocksDatabase
 {
 
+    private void touch(BlocksVersionedStorable storable) {
+        storable.setDocumentVersion(Calendar.getInstance().getTimeInMillis());
+        storable.setApplicationVersion(Blocks.config().getProjectVersion());
+        storable.setUpdatedAt(LocalDateTime.now().toString());
+        storable.setUpdatedBy(Blocks.config().getCurrentUserName());
+        if (storable.getCreatedAt() == null || storable.getCreatedBy() == null) {
+            storable.setCreatedAt(storable.getUpdatedAt());
+            storable.setCreatedBy(storable.getUpdatedBy());
+        }
+    }
 
-    public Entity fetchEntity(BlockId id, String language) {
-        Entity retVal = doFetchEntity(id, language);
+    private void touch(BlocksStorable storable) {
+        storable.setUpdatedAt(LocalDateTime.now().toString());
+        storable.setUpdatedBy(Blocks.config().getCurrentUserName());
+        if (storable.getCreatedAt() == null || storable.getCreatedBy() == null) {
+            storable.setCreatedAt(storable.getUpdatedAt());
+            storable.setCreatedBy(storable.getUpdatedBy());
+        }
+    }
+
+    public <T extends BlocksStorable> T fetch(BlockId id, Class<T> clazz) {
+        return doFetch(id, clazz);
+    }
+
+    public <T extends BlocksVersionedStorable> T fetch(BlockId id, String language, Class<T> clazz) {
+        T retVal = doFetch(id, language, clazz);
         if (retVal == null) {
-            retVal = doFetchEntity(id);
+            retVal = doFetch(id, clazz);
         }
         return retVal;
+    }
+
+    public Entity fetchEntity(BlockId id, String language) {
+        return fetch(id, language, Blocks.factory().getEntityClass());
     }
 
     public StoredTemplate fetchTemplate(BlockId id, String language) {
-        StoredTemplate retVal = doFetchTemplate(id, language);
-        if (retVal == null) {
-            retVal = doFetchTemplate(id);
-        }
-        return retVal;
+        return fetch(id, language, Blocks.factory().getStoredTemplateClass());
     }
 
-    public StoredTemplate fetchSingletonTemplate(BlockId id, String language) {
-        StoredTemplate retVal = doFetchSingletonTemplate(id, language);
-        if (retVal == null) {
-            retVal = doFetchSingletonTemplate(id);
-        }
-        return retVal;
-    }
-
-    public StoredTemplate fetchBlueprint(BlockId id, String language) {
-        StoredTemplate retVal = doFetchBlueprint(id, language);
-        if (retVal == null) {
-            retVal = doFetchBlueprint(id);
-        }
-        return retVal;
+    public Blueprint fetchBlueprint(BlockId id, String language) {
+        return fetch(id, language, Blocks.factory().getBlueprintClass());
     }
 
     public StoredTemplate fetchPageTemplate(BlockId id, String language) {
-        StoredTemplate retVal = doFetchPageTemplate(id, language);
-        if (retVal == null) {
-            retVal = doFetchPageTemplate(id);
-        }
-        return retVal;
+        return fetch(id, language, Blocks.factory().getPageTemplateClass());
     }
 
-    public BlocksUrlDispatcher fetchSiteMap() throws DatabaseException
+
+
+    //
+//    public BlocksUrlDispatcher fetchSiteMap() throws DatabaseException
+//    {
+//        return doFetchSiteMap();
+//    }
+
+    public void save(BlocksStorable storable) throws DatabaseException
     {
-        BlocksUrlDispatcher retVal = doFetchSiteMap();
-        if (retVal == null) {
-            retVal = this.createUrlDispatcher();
-            saveSiteMap(retVal);
-        }
-        return retVal;
+        touch(storable);
+        doSave(storable);
     }
 
-    public void saveEntity(Entity entity) {
+    public void save(BlocksVersionedStorable storable) throws DatabaseException
+    {
+        if (storable.getId() != null) {
+            boolean deleted = false;
+            // Get the current version in the database
+            BlocksVersionedStorable oldStorable = fetch(storable.getId(), storable.getLanguage(), storable.getClass());
+            if (oldStorable == null) {
+                oldStorable = doFetchPrevious(storable.getId(), storable.getLanguage(), storable.getClass());
+                deleted = true;
+            }
+
+            if (oldStorable != null && (deleted || !oldStorable.equals(storable))) {
+                // save current version to history
+                doSaveHistory(oldStorable);
+                // upodate metadata
+                touch(storable);
+
+            }
+        }
+        doSave(storable);
+
+    }
+
+
+    public void saveEntity(Entity entity) throws DatabaseException
+    {
         ArrayList<Entity> entities = entity.flatten(new ArrayList<Entity>());
         for (Entity e: entities) {
-            saveSingleEntity(e);
-        }
-    }
-
-    private void saveSingleEntity(Entity entity) {
-        Entity oldEntity = null;
-        if (entity.getId() != null) oldEntity = fetchEntity(entity.getId(), entity.getLanguage());
-        if (oldEntity == null) {
-            doSaveEntity(entity);
-        } else if (!oldEntity.equals(entity)) {
-            entity.merge(oldEntity, false);
-            entity.setMeta(oldEntity.getMeta());
-            entity.getMeta().touch();
-            doSaveEntity(entity);
+            save(e);
         }
     }
 
 
-
-    public void saveTemplate(StoredTemplate template) throws DatabaseException
+    public void remove(BlocksVersionedStorable storable, boolean all) throws DatabaseException
     {
-        StoredTemplate oldTemplate = null;
-        if (template.getId() != null) oldTemplate = fetchTemplate(template.getId(), template.getLanguage());
-        if (oldTemplate == null) {
-            doSaveTemplate(template);
-        } else if (!oldTemplate.equals(template)) {
-            doSaveTemplateHistory(oldTemplate);
-            template.setMeta(oldTemplate.getMeta());
-            template.getMeta().touch();
-            doSaveTemplate(template);
+        if (storable.getId() != null) {
+            BlocksVersionedStorable oldStorable = null;
+            for (String lang : Blocks.config().getLanguages()) {
+                if (all || Blocks.config().getLanguages().equals(storable.getLanguage())) {
+                    oldStorable = fetchTemplate(storable.getId(), lang);
+                    if (oldStorable != null) {
+                        doSaveHistory(oldStorable);
+                    }
+                    doRemove(storable);
+                }
+            }
         }
     }
 
-    public void saveSiteMap(BlocksUrlDispatcher urlDispatcher) throws DatabaseException
+    public void remove(BlocksStorable storable) throws DatabaseException
     {
-        doSaveSiteMap(urlDispatcher);
+        if (storable.getId() != null) {
+            doRemove(storable);
+        }
     }
 
+    protected abstract <T extends BlocksStorable> T doFetch(BlockId id, Class<T> clazz);
+    protected abstract <T extends BlocksVersionedStorable> T doFetch(BlockId id, String language, Class<T> clazz);
+    public abstract BlocksUrlDispatcher fetchUrlDispatcher();
 
-    protected abstract Entity doFetchEntity(BlockId id, String language);
-    protected abstract Entity doFetchEntity(BlockId id);
+    protected abstract void doSave(BlocksVersionedStorable storable) throws DatabaseException;
+    protected abstract void doSave(BlocksStorable storable) throws DatabaseException;
+    protected abstract void doSaveHistory(BlocksVersionedStorable versionedStorable) throws DatabaseException;
 
-    protected abstract StoredTemplate doFetchTemplate(BlockId id, String language);
-    protected abstract StoredTemplate doFetchTemplate(BlockId id);
-    protected abstract StoredTemplate doFetchSingletonTemplate(BlockId id, String language);
-    protected abstract StoredTemplate doFetchSingletonTemplate(BlockId id);
-    protected abstract Blueprint doFetchBlueprint(BlockId id, String language);
-    protected abstract Blueprint doFetchBlueprint(BlockId id);
-    protected abstract PageTemplate doFetchPageTemplate(BlockId id, String language);
-    protected abstract PageTemplate doFetchPageTemplate(BlockId id);
 
-    protected abstract BlocksUrlDispatcher doFetchSiteMap();
+    protected abstract void doRemove(BlocksVersionedStorable storable) throws DatabaseException;
+    protected abstract void doRemove(BlocksStorable storable) throws DatabaseException;
 
-    protected abstract void doSaveTemplate(StoredTemplate template) throws DatabaseException;
-    protected abstract void doSaveSiteMap(BlocksUrlDispatcher urlDispatcher) throws DatabaseException;
-    protected abstract void doSaveEntity(Entity entity);
 
-    protected abstract StoredTemplate doFetchPreviousTemplate(BlockId id, String language);
-    protected abstract StoredTemplate doFetchPreviousTemplateWithVersion(BlockId id, String language, Long version);
-    protected abstract List<Long> getVersionNumbersForTemplate(BlockId id, String language);
+    protected abstract <T extends BlocksVersionedStorable> T doFetchPrevious(BlockId id, String language, Class<T> clazz);
+    protected abstract <T extends BlocksVersionedStorable> T doFetchPreviousVersion(BlockId id, String language, Long version, Class<T> clazz);
+    protected abstract List<Long> getVersionNumbers(BlockId id, String language);
 
-    protected abstract StoredTemplate doFetchPreviousBlueprint(BlockId id, String language);
-    protected abstract StoredTemplate doFetchPreviousBlueprintWithVersion(BlockId id, String language, Long version);
-    protected abstract List<Long> getVersionNumbersForBlueprint(BlockId id, String language);
 
-    protected abstract StoredTemplate doFetchPreviousPageTemplate(BlockId id, String language);
-    protected abstract StoredTemplate doFetchPreviousPageTemplateWithVersion(BlockId id, String language, Long version);
-    protected abstract List<Long> getVersionNumbersForPageTemplate(BlockId id, String language);
 
-    protected abstract void doSaveTemplateHistory(StoredTemplate storedTemplate) throws DatabaseException;
-
-    public abstract BlocksUrlDispatcher createUrlDispatcher();
-
-    public abstract BlockId getIdForString(String s);
 
 }
