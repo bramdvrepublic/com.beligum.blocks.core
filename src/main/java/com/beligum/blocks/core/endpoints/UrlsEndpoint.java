@@ -1,7 +1,7 @@
 package com.beligum.blocks.core.endpoints;
 
-import com.beligum.blocks.core.URLMapping.SiteMap;
-import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
+import com.beligum.blocks.core.urlmapping.SiteMap;
+import com.beligum.blocks.core.urlmapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.UrlIdMappingException;
 import com.beligum.blocks.core.identifiers.BlocksID;

@@ -1,0 +1,78 @@
+#define($body-html)
+<div class="container">
+    <div class="panel panel-gray">
+        <div class="panel-heading">
+            <h1 class="panel-title">$I18N.getMessage("blueprintsTitle")</h1>
+        </div>
+        <table class="table">
+            <thead>
+            <tr>
+                <th>
+                    $I18N.getMessage("name")
+                </th>
+                <th>
+                    $I18N.getMessage("blueprintPageTemplate")
+                </th>
+                <th>
+                    $I18N.getMessage("pageBlock")
+                </th>
+                <th>
+                    $I18N.getMessage("addableBlock")
+                </th>
+                <th>
+                    $I18N.getMessage("properties")
+                </th>
+                <th>
+                    $I18N.getMessage("scripts")
+                </th>
+                <th>
+                    $I18N.getMessage("links")
+                </th>
+                <th>
+                    $I18N.getMessage("languages")
+                </th>
+            </tr>
+            </thead>
+            <tbody>
+                #foreach($blueprint in $blueprints)
+                <tr>
+                    <td>
+                        <a href="/debug/blueprints/$blueprint.getName()" class="admin-link">
+                            $!blueprint.getName()
+                        </a>
+                    </td>
+                    <td>
+                        $!blueprint.getPageTemplateName()
+                    </td>
+                    <td>
+                        $!blueprint.isPageBlock()
+                    </td>
+                    <td>
+                        $!blueprint.isAddableBlock()
+                    </td>
+                    <td>
+                        $!blueprint.getProperties().size()
+                    </td>
+                    <td>
+                        $!blueprint.getScripts().size()
+                    </td>
+                    <td>
+                        $!blueprint.getLinks().size()
+                    </td>
+                    <td>
+                        #set($index = 0)
+                        #foreach($language in $blueprint.getLanguages())
+                            <a href="/debug/blueprints/$blueprint.getName()?lang=$language" class="admin-link">
+                                $language#set($index = $index + 1)#if($index < $blueprint.getLanguages().size()),#end
+                            </a>
+                        #end
+                    </td>
+                </tr>
+                #end
+            </tbody>
+        </table>
+    </div>
+</div>
+#end
+
+#parse("/views/admin/main.html")

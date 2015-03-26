@@ -1,9 +1,8 @@
 package com.beligum.blocks.core.endpoints;
 
-import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
-import com.beligum.blocks.core.caching.BlueprintsCache;
-import com.beligum.blocks.core.caching.PageTemplateCache;
+
 import com.beligum.blocks.core.config.BlocksConfig;
+import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.exceptions.*;
 import com.beligum.blocks.core.identifiers.BlocksID;
@@ -11,26 +10,30 @@ import com.beligum.blocks.core.models.redis.templates.*;
 import com.beligum.blocks.core.mongocache.TemplateCache;
 import com.beligum.blocks.core.parsers.TemplateParser;
 import com.beligum.blocks.core.usermanagement.Permissions;
+import com.beligum.core.framework.base.R;
+import com.beligum.core.framework.templating.ifaces.Template;
 import com.beligum.core.framework.utils.Logger;
+import gen.com.beligum.blocks.core.endpoints.DebugEndpointRoutes;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
+import org.apache.velocity.tools.generic.DateTool;
+import org.apache.velocity.tools.generic.EscapeTool;
+import org.apache.velocity.tools.generic.RenderTool;
 import org.joda.time.LocalDateTime;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by bas on 27.01.15.
  */
-@Path("/debug")
+@Path("debug")
 @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
 public class DebugEndpoint
 {
@@ -38,6 +41,12 @@ public class DebugEndpoint
     public static final String BLUEPRINT_TYPE = "blueprint";
     public static final String PAGE_TEMPLATE_TYPE = "template";
     public static final String XML_TEMPLATE_TYPE = "xml";
+
+    @GET
+    public Response debugIndex()
+    {
+        return Response.seeOther(URI.create(DebugEndpointRoutes.getBlueprintsPage().getPath())).build();
+    }
 
     @GET
     @Path("/flush")
@@ -76,7 +85,82 @@ public class DebugEndpoint
     }
 
     @GET
+    @Path("/pagetemplates")
+    public Response getPageTemplatesPage() throws Exception
+    {
+        Template template = R.templateEngine().getEmptyTemplate("/views/admin/pagetemplates.vm");
+        template.set("pageTemplates", PageTemplatesCache.getInstance().values());
+        return Response.ok(template).build();
+    }
+
+    @GET
+    @Path("/pagetemplates/{pageTemplateName}")
+    public Response getPageTemplatePage(
+                    @PathParam("pageTemplateName")
+                    String pageTemplateName,
+                    @QueryParam("lang")
+                    String language) throws Exception
+    {
+        if(StringUtils.isEmpty(language)){
+            language = BlocksConfig.getDefaultLanguage();
+        }
+        PageTemplate pageTemplate = PageTemplatesCache.getInstance().get(pageTemplateName);
+        Template template = R.templateEngine().getEmptyTemplate("/views/admin/pagetemplate.vm");
+        template.set("DateTool", new DateTool());
+        template.set("EscapeTool", new EscapeTool());
+        template.set("pageTemplate", pageTemplate);
+        template.set("activeLanguage", language);
+        //TODO: rendering should include links ands scripts for full view of blueprint
+        String resourcePath = XMLUrlIdMapper.getInstance().getUrl(pageTemplate.getId()).getPath().substring(1);
+        template.set("src", DebugEndpointRoutes.showTemplate(resourcePath, null, PAGE_TEMPLATE_TYPE).getAbsoluteUrl());
+        return Response.ok(template).build();
+    }
+
+    @GET
     @Path("/blueprints")
+    public Response getBlueprintsPage() throws Exception
+    {
+        Template template = R.templateEngine().getEmptyTemplate("/views/admin/blueprints.vm");
+        template.set("blueprints", BlueprintsCache.getInstance().values());
+        return Response.ok(template).build();
+    }
+
+    @GET
+    @Path("/blueprints/{blueprintName}")
+    public Response getBlueprintPage(@PathParam("blueprintName") String blueprintName, @QueryParam("lang") String language) throws Exception
+    {
+        if(StringUtils.isEmpty(language)){
+            language = BlocksConfig.getDefaultLanguage();
+        }
+        Blueprint blueprint = BlueprintsCache.getInstance().get(blueprintName);
+        Template template = R.templateEngine().getEmptyTemplate("/views/admin/blueprint.vm");
+        template.set("DateTool", new DateTool());
+        template.set("EscapeTool", new EscapeTool());
+        template.set("blueprint", blueprint);
+        template.set("activeLanguage", language);
+        //TODO: rendering should include links ands scripts for full view of blueprint
+        template.set("src", TemplateParser.renderTemplate(blueprint, language));
+        return Response.ok(template).build();
+    }
+
+    @GET
+    @Path("/sitemap")
+    public Response viewSiteMap(@QueryParam("lang") String language) throws UrlIdMappingException
+    {
+        List<SiteMap> siteMaps = new ArrayList<>();
+        String[] languages = BlocksConfig.getLanguages();
+        for(int i = 0; i<languages.length; i++){
+            SiteMap siteMap = new UrlsEndpoint().getSiteMap(languages[i]);
+            siteMaps.add(siteMap);
+        }
+        Template template = R.templateEngine().getEmptyTemplate("/views/admin/sitemap.vm");
+        template.set("siteMaps", siteMaps);
+        template.set("RenderTool", new RenderTool());
+        return Response.ok(template).build();
+    }
+
+    @GET
+    @Path("src/blueprints")
     @Produces("text/plain")
     public Response getBlueprintsCache() throws Exception
     {
@@ -90,12 +174,12 @@ public class DebugEndpoint
     }
 
     @GET
-    @Path("/pagetemplates")
+    @Path("src/pagetemplates")
     @Produces("text/plain")
     public Response getPageTemplateCache() throws Exception
     {
-        List<String> pageTemplateKeys = PageTemplateCache.getInstance().keys();
-        List<PageTemplate> pageTemplates = PageTemplateCache.getInstance().values();
+        List<String> pageTemplateKeys = PageTemplatesCache.getInstance().keys();
+        List<PageTemplate> pageTemplates = PageTemplatesCache.getInstance().values();
         String cache = "";
         for(int i = 0; i<pageTemplates.size(); i++){
             cache += "----------------------------------" + pageTemplateKeys.get(i) + "---------------------------------- \n\n" + pageTemplates.get(i).toString() + "\n\n\n\n\n\n";
@@ -127,7 +211,7 @@ public class DebugEndpoint
     @GET
     @Path("/show/{resourcePath:.+}")
     @Produces("text/html")
-    public Response showEntityTemplate(
+    public Response showTemplate(
                     @PathParam("resourcePath")
                     @DefaultValue("")
                     String resourcePath,
@@ -145,8 +229,12 @@ public class DebugEndpoint
         if(template instanceof EntityTemplate) {
             return Response.ok(((EntityTemplate) template).renderEntityInPageTemplate(template.getLanguage())).build();
         }
+        else if(template instanceof PageTemplate){
+            Blueprint defaultBlueprint = BlueprintsCache.getInstance().get(ParserConstants.DEFAULT_BLUEPRINT);
+            return Response.ok(TemplateParser.renderTemplate(TemplateParser.parse(template.getTemplate()), BlocksConfig.getSiteDomainUrl(), id.getLanguage(), template.getLinks(), template.getScripts()).outerHtml()).build();
+        }
         else{
-            return Response.ok(TemplateParser.renderTemplate(template)).build();
+            return Response.ok(TemplateParser.renderTemplate(template, id.getLanguage())).build();
         }
     }
 

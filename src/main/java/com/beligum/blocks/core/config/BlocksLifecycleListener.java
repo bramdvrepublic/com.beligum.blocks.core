@@ -22,8 +22,6 @@ public class BlocksLifecycleListener implements ServerLifecycleListener
         //initialize the Redis-singleton on server start-up
 //        RedisDatabase.getInstance();
 
-
-
         //initialize the dynamic block handler before the templates are parsed, so all dynamic blocks are known beforehand
         DynamicBlockHandler.getInstance();
         try {

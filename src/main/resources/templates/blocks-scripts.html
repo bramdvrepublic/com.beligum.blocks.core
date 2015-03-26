@@ -1,11 +1,16 @@
-<link href="/assets/libs/bootstrap/css/bootstrap.css" rel="stylesheet" />
-<link href="/assets/libs/bootstrap-dialogs/less/bootstrap-dialog.less" rel="stylesheet" />
-<link href="/assets/libs/font-awesome/4.1.0/less/font-awesome.less" rel="stylesheet" />
-<link href="/assets/stylesheets/blocks.less" rel="stylesheet" />
-<link href="/assets/styles/finder.less" rel="stylesheet" />
+#join()
 
-<script src="/assets/libs/jquery/jquery-1.11.1.js" type="application/javascript" ></script>
-<script src="/assets/libs/bootstrap/js/bootstrap.min.js" type="application/javascript"></script>
+<link href="/assets/webjars/bootstrap/3.3.4/less/bootstrap.less" rel="stylesheet" />
+<link href="/assets/webjars/font-awesome/4.3.0/less/font-awesome.less" rel="stylesheet" />
+
+<link href="/assets/libs/bootstrap-dialogs/less/bootstrap-dialog.less" rel="stylesheet" />
+<!-- This allows us to import the less libraries (elements, animate, ...) only once -->
+<link href="/assets/styles/styles.less" rel="stylesheet" />
+
+<script src="/assets/webjars/jquery/1.11.1/jquery.js" type="application/javascript" ></script>
+<script src="/assets/webjars/jquery-cookie/1.4.1-1/jquery.cookie.js" type="application/javascript" ></script>
+<script src="/assets/webjars/bootstrap/3.3.4/js/bootstrap.js" type="application/javascript" ></script>
+
 <script src="/assets/libs/bootstrap-dialogs/js/bootstrap-dialog.min.js" type="application/javascript"></script>
 <script src="/assets/javascripts/ckeditor/ckeditor.js" type="application/javascript" ></script>
 <script src="/assets/javascripts/ckeditor/adapters/jquery.js" type="application/javascript" ></script>
@@ -51,5 +56,7 @@
 <script src="/assets/libs/file-upload/jquery-ui-widget.js"></script>
 <script src="/assets/libs/file-upload/jquery.iframe-transport.js"></script>
 <script src="/assets/libs/file-upload/jquery.fileupload.js"></script>
-<!--<script src="/assets/javascripts/finder/finder.js" type="application/javascript" ></script>-->
-<!--<script src="/assets/javascripts/finder/finder-ui.js" type="application/javascript" ></script>-->
+<script src="/constants/blocks/finder?type=js" type="application/javascript"></script>
+<script src="/assets/javascripts/finder/finder.js" type="application/javascript" ></script>
+<script src="/assets/javascripts/finder/finder-ui.js" type="application/javascript" ></script>
+#end

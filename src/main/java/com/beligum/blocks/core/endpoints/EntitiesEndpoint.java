@@ -1,8 +1,8 @@
 package com.beligum.blocks.core.endpoints;
 
-import com.beligum.blocks.core.URLMapping.XMLUrlIdMapper;
+import com.beligum.blocks.core.urlmapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.BlueprintsCache;
-import com.beligum.blocks.core.caching.PageTemplateCache;
+import com.beligum.blocks.core.caching.PageTemplatesCache;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.dbs.Database;
@@ -117,9 +117,9 @@ public class EntitiesEndpoint
     @GET
     @Path("/class/{blueprintType}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getClassTemplate(@PathParam("blueprintType") String entityTemplateClasName) throws Exception
+    public Response getClassTemplate(@PathParam("blueprintType") String blueprintName) throws Exception
     {
-        String classHtml = TemplateParser.renderTemplate(BlueprintsCache.getInstance().get(entityTemplateClasName));
+        String classHtml = TemplateParser.renderTemplate(BlueprintsCache.getInstance().get(blueprintName));
         HashMap<String, String> json = new HashMap<String, String>();
         json.put("template", classHtml);
         return Response.ok(json).build();
@@ -252,7 +252,7 @@ public class EntitiesEndpoint
     public Response listTemplates() throws Exception
     {
         List<String> templateNames = new ArrayList<String>();
-        for (PageTemplate e : PageTemplateCache.getInstance().values()) {
+        for (PageTemplate e : PageTemplatesCache.getInstance().values()) {
             if(!e.getName().equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)){
                 templateNames.add(e.getName());
             }
