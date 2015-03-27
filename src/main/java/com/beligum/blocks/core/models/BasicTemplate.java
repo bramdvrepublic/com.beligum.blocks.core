@@ -25,13 +25,6 @@ import java.util.*;
 /**
  * Created by wouter on 16/03/15.
  */
-@JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.PROPERTY, property="type")
-@JsonSubTypes({
-                @JsonSubTypes.Type(value=BasicTemplate.class, name="BasicTemplate"),
-                @JsonSubTypes.Type(value=StoredTemplate.class, name="Storedtemplate"),
-                @JsonSubTypes.Type(value=MongoStoredTemplate.class, name="MongoStoredTemplate")
-
-})
 public class BasicTemplate
 {
     protected String blueprintName;
@@ -529,6 +522,9 @@ public class BasicTemplate
         return this.entity;
     }
 
+    public String getValue() {
+        return this.value;
+    }
 
     @Override
     public boolean equals(Object o)

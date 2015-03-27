@@ -13,12 +13,9 @@ import java.util.LinkedHashSet;
 /**
  * Created by wouter on 16/03/15.
  */
-public abstract class Blueprint extends MongoStoredTemplate
+public abstract class Blueprint extends StoredTemplate
 {
-    // complete blueprint
-    private String fullTemplate;
-    // template without properties
-    private String template;
+
     /**true if this is a class which can be created as a new page*/
     private boolean pageBlock;
     /**true if this is a class which can be added as a new block*/
@@ -38,7 +35,6 @@ public abstract class Blueprint extends MongoStoredTemplate
     public Blueprint(Element element, String language) throws ParseException
     {
         super(element, language);
-        this.fullTemplate = element.outerHtml();
         this.name = this.blueprintName;
         this.addableBlock = ElementParser.isAddableBlock(element);
         this.pageBlock = ElementParser.isPageBlock(element);

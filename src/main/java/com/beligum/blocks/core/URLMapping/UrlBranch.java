@@ -19,7 +19,7 @@ public class UrlBranch
 
     protected ArrayList<UrlBranch> subBranches = new ArrayList<UrlBranch>();
     protected String storedTemplateId;
-    protected HashSet<UrlBranchHistory> deleted = new HashSet<>();
+    protected ArrayList<UrlBranchHistory> deleted = new ArrayList<>();
     protected HashMap<String, String> translations  = new HashMap<>();
 
     @JsonIgnore
@@ -94,7 +94,7 @@ public class UrlBranch
 
 
     protected void remove() {
-        if (this.storedTemplateId == null) {
+        if (this.storedTemplateId != null) {
             this.keepDeletedInfo(this.storedTemplateId);
             this.storedTemplateId = null;
         }
@@ -207,7 +207,12 @@ public class UrlBranch
         this.deleted.add(new UrlBranchHistory(storedTemplateId));
     }
 
-    protected HashSet<UrlBranchHistory> getDeleted() {
+    protected ArrayList<UrlBranchHistory> getDeleted() {
         return this.deleted;
+    }
+
+    public ArrayList<UrlBranch> getSubBranches()
+    {
+        return subBranches;
     }
 }

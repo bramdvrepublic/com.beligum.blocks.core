@@ -15,6 +15,11 @@ public class UrlBranchHistory
     private String updateBy;
     private String storedTemplateId;
 
+    // constructor for jackson
+    public UrlBranchHistory() {
+
+    }
+
     public  UrlBranchHistory(String storedTemplateID) {
         this.versioned = Calendar.getInstance().getTimeInMillis();
         this.updateBy = Blocks.config().getCurrentUserName();

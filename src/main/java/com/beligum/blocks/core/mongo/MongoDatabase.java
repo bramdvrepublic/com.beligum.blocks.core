@@ -1,6 +1,7 @@
 package com.beligum.blocks.core.mongo;
 
 import com.beligum.blocks.core.base.Blocks;
+import com.beligum.blocks.core.mongo.versioned.MongoVersionable;
 import com.beligum.blocks.core.urlmapping.BlocksUrlDispatcher;
 import com.beligum.blocks.core.models.interfaces.BlocksStorable;
 import com.beligum.blocks.core.models.interfaces.BlocksVersionedStorable;
@@ -9,7 +10,9 @@ import com.beligum.blocks.core.dbs.AbstractBlockDatabase;
 import com.beligum.blocks.core.exceptions.DatabaseException;
 import com.beligum.blocks.core.identifiers.BlockId;
 import com.beligum.core.framework.utils.Logger;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.mongodb.*;
+import org.bson.types.ObjectId;
 import org.jongo.Jongo;
 import org.jongo.MongoCollection;
 import org.jongo.MongoCursor;
@@ -37,7 +40,7 @@ public class MongoDatabase extends AbstractBlockDatabase
 
         DB db = client.getDB( "BLOCKS" );
         this.jongo = new Jongo(db,
-                                new JacksonMapper.Builder()
+                                new JacksonMapper.Builder().enable(MapperFeature.AUTO_DETECT_GETTERS)
                                                 .build()
         );
     }
@@ -51,7 +54,7 @@ public class MongoDatabase extends AbstractBlockDatabase
     }
 
     private String getHistoryCollectionName(Class<? extends BlocksStorable> clazz) {
-        return clazz.getSimpleName();
+        return clazz.getSimpleName()+ "_history";
     }
 
     private String getHistoryCollectionName(Class<? extends BlocksStorable> clazz, String language) {
@@ -92,7 +95,7 @@ public class MongoDatabase extends AbstractBlockDatabase
 
     @Override
     public BlocksUrlDispatcher fetchUrlDispatcher() {
-        return doFetch(Blocks.factory().getIdForString(MongoUrlDispatcher.dispatcherID), MongoUrlDispatcher.class);
+        return doFetch(MongoUrlDispatcher.dispatcherID, MongoUrlDispatcher.class);
     }
 
     @Override
@@ -134,7 +137,7 @@ public class MongoDatabase extends AbstractBlockDatabase
     {
 
         if (storable != null && storable.getId() != null) {
-            MongoVersionedObject history = new MongoVersionedObject(storable);
+            MongoVersionedObject history = new MongoVersionedObject((MongoVersionable)storable);
             MongoCollection collection = jongo.getCollection(getHistoryCollectionName(storable.getClass(), storable.getLanguage()));
             collection.save(history);
         }
@@ -144,7 +147,7 @@ public class MongoDatabase extends AbstractBlockDatabase
     protected void doRemove(BlocksStorable storable) {
         if (storable != null && storable.getId() != null) {
             MongoCollection collection = jongo.getCollection(getCollectionName(storable.getClass()));
-            collection.remove("{id: #id}", storable.getId());
+            collection.remove(storable.getId().toString());
         }
     }
 
@@ -152,7 +155,7 @@ public class MongoDatabase extends AbstractBlockDatabase
     protected void doRemove(BlocksVersionedStorable storable) {
         if (storable != null && storable.getId() != null) {
             MongoCollection collection = jongo.getCollection(getCollectionName(storable.getClass()));
-            collection.remove("{id: #id}", storable.getId());
+            collection.remove(storable.getId().toString());
         }
     }
 
@@ -168,8 +171,8 @@ public class MongoDatabase extends AbstractBlockDatabase
         T retVal = null;
         MongoVersionedObject versionedObject = null;
         if (id != null && language != null) {
-            MongoCollection collection = jongo.getCollection(getCollectionName(clazz));
-            MongoCursor<MongoVersionedObject> cursor = collection.find("{versionedId: #id, language: #language}", id.toString(), language).limit(1).sort("{_id: 1}").as(MongoVersionedObject.class);
+            MongoCollection collection = jongo.getCollection(getHistoryCollectionName(clazz, language));
+            MongoCursor<MongoVersionedObject> cursor = collection.find("{versionedId: #, language: #}", id.toString(), language).limit(1).sort("{_id: 1}").as(MongoVersionedObject.class);
             if (cursor.hasNext()) {
                 versionedObject = cursor.next();
                 if (versionedObject != null) {

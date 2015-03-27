@@ -4,14 +4,17 @@ import com.beligum.blocks.core.exceptions.ParseException;
 import com.beligum.blocks.core.identifiers.BlockId;
 import com.beligum.blocks.core.identifiers.MongoID;
 import com.beligum.blocks.core.models.Blueprint;
+import com.beligum.blocks.core.mongo.versioned.MongoVersionable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.jsoup.nodes.Element;
 
 /**
  * Created by wouter on 23/03/15.
  */
-public class MongoBlueprint extends Blueprint
+@JsonTypeInfo(use= JsonTypeInfo.Id.CLASS, include= JsonTypeInfo.As.PROPERTY, property="class")
+public class MongoBlueprint extends Blueprint implements MongoVersionable
 {
     public MongoBlueprint() {
 

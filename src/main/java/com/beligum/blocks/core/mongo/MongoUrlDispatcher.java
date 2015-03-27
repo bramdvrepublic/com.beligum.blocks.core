@@ -4,16 +4,18 @@ import com.beligum.blocks.core.urlmapping.UrlDispatcher;
 import com.beligum.blocks.core.identifiers.BlockId;
 import com.beligum.blocks.core.identifiers.MongoID;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 /**
  * Created by wouter on 23/03/15.
  */
+@JsonTypeInfo(use= JsonTypeInfo.Id.CLASS, include= JsonTypeInfo.As.PROPERTY, property="class")
 public class MongoUrlDispatcher extends UrlDispatcher
 {
-    public static final String dispatcherID = "urldispatcher";
+    public static final MongoID dispatcherID = new MongoID("urldispatcher");
 
     @JsonProperty("_id")
-    private String dbID;
+    private String dbID = MongoUrlDispatcher.dispatcherID.toString();
     private String createdBy;
     private String createdAt;
     private String updatedBy;
@@ -22,7 +24,7 @@ public class MongoUrlDispatcher extends UrlDispatcher
 
     @Override
     public BlockId getId() {
-        return new MongoID(this.dispatcherID);
+        return MongoUrlDispatcher.dispatcherID;
     }
 
     @Override

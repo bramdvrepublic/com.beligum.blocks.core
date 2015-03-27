@@ -39,8 +39,8 @@ public class UrlsEndpoint
         }catch(Exception e){
             return Response.status(Response.Status.BAD_REQUEST).entity(I18n.instance().getMessage("badChangeUrl")).build();
         }
-        BlocksID id = XMLUrlIdMapper.getInstance().getId(original);
-        XMLUrlIdMapper.getInstance().put(id, newURL);
+//        BlocksID id = XMLUrlIdMapper.getInstance().getId(original);
+//        XMLUrlIdMapper.getInstance().put(id, newURL);
         return Response.ok(newURL.toString()).build();
     }
 

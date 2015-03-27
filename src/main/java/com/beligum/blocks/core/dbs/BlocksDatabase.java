@@ -23,7 +23,9 @@ public interface BlocksDatabase
     public void save(BlocksStorable storable) throws DatabaseException;
     public void save(BlocksVersionedStorable storable) throws DatabaseException;
     public void saveEntity(Entity entity) throws DatabaseException;
-    public void remove(BlocksVersionedStorable storable, boolean all) throws DatabaseException;
+
+    public void remove(BlocksVersionedStorable storable, String language) throws DatabaseException;
+    public void remove(BlocksVersionedStorable storable) throws DatabaseException;
     public void remove(BlocksStorable storable) throws DatabaseException;
 
 

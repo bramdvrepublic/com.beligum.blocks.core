@@ -91,7 +91,11 @@ public class MongoBlocksFactory implements BlocksFactory
     }
 
     public BlockId getIdForString(String s) {
-        return new MongoID(s);
+        BlockId retVal = null;
+        if (s != null) {
+            retVal =  new MongoID(s);
+        }
+        return retVal;
     }
 
 }

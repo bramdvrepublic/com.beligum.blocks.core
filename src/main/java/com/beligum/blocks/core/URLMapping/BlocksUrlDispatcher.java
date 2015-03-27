@@ -9,16 +9,18 @@ import java.net.URL;
  */
 public interface BlocksUrlDispatcher
 {
-    public String findId(URL url);
+    public BlockId findId(URL url);
+
+    public BlockId findPreviousId(URL url);
 
     public void addId(URL url, BlockId id, String language);
 
-    public void removeId(URL url, String language, boolean completely);
+    public void removeId(URL url) throws Exception;
 
     public String getLanguage(URL url);
 
     public String getLanguageOrNull(URL url);
 
-    public String findPreviousId(URL url);
+
 
 }

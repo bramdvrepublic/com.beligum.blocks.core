@@ -23,15 +23,14 @@ public abstract class StoredTemplate extends StorableTemplate
     public StoredTemplate(Element node, String language) throws ParseException
     {
         super(node, language);
+        this.setPageTemplateName(findPageTemplateName());
     }
 
 
     public StoredTemplate(Element node, URL url) throws ParseException
     {
         this(node, Blocks.urlDispatcher().getLanguage(url));
-        this.setId(Blocks.factory().getIdForString(Blocks.urlDispatcher().findId(url)));
-
-
+        this.setId(Blocks.urlDispatcher().findId(url));
     }
 
 
@@ -43,7 +42,7 @@ public abstract class StoredTemplate extends StorableTemplate
         String retVal = ParserConstants.DEFAULT_PAGE_TEMPLATE;
         Blueprint blueprint = this.getBlueprint();
         if (this.getBlueprintName() != null && blueprint != null) {
-            this.getBlueprint().getPageTemplateName();
+            retVal = this.getBlueprint().getPageTemplateName();
         }
         return retVal;
     }
@@ -55,11 +54,19 @@ public abstract class StoredTemplate extends StorableTemplate
         return this.pageTemplateName;
     }
 
+    public void setPageTemplateName(String pageTemplateName) {
+        this.pageTemplateName = pageTemplateName;
+    }
+
     public String getPageTitle() {
         String retVal = Blocks.config().getDefaultPageTitle();
         if (this.pageTitle != null) {
             retVal = this.pageTitle;
         }
-        return pageTitle;
+        return retVal;
+    }
+
+    public void setPageTitle(String pageTitle) {
+        this.pageTitle = pageTitle;
     }
 }

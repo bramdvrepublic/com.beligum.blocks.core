@@ -4,9 +4,11 @@ import com.beligum.blocks.core.base.Blocks;
 import com.beligum.blocks.core.config.ParserConstants;
 import com.beligum.blocks.core.exceptions.CacheException;
 import com.beligum.blocks.core.exceptions.LanguageException;
+import com.beligum.blocks.core.identifiers.BlockId;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.Blueprint;
 import com.beligum.blocks.core.models.Entity;
+import com.beligum.blocks.core.models.PageTemplate;
 import com.beligum.blocks.core.models.StoredTemplate;
 import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.usermanagement.Permissions;
@@ -66,72 +68,56 @@ public class ApplicationEndpoint
                 }
             }
             //
-            if (version != null && !SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
+            if (!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
                 //                    throw new UnauthorizedException("User is not allowed to see versioned entity: url = " + randomURLPath + ", version=" +version);
                 version = null;
+                fetchDeleted = false;
                 Logger.debug("Unauthorized user tried to view older version of page '" + randomURLPath + "'.");
             }
 
             //            //if no language info is specified in the url, or if the specified language doesn't exist, the default language will still be shown
-            String id = null;
+            BlockId id = Blocks.urlDispatcher().findId(url);
             StoredTemplate storedTemplate = null;
 
-            if (!fetchDeleted) {
-                id = Blocks.urlDispatcher().findId(url);
-                storedTemplate = Blocks.database().fetchTemplate(Blocks.factory().getIdForString(id), language);
-            }
-            else {
+            if (id != null) {
+                storedTemplate = Blocks.database().fetchTemplate(id, language);
+
+            } else if (fetchDeleted) {
                 id = Blocks.urlDispatcher().findPreviousId(url);
+                if (id != null) {
+                    storedTemplate = Blocks.database().fetchPrevious(id, language, Blocks.factory().getStoredTemplateClass());
+                }
             }
 
 
             if (storedTemplate == null) {
-                if (!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
-                    throw new NotFoundException("Page does not exist: " + url);
+                if (fetchDeleted) {
+                    // Todo add flash message
                 }
-//                //check if this url has ever before had an id mapped to it
-//                if (!fetchDeleted) {
-//                    id = Blocks.urlDispatcher().findPreviousId(url);
-//                }
-//                storedTemplate = Blocks.database().fetchTemplate(Blocks.database().getIdForString(id), language);
-
-//                if (id == null) {
+                if (SecurityUtils.getSubject().isAuthenticated()) {
                     Template template = R.templateEngine().getEmptyTemplate("/views/new-page.vm");
                     return injectParameters(template);
-                    //                    return Response.ok(TemplateCache.getInstance().getPagetemplate("menu-footer").getTemplateAsString(true)).build();
-//                }
-//                else {
-//                    Template template = R.templateEngine().getEmptyTemplate("/views/deleted-page.vm");
-//                    return injectParameters(template);
-//                }
+                } else {
+                    throw new NotFoundException();
+                }
 
             } else {
 
-                    if (storedTemplate.getEntity() != null) {
-                        Entity entity = Blocks.database().fetchEntity(storedTemplate.getEntity().getId(), language);
-                        storedTemplate.fillTemplateValuesWithEntityValues(entity, new HashSet<String>());
-                    }
-                return Response.ok(Blocks.templateCache().getPagetemplate("menu-footer", language).getRenderedTemplate(false, storedTemplate)).build();
+                if (storedTemplate.getEntity() != null) {
+                    Entity entity = Blocks.database().fetchEntity(storedTemplate.getEntity().getId(), language);
+                    storedTemplate.fillTemplateValuesWithEntityValues(entity, new HashSet<String>());
                 }
-                //
+                PageTemplate pageTemplate = Blocks.templateCache().getPagetemplate(storedTemplate.getPageTemplateName(), storedTemplate.getLanguage());
+                return Response.ok(pageTemplate.getRenderedTemplate(false, storedTemplate)).build();
+            }
+            //
 
 
 
         }
         //if the index was not found, redirect to user login, else throw exception
         catch(NotFoundException e){
-            String url = RequestContext.getRequest().getRequestUri().toString();
-            try {
-                if(url != null && (url.toString().equals(new URL("" + "/" + Blocks.config().getDefaultLanguage()).toString()) || url.toString().equals(new URL(Blocks.config().getSiteDomain() + "/" + Blocks.config().getDefaultLanguage() + "/").toString()))){
-                    return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
-                }
-                else{
-                    throw e;
-                }
-            }
-            catch (MalformedURLException e1) {
-                throw e;
-            }
+                return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
         }
         catch(AuthorizationException e){
             throw e;
@@ -139,24 +125,6 @@ public class ApplicationEndpoint
         catch(Exception e){
             Logger.error(e);
             throw new NotFoundException("The page '" + randomURLPath + "' could not be found.", e);
-        }
-    }
-
-    /**
-     * Checks if the specified entity is deleted and if so, it returns true if the current user is allowed to create new entities or throws a NotFoundException if the current user is not allowed.
-     * @param entityTemplate
-     * @return false if the entity did not need to be handled, since it was not a deleted entity, or true if it was and the current user is allowed to revive it
-     * @throws javax.ws.rs.NotFoundException if the entity is deleted and the current user cannot revive it
-     */
-    private boolean handleTrashedEntity(EntityTemplate entityTemplate){
-        if(entityTemplate.getDeleted() == true){
-            if(!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
-                throw new NotFoundException("A deleted entity cannot be accessed: '" + entityTemplate.getUrl() + "'.");
-            }
-            return true;
-        }
-        else{
-            return false;
         }
     }
 
@@ -174,10 +142,5 @@ public class ApplicationEndpoint
         return Response.ok(newPageTemplate).build();
     }
 
-    private boolean hasLanguage(URL url) throws LanguageException
-    {
-        String[] urlAndLanguage = Languages.translateUrl(url.toString(), Languages.NO_LANGUAGE);
-        return !"".equals(urlAndLanguage[1]);
-    }
 
 }

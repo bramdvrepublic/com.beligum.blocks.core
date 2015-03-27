@@ -53,6 +53,16 @@ public abstract class AbstractBlockDatabase implements BlocksDatabase
         return retVal;
     }
 
+    public <T extends BlocksVersionedStorable> T fetchPrevious(BlockId id, String language, Class<T> clazz) {
+        T retVal = doFetchPrevious(id, language, clazz);
+        if (retVal == null) {
+            retVal = doFetchPrevious(id, Blocks.config().getDefaultLanguage(), clazz);
+        }
+        return retVal;
+    }
+
+
+
     public Entity fetchEntity(BlockId id, String language) {
         return fetch(id, language, Blocks.factory().getEntityClass());
     }
@@ -72,10 +82,10 @@ public abstract class AbstractBlockDatabase implements BlocksDatabase
 
 
     //
-//    public BlocksUrlDispatcher fetchSiteMap() throws DatabaseException
-//    {
-//        return doFetchSiteMap();
-//    }
+    //    public BlocksUrlDispatcher fetchSiteMap() throws DatabaseException
+    //    {
+    //        return doFetchSiteMap();
+    //    }
 
     public void save(BlocksStorable storable) throws DatabaseException
     {
@@ -116,18 +126,35 @@ public abstract class AbstractBlockDatabase implements BlocksDatabase
     }
 
 
-    public void remove(BlocksVersionedStorable storable, boolean all) throws DatabaseException
+    public void remove(BlocksVersionedStorable storable) throws DatabaseException
     {
         if (storable.getId() != null) {
             BlocksVersionedStorable oldStorable = null;
             for (String lang : Blocks.config().getLanguages()) {
-                if (all || Blocks.config().getLanguages().equals(storable.getLanguage())) {
-                    oldStorable = fetchTemplate(storable.getId(), lang);
+
+                oldStorable = doFetch(storable.getId(), lang, storable.getClass());
+                if (oldStorable != null) {
+                    doSaveHistory(oldStorable);
+                }
+                doRemove(storable);
+
+            }
+        }
+    }
+
+    public void remove(BlocksVersionedStorable storable, String language) throws DatabaseException
+    {
+        if (storable.getId() != null) {
+            BlocksVersionedStorable oldStorable = null;
+            for (String lang : Blocks.config().getLanguages()) {
+                if (lang.equals(language)) {
+                    oldStorable = doFetch(storable.getId(), lang, storable.getClass());
                     if (oldStorable != null) {
                         doSaveHistory(oldStorable);
                     }
                     doRemove(storable);
                 }
+
             }
         }
     }

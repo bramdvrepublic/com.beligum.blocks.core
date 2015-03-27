@@ -60,31 +60,32 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
 
 
 
-    public String findId(URL url) {
-        String retVal = null;
+    public BlockId findId(URL url) {
+        BlockId retVal = null;
         ArrayList<String> paths = splitUrl(url);
         String language = getLanguage(paths);
         paths = getUrlWithoutLanguage(paths);
         UrlBranch branch = findBranch(paths, language, 0, false, SEARCH_OPTION.NORMAL);
 
         if (branch != null) {
-            retVal =  branch.getStoredTemplateId();
+            retVal =  Blocks.factory().getIdForString(branch.getStoredTemplateId());
         }
         return retVal;
     }
 
-    public String findPreviousId(URL url) {
-        String retVal = null;
+    @Override
+    public BlockId findPreviousId(URL url) {
+        BlockId retVal = null;
         ArrayList<String> paths = splitUrl(url);
         String language = getLanguage(paths);
         paths = getUrlWithoutLanguage(paths);
         UrlBranch branch = findBranch(paths, language, 0, false, SEARCH_OPTION.NORMAL);
 
         if (branch != null) {
-            UrlBranchHistory[] history = (UrlBranchHistory[])branch.getDeleted().toArray();
-            if (history.length > 0) {
-                UrlBranchHistory last = history[history.length - 1];
-                retVal = last.getStoredTemplateId();
+            ArrayList<UrlBranchHistory> history = branch.getDeleted();
+            if (history.size() > 0) {
+                UrlBranchHistory last = history.get(history.size()-1);
+                retVal = Blocks.factory().getIdForString(last.getStoredTemplateId());
             }
         }
         return retVal;
@@ -99,35 +100,31 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
         branch.add(id.toString());
         String stringUrl = branch.getUrl();
         this.idToUrl.put(stringUrl, id.toString());
+
         try {
             Blocks.database().save(this);
         } catch (Exception e) {
 
         }
+
     }
 
-    public void removeId(URL url, String language, boolean completely)
+
+    public void removeId(URL urlWithLanguage) throws Exception
     {
         String retVal = null;
-        ArrayList<String> paths = splitUrl(url);
+        ArrayList<String> paths = splitUrl(urlWithLanguage);
+        String language = getLanguage(urlWithLanguage);
         paths = getUrlWithoutLanguage(paths);
         UrlBranch branch = findBranch(paths, language, 0, false, SEARCH_OPTION.NORMAL);
         if (branch != null) {
-            if (!completely && branch.translations.size() == 1 && branch.translations.containsKey(language)) {
-                completely = true;
-            }
-            if (completely) {
                 this.idToUrl.remove(branch.getStoredTemplateId());
                 branch.remove();
-                String stringUrl = branch.getUrl();
-            }
-            else {
-               if (branch.translations.containsKey(language)) {
-                   branch.translations.remove(language);
-               }
-            }
+        } else {
+            throw new Exception("Url does not exits. could not delete.");
         }
 
+        // Save the sitemap to the  database
         try {
             Blocks.database().save(this);
         } catch (Exception e) {
@@ -163,6 +160,10 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
 
     public String getLanguageOrNull(URL url) {
         return getLanguage(splitUrl(url));
+    }
+
+    public String getTest() {
+        return "test test sitemap";
     }
 
     private String getLanguage(ArrayList<String> paths) {
