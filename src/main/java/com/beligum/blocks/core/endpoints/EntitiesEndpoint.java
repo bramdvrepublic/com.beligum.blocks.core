@@ -1,6 +1,5 @@
 package com.beligum.blocks.core.endpoints;
 
-import com.beligum.blocks.core.urlmapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.caching.BlueprintsCache;
 import com.beligum.blocks.core.caching.PageTemplatesCache;
 import com.beligum.blocks.core.config.BlocksConfig;
@@ -10,12 +9,13 @@ import com.beligum.blocks.core.dbs.RedisDatabase;
 import com.beligum.blocks.core.identifiers.BlocksID;
 import com.beligum.blocks.core.internationalization.Languages;
 import com.beligum.blocks.core.models.redis.templates.AbstractTemplate;
-import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.Blueprint;
+import com.beligum.blocks.core.models.redis.templates.EntityTemplate;
 import com.beligum.blocks.core.models.redis.templates.PageTemplate;
 import com.beligum.blocks.core.parsers.TemplateParser;
+import com.beligum.blocks.core.urlmapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.usermanagement.Permissions;
-import com.beligum.core.framework.i18n.I18n;
+import com.beligum.core.framework.i18n.I18nFactory;
 import com.beligum.core.framework.utils.Logger;
 import gen.com.beligum.blocks.core.endpoints.ApplicationEndpointRoutes;
 import org.apache.shiro.authz.annotation.RequiresRoles;
@@ -134,7 +134,7 @@ public class EntitiesEndpoint
             }
             return Response.ok(pageUrl.getPath()).build();
         }catch (Exception e){
-            return Response.status(Response.Status.BAD_REQUEST).entity(I18n.instance().getMessage("entitySaveFailed")).build();
+            return Response.status(Response.Status.BAD_REQUEST).entity(I18nFactory.instance().getDefaultResourceBundle().getMessage("entitySaveFailed")).build();
         }
     }
 
@@ -154,7 +154,7 @@ public class EntitiesEndpoint
             return Response.ok(entityUrl.toString()).build();
         }
         catch(Exception e){
-            return Response.status(Response.Status.BAD_REQUEST).entity(I18n.instance().getMessage("entityDeleteFailed")).build();
+            return Response.status(Response.Status.BAD_REQUEST).entity(I18nFactory.instance().getDefaultResourceBundle().getMessage("entityDeleteFailed")).build();
         }
     }
 

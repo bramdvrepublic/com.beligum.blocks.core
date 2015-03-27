@@ -52,7 +52,7 @@ public class ApplicationEndpoint
                 Logger.debug("Unauthorized user tried to view deleted version of page '" + randomURLPath + "'.");
                 fetchDeleted = false;
             }
-            URL url = new URL(RequestContext.getRequest().getRequestUri().toString());
+            URL url = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri().toURL();
             if(!this.hasLanguage(url)){
                 return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId(BlocksConfig.getDefaultLanguage()+url.getPath(), version, fetchDeleted).getPath())).build();
             }
@@ -126,7 +126,7 @@ public class ApplicationEndpoint
         }
         //if the index was not found, redirect to user login, else throw exception
         catch(NotFoundException e){
-            String url = RequestContext.getRequest().getRequestUri().toString();
+            String url = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri().toString();
             try {
                 if(url != null && (url.toString().equals(new URL(BlocksConfig.getSiteDomain() + "/" + BlocksConfig.getDefaultLanguage()).toString()) || url.toString().equals(new URL(BlocksConfig.getSiteDomain() + "/" + BlocksConfig.getDefaultLanguage() + "/").toString()))){
                     return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
@@ -174,7 +174,7 @@ public class ApplicationEndpoint
     private Response injectParameters(Template newPageTemplate) throws Exception
     {
         List<Blueprint> pageBlocks = BlueprintsCache.getInstance().getPageClasses();
-        newPageTemplate.set(ParserConstants.ENTITY_URL, RequestContext.getRequest().getRequestUri().toString());
+        newPageTemplate.set(ParserConstants.ENTITY_URL, RequestContext.getJaxRsRequest().getUriInfo().getRequestUri().toString());
         newPageTemplate.set(ParserConstants.BLUEPRINTS, pageBlocks);
         return Response.ok(newPageTemplate).build();
     }

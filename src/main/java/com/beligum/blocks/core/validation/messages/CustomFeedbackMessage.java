@@ -1,6 +1,6 @@
 package com.beligum.blocks.core.validation.messages;
 
-import com.beligum.core.framework.i18n.I18n;
+import com.beligum.core.framework.i18n.I18nFactory;
 import com.beligum.core.framework.validation.messages.FeedbackMessage;
 
 /**
@@ -22,7 +22,7 @@ public class CustomFeedbackMessage implements FeedbackMessage
     @Override
     public String getMessage()
     {
-        return I18n.instance().getMessage(messageKey);
+        return I18nFactory.instance().getDefaultResourceBundle().getMessage(messageKey);
     }
     /**
      * @return the non-interpolated error message for this constraint violation

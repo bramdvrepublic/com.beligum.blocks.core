@@ -70,6 +70,7 @@
             <artifactId>font-awesome</artifactId>
             <version>4.3.0-1</version>
         </dependency>
+
         <!-- <dependency>
              <artifactId>solr-solrj</artifactId>
              <groupId>org.apache.solr</groupId>

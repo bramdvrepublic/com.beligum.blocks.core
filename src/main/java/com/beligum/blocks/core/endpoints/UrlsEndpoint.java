@@ -1,11 +1,11 @@
 package com.beligum.blocks.core.endpoints;
 
-import com.beligum.blocks.core.urlmapping.SiteMap;
-import com.beligum.blocks.core.urlmapping.XMLUrlIdMapper;
 import com.beligum.blocks.core.config.BlocksConfig;
 import com.beligum.blocks.core.exceptions.UrlIdMappingException;
 import com.beligum.blocks.core.identifiers.BlocksID;
-import com.beligum.core.framework.i18n.I18n;
+import com.beligum.blocks.core.urlmapping.SiteMap;
+import com.beligum.blocks.core.urlmapping.XMLUrlIdMapper;
+import com.beligum.core.framework.i18n.I18nFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -37,7 +37,7 @@ public class UrlsEndpoint
             newPath = "." + newPath;
             newURL = new URL(original, newPath);
         }catch(Exception e){
-            return Response.status(Response.Status.BAD_REQUEST).entity(I18n.instance().getMessage("badChangeUrl")).build();
+            return Response.status(Response.Status.BAD_REQUEST).entity(I18nFactory.instance().getDefaultResourceBundle().getMessage("badChangeUrl")).build();
         }
         BlocksID id = XMLUrlIdMapper.getInstance().getId(original);
         XMLUrlIdMapper.getInstance().put(id, newURL);

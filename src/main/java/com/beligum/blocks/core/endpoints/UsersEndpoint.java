@@ -10,7 +10,7 @@ import com.beligum.blocks.core.validation.messages.CustomFeedbackMessage;
 import com.beligum.core.framework.base.R;
 import com.beligum.core.framework.base.RequestContext;
 import com.beligum.core.framework.email.EmailException;
-import com.beligum.core.framework.i18n.I18n;
+import com.beligum.core.framework.i18n.I18nFactory;
 import com.beligum.core.framework.models.AbstractSubject;
 import com.beligum.core.framework.security.DefaultCookiePrincipal;
 import com.beligum.core.framework.templating.ifaces.Template;
@@ -39,7 +39,9 @@ import javax.ws.rs.core.Response;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
-import java.util.*;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * Created by bas on 15.01.15.
@@ -220,7 +222,7 @@ public class UsersEndpoint
             return Response.status(Response.Status.BAD_REQUEST).entity(template).build();
         }
         Response retVal = null;
-        URI referer = URI.create(RequestContext.getRequest().getRequestHeaders().getFirst(HttpHeaders.REFERER));
+        URI referer = URI.create(RequestContext.getJaxRsRequest().getHeaders().getFirst(HttpHeaders.REFERER));
         if (referer.getPath().equalsIgnoreCase(UsersEndpointRoutes.login().getPath())) {
             retVal = Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId("", null, false).getPath())).build();
         } else {
@@ -423,7 +425,7 @@ public class UsersEndpoint
     public Response deleteUser(@PathParam("userId") long userId){
         if(this.getCurrentUserId() == userId){
             Logger.warn("User '" + userId + "' cannot delete himself.");
-            return Response.status(Response.Status.FORBIDDEN).entity(I18n.instance().getMessage("selfDelete")).build();
+            return Response.status(Response.Status.FORBIDDEN).entity(I18nFactory.instance().getDefaultResourceBundle().getMessage("selfDelete")).build();
         }
         EntityManager em = RequestContext.getEntityManager();
         Person user = em.find(Person.class, userId);
@@ -432,7 +434,7 @@ public class UsersEndpoint
         user.getSubject().setDeleted(true);
         em.merge(user);
         //return the redirect url
-        return Response.ok(I18n.instance().getMessage("userDeleted")).build();
+        return Response.ok(I18nFactory.instance().getDefaultResourceBundle().getMessage("userDeleted")).build();
     }
 
 
