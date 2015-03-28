@@ -26,9 +26,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.beligum.core</groupId>
-            <artifactId>core-framework</artifactId>
-            <version>0.2.6-SNAPSHOT</version>
+            <groupId>com.beligum.base</groupId>
+            <artifactId>base-core</artifactId>
+            <version>0.2.6</version>
         </dependency>
         <dependency>
             <groupId>com.beligum.blocks</groupId>
