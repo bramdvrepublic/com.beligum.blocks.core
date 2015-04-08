@@ -31,14 +31,15 @@ public class TranslationList implements DynamicBlockListener
     public StringBuilder render(BasicTemplate basicTemplate)
     {
         StringBuilder retVal = new StringBuilder();
+        retVal.append(basicTemplate.renderStartElement(true, false));
+        retVal.append("<ul>");
+        for(String language : Blocks.config().getLanguages()){
+            getListItem(retVal, language, basicTemplate.getLanguage());
+        }
+        retVal.append("</ul>");
+        retVal.append(basicTemplate.renderEndElement());
 
-            retVal.append("<ul>");
-            for(String language : Blocks.config().getLanguages()){
-                getListItem(retVal, language, basicTemplate.getLanguage());
-            }
-            retVal.append("</ul>");
-
-            return new StringBuilder();
+        return new StringBuilder();
 
     }
 
