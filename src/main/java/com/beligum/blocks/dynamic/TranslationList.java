@@ -5,6 +5,7 @@ import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.models.BasicTemplate;
 import com.beligum.blocks.models.StoredTemplate;
+import com.beligum.blocks.utils.URLFactory;
 import org.jsoup.nodes.Element;
 
 import java.util.ArrayList;
@@ -39,7 +40,7 @@ public class TranslationList implements DynamicBlockListener
         retVal.append("</ul>");
         retVal.append(basicTemplate.renderEndElement());
 
-        return new StringBuilder();
+        return retVal;
 
     }
 
@@ -48,7 +49,7 @@ public class TranslationList implements DynamicBlockListener
     }
 
     public String getType(){
-        return ParserConstants.DynamicBlocks.TRANSLATION_LIST;
+        return URLFactory.makeAbsoluteRdfValue(ParserConstants.DynamicBlocks.TRANSLATION_LIST);
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.beligum.blocks.models;
 
 import com.beligum.blocks.models.interfaces.NamedProperty;
+import com.beligum.blocks.utils.URLFactory;
 
 /**
  * Created by wouter on 2/04/15.
@@ -20,7 +21,7 @@ public class EntityField implements NamedProperty
     }
 
     public EntityField(String name, String value) {
-        this.name = name;
+        this.name = URLFactory.makeAbsoluteRdfValue(name);
         this.value = value;
     }
 

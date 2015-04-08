@@ -7,12 +7,11 @@ import com.beligum.blocks.identifiers.BlockId;
 import com.beligum.blocks.models.*;
 import com.beligum.blocks.renderer.BlocksTemplateRenderer;
 import com.beligum.blocks.usermanagement.Permissions;
-import com.beligum.blocks.utils.PropertyFinder;
 import com.beligum.base.server.R;
 import com.beligum.base.server.RequestContext;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
-import gen.com.beligum.blocks.core.endpoints.UsersEndpointRoutes;
+import gen.com.beligum.blocks.endpoints.UsersEndpointRoutes;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.AuthorizationException;
 
@@ -93,15 +92,12 @@ public class ApplicationEndpoint
                 Entity entity = null;
                 if (storedTemplate.getEntity() != null) {
                     entity = Blocks.database().fetchEntity(storedTemplate.getEntity().getId(), language);
-//                    storedTemplate.fillTemplateValuesWithEntityValues(entity, new PropertyFinder<EntityField>());
                 }
                 PageTemplate pageTemplate = Blocks.templateCache().getPagetemplate(storedTemplate.getPageTemplateName(), storedTemplate.getLanguage());
                 BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
                 String page = renderer.render(pageTemplate, storedTemplate, entity);
                 return Response.ok(page).build();
             }
-            //
-
 
 
         }

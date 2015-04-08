@@ -12,7 +12,7 @@ import com.beligum.blocks.exceptions.CacheException;
 import com.beligum.blocks.exceptions.UrlIdMappingException;
 import com.beligum.blocks.models.Blueprint;
 import com.beligum.blocks.models.PageTemplate;
-import gen.com.beligum.blocks.core.endpoints.DebugEndpointRoutes;
+import gen.com.beligum.blocks.endpoints.DebugEndpointRoutes;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
