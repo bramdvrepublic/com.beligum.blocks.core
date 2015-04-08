@@ -21,7 +21,11 @@ public class EntityField implements NamedProperty
     }
 
     public EntityField(String name, String value) {
-        this.name = URLFactory.makeAbsoluteRdfValue(name);
+        if (name != null) {
+            this.name = URLFactory.makeAbsoluteRdfValue(name);
+        } else {
+            this.name = null;
+        }
         this.value = value;
     }
 
@@ -31,7 +35,7 @@ public class EntityField implements NamedProperty
 
     public void setName(String name)
     {
-        this.name = name;
+        this.name = URLFactory.makeAbsoluteRdfValue(name);
     }
     public String getValue()
     {

@@ -67,11 +67,13 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         this.readOnly = readOnly;
     }
 
+    public VelocityBlocksRenderer() {
+        this.velocityTemplateEngine = new VelocityTemplateEngine();
+    }
 
 
     public String render(StoredTemplate storedTemplate, Entity entity) {
         this.locale = new Locale(storedTemplate.getLanguage());
-        this.velocityTemplateEngine = new VelocityTemplateEngine();
         this.buffer = new StringBuilder();
         this.renderTemplate(storedTemplate, entity, this.readOnly);
         return this.buffer.toString();
@@ -80,7 +82,6 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 
     public String render(PageTemplate pageTemplate, StoredTemplate storedTemplate, Entity entity) {
         this.locale = new Locale(storedTemplate.getLanguage());
-        this.velocityTemplateEngine = new VelocityTemplateEngine();
         this.buffer = new StringBuilder();
 
         // Render everything in the page except main content
@@ -157,9 +158,9 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 
             // If blueprint is fixed or readonly then use template of blueprint to fill with values
             if (blueprint.isFixed() || readOnly) {
-                Template velocityStringTemplate = this.velocityTemplateEngine.getEmptyStringTemplate(blueprint.getTemplate());
-                velocityStringTemplate.set(TemplateContext.InternalProperties.I18N.name(), I18nFactory.instance().getResourceBundle(this.locale));
-                stringTemplate = velocityStringTemplate.render();
+//                Template velocityStringTemplate = this.velocityTemplateEngine.getEmptyStringTemplate(blueprint.getTemplate());
+//                velocityStringTemplate.set(TemplateContext.InternalProperties.I18N.name(), I18nFactory.instance().getResourceBundle(this.locale));
+                stringTemplate = blueprint.getTemplate();
             }
 
             if (readOnly) {

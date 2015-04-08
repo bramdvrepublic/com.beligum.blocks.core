@@ -2,8 +2,10 @@ package com.beligum.blocks.models;
 
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.utils.PropertyFinder;
+import com.beligum.blocks.utils.URLFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * Created by wouter on 17/03/15.
@@ -12,6 +14,7 @@ import java.util.ArrayList;
 public abstract class Entity extends AbstractEntity
 {
 
+    private HashMap<String, Object> entity = new HashMap<>();
     private ArrayList<EntityField> properties = new ArrayList<>();
 
     public Entity() {
@@ -28,6 +31,8 @@ public abstract class Entity extends AbstractEntity
 
     public Entity(String name, String value, String language) {
         super(name, value, language);
+        this.value = URLFactory.makeAbsoluteRdfValue(value);
+        entity.put("type", URLFactory.makeAbsoluteRdfValue(value));
     }
 
     public ArrayList<EntityField> getProperties() {
@@ -36,6 +41,11 @@ public abstract class Entity extends AbstractEntity
 
     public void addProperty(EntityField property) {
         properties.add(property);
+//        if (entity.containsKey(property.getName())) {
+//
+//        } else {
+//            entity
+//        }
     }
 
 
@@ -61,6 +71,15 @@ public abstract class Entity extends AbstractEntity
                 }
                 propertyFinder.propertyFound(key);
             }
+        }
+    }
+
+    @Override
+    public void setValue(String value) {
+        if (value != null) {
+            this.value = URLFactory.makeAbsoluteRdfValue(value);
+        } else {
+            this.value = null;
         }
     }
 
