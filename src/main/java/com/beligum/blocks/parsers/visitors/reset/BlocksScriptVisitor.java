@@ -1,6 +1,6 @@
 package com.beligum.blocks.parsers.visitors.reset;
 
-import com.beligum.blocks.parsers.visitors.HtmlVisitor;
+import com.beligum.blocks.parsers.visitors.BasicVisitor;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 
@@ -9,7 +9,7 @@ import java.util.LinkedHashSet;
 /**
  * Created by wouter on 18/03/15.
  */
-public class BlocksScriptVisitor extends HtmlVisitor
+public class BlocksScriptVisitor extends BasicVisitor
 {
 
     LinkedHashSet<String> scripts = new LinkedHashSet<>();

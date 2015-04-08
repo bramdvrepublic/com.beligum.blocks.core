@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Created by wouter on 30/03/15.
  */
-public abstract class HtmlVisitor
+public abstract class BasicVisitor
 {
     protected HashBiMap<String, String> localPrefixes = HashBiMap.create();
 

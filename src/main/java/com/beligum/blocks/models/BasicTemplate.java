@@ -9,6 +9,7 @@ import com.beligum.blocks.models.interfaces.NamedProperty;
 import com.beligum.blocks.parsers.ElementParser;
 import com.beligum.blocks.parsers.visitors.template.PropertyVisitor;
 import com.beligum.blocks.parsers.Traversor;
+import com.beligum.blocks.renderer.BlocksTemplateRenderer;
 import com.beligum.blocks.utils.PropertyFinder;
 import com.beligum.blocks.utils.URLFactory;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -104,189 +105,179 @@ public class BasicTemplate implements NamedProperty
         return new PropertyVisitor();
     }
 
-    public StringBuilder getRenderedTemplate(boolean readOnly, boolean fetchSingeltons)
-    {
-        StringBuilder retVal = new StringBuilder(this.value);
-        Blueprint blueprint = getBlueprint();
+//    public StringBuilder getRenderedTemplate(boolean readOnly, boolean fetchSingeltons)
+//    {
+//        StringBuilder retVal = new StringBuilder(this.value);
+//        Blueprint blueprint = getBlueprint();
+//
+//        // TODO fix dynamic blocks
+//        if (blueprint == null) {
+//            // Dynamic block
+//            //
+//        } else if (Blocks.blockHandler().isDynamicBlock(this.getBlueprintName())) {
+//            return Blocks.blockHandler().getDynamicBlock(this.getBlueprintName()).render(this);
+//        } else if (readOnly) {
+//            retVal = blueprint.getRenderedTemplate(readOnly, fetchSingeltons);
+//        } else {
+//            // check if blueprint is readonly -> all properties read only except not-read
+//            if (blueprint.isFixed() || readOnly) retVal = new StringBuilder(blueprint.getTemplate());
+//            ArrayList<BasicTemplate> mixedProperties = mixProperties(readOnly, blueprint.isReadOnly(), properties, blueprint.getProperties());
+//            retVal = this.fillTemplateWithProperties(new StringBuilder(retVal), readOnly, blueprint, fetchSingeltons);
+//
+//        }
+//        return this.renderInsideElement(retVal, readOnly);
+//    }
 
-        // TODO fix dynamic blocks
-        if (blueprint == null) {
-            // Dynamic block
-            //
-        } else if (Blocks.blockHandler().isDynamicBlock(this.getBlueprintName())) {
-            return Blocks.blockHandler().getDynamicBlock(this.getBlueprintName()).render(this);
-        } else if (readOnly) {
-            retVal = blueprint.getRenderedTemplate(readOnly, fetchSingeltons);
-        } else {
-            // check if blueprint is readonly -> all properties read only except not-read
-            if (blueprint.isFixed() || readOnly) retVal = new StringBuilder(blueprint.getTemplate());
-            ArrayList<BasicTemplate> mixedProperties = mixProperties(readOnly, blueprint.isReadOnly(), properties, blueprint.getProperties());
-            retVal = this.fillTemplateWithProperties(new StringBuilder(retVal), readOnly, blueprint, fetchSingeltons);
-
-        }
-        return this.renderInsideElement(retVal, readOnly);
-    }
-
-    public void fillTemplateValuesWithEntityValues(Entity entity, PropertyFinder<EntityField> propertyFinder) {
-        // find each property
-        if (this.getProperties().size() > 0) {
-            for (BasicTemplate template : this.getProperties()) {
-                String key = template.getName();
-                EntityField property = propertyFinder.getProperty(key, entity.getProperties());
-                if (property != null && property instanceof Entity) {
-                    template.fillTemplateValuesWithEntityValues((Entity) property, new PropertyFinder<EntityField>());
-                }
-                else if (property != null) {
-                    template.setValue(property.getValue());
-                    propertyFinder.propertyFound(key);
-                } else {
-                    Logger.debug("Could not find a value in the entity to fill this template");
-                }
-            }
-        } else if (this.getBlueprintName() != null) {
-            // Fill this template itself
-           EntityField field = propertyFinder.getProperty(this.getName(), entity.getProperties());
-           if (field != null && field instanceof Entity) {
-               this.fillTemplateValuesWithEntityValues((Entity)field, propertyFinder);
-           } else if (field != null) {
-               this.setValue(field.getValue());
-               propertyFinder.propertyFound(this.getName());
-           } else {
-               Logger.debug("Could not find a value in the entity to fill this template");
-           }
-        } else {
-            Logger.debug("This is a blueprint without properties so we can't fill anything");
-        }
-    }
+//    public void fillTemplateValuesWithEntityValues(Entity entity, PropertyFinder<EntityField> propertyFinder) {
+//        // find each property
+//        if (this.getProperties().size() > 0) {
+//            for (BasicTemplate template : this.getProperties()) {
+//                String key = template.getName();
+//                EntityField property = propertyFinder.getProperty(key, entity.getProperties());
+//                if (property != null && property instanceof Entity) {
+//                    template.fillTemplateValuesWithEntityValues((Entity) property, new PropertyFinder<EntityField>());
+//                }
+//                else if (property != null) {
+//                    template.setValue(property.getValue());
+//                    propertyFinder.propertyFound(key);
+//                } else {
+//                    Logger.debug("Could not find a value in the entity to fill this template");
+//                }
+//            }
+//        } else if (this.getBlueprintName() != null) {
+//            // Fill this template itself
+//           EntityField field = propertyFinder.getProperty(this.getName(), entity.getProperties());
+//           if (field != null && field instanceof Entity) {
+//               this.fillTemplateValuesWithEntityValues((Entity)field, propertyFinder);
+//           } else if (field != null) {
+//               this.setValue(field.getValue());
+//               propertyFinder.propertyFound(this.getName());
+//           } else {
+//               Logger.debug("Could not find a value in the entity to fill this template");
+//           }
+//        } else {
+//            Logger.debug("This is a blueprint without properties so we can't fill anything");
+//        }
+//    }
 
     public void setValue(String value) {
         this.value = value;
     }
 
-    protected StringBuilder fillTemplateWithProperties(StringBuilder template, boolean readOnly, BasicTemplate blueprint, boolean fetchSingletons)
-    {
-        // find property
-        String nextProperty = findNextPropertyInTemplate(template);
-        PropertyFinder<BasicTemplate> propertyFinder = new PropertyFinder();
-        while (nextProperty != null) {
-            BasicTemplate property = propertyFinder.getProperty(nextProperty, properties);
-            BasicTemplate blueprintProperty = propertyFinder.getProperty(nextProperty, blueprint.getProperties());
+//    protected StringBuilder fillTemplateWithProperties(StringBuilder template, boolean readOnly, BasicTemplate blueprint, boolean fetchSingletons)
+//    {
+//        // find property
+//        String nextProperty = findNextPropertyInTemplate(template);
+//        PropertyFinder<BasicTemplate> propertyFinder = new PropertyFinder();
+//        while (nextProperty != null) {
+//            BasicTemplate property = propertyFinder.getProperty(nextProperty, properties);
+//            BasicTemplate blueprintProperty = propertyFinder.getProperty(nextProperty, blueprint.getProperties());
+//
+//
+//            if (property == null && blueprintProperty != null) {
+//                property = propertyFinder.getProperty(nextProperty, blueprint.getProperties());
+//            } else if (property != null && property instanceof Singleton && fetchSingletons) {
+//                BlockId singletonId = ((Singleton)property).getId();
+//                StoredTemplate singleton = Blocks.database().fetch(singletonId, this.language, Blocks.factory().getSingletonClass());
+//                if (singleton != null) property = singleton;
+//            }
+//            propertyFinder.propertyFound(nextProperty);
+//
+//            if (property != null) {
+//                boolean propertyReadOnly = readOnly;
+//                if (!readOnly) {
+//                    if (blueprintProperty != null && blueprint.isReadOnly() || property.isReadOnly()) {
+//                        propertyReadOnly = true;
+//                    }
+//                }
+//                StringBuilder propertyValue = property.getRenderedTemplate(propertyReadOnly, fetchSingletons);
+//                replacePropertyWithValue(template, nextProperty, propertyValue);
+//
+//
+//            } else {
+//                replacePropertyWithValue(template, nextProperty, new StringBuilder());
+//
+//            }
+//
+//            nextProperty = findNextPropertyInTemplate(template);
+//        }
+//        return template;
+//    }
+
+//    protected String findNextPropertyInTemplate(StringBuilder template) {
+//        String retVal = null;
+//        int start = template.indexOf(ParserConstants.TEMPLATE_PROPERTY_START);
+//        if (start > -1) {
+//            int end = template.indexOf(ParserConstants.TEMPLATE_PROPERTY_END);
+//            if (end > -1 && end > start) {
+//                start += ParserConstants.TEMPLATE_PROPERTY_START.length();
+//                retVal = template.substring(start, end);
+//            }
+//        }
+//        return retVal;
+//    }
+//
+//    protected void replacePropertyWithValue(StringBuilder template, String property, StringBuilder value) {
+//        StringBuilder retVal = template;
+//        String propertyKey = ParserConstants.TEMPLATE_PROPERTY_START + property + ParserConstants.TEMPLATE_PROPERTY_END;
+//        int index = retVal.indexOf(propertyKey);
+//        if (index >= 0) {
+//            retVal = retVal.replace(index, index + propertyKey.length(), value.toString());
+//        }
+//    }
+
+//    protected ArrayList<BasicTemplate> mixProperties(boolean parentReadOnly, boolean blueprintReadOnly, ArrayList<BasicTemplate> instanceProperties, ArrayList<BasicTemplate> blueprintProperties)
+//
+//    {
+//        ArrayList<BasicTemplate> retVal = new ArrayList<>();
+//
+//        if (parentReadOnly) {
+//            retVal = blueprintProperties;
+//        } else {
+//            PropertyFinder<BasicTemplate> propertyFinder = new PropertyFinder();
+//            for (BasicTemplate property : instanceProperties) {
+//                String key = property.getName();
+//                // get numbered property
+//                BasicTemplate instanceProperty = propertyFinder.getProperty(key, instanceProperties);
+//                BasicTemplate blueprintProperty = propertyFinder.getProperty(key, blueprintProperties);
+//                if (blueprintProperty == null && propertyFinder.getFirstProperty(key, blueprintProperties) != null) {
+//                    blueprintProperty = propertyFinder.getFirstProperty(key, blueprintProperties);
+//                } else if (instanceProperty.getBlueprintName() != null) {
+//                    blueprintProperty = Blocks.templateCache().getBlueprint(instanceProperty.getBlueprintName(), instanceProperty.getLanguage());
+//                }
+//
+//                if (blueprintProperty != null && (blueprintReadOnly || blueprintProperty.isReadOnly())) {
+//                    retVal.add(blueprintProperty);
+//                } else if (blueprintProperty == null && blueprintReadOnly) {
+//                    // TODO put nothing or instance?
+//                    retVal.add(instanceProperty);
+//                } else {
+//                    retVal.add(instanceProperty);
+//                }
+//                propertyFinder.propertyFound(key);
+//
+//            }
+//        }
+//        return retVal;
+//
+//    }
 
 
-            if (property == null && blueprintProperty != null) {
-                property = propertyFinder.getProperty(nextProperty, blueprint.getProperties());
-            } else if (property != null && property instanceof Singleton && fetchSingletons) {
-                BlockId singletonId = ((Singleton)property).getId();
-                StoredTemplate singleton = Blocks.database().fetch(singletonId, this.language, Blocks.factory().getSingletonClass());
-                if (singleton != null) property = singleton;
-            }
-            propertyFinder.propertyFound(nextProperty);
-
-            if (property != null) {
-                boolean propertyReadOnly = readOnly;
-                if (!readOnly) {
-                    if (blueprintProperty != null && blueprint.isReadOnly() || property.isReadOnly()) {
-                        propertyReadOnly = true;
-                    }
-                }
-                StringBuilder propertyValue = property.getRenderedTemplate(propertyReadOnly, fetchSingletons);
-                replacePropertyWithValue(template, nextProperty, propertyValue);
+//    @JsonIgnore
+//    public Element getTemplateAsElement()
+//    {
+//        Element retVal = null;
+//        if (this.transientElement == null) {
+//            this.transientElement = parse(this.renderInsideElement(new StringBuilder(this.value), false).toString());
+//        }
+//        retVal = this.transientElement.clone();
+//        if (retVal == null) retVal = new Element(Tag.valueOf("div"), null);
+//        return retVal;
+//    }
 
 
-            } else {
-                replacePropertyWithValue(template, nextProperty, new StringBuilder());
 
-            }
-
-            nextProperty = findNextPropertyInTemplate(template);
-        }
-        return template;
-    }
-
-    protected String findNextPropertyInTemplate(StringBuilder template) {
-        String retVal = null;
-        int start = template.indexOf(ParserConstants.TEMPLATE_PROPERTY_START);
-        if (start > -1) {
-            int end = template.indexOf(ParserConstants.TEMPLATE_PROPERTY_END);
-            if (end > -1 && end > start) {
-                start += ParserConstants.TEMPLATE_PROPERTY_START.length();
-                retVal = template.substring(start, end);
-            }
-        }
-        return retVal;
-    }
-
-    protected void replacePropertyWithValue(StringBuilder template, String property, StringBuilder value) {
-        StringBuilder retVal = template;
-        String propertyKey = ParserConstants.TEMPLATE_PROPERTY_START + property + ParserConstants.TEMPLATE_PROPERTY_END;
-        int index = retVal.indexOf(propertyKey);
-        if (index >= 0) {
-            retVal = retVal.replace(index, index + propertyKey.length(), value.toString());
-        }
-    }
-
-    protected ArrayList<BasicTemplate> mixProperties(boolean parentReadOnly, boolean blueprintReadOnly, ArrayList<BasicTemplate> instanceProperties, ArrayList<BasicTemplate> blueprintProperties)
-
-    {
-        ArrayList<BasicTemplate> retVal = new ArrayList<>();
-
-        if (parentReadOnly) {
-            retVal = blueprintProperties;
-        } else {
-            PropertyFinder<BasicTemplate> propertyFinder = new PropertyFinder();
-            for (BasicTemplate property : instanceProperties) {
-                String key = property.getName();
-                // get numbered property
-                BasicTemplate instanceProperty = propertyFinder.getProperty(key, instanceProperties);
-                BasicTemplate blueprintProperty = propertyFinder.getProperty(key, blueprintProperties);
-                if (blueprintProperty == null && propertyFinder.getFirstProperty(key, blueprintProperties) != null) {
-                    blueprintProperty = propertyFinder.getFirstProperty(key, blueprintProperties);
-                } else if (instanceProperty.getBlueprintName() != null) {
-                    blueprintProperty = Blocks.templateCache().getBlueprint(instanceProperty.getBlueprintName(), instanceProperty.getLanguage());
-                }
-
-                if (blueprintProperty != null && (blueprintReadOnly || blueprintProperty.isReadOnly())) {
-                    retVal.add(blueprintProperty);
-                } else if (blueprintProperty == null && blueprintReadOnly) {
-                    // TODO put nothing or instance?
-                    retVal.add(instanceProperty);
-                } else {
-                    retVal.add(instanceProperty);
-                }
-                propertyFinder.propertyFound(key);
-
-            }
-        }
-        return retVal;
-
-    }
-
-
-    @JsonIgnore
-    public Element getTemplateAsElement()
-    {
-        Element retVal = null;
-        if (this.transientElement == null) {
-            this.transientElement = parse(this.renderInsideElement(new StringBuilder(this.value), false).toString());
-        }
-        retVal = this.transientElement.clone();
-        if (retVal == null) retVal = new Element(Tag.valueOf("div"), null);
-        return retVal;
-    }
-
-    @JsonIgnore
-    public Element getRenderedTemplateAsElement()
-    {
-        Element retVal = null;
-        if (this.renderedTransientElement == null) {
-            this.renderedTransientElement = parse(this.getRenderedTemplate(false, false).toString());
-        }
-        retVal = this.renderedTransientElement.clone();
-        if (retVal == null) retVal = new Element(Tag.valueOf("div"), null);
-        return retVal;
-    }
-
-    public String renderStartElement(boolean readOnly)
+    public String renderStartElement(boolean readOnly, boolean showResource)
     {
 
         StringBuilder retVal = new StringBuilder();
@@ -337,7 +328,7 @@ public class BasicTemplate implements NamedProperty
             }
         }
 
-        if (this.templateContent) {
+        if (!showResource) {
             // do nothing
         } else if (this instanceof StoredTemplate) {
             if (((StoredTemplate)this).getId() != null) {
@@ -371,18 +362,10 @@ public class BasicTemplate implements NamedProperty
     }
 
 
-    public String renderEndElement(String language) {
+    public String renderEndElement() {
         String retVal = "</" + this.element.getTag() + ">";
         return retVal;
     }
-
-    public StringBuilder renderInsideElement(StringBuilder template, boolean readonly)
-    {
-        template.insert(0, this.renderStartElement(readonly));
-        template.append(renderEndElement(language));
-        return template;
-    }
-
 
 
 

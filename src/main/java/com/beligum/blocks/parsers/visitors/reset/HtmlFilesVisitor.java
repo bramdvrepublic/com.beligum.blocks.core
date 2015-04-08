@@ -4,7 +4,7 @@ import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.parsers.ElementParser;
-import com.beligum.blocks.parsers.visitors.HtmlVisitor;
+import com.beligum.blocks.parsers.visitors.BasicVisitor;
 import com.beligum.base.utils.Logger;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -18,7 +18,7 @@ import org.jsoup.parser.Tag;
  */
 
 
-public class HtmlFilesVisitor extends HtmlVisitor
+public class HtmlFilesVisitor extends BasicVisitor
 {
     private boolean parsingPageTemplate = false;
     private String language;

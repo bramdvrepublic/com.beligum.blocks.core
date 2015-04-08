@@ -4,6 +4,8 @@ import com.beligum.blocks.caching.BlocksTemplateCache;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.dbs.AbstractBlockDatabase;
 import com.beligum.blocks.dynamic.DynamicBlockHandler;
+import com.beligum.blocks.renderer.BlocksTemplateRenderer;
+import com.beligum.blocks.renderer.VelocityBlocksRenderer;
 import com.beligum.blocks.urlmapping.BlocksUrlDispatcher;
 import com.beligum.blocks.exceptions.CacheException;
 import com.beligum.blocks.models.factory.BlocksFactory;
@@ -22,7 +24,8 @@ public class Blocks
         BLOCKS_TEMPLATE_CACHE_KEY,
         BLOCKS_URL_DISPATCHER_KEY,
         BLOCKS_FACTORY_KEY,
-        BLOCKS_HANDLER_KEY
+        BLOCKS_HANDLER_KEY,
+        BLOCKS_RENDERER_KEY
     }
 
     public static AbstractBlockDatabase database() {
@@ -78,7 +81,6 @@ public class Blocks
         }
         return (DynamicBlockHandler)R.cacheManager().getApplicationCache().get(BlocksConfigCacheKey.BLOCKS_HANDLER_KEY);
     }
-
 
 
 }

@@ -2,6 +2,7 @@ package com.beligum.blocks.endpoints;
 
 
 import com.beligum.blocks.base.Blocks;
+import com.beligum.blocks.renderer.BlocksTemplateRenderer;
 import com.beligum.blocks.urlmapping.BlocksUrlDispatcher;
 import com.beligum.blocks.usermanagement.Permissions;
 import com.beligum.base.server.R;
@@ -134,7 +135,8 @@ public class DebugEndpoint
         template.set("blueprint", blueprint);
         template.set("activeLanguage", language);
         //TODO: rendering should include links ands scripts for full view of blueprint
-        template.set("src", blueprint.getRenderedTemplate(false, true));
+        BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
+        template.set("src", renderer.render(blueprint, null));
         return Response.ok(template).build();
     }
 

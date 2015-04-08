@@ -61,7 +61,7 @@ public abstract class Blueprint extends StoredTemplate
         scripts = blueprintVisitor.getScripts();
         this.value = this.transientElement.html();
         try {
-//            this.transientElement = parseTemplateToElement(this.getRenderedTemplate(this.isReadOnly()));
+//            this.transientElement = parseTemplateToElement(this.renderTemplate(this.isReadOnly()));
         } catch (Exception e)  {
             Logger.error(e);
             throw  new ParseException("Could not parse template string to element");
@@ -130,14 +130,14 @@ public abstract class Blueprint extends StoredTemplate
         int x = 0;
     }
 
-    public StringBuilder getRenderedTemplate(boolean readOnly, boolean fetchSingleton)
-    {
-        StringBuilder retVal = new StringBuilder(this.value);
-        if (properties.size() > 0) {
-            retVal = this.fillTemplateWithProperties(retVal, readOnly, this, fetchSingleton);
-        }
-        return this.renderInsideElement(retVal, readOnly);
-    }
+//    public StringBuilder getRenderedTemplate(boolean readOnly, boolean fetchSingleton)
+//    {
+//        StringBuilder retVal = new StringBuilder(this.value);
+//        if (properties.size() > 0) {
+//            retVal = this.fillTemplateWithProperties(retVal, readOnly, this, fetchSingleton);
+//        }
+//        return this.renderInsideElement(retVal, readOnly);
+//    }
 
     public boolean isFixed() {
         return !this.canChange;

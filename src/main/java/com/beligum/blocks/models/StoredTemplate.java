@@ -3,7 +3,10 @@ package com.beligum.blocks.models;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
+import com.beligum.blocks.renderer.BlocksTemplateRenderer;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.jsoup.nodes.Element;
+import org.jsoup.parser.Tag;
 
 import java.net.URL;
 
@@ -69,5 +72,21 @@ public abstract class StoredTemplate extends StorableTemplate
 
     public void setPageTitle(String pageTitle) {
         this.pageTitle = pageTitle;
+    }
+
+    @JsonIgnore
+    public Element getRenderedTemplateAsElement()
+    {
+        Element retVal = null;
+        if (this.renderedTransientElement == null) {
+            BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
+            renderer.setFetchEntities(false);
+
+            String template = renderer.render(this, null);
+            this.renderedTransientElement = parse(template);
+        }
+        retVal = this.renderedTransientElement.clone();
+        if (retVal == null) retVal = new Element(Tag.valueOf("div"), null);
+        return retVal;
     }
 }

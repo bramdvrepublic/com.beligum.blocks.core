@@ -5,7 +5,7 @@ import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.models.StoredTemplate;
 import com.beligum.blocks.parsers.ElementParser;
-import com.beligum.blocks.parsers.visitors.HtmlVisitor;
+import com.beligum.blocks.parsers.visitors.BasicVisitor;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 
@@ -16,7 +16,7 @@ import java.util.UUID;
 /**
  * Created by wouter on 20/03/15.
  */
-public class HtmlFromClientVisitor extends HtmlVisitor
+public class HtmlFromClientVisitor extends BasicVisitor
 {
 
     private StoredTemplate content = null;

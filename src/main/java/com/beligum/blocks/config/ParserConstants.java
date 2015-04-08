@@ -24,10 +24,10 @@ public class ParserConstants
         }
     }
 
-    public final static String TEMPLATE_PROPERTY_START = "##BLOCKS-PROPERTY-START##";
-    public final static String TEMPLATE_PROPERTY_END = "##BLOCKS-PROPERTY-END##";
-    public final static String TEMPLATE_HEAD = "##BLOCKS-HEAD##";
-    public final static String TEMPLATE_CONTENT = "##BLOCKS-TEMPLATE-CONTENT##";
+    public final static String TEMPLATE_PROPERTY_START = "%%BLOCKS-PROPERTY-START%%";
+    public final static String TEMPLATE_PROPERTY_END = "%%BLOCKS-PROPERTY-END%%";
+    public final static String TEMPLATE_HEAD = "%%BLOCKS-HEAD%%";
+    public final static String TEMPLATE_CONTENT = "%%BLOCKS-TEMPLATE-CONTENT%%";
 
     public final static String CAN_LAYOUT = "can-layout";
     public final static String CAN_EDIT_PROPERTY = "can-edit";

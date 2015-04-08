@@ -2,7 +2,7 @@ package com.beligum.blocks.parsers;
 
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
-import com.beligum.blocks.parsers.visitors.HtmlVisitor;
+import com.beligum.blocks.parsers.visitors.BasicVisitor;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 
@@ -11,7 +11,7 @@ import org.jsoup.nodes.Node;
  */
 public class Traversor
 {
-    public static HtmlVisitor traverseDeep(Node root, HtmlVisitor visitor) throws ParseException
+    public static BasicVisitor traverseDeep(Node root, BasicVisitor visitor) throws ParseException
     {
         Node node = root;
         int depth = 0;
@@ -46,7 +46,7 @@ public class Traversor
         return visitor;
     }
 
-    public static HtmlVisitor traverseProperties(Node root, HtmlVisitor visitor) throws ParseException
+    public static BasicVisitor traverseProperties(Node root, BasicVisitor visitor) throws ParseException
     {
         Node node = root;
         int depth = 0;

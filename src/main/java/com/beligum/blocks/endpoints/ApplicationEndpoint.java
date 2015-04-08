@@ -5,6 +5,7 @@ import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.exceptions.CacheException;
 import com.beligum.blocks.identifiers.BlockId;
 import com.beligum.blocks.models.*;
+import com.beligum.blocks.renderer.BlocksTemplateRenderer;
 import com.beligum.blocks.usermanagement.Permissions;
 import com.beligum.blocks.utils.PropertyFinder;
 import com.beligum.base.server.R;
@@ -89,13 +90,15 @@ public class ApplicationEndpoint
                 }
 
             } else {
-
+                Entity entity = null;
                 if (storedTemplate.getEntity() != null) {
-                    Entity entity = Blocks.database().fetchEntity(storedTemplate.getEntity().getId(), language);
-                    storedTemplate.fillTemplateValuesWithEntityValues(entity, new PropertyFinder<EntityField>());
+                    entity = Blocks.database().fetchEntity(storedTemplate.getEntity().getId(), language);
+//                    storedTemplate.fillTemplateValuesWithEntityValues(entity, new PropertyFinder<EntityField>());
                 }
                 PageTemplate pageTemplate = Blocks.templateCache().getPagetemplate(storedTemplate.getPageTemplateName(), storedTemplate.getLanguage());
-                return Response.ok(pageTemplate.getRenderedTemplate(false, storedTemplate)).build();
+                BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
+                String page = renderer.render(pageTemplate, storedTemplate, entity);
+                return Response.ok(page).build();
             }
             //
 

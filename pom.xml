@@ -70,6 +70,21 @@
             <artifactId>font-awesome</artifactId>
             <version>4.3.0-1</version>
         </dependency>
+        <dependency>
+            <groupId>com.beligum.webjars</groupId>
+            <artifactId>less-elements</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.beligum.webjars</groupId>
+            <artifactId>less-animate</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.beligum.webjars</groupId>
+            <artifactId>bootstrap-dialog</artifactId>
+            <version>1.34.3</version>
+        </dependency>
 
         <dependency>
             <groupId>com.google.guava</groupId>

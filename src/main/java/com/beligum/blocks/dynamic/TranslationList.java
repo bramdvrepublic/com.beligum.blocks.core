@@ -38,7 +38,7 @@ public class TranslationList implements DynamicBlockListener
             }
             retVal.append("</ul>");
 
-            return basicTemplate.renderInsideElement(retVal, true);
+            return new StringBuilder();
 
     }
 

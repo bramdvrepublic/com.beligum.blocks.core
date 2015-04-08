@@ -1,6 +1,7 @@
 package com.beligum.blocks.models.factory;
 
 import com.beligum.blocks.models.*;
+import com.beligum.blocks.renderer.BlocksTemplateRenderer;
 import com.beligum.blocks.urlmapping.BlocksUrlDispatcher;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.identifiers.BlockId;
@@ -29,7 +30,7 @@ public interface BlocksFactory
     public Class<? extends Singleton> getSingletonClass();
     public Class<? extends UrlDispatcher> getUrlDispatcherClass();
 
-
+    public BlocksTemplateRenderer createTemplateRenderer();
     public BlocksUrlDispatcher createUrlDispatcher();
     public BlockId getIdForString(String s);
 }

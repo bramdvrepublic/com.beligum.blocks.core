@@ -5,7 +5,8 @@ import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.models.BasicTemplate;
 import com.beligum.blocks.parsers.ElementParser;
-import com.beligum.blocks.parsers.visitors.HtmlVisitor;
+import com.beligum.blocks.parsers.visitors.BasicVisitor;
+import com.beligum.blocks.renderer.BlocksTemplateRenderer;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
@@ -15,9 +16,10 @@ import java.util.ArrayList;
 /**
  * Created by wouter on 16/03/15.
  */
-public class PropertyVisitor extends HtmlVisitor
+public class PropertyVisitor extends BasicVisitor
 {
     ArrayList<BasicTemplate> properties = new ArrayList<>();
+    BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
 
     @Override
     public Node head(Node node, int depth) throws ParseException

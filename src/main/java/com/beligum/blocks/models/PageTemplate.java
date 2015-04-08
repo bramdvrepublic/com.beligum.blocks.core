@@ -45,49 +45,6 @@ public abstract class PageTemplate extends Blueprint
     }
 
 
-    public String getRenderedTemplate(boolean readOnly, BasicTemplate templateToRender) throws Exception
-    {
-        String retVal = this.value;
-
-        templateToRender.isTemplateContent(true);
-        String template = templateToRender.getRenderedTemplate(readOnly, true).toString();
-        retVal = retVal.replaceFirst(ParserConstants.TEMPLATE_CONTENT, template);
-
-
-        StringBuilder scriptsAndLinks = new StringBuilder();
-        // Append Blocks client only if logged in
-        if (SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
-            for (String link : Blocks.templateCache().getBlocksLinks()) {
-                scriptsAndLinks.append(link).append(System.lineSeparator());
-            }
-        }
-
-        for (String link: this.getLinks()) {
-            scriptsAndLinks.append(link).append(System.lineSeparator());
-        }
-
-        // Append Blocks client only if logged in
-        if (SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
-            for (String script : Blocks.templateCache().getBlocksScripts()) {
-                scriptsAndLinks.append(script).append(System.lineSeparator());
-            }
-        }
-
-        for (String script: this.getScripts()) {
-            scriptsAndLinks.append(script).append(System.lineSeparator());
-        }
-
-
-        retVal = retVal.replaceFirst(ParserConstants.TEMPLATE_HEAD, scriptsAndLinks.toString());
-
-        StringBuilder props = new StringBuilder(retVal);
-        if (properties.size() > 0) {
-            props = this.fillTemplateWithProperties(props, readOnly, templateToRender, true);
-        }
-
-        return props.toString();
-
-    }
 
 
 }

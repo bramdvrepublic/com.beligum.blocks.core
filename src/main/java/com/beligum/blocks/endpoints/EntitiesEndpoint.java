@@ -6,6 +6,7 @@ import com.beligum.blocks.identifiers.BlockId;
 import com.beligum.blocks.models.*;
 import com.beligum.blocks.parsers.visitors.template.HtmlFromClientVisitor;
 import com.beligum.blocks.parsers.Traversor;
+import com.beligum.blocks.renderer.BlocksTemplateRenderer;
 import com.beligum.blocks.usermanagement.Permissions;
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.utils.Logger;
@@ -72,7 +73,8 @@ public class EntitiesEndpoint
     {
         Blueprint blueprint = Blocks.templateCache().getBlueprint(blueprintName, Blocks.config().getDefaultLanguage());
         if (blueprint != null) {
-            String classHtml = blueprint.getRenderedTemplate(false, true).toString();
+            BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
+            String classHtml = renderer.render(blueprint, null).toString();
             HashMap<String, String> json = new HashMap<String, String>();
             json.put("template", classHtml);
             return Response.ok(json).build();
@@ -119,7 +121,7 @@ public class EntitiesEndpoint
             StoredTemplate pageContent = htmlFromClientVisitor.getContent();
 //            Model m = ModelFactory.createDefaultModel();
 //            JenaRdfaReader.inject();
-//            String c = pageContent.getRenderedTemplate(false, false).toString();
+//            String c = pageContent.renderTemplate(false, false).toString();
 ////            c = c.replaceAll(System.lineSeparator(), "");
 //            StringReader q = new StringReader(html.outerHtml());
 //            Logger.warn(html.outerHtml());
