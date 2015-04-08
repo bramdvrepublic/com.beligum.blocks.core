@@ -1,4 +1,4 @@
-package com.beligum.blocks.core.validation.messages;
+package com.beligum.blocks.validation.messages;
 
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.validation.messages.FeedbackMessage;
