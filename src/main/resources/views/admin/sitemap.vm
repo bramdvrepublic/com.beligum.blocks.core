@@ -2,10 +2,10 @@
 <script src="/assets/javascripts/admin/sitemap.js" type="application/javascript"></script>
 #end
 
-#macro(childHtml $root)
-<a href="$root.getUrl()" class="admin-link #if(!$root.hasEntity) no-entity #end">$root.getRelativePath()</a>
+#macro(childHtml $root $language)
+<a href="$root.getUrl($language)" class="admin-link #if(!$root.getStoredTemplateId) no-entity #end">$root.getPathName()</a>
 <ul class="admin-list">
-    #foreach($child in $root.getChildren())
+    #foreach($child in $root.getSubBranches())
         <li>
             #childHtml($child)
         </li>
@@ -15,16 +15,19 @@
 
 #define($body-html)
 <div class="container">
-    #foreach($siteMap in $siteMaps)<div class="panel panel-gray">
-        <div class="panel-heading" data-toggle="collapse" href="#panelbody-$siteMap.getLanguage()">
+    #foreach($language in $languages)<div class="panel panel-gray">
+        <div class="panel-heading" data-toggle="collapse" href="#panelbody-$language">
             <h1 class="panel-title">
-                $I18N.getMessage("siteMap") $siteMap.getLanguage()
+                $I18N.getMessage("siteMap") $language
                 <span class="glyphicon glyphicon-chevron-up pull-right"></span>
             </h1>
         </div>
-        <div class="panel-collapse collapse in" id="panelbody-$siteMap.getLanguage()">
+        <div class="panel-collapse collapse in" id="panelbody-$language">
             <div class="panel-body">
-                #childHtml($siteMap.getRoot())
+                $urlmap.test
+                #if($urlmap) niet gevoinde #end
+
+                #childHtml($urlmap $language)
             </div>
         </div>
     </div>

@@ -18,21 +18,16 @@
                                 <thead>
                                 <tr>
                                     <th>$I18N.getMessage("id")</th>
-                                    <th>$I18N.getMessage("languages")</th>
+
                                 </tr>
                                 </thead>
                                 <tbody>
                                     #foreach($property in $pageTemplate.getProperties())
                                     <tr>
                                         <td>
-                                            $property.getUnversionedId()
+                                            $property.getId()
                                         </td>
-                                        <td>
-                                            #set($index = 0)
-                                            #foreach($language in $pageTemplate.getLanguages())
-                                                $language#set($index = $index + 1)#if($index < $pageTemplate.getLanguages().size()),#end
-                                            #end
-                                        </td>
+
                                     </tr>
                                     #end
                                 </tbody>
@@ -76,11 +71,11 @@
                             <tbody>
                             <tr>
                                 <td>$I18N.getMessage("id")</td>
-                                <td>$!pageTemplate.getId().getUnversionedId()</td>
+                                <td>$!pageTemplate.getId()</td>
                             </tr>
                             <tr>
                                 <td>$I18N.getMessage("version")</td>
-                                <td>$!pageTemplate.getId().getVersion()</td>
+                                <td>$!pageTemplate.getDocumentVersion()</td>
                             </tr>
                             <tr>
                                 <td>$I18N.getMessage("createdBy")</td>
@@ -88,7 +83,7 @@
                             </tr>
                             <tr>
                                 <td>$I18N.getMessage("createdAt")</td>
-                                <td>$DateTool.format($!pageTemplate.getCreatedAtDate())</td>
+                                <td>$!pageTemplate.getCreatedAtDate()</td>
                             </tr>
                             <tr>
                                 <td>$I18N.getMessage("updatedBy")</td>
@@ -96,12 +91,9 @@
                             </tr>
                             <tr>
                                 <td>$I18N.getMessage("updatedAt")</td>
-                                <td>$DateTool.format($!pageTemplate.getUpdatedAtDate())</td>
+                                <td>$!pageTemplate.getUpdatedAtDate()</td>
                             </tr>
-                            <tr>
-                                <td>$I18N.getMessage("deleted")</td>
-                                <td>$!pageTemplate.getDeleted()</td>
-                            </tr>
+
                             <tr>
                                 <td>$I18N.getMessage("applicationVersion")</td>
                                 <td>$!pageTemplate.getApplicationVersion()</td>
@@ -110,19 +102,19 @@
                         </table>
                     </div>
 
-                    <div class="panel panel-gray">
-                        <div class="panel-heading">
-                            <h3 class="panel-title">$I18N.getMessage("languages")</h3>
-                        </div>
-                        <div class="panel-body">
-                            #set($index = 0)
-                            #foreach($language in $pageTemplate.getLanguages())
-                                <a href="/debug/pagetemplates/$pageTemplate.getName()?lang=$language" class="admin-link #if($language==$activeLanguage) active#else not-active#end ">
-                                    $language#set($index = $index + 1)#if($index < $pageTemplate.getLanguages().size()),#end
-                                </a>
-                            #end
-                        </div>
-                    </div>
+##                    <div class="panel panel-gray">
+##                        <div class="panel-heading">
+##                            <h3 class="panel-title">$I18N.getMessage("languages")</h3>
+##                        </div>
+##                        <div class="panel-body">
+##                            #set($index = 0)
+##                            #foreach($language in $pageTemplate.getLanguages())
+##                                <a href="/debug/pagetemplates/$pageTemplate.getName()?lang=$language" class="admin-link #if($language==$activeLanguage) active#else not-active#end ">
+##                                    $language#set($index = $index + 1)#if($index < $pageTemplate.getLanguages().size()),#end
+##                                </a>
+##                            #end
+##                        </div>
+##                    </div>
 
 
                     <div class="panel panel-gray">
@@ -142,7 +134,7 @@
                         </div>
 
                         <div class="panel-body">
-                            <pre>$EscapeTool.html($pageTemplate.getTemplate())</pre>
+                            <pre>$pageTemplate.getValue()</pre>
                         </div>
                     </div>
 
