@@ -1,18 +1,17 @@
 package com.beligum.blocks.endpoints;
 
-
-import com.beligum.blocks.base.Blocks;
-import com.beligum.blocks.renderer.BlocksTemplateRenderer;
-import com.beligum.blocks.urlmapping.BlocksUrlDispatcher;
-import com.beligum.blocks.usermanagement.Permissions;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.exceptions.CacheException;
 import com.beligum.blocks.exceptions.UrlIdMappingException;
 import com.beligum.blocks.models.Blueprint;
 import com.beligum.blocks.models.PageTemplate;
-import gen.com.beligum.blocks.core.endpoints.DebugEndpointRoutes;
+import com.beligum.blocks.renderer.BlocksTemplateRenderer;
+import com.beligum.blocks.urlmapping.BlocksUrlDispatcher;
+import com.beligum.blocks.usermanagement.Permissions;
+import gen.com.beligum.blocks.endpoints.DebugEndpointRoutes;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
@@ -26,7 +25,7 @@ import javax.ws.rs.core.Response;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
 
 /**
  * Created by bas on 27.01.15.
