@@ -35,9 +35,8 @@ public abstract class Blueprint extends StoredTemplate
     public Blueprint(Element element, String language) throws ParseException
     {
         super(element, language);
-        if (this.name == null && this.blueprintName != null) {
-            this.name = this.blueprintName;
-        }
+        this.name = this.blueprintName;
+
 
         this.addableBlock = ElementParser.isAddableBlock(element);
         this.pageBlock = ElementParser.isPageBlock(element);

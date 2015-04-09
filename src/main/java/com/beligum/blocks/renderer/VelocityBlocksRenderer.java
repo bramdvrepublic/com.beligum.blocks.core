@@ -11,10 +11,12 @@ import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.identifiers.BlockId;
 import com.beligum.blocks.models.*;
 import com.beligum.blocks.usermanagement.Permissions;
+import com.beligum.blocks.utils.EntityPropertyFinder;
 import com.beligum.blocks.utils.PropertyFinder;
 import org.apache.shiro.SecurityUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 
@@ -41,6 +43,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
     private boolean showResource = true;
     private boolean fetchSingletons = true;
     private boolean fetchEntities = false;
+    private boolean renderDynamicBlocks = true;
     private boolean readOnly = false;
     private LinkedHashSet<String> links = new LinkedHashSet();
     private LinkedHashSet<String> scripts = new LinkedHashSet();
@@ -62,6 +65,10 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
     {
         this.fetchEntities = fetchEntities;
     }
+    public void setRenderDynamicBlocks(boolean renderDynamicBlocks)
+    {
+        this.renderDynamicBlocks = renderDynamicBlocks;
+    }
     public void setReadOnly(boolean readOnly)
     {
         this.readOnly = readOnly;
@@ -72,16 +79,16 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
     }
 
 
-    public String render(StoredTemplate storedTemplate, Entity entity) {
-        this.locale = new Locale(storedTemplate.getLanguage());
+    public String render(StoredTemplate storedTemplate, Entity entity, String language) {
+        this.locale = new Locale(language);
         this.buffer = new StringBuilder();
         this.renderTemplate(storedTemplate, entity, this.readOnly);
         return this.buffer.toString();
     }
 
 
-    public String render(PageTemplate pageTemplate, StoredTemplate storedTemplate, Entity entity) {
-        this.locale = new Locale(storedTemplate.getLanguage());
+    public String render(PageTemplate pageTemplate, StoredTemplate storedTemplate, Entity entity, String language) {
+        this.locale = new Locale(language);
         this.buffer = new StringBuilder();
 
         // Render everything in the page except main content
@@ -89,13 +96,14 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         this.links.addAll(pageTemplate.getLinks());
 
         this.fillTemplateWithProperties(pageTemplate.getValue(), this.readOnly, pageTemplate, pageTemplate, null);
-        String page = this.buffer.toString();
+        StringBuilder page = this.buffer;
 
         // Render main content
         this.buffer = new StringBuilder();
         this.showResource = false;
         this.renderTemplate(storedTemplate, entity, this.readOnly);
-        page = page.replaceFirst(ParserConstants.TEMPLATE_CONTENT, this.buffer.toString());
+
+        page = replace(page, ParserConstants.TEMPLATE_CONTENT, this.buffer);
 
 
         // Add all links and scripts
@@ -122,17 +130,27 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
             scriptsAndLinks.append(script).append(System.lineSeparator());
         }
 
-
-        page = page.replaceFirst(ParserConstants.TEMPLATE_HEAD, scriptsAndLinks.toString());
+        page = replace(page, ParserConstants.TEMPLATE_HEAD, scriptsAndLinks);
 
         this.buffer = new StringBuilder();
 
-        return page;
+        return page.toString();
+    }
+
+    public StringBuilder replace(StringBuilder origin, String property, StringBuilder value) {
+        StringBuilder retVal = new StringBuilder();
+        int start = origin.indexOf(property);
+        if (start > -1) {
+            retVal.append(origin.substring(0, start));
+            retVal.append(value);
+            retVal.append(origin.substring(start+property.length()));
+        }
+        return retVal;
     }
 
     public void renderTemplate(BasicTemplate template, EntityField entity, boolean readOnly)
     {
-        if (Blocks.blockHandler().isDynamicBlock(template.getBlueprintName())) {
+        if (renderDynamicBlocks && Blocks.blockHandler().isDynamicBlock(template.getBlueprintName())) {
             this.buffer.append(Blocks.blockHandler().getDynamicBlock(template.getBlueprintName()).render(template));
             return;
         }
@@ -184,9 +202,9 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         // find property
         ArrayList<Field> fields = findNextPropertyInTemplate(templateToRender);
         PropertyFinder<BasicTemplate> propertyFinder = new PropertyFinder();
-        PropertyFinder<EntityField> entityPropertyFinder = new PropertyFinder();
+        EntityPropertyFinder entityPropertyFinder = new EntityPropertyFinder();
 
-        ArrayList<EntityField> entityProperties = new ArrayList<>();
+        HashMap<String, Object> entityProperties = new HashMap<String, Object>();
         if (entity != null && entity instanceof Entity) entityProperties = ((Entity)entity).getProperties();
 
         for (Field nextProperty: fields) {
@@ -198,7 +216,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 
             BasicTemplate property = propertyFinder.getProperty(nextProperty.name, template.getProperties());
             BasicTemplate blueprintProperty = propertyFinder.getProperty(nextProperty.name, blueprint.getProperties());
-            EntityField entityProperty = entityPropertyFinder.getProperty(nextProperty.name, entityProperties);
+            EntityField entityProperty = entityPropertyFinder.getProperty(nextProperty.name, entityProperties, locale.getLanguage());
             propertyFinder.propertyFound(nextProperty.name);
             entityPropertyFinder.propertyFound(nextProperty.name);
 

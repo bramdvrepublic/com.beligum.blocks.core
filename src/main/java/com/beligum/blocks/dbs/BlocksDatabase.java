@@ -8,6 +8,9 @@ import com.beligum.blocks.models.StoredTemplate;
 import com.beligum.blocks.models.interfaces.BlocksStorable;
 import com.beligum.blocks.models.interfaces.BlocksVersionedStorable;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+
 /**
  * Created by wouter on 23/03/15.
  */
@@ -28,6 +31,7 @@ public interface BlocksDatabase
     public void remove(BlocksVersionedStorable storable) throws DatabaseException;
     public void remove(BlocksStorable storable) throws DatabaseException;
 
-
+    public void testSave(Entity entity);
+    public ArrayList<HashMap<String, Object>> testFetch();
 
 }

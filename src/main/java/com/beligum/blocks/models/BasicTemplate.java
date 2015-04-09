@@ -381,7 +381,7 @@ public class BasicTemplate implements NamedProperty
     public Blueprint getBlueprint() {
         Blueprint retVal = null;
         if (this.getBlueprintName() != null) {
-            retVal = Blocks.templateCache().getBlueprint(this.getBlueprintName(), this.language);
+            retVal = Blocks.templateCache().getBlueprint(this.getBlueprintName());
         }
         return retVal;
     }
@@ -406,20 +406,20 @@ public class BasicTemplate implements NamedProperty
             // this is a field so store the value
             // Todo also catch content, language, datatype
             if (element.getAttributes().containsKey(ParserConstants.SRC)) {
-                entityToFill.addProperty(new EntityField(this.name, element.getAttributes().get(ParserConstants.SRC)));
-                entityToFill.addProperty(new EntityField(URLFactory.makeAbsolute(this.name, ParserConstants.CAPTION), value));
+                entityToFill.addProperty(this.name, element.getAttributes().get(ParserConstants.SRC), this.language);
+                entityToFill.addProperty(URLFactory.makeAbsolute(this.name, ParserConstants.CAPTION), value, this.language);
             } else if (element.getAttributes().containsKey(ParserConstants.HREF)) {
-                entityToFill.addProperty(new EntityField(this.name, element.getAttributes().get(ParserConstants.HREF)));
-                entityToFill.addProperty(new EntityField(URLFactory.makeAbsolute(this.name, ParserConstants.CAPTION), value));
+                entityToFill.addProperty(this.name, element.getAttributes().get(ParserConstants.HREF), this.language);
+                entityToFill.addProperty(URLFactory.makeAbsolute(this.name, ParserConstants.CAPTION), value, this.language);
             } else if (element.getAttributes().containsKey(ParserConstants.CONTENT)) {
-                entityToFill.addProperty(new EntityField(this.name, element.getAttributes().get(ParserConstants.CONTENT)));
-                entityToFill.addProperty(new EntityField(URLFactory.makeAbsolute(this.name, ParserConstants.CAPTION), value));
+                entityToFill.addProperty(this.name, element.getAttributes().get(ParserConstants.CONTENT), this.language);
+                entityToFill.addProperty(URLFactory.makeAbsolute(this.name, ParserConstants.CAPTION), value, this.language);
             } else {
-                entityToFill.addProperty(new EntityField(this.name, value));
+                entityToFill.addProperty(this.name, value, this.language);
             }
         } else {
             // if blueprint has typeOf then create new entity
-            Blueprint blueprint = Blocks.templateCache().getBlueprint(this.getBlueprintName(), this.language);
+            Blueprint blueprint = Blocks.templateCache().getBlueprint(this.getBlueprintName());
             String entityName = blueprint.getRdfType();
             if (entityName != null) {
                 this.entity = Blocks.factory().createEntity(entityName, this.language);
@@ -429,7 +429,7 @@ public class BasicTemplate implements NamedProperty
             for (BasicTemplate property : properties) {
                 entityToFill = property.getEntityProperties(entityToFill);
             }
-            if (entityToFill != entity) entity.addProperty(entityToFill);
+            if (entityToFill != entity) entity.addEntity(this.name, entityToFill);
 
         }
         return entity;
@@ -439,7 +439,7 @@ public class BasicTemplate implements NamedProperty
     {
         ArrayList<Entity> retVal = new ArrayList<Entity>();
         if (this.getBlueprintName() != null) {
-            Blueprint blueprint = Blocks.templateCache().getBlueprint(this.getBlueprintName(), this.language);
+            Blueprint blueprint = Blocks.templateCache().getBlueprint(this.getBlueprintName());
             if (blueprint != null && blueprint.getRdfType() != null) {
                 this.entity = Blocks.factory().createEntity(blueprint.getRdfType(), this.language);
 

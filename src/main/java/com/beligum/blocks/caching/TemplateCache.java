@@ -26,8 +26,8 @@ public class TemplateCache implements BlocksTemplateCache
 {
     private boolean runningTroughHtmlTemplates = false;
     private AntPathMatcher pathMatcher = new AntPathMatcher();
-    private HashMap<String, HashMap<String, Blueprint>> blueprints = new HashMap<String, HashMap<String, Blueprint>>();
-    private HashMap<String, HashMap<String, PageTemplate>> pagetemplates = new HashMap<String, HashMap<String, PageTemplate>>();
+    private HashMap<String, Blueprint> blueprints = new HashMap<String, Blueprint>();
+    private HashMap<String, PageTemplate> pagetemplates = new HashMap<String, PageTemplate>();
     private HashBiMap<String, String> prefixes = HashBiMap.create();
     private Set<String> pageblocks = new HashSet<String>();
     private Set<String> addableblocks = new HashSet<String>();
@@ -36,76 +36,68 @@ public class TemplateCache implements BlocksTemplateCache
 
     public TemplateCache() throws CacheException
     {
-        blueprints = new HashMap<String, HashMap<String, Blueprint>>();
-        pagetemplates = new HashMap<String, HashMap<String, PageTemplate>>();
-        for (String lang: Blocks.config().getLanguages()) {
-            blueprints.put(lang, new HashMap<String, Blueprint>());
-            pagetemplates.put(lang, new HashMap<String, PageTemplate>());
-        }
+        blueprints = new HashMap<String, Blueprint>();
+        pagetemplates = new HashMap<String, PageTemplate>();
+
     }
 
     public void reset() throws CacheException
     {
-        blueprints = new HashMap<String, HashMap<String, Blueprint>>();
-        pagetemplates = new HashMap<String, HashMap<String, PageTemplate>>();
-        for (String lang: Blocks.config().getLanguages()) {
-            blueprints.put(lang, new HashMap<String, Blueprint>());
-            pagetemplates.put(lang, new HashMap<String, PageTemplate>());
-        }
+        blueprints = new HashMap<String, Blueprint>();
+        pagetemplates = new HashMap<String, PageTemplate>();
+
         this.fillCache();
     }
 
 
     public void addBlueprint(Blueprint blueprint) {
-        if (!this.blueprints.get(blueprint.getLanguage()).containsKey(blueprint.getBlueprintName())) {
-            this.blueprints.get(blueprint.getLanguage()).put(blueprint.getName(), blueprint);
+        if (!this.blueprints.containsKey(blueprint.getBlueprintName())) {
+            this.blueprints.put(blueprint.getBlueprintName(), blueprint);
         }
     }
 
     public void addPageTemplate(PageTemplate page) {
-        if (!this.pagetemplates.get(page.getLanguage()).containsKey(page.getBlueprintName())) {
-            this.pagetemplates.get(page.getLanguage()).put(page.getName(), page);
+        if (!this.pagetemplates.containsKey(page.getBlueprintName())) {
+            this.pagetemplates.put(page.getName(), page);
         }
     }
 
     public void addBlueprint(Blueprint blueprint, String language) {
-        if (!this.blueprints.get(language).containsKey(blueprint.getBlueprintName())) {
-            this.blueprints.get(language).put(blueprint.getName(), blueprint);
+        if (!this.blueprints.containsKey(blueprint.getBlueprintName())) {
+            this.blueprints.put(blueprint.getName(), blueprint);
         }
     }
 
     public void addPageTemplate(PageTemplate page, String language) {
-        if (!this.pagetemplates.get(language).containsKey(page.getBlueprintName())) {
-            this.pagetemplates.get(language).put(page.getName(), page);
+        if (!this.pagetemplates.containsKey(page.getBlueprintName())) {
+            this.pagetemplates.put(page.getName(), page);
         }
     }
 
-    public Blueprint getBlueprint(String name, String language) {
+    public Blueprint getBlueprint(String name) {
         Blueprint retVal = null;
-        if (name != null && language != null) {
-            retVal = this.blueprints.get(language).get(name);
-            if (retVal == null) {
-                retVal = this.blueprints.get(Blocks.config().getDefaultLanguage()).get(name);
-            }
+        if (name != null) {
+            retVal = this.blueprints.get(name);
+
         }
         return retVal;
     }
 
-    public PageTemplate getPagetemplate(String name, String language) {
-        return this.pagetemplates.get(language).get(name);
+    public PageTemplate getPagetemplate(String name) {
+        return this.pagetemplates.get(name);
     }
 
-    public List<Blueprint> getBlueprints(String language) {
-        return new ArrayList<Blueprint>(this.blueprints.get(language).values());
+    public List<Blueprint> getBlueprints() {
+        return new ArrayList<Blueprint>(this.blueprints.values());
     }
 
-    public List<PageTemplate> getPagetemplates(String language) {
-        return new ArrayList<PageTemplate>(this.pagetemplates.get(language).values());
+    public List<PageTemplate> getPagetemplates() {
+        return new ArrayList<PageTemplate>(this.pagetemplates.values());
     }
 
     public List<Blueprint> getPageBlocks() {
         ArrayList<Blueprint> list = new ArrayList<>();
-        for (Blueprint bp: getBlueprints(Blocks.config().getDefaultLanguage())) {
+        for (Blueprint bp: getBlueprints()) {
             if (bp.isPageBlock()) list.add(bp);
         }
 
@@ -114,7 +106,7 @@ public class TemplateCache implements BlocksTemplateCache
 
     public List<Blueprint> getAddableBlocks() {
         ArrayList<Blueprint> list = new ArrayList<>();
-        for (Blueprint bp: getBlueprints(Blocks.config().getDefaultLanguage())) {
+        for (Blueprint bp: getBlueprints()) {
             if (bp.isAddableBlock()) list.add(bp);
         }
 
@@ -257,19 +249,19 @@ public class TemplateCache implements BlocksTemplateCache
 
                 // Parse all after finding all
                 // Add missing blueprints to default language
-                for (String lang: Blocks.config().getLanguages()) {
-                    for (Blueprint blueprint : this.getBlueprints(lang)) {
-                        blueprint.parse();
 
-                        if (blueprint.isAddableBlock()) this.addableblocks.add(blueprint.getName());
-                        if (blueprint.isPageBlock()) this.pageblocks.add(blueprint.getName());
-                    }
+                for (Blueprint blueprint : this.getBlueprints()) {
+                    blueprint.parse();
 
-                    for (PageTemplate pageTemplate : this.getPagetemplates(lang)) {
-                        pageTemplate.parse();
-
-                    }
+                    if (blueprint.isAddableBlock()) this.addableblocks.add(blueprint.getName());
+                    if (blueprint.isPageBlock()) this.pageblocks.add(blueprint.getName());
                 }
+
+                for (PageTemplate pageTemplate : this.getPagetemplates()) {
+                    pageTemplate.parse();
+
+                }
+
 
                 BlocksScriptVisitor visitor = new BlocksScriptVisitor();
                 Document doc = visitor.getSource(Blocks.config().getFrontEndScripts());

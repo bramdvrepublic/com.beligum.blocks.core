@@ -85,7 +85,7 @@ public class DebugEndpoint
     public Response getPageTemplatesPage() throws Exception
     {
         Template template = R.templateEngine().getEmptyTemplate("/views/admin/pagetemplates.vm");
-        template.set("pageTemplates",  Blocks.templateCache().getPagetemplates(Blocks.config().getDefaultLanguage()));
+        template.set("pageTemplates",  Blocks.templateCache().getPagetemplates());
         return Response.ok(template).build();
     }
 
@@ -100,7 +100,7 @@ public class DebugEndpoint
         if(StringUtils.isEmpty(language)){
             language = Blocks.config().getDefaultLanguage();
         }
-        PageTemplate pageTemplate = Blocks.templateCache().getPagetemplate(pageTemplateName, language);
+        PageTemplate pageTemplate = Blocks.templateCache().getPagetemplate(pageTemplateName);
         Template template = R.templateEngine().getEmptyTemplate("/views/admin/pagetemplate.vm");
         template.set("DateTool", new DateTool());
         template.set("EscapeTool", new EscapeTool());
@@ -117,7 +117,7 @@ public class DebugEndpoint
     public Response getBlueprintsPage() throws Exception
     {
         Template template = R.templateEngine().getEmptyTemplate("/views/admin/blueprints.vm");
-        template.set("blueprints", Blocks.templateCache().getBlueprints(Blocks.config().getDefaultLanguage()));
+        template.set("blueprints", Blocks.templateCache().getBlueprints());
         return Response.ok(template).build();
     }
 
@@ -128,7 +128,7 @@ public class DebugEndpoint
         if(StringUtils.isEmpty(language)){
             language = Blocks.config().getDefaultLanguage();
         }
-        Blueprint blueprint = Blocks.templateCache().getBlueprint(blueprintName, language);
+        Blueprint blueprint = Blocks.templateCache().getBlueprint(blueprintName);
         Template template = R.templateEngine().getEmptyTemplate("/views/admin/blueprint.vm");
         template.set("DateTool", new DateTool());
         template.set("EscapeTool", new EscapeTool());
@@ -136,7 +136,7 @@ public class DebugEndpoint
         template.set("activeLanguage", language);
         //TODO: rendering should include links ands scripts for full view of blueprint
         BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
-        template.set("src", renderer.render(blueprint, null));
+        template.set("src", renderer.render(blueprint, null, Blocks.config().getDefaultLanguage()));
         return Response.ok(template).build();
     }
 
@@ -162,7 +162,7 @@ public class DebugEndpoint
         if (language == null) language = Blocks.config().getDefaultLanguage();
 
         String cache = "";
-        for(Blueprint blueprint: Blocks.templateCache().getBlueprints(language)){
+        for(Blueprint blueprint: Blocks.templateCache().getBlueprints()){
             cache += "----------------------------------" + blueprint.getBlueprintName() + "---------------------------------- \n\n" + blueprint.getValue() + "\n\n\n\n\n\n";
         }
         return Response.ok(cache).build();
@@ -176,7 +176,7 @@ public class DebugEndpoint
         if (language == null) language = Blocks.config().getDefaultLanguage();
 
         String cache = "";
-        for(PageTemplate pageTemplate: Blocks.templateCache().getPagetemplates(language)){
+        for(PageTemplate pageTemplate: Blocks.templateCache().getPagetemplates()){
             cache += "----------------------------------" + pageTemplate.getBlueprintName() + "---------------------------------- \n\n" + pageTemplate.getValue() + "\n\n\n\n\n\n";
         }
         return Response.ok(cache).build();

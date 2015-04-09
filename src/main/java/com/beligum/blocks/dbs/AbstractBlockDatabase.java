@@ -63,7 +63,8 @@ public abstract class AbstractBlockDatabase implements BlocksDatabase
     }
 
     public Entity fetchEntity(BlockId id, String language) {
-        return fetch(id, language, Blocks.factory().getEntityClass());
+//        return fetch(id, language, Blocks.factory().getEntityClass());
+        return null;
     }
 
     public StoredTemplate fetchTemplate(BlockId id, String language) {
@@ -116,7 +117,7 @@ public abstract class AbstractBlockDatabase implements BlocksDatabase
     {
         ArrayList<Entity> entities = entity.flatten(new ArrayList<Entity>());
         for (Entity e: entities) {
-            save(e);
+//            save(e);
         }
     }
 

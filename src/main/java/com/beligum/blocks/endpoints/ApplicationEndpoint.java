@@ -93,9 +93,9 @@ public class ApplicationEndpoint
                 if (storedTemplate.getEntity() != null) {
                     entity = Blocks.database().fetchEntity(storedTemplate.getEntity().getId(), language);
                 }
-                PageTemplate pageTemplate = Blocks.templateCache().getPagetemplate(storedTemplate.getPageTemplateName(), storedTemplate.getLanguage());
+                PageTemplate pageTemplate = Blocks.templateCache().getPagetemplate(storedTemplate.getPageTemplateName());
                 BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
-                String page = renderer.render(pageTemplate, storedTemplate, entity);
+                String page = renderer.render(pageTemplate, storedTemplate, entity, storedTemplate.getLanguage());
                 return Response.ok(page).build();
             }
 

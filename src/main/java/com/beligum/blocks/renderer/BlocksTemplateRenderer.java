@@ -14,8 +14,9 @@ public interface BlocksTemplateRenderer
     public void setShowResource(boolean showResource);
     public void setFetchSingletons(boolean fetchSingletons);
     public void setFetchEntities(boolean fetchEntities);
+    public void setRenderDynamicBlocks(boolean renderDynamicBlocks);
     public void setReadOnly(boolean readOnly);
 
-    public String render(StoredTemplate storedTemplate, Entity entity);
-    public String render(PageTemplate pageTemplate, StoredTemplate storedTemplate, Entity entity);
+    public String render(StoredTemplate storedTemplate, Entity entity, String language);
+    public String render(PageTemplate pageTemplate, StoredTemplate storedTemplate, Entity entity, String language);
 }

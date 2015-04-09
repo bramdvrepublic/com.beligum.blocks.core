@@ -45,7 +45,7 @@ public class EntitiesEndpoint
                     throws Exception
 
     {
-        Blueprint blueprint = Blocks.templateCache().getBlueprint(entityClassName, Blocks.config().getDefaultLanguage());
+        Blueprint blueprint = Blocks.templateCache().getBlueprint(entityClassName);
         URL pageURL = new URL(pageUrl);
         BlockId existingId = Blocks.urlDispatcher().findId(pageURL);
 
@@ -71,10 +71,10 @@ public class EntitiesEndpoint
     @Produces(MediaType.APPLICATION_JSON)
     public Response getClassTemplate(@PathParam("blueprintType") String blueprintName) throws Exception
     {
-        Blueprint blueprint = Blocks.templateCache().getBlueprint(blueprintName, Blocks.config().getDefaultLanguage());
+        Blueprint blueprint = Blocks.templateCache().getBlueprint(blueprintName);
         if (blueprint != null) {
             BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
-            String classHtml = renderer.render(blueprint, null).toString();
+            String classHtml = renderer.render(blueprint, null, Blocks.config().getDefaultLanguage()).toString();
             HashMap<String, String> json = new HashMap<String, String>();
             json.put("template", classHtml);
             return Response.ok(json).build();
@@ -233,7 +233,7 @@ public class EntitiesEndpoint
     public Response listTemplates() throws Exception
     {
         List<String> templateNames = new ArrayList<String>();
-        for (PageTemplate e : Blocks.templateCache().getPagetemplates(Blocks.config().getDefaultLanguage())) {
+        for (PageTemplate e : Blocks.templateCache().getPagetemplates()) {
             if(!e.getName().equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)){
                 templateNames.add(e.getName());
             }
@@ -252,7 +252,7 @@ public class EntitiesEndpoint
         BlockId blockId = Blocks.urlDispatcher().findId(url);
         String language = Blocks.urlDispatcher().getLanguage(url);
         if (blockId != null) {
-            PageTemplate pageTemplate = Blocks.templateCache().getPagetemplate(templateName, language);
+            PageTemplate pageTemplate = Blocks.templateCache().getPagetemplate(templateName);
             if (pageTemplate == null) {
                 throw new Exception("Page template does not exist");
             }
