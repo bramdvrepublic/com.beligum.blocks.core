@@ -19,6 +19,9 @@ import com.beligum.blocks.utils.Utils;
 import com.beligum.blocks.validation.ExistingEntityId;
 import com.beligum.blocks.validation.messages.CustomFeedbackMessage;
 import com.google.common.net.HttpHeaders;
+import gen.com.beligum.blocks.core.fs.html.views.emails.changeemail;
+import gen.com.beligum.blocks.core.fs.html.views.emails.forgotpasswordemail;
+import gen.com.beligum.blocks.core.fs.html.views.usermanagement.*;
 import gen.com.beligum.blocks.endpoints.ApplicationEndpointRoutes;
 import gen.com.beligum.blocks.endpoints.UsersEndpointRoutes;
 import org.apache.commons.beanutils.PropertyUtils;
@@ -63,7 +66,6 @@ public class UsersEndpoint
         /*
          * Fetch users-template
          */
-        Template template = R.templateEngine().getEmptyTemplate("/views/usermanagement/users-all.vm");
         List<Person> users = RequestContext.getEntityManager().createNamedQuery(Person.FIND_UNDELETED_PERSONS, Person.class).getResultList();
 
         /*
@@ -121,6 +123,7 @@ public class UsersEndpoint
         /*
          * Add users-list and return
          */
+        Template template = users_all.instance.getNewTemplate();
         template.set("users", users);
         template.set("sortedBy", fieldName);
         template.set("showInactive", showInactive);
@@ -132,7 +135,7 @@ public class UsersEndpoint
     @Path("/new")
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
     public Response newUser(){
-        Template template = R.templateEngine().getEmptyTemplate("/views/usermanagement/users-new.vm");
+        Template template = users_new.instance.getNewTemplate();
         template.set("roles", Permissions.getRoleNames());
         return Response.ok(template).build();
     }
@@ -192,7 +195,7 @@ public class UsersEndpoint
      */
     private Template getLoginTemplate(){
         //if ever the login-template changes, all velocity-variables need to be set in this method before returning the template
-        return R.templateEngine().getEmptyTemplate("/views/usermanagement/login.vm");
+        return login.instance.getNewTemplate();
     }
 
     @POST
@@ -298,7 +301,7 @@ public class UsersEndpoint
     private Template getUserTemplate(long userId, boolean isCurrentUser)
     {
         Person userToBeEdited = RequestContext.getEntityManager().find(Person.class, userId);
-        Template template = R.templateEngine().getEmptyTemplate("/views/usermanagement/users-edit.vm");
+        Template template = users_edit.instance.getNewTemplate();
         template.set("editUser", userToBeEdited);
         template.set("roles", Permissions.getRoleNames());
         template.set("isProfile", isCurrentUser);
@@ -476,7 +479,7 @@ public class UsersEndpoint
     private boolean sendChangeEmailEmail(Person person) throws EmailException
     {
         try {
-            Template emailTemplate = R.templateEngine().getEmptyTemplate("views/emails/changeemail.vm");
+            Template emailTemplate = changeemail.instance.getNewTemplate();
             emailTemplate.set("emailMessage",
                               //start email message
                               person.getFirstName() + " " + person.getLastName() + " has requested to change " +
@@ -501,7 +504,7 @@ public class UsersEndpoint
     public Response getChangePassword(@PathParam("userId") @ExistingEntityId(entityClass = Person.class) long userId) {
         //will throw exception if the current user is not the one being accessed, or an administrator
         this.checkForCurrentUser(userId);
-        Template template = R.templateEngine().getEmptyTemplate("/views/usermanagement/changePassword.vm");
+        Template template = changePassword.instance.getNewTemplate();
         template.set("person", RequestContext.getEntityManager().find(Person.class, userId));
         return Response.ok(template).build();
     }
@@ -538,8 +541,7 @@ public class UsersEndpoint
     @GET
     @Path(FORGOT_PASSWORD)
     public Response getForgotPassword() {
-        Template template = R.templateEngine().getEmptyTemplate("/views/usermanagement/forgotPassword.vm");
-        return Response.ok(template).build();
+        return Response.ok(forgotPassword.instance.getNewTemplate()).build();
     }
 
 
@@ -562,7 +564,7 @@ public class UsersEndpoint
 
     private boolean sendForgotPasswordEmail(Person person) throws EmailException {
         try {
-            Template emailTemplate = R.templateEngine().getEmptyTemplate("views/emails/forgotpasswordemail.vm");
+            Template emailTemplate = forgotpasswordemail.instance.getNewTemplate();
             emailTemplate.set("emailMessage",
                               //start email message
                               "Someone has used this email to request a password reset on www.mot.be<br/>" +
@@ -614,7 +616,7 @@ public class UsersEndpoint
 
         //action for changing email address
         if (action.equals(CHANGE_EMAIL)) {
-            template = R.templateEngine().getEmptyTemplate("/views/usermanagement/changeEmailFinal.vm");
+            template = changeEmailFinal.instance.getNewTemplate();
             template.set("query", "u=" + personId + "&c=" + confirmString);
             template.set("oldEmail", person.getEmail());
             template.set("newEmail", person.getSubject().getPrincipalReset());
@@ -624,11 +626,11 @@ public class UsersEndpoint
             // if userId is found
             // if confirmation string is correct, update person and update subject of person
             if (confirmString.equals(person.getSubject().getConfirmation())) {
-                template = R.templateEngine().getEmptyTemplate("/views/usermanagement/forgotPasswordFinal.vm");
+                template = forgotPasswordFinal.instance.getNewTemplate();
                 template.set("person", person);
                 template.set(FEEDBACK_MESSAGE, new CustomFeedbackMessage("forgotPasswordSuccess", FeedbackMessage.Level.SUCCESS));
             } else {
-                template = R.templateEngine().getEmptyTemplate("/views/usermanagement/forgotPasswordFailure.vm");
+                template = forgotPasswordFailure.instance.getNewTemplate();
                 template.set(FEEDBACK_MESSAGE, new CustomFeedbackMessage("emailConfirmationFailure", FeedbackMessage.Level.ERROR));
             }
         } else {

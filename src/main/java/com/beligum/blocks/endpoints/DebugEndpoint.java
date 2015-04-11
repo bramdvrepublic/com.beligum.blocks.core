@@ -1,6 +1,5 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.base.Blocks;
@@ -11,6 +10,7 @@ import com.beligum.blocks.models.PageTemplate;
 import com.beligum.blocks.renderer.BlocksTemplateRenderer;
 import com.beligum.blocks.urlmapping.BlocksUrlDispatcher;
 import com.beligum.blocks.usermanagement.Permissions;
+import gen.com.beligum.blocks.core.fs.html.views.admin.*;
 import gen.com.beligum.blocks.endpoints.DebugEndpointRoutes;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
@@ -83,7 +83,7 @@ public class DebugEndpoint
     @Path("/pagetemplates")
     public Response getPageTemplatesPage() throws Exception
     {
-        Template template = R.templateEngine().getEmptyTemplate("/views/admin/pagetemplates.vm");
+        Template template = pagetemplates.instance.getNewTemplate();
         template.set("pageTemplates",  Blocks.templateCache().getPagetemplates(Blocks.config().getDefaultLanguage()));
         return Response.ok(template).build();
     }
@@ -100,7 +100,7 @@ public class DebugEndpoint
             language = Blocks.config().getDefaultLanguage();
         }
         PageTemplate pageTemplate = Blocks.templateCache().getPagetemplate(pageTemplateName, language);
-        Template template = R.templateEngine().getEmptyTemplate("/views/admin/pagetemplate.vm");
+        Template template = pagetemplate.instance.getNewTemplate();
         template.set("DateTool", new DateTool());
         template.set("EscapeTool", new EscapeTool());
         template.set("pageTemplate", pageTemplate);
@@ -115,7 +115,7 @@ public class DebugEndpoint
     @Path("/blueprints")
     public Response getBlueprintsPage() throws Exception
     {
-        Template template = R.templateEngine().getEmptyTemplate("/views/admin/blueprints.vm");
+        Template template = blueprints.instance.getNewTemplate();
         template.set("blueprints", Blocks.templateCache().getBlueprints(Blocks.config().getDefaultLanguage()));
         return Response.ok(template).build();
     }
@@ -127,15 +127,15 @@ public class DebugEndpoint
         if(StringUtils.isEmpty(language)){
             language = Blocks.config().getDefaultLanguage();
         }
-        Blueprint blueprint = Blocks.templateCache().getBlueprint(blueprintName, language);
-        Template template = R.templateEngine().getEmptyTemplate("/views/admin/blueprint.vm");
+        Blueprint blueprintObj = Blocks.templateCache().getBlueprint(blueprintName, language);
+        Template template = blueprint.instance.getNewTemplate();
         template.set("DateTool", new DateTool());
         template.set("EscapeTool", new EscapeTool());
-        template.set("blueprint", blueprint);
+        template.set("blueprint", blueprintObj);
         template.set("activeLanguage", language);
         //TODO: rendering should include links ands scripts for full view of blueprint
         BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
-        template.set("src", renderer.render(blueprint, null));
+        template.set("src", renderer.render(blueprintObj, null));
         return Response.ok(template).build();
     }
 
@@ -145,7 +145,7 @@ public class DebugEndpoint
     {
         ArrayList<String> languages = Blocks.config().getLanguages();
 
-        Template template = R.templateEngine().getEmptyTemplate("/views/admin/sitemap.vm");
+        Template template = sitemap.instance.getNewTemplate();
         BlocksUrlDispatcher sitemap = Blocks.urlDispatcher();
         template.set("urlmap", sitemap);
         template.set("languages", languages);
