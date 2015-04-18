@@ -23,24 +23,7 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
     }
 
 
-    protected UrlBranch findBranch(ArrayList<String> url, String language, int index, boolean create, SEARCH_OPTION option) {
-        UrlBranch retVal = null;
-        if (url.size() == 0) {
-            retVal = this;
-        } else {
-            for (UrlBranch branch: subBranches) {
-                retVal = branch.findBranch(url, language, index, create, option);
-                if (retVal != null) break;
-            }
-            if (retVal == null && create) {
-                UrlBranch branch = new UrlBranch(url.get(index), language);
-                this.subBranches.add(branch);
-                branch.setParent(this);
-                retVal = branch.findBranch(url, language, index, create, option);
-            }
-        }
-        return retVal;
-    }
+
 
     protected void resetIdToUrl() {
         Stack<UrlBranch> stack = new Stack<>();
@@ -91,7 +74,7 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
         UrlBranch branch = findBranch(paths, language, 0, true, SEARCH_OPTION.NORMAL);
         branch.add(id.toString());
         String stringUrl = branch.getUrl();
-        this.idToUrl.put(stringUrl, id.toString());
+        this.idToUrl.put(id.toString(), stringUrl);
 
         try {
             Blocks.database().save(this);
@@ -122,6 +105,10 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
         } catch (Exception e) {
 
         }
+    }
+
+    public String getUrlForId(String id) {
+        return this.idToUrl.get(id);
     }
 
 

@@ -97,3 +97,14 @@ to show in the fields. If a property of a block is marked as not editable, then 
 even if there is content available in the database.
 
 This way we have full control of the shown content, based on the blueprints
+
+
+# url
+- Map with url -> id
+- url fields = name, id, verb
+- tree with all urls in paths
+
+find url -> id
+find translated url -> lang/url -> id
+find url+lang -> translated url
+find id+lang -> translated url

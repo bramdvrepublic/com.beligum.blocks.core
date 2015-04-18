@@ -1,16 +1,19 @@
 package com.beligum.blocks.wiki;
 
 import com.beligum.blocks.base.Blocks;
+import com.beligum.blocks.exceptions.DatabaseException;
 import com.beligum.blocks.models.Entity;
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.models.rdf.OrderedMemGraph;
+import com.beligum.blocks.utils.URLFactory;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.rdf.model.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.util.AntPathMatcher;
 import org.joda.time.LocalDateTime;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -123,11 +126,9 @@ public abstract class WikiParser
             Entity entity = addEntity();
 
             if (entity.getProperties().size() > 0) {
-                this.entities.add(entity);
-                Blocks.database().testSave(entity);
+                this.entities.add(changeEntity(entity));
+                saveEntity(entity);
             }
-
-
 
         }
 
@@ -137,8 +138,42 @@ public abstract class WikiParser
 
     public abstract Entity addEntity();
 
+    public abstract Entity changeEntity(Entity entity);
+
+    public abstract void saveEntity(Entity entity);
+
+
     public abstract Entity fillEntity(HashMap<String, HashMap<String, String>> item, String lang);
 
+    public void splitField(Entity entity, String field) {
+        String name = Blocks.rdfFactory().ensureAbsoluteRdfValue(field);
+        HashMap<String, ArrayList<String>> property = (HashMap<String, ArrayList<String>>)entity.getProperties().get(name);
+        entity.getProperties().remove(name);
+        for (String language: new String[]{"nl", "fr", "en"}) {
+            if (property != null && property.containsKey(language)) {
+                for (String value : property.get(language)) {
+                    String[] splitValue = value.split("\\|");
+                    for (String v : splitValue) {
+                        entity.addProperty(field, v.trim(), language);
+                    }
+                }
+            }
+        }
+    }
+
+    public void prependField(Entity entity, String field, String prefix) {
+        String name = Blocks.rdfFactory().ensureAbsoluteRdfValue(field);
+        HashMap<String, ArrayList<String>> property = (HashMap<String, ArrayList<String>>)entity.getProperties().get(name);
+        entity.getProperties().remove(name);
+        for (String language: new String[]{"nl", "fr", "en"}) {
+            if (property != null && property.containsKey(language)) {
+                for (String value : property.get(language)) {
+                    entity.addProperty(field, prefix + value.trim(), language);
+
+                }
+            }
+        }
+    }
 
     public void addToEntity(String newFieldName, String[] oldFields, Entity entity, String language, HashMap<String, HashMap<String,String>> item) {
         String value = null;

@@ -1,5 +1,6 @@
 package com.beligum.blocks.base;
 
+import com.beligum.blocks.caching.BlocksRdfFactory;
 import com.beligum.blocks.caching.BlocksTemplateCache;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.dbs.AbstractBlockDatabase;
@@ -25,7 +26,8 @@ public class Blocks
         BLOCKS_URL_DISPATCHER_KEY,
         BLOCKS_FACTORY_KEY,
         BLOCKS_HANDLER_KEY,
-        BLOCKS_RENDERER_KEY
+        BLOCKS_RENDERER_KEY,
+        BlOCKS_RDF_FACTORY
     }
 
     public static AbstractBlockDatabase database() {
@@ -80,6 +82,13 @@ public class Blocks
             R.cacheManager().getApplicationCache().put(BlocksConfigCacheKey.BLOCKS_HANDLER_KEY, new DynamicBlockHandler());
         }
         return (DynamicBlockHandler)R.cacheManager().getApplicationCache().get(BlocksConfigCacheKey.BLOCKS_HANDLER_KEY);
+    }
+
+    public static BlocksRdfFactory rdfFactory() {
+        if (!R.cacheManager().getApplicationCache().containsKey(BlocksConfigCacheKey.BlOCKS_RDF_FACTORY)) {
+            R.cacheManager().getApplicationCache().put(BlocksConfigCacheKey.BlOCKS_RDF_FACTORY, new BlocksRdfFactory());
+        }
+        return (BlocksRdfFactory)R.cacheManager().getApplicationCache().get(BlocksConfigCacheKey.BlOCKS_RDF_FACTORY);
     }
 
 

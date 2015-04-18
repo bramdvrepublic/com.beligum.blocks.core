@@ -20,11 +20,7 @@ public interface BlocksTemplateCache
     public void addBlueprint(Blueprint blueprint);
 
     public void addPageTemplate(PageTemplate page);
-
-    public void addPrefixes(HashMap<String, String> prefixes);
-    public void addPrefix(String prefix, String namespace);
-    public String getPrefixForSchema(String schema);
-    public String getSchemaForPrefix(String prefix);
+ ;
     public Blueprint getBlueprint(String name);
 
     public PageTemplate getPagetemplate(String name);

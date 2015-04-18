@@ -63,7 +63,7 @@ public class UrlBranch
         }
     }
 
-    protected boolean pathFoundForLanguage(String path, String language, SEARCH_OPTION option) {
+    public boolean pathFoundForLanguage(String path, String language, SEARCH_OPTION option) {
         // this should never be null so fill it with the closest default value
         if (translations.get(Blocks.config().getDefaultLanguage()) == null) {
             fixThisPath();
@@ -111,32 +111,26 @@ public class UrlBranch
 
     protected UrlBranch findBranch(ArrayList<String> url, String language, int index, boolean create, SEARCH_OPTION option) {
         UrlBranch retVal = null;
-        String path = url.get(index);
-
-        boolean found = pathFoundForLanguage(path, language, option);
-        if (url.size() - 1 == index) {
-            if (found) {
-                retVal = this;
-            }
-        } else if (found) {
+        if (url.size() == index) {
+            retVal = this;
+        } else {
             for (UrlBranch branch: subBranches) {
-                retVal = branch.findBranch(url, language, index + 1, create, option);
-                if (retVal != null) break;
+                String path = url.get(index);
+                if (branch.pathFoundForLanguage(path, language, option)) {
+                    if (index == url.size()) {
+                        retVal = branch;
+                    } else {
+                        retVal = branch.findBranch(url, language, index + 1, create, option);
+                    }
+                    break;
+                }
             }
+
             if (retVal == null && create) {
                 UrlBranch branch = new UrlBranch(url.get(index), language);
                 this.subBranches.add(branch);
                 branch.setParent(this);
                 retVal = branch.findBranch(url, language, index + 1, create, option);
-            }
-        } else if (create) {
-                UrlBranch branch = new UrlBranch(url.get(index), language);
-                this.subBranches.add(branch);
-                branch.setParent(this);
-            if (url.size()-1 > index) {
-                retVal = branch.findBranch(url, language, index + 1, create, option);
-            } else if (url.size()-1 == index) {
-                retVal = branch;
             }
         }
         return retVal;
@@ -163,16 +157,19 @@ public class UrlBranch
     }
 
     protected String getUrl(String language) {
-        String retVal = "/";
+        String retVal = "";
         if (language == null) language = Blocks.config().getDefaultLanguage();
-        UrlBranch parent = this;
-        List<String> paths = new ArrayList<>();
-        while (parent != null) {
-            paths.add(this.getPathName(language));
-            parent = parent.getParent();
+        if (this.getParent() == null) {
+            retVal = "/";
+        } else {
+            UrlBranch parent = this;
+            List<String> paths = new ArrayList<>();
+            while (parent.getParent() != null) {
+                retVal = "/" + parent.getPathName(language) + retVal;
+                parent = parent.getParent();
+            }
         }
-        Collections.reverse(paths);
-        retVal += StringUtils.join(paths.toArray(), "/");
+
         return retVal;
     }
 

@@ -129,7 +129,7 @@ public class BlocksRdfFactory
                 retVal = relativePath;
             } else  {
                 String prefixSchema = getSchemaForPrefix(paths[0]);
-                retVal = URLFactory.makeAbsolute(prefixSchema, relativePath);
+                retVal = URLFactory.makeAbsolute(prefixSchema, paths[1]);
             }
         }
 
@@ -139,39 +139,55 @@ public class BlocksRdfFactory
         return retVal;
     }
 
-    public String ensurePrefixedRdfValue(String relativePath) {
-        String retVal = null;
-        if (relativePath.indexOf(":") > 0) {
-            String[] paths = relativePath.split(":");
-            if (paths[1].startsWith("//")) {
-                retVal = relativePath;
-            } else  {
-                String prefixSchema = getSchemaForPrefix(paths[0]);
-                retVal = URLFactory.makeAbsolute(prefixSchema, relativePath);
-            }
-        }
+//    public String ensurePrefixedRdfValue(String relativePath) {
+//        return ensurePrefixedRdfValue(Blocks.config().getDefaultRdfPrefix(), relativePath);
+//    }
 
-        if (retVal == null) {
-            retVal = URLFactory.makeAbsolute(schema, relativePath);
-        }
-        return retVal;
+//    public String ensurePrefixedRdfValue(String prefix, String relativePath) {
+//        String retVal = null;
+//        if (relativePath.indexOf(":") > 0) {
+//            String[] paths = relativePath.split(":");
+//            if (paths.length > 1 && paths[1].startsWith("//")) {
+//                String schema = getSchemaForUrl(relativePath);
+//
+//                if (schema != null) {
+//                    prefix = getPrefixForSchema(schema);
+//                    retVal = makePrefixed(prefix, relativePath.substring(schema.length()));
+//                } else {
+//                    // add prefix
+//                    int index = relativePath.indexOf("#");
+//                    if (relativePath.indexOf("#") == -1) index = relativePath.indexOf("/");
+//                    schema = relativePath.substring(0, index);
+//                    relativePath = relativePath.substring(index + 1);
+//                    prefix = createPrefixForSchema(schema);
+//                    retVal = makePrefixed(prefix, relativePath);
+//                }
+//            } else  {
+//                // already prefixed
+//                retVal = relativePath;
+//            }
+//        }
+//
+//        if (retVal == null) {
+//            retVal = makePrefixed(prefix, relativePath);
+//        }
+//        return retVal;
+//    }
+
+
+    public static String makePrefixed(String prefix, String relativePath) {
+        return prefix + ":" + relativePath;
     }
 
-    public String ensurePrefixedRdfValue(String prefix, String relativePath) {
-        String retVal = null;
-        if (relativePath.indexOf(":") > 0) {
-            String[] paths = relativePath.split(":");
-            if (paths.length > 1 && paths[1].startsWith("//")) {
-                String schema = getSchemaForPrefix();
-                retVal = relativePath;
-            } else  {
-                String prefixSchema = getPrefixForSchema(paths[0]);
-                retVal = URLFactory.makeAbsolute(prefixSchema, relativePath);
+    public String createPrefixForSchema(String schema) {
+        String retVal = schema;
+        String[] paths = schema.split(".");
+        if (paths.length > 1) {
+            if (paths[0].endsWith("www")) {
+                retVal = paths[1];
+            } else {
+                retVal = paths[0].substring(paths[0].lastIndexOf("/"));
             }
-        }
-
-        if (retVal == null) {
-            retVal = URLFactory.makePrefixed(schema, relativePath);
         }
         return retVal;
     }

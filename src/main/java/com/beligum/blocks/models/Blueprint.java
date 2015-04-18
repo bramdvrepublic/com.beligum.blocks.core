@@ -5,7 +5,6 @@ import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.parsers.ElementParser;
 import com.beligum.blocks.parsers.visitors.template.BlueprintVisitor;
-import com.beligum.base.utils.Logger;
 import org.jsoup.nodes.Element;
 
 import java.util.LinkedHashSet;
@@ -36,7 +35,7 @@ public abstract class Blueprint extends StoredTemplate
     {
         super(element, language);
         this.name = this.blueprintName;
-
+        this.wrapper = false;
 
         this.addableBlock = ElementParser.isAddableBlock(element);
         this.pageBlock = ElementParser.isPageBlock(element);
@@ -59,12 +58,10 @@ public abstract class Blueprint extends StoredTemplate
         links = blueprintVisitor.getLinks();
         scripts = blueprintVisitor.getScripts();
         this.value = this.transientElement.html();
-        try {
-//            this.transientElement = parseTemplateToElement(this.renderTemplate(this.isReadOnly()));
-        } catch (Exception e)  {
-            Logger.error(e);
-            throw  new ParseException("Could not parse template string to element");
+        for (BasicTemplate property: this.properties) {
+            if (property.isWrapper()) this.wrapper = true;
         }
+        if (this.getProperties().size() > 1 && this.wrapper) throw new ParseException("Anonymous blueprint can have only 1 property");
         return blueprintVisitor;
     }
 
@@ -113,7 +110,7 @@ public abstract class Blueprint extends StoredTemplate
             }
             String schemaUrl = property.substring(0, lastIndex + 1);
             this.rdfType = property.substring(lastIndex + 1, property.length());
-            this.rdfTypePrefix = Blocks.templateCache().getPrefixForSchema(schemaUrl);
+            this.rdfTypePrefix = Blocks.rdfFactory().getPrefixForSchema(schemaUrl);
         } else {
             String[] namespacedName = this.rdfType.split(":");
             if (namespacedName.length == 2) {
@@ -133,7 +130,7 @@ public abstract class Blueprint extends StoredTemplate
 //    {
 //        StringBuilder retVal = new StringBuilder(this.value);
 //        if (properties.size() > 0) {
-//            retVal = this.fillTemplateWithProperties(retVal, readOnly, this, fetchSingleton);
+//            retVal = this.renderTemplate(retVal, readOnly, this, fetchSingleton);
 //        }
 //        return this.renderInsideElement(retVal, readOnly);
 //    }

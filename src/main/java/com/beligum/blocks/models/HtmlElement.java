@@ -19,7 +19,7 @@ public class HtmlElement
     }
 
     public HtmlElement(Element element) {
-        this.tag = element.tagName();
+        this.tag = element.tagName().toLowerCase();
         for (Attribute attribute: element.attributes().asList()) {
             this.attributes.put(attribute.getKey(), attribute.getValue());
         }

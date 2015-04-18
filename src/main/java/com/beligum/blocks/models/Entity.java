@@ -2,20 +2,30 @@ package com.beligum.blocks.models;
 
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.identifiers.BlockId;
+import com.beligum.blocks.models.interfaces.BlocksStorable;
 import com.beligum.blocks.utils.PropertyFinder;
 import com.beligum.blocks.utils.URLFactory;
+import com.hp.hpl.jena.rdf.model.*;
+import com.hp.hpl.jena.rdf.model.impl.LiteralImpl;
+import com.hp.hpl.jena.rdf.model.impl.ModelCom;
+import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.impl.PropertyImpl;
+import com.hp.hpl.jena.vocabulary.RDF;
+import sun.jvm.hotspot.opto.Block;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by wouter on 17/03/15.
  */
 
-public class Entity extends EntityField
+public abstract class Entity extends EntityField implements BlocksStorable
 {
+    private String createdBy;
+    private String updatedBy;
+    private String createdAt;
+    private String updatedAt;
+
 
     private HashMap<String, Object> properties = new HashMap<>();
 
@@ -28,15 +38,34 @@ public class Entity extends EntityField
     }
 
     public Entity(String value) {
-        properties.put("name", URLFactory.makeAbsoluteRdfValue(value));
+        this.addProperty(Blocks.rdfFactory().ensureAbsoluteRdfValue(RDF.type.toString()), Blocks.rdfFactory().ensureAbsoluteRdfValue(value));
     }
 
     public BlockId getId() {
-        return null;
+        BlockId retVal = null;
+        if (this.properties.containsKey("id")) {
+            retVal = (BlockId)this.properties.get("id");
+        }
+        return retVal;
     }
 
     public void setId(BlockId id) {
+        this.properties.put("id", id.toString());
     }
+
+//    public LinkedHashMap<String, Object> getContext() {
+//        if (!this.properties.containsKey("@context")) {
+//            this.properties.put("@context", new LinkedHashMap<String, Object>());
+//        }
+//        return (LinkedHashMap<String, Object>)this.properties.get("@context");
+//    }
+//
+//    public ArrayList<Object> getGraph() {
+//        if (!this.properties.containsKey("@graph")) {
+//            this.properties.put("@graph", new ArrayList<Object>());
+//        }
+//        return (ArrayList<Object>)this.properties.get("@graph");
+//    }
 
     public void addProperty(String name, String value) {
         this.addProperty(name, value, EntityField.NO_LANGUAGE);
@@ -47,7 +76,7 @@ public class Entity extends EntityField
         if (language == null) language = EntityField.NO_LANGUAGE;
 
 
-        name = URLFactory.makeAbsoluteRdfValue(name);
+        name = Blocks.rdfFactory().ensureAbsoluteRdfValue(name);
         if (!properties.containsKey(name)) {
             properties.put(name, new HashMap<String, Object>());
         }
@@ -61,22 +90,56 @@ public class Entity extends EntityField
             property.put(language, new ArrayList<Object>());
         }
         ArrayList<Object> langValues = (ArrayList<Object>)property.get(language);
-        ArrayList<Object> values = (ArrayList<Object>)property.get(NO_LANGUAGE);
+        ArrayList<Object> defaultLangValues = (ArrayList<Object>)property.get(NO_LANGUAGE);
         langValues.add(value);
-        if (langValues.size() > values.size()) {
-            for (int i = values.size(); i < langValues.size(); i++) {
-//                if (i > values.size()) {
-//                    values.set(i, langValues.get(i));
-//                } else {
-//                    values.add(i, langValues.get(i));
-//                }
+        if (defaultLangValues.size() < langValues.size()) {
+            for(int i=defaultLangValues.size(); i < langValues.size(); i++) {
+                defaultLangValues.add(langValues.get(i));
             }
         }
+        property.put(NO_LANGUAGE, defaultLangValues);
+        property.put(language, langValues);
+    }
+
+    public void setProperty(String name, String value, int index, String language) {
+        if (name == null || value == null) return;
+        if (language == null) language = EntityField.NO_LANGUAGE;
+
+
+        name = Blocks.rdfFactory().ensureAbsoluteRdfValue(name);
+        if (!properties.containsKey(name)) {
+            properties.put(name, new HashMap<String, Object>());
+        }
+        if (!(properties.get(name) instanceof Map)) return;
+
+        HashMap<String, Object> property = ((HashMap<String, Object>)properties.get(name));
+        if (!property.containsKey(NO_LANGUAGE)) {
+            property.put(NO_LANGUAGE, new ArrayList<Object>());
+        }
+        if (!property.containsKey(language)) {
+            property.put(language, new ArrayList<Object>());
+        }
+        ArrayList<Object> langValues = (ArrayList<Object>)property.get(language);
+        ArrayList<Object> defaultLangValues = (ArrayList<Object>)property.get(NO_LANGUAGE);
+
+        if (langValues.size() > index) {
+            langValues.set(index, value);
+        } else {
+            langValues.add(value);
+        }
+        if (defaultLangValues.size() < langValues.size()) {
+            for(int i=defaultLangValues.size(); i < langValues.size(); i++) {
+                defaultLangValues.add(langValues.get(i));
+            }
+        }
+        property.put(NO_LANGUAGE, defaultLangValues);
+        property.put(language, langValues);
+
 
     }
 
     public void addEntity(String name, Entity value) {
-        name = URLFactory.makeAbsoluteRdfValue(name);
+        name = Blocks.rdfFactory().ensureAbsoluteRdfValue(name);
         if (!properties.containsKey(name)) {
             properties.put(name, new ArrayList<Object>());
         }
@@ -86,6 +149,62 @@ public class Entity extends EntityField
 
         property.add(value.getProperties());
 
+    }
+
+    public void setEntity(String name, Entity value, int index) {
+        name = Blocks.rdfFactory().ensureAbsoluteRdfValue(name);
+        if (!properties.containsKey(name)) {
+            properties.put(name, new ArrayList<Object>());
+        }
+        if (!(properties.get(name) instanceof List)) return;
+
+        ArrayList<Object> property = (ArrayList<Object>)properties.get(name);
+        if (property.size() > index) {
+            property.set(index, value.getProperties());
+        } else {
+            property.add(value.getProperties());
+        }
+
+    }
+
+    public Resource getRdfModel(Model model, String id) {
+        if (model == null) return null;
+
+        Resource retVal = null;
+//        EntityField field = PropertyFinder.findProperty(Blocks.rdfFactory().ensureAbsoluteRdfValue("resource"), this.properties,0, "nl");
+
+        if (id != null) {
+            retVal = model.createResource(Blocks.rdfFactory().ensureAbsoluteRdfValue(id));
+        } else {
+            retVal = model.createResource();
+        }
+
+        for (String property: this.properties.keySet()) {
+            if (!property.endsWith("resource")) {
+                Object value = this.properties.get(property);
+                if (value instanceof List) {
+                    // entity
+                    for (HashMap<String, Object> entity: (ArrayList<HashMap<String, Object>>)value) {
+                        Entity e = Blocks.factory().createEntity(entity);
+                        retVal.addProperty(new PropertyImpl(Blocks.rdfFactory().ensureAbsoluteRdfValue(property)), e.getRdfModel(model, null));
+                    }
+                }
+                else if (value instanceof Map) {
+                    for (String lang: ((HashMap<String, ArrayList>)value).keySet()) {
+                        ArrayList<String> values = ((HashMap<String, ArrayList<String>>)value).get(lang);
+                        for (String propertyValue: values) {
+                            if (lang.equals("default")) {
+                                retVal.addProperty(new PropertyImpl(property), propertyValue);
+                            }
+                            else {
+                                retVal.addProperty(new PropertyImpl(property), propertyValue, lang);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return retVal;
     }
 
 
@@ -99,20 +218,20 @@ public class Entity extends EntityField
         return list;
     }
 
-//    public void merge(Entity entity, boolean overwrite) {
-//        if (entity != null) {
-//            PropertyFinder<EntityField> propertyFinder = new PropertyFinder<>();
-//            for (int i=0; i < entity.getProperties().size(); i++) {
-//                EntityField property = entity.getProperties().get(i);
-//                String key = property.getName();
-//                EntityField otherProperty = propertyFinder.getProperty(key, this.getProperties());
-//                if (overwrite || otherProperty != null) {
-//                    this.getProperties().add(i, otherProperty);
-//                }
-//                propertyFinder.propertyFound(key);
-//            }
-//        }
-//    }
+    //    public void merge(Entity entity, boolean overwrite) {
+    //        if (entity != null) {
+    //            PropertyFinder<EntityField> propertyFinder = new PropertyFinder<>();
+    //            for (int i=0; i < entity.getProperties().size(); i++) {
+    //                EntityField property = entity.getProperties().get(i);
+    //                String key = property.getName();
+    //                EntityField otherProperty = propertyFinder.getProperty(key, this.getProperties());
+    //                if (overwrite || otherProperty != null) {
+    //                    this.getProperties().add(i, otherProperty);
+    //                }
+    //                propertyFinder.propertyFound(key);
+    //            }
+    //        }
+    //    }
 
 
 
@@ -143,5 +262,45 @@ public class Entity extends EntityField
     public void setProperties(HashMap<String, Object> entity)
     {
         this.properties = entity;
+    }
+    @Override
+    public String getCreatedBy()
+    {
+        return createdBy;
+    }
+    @Override
+    public void setCreatedBy(String created_by)
+    {
+        this.createdBy = created_by;
+    }
+    @Override
+    public String getUpdatedBy()
+    {
+        return updatedBy;
+    }
+    @Override
+    public void setUpdatedBy(String updatedBy)
+    {
+        this.updatedBy = updatedBy;
+    }
+    @Override
+    public String getCreatedAt()
+    {
+        return createdAt;
+    }
+    @Override
+    public void setCreatedAt(String createdAt)
+    {
+        this.createdAt = createdAt;
+    }
+    @Override
+    public String getUpdatedAt()
+    {
+        return updatedAt;
+    }
+    @Override
+    public void setUpdatedAt(String updatedAt)
+    {
+        this.updatedAt = updatedAt;
     }
 }

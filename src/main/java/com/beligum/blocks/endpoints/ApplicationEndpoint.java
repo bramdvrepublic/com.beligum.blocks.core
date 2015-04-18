@@ -8,10 +8,7 @@ import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.CacheException;
 import com.beligum.blocks.identifiers.BlockId;
-import com.beligum.blocks.models.Blueprint;
-import com.beligum.blocks.models.Entity;
-import com.beligum.blocks.models.PageTemplate;
-import com.beligum.blocks.models.StoredTemplate;
+import com.beligum.blocks.models.*;
 import com.beligum.blocks.renderer.BlocksTemplateRenderer;
 import com.beligum.blocks.usermanagement.Permissions;
 import com.beligum.base.server.R;
@@ -26,15 +23,13 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 @Path("/")
 public class ApplicationEndpoint
 {
-
-
-
 
     //using regular expression to let all requests to undefined paths end up here
     @Path("/{randomPage:.*}")
@@ -96,13 +91,17 @@ public class ApplicationEndpoint
                 }
 
             } else {
-                Entity entity = null;
-                if (storedTemplate.getEntity() != null) {
-                    entity = Blocks.database().fetchEntity(storedTemplate.getEntity().getId(), language);
-                }
+                Resource resource= null;
+//                if (storedTemplate.getEntity() != null) {
+                    ArrayList<JsonLDWrapper> model = Blocks.database().fetchEntities("{ '@graph.@id': 'mot:/" + storedTemplate.getId().toString() + "'}");
+
+                if (model.iterator().hasNext()) resource = model.iterator().next().getMainResource(storedTemplate.getLanguage());
+//                }
+
                 PageTemplate pageTemplate = Blocks.templateCache().getPagetemplate(storedTemplate.getPageTemplateName());
                 BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
-                String page = renderer.render(pageTemplate, storedTemplate, entity, storedTemplate.getLanguage());
+                // Todo render enttity
+                String page = renderer.render(pageTemplate, storedTemplate, resource, storedTemplate.getLanguage());
                 return Response.ok(page).build();
             }
 

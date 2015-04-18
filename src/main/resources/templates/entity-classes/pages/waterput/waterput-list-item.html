@@ -1,13 +1,21 @@
-<div blueprint="waterput-list-item" typeof="waterput">
-    <div><span property="name">empty name</span></div>
-    <div><span property="comment">empty name</span></div>
-    <div><span property="isDestroyed">empty name</span></div>
-    <div><span property="verified">empty name</span></div>
-    <div property="address" typeof="address">
-        <span property="street">street</span>
-        <span property="postalcode">zip</span>
-        <span property="locality">city</span>
-        <span property="country">country</span>
+<div blueprint="waterput-list-item" typeof="Waterwell">
+    <div>
+        <a property="rdfs:Resource" href="">
+            <span property="address" blueprint="waterput-adres" typeof="Address">
+                <span property="street">street</span>
+                <span property="postalcode">zip</span>
+                <span property="locality">city</span>
+                <span property="country">country</span>
+            </span>
+        </a>
     </div>
+
+    <!--<div><span property="comment">empty name</span></div>-->
+    <!--<div><span property="isDestroyed">empty name</span></div>-->
+    <!--<div><span property="verified">empty name</span></div>-->
+    <!--<div property="address" typeof="address">-->
+
+    <!--</div>-->
+    <!--<img inlist property="image" src="" />-->
 
 </div>

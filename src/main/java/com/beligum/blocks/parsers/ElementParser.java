@@ -70,6 +70,10 @@ public class ElementParser
         return node.hasAttr(ParserConstants.PREFIX);
     }
 
+    public static boolean hasInList(Element node)  {
+        return node.hasAttr(ParserConstants.INLIST);
+    }
+
     public static URL getHref(Element node) {
         URL retVal = null;
         try {

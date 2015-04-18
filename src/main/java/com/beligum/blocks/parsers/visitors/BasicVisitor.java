@@ -71,20 +71,20 @@ public abstract class BasicVisitor
         }
     }
 
-    public String makeAbsoluteRdfValue(String value) {
-        if (value != null && !value.startsWith("http://")) {
-            if (value.contains(":")) {
-                String prefix = value.split(":")[0];
-                value = value.split(":")[1];
-                String namespace = this.localPrefixes.get(prefix) == null ? Blocks.templateCache().getSchemaForPrefix(prefix): this.localPrefixes.get(prefix);
-                if (namespace != null) value = URLFactory.makeAbsolute(namespace, value);
-            } else {
-                value = URLFactory.makeAbsoluteRdfValue(value).toString();
-            }
-        }
-        return value;
-    }
-
+//    public String makeAbsoluteRdfValue(String value) {
+//        if (value != null && !value.startsWith("http://")) {
+//            if (value.contains(":")) {
+//                String prefix = value.split(":")[0];
+//                value = value.split(":")[1];
+//                String namespace = this.localPrefixes.get(prefix) == null ? Blocks.templateCache().getSchemaForPrefix(prefix): this.localPrefixes.get(prefix);
+//                if (namespace != null) value = URLFactory.makeAbsolute(namespace, value);
+//            } else {
+//                value = URLFactory.makeAbsoluteRdfValue(value).toString();
+//            }
+//        }
+//        return value;
+//    }
+//
 
 
 

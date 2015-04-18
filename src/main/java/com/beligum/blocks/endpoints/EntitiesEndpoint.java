@@ -116,16 +116,8 @@ public class EntitiesEndpoint
             HtmlFromClientVisitor htmlFromClientVisitor = new HtmlFromClientVisitor(pageUrl);
             Traversor.traverseProperties(html, htmlFromClientVisitor);
 
-//            RDFReaderFImpl.setBaseReaderClassName("RDFA", RDFaReader.class.getName());
-
             StoredTemplate pageContent = htmlFromClientVisitor.getContent();
-//            Model m = ModelFactory.createDefaultModel();
-//            JenaRdfaReader.inject();
-//            String c = pageContent.renderTemplate(false, false).toString();
-////            c = c.replaceAll(System.lineSeparator(), "");
-//            StringReader q = new StringReader(html.outerHtml());
-//            Logger.warn(html.outerHtml());
-//            m.read(q, "RDFA");
+
 
             if (pageContent != null) {
                 // recreate this page. This way we prevent unwanted changes

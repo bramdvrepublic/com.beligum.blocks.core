@@ -1,5 +1,6 @@
 <div blueprint="bakehouse-list-item" typeof="Bakehouse">
-    <div property="name"></div>
+    <!--<span property="name"></div>-->
+    <!--<img inlist property="image">-->
     <!--<div property="isDestroyed"></div>-->
     <!--<div property="comment"></div>-->
     <!--<div property="info"></div>-->
@@ -8,12 +9,12 @@
     <!--<div property="targets"></div>-->
     <!--<div property="verified"></div>-->
 
-
-    <!--<div property="address" typeof="Address">-->
-        <!--<div property="locality"></div>-->
-        <!--<div property="street"></div>-->
-        <!--<div property="postalcode"></div>-->
-        <!--<div property="country"></div>-->
-
-    <!--</div>-->
+    <a href="#" property="rdfs:Resource" >
+    <span property="address" typeof="Address">
+        <span property="locality"></span>
+        <span property="street"></span>
+        <span property="postalcode"></span>
+        <span property="country"></span>
+    </span>
+    </a>
 </div>

@@ -95,6 +95,7 @@ public class ParserConstants
     public static final String SRC = "src";
     public static final String HREF = "href";
     public static final String PREFIX = "prefix";
+    public static final String INLIST = "inlist";
     public static final String CONTENT = "content";
 
     public static final String CAPTION = "caption";
