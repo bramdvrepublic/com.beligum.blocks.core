@@ -1,6 +1,5 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.base.server.R;
 import com.beligum.base.server.RequestContext;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
@@ -15,6 +14,7 @@ import com.beligum.base.server.R;
 import com.beligum.base.server.RequestContext;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
+import gen.com.beligum.blocks.core.fs.html.views.new_page;
 import gen.com.beligum.blocks.endpoints.UsersEndpointRoutes;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.AuthorizationException;
@@ -84,8 +84,7 @@ public class ApplicationEndpoint
                     // Todo add flash message
                 }
                 if (SecurityUtils.getSubject().isAuthenticated()) {
-                    Template template = R.templateEngine().getEmptyTemplate("/views/new-page.vm");
-                    return injectParameters(template);
+                    return injectParameters(new_page.instance.getNewTemplate());
                 } else {
                     throw new NotFoundException();
                 }

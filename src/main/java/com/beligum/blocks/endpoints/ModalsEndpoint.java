@@ -1,9 +1,9 @@
 package com.beligum.blocks.endpoints;
 
+import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.usermanagement.Permissions;
-import com.beligum.base.server.R;
-import com.beligum.base.templating.ifaces.Template;
+import gen.com.beligum.blocks.core.fs.html.views.modals.change_url_modal;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
 import javax.ws.rs.GET;
@@ -21,7 +21,6 @@ import java.util.Arrays;
 public class ModalsEndpoint
 {
     public static final String CHANGE_URL_MODAL = "change-url-modal.vm";
-    public static final String NEW_PAGE_MODAL = "new-page.vm";
 
     @GET
     @Path("/changeurl")
@@ -30,7 +29,7 @@ public class ModalsEndpoint
                     @QueryParam("original")
                     String originalUrl) throws MalformedURLException
     {
-        Template template = R.templateEngine().getEmptyTemplate("/views/modals/" + CHANGE_URL_MODAL);
+        Template template = change_url_modal.instance.getNewTemplate();
         String originalPath = new URL(originalUrl).getPath();
         String [] splitted = originalPath.split("/");
         if(splitted.length>2) {
