@@ -26,9 +26,8 @@ public class TemplateCache implements BlocksTemplateCache
 {
     private boolean runningTroughHtmlTemplates = false;
     private AntPathMatcher pathMatcher = new AntPathMatcher();
-    private HashMap<String, HashMap<String, Blueprint>> blueprints = new HashMap<String, HashMap<String, Blueprint>>();
-    private HashMap<String, HashMap<String, PageTemplate>> pagetemplates = new HashMap<String, HashMap<String, PageTemplate>>();
-    private HashBiMap<String, String> prefixes = HashBiMap.create();
+    private HashMap<String, Blueprint> blueprints = new HashMap<String, Blueprint>();
+    private HashMap<String, PageTemplate> pagetemplates = new HashMap<String, PageTemplate>();
     private Set<String> pageblocks = new HashSet<String>();
     private Set<String> addableblocks = new HashSet<String>();
     private LinkedHashSet<String> blocksScripts = new LinkedHashSet<>();
@@ -36,76 +35,68 @@ public class TemplateCache implements BlocksTemplateCache
 
     public TemplateCache() throws CacheException
     {
-        blueprints = new HashMap<String, HashMap<String, Blueprint>>();
-        pagetemplates = new HashMap<String, HashMap<String, PageTemplate>>();
-        for (String lang: Blocks.config().getLanguages()) {
-            blueprints.put(lang, new HashMap<String, Blueprint>());
-            pagetemplates.put(lang, new HashMap<String, PageTemplate>());
-        }
+        blueprints = new HashMap<String, Blueprint>();
+        pagetemplates = new HashMap<String, PageTemplate>();
+
     }
 
     public void reset() throws CacheException
     {
-        blueprints = new HashMap<String, HashMap<String, Blueprint>>();
-        pagetemplates = new HashMap<String, HashMap<String, PageTemplate>>();
-        for (String lang: Blocks.config().getLanguages()) {
-            blueprints.put(lang, new HashMap<String, Blueprint>());
-            pagetemplates.put(lang, new HashMap<String, PageTemplate>());
-        }
+        blueprints = new HashMap<String, Blueprint>();
+        pagetemplates = new HashMap<String, PageTemplate>();
+
         this.fillCache();
     }
 
 
     public void addBlueprint(Blueprint blueprint) {
-        if (!this.blueprints.get(blueprint.getLanguage()).containsKey(blueprint.getBlueprintName())) {
-            this.blueprints.get(blueprint.getLanguage()).put(blueprint.getName(), blueprint);
+        if (!this.blueprints.containsKey(blueprint.getBlueprintName())) {
+            this.blueprints.put(blueprint.getBlueprintName(), blueprint);
         }
     }
 
     public void addPageTemplate(PageTemplate page) {
-        if (!this.pagetemplates.get(page.getLanguage()).containsKey(page.getBlueprintName())) {
-            this.pagetemplates.get(page.getLanguage()).put(page.getName(), page);
+        if (!this.pagetemplates.containsKey(page.getBlueprintName())) {
+            this.pagetemplates.put(page.getName(), page);
         }
     }
 
     public void addBlueprint(Blueprint blueprint, String language) {
-        if (!this.blueprints.get(language).containsKey(blueprint.getBlueprintName())) {
-            this.blueprints.get(language).put(blueprint.getName(), blueprint);
+        if (!this.blueprints.containsKey(blueprint.getBlueprintName())) {
+            this.blueprints.put(blueprint.getName(), blueprint);
         }
     }
 
     public void addPageTemplate(PageTemplate page, String language) {
-        if (!this.pagetemplates.get(language).containsKey(page.getBlueprintName())) {
-            this.pagetemplates.get(language).put(page.getName(), page);
+        if (!this.pagetemplates.containsKey(page.getBlueprintName())) {
+            this.pagetemplates.put(page.getName(), page);
         }
     }
 
-    public Blueprint getBlueprint(String name, String language) {
+    public Blueprint getBlueprint(String name) {
         Blueprint retVal = null;
-        if (name != null && language != null) {
-            retVal = this.blueprints.get(language).get(name);
-            if (retVal == null) {
-                retVal = this.blueprints.get(Blocks.config().getDefaultLanguage()).get(name);
-            }
+        if (name != null) {
+            retVal = this.blueprints.get(name);
+
         }
         return retVal;
     }
 
-    public PageTemplate getPagetemplate(String name, String language) {
-        return this.pagetemplates.get(language).get(name);
+    public PageTemplate getPagetemplate(String name) {
+        return this.pagetemplates.get(name);
     }
 
-    public List<Blueprint> getBlueprints(String language) {
-        return new ArrayList<Blueprint>(this.blueprints.get(language).values());
+    public List<Blueprint> getBlueprints() {
+        return new ArrayList<Blueprint>(this.blueprints.values());
     }
 
-    public List<PageTemplate> getPagetemplates(String language) {
-        return new ArrayList<PageTemplate>(this.pagetemplates.get(language).values());
+    public List<PageTemplate> getPagetemplates() {
+        return new ArrayList<PageTemplate>(this.pagetemplates.values());
     }
 
     public List<Blueprint> getPageBlocks() {
         ArrayList<Blueprint> list = new ArrayList<>();
-        for (Blueprint bp: getBlueprints(Blocks.config().getDefaultLanguage())) {
+        for (Blueprint bp: getBlueprints()) {
             if (bp.isPageBlock()) list.add(bp);
         }
 
@@ -114,7 +105,7 @@ public class TemplateCache implements BlocksTemplateCache
 
     public List<Blueprint> getAddableBlocks() {
         ArrayList<Blueprint> list = new ArrayList<>();
-        for (Blueprint bp: getBlueprints(Blocks.config().getDefaultLanguage())) {
+        for (Blueprint bp: getBlueprints()) {
             if (bp.isAddableBlock()) list.add(bp);
         }
 
@@ -129,81 +120,6 @@ public class TemplateCache implements BlocksTemplateCache
         return this.blocksLinks;
     }
 
-    public void addPrefixes(HashMap<String, String> prefixes) {
-        this.prefixes.putAll(prefixes);
-    }
-
-
-
-    public void addPrefix(String prefix, String namespace) {
-        if (prefix != null && namespace != null) {
-            if (!this.prefixes.containsValue(namespace)) {
-                if (!this.prefixes.containsKey(prefix)) {
-                    this.prefixes.put(prefix, namespace);
-                } else {
-                    // Todo prefix exists but with a different namespace
-                    this.prefixes.put(prefix+"1", namespace);
-                }
-            }
-        }
-    }
-
-    public String getPrefixForSchema(String schema) {
-        return this.prefixes.inverse().get(schema);
-    }
-
-    public String getSchemaForPrefix(String prefix) {
-        return this.prefixes.get(prefix);
-    }
-
-
-    private void addDefaultPrefixes() {
-        this.addPrefix(Blocks.config().getDefaultRdfPrefix(), Blocks.config().getDefaultRdfSchema());
-        this.addPrefix("cat","http://www.w3.org/ns/dcat#");
-        this.addPrefix("qb","http://purl.org/linked-data/cube#");
-        this.addPrefix("grddl","http://www.w3.org/2003/g/data-view#");
-        this.addPrefix("ma","http://www.w3.org/ns/ma-ont#");
-        this.addPrefix("owl","http://www.w3.org/2002/07/owl#");
-        this.addPrefix("rdf","http://www.w3.org/1999/02/22-rdf-syntax-ns#");
-        this.addPrefix("rdfa","http://www.w3.org/ns/rdfa#");
-        this.addPrefix("rdfs","http://www.w3.org/2000/01/rdf-schema#");
-        this.addPrefix("rif","http://www.w3.org/2007/rif#");
-        this.addPrefix("rr","http://www.w3.org/ns/r2rml#");
-        this.addPrefix("skos","http://www.w3.org/2004/02/skos/core#");
-        this.addPrefix("skosxl","http://www.w3.org/2008/05/skos-xl#");
-        this.addPrefix("wdr","http://www.w3.org/2007/05/powder#");
-        this.addPrefix("void","http://rdfs.org/ns/void#");
-        this.addPrefix("wdrs","http://www.w3.org/2007/05/powder-s#");
-        this.addPrefix("xhv","http://www.w3.org/1999/xhtml/vocab#");
-        this.addPrefix("xml","http://www.w3.org/XML/1998/namespace");
-        this.addPrefix("xsd","http://www.w3.org/2001/XMLSchema#");
-        this.addPrefix("prov","http://www.w3.org/ns/prov#");
-        this.addPrefix("sd","http://www.w3.org/ns/sparql-service-description#");
-        this.addPrefix("org","http://www.w3.org/ns/org#");
-        this.addPrefix("gldp","http://www.w3.org/ns/people#");
-        this.addPrefix("cnt","http://www.w3.org/2008/content#");
-        this.addPrefix("dcat","http://www.w3.org/ns/dcat#");
-        this.addPrefix("earl","http://www.w3.org/ns/earl#");
-        this.addPrefix("ht","http://www.w3.org/2006/http#");
-        this.addPrefix("ptr","http://www.w3.org/2009/pointers#");
-        this.addPrefix("cc","http://creativecommons.org/ns#");
-        this.addPrefix("ctag","http://commontag.org/ns#");
-        this.addPrefix("dc","http://purl.org/dc/terms/");
-        this.addPrefix("dc11","http://purl.org/dc/elements/1.1/");
-        this.addPrefix("dcterms","http://purl.org/dc/terms/");
-        this.addPrefix("foaf","http://xmlns.com/foaf/0.1/");
-        this.addPrefix("gr","http://purl.org/goodrelations/v1#");
-        this.addPrefix("ical","http://www.w3.org/2002/12/cal/icaltzd#");
-        this.addPrefix("og","http://ogp.me/ns#");
-        this.addPrefix("rev","http://purl.org/stuff/rev#");
-        this.addPrefix("sioc","http://rdfs.org/sioc/ns#");
-        this.addPrefix("v","http://rdf.data-vocabulary.org/#");
-        this.addPrefix("vcard","http://www.w3.org/2006/vcard/ns#");
-        this.addPrefix("schema","http://schema.org/");
-        this.addPrefix("describedby","http://www.w3.org/2007/05/powder-s#describedby");
-        this.addPrefix("license","http://www.w3.org/1999/xhtml/vocab#license");
-        this.addPrefix("role","http://www.w3.org/1999/xhtml/vocab#role");
-    }
 
     /**
      * Fill up the page-cache with all template found in file-system
@@ -215,8 +131,7 @@ public class TemplateCache implements BlocksTemplateCache
         if (!runningTroughHtmlTemplates) {
             runningTroughHtmlTemplates = true;
 
-            this.prefixes.clear();
-            this.addDefaultPrefixes();
+
 
             try {
                 List<Path> allResourceFolders = R.resourceLoader().getResourceFolders();
@@ -257,19 +172,19 @@ public class TemplateCache implements BlocksTemplateCache
 
                 // Parse all after finding all
                 // Add missing blueprints to default language
-                for (String lang: Blocks.config().getLanguages()) {
-                    for (Blueprint blueprint : this.getBlueprints(lang)) {
-                        blueprint.parse();
 
-                        if (blueprint.isAddableBlock()) this.addableblocks.add(blueprint.getName());
-                        if (blueprint.isPageBlock()) this.pageblocks.add(blueprint.getName());
-                    }
+                for (Blueprint blueprint : this.getBlueprints()) {
+                    blueprint.parse();
 
-                    for (PageTemplate pageTemplate : this.getPagetemplates(lang)) {
-                        pageTemplate.parse();
-
-                    }
+                    if (blueprint.isAddableBlock()) this.addableblocks.add(blueprint.getName());
+                    if (blueprint.isPageBlock()) this.pageblocks.add(blueprint.getName());
                 }
+
+                for (PageTemplate pageTemplate : this.getPagetemplates()) {
+                    pageTemplate.parse();
+
+                }
+
 
                 BlocksScriptVisitor visitor = new BlocksScriptVisitor();
                 Document doc = visitor.getSource(Blocks.config().getFrontEndScripts());

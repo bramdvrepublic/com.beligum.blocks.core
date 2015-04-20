@@ -2,7 +2,7 @@ package com.beligum.blocks.config;
 
 /**
  * Created by bas on 03.11.14.
- * CSS-class-names used while parsing html to blocks
+ * CSS-class-names used while parsing html to templates
  */
 public class ParserConstants
 {
@@ -76,7 +76,7 @@ public class ParserConstants
     public static final String CSS_CLASS_PREFIX = "block-";
 
     /**
-     * Dynamic blocks
+     * Dynamic templates
      */
     public class DynamicBlocks{
         /**the type indicating a block is a translation-block*/
@@ -95,6 +95,7 @@ public class ParserConstants
     public static final String SRC = "src";
     public static final String HREF = "href";
     public static final String PREFIX = "prefix";
+    public static final String INLIST = "inlist";
     public static final String CONTENT = "content";
 
     public static final String CAPTION = "caption";

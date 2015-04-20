@@ -221,7 +221,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                         Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK);
                         Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_PROPERTY);
 
-                        //Logger.debug("changed blocks");
+                        //Logger.debug("changed templates");
                     }
                 } else if (block.current != null) {
                     Broadcaster.send(Broadcaster.EVENTS.HOOVER_OVER_BLOCK);

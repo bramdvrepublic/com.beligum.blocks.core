@@ -15,14 +15,14 @@ Two ID's are **equal** when their string-representation is equal (for RedisID's 
 
 All ID's used in Redis, are URI's mapping one-to-one on the object in question:
 
- - The id of the html-content in a certain language looks like this: "blocks://[db-site-alias]/[entityId]:[version]/[languageCode]"
- - The ID of the redis-hash representing an EntityTemplate looks like this: "blocks://[db-site-alias]/[entityId]:[version]"
- - The list of all versions of a certain EntityTemplate has an id looking like this: "blocks://[db-site-alias]/[entityId]"
- - The ID of the redis-hash representing an EntityTemplateClass looks like this= "blocks://[db-site-alias]/[entityClassName]:[version]"
- - The list of all versions of a certain EntityTemplateClass has an id looking like this: "blocks://[db-site-alias]/[entityClassName]"
- - The default property of a certain EntityTemplateClass is an EntityTemplate (instance), represented by a redis-hash and has an id looking like this: "blocks://[db-site-alias]/[entityClassName]#[propertyName]:[version]"
- - the list of all versions of a property of a certain EntityTemplateClass has an id lookin like this: "blocks://[db-site-alias]/[entityClassName]#[propertyName]"
- - The set with all instances of a certain EntityTemplateClass has an id looking like this: "blocks://[db-site-allias]/[entityClassName]Set"
+ - The id of the html-content in a certain language looks like this: "templates://[db-site-alias]/[entityId]:[version]/[languageCode]"
+ - The ID of the redis-hash representing an EntityTemplate looks like this: "templates://[db-site-alias]/[entityId]:[version]"
+ - The list of all versions of a certain EntityTemplate has an id looking like this: "templates://[db-site-alias]/[entityId]"
+ - The ID of the redis-hash representing an EntityTemplateClass looks like this= "templates://[db-site-alias]/[entityClassName]:[version]"
+ - The list of all versions of a certain EntityTemplateClass has an id looking like this: "templates://[db-site-alias]/[entityClassName]"
+ - The default property of a certain EntityTemplateClass is an EntityTemplate (instance), represented by a redis-hash and has an id looking like this: "templates://[db-site-alias]/[entityClassName]#[propertyName]:[version]"
+ - the list of all versions of a property of a certain EntityTemplateClass has an id lookin like this: "templates://[db-site-alias]/[entityClassName]#[propertyName]"
+ - The set with all instances of a certain EntityTemplateClass has an id looking like this: "templates://[db-site-allias]/[entityClassName]Set"
 
 
 # Templates
@@ -65,26 +65,26 @@ Is done in 5 visiting-lines:
   \</html\>
 
 # Internationalization
- - Preferred languages can be specified in the configuration-xml under "blocks.site.languages", as a list, in order from most preferred language to least preferred language.
+ - Preferred languages can be specified in the configuration-xml under "templates.site.languages", as a list, in order from most preferred language to least preferred language.
  - Languages should always be represented as a (2 letter) ISO 639 language-code.
  - If a url needs to be translated, it needs to be an absolute url of this site-domain or a relative url starting with a '/'. Relative urls without '/' will not be translated!
 
 # Script- and style-injection
- - Scripts and links (f.i. css-files) can be added to page-templates, class blueprints and dynamic blocks
+ - Scripts and links (f.i. css-files) can be added to page-templates, class blueprints and dynamic templates
  - Scripts of page-templates and entity-classes are saved to db as a html-blob
  - When a page is send to the client, the scripts and links are injected in this order:
      1. links of page-template
      2. links of blueprints
-     3. links of dynamic blocks
+     3. links of dynamic templates
      4. scripts of page-template
      5. scripts of blueprints
-     6. scripts of dynamic blocks
-     (7. links of blocks core frontend)
-     (8. scripts of blocks core frontend)
+     6. scripts of dynamic templates
+     (7. links of templates core frontend)
+     (8. scripts of templates core frontend)
 
 # Editable pages
 - a page, when loaded, is automatically set to editable
-- All blocks on the first level in the page are editable
+- All templates on the first level in the page are editable
     - EXCEPT if the blueprint of this block defines it as not editable with the attribute CAN_NOT_EDIT
 - if a block is editable, then it's properties are editable too
     - EXCEPT if the property is marked with CAN-NOT-EDIT attribute
@@ -97,3 +97,14 @@ to show in the fields. If a property of a block is marked as not editable, then 
 even if there is content available in the database.
 
 This way we have full control of the shown content, based on the blueprints
+
+
+# url
+- Map with url -> id
+- url fields = name, id, verb
+- tree with all urls in paths
+
+find url -> id
+find translated url -> lang/url -> id
+find url+lang -> translated url
+find id+lang -> translated url

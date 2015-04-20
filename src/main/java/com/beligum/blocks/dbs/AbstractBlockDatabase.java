@@ -3,10 +3,7 @@ package com.beligum.blocks.dbs;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.exceptions.DatabaseException;
 import com.beligum.blocks.identifiers.BlockId;
-import com.beligum.blocks.models.Blueprint;
-import com.beligum.blocks.models.Entity;
-import com.beligum.blocks.models.Singleton;
-import com.beligum.blocks.models.StoredTemplate;
+import com.beligum.blocks.models.*;
 import com.beligum.blocks.models.interfaces.BlocksStorable;
 import com.beligum.blocks.models.interfaces.BlocksVersionedStorable;
 import com.beligum.blocks.urlmapping.BlocksUrlDispatcher;
@@ -62,8 +59,8 @@ public abstract class AbstractBlockDatabase implements BlocksDatabase
         return retVal;
     }
 
-    public Entity fetchEntity(BlockId id, String language) {
-        return fetch(id, language, Blocks.factory().getEntityClass());
+    public JsonLDWrapper fetchEntity(BlockId id) {
+        return doFetch(id, JsonLDWrapper.class);
     }
 
     public StoredTemplate fetchTemplate(BlockId id, String language) {
@@ -81,6 +78,7 @@ public abstract class AbstractBlockDatabase implements BlocksDatabase
     public Singleton fetchSingleton(BlockId id, String language) {
         return fetch(id, language, Blocks.factory().getSingletonClass());
     }
+
 
     public void save(BlocksStorable storable) throws DatabaseException
     {
@@ -116,7 +114,7 @@ public abstract class AbstractBlockDatabase implements BlocksDatabase
     {
         ArrayList<Entity> entities = entity.flatten(new ArrayList<Entity>());
         for (Entity e: entities) {
-            save(e);
+//            save(e);
         }
     }
 
@@ -162,8 +160,11 @@ public abstract class AbstractBlockDatabase implements BlocksDatabase
     }
 
     protected abstract <T extends BlocksStorable> T doFetch(BlockId id, Class<T> clazz);
+
     protected abstract <T extends BlocksVersionedStorable> T doFetch(BlockId id, String language, Class<T> clazz);
     public abstract BlocksUrlDispatcher fetchUrlDispatcher();
+
+    public abstract ArrayList<JsonLDWrapper> fetchEntities(String query);
 
     protected abstract void doSave(BlocksVersionedStorable storable) throws DatabaseException;
     protected abstract void doSave(BlocksStorable storable) throws DatabaseException;

@@ -14,7 +14,7 @@ base.plugin("blocks.core.Constants", function ()
         {name: "col-md-", min: 992, max: 1199},
         {name: "col-lg-", min: 120, max: 10000}
     ];
-    this.CAN_LAYOUT_ROW_CLASS = "can-layout"; // can layout row and add and delete blocks
+    this.CAN_LAYOUT_ROW_CLASS = "can-layout"; // can layout row and add and delete templates
     this.CAN_EDIT_BLOCK_CLASS = "can-edit"; // specifies edit and delete
     this.IS_ENTITY = "use-blueprint";
     this.IS_PROPERTY = "property";

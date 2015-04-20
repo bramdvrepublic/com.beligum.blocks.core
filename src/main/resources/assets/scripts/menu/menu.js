@@ -5,8 +5,8 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
     /*
     * Create the html for top bar
     * */
-    var menuBtn = $('<div class="blocks-main-edit-button"><i class="glyphicon glyphicon-cog"></i></div>');
-    var menuBar = $('<div class="blocks-main-menu"></div>');
+    var menuBtn = $('<div class="templates-main-edit-button"><i class="glyphicon glyphicon-cog"></i></div>');
+    var menuBar = $('<div class="templates-main-menu"></div>');
     var btnList = menuBar;
 
     var saveBtn = $('<a class="btn  btn-default" href="#">Save</a>');

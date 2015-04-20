@@ -81,8 +81,8 @@ public abstract class StoredTemplate extends StorableTemplate
         if (this.renderedTransientElement == null) {
             BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
             renderer.setFetchEntities(false);
-
-            String template = renderer.render(this, null);
+            renderer.setRenderDynamicBlocks(false);
+            String template = renderer.render(this, null, this.language);
             this.renderedTransientElement = parse(template);
         }
         retVal = this.renderedTransientElement.clone();

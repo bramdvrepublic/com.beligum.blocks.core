@@ -18,6 +18,8 @@ public class WikiItem
     private String other;
     private boolean valid = true;
 
+    private int fieldType;
+
     public WikiItem() {
 
     }
@@ -63,8 +65,18 @@ public class WikiItem
             if (lang_test.toLowerCase().equals("fr") || lang_test.toLowerCase().equals("en") || lang_test.toLowerCase().equals("nl")) {
                 name = name.substring(0, name.length() - 2);
                 lang = lang_test.toLowerCase();
+            } else if (name.toLowerCase().contains("_fr")) {
+                name = name.replaceAll("Fr", "");
+                lang = "fr";
+            } else if (name.toLowerCase().contains("_nl")) {
+                name = name.replaceAll("Nl", "");
+                lang = "nl";
+            } else if (name.toLowerCase().contains("_en")) {
+                name = name.replaceAll("En", "");
+                lang = "en";
             }
         }
+
 
 
         Integer dp = name.indexOf(":");
@@ -97,7 +109,12 @@ public class WikiItem
 
             if (end_key > -1) {
                 //            #search end of key.If not found this page is invalid
+
                 String fullField = text.substring(0, end_key);
+                if (fullField.contains("_end")) {
+                    int x= 0;
+                }
+                end_key += 2;
                 text = text.substring(end_key);
 
                 Integer seperatorIndex = findKeyField(fullField);
@@ -106,7 +123,12 @@ public class WikiItem
 
                 if (seperatorIndex > -1) {
                     String key = fullField.substring(0, seperatorIndex);
-                    String value = fullField.substring(seperatorIndex + 1);
+                    if (fieldType == 1) {
+                        seperatorIndex += 1;
+                    } else {
+                        seperatorIndex += 2;
+                    }
+                    String value = fullField.substring(seperatorIndex);
                     this.addField(key, value);
                     found_vars += 1;
                 }
@@ -128,21 +150,43 @@ public class WikiItem
 
     public Integer findStartField(String text)
     {
-        Integer val = text.indexOf("(:");
-        if (val > -1) {
-            val += 2;
+        Integer retVal = -1;
+        Integer val1 = text.indexOf("(:");
+        Integer val2 = text.indexOf("[[#");
+
+        if (val2 < val1 && val2 > -1) {
+            fieldType = 2;
+            retVal = val2 + 3;
+        } else if (val1 > -1) {
+            fieldType = 1;
+            retVal = val1 + 2;
         }
-        return val;
+
+        return retVal;
     }
 
     public Integer findKeyField(String text) {
-        return text.indexOf(":");
+        if (fieldType == 1) {
+            return text.indexOf(":");
+        } else {
+            return text.indexOf("]]");
+        }
     }
 
 
     public Integer findEndField(String text)
     {
-        return text.indexOf(":)");
+        if (fieldType == 1) {
+            return text.indexOf(":)");
+        } else {
+            Integer val2 = text.indexOf("[[#");
+            Integer val3 = text.indexOf("[[#een");
+
+            if (val2.equals(val3)) {
+                val2 = text.indexOf("[[#", val2 + 1);
+            }
+            return val2;
+        }
     }
 
     public HashMap<String, HashMap<String, String>> addToData(HashMap<String, HashMap<String, String>> stored)

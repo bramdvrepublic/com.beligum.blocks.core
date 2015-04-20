@@ -21,6 +21,8 @@ public interface BlocksUrlDispatcher
 
     public String getLanguageOrNull(URL url);
 
+    public String getUrlForId(String id);
+
 
 
 }

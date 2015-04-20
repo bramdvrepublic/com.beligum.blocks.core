@@ -314,8 +314,8 @@ base.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function (C
         var cleanBlock = findHighestLayoutElement(blockElement);
 
 //        var cleanBlock = blockElement.parent();
-//        if (blocks) {
-//            cleanBlock = blocks[0].parent();
+//        if (templates) {
+//            cleanBlock = templates[0].parent();
 //        }
 
         elementChanged(cleanBlock, function() {
@@ -391,9 +391,9 @@ base.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function (C
     }
 
     /*
-    * When 1 column contains e.g. 6 blocks and we drop a block
+    * When 1 column contains e.g. 6 templates and we drop a block
     * to the right of the 3th block in that column,
-    * then we need to wrap all blocks in rows
+    * then we need to wrap all templates in rows
     *
     * We do this efficiently and in this example this method would wrap:
      *  - block 1 & 2 in a row (with 1 column)
@@ -415,7 +415,7 @@ base.plugin("blocks.core.DomManipulation", ["blocks.core.Constants", function (C
             var children = parentColumnElement.children().remove();
             var childCount = children.length;
             var flag = false;
-            // grab all blocks in the parent column
+            // grab all templates in the parent column
             // put all siblings before our block in the before array
             // put all siblings after our block in the after array
             for (var i = 0; i < childCount; i++) {

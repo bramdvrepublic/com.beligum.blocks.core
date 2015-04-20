@@ -1,16 +1,12 @@
 package com.beligum.blocks.models;
 
-import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.exceptions.ParseException;
-import com.beligum.blocks.identifiers.BlockId;
 import com.beligum.blocks.models.interfaces.NamedProperty;
 import com.beligum.blocks.parsers.ElementParser;
 import com.beligum.blocks.parsers.visitors.template.PropertyVisitor;
 import com.beligum.blocks.parsers.Traversor;
-import com.beligum.blocks.renderer.BlocksTemplateRenderer;
-import com.beligum.blocks.utils.PropertyFinder;
 import com.beligum.blocks.utils.URLFactory;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.lang3.StringUtils;
@@ -37,7 +33,8 @@ public class BasicTemplate implements NamedProperty
     protected boolean readOnly = false;
     protected String rdfNamespace;
     protected URL href;
-
+    protected boolean wrapper;
+    protected boolean inList;
 
     protected Entity entity;
 
@@ -55,6 +52,14 @@ public class BasicTemplate implements NamedProperty
 
     protected ArrayList<BasicTemplate> properties = new ArrayList<BasicTemplate>();
 
+    public boolean isWrapper()
+    {
+        return wrapper;
+    }
+    public boolean isInList()
+    {
+        return inList;
+    }
 
     public BasicTemplate(Element node, String language) throws ParseException
     {
@@ -67,6 +72,12 @@ public class BasicTemplate implements NamedProperty
         this.transientElement = node;
         this.element = new HtmlElement(node);
         this.name = ElementParser.getProperty(node);
+        if (this.name == null) {
+            this.name = "";
+            this.wrapper = true;
+        }
+
+        this.inList = ElementParser.hasInList(node);
 
         this.blueprintName = ElementParser.getBlueprintName(node);
         this.readOnly = ElementParser.isReadOnly(node);
@@ -75,11 +86,12 @@ public class BasicTemplate implements NamedProperty
 
         this.templateContent = false;
 
-        if (this.getBlueprintName() == null) {
+        if (this.getBlueprintName() == null || this.wrapper) {
             this.value = node.html();
         }
-        if(!(this instanceof Blueprint)) {
+        if(!(this instanceof Blueprint) && !this.wrapper) {
             this.parse();
+
         }
 //        this.html = node.outerHtml();
 
@@ -110,7 +122,7 @@ public class BasicTemplate implements NamedProperty
 //        StringBuilder retVal = new StringBuilder(this.value);
 //        Blueprint blueprint = getBlueprint();
 //
-//        // TODO fix dynamic blocks
+//        // TODO fix dynamic templates
 //        if (blueprint == null) {
 //            // Dynamic block
 //            //
@@ -122,7 +134,7 @@ public class BasicTemplate implements NamedProperty
 //            // check if blueprint is readonly -> all properties read only except not-read
 //            if (blueprint.isFixed() || readOnly) retVal = new StringBuilder(blueprint.getTemplate());
 //            ArrayList<BasicTemplate> mixedProperties = mixProperties(readOnly, blueprint.isReadOnly(), properties, blueprint.getProperties());
-//            retVal = this.fillTemplateWithProperties(new StringBuilder(retVal), readOnly, blueprint, fetchSingeltons);
+//            retVal = this.renderTemplate(new StringBuilder(retVal), readOnly, blueprint, fetchSingeltons);
 //
 //        }
 //        return this.renderInsideElement(retVal, readOnly);
@@ -164,7 +176,7 @@ public class BasicTemplate implements NamedProperty
         this.value = value;
     }
 
-//    protected StringBuilder fillTemplateWithProperties(StringBuilder template, boolean readOnly, BasicTemplate blueprint, boolean fetchSingletons)
+//    protected StringBuilder renderTemplate(StringBuilder template, boolean readOnly, BasicTemplate blueprint, boolean fetchSingletons)
 //    {
 //        // find property
 //        String nextProperty = findNextPropertyInTemplate(template);
@@ -277,95 +289,6 @@ public class BasicTemplate implements NamedProperty
 
 
 
-    public String renderStartElement(boolean readOnly, boolean showResource)
-    {
-
-        StringBuilder retVal = new StringBuilder();
-        retVal.append("<").append(this.element.getTag()).append(" ");
-        HashSet<String> attributes = new HashSet<String>(this.element.getAttributes().keySet());
-        Blueprint blueprint = this.getBlueprint();
-
-        // Set the right attributes on the element
-        if (readOnly) {
-            if (blueprint != null) {
-                attributes = new HashSet<String>(blueprint.getElement().getAttributes().keySet());
-            }
-            attributes.remove(ParserConstants.CAN_EDIT_PROPERTY);
-            attributes.remove(ParserConstants.CAN_LAYOUT);
-
-        } else if (!readOnly && blueprint != null){
-            // property is can edit
-            attributes.remove(ParserConstants.CAN_EDIT_PROPERTY);
-            attributes.addAll(blueprint.getElement().getAttributes().keySet());
-        } else {
-            attributes.add(ParserConstants.CAN_EDIT_PROPERTY);
-        }
-
-        attributes.remove(ParserConstants.REFERENCE_TO);
-        attributes.remove(ParserConstants.RESOURCE);
-        attributes.remove(ParserConstants.LANGUAGE);
-
-        for (String key: attributes) {
-            String value = this.getElement().getAttributes().get(key);
-            if (value == null && blueprint != null)  value = blueprint.getElement().getAttributes().get(key);
-
-            if (key.equals(ParserConstants.PROPERTY) && blueprint != null && blueprint.getRdfType() == null) {
-                retVal.append(addAtribute(ParserConstants.BLUEPRINT_PROPERTY, this.name));
-            } else if (key.equals(ParserConstants.PROPERTY)) {
-                retVal.append(addAtribute(ParserConstants.PROPERTY, this.name));
-            } else if (key.equals("class") && blueprint != null) {
-                LinkedHashSet<String> classes = new LinkedHashSet<>();
-                classes.addAll(Arrays.asList((ParserConstants.CSS_CLASS_PREFIX + blueprint.getName() + " " + value).split(" ")));
-                classes.addAll(Arrays.asList(blueprint.getElement().getAttributes().get(key).split(" ")));
-
-                retVal.append(addAtribute(key, StringUtils.join(classes.toArray(), " ")));
-            } else if (key.equals(ParserConstants.TYPE_OF)) {
-                retVal.append(addAtribute(ParserConstants.TYPE_OF, blueprint.getRdfType()));
-            }
-            else
-            {
-                retVal.append(addAtribute(key, this.element.getAttributes().get(key)));
-            }
-        }
-
-        if (!showResource) {
-            // do nothing
-        } else if (this instanceof StoredTemplate) {
-            if (((StoredTemplate)this).getId() != null) {
-                // add resource
-                if (this.entity != null) {
-                    retVal.append(addAtribute(ParserConstants.RESOURCE, ((StoredTemplate)this).getId().toString()));
-                }
-//                else {
-//                    retVal.append(addAtribute(ParserConstants.REFERENCE_TO, ((StoredTemplate)this).getId().toString()));
-//                }
-            }
-        } else if (this.entity != null && this.entity.getId() != null){
-            retVal.append(addAtribute(ParserConstants.RESOURCE, this.entity.getId().toString()));
-        }
-
-        retVal.append(addAtribute(ParserConstants.LANGUAGE, language) + ">");
-
-
-        return retVal.toString();
-    }
-
-    private String addAtribute(String key, String value) {
-        String retVal = key;
-        if (!(value == null || value.isEmpty())) {
-            retVal+= "=\"" + value + "\"";
-        } else {
-            retVal+= "=\"\"";
-        }
-        retVal += " ";
-        return retVal;
-    }
-
-
-    public String renderEndElement() {
-        String retVal = "</" + this.element.getTag() + ">";
-        return retVal;
-    }
 
 
 
@@ -381,7 +304,7 @@ public class BasicTemplate implements NamedProperty
     public Blueprint getBlueprint() {
         Blueprint retVal = null;
         if (this.getBlueprintName() != null) {
-            retVal = Blocks.templateCache().getBlueprint(this.getBlueprintName(), this.language);
+            retVal = Blocks.templateCache().getBlueprint(this.getBlueprintName());
         }
         return retVal;
     }
@@ -406,30 +329,30 @@ public class BasicTemplate implements NamedProperty
             // this is a field so store the value
             // Todo also catch content, language, datatype
             if (element.getAttributes().containsKey(ParserConstants.SRC)) {
-                entityToFill.addProperty(new EntityField(this.name, element.getAttributes().get(ParserConstants.SRC)));
-                entityToFill.addProperty(new EntityField(URLFactory.makeAbsolute(this.name, ParserConstants.CAPTION), value));
+                entityToFill.addProperty(this.name, element.getAttributes().get(ParserConstants.SRC), this.language);
+                entityToFill.addProperty(URLFactory.makeAbsolute(this.name, ParserConstants.CAPTION), value, this.language);
             } else if (element.getAttributes().containsKey(ParserConstants.HREF)) {
-                entityToFill.addProperty(new EntityField(this.name, element.getAttributes().get(ParserConstants.HREF)));
-                entityToFill.addProperty(new EntityField(URLFactory.makeAbsolute(this.name, ParserConstants.CAPTION), value));
+                entityToFill.addProperty(this.name, element.getAttributes().get(ParserConstants.HREF), this.language);
+                entityToFill.addProperty(URLFactory.makeAbsolute(this.name, ParserConstants.CAPTION), value, this.language);
             } else if (element.getAttributes().containsKey(ParserConstants.CONTENT)) {
-                entityToFill.addProperty(new EntityField(this.name, element.getAttributes().get(ParserConstants.CONTENT)));
-                entityToFill.addProperty(new EntityField(URLFactory.makeAbsolute(this.name, ParserConstants.CAPTION), value));
+                entityToFill.addProperty(this.name, element.getAttributes().get(ParserConstants.CONTENT), this.language);
+                entityToFill.addProperty(URLFactory.makeAbsolute(this.name, ParserConstants.CAPTION), value, this.language);
             } else {
-                entityToFill.addProperty(new EntityField(this.name, value));
+                entityToFill.addProperty(this.name, value, this.language);
             }
         } else {
             // if blueprint has typeOf then create new entity
-            Blueprint blueprint = Blocks.templateCache().getBlueprint(this.getBlueprintName(), this.language);
+            Blueprint blueprint = Blocks.templateCache().getBlueprint(this.getBlueprintName());
             String entityName = blueprint.getRdfType();
             if (entityName != null) {
-                this.entity = Blocks.factory().createEntity(entityName, this.language);
+                this.entity = Blocks.factory().createEntity(entityName);
                 entityToFill = this.entity;
             }
             // Add properties to typeof
             for (BasicTemplate property : properties) {
                 entityToFill = property.getEntityProperties(entityToFill);
             }
-            if (entityToFill != entity) entity.addProperty(entityToFill);
+            if (entityToFill != entity) entity.addEntity(this.name, entityToFill);
 
         }
         return entity;
@@ -439,9 +362,9 @@ public class BasicTemplate implements NamedProperty
     {
         ArrayList<Entity> retVal = new ArrayList<Entity>();
         if (this.getBlueprintName() != null) {
-            Blueprint blueprint = Blocks.templateCache().getBlueprint(this.getBlueprintName(), this.language);
+            Blueprint blueprint = Blocks.templateCache().getBlueprint(this.getBlueprintName());
             if (blueprint != null && blueprint.getRdfType() != null) {
-                this.entity = Blocks.factory().createEntity(blueprint.getRdfType(), this.language);
+                this.entity = Blocks.factory().createEntity(blueprint.getRdfType());
 
                 // Does this allready contain an id, then use this as
                 if (this instanceof StoredTemplate && ((StoredTemplate)this).getId() != null) {

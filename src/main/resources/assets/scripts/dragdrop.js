@@ -104,7 +104,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
 
         if (dragging) {
             // find the triggered dropspot
-            // dropspot has an "anchor" block and sometimes "other" (when dropping between 2 columns, 2 rows, 2 blocks)
+            // dropspot has an "anchor" block and sometimes "other" (when dropping between 2 columns, 2 rows, 2 templates)
             var dropSpot = null;
 
 // && (lastDropLocation == null || lastDropLocation.block == dropBlock)
@@ -234,7 +234,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         Logger.debug("create droppointer ");
         var zindex = BlocksConstants.maxIndex + 3;
         if (dropPointerElements == null) {
-            dropPointerElements = $("<div class='blocks-dropspot' />");
+            dropPointerElements = $("<div class='templates-dropspot' />");
             dropPointerElements.css("z-index", zindex);
             // TODO position close to blue lin
             // TODO make drop line thicker

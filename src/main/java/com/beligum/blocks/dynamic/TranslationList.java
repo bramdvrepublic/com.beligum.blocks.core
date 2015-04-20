@@ -5,6 +5,8 @@ import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.models.BasicTemplate;
 import com.beligum.blocks.models.StoredTemplate;
+import com.beligum.blocks.renderer.VelocityBlocksRenderer;
+import com.beligum.blocks.utils.URLFactory;
 import org.jsoup.nodes.Element;
 
 import java.util.ArrayList;
@@ -30,16 +32,17 @@ public class TranslationList implements DynamicBlockListener
      */
     public StringBuilder render(BasicTemplate basicTemplate)
     {
-        StringBuilder retVal = new StringBuilder();
-        retVal.append(basicTemplate.renderStartElement(true, false));
-        retVal.append("<ul>");
-        for(String language : Blocks.config().getLanguages()){
-            getListItem(retVal, language, basicTemplate.getLanguage());
-        }
-        retVal.append("</ul>");
-        retVal.append(basicTemplate.renderEndElement());
+        VelocityBlocksRenderer renderer = new VelocityBlocksRenderer();
+        renderer.renderStartElement(basicTemplate, true, null);
 
-        return new StringBuilder();
+        renderer.append("<ul>");
+        for(String language : Blocks.config().getLanguages()){
+            getListItem(renderer, language, basicTemplate.getLanguage());
+        }
+        renderer.append("</ul>");
+        renderer.renderEndElement(basicTemplate.getBlueprint().getElement().getTag());
+
+        return renderer.toStringBuilder();
 
     }
 
@@ -48,7 +51,7 @@ public class TranslationList implements DynamicBlockListener
     }
 
     public String getType(){
-        return ParserConstants.DynamicBlocks.TRANSLATION_LIST;
+        return Blocks.rdfFactory().ensureAbsoluteRdfValue(ParserConstants.DynamicBlocks.TRANSLATION_LIST);
     }
 
     /**
@@ -70,15 +73,15 @@ public class TranslationList implements DynamicBlockListener
         return  new ArrayList<>();
     }
 
-    private void getListItem(StringBuilder retVal, String language, String activeLanguage)
+    private void getListItem(VelocityBlocksRenderer renderer, String language, String activeLanguage)
     {
         //if we're dealing with a translation list, we simple want the links to be a link of this page, translated into the specified language
 
         if(language.equals(activeLanguage)){
-            retVal.append("<li><a href=\"").append(" ").append("\" class=\"").append(ACTIVE_CLASS).append("\" title=\"\" >").append(language).append("</a></li>");
+            renderer.append("<li><a href=\"").append(" ").append("\" class=\"").append(ACTIVE_CLASS).append("\" title=\"\" >").append(language).append("</a></li>");
         }
         else {
-            retVal.append("<li><a href=\"").append(" ").append("\" title=\"\">").append(language).append("</a></li>");
+            renderer.append("<li><a href=\"").append(" ").append("\" title=\"\">").append(language).append("</a></li>");
         }
     }
 

@@ -52,7 +52,7 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.Con
 
     /*
     * Wrap (if necessary)  so a correct bootstrap layout is preserved.
-    * This allows us to drop on columns and rows and not only on blocks
+    * This allows us to drop on columns and rows and not only on templates
     * */
     var dropOnFunctions = {
         "drop-vertical-on-block": function (droppedElement, dropLocationElement, side) {
@@ -93,7 +93,7 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.Con
 
     /*
      * Wrap (if necessary) the droppedElement so a correct bootstrap layout is preserved.
-     * This allows us to drop on columns and rows and not only on blocks
+     * This allows us to drop on columns and rows and not only on templates
      * */
     var droppedFunctions = {
 

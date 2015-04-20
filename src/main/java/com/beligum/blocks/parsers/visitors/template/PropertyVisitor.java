@@ -29,6 +29,9 @@ public class PropertyVisitor extends BasicVisitor
         Node retVal = node;
         if (ElementParser.isProperty((Element) node)) {
             String propertyName = ElementParser.getProperty((Element)node);
+
+
+
             retVal = this.replacePropertyWithID((Element) node, propertyName);
             BasicTemplate property = null;
             if (ElementParser.isSingleton((Element)node)) {
@@ -56,6 +59,7 @@ public class PropertyVisitor extends BasicVisitor
     }
 
     protected Node replacePropertyWithID(Element element, String key) {
+        if (key == null) key = "";
         String templateKey = ParserConstants.TEMPLATE_PROPERTY_START + key + ParserConstants.TEMPLATE_PROPERTY_END;
         Node textNode = new TextNode(templateKey, null);
         element.replaceWith(textNode);

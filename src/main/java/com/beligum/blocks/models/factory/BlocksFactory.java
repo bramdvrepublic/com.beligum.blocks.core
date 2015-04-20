@@ -9,6 +9,7 @@ import com.beligum.blocks.urlmapping.UrlDispatcher;
 import org.jsoup.nodes.Element;
 
 import java.net.URL;
+import java.util.HashMap;
 
 /**
  * Created by wouter on 26/03/15.
@@ -20,7 +21,7 @@ public interface BlocksFactory
     public Blueprint createBlueprint(Element element, String language) throws ParseException;
     public PageTemplate createPageTemplate(Element element, String language)  throws ParseException;
     public Entity createEntity(String name);
-    public Entity createEntity(String name, String language);
+    public Entity createEntity(HashMap<String, Object> properties);
     public Singleton createSingleton(Element element, String language) throws ParseException;
 
     public Class<? extends Entity> getEntityClass();
