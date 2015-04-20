@@ -2,7 +2,6 @@ base.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broadc
 {
     var Overlay = this;
 
-
     Overlay.showOverlays = function() {
         var elements = Broadcaster.getContainer().findElements(0, 9);
         for (var i = 0; i < elements.length; i++) {
