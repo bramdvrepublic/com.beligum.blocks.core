@@ -122,7 +122,7 @@ public class BasicTemplate implements NamedProperty
 //        StringBuilder retVal = new StringBuilder(this.value);
 //        Blueprint blueprint = getBlueprint();
 //
-//        // TODO fix dynamic blocks
+//        // TODO fix dynamic templates
 //        if (blueprint == null) {
 //            // Dynamic block
 //            //

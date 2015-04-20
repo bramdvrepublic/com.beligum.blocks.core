@@ -7,7 +7,6 @@ import com.beligum.blocks.models.*;
 import com.beligum.blocks.models.interfaces.BlocksStorable;
 import com.beligum.blocks.models.interfaces.BlocksVersionedStorable;
 import com.beligum.blocks.urlmapping.BlocksUrlDispatcher;
-import com.hp.hpl.jena.rdf.model.Model;
 import org.joda.time.LocalDateTime;
 
 import java.util.ArrayList;

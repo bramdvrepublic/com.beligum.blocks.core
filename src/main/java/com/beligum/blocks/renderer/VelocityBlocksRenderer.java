@@ -9,10 +9,6 @@ import com.beligum.blocks.models.Resource;
 import com.beligum.blocks.models.rdf.OrderedMemGraph;
 import com.beligum.blocks.usermanagement.Permissions;
 import com.beligum.blocks.utils.PropertyFinder;
-import com.hp.hpl.jena.graph.Node;
-import com.hp.hpl.jena.rdf.model.*;
-import com.hp.hpl.jena.rdf.model.impl.PropertyImpl;
-import com.hp.hpl.jena.vocabulary.RDFS;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.velocity.runtime.directive.Parse;
@@ -33,7 +29,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
     private final Set<String> hrefElements = new HashSet<String>(Arrays.asList("a", "area", "base", "link"));
 
     // Resource -> property -> language -> value
-    private HashMap<String, HashMap<String, HashMap<String, ArrayList<RDFNode>>>> rdfCache = new HashMap<>();
+//    private HashMap<String, HashMap<String, HashMap<String, ArrayList<RDFNode>>>> rdfCache = new HashMap<>();
     private HashMap<String, HashMap<String, Integer>> rdfPropertyUsed = new HashMap<>();
 
     private class Field {
@@ -54,7 +50,6 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 
     private Locale locale;
     private StringBuilder buffer;
-    private Model model;
     private boolean useOnlyEntity = false;
     private boolean showResource = true;
     private boolean fetchSingletons = true;
@@ -92,12 +87,6 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
     }
 
     public VelocityBlocksRenderer() {
-        this.model = ModelFactory.createModelForGraph(new OrderedMemGraph());
-        this.buffer = new StringBuilder();
-    }
-
-    public VelocityBlocksRenderer(Model model) {
-        this.model = model;
         this.buffer = new StringBuilder();
     }
 
@@ -106,7 +95,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
     public String render(StoredTemplate storedTemplate, Resource resource, String language) {
         this.locale = new Locale(language);
         this.buffer = new StringBuilder();
-        if (!this.model.isEmpty()) usesEntity = true;
+        if (resource != null) usesEntity = true;
         if (renderDynamicBlocks && Blocks.blockHandler().isDynamicBlock(storedTemplate.getBlueprintName())) {
             this.buffer.append(Blocks.blockHandler().getDynamicBlock(storedTemplate.getBlueprintName()).render(storedTemplate));
         } else {
@@ -120,7 +109,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         this.locale = new Locale(language);
         this.buffer = new StringBuilder();
 
-        if (!this.model.isEmpty()) usesEntity = true;
+        if (resource != null) usesEntity = true;
         // Render everything in the page except main content
         this.scripts.addAll(pageTemplate.getScripts());
         this.links.addAll(pageTemplate.getLinks());
@@ -388,7 +377,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
                 if (property != null) {
                     value = resource.getProperty(property);
                 } else {
-                    value = resource.getProperty(RDFS.Resource.toString());
+//                    value = resource.getProperty(RDFS.Resource.toString());
                 }
             }
 
@@ -548,57 +537,57 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         return name + "/" + ParserConstants.CAPTION;
     }
 
-    private List<RDFNode> getRDFValues(RDFNode resource, Property property, String language) {
-        String id = null;
-        List<RDFNode> retVal = new ArrayList<>();
-        if (language == null) language = Locale.ROOT.getLanguage();
-        if (resource != null && resource.isResource()) {
-            if (resource.isAnon()) {
-                id = resource.asResource().getId().toString();
-            } else {
-                id = resource.asResource().getURI();
-            }
-        }
-        if (id != null) {
-            if (!this.rdfCache.containsKey(id)) {
-                this.rdfCache.put(id, new HashMap());
-            }
-            HashMap<String, HashMap<String, ArrayList<RDFNode>>> properties = this.rdfCache.get(id);
-            if (!properties.containsKey(property.getURI())) {
-                properties.put(property.getURI(), new HashMap<String, ArrayList<RDFNode>>());
-
-                HashMap<String, ArrayList<RDFNode>> values = properties.get(property.getURI());
-                if (!values.containsKey(Locale.ROOT.getLanguage())) {
-                    values.put(Locale.ROOT.getLanguage(), new ArrayList<RDFNode>());
-                }
-                if (!values.containsKey(language)) {
-                    values.put(language, new ArrayList<RDFNode>());
-                }
-
-                NodeIterator it = model.listObjectsOfProperty(resource.asResource(), property);
-                while (it.hasNext()) {
-                    RDFNode value = it.next();
-                    if (value.isLiteral()) {
-                        if (!values.containsKey(value.asLiteral().getLanguage())) {
-                            values.put(value.asLiteral().getLanguage(), new ArrayList<RDFNode>());
-                        }
-                        values.get(value.asLiteral().getLanguage()).add(value);
-                    } else {
-                        values.get(Locale.ROOT.getLanguage()).add(value);
-                    }
-                }
-
-            }
-            HashMap<String, ArrayList<RDFNode>> values = properties.get(property.getURI());
-            if (values.get(Locale.ROOT.getLanguage()).size() > values.get(language).size()) {
-                for (int i = values.get(language).size(); i < values.get(Locale.ROOT.getLanguage()).size(); i++) {
-                    values.get(language).add(values.get(Locale.ROOT.getLanguage()).get(i));
-                }
-            }
-            retVal = values.get(language);
-        }
-        return retVal;
-    }
+//    private List<RDFNode> getRDFValues(RDFNode resource, Property property, String language) {
+//        String id = null;
+//        List<RDFNode> retVal = new ArrayList<>();
+//        if (language == null) language = Locale.ROOT.getLanguage();
+//        if (resource != null && resource.isResource()) {
+//            if (resource.isAnon()) {
+//                id = resource.asResource().getId().toString();
+//            } else {
+//                id = resource.asResource().getURI();
+//            }
+//        }
+//        if (id != null) {
+//            if (!this.rdfCache.containsKey(id)) {
+//                this.rdfCache.put(id, new HashMap());
+//            }
+//            HashMap<String, HashMap<String, ArrayList<RDFNode>>> properties = this.rdfCache.get(id);
+//            if (!properties.containsKey(property.getURI())) {
+//                properties.put(property.getURI(), new HashMap<String, ArrayList<RDFNode>>());
+//
+//                HashMap<String, ArrayList<RDFNode>> values = properties.get(property.getURI());
+//                if (!values.containsKey(Locale.ROOT.getLanguage())) {
+//                    values.put(Locale.ROOT.getLanguage(), new ArrayList<RDFNode>());
+//                }
+//                if (!values.containsKey(language)) {
+//                    values.put(language, new ArrayList<RDFNode>());
+//                }
+//
+//                NodeIterator it = model.listObjectsOfProperty(resource.asResource(), property);
+//                while (it.hasNext()) {
+//                    RDFNode value = it.next();
+//                    if (value.isLiteral()) {
+//                        if (!values.containsKey(value.asLiteral().getLanguage())) {
+//                            values.put(value.asLiteral().getLanguage(), new ArrayList<RDFNode>());
+//                        }
+//                        values.get(value.asLiteral().getLanguage()).add(value);
+//                    } else {
+//                        values.get(Locale.ROOT.getLanguage()).add(value);
+//                    }
+//                }
+//
+//            }
+//            HashMap<String, ArrayList<RDFNode>> values = properties.get(property.getURI());
+//            if (values.get(Locale.ROOT.getLanguage()).size() > values.get(language).size()) {
+//                for (int i = values.get(language).size(); i < values.get(Locale.ROOT.getLanguage()).size(); i++) {
+//                    values.get(language).add(values.get(Locale.ROOT.getLanguage()).get(i));
+//                }
+//            }
+//            retVal = values.get(language);
+//        }
+//        return retVal;
+//    }
 
 //
 //    private RDFNode getRDFValue(RDFNode resource, Property property, String language) {

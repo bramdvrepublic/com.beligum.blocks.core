@@ -10,7 +10,7 @@ base.plugin("blocks.core.DragCreate", ["blocks.core.Constants", "blocks.core.Dra
     var dragging = false;
     var targetButton = null;
 
-    // Start and stop on start stop blocks
+    // Start and stop on start stop templates
     this.activate = function () {
         active = true;
         targetButton = null;

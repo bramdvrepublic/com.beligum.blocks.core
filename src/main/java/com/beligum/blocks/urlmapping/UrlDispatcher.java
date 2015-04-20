@@ -141,10 +141,6 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
         return getLanguage(splitUrl(url));
     }
 
-    public String getTest() {
-        return "test test sitemap";
-    }
-
     private String getLanguage(ArrayList<String> paths) {
         if (paths.size() > 0 && isPossibleLanguage(paths.get(0))) return paths.get(0); else return null;
     }

@@ -7,8 +7,8 @@ package com.beligum.blocks.config;
  */
 public class DatabaseConstants
 {
-    /**name of the scheme used for uri-identification of objects in the blocks-project*/
-    public static final String SCHEME_NAME = "blocks";
+    /**name of the scheme used for uri-identification of objects in the templates-project*/
+    public static final String SCHEME_NAME = "templates";
     /*name of the blueprint-field in db*/
     public final static String BLUEPRINT_TYPE = "blueprintType";
     /**the (javascript-)script-tags*/

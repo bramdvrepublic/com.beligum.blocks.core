@@ -307,7 +307,7 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
 
 
     /*
-     We create some sort of a heat map. We define boxes for all draggable blocks
+     We create some sort of a heat map. We define boxes for all draggable templates
      we can add left and right from each column
      and left and right from container if container has more than 1 row
      select each row and add bottom
@@ -366,7 +366,7 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
     // EVents with callback
 
     // This enables/disables the drag functionality. But all mouse ecvents are still send
-    // This way you can implement your own drag without diabling the whole blocks event system
+    // This way you can implement your own drag without diabling the whole templates event system
     this.EVENTS.ENABLE_BLOCK_DRAG = "ENABLE_DRAG";
     this.EVENTS.DISABLE_BLOCK_DRAG = "DISABLE_DRAG";
 
@@ -399,10 +399,10 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
     // Notifications
     this.EVENTS.DO_ALLOW_DRAG = "ALLOW_DRAG";
     this.EVENTS.DO_NOT_ALLOW_DRAG = "DO_NOT_ALLOW_DRAG";
-    // Thsi (de)activates the mouse cf pauzes the blocks layouter (used during dialogs)
+    // Thsi (de)activates the mouse cf pauzes the templates layouter (used during dialogs)
     this.EVENTS.ACTIVATE_MOUSE = "ACTIVATE_MOUSE";
     this.EVENTS.DEACTIVATE_MOUSE = "DEACTIVATE_MOUSE";
-    // Events send when the the blocks DOM tree in memory will/is/did rebuild
+    // Events send when the the templates DOM tree in memory will/is/did rebuild
     this.EVENTS.DO_REFRESH_LAYOUT = "DO_REFRESH_LAYOUT";
     this.EVENTS.WILL_REFRESH_LAYOUT = "WILL_REFRESH_LAYOUT";
     this.EVENTS.DID_REFRESH_LAYOUT = "DID_REFRESH_LAYOUT";

@@ -42,7 +42,7 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "blocks.co
             }
 
             //// If we are the only child in the parent then our dimensions are the same as the dimensions of the parent
-            //if (parent != null && !(this instanceof blocks.elements.Container)) {
+            //if (parent != null && !(this instanceof templates.elements.Container)) {
             //    var prev = element.parent();
             //    while (prev.siblings().length == 0 && prev[0] != parent.element[0]) {
             //        prev = prev.parent();
@@ -223,17 +223,17 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "blocks.co
             }
         },
 
-        // Creates rows or blocks inside a column
+        // Creates rows or templates inside a column
         generateChildrenForColumn: function ()
         {
             var childType = Constants.ROW_CLASS;
             var rows = this.element.children("." + Constants.ROW_CLASS);
             if (rows.length == 0) {
                 var rows = this.element.children();
-                //var blocks = true;
+                //var templates = true;
                 for (var x = 0; i < rows.length; i++) {
                     if ($(rows[x].css('display') !== 'block')) {
-                        //blocks = false;
+                        //templates = false;
                         rows = [];
                         break;
                     }
@@ -331,12 +331,12 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "blocks.co
                             this.resizeHandles.push(new blocks.elements.ResizeHandle(oldColumn, newColumn));
                         }
                         //else if (outside) {
-                        //    this.resizeHandles.push(new blocks.elements.ResizeHandle(oldColumn, newColumn));
+                        //    this.resizeHandles.push(new templates.elements.ResizeHandle(oldColumn, newColumn));
                         //}
 
 
                         //if (outside && i == columnCount - 1) {
-                        //    this.resizeHandles.push(new blocks.elements.ResizeHandle(newColumn, null));
+                        //    this.resizeHandles.push(new templates.elements.ResizeHandle(newColumn, null));
                         //}
 //
                     } else {

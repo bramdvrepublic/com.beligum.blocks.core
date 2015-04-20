@@ -1,15 +1,15 @@
 added tag pointing to front-end-scripts
-    <blocks>
+    <templates>
         <scripts>
-            <frontend>/templates/blocks-scripts.html</frontend>
+            <frontend>/templates/templates-scripts.html</frontend>
         </scripts>
-    </blocks>
+    </templates>
 
 using sql for user-management, a correct server must be specified in the configuration xml
 
 Install and run Solr Server
-<blocks>
+<templates>
     <solr>
         <url>http://localhost:8983/solr/#/</url>
     </solr>
-<blocks>
+<templates>

@@ -5,9 +5,7 @@ import com.beligum.blocks.identifiers.BlockId;
 import com.beligum.blocks.models.interfaces.BlocksStorable;
 import com.beligum.blocks.utils.PropertyFinder;
 import com.beligum.blocks.utils.URLFactory;
-import com.hp.hpl.jena.rdf.model.*;
-import com.hp.hpl.jena.rdf.model.impl.LiteralImpl;
-import com.hp.hpl.jena.rdf.model.impl.ModelCom;
+import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.impl.PropertyImpl;
 import com.hp.hpl.jena.vocabulary.RDF;
@@ -18,7 +16,6 @@ import java.util.*;
 /**
  * Created by wouter on 17/03/15.
  */
-
 public abstract class Entity extends EntityField implements BlocksStorable
 {
     private String createdBy;

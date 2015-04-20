@@ -5,7 +5,7 @@
 base.plugin("blocks.core.Elements.Column", ["base.core.Class", "blocks.core.Constants", function (Class, Constants)
 {
     blocks = window['blocks'] || {};
-    // A column (inside a row) -> Can contain rows or blocks
+    // A column (inside a row) -> Can contain rows or templates
     blocks.elements = blocks.elements || {};
     blocks.elements.Column = Class.create(blocks.elements.LayoutElement, {
         constructor: function (element, parent, index)

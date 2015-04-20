@@ -43,7 +43,7 @@
             </mount-point>
             <!--<mount-point>-->
             <!--<name>local2</name>-->
-            <!--<uri>/home/bram/Projects/Workspace/idea/com.beligum.blocks.media/0_media</uri>-->
+            <!--<uri>/home/bram/Projects/Workspace/idea/com.beligum.templates.media/0_media</uri>-->
             <!--</mount-point>-->
         </media-mount-points>
     </server>

@@ -5,7 +5,7 @@
 base.plugin("blocks.core.Elements.Container", ["base.core.Class", "blocks.core.Constants", "blocks.core.DomManipulation", function (Class, Constants, DOM)
 {
     blocks = window['blocks'] || {};
-    // Region where blocks can be dragged
+    // Region where templates can be dragged
     blocks.elements = blocks.elements || {};
     blocks.elements.Container = Class.create(blocks.elements.LayoutElement, {
         constructor: function (element, parent)
