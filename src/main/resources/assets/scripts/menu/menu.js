@@ -3,17 +3,17 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
     this.MainMenu = this;
 
     /*
-     * Create the html for top bar
-     * */
-    var menuBtn = $('<div class="templates-main-edit-button"><i class="glyphicon glyphicon-cog"></i></div>');
-    var menuBar = $('<div class="templates-main-menu"></div>');
+    * Create the html for top bar
+    * */
+    var menuBtn = $('<div class="blocks-main-edit-button"><i class="glyphicon glyphicon-cog"></i></div>');
+    var menuBar = $('<div class="blocks-main-menu"></div>');
     var btnList = menuBar;
 
-    var saveBtn = $('<a class="btn  btn-default" href="#">Save</a>');
+    var saveBtn = $('<a class="btn btn-default" href="#">Save</a>');
     btnList.append(saveBtn);
-    var deleteBtn = $('<a class="btn  btn-default" href="#">Delete</a>');
+    var deleteBtn = $('<a class="btn btn-default" href="#">Delete</a>');
     btnList.append(deleteBtn);
-    var changeUrlBtn = $('<a class="btn  btn-default" href="#">Change url</a>');
+    var changeUrlBtn = $('<a class="btn btn-default" href="#">Change url</a>');
     btnList.append(changeUrlBtn);
 
     var dragBlocksContainer = $('<div class="drag-block-container"></div>');

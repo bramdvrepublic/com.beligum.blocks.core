@@ -454,8 +454,6 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "blocks.co
         showOverlay: function ()
         {
             if (this.overlay != null) {
-
-
                 this.overlay.css("width", (this.right - this.left) + "px");
                 this.overlay.css("height", (this.bottom - this.top) + "px");
 
@@ -463,8 +461,6 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "blocks.co
                 this.overlay.css("left", this.left + "px");
                 this.overlay.css("top", this.top + "px");
                 body.append(this.overlay);
-
-
             }
         },
 
@@ -472,8 +468,6 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "blocks.co
         {
             if (this.overlay != null) this.overlay.remove();
         }
-
-
     });
 
 }]);

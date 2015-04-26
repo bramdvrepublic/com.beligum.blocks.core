@@ -55,28 +55,14 @@ public class TemplateCache implements BlocksTemplateCache
 
     public void addBlueprint(Blueprint blueprint)
     {
-        if (!this.blueprints.containsKey(blueprint.getBlueprintName())) {
-            this.blueprints.put(blueprint.getBlueprintName(), blueprint);
+        if (!this.blueprints.containsKey(blueprint.getName())) {
+            this.blueprints.put(blueprint.getName(), blueprint);
         }
     }
 
     public void addPageTemplate(PageTemplate page)
     {
-        if (!this.pagetemplates.containsKey(page.getBlueprintName())) {
-            this.pagetemplates.put(page.getName(), page);
-        }
-    }
-
-    public void addBlueprint(Blueprint blueprint, String language)
-    {
-        if (!this.blueprints.containsKey(blueprint.getBlueprintName())) {
-            this.blueprints.put(blueprint.getName(), blueprint);
-        }
-    }
-
-    public void addPageTemplate(PageTemplate page, String language)
-    {
-        if (!this.pagetemplates.containsKey(page.getBlueprintName())) {
+        if (!this.pagetemplates.containsKey(page.getName())) {
             this.pagetemplates.put(page.getName(), page);
         }
     }

@@ -6,7 +6,6 @@
 
 base.plugin("blocks.core.Constants", function ()
 {
-
     // Must be ordered from small to big
     this.COLUMN_WIDTH_CLASS = [
         {name: "col-xs-", min: 0, max: 767},

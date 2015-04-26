@@ -51,7 +51,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     {
         Logger.debug("drag started");
 //        Broadcaster.zoom();
-        old_direction = BlocksConstants.DIRECTION.NONE;
+        old_direction = BaseConstants.DIRECTION.NONE;
         if (blockEvent != null) {
             currentDraggedBlock = Broadcaster.getHooveredBlockForPosition(blockEvent.custom.draggingStart.pageX, blockEvent.custom.draggingStart.pageY).current;
         } else {
@@ -136,9 +136,9 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                 //Logger.debug(container);
                 if (blockEvent.pageY > container.top && blockEvent.pageY < container.bottom) {
                     if (blockEvent.pageX < container.left) {
-                        dropSpot = new blocks.elements.Dropspot(BlocksConstants.SIDE.LEFT, container, 0);
+                        dropSpot = new blocks.elements.Dropspot(BaseConstants.SIDE.LEFT, container, 0);
                     } else if (blockEvent.pageX > container.right) {
-                        dropSpot = new blocks.elements.Dropspot(BlocksConstants.SIDE.RIGHT, container, 0);
+                        dropSpot = new blocks.elements.Dropspot(BaseConstants.SIDE.RIGHT, container, 0);
                     }
                 } else if (blockEvent.pageX > container.left && blockEvent.pageX < container.right) {
                     if (blockEvent.pageY < container.top) {
@@ -246,7 +246,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         Logger.debug("create droppointer ");
         var zindex = BlocksConstants.maxIndex + 3;
         if (dropPointerElements == null) {
-            dropPointerElements = $("<div class='templates-dropspot' />");
+            dropPointerElements = $("<div class='blocks-dropspot' />");
             dropPointerElements.css("z-index", zindex);
             // TODO position close to blue lin
             // TODO make drop line thicker

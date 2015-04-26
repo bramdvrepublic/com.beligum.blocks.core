@@ -87,9 +87,9 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         var docWidth = 1000;
         if (docWidth > 920) {
             Broadcaster.send(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG);
-            draggingStatus = BlocksConstants.DRAGGING.NO;
+            draggingStatus = BaseConstants.DRAGGING.NO;
         } else {
-            draggingStatus = BlocksConstants.DRAGGING.NOT_ALLOWED;
+            draggingStatus = BaseConstants.DRAGGING.NOT_ALLOWED;
         }
 
         mouseMove(Broadcaster.getLastMove());
@@ -109,23 +109,23 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             // check for left mouse click
             if (event.which == 1) {
                 var block = Broadcaster.getHooveredBlockForPosition(event.pageX, event.pageY);
-                if (draggingStatus == BlocksConstants.DRAGGING.NO &&
+                if (draggingStatus == BaseConstants.DRAGGING.NO &&
                     block.current != null && block.current.canDrag) {
 
-                    draggingStatus = BlocksConstants.DRAGGING.WAITING;
+                    draggingStatus = BaseConstants.DRAGGING.WAITING;
                     draggingStart = event;
 //                    disableSelection();
                 } else {
                     Logger.debug("We can not start because dragging is already in place or not allowed. " + draggingStatus);
                     Mouse.resetMouse();
-                    draggingStatus = BlocksConstants.DRAGGING.TEXT_SELECTION;
+                    draggingStatus = BaseConstants.DRAGGING.TEXT_SELECTION;
                     Broadcaster.send(Broadcaster.EVENTS.END_HOOVER);
 
                 }
             } else {
                 // middle or right mouse button presses
                 //TODO ??
-                if (draggingStatus == BlocksConstants.DRAGGING.YES) {
+                if (draggingStatus == BaseConstants.DRAGGING.YES) {
                     Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG);
                 }
                 Mouse.resetMouse();
@@ -140,9 +140,9 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     {
         if (active && event.which == 1) {
             Logger.debug("MOUSE UP");
-            if (draggingStatus != BlocksConstants.DRAGGING.NOT_ALLOWED) {
+            if (draggingStatus != BaseConstants.DRAGGING.NOT_ALLOWED) {
                 var oldDragStatus = draggingStatus;
-                if (oldDragStatus == BlocksConstants.DRAGGING.YES) {
+                if (oldDragStatus == BaseConstants.DRAGGING.YES) {
                     Broadcaster.send(Broadcaster.EVENTS.END_DRAG);
                 } else if (Broadcaster.property().current != null && Broadcaster.property().current.editType != BlocksConstants.EDIT_NONE) {
                     Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
@@ -162,7 +162,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         Logger.debug("Calculate wait for drag");
         if (Math.abs(draggingStart.pageX - event.pageX) > config.DRAGGING_THRESHOLD ||
             Math.abs(draggingStart.pageY - event.pageY) > config.DRAGGING_THRESHOLD) {
-            draggingStatus = BlocksConstants.DRAGGING.YES;
+            draggingStatus = BaseConstants.DRAGGING.YES;
             Logger.debug("Start drag");
             Broadcaster.send(Broadcaster.EVENTS.START_DRAG, {draggingStart: draggingStart});
 
@@ -194,9 +194,9 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 currentProperty = property.current;
             }
 
-            if (draggingStatus == BlocksConstants.DRAGGING.WAITING) {
+            if (draggingStatus == BaseConstants.DRAGGING.WAITING) {
                 enableDragAfterTreshold(event);
-            } else if (draggingStatus != BlocksConstants.DRAGGING.YES) {
+            } else if (draggingStatus != BaseConstants.DRAGGING.YES) {
                 if (changedProperty) {
 
                     if (property.current == null) {
@@ -231,7 +231,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                     Broadcaster.send(Broadcaster.EVENTS.HOOVER_OVER_BLOCK);
                 }
 
-            } else if (draggingStatus == BlocksConstants.DRAGGING.YES) {
+            } else if (draggingStatus == BaseConstants.DRAGGING.YES) {
                 if (changedBlock) {
                     if (block.current == null) {
                         Broadcaster.send(Broadcaster.EVENTS.DRAG_LEAVE_BLOCK);
@@ -253,7 +253,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     this.disallowDrag = function ()
     {
         Logger.debug("Dragging not allowed");
-        draggingStatus = BlocksConstants.DRAGGING.NOT_ALLOWED;
+        draggingStatus = BaseConstants.DRAGGING.NOT_ALLOWED;
     };
 
     this.allowDrag = function ()
@@ -288,7 +288,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         $(document).on("mouseleave.blocks_core", function ()
         {
 //                mouseUp(event);
-            if (draggingStatus == BlocksConstants.DRAGGING.YES) {
+            if (draggingStatus == BaseConstants.DRAGGING.YES) {
                 Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG);
             }
             Mouse.resetMouse();
@@ -311,8 +311,6 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         $(document).off("mouseleave.blocks_core");
 
     };
-
-
 }])
     .config("blocks.core.Mouse", {
         DRAGGING_THRESHOLD: 10,
