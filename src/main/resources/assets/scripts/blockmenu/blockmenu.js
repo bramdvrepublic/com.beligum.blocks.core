@@ -1,29 +1,29 @@
 /*
-* The menu that is shown in each block.
-* with addButton you can add a button to the menu
-* addButton takes an object with:
-*   element: jquery element (the button). See bootstrap for now (<button class="btn">test</button>)
-*   priority: sets the order for the buttons. smallest is most left
-*   visible: if null, button is always shown, otherwise function that takes
-*           block as argument and returns true/false if this button should
-*           be shown (for this block)
-*
-*   Menu is shwon when hoovering over a block
-*   Menu is hidden while dragging
-* */
+ * The menu that is shown in each block.
+ * with addButton you can add a button to the menu
+ * addButton takes an object with:
+ *   element: jquery element (the button). See bootstrap for now (<button class="btn">test</button>)
+ *   priority: sets the order for the buttons. smallest is most left
+ *   visible: if null, button is always shown, otherwise function that takes
+ *           block as argument and returns true/false if this button should
+ *           be shown (for this block)
+ *
+ *   Menu is shwon when hoovering over a block
+ *   Menu is hidden while dragging
+ * */
 // TODO refactor, put some things in config (element classes etc)
 // TODO when showing menu set height block double of menu
 /*
-* This is the menu that is showed for every block
-*
-* */
+ * This is the menu that is showed for every block
+ *
+ * */
 
 base.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.Constants", function (Broadcaster, Constants)
 {
 
     /*
-    * Init Menu in html
-    * */
+     * Init Menu in html
+     * */
     var BlockMenu = this;
     var hoverOverMenu = false;
     var menuElement = $('<div class="block-menu"></div>');
@@ -31,12 +31,14 @@ base.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.Co
     menuElement.append(menuHandle);
 
     /*
-    * Catch mouse down on the menu. This opens and initializes the menu
-    * */
-    $(document).on("mousedown", ".block-menu-handle", function(event) {
+     * Catch mouse down on the menu. This opens and initializes the menu
+     * */
+    $(document).on("mousedown", ".block-menu-handle", function (event)
+    {
         if (!menuElement.hasClass("open")) {
             // Check which buttons to show
-            $.each(buttons, function(index, button) {
+            $.each(buttons, function (index, button)
+            {
                 if (button.enabled != null && !button.enabled(activeBlock)) {
                     $(button.element).addClass("disabled");
                     $(button.element).removeClass("enabled");
@@ -46,7 +48,8 @@ base.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.Co
                     $(button.element).addClass("enabled");
                     $(button.element).off("mouseup.block-menu-action")
 
-                    $(button.element).on("mouseup.block-menu-action", function(event) {
+                    $(button.element).on("mouseup.block-menu-action", function (event)
+                    {
                         button.action(event);
                         BlockMenu.hideMenu();
                     })
@@ -59,7 +62,8 @@ base.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.Co
 
             // Close the menu if we click outside the menu
             // This handler is deleted when the menu hides
-            $(document).on("mousedown.remove_block_menu", function (event) {
+            $(document).on("mousedown.remove_block_menu", function (event)
+            {
                 var target = $(event.target);
                 if (!target.hasClass("block-menu-item") && !target.closest("block-menu-item").length > 0) {
                     menuElement.removeClass("open");
@@ -75,40 +79,46 @@ base.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.Co
 
 
     /*
-    * This allows us to check if we are hovering over the menu or not
-    * can be useful...
-    * */
-    menuElement.on("mouseenter", function() {
+     * This allows us to check if we are hovering over the menu or not
+     * can be useful...
+     * */
+    menuElement.on("mouseenter", function ()
+    {
         hoverOverMenu = true;
     });
 
-    menuElement.on("mouseleave", function() {
+    menuElement.on("mouseleave", function ()
+    {
         hoverOverMenu = false;
         if (activeBlock == null) {
             Broadcaster.resetHover();
         }
     });
 
-    this.mouseOverMenu = function() {
+    this.mouseOverMenu = function ()
+    {
         return hoverOverMenu;
     };
 
 
     /*
-    * Show hide remove menu
-    * */
+     * Show hide remove menu
+     * */
 
 
-    this.createMenu = function() {
+    this.createMenu = function ()
+    {
         $("body").append(menuElement);
         BlockMenu.hideMenu();
     }
 
-    this.removeMenu = function() {
+    this.removeMenu = function ()
+    {
         menuElement.remove();
     }
 
-    this.hideMenu = function() {
+    this.hideMenu = function ()
+    {
         $(document).off("mousedown.remove_block_menu");
         activeBlock = null;
         menuElement.removeClass("open");
@@ -126,14 +136,15 @@ base.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.Co
 
     var buttons = [];
     var activeBlock = null;
-    this.addButton = function(button) {
+    this.addButton = function (button)
+    {
         button.element.addClass("block-menu-item");
         if (button.priority == null) button.priority = 0;
         var added = false;
-        for (var i=0; i < buttons.length; i++) {
+        for (var i = 0; i < buttons.length; i++) {
             var b = buttons[i];
             if (b.priority <= button.priority) {
-                buttons.splice(i+1 ,0, button);
+                buttons.splice(i + 1, 0, button);
                 b.element.before(button.element);
                 added = true;
                 break;
@@ -147,13 +158,14 @@ base.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.Co
 
     // The current block that the menu is activated on
     // This way, when a plugin registers at the menu, it always has acces to the current block and element
-    this.currentBlock = function() {
+    this.currentBlock = function ()
+    {
         return activeBlock;
     };
 
 
-
-    this.showMenu = function(block) {
+    this.showMenu = function (block)
+    {
         if (block != null) {
             visible = true;
             menuElement.hide();
@@ -173,8 +185,6 @@ base.plugin("blocks.core.BlockMenu", ["blocks.core.Broadcaster", "blocks.core.Co
             menuElement.hide();
         }
     };
-
-
 
 
 }]);

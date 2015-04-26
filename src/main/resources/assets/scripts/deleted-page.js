@@ -1,7 +1,8 @@
 /**
  * Created by bas on 09.02.15.
  */
-function showSelectionModal(){
+function showSelectionModal()
+{
     var selectionModal = new BootstrapDialog()
         .setTitle('Choose a page type')
         .setMessage($('<div></div>').load('/modals/newpage?entityurl=' + window.location.href))
@@ -9,14 +10,16 @@ function showSelectionModal(){
         .setButtons([
             {
                 label: 'Cancel',
-                action: function (newPageDialog) {
+                action: function (newPageDialog)
+                {
                     newPageDialog.close();
                 }
             },
             {
                 label: 'New page',
                 cssClass: 'btn-info',
-                action: function (newPageDialog) {
+                action: function (newPageDialog)
+                {
                     $('#newpage').submit();
                     newPageDialog.close();
                 }

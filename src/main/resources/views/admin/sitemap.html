@@ -15,22 +15,23 @@
 
 #define($body-html)
 <div class="container">
-    #foreach($language in $languages)<div class="panel panel-gray">
-        <div class="panel-heading" data-toggle="collapse" href="#panelbody-$language">
-            <h1 class="panel-title">
-                $I18N.getMessage("siteMap") $language
-                <span class="glyphicon glyphicon-chevron-up pull-right"></span>
-            </h1>
-        </div>
-        <div class="panel-collapse collapse in" id="panelbody-$language">
-            <div class="panel-body">
-                $urlmap.test
-                #if($urlmap) niet gevoinde #end
+    #foreach($language in $languages)
+        <div class="panel panel-gray">
+            <div class="panel-heading" data-toggle="collapse" href="#panelbody-$language">
+                <h1 class="panel-title">
+                    $I18N.getMessage("siteMap") $language
+                    <span class="glyphicon glyphicon-chevron-up pull-right"></span>
+                </h1>
+            </div>
+            <div class="panel-collapse collapse in" id="panelbody-$language">
+                <div class="panel-body">
+                    $urlmap.test
+                    #if($urlmap) niet gevoinde #end
 
-                #childHtml($urlmap $language)
+                    #childHtml($urlmap $language)
+                </div>
             </div>
         </div>
-    </div>
     #end
 </div>
 #end

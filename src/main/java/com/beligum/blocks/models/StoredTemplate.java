@@ -19,10 +19,10 @@ public abstract class StoredTemplate extends StorableTemplate
     protected String pageTemplateName;
     protected String pageTitle;
 
-    public StoredTemplate() {
+    public StoredTemplate()
+    {
         super();
     }
-
 
     public StoredTemplate(Element node, String language) throws ParseException
     {
@@ -30,19 +30,19 @@ public abstract class StoredTemplate extends StorableTemplate
         this.setPageTemplateName(findPageTemplateName());
     }
 
-
     public StoredTemplate(Element node, URL url) throws ParseException
     {
         this(node, Blocks.urlDispatcher().getLanguage(url));
         this.setId(Blocks.urlDispatcher().findId(url));
     }
 
-
-    public void setLanguage(String language) {
+    public void setLanguage(String language)
+    {
         this.language = language;
     }
 
-    protected String findPageTemplateName() {
+    protected String findPageTemplateName()
+    {
         String retVal = ParserConstants.DEFAULT_PAGE_TEMPLATE;
         Blueprint blueprint = this.getBlueprint();
         if (this.getBlueprintName() != null && blueprint != null) {
@@ -51,18 +51,21 @@ public abstract class StoredTemplate extends StorableTemplate
         return retVal;
     }
 
-    public String getPageTemplateName() {
+    public String getPageTemplateName()
+    {
         if (this.pageTemplateName == null) {
             this.pageTemplateName = findPageTemplateName();
         }
         return this.pageTemplateName;
     }
 
-    public void setPageTemplateName(String pageTemplateName) {
+    public void setPageTemplateName(String pageTemplateName)
+    {
         this.pageTemplateName = pageTemplateName;
     }
 
-    public String getPageTitle() {
+    public String getPageTitle()
+    {
         String retVal = Blocks.config().getDefaultPageTitle();
         if (this.pageTitle != null) {
             retVal = this.pageTitle;
@@ -70,7 +73,8 @@ public abstract class StoredTemplate extends StorableTemplate
         return retVal;
     }
 
-    public void setPageTitle(String pageTitle) {
+    public void setPageTitle(String pageTitle)
+    {
         this.pageTitle = pageTitle;
     }
 
@@ -86,7 +90,8 @@ public abstract class StoredTemplate extends StorableTemplate
             this.renderedTransientElement = parse(template);
         }
         retVal = this.renderedTransientElement.clone();
-        if (retVal == null) retVal = new Element(Tag.valueOf("div"), null);
+        if (retVal == null)
+            retVal = new Element(Tag.valueOf("div"), null);
         return retVal;
     }
 }

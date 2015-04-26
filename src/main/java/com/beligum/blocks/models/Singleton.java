@@ -13,10 +13,9 @@ public abstract class Singleton extends StoredTemplate
     private final String defaultName = "DEFAULT";
     private String singletonName;
 
-
-    public Singleton() {
+    public Singleton()
+    {
     }
-
 
     public Singleton(Element node, String language) throws ParseException
     {
@@ -33,11 +32,13 @@ public abstract class Singleton extends StoredTemplate
             }
             if (!StringUtils.isEmpty(this.getBlueprintName())) {
                 this.singletonName = this.getBlueprintName() + "/" + name;
-            } else {
+            }
+            else {
                 this.singletonName = name;
             }
 
-        } else {
+        }
+        else {
             throw new ParseException("Node is not a valid Singleton.");
         }
     }

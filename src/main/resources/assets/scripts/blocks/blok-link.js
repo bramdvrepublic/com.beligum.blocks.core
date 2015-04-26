@@ -8,54 +8,58 @@ base.plugin("blocks.core.bloklink", ["blocks.core.Edit", "blocks.core.Broadcaste
 {
 
     /*
-    * The content for the dialog: for testing written in jquery
-    * */
+     * The content for the dialog: for testing written in jquery
+     * */
     var dialogContent = $('<div class="form" role="form"><div class="form-group">' +
-        '<label for="colorselect">Kleur</label>' +
-        '<select class="form-control" id="colorselect">' +
-        '<option value="">Roze</option>'+
-        '<option value="bgblue">Blauw</option>'+
-        '<option value="bgbrown">Bruin</option>'+
-        '<option value="bgdarkblue">Donker blauw</option>'+
-        '<option value="bggreen">Groen</option>'+
-        '<option value="bgorange">Oranje</option>'+
-        '<option value="bgred">Rood</option>'+
-        '</select></div>' +
-        '' +
-        '<div class="form-group">' +
-        '<label for="colorselect">Url</label>' +
-        '<div class="input-group">' +
-        '<input type="text" class="form-control"  id="linkurl" value="" />' +
-        '<span class="input-group-btn"><button class="btn btn-default select-url" type="button" >Select</button></span>' +
-        '</div>' +
-        '</div>' +
-        '</div>');
+    '<label for="colorselect">Kleur</label>' +
+    '<select class="form-control" id="colorselect">' +
+    '<option value="">Roze</option>' +
+    '<option value="bgblue">Blauw</option>' +
+    '<option value="bgbrown">Bruin</option>' +
+    '<option value="bgdarkblue">Donker blauw</option>' +
+    '<option value="bggreen">Groen</option>' +
+    '<option value="bgorange">Oranje</option>' +
+    '<option value="bgred">Rood</option>' +
+    '</select></div>' +
+    '' +
+    '<div class="form-group">' +
+    '<label for="colorselect">Url</label>' +
+    '<div class="input-group">' +
+    '<input type="text" class="form-control"  id="linkurl" value="" />' +
+    '<span class="input-group-btn"><button class="btn btn-default select-url" type="button" >Select</button></span>' +
+    '</div>' +
+    '</div>' +
+    '</div>');
 
 
-
-    $(document).on("click", ".form-group .select-url", function() {
+    $(document).on("click", ".form-group .select-url", function ()
+    {
         Sitemap.urlsModal();
     });
 
 
-
-    var doEditBlockLink = function(blockEvent) {
+    var doEditBlockLink = function (blockEvent)
+    {
         BootstrapDialog.show({
             title: "Change Link Block",
             message: dialogContent,
             buttons: [
-                {id: 'btn-close',
+                {
+                    id: 'btn-close',
                     label: 'Cancel',
-                    action: function(dialogRef){
+                    action: function (dialogRef)
+                    {
                         Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
                         dialogRef.close();
-                    }},
+                    }
+                },
                 {
                     id: 'btn-ok',
                     icon: 'glyphicon glyphicon-check',
                     label: 'Ok',
                     cssClass: 'btn-primary',
-                    action: function(dialogRef){
+                    action: function (dialogRef)
+                    {
                         var block = blockEvent.block.current;
                         var color = dialogRef.$modalBody.find("#colorselect").val();
                         var el = block.element.find(".square-inner");
@@ -80,10 +84,10 @@ base.plugin("blocks.core.bloklink", ["blocks.core.Edit", "blocks.core.Broadcaste
     };
 
     /*
-    * We register for editing. When clicked in the blocksmenu our dialog will be shown (element),
-    * when clicked ok in the dialog our callback is called.
-    * enabled checks if we want to edit this block. This is used by the dispatcher to call our plugin for the right block
-    * */
+     * We register for editing. When clicked in the blocksmenu our dialog will be shown (element),
+     * when clicked ok in the dialog our callback is called.
+     * enabled checks if we want to edit this block. This is used by the dispatcher to call our plugin for the right block
+     * */
     Edit.registerByType("exhibition", doEditBlockLink);
 
 

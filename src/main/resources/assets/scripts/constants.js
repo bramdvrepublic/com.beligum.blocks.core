@@ -40,10 +40,12 @@ base.plugin("blocks.core.Constants", function ()
     this.EDIT_OTHER = "edit-other";
 
     this.maxIndex = 0;
-    this.calculateMaxIndex = function() {
-        this.maxIndex = Math.max.apply(null,$.map($('body  *'), function(e,n){
-                if($(e).css('position')=='absolute' || $(e).css('position')=='relative')
-                    return parseInt($(e).css('z-index'))||1 ;
+    this.calculateMaxIndex = function ()
+    {
+        this.maxIndex = Math.max.apply(null, $.map($('body  *'), function (e, n)
+            {
+                if ($(e).css('position') == 'absolute' || $(e).css('position') == 'relative')
+                    return parseInt($(e).css('z-index')) || 1;
             })
         );
     };

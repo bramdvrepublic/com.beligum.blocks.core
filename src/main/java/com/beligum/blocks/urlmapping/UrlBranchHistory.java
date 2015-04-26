@@ -16,18 +16,21 @@ public class UrlBranchHistory
     private String storedTemplateId;
 
     // constructor for jackson
-    public UrlBranchHistory() {
+    public UrlBranchHistory()
+    {
 
     }
 
-    public  UrlBranchHistory(String storedTemplateID) {
+    public UrlBranchHistory(String storedTemplateID)
+    {
         this.versioned = Calendar.getInstance().getTimeInMillis();
         this.updateBy = Blocks.config().getCurrentUserName();
         this.updatedAt = LocalDateTime.now().toString();
         this.storedTemplateId = storedTemplateID;
     }
 
-    public String getStoredTemplateId() {
+    public String getStoredTemplateId()
+    {
         return storedTemplateId;
     }
 }

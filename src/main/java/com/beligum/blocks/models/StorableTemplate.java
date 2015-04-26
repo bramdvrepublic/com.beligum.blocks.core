@@ -19,9 +19,9 @@ public abstract class StorableTemplate extends BasicTemplate implements BlocksVe
     private String updatedBy;
     private String updatedAt;
 
-    public StorableTemplate() {
+    public StorableTemplate()
+    {
     }
-
 
     public StorableTemplate(Element node, String language) throws ParseException
     {
@@ -31,7 +31,6 @@ public abstract class StorableTemplate extends BasicTemplate implements BlocksVe
             this.setId(Blocks.factory().getIdForString(reference));
         }
     }
-
 
     @Override
     public Long getDocumentVersion()

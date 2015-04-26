@@ -27,7 +27,8 @@ public class BlocksScriptVisitor extends BasicVisitor
             node.replaceWith(emtpyNode);
             node = emtpyNode;
 
-        } else if (node.nodeName().equals("script")) {
+        }
+        else if (node.nodeName().equals("script")) {
             //if a script has been found, add it to the scripts-stack
             this.scripts.add(node.outerHtml());
             Node emtpyNode = new TextNode("", null);
@@ -39,15 +40,18 @@ public class BlocksScriptVisitor extends BasicVisitor
     }
 
     @Override
-    public Node tail (Node node, int depth) {
+    public Node tail(Node node, int depth)
+    {
         return node;
     }
 
-    public LinkedHashSet<String> getScripts() {
+    public LinkedHashSet<String> getScripts()
+    {
         return this.scripts;
     }
 
-    public LinkedHashSet<String> getLinks() {
+    public LinkedHashSet<String> getLinks()
+    {
         return this.links;
     }
 }

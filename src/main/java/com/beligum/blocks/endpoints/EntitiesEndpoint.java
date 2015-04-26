@@ -80,12 +80,12 @@ public class EntitiesEndpoint
             HashMap<String, String> json = new HashMap<String, String>();
             json.put("template", classHtml);
             return Response.ok(json).build();
-        } else {
+        }
+        else {
             throw new Exception("Blueprint not found with name: " + blueprintName);
         }
 
     }
-
 
     @PUT
     @Path("/{entityUrlPath:.+}")
@@ -95,8 +95,7 @@ public class EntitiesEndpoint
      */
     public Response updateEntity(@PathParam("entityUrlPath") String pageUrlPath, @QueryParam("deleted") @DefaultValue("false") boolean fetchDeleted, String pageHtml)
     {
-        try{
-
+        try {
 
             // analyze html,
             // only properties should be a) singletons, b) 1 property that is not a singelton (with reference-to (or resource)) this will replace entity with id of url
@@ -120,15 +119,14 @@ public class EntitiesEndpoint
 
             StoredTemplate pageContent = htmlFromClientVisitor.getContent();
 
-
             if (pageContent != null) {
                 // recreate this page. This way we prevent unwanted changes
                 pageContent = Blocks.factory().createStoredTemplate(pageContent.getRenderedTemplateAsElement(), language);
 
-//                All entities on this page without a parent (need to be saved)
+                //                All entities on this page without a parent (need to be saved)
                 List<Entity> entities = pageContent.getRootEntities();
 
-                for (Entity entity: entities) {
+                for (Entity entity : entities) {
                     Blocks.database().saveEntity(entity);
                 }
 
@@ -137,12 +135,11 @@ public class EntitiesEndpoint
 
             ArrayList<StoredTemplate> other = htmlFromClientVisitor.getOther();
             ArrayList<StoredTemplate> otherWithoutSingletons = new ArrayList<>();
-            for (StoredTemplate singleton: other) {
+            for (StoredTemplate singleton : other) {
 
                 if (singleton instanceof Singleton) {
                     Blocks.factory().createSingleton(singleton.getRenderedTemplateAsElement(), language);
                     Blocks.database().save(singleton);
-
 
                     List<Entity> entities = singleton.getRootEntities();
 
@@ -150,25 +147,26 @@ public class EntitiesEndpoint
                         Blocks.database().saveEntity(entity);
                     }
 
-                }else {
+                }
+                else {
                     otherWithoutSingletons.add(singleton);
                 }
             }
 
-
-            for (StoredTemplate storedTemplate: otherWithoutSingletons) {
+            for (StoredTemplate storedTemplate : otherWithoutSingletons) {
                 storedTemplate = Blocks.factory().createStoredTemplate(storedTemplate.getRenderedTemplateAsElement(), language);
-//                    Blocks.database().save(storedTemplate);
+                //                    Blocks.database().save(storedTemplate);
 
                 List<Entity> entities = storedTemplate.getRootEntities();
 
-                for (Entity entity: entities) {
+                for (Entity entity : entities) {
                     Blocks.database().saveEntity(entity);
                 }
             }
 
             return Response.ok(pageUrl.getPath()).build();
-        }catch (Exception e){
+        }
+        catch (Exception e) {
             Logger.error(e);
             return Response.status(Response.Status.BAD_REQUEST).entity(I18nFactory.instance().getDefaultResourceBundle().getMessage("entitySaveFailed")).build();
         }
@@ -192,11 +190,10 @@ public class EntitiesEndpoint
             Blocks.database().remove(storedTemplate);
             return Response.ok(pageUrl.toString()).build();
         }
-        catch(Exception e){
+        catch (Exception e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(I18nFactory.instance().getDefaultResourceBundle().getMessage("entityDeleteFailed")).build();
         }
     }
-
 
     @GET
     @Path("/list")
@@ -210,7 +207,7 @@ public class EntitiesEndpoint
         List<String> entityNames = new ArrayList<String>();
         List<Blueprint> addableClasses = Blocks.templateCache().getAddableBlocks();
         for (Blueprint e : addableClasses) {
-            if(!e.getName().equals(ParserConstants.DEFAULT_BLUEPRINT)){
+            if (!e.getName().equals(ParserConstants.DEFAULT_BLUEPRINT)) {
                 entityNames.add(e.getBlueprintName());
             }
         }
@@ -228,7 +225,7 @@ public class EntitiesEndpoint
     {
         List<String> templateNames = new ArrayList<String>();
         for (PageTemplate e : Blocks.templateCache().getPagetemplates()) {
-            if(!e.getName().equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)){
+            if (!e.getName().equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
                 templateNames.add(e.getName());
             }
         }

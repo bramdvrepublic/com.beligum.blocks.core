@@ -1,5 +1,9 @@
 package com.beligum.blocks.caching;
 
+import com.beligum.base.resources.ResourceSearchResult;
+import com.beligum.base.server.R;
+import com.beligum.base.templating.ifaces.Template;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.exceptions.CacheException;
 import com.beligum.blocks.exceptions.ParseException;
@@ -8,15 +12,16 @@ import com.beligum.blocks.models.PageTemplate;
 import com.beligum.blocks.parsers.FileAnalyzer;
 import com.beligum.blocks.parsers.Traversor;
 import com.beligum.blocks.parsers.visitors.reset.BlocksScriptVisitor;
-import com.beligum.base.server.R;
-import com.beligum.base.utils.Logger;
-import com.google.common.collect.HashBiMap;
+import org.apache.commons.io.Charsets;
+import org.apache.commons.io.IOUtils;
 import org.apache.shiro.util.AntPathMatcher;
 import org.jsoup.nodes.Document;
 
-import java.io.IOException;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
+import java.io.Reader;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -48,32 +53,36 @@ public class TemplateCache implements BlocksTemplateCache
         this.fillCache();
     }
 
-
-    public void addBlueprint(Blueprint blueprint) {
+    public void addBlueprint(Blueprint blueprint)
+    {
         if (!this.blueprints.containsKey(blueprint.getBlueprintName())) {
             this.blueprints.put(blueprint.getBlueprintName(), blueprint);
         }
     }
 
-    public void addPageTemplate(PageTemplate page) {
+    public void addPageTemplate(PageTemplate page)
+    {
         if (!this.pagetemplates.containsKey(page.getBlueprintName())) {
             this.pagetemplates.put(page.getName(), page);
         }
     }
 
-    public void addBlueprint(Blueprint blueprint, String language) {
+    public void addBlueprint(Blueprint blueprint, String language)
+    {
         if (!this.blueprints.containsKey(blueprint.getBlueprintName())) {
             this.blueprints.put(blueprint.getName(), blueprint);
         }
     }
 
-    public void addPageTemplate(PageTemplate page, String language) {
+    public void addPageTemplate(PageTemplate page, String language)
+    {
         if (!this.pagetemplates.containsKey(page.getBlueprintName())) {
             this.pagetemplates.put(page.getName(), page);
         }
     }
 
-    public Blueprint getBlueprint(String name) {
+    public Blueprint getBlueprint(String name)
+    {
         Blueprint retVal = null;
         if (name != null) {
             retVal = this.blueprints.get(name);
@@ -82,44 +91,52 @@ public class TemplateCache implements BlocksTemplateCache
         return retVal;
     }
 
-    public PageTemplate getPageTemplate(String name) {
+    public PageTemplate getPageTemplate(String name)
+    {
         return this.pagetemplates.get(name);
     }
 
-    public List<Blueprint> getBlueprints() {
+    public List<Blueprint> getBlueprints()
+    {
         return new ArrayList<Blueprint>(this.blueprints.values());
     }
 
-    public List<PageTemplate> getPagetemplates() {
+    public List<PageTemplate> getPagetemplates()
+    {
         return new ArrayList<PageTemplate>(this.pagetemplates.values());
     }
 
-    public List<Blueprint> getPageBlocks() {
+    public List<Blueprint> getPageBlocks()
+    {
         ArrayList<Blueprint> list = new ArrayList<>();
-        for (Blueprint bp: getBlueprints()) {
-            if (bp.isPageBlock()) list.add(bp);
+        for (Blueprint bp : getBlueprints()) {
+            if (bp.isPageBlock())
+                list.add(bp);
         }
 
         return list;
     }
 
-    public List<Blueprint> getAddableBlocks() {
+    public List<Blueprint> getAddableBlocks()
+    {
         ArrayList<Blueprint> list = new ArrayList<>();
-        for (Blueprint bp: getBlueprints()) {
-            if (bp.isAddableBlock()) list.add(bp);
+        for (Blueprint bp : getBlueprints()) {
+            if (bp.isAddableBlock())
+                list.add(bp);
         }
 
         return list;
     }
 
-    public LinkedHashSet<String> getBlocksScripts() {
+    public LinkedHashSet<String> getBlocksScripts()
+    {
         return this.blocksScripts;
     }
 
-    public LinkedHashSet<String> getBlocksLinks() {
+    public LinkedHashSet<String> getBlocksLinks()
+    {
         return this.blocksLinks;
     }
-
 
     /**
      * Fill up the page-cache with all template found in file-system
@@ -131,42 +148,23 @@ public class TemplateCache implements BlocksTemplateCache
         if (!runningTroughHtmlTemplates) {
             runningTroughHtmlTemplates = true;
 
-
-
             try {
-                List<Path> allResourceFolders = R.resourceLoader().getResourceFolders();
+                List<ResourceSearchResult> htmlFiles = R.resourceLoader().searchResourceGlob("/templates/**.{html,htm}");
+                htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/views/**.{html,htm}"));
 
-                for (Path resourceFolder : allResourceFolders) {
-                    Path templatesFolder = resourceFolder.resolve(Blocks.config().getTemplateFolder());
+                for (ResourceSearchResult htmlFile : htmlFiles) {
+                    Path relativeAbsolutedPath = Paths.get("/").resolve(htmlFile.getResourceFolder().relativize(htmlFile.getResource()));
 
-                    if (Files.exists(templatesFolder)) {
-                        //set which will be filled up with all class-names found in all files in the templates-folder
-                        final Set<String> foundEntityClassNames = new HashSet<>();
-
-                        //first fetch all blueprints from all files
-                        FileVisitor<Path> visitor = new SimpleFileVisitor<Path>()
-                        {
-                            @Override
-                            public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs)
-                                            throws IOException
-                            {
-                                String path = filePath.getFileName().toString();
-                                if (pathMatcher.matches("*.html", path) || pathMatcher.match("*.htm", path)) {
-                                    try {
-                                        String html = new String(Files.readAllBytes(filePath));
-                                        for (String language: Blocks.config().getLanguages()) {
-                                            FileAnalyzer.AnalyseHtmlFile(html, language);
-                                        }
-                                    }
-                                    catch (ParseException e) {
-                                        Logger.error("Parse error while fetching page-templates and blueprints from file '" + filePath + "'.", e);
-                                    }
-                                }
-                                return FileVisitResult.CONTINUE;
-                            }
-                        };
-                        Files.walkFileTree(templatesFolder, visitor);
-
+                    try (Reader reader = Files.newBufferedReader(htmlFile.getResource(), Charset.forName(Charsets.UTF_8.name()))) {
+                        Template template = R.templateEngine().getNewStringTemplate(IOUtils.toString(reader));
+                        //TODO bram: we should incorporate the language here?
+                        String html = template.render();
+                        for (String language : Blocks.config().getLanguages()) {
+                            FileAnalyzer.AnalyseHtmlFile(html, language);
+                        }
+                    }
+                    catch (ParseException e) {
+                        Logger.error("Parse error while fetching page-templates and blueprints from file '" + htmlFile + "'.", e);
                     }
                 }
 
@@ -176,8 +174,10 @@ public class TemplateCache implements BlocksTemplateCache
                 for (Blueprint blueprint : this.getBlueprints()) {
                     blueprint.parse();
 
-                    if (blueprint.isAddableBlock()) this.addableblocks.add(blueprint.getName());
-                    if (blueprint.isPageBlock()) this.pageblocks.add(blueprint.getName());
+                    if (blueprint.isAddableBlock())
+                        this.addableblocks.add(blueprint.getName());
+                    if (blueprint.isPageBlock())
+                        this.pageblocks.add(blueprint.getName());
                 }
 
                 for (PageTemplate pageTemplate : this.getPagetemplates()) {
@@ -185,13 +185,11 @@ public class TemplateCache implements BlocksTemplateCache
 
                 }
 
-
                 BlocksScriptVisitor visitor = new BlocksScriptVisitor();
                 Document doc = visitor.getSource(Blocks.config().getFrontEndScripts());
                 Traversor.traverseDeep(doc, visitor);
                 this.blocksScripts = visitor.getScripts();
                 this.blocksLinks = visitor.getLinks();
-
 
             }
             catch (Exception e) {
@@ -202,7 +200,5 @@ public class TemplateCache implements BlocksTemplateCache
             }
         }
     }
-
-
 
 }

@@ -11,7 +11,8 @@ import org.jsoup.nodes.Element;
 public abstract class PageTemplate extends Blueprint
 {
 
-    public PageTemplate() {
+    public PageTemplate()
+    {
 
     }
 
@@ -29,18 +30,16 @@ public abstract class PageTemplate extends Blueprint
     }
 
     @Override
-    protected PagetemplateVisitor getVisitor() {
+    protected PagetemplateVisitor getVisitor()
+    {
         return new PagetemplateVisitor(this.name);
     }
 
     @Override
     public PagetemplateVisitor parse() throws ParseException
     {
-        PagetemplateVisitor pagetemplateVisitor = (PagetemplateVisitor)super.parse();
-        return  pagetemplateVisitor;
+        PagetemplateVisitor pagetemplateVisitor = (PagetemplateVisitor) super.parse();
+        return pagetemplateVisitor;
     }
-
-
-
 
 }

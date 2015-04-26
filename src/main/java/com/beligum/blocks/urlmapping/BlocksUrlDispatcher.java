@@ -23,6 +23,4 @@ public interface BlocksUrlDispatcher
 
     public String getUrlForId(String id);
 
-
-
 }

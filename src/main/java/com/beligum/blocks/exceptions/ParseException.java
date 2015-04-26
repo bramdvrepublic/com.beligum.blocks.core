@@ -169,9 +169,10 @@ public class ParseException extends Exception
         return errorNode;
     }
 
-    public String getMessage(ParseException e){
+    public String getMessage(ParseException e)
+    {
         String errorMessage = e.getMessage() + "\n";
-        if(e.getErrorNode() != null) {
+        if (e.getErrorNode() != null) {
             errorMessage += "Found at node: \n\n";
             errorMessage += e.getErrorNode();
             errorMessage += "\n\n";

@@ -96,8 +96,8 @@ public class ApplicationEndpoint
             //                }
 
             PageTemplate pageTemplate = Blocks.templateCache().getPageTemplate(storedTemplate.getPageTemplateName());
-            if (pageTemplate==null) {
-                throw new Exception("Couldn't find the page template with name '"+storedTemplate.getPageTemplateName()+"'");
+            if (pageTemplate == null) {
+                throw new Exception("Couldn't find the page template with name '" + storedTemplate.getPageTemplateName() + "'");
             }
             BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
 

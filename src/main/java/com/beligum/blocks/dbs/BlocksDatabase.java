@@ -18,22 +18,30 @@ import java.util.HashMap;
 public interface BlocksDatabase
 {
     public <T extends BlocksStorable> T fetch(BlockId id, Class<T> clazz);
+
     public <T extends BlocksVersionedStorable> T fetch(BlockId id, String language, Class<T> clazz);
+
     public JsonLDWrapper fetchEntity(BlockId id);
+
     public abstract ArrayList<JsonLDWrapper> fetchEntities(String query);
 
     public StoredTemplate fetchTemplate(BlockId id, String language);
+
     public Blueprint fetchBlueprint(BlockId id, String language);
+
     public StoredTemplate fetchPageTemplate(BlockId id, String language);
 
     public void save(BlocksStorable storable) throws DatabaseException;
+
     public void save(BlocksVersionedStorable storable) throws DatabaseException;
+
     public void saveEntity(Entity entity) throws DatabaseException;
 
     public void remove(BlocksVersionedStorable storable, String language) throws DatabaseException;
-    public void remove(BlocksVersionedStorable storable) throws DatabaseException;
-    public void remove(BlocksStorable storable) throws DatabaseException;
 
+    public void remove(BlocksVersionedStorable storable) throws DatabaseException;
+
+    public void remove(BlocksStorable storable) throws DatabaseException;
 
     public ArrayList<HashMap<String, Object>> testFetch();
 

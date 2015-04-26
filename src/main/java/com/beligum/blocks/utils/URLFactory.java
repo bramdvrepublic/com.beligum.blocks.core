@@ -11,28 +11,30 @@ import java.net.URL;
 public class URLFactory
 {
 
-
     public static URL createURL(String spec) throws MalformedURLException
     {
         URL retVal = null;
         if (spec.contains("://")) {
             retVal = new URL(spec);
-        } else {
+        }
+        else {
             retVal = new URL(URLFactory.makeAbsoluteUrl(spec));
         }
         return retVal;
     }
 
-    public static String makeAbsoluteUrl(String relativePath) {
+    public static String makeAbsoluteUrl(String relativePath)
+    {
         return makeAbsolute(Blocks.config().getSiteDomain(), relativePath);
     }
 
-
-
-    public static String makeAbsolute(String host, String relativePath) {
+    public static String makeAbsolute(String host, String relativePath)
+    {
         host = host.trim();
-        if (!host.endsWith("/") && !host.endsWith("#") && !host.endsWith(":")) host += "/";
-        if (relativePath.startsWith("/")) relativePath = relativePath.substring(1);
+        if (!host.endsWith("/") && !host.endsWith("#") && !host.endsWith(":"))
+            host += "/";
+        if (relativePath.startsWith("/"))
+            relativePath = relativePath.substring(1);
         return host + relativePath;
     }
 

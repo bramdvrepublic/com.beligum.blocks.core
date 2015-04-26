@@ -1,7 +1,7 @@
 package com.beligum.blocks.parsers.visitors.template;
 
-import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.base.Blocks;
+import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.models.BasicTemplate;
 import com.beligum.blocks.parsers.ElementParser;
@@ -28,18 +28,16 @@ public class PropertyVisitor extends BasicVisitor
         // if property do something
         Node retVal = node;
         if (ElementParser.isProperty((Element) node)) {
-            String propertyName = ElementParser.getProperty((Element)node);
-
-
+            String propertyName = ElementParser.getProperty((Element) node);
 
             retVal = this.replacePropertyWithID((Element) node, propertyName);
             BasicTemplate property = null;
-            if (ElementParser.isSingleton((Element)node)) {
+            if (ElementParser.isSingleton((Element) node)) {
                 property = Blocks.factory().createSingleton((Element) node.clone(), ElementParser.getLanguage((Element) node));
-            } else {
-                property = new BasicTemplate((Element) node.clone(), ElementParser.getLanguage((Element)node));
             }
-
+            else {
+                property = new BasicTemplate((Element) node.clone(), ElementParser.getLanguage((Element) node));
+            }
 
             this.properties.add(property);
         }
@@ -53,13 +51,15 @@ public class PropertyVisitor extends BasicVisitor
         return node;
     }
 
-
-    public ArrayList<BasicTemplate> getProperties() {
+    public ArrayList<BasicTemplate> getProperties()
+    {
         return this.properties;
     }
 
-    protected Node replacePropertyWithID(Element element, String key) {
-        if (key == null) key = "";
+    protected Node replacePropertyWithID(Element element, String key)
+    {
+        if (key == null)
+            key = "";
         String templateKey = ParserConstants.TEMPLATE_PROPERTY_START + key + ParserConstants.TEMPLATE_PROPERTY_END;
         Node textNode = new TextNode(templateKey, null);
         element.replaceWith(textNode);

@@ -75,7 +75,8 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     var config = this.config;
     var windowFrame = {width: 0, height: 0};
 
-    this.resetMouse = function () {
+    this.resetMouse = function ()
+    {
         windowFrame = {width: document.innerWidth, height: document.innerHeight};
         dblClickFound = false;
         draggingStart = null;
@@ -95,14 +96,14 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     };
 
 
-
     /*
      * on mousedown and dragging allowed and surface to drag selected:
      *   - wait for drag
      *   - disable selection
      *   - keep current jQuery event as startevent
      * */
-    var mouseDown = function (event) {
+    var mouseDown = function (event)
+    {
         if (active) {
 
             // check for left mouse click
@@ -135,7 +136,8 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     /*
      * If dragging send END_OF_DRAG and reset draggingOptions
      * */
-    var mouseUp = function (event) {
+    var mouseUp = function (event)
+    {
         if (active && event.which == 1) {
             Logger.debug("MOUSE UP");
             if (draggingStatus != BlocksConstants.DRAGGING.NOT_ALLOWED) {
@@ -155,7 +157,8 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     /*
      * While waiting for drag, check if threshold is activated to really start drag
      * */
-    var enableDragAfterTreshold = function (event) {
+    var enableDragAfterTreshold = function (event)
+    {
         Logger.debug("Calculate wait for drag");
         if (Math.abs(draggingStart.pageX - event.pageX) > config.DRAGGING_THRESHOLD ||
             Math.abs(draggingStart.pageY - event.pageY) > config.DRAGGING_THRESHOLD) {
@@ -169,7 +172,8 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     /*
      *
      * */
-    var mouseMove = function (event) {
+    var mouseMove = function (event)
+    {
         if (active && !Menu.mouseOverMenu()) {
             var changedBlock = false;
             var block = Broadcaster.block();
@@ -238,7 +242,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                         Broadcaster.send(Broadcaster.EVENTS.DRAG_LEAVE_BLOCK);
                     }
                 } else // if (block.current != null)
-                 {
+                {
                     Broadcaster.send(Broadcaster.EVENTS.DRAG_OVER_BLOCK);
                 }
 
@@ -246,36 +250,43 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         }
     };
 
-    this.disallowDrag = function() {
+    this.disallowDrag = function ()
+    {
         Logger.debug("Dragging not allowed");
         draggingStatus = BlocksConstants.DRAGGING.NOT_ALLOWED;
     };
 
-    this.allowDrag = function() {
+    this.allowDrag = function ()
+    {
         Logger.debug("Dragging allowed");
         Mouse.resetMouse(true);
     };
 
 
-
-
-
-    this.activate = function () {
+    this.activate = function ()
+    {
         Mouse.deactivate();
         active = true;
-        $(document).on("mousedown.blocks_core", function (event) {
-            if (event.which == 1) { mouseDown(event);}
+        $(document).on("mousedown.blocks_core", function (event)
+        {
+            if (event.which == 1) {
+                mouseDown(event);
+            }
         });
-        $(document).on("mouseup.blocks_core", function (event) {
-            if (event.which == 1) {mouseUp(event); }
+        $(document).on("mouseup.blocks_core", function (event)
+        {
+            if (event.which == 1) {
+                mouseUp(event);
+            }
         });
-        $(document).on("mousemove.blocks_core", function (event) {
+        $(document).on("mousemove.blocks_core", function (event)
+        {
             mouseMove(event);
         });
 
 
-
-        $(document).on("mouseleave.blocks_core", function(){
+        $(document).on("mouseleave.blocks_core", function ()
+        {
 //                mouseUp(event);
             if (draggingStatus == BlocksConstants.DRAGGING.YES) {
                 Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG);
@@ -291,7 +302,8 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     };
 
 
-    this.deactivate = function () {
+    this.deactivate = function ()
+    {
         active = false;
         $(document).off("mousedown.blocks_core");
         $(document).off("mouseup.blocks_core");
@@ -299,8 +311,6 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         $(document).off("mouseleave.blocks_core");
 
     };
-
-
 
 
 }])

@@ -11,10 +11,12 @@ base.plugin("blocks.core.DragCreate", ["blocks.core.Constants", "blocks.core.Dra
     var targetButton = null;
 
     // Start and stop on start stop templates
-    this.activate = function () {
+    this.activate = function ()
+    {
         active = true;
         targetButton = null;
-        $(document).on("mousedown.fakedragdrop", ".drag-create-block", function (event) {
+        $(document).on("mousedown.fakedragdrop", ".drag-create-block", function (event)
+        {
             if (event.which == 1) {
                 targetButton = $(event.currentTarget);
                 start();
@@ -22,27 +24,32 @@ base.plugin("blocks.core.DragCreate", ["blocks.core.Constants", "blocks.core.Dra
         });
     };
 
-    this.deactivate = function () {
+    this.deactivate = function ()
+    {
         active = false;
         $(document).off("mousedown.fakedragdrop");
     };
 
-    var start = function () {
+    var start = function ()
+    {
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
-        $(document).on("mouseup.fakedragdrop", function (event) {
+        $(document).on("mouseup.fakedragdrop", function (event)
+        {
             end();
         });
         dragging = true;
 
         DOM.disableSelection();
         DragDrop.dragStarted(null);
-        $(document).on("mousemove.fakedragdrop", function (event) {
+        $(document).on("mousemove.fakedragdrop", function (event)
+        {
             Broadcaster.send(Broadcaster.EVENTS.DRAG_OVER_BLOCK);
         });
 
     };
 
-    var end = function () {
+    var end = function ()
+    {
         $(document).off("mousemove.fakedragdrop");
         var dropSpot = DragDrop.getCurrentDropspot();
         Logger.debug(dropSpot);
@@ -64,8 +71,10 @@ base.plugin("blocks.core.DragCreate", ["blocks.core.Constants", "blocks.core.Dra
     };
 
 
-    function askBlockToAdd(side, currentBlock) {
-        $.getJSON("/entities/list").success(function (data) {
+    function askBlockToAdd(side, currentBlock)
+    {
+        $.getJSON("/entities/list").success(function (data)
+        {
             var modalText = '<div class="form-inline" role="form"><div class="form-group"></div></div>';
             var optionList = $('<select class="form-control" id="blocktypeselect"></div>');
             var label = '<label for="inputPassword2" class="sr-only">Type block : </label>';
@@ -82,7 +91,8 @@ base.plugin("blocks.core.DragCreate", ["blocks.core.Constants", "blocks.core.Dra
                     {
                         id: 'btn-close',
                         label: 'Cancel',
-                        action: function (dialogRef) {
+                        action: function (dialogRef)
+                        {
                             dialogRef.close();
                         }
                     },
@@ -91,7 +101,8 @@ base.plugin("blocks.core.DragCreate", ["blocks.core.Constants", "blocks.core.Dra
                         icon: 'glyphicon glyphicon-check',
                         label: 'Ok',
                         cssClass: 'btn-primary',
-                        action: function (dialogRef) {
+                        action: function (dialogRef)
+                        {
                             var value = dialogRef.$modalBody.find("#blocktypeselect").val();
                             if (value != null && value != "") {
                                 addBlock(value, side, currentBlock);
@@ -108,10 +119,13 @@ base.plugin("blocks.core.DragCreate", ["blocks.core.Constants", "blocks.core.Dra
         });
     }
 
-    function addBlock(name, side, currentBlock) {
-        $.getJSON("/entities/class/" + name).success(function (data) {
+    function addBlock(name, side, currentBlock)
+    {
+        $.getJSON("/entities/class/" + name).success(function (data)
+        {
             Layouter.addNewBlockAtLocation(side, $(data.template), currentBlock);
-        }).error(function() {
+        }).error(function ()
+        {
             // error
             Notification.error("This block could not be found on the server");
         });

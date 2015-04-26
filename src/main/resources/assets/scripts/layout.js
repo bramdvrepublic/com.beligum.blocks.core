@@ -26,7 +26,8 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.Con
     //      -> wrap in rows
     // 2. if droplocation has can-layout class prevent drop outside layoutable area
     //      -> take first or last row
-    var findDropLocationElement = function (dropLocation, side) {
+    var findDropLocationElement = function (dropLocation, side)
+    {
         var dropLocationElement = dropLocation.element;
         var retVal = dropLocationElement;
 
@@ -51,11 +52,12 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.Con
     };
 
     /*
-    * Wrap (if necessary)  so a correct bootstrap layout is preserved.
-    * This allows us to drop on columns and rows and not only on templates
-    * */
+     * Wrap (if necessary)  so a correct bootstrap layout is preserved.
+     * This allows us to drop on columns and rows and not only on templates
+     * */
     var dropOnFunctions = {
-        "drop-vertical-on-block": function (droppedElement, dropLocationElement, side) {
+        "drop-vertical-on-block": function (droppedElement, dropLocationElement, side)
+        {
             // do nothing?
             if (DOM.isColumn(droppedElement) || DOM.isRow(droppedElement)) {
                 dropLocationElement = DOM.wrapSiblingBlocksInRows(dropLocationElement).parent().parent(); // return row
@@ -63,29 +65,34 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.Con
             return dropLocationElement;
         },
 
-        "drop-vertical-on-row": function (droppedElement, dropLocationElement, side) {
+        "drop-vertical-on-row": function (droppedElement, dropLocationElement, side)
+        {
             // Do nothing
             return dropLocationElement;
         },
 
-        "drop-vertical-on-column": function (droppedElement, dropLocationElement, side) {
+        "drop-vertical-on-column": function (droppedElement, dropLocationElement, side)
+        {
             // wrap column in row
             dropLocationElement = DOM.wrapColumnInColumn(dropLocationElement);
             return dropLocationElement.children().first(); // return row
         },
 
-        "drop-horizontal-on-block": function (droppedElement, dropLocationElement, side) {
+        "drop-horizontal-on-block": function (droppedElement, dropLocationElement, side)
+        {
             dropLocationElement = DOM.wrapSiblingBlocksInRows(dropLocationElement);
             return dropLocationElement.parent(); // return column
         },
 
-        "drop-horizontal-on-row": function (droppedElement, dropLocationElement, side) {
+        "drop-horizontal-on-row": function (droppedElement, dropLocationElement, side)
+        {
             // wrap block in row
             dropLocationElement = DOM.wrapRowInRow(dropLocationElement);
             return dropLocationElement.children().first(); // return column
         },
 
-        "drop-horizontal-on-column": function (droppedElement, dropLocationElement, side) {
+        "drop-horizontal-on-column": function (droppedElement, dropLocationElement, side)
+        {
             // Do nothing
             return dropLocationElement;
         }
@@ -97,7 +104,8 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.Con
      * */
     var droppedFunctions = {
 
-        "drop-block-vertical" : function(droppedElement, dropLocationElement, side) {
+        "drop-block-vertical": function (droppedElement, dropLocationElement, side)
+        {
             // wrap block in row
             if (DOM.isColumn(dropLocationElement) || DOM.isRow(dropLocationElement)) {
                 droppedElement = DOM.wrapBlockInRow(droppedElement);
@@ -105,35 +113,41 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.Con
             return droppedElement;
         },
 
-        "drop-row-vertical" : function(droppedElement, dropLocationElement, side) {
+        "drop-row-vertical": function (droppedElement, dropLocationElement, side)
+        {
             // do nothing
             return droppedElement;
         },
 
-        "drop-column-vertical" : function(droppedElement, dropLocationElement, side) {
+        "drop-column-vertical": function (droppedElement, dropLocationElement, side)
+        {
             // wrap column in row
             return DOM.wrapColumnInRow(droppedElement);
         },
 
-        "drop-block-horizontal" : function(droppedElement, dropLocationElement, side) {
+        "drop-block-horizontal": function (droppedElement, dropLocationElement, side)
+        {
             return DOM.wrapBlockInColumn(droppedElement);
         },
 
-        "drop-column-horizontal" : function(droppedElement, dropLocationElement, side) {
+        "drop-column-horizontal": function (droppedElement, dropLocationElement, side)
+        {
             // wrap column in row
             return droppedElement
         },
 
-        "drop-row-horizontal" : function(droppedElement, dropLocationElement, side) {
+        "drop-row-horizontal": function (droppedElement, dropLocationElement, side)
+        {
             return DOM.wrapRowInColumn(droppedElement);
         }
     }
 
     /*
-    * Function to call to add a block relative to a block
-    * This function changes the dom
-    * */
-    var drop =  function(droppedElement, dropLocationElement, side) {
+     * Function to call to add a block relative to a block
+     * This function changes the dom
+     * */
+    var drop = function (droppedElement, dropLocationElement, side)
+    {
         // If we drop on the edge of the container, wrap the container so we drop inside
         // (because we drop always outside the droplocation)
         var subj = "block";
@@ -150,11 +164,12 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.Con
         }
         var s = (side == Constants.SIDE.TOP || side == Constants.SIDE.BOTTOM) ? "vertical" : "horizontal";
         var dropString = "drop-" + s + "-on-" + obj;
-        var droppedString = "drop-"+ subj +"-"+ s;
+        var droppedString = "drop-" + subj + "-" + s;
         dropLocationElement = dropOnFunctions[dropString](droppedElement, dropLocationElement);
         droppedElement = droppedFunctions[droppedString](droppedElement, dropLocationElement);
 
-        DOM.appendElement(droppedElement, dropLocationElement, side, function() {
+        DOM.appendElement(droppedElement, dropLocationElement, side, function ()
+        {
             Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
         });
@@ -163,10 +178,11 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.Con
 
 
     /*
-    * This is the external interface to drop a block.
-    * First it removes the dropped block and then adds it relative to the droplocation
-    * */
-    this.changeBlockLocation = function (block, dropLocation, side) {
+     * This is the external interface to drop a block.
+     * First it removes the dropped block and then adds it relative to the droplocation
+     * */
+    this.changeBlockLocation = function (block, dropLocation, side)
+    {
         // remove dropped block
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         // Get column width of the dropped element
@@ -176,18 +192,19 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.Con
         } else if (DOM.isColumn(block.element.parent().parent())) {
             columnWidthDroppedElement = DOM.getColumnWidth(block.element.parent().parent());
         }
-        DOM.removeBlock(block, 200, function() {
+        DOM.removeBlock(block, 200, function ()
+        {
 
             var dropLocationElement = findDropLocationElement(dropLocation, side);
             drop(block.element, dropLocationElement, side);
         });
 
 
-
     };
 
     // Add new jquery Object at bottom of dropLocation
-    this.addNewBlockAtLocation = function(side, blockElement, dropLocation) {
+    this.addNewBlockAtLocation = function (side, blockElement, dropLocation)
+    {
         dropLocationElement = dropLocation.element;
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         Broadcaster.send(Broadcaster.EVENTS.DOM_WILL_CHANGE);
@@ -198,18 +215,17 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.Con
     };
 
     // remove block
-    this.removeBlock = function(block) {
+    this.removeBlock = function (block)
+    {
         if (block instanceof blocks.elements.Block) {
             Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
-            DOM.removeBlock(block, 300, function() {
+            DOM.removeBlock(block, 300, function ()
+            {
                 Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
                 Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
             })
         }
     };
-
-
-
 
 
 }]);

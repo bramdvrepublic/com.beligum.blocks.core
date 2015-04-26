@@ -2,7 +2,8 @@ base.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broadc
 {
     var Overlay = this;
 
-    Overlay.showOverlays = function() {
+    Overlay.showOverlays = function ()
+    {
         var elements = Broadcaster.getContainer().findElements(0, 9);
         for (var i = 0; i < elements.length; i++) {
             if (elements[i].editType != Constants.EDIT_NONE || elements[i].canDrag) {
@@ -11,7 +12,8 @@ base.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broadc
         }
     };
 
-    Overlay.removeResizehandles = function() {
+    Overlay.removeResizehandles = function ()
+    {
         var elements = Broadcaster.getContainer().findElements(0, 9);
         for (var i = 0; i < elements.length; i++) {
             if (elements[i] instanceof blocks.elements.Row) {
@@ -21,7 +23,8 @@ base.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broadc
         }
     };
 
-    Overlay.showResizehandles = function() {
+    Overlay.showResizehandles = function ()
+    {
         var elements = Broadcaster.getContainer().findElements(0, 9);
         for (var i = 0; i < elements.length; i++) {
             if (elements[i] instanceof blocks.elements.Row) {
@@ -32,7 +35,8 @@ base.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broadc
     };
 
 
-    Overlay.removeOverlays = function() {
+    Overlay.removeOverlays = function ()
+    {
         if (Broadcaster.getContainer() != null) {
             var elements = Broadcaster.getContainer().findElements(0, 9);
             for (var i = 0; i < elements.length; i++) {
@@ -50,9 +54,8 @@ base.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broadc
     //};
 
 
-
-
-    var hideAll = function(element) {
+    var hideAll = function (element)
+    {
         if (element.prop("tagName") != "BODY") {
             var siblings = element.siblings().addClass("not-visible");
             hideAll(element.parent());
@@ -62,7 +65,8 @@ base.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broadc
 
     var overlayList = [];
 
-    $(document).on("mouseup.blocks_overlay", function(event) {
+    $(document).on("mouseup.blocks_overlay", function (event)
+    {
         if (overlayList.length > 0) {
             var overlayItem = overlayList.pop();
 
@@ -70,8 +74,8 @@ base.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broadc
                 $(".not-visible").removeClass("not-visible");
                 var overlayListLength = overlayList.length;
                 if (overlayListLength > 0) {
-                    hideAll(overlayList[overlayListLength-1].element);
-                    Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, overlayList[overlayListLength-1].element);
+                    hideAll(overlayList[overlayListLength - 1].element);
+                    Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, overlayList[overlayListLength - 1].element);
                 } else {
                     Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, null);
                 }
@@ -81,11 +85,6 @@ base.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broadc
             }
         }
     });
-
-
-
-
-
 
 
 }]);
