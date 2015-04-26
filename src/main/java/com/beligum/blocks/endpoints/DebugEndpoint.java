@@ -83,7 +83,7 @@ public class DebugEndpoint
     @Path("/pagetemplates")
     public Response getPageTemplatesPage() throws Exception
     {
-        Template template = pagetemplates.instance.getNewTemplate();
+        Template template = pagetemplates.get().getNewTemplate();
         template.set("pageTemplates",  Blocks.templateCache().getPagetemplates());
         return Response.ok(template).build();
     }
@@ -100,7 +100,7 @@ public class DebugEndpoint
             language = Blocks.config().getDefaultLanguage();
         }
         PageTemplate pageTemplate = Blocks.templateCache().getPagetemplate(pageTemplateName);
-        Template template = pagetemplate.instance.getNewTemplate();
+        Template template = pagetemplate.get().getNewTemplate();
         template.set("DateTool", new DateTool());
         template.set("EscapeTool", new EscapeTool());
         template.set("pageTemplate", pageTemplate);
@@ -115,7 +115,7 @@ public class DebugEndpoint
     @Path("/blueprints")
     public Response getBlueprintsPage() throws Exception
     {
-        Template template = blueprints.instance.getNewTemplate();
+        Template template = blueprints.get().getNewTemplate();
         template.set("blueprints", Blocks.templateCache().getBlueprints());
         return Response.ok(template).build();
     }
@@ -128,7 +128,7 @@ public class DebugEndpoint
             language = Blocks.config().getDefaultLanguage();
         }
         Blueprint blueprintObj = Blocks.templateCache().getBlueprint(blueprintName);
-        Template template = blueprint.instance.getNewTemplate();
+        Template template = blueprint.get().getNewTemplate();
         template.set("DateTool", new DateTool());
         template.set("EscapeTool", new EscapeTool());
         template.set("blueprint", blueprintObj);
@@ -145,7 +145,7 @@ public class DebugEndpoint
     {
         ArrayList<String> languages = Blocks.config().getLanguages();
 
-        Template template = sitemap.instance.getNewTemplate();
+        Template template = sitemap.get().getNewTemplate();
         BlocksUrlDispatcher sitemap = Blocks.urlDispatcher();
         template.set("urlmap", sitemap);
         template.set("languages", languages);

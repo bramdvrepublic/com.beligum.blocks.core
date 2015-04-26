@@ -10,10 +10,6 @@ import com.beligum.blocks.identifiers.BlockId;
 import com.beligum.blocks.models.*;
 import com.beligum.blocks.renderer.BlocksTemplateRenderer;
 import com.beligum.blocks.usermanagement.Permissions;
-import com.beligum.base.server.R;
-import com.beligum.base.server.RequestContext;
-import com.beligum.base.templating.ifaces.Template;
-import com.beligum.base.utils.Logger;
 import gen.com.beligum.blocks.core.fs.html.views.new_page;
 import gen.com.beligum.blocks.endpoints.UsersEndpointRoutes;
 import org.apache.shiro.SecurityUtils;
@@ -30,7 +26,6 @@ import java.util.Locale;
 @Path("/")
 public class ApplicationEndpoint
 {
-
     //using regular expression to let all requests to undefined paths end up here
     @Path("/{randomPage:.*}")
     @GET
@@ -84,7 +79,7 @@ public class ApplicationEndpoint
                     // Todo add flash message
                 }
                 if (SecurityUtils.getSubject().isAuthenticated()) {
-                    return injectParameters(new_page.instance.getNewTemplate());
+                    return injectParameters(new_page.get().getNewTemplate());
                 } else {
                     throw new NotFoundException();
                 }

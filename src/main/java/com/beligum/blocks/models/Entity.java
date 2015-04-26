@@ -3,13 +3,10 @@ package com.beligum.blocks.models;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.identifiers.BlockId;
 import com.beligum.blocks.models.interfaces.BlocksStorable;
-import com.beligum.blocks.utils.PropertyFinder;
-import com.beligum.blocks.utils.URLFactory;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.impl.PropertyImpl;
 import com.hp.hpl.jena.vocabulary.RDF;
-import sun.jvm.hotspot.opto.Block;
 
 import java.util.*;
 

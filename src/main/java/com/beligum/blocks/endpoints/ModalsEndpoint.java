@@ -29,7 +29,7 @@ public class ModalsEndpoint
                     @QueryParam("original")
                     String originalUrl) throws MalformedURLException
     {
-        Template template = change_url_modal.instance.getNewTemplate();
+        Template template = change_url_modal.get().getNewTemplate();
         String originalPath = new URL(originalUrl).getPath();
         String [] splitted = originalPath.split("/");
         if(splitted.length>2) {

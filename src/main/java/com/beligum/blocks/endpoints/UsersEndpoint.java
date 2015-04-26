@@ -123,7 +123,7 @@ public class UsersEndpoint
         /*
          * Add users-list and return
          */
-        Template template = users_all.instance.getNewTemplate();
+        Template template = users_all.get().getNewTemplate();
         template.set("users", users);
         template.set("sortedBy", fieldName);
         template.set("showInactive", showInactive);
@@ -135,7 +135,7 @@ public class UsersEndpoint
     @Path("/new")
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
     public Response newUser(){
-        Template template = users_new.instance.getNewTemplate();
+        Template template = users_new.get().getNewTemplate();
         template.set("roles", Permissions.getRoleNames());
         return Response.ok(template).build();
     }
@@ -195,7 +195,7 @@ public class UsersEndpoint
      */
     private Template getLoginTemplate(){
         //if ever the login-template changes, all velocity-variables need to be set in this method before returning the template
-        return login.instance.getNewTemplate();
+        return login.get().getNewTemplate();
     }
 
     @POST
@@ -301,7 +301,7 @@ public class UsersEndpoint
     private Template getUserTemplate(long userId, boolean isCurrentUser)
     {
         Person userToBeEdited = RequestContext.getEntityManager().find(Person.class, userId);
-        Template template = users_edit.instance.getNewTemplate();
+        Template template = users_edit.get().getNewTemplate();
         template.set("editUser", userToBeEdited);
         template.set("roles", Permissions.getRoleNames());
         template.set("isProfile", isCurrentUser);
@@ -479,7 +479,7 @@ public class UsersEndpoint
     private boolean sendChangeEmailEmail(Person person) throws EmailException
     {
         try {
-            Template emailTemplate = changeemail.instance.getNewTemplate();
+            Template emailTemplate = changeemail.get().getNewTemplate();
             emailTemplate.set("emailMessage",
                               //start email message
                               person.getFirstName() + " " + person.getLastName() + " has requested to change " +
@@ -504,7 +504,7 @@ public class UsersEndpoint
     public Response getChangePassword(@PathParam("userId") @ExistingEntityId(entityClass = Person.class) long userId) {
         //will throw exception if the current user is not the one being accessed, or an administrator
         this.checkForCurrentUser(userId);
-        Template template = changePassword.instance.getNewTemplate();
+        Template template = changePassword.get().getNewTemplate();
         template.set("person", RequestContext.getEntityManager().find(Person.class, userId));
         return Response.ok(template).build();
     }
@@ -541,7 +541,7 @@ public class UsersEndpoint
     @GET
     @Path(FORGOT_PASSWORD)
     public Response getForgotPassword() {
-        return Response.ok(forgotPassword.instance.getNewTemplate()).build();
+        return Response.ok(forgotPassword.get().getNewTemplate()).build();
     }
 
 
@@ -564,7 +564,7 @@ public class UsersEndpoint
 
     private boolean sendForgotPasswordEmail(Person person) throws EmailException {
         try {
-            Template emailTemplate = forgotpasswordemail.instance.getNewTemplate();
+            Template emailTemplate = forgotpasswordemail.get().getNewTemplate();
             emailTemplate.set("emailMessage",
                               //start email message
                               "Someone has used this email to request a password reset on www.mot.be<br/>" +
@@ -616,7 +616,7 @@ public class UsersEndpoint
 
         //action for changing email address
         if (action.equals(CHANGE_EMAIL)) {
-            template = changeEmailFinal.instance.getNewTemplate();
+            template = changeEmailFinal.get().getNewTemplate();
             template.set("query", "u=" + personId + "&c=" + confirmString);
             template.set("oldEmail", person.getEmail());
             template.set("newEmail", person.getSubject().getPrincipalReset());
@@ -626,11 +626,11 @@ public class UsersEndpoint
             // if userId is found
             // if confirmation string is correct, update person and update subject of person
             if (confirmString.equals(person.getSubject().getConfirmation())) {
-                template = forgotPasswordFinal.instance.getNewTemplate();
+                template = forgotPasswordFinal.get().getNewTemplate();
                 template.set("person", person);
                 template.set(FEEDBACK_MESSAGE, new CustomFeedbackMessage("forgotPasswordSuccess", FeedbackMessage.Level.SUCCESS));
             } else {
-                template = forgotPasswordFailure.instance.getNewTemplate();
+                template = forgotPasswordFailure.get().getNewTemplate();
                 template.set(FEEDBACK_MESSAGE, new CustomFeedbackMessage("emailConfirmationFailure", FeedbackMessage.Level.ERROR));
             }
         } else {
