@@ -1,15 +1,15 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.base.Blocks;
-import com.beligum.blocks.identifiers.BlockId;
-import com.beligum.blocks.models.*;
-import com.beligum.blocks.parsers.visitors.template.HtmlFromClientVisitor;
-import com.beligum.blocks.parsers.Traversor;
-import com.beligum.blocks.renderer.BlocksTemplateRenderer;
-import com.beligum.blocks.usermanagement.Permissions;
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.base.Blocks;
+import com.beligum.blocks.config.ParserConstants;
+import com.beligum.blocks.identifiers.BlockId;
+import com.beligum.blocks.models.*;
+import com.beligum.blocks.parsers.Traversor;
+import com.beligum.blocks.parsers.visitors.template.HtmlFromClientVisitor;
+import com.beligum.blocks.renderer.BlocksTemplateRenderer;
+import com.beligum.blocks.security.Permissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.hibernate.validator.constraints.NotBlank;
 import org.jsoup.Jsoup;
@@ -21,7 +21,9 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * Created by bas on 07.10.14.
@@ -244,7 +246,7 @@ public class EntitiesEndpoint
         BlockId blockId = Blocks.urlDispatcher().findId(url);
         String language = Blocks.urlDispatcher().getLanguage(url);
         if (blockId != null) {
-            PageTemplate pageTemplate = Blocks.templateCache().getPagetemplate(templateName);
+            PageTemplate pageTemplate = Blocks.templateCache().getPageTemplate(templateName);
             if (pageTemplate == null) {
                 throw new Exception("Page template does not exist");
             }

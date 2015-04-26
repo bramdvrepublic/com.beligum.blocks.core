@@ -8,8 +8,8 @@ import com.beligum.blocks.exceptions.UrlIdMappingException;
 import com.beligum.blocks.models.Blueprint;
 import com.beligum.blocks.models.PageTemplate;
 import com.beligum.blocks.renderer.BlocksTemplateRenderer;
+import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.urlmapping.BlocksUrlDispatcher;
-import com.beligum.blocks.usermanagement.Permissions;
 import gen.com.beligum.blocks.core.fs.html.views.admin.*;
 import gen.com.beligum.blocks.endpoints.DebugEndpointRoutes;
 import org.apache.commons.lang3.StringUtils;
@@ -99,7 +99,7 @@ public class DebugEndpoint
         if(StringUtils.isEmpty(language)){
             language = Blocks.config().getDefaultLanguage();
         }
-        PageTemplate pageTemplate = Blocks.templateCache().getPagetemplate(pageTemplateName);
+        PageTemplate pageTemplate = Blocks.templateCache().getPageTemplate(pageTemplateName);
         Template template = pagetemplate.get().getNewTemplate();
         template.set("DateTool", new DateTool());
         template.set("EscapeTool", new EscapeTool());

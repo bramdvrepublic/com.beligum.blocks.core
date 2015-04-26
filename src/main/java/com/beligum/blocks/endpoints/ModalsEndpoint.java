@@ -2,7 +2,7 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.base.Blocks;
-import com.beligum.blocks.usermanagement.Permissions;
+import com.beligum.blocks.security.Permissions;
 import gen.com.beligum.blocks.core.fs.html.views.modals.change_url_modal;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 

@@ -1,29 +1,26 @@
 #define($body-html)
-<div class="container">
+<div class="container new-page">
     <div class="row">
-        <div class="col-md-12">
-            <div class="block center-block">
-                <h2>Do you want to create a new page?</h2>
-            </div>
+        <div class="col-sm-12">
+
+            <h1>Do you want to create a new page?</h1>
+
+            <form role="form" method="POST" action="/entities" class="form-inline">
+                <input type="hidden" name="page-url" value="$entityUrl"/>
+
+                <div class="form-group">
+                    <select name="page-class-name" id="class-selection" class="form-control">
+                        #foreach($blueprint in $blueprints)
+                            <option value="$blueprint.getName()">$!blueprint.getName()</option>
+                        #end
+                    </select>
+
+                    <button type="submit" class="btn btn-primary">New page</button>
+                </div>
+            </form>
         </div>
     </div>
-    <div class="row">
-        <form method="POST" action="/entities">
-            <input type="hidden" name="page-url" value="$entityUrl"/>
-            <div class="col-md-2">
-                <select name="page-class-name" id="class-selection" class="form-control">
-                    #foreach($blueprint in $blueprints)
-                        <option value="$blueprint.getName()">$!blueprint.getName()</option>
-                    #end
-                </select>
-            </div>
-            <div class="col-md-8">
-                <button type="submit" class="col-md-6 btn btn-default">New page</button>
-            </div>
-        </form>
-    </div>
-</div>
 </div>
 #end
 
-#parse("/views/mot-main.html")
+#parse("/templates/main.html")

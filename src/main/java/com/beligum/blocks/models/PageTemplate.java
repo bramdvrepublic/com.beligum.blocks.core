@@ -1,12 +1,8 @@
 package com.beligum.blocks.models;
 
-import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.parsers.ElementParser;
 import com.beligum.blocks.parsers.visitors.template.PagetemplateVisitor;
-import com.beligum.blocks.usermanagement.Permissions;
-import org.apache.shiro.SecurityUtils;
 import org.jsoup.nodes.Element;
 
 /**

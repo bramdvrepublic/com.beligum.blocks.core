@@ -1,17 +1,13 @@
 package com.beligum.blocks.renderer;
 
-import com.beligum.base.templating.velocity.VelocityTemplateEngine;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.identifiers.BlockId;
 import com.beligum.blocks.models.*;
-import com.beligum.blocks.models.Resource;
-import com.beligum.blocks.models.rdf.OrderedMemGraph;
-import com.beligum.blocks.usermanagement.Permissions;
+import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.utils.PropertyFinder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
-import org.apache.velocity.runtime.directive.Parse;
 
 import java.util.*;
 

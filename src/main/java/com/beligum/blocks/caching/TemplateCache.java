@@ -82,7 +82,7 @@ public class TemplateCache implements BlocksTemplateCache
         return retVal;
     }
 
-    public PageTemplate getPagetemplate(String name) {
+    public PageTemplate getPageTemplate(String name) {
         return this.pagetemplates.get(name);
     }
 
