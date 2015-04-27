@@ -1,17 +1,14 @@
 package com.beligum.blocks.renderer;
 
-import com.beligum.base.templating.velocity.VelocityTemplateEngine;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.identifiers.BlockId;
 import com.beligum.blocks.models.*;
-import com.beligum.blocks.models.Resource;
-import com.beligum.blocks.models.rdf.OrderedMemGraph;
+import com.beligum.blocks.models.jsonld.ResourceNode;
+import com.beligum.blocks.models.jsonld.ResourceNodeIterator;
 import com.beligum.blocks.usermanagement.Permissions;
 import com.beligum.blocks.utils.PropertyFinder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
-import org.apache.velocity.runtime.directive.Parse;
 
 import java.util.*;
 
@@ -92,20 +89,24 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 
 
 
-    public String render(StoredTemplate storedTemplate, Resource resource, String language) {
+    public String render(StoredTemplate storedTemplate, ResourceNode resource, String language) {
         this.locale = new Locale(language);
         this.buffer = new StringBuilder();
-        if (resource != null) usesEntity = true;
+        if (resource != null) {
+            usesEntity = true;
+        }
+
         if (renderDynamicBlocks && Blocks.blockHandler().isDynamicBlock(storedTemplate.getBlueprintName())) {
             this.buffer.append(Blocks.blockHandler().getDynamicBlock(storedTemplate.getBlueprintName()).render(storedTemplate));
         } else {
-            this.renderElement(storedTemplate, resource, null, this.readOnly);
+            this.renderElement(storedTemplate, ResourceNodeIterator.create(resource), null, this.readOnly);
         }
+
         return this.buffer.toString();
     }
 
 
-    public String render(PageTemplate pageTemplate, StoredTemplate storedTemplate, Resource resource, String language) {
+    public String render(PageTemplate pageTemplate, StoredTemplate storedTemplate, ResourceNode resource, String language) {
         this.locale = new Locale(language);
         this.buffer = new StringBuilder();
 
@@ -165,7 +166,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         return retVal;
     }
 
-    private void renderInsideElement(BasicTemplate template, Resource resource,  String property, boolean readOnly)
+    private void renderInsideElement(BasicTemplate template, ResourceNodeIterator resource,  String property, boolean readOnly)
     {
 
         String stringTemplate = template.getValue();
@@ -175,11 +176,11 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
             // This is a basic block/property
             String value = null;
             if (resource != null) {
-                value = resource.getProperty(property);
+                value = resource.getString(property);
             }
             if (value != null) {
                 this.buffer.append(value);
-            } else if (template.getProperties().size() > 0) {
+            } else if (template.getFields().size() > 0) {
                 this.renderTemplate(template, resource, true);
             } else if (!useOnlyEntity) {
                 this.buffer.append(template.getValue());
@@ -194,19 +195,20 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
             this.scripts.addAll(blueprint.getScripts());
 
             if (resource != null) {
-                Resource newResource = resource.getResource(property);
+                ResourceNode newResource = resource.getResource(property);
                 if (newResource != null) {
-                    resource = newResource;
+                    resource = ResourceNodeIterator.create(newResource);
                 }
             }
 
+            // TODO: check nr of properties for blueprint
             if (readOnly) {
-                if (blueprint.getProperties().size() > 0) {
+                if (blueprint.getFields().size() > 0) {
                     this.renderTemplate(template, resource, true);
                 } else {
                     this.buffer.append(blueprint.getValue());
                 }
-            } else if (blueprint.getProperties().size() > 0 || template.getProperties().size() > 0) {
+            } else if (blueprint.getFields().size() > 0 || template.getFields().size() > 0) {
                 this.renderTemplate(template, resource, readOnly);
             } else {
                 this.buffer.append(template.getValue());
@@ -217,7 +219,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 
     }
 
-    public void renderInsideWrapper(String templateToRender, Resource resource, String property) {
+    public void renderInsideWrapper(String templateToRender, ResourceNodeIterator resource, String property) {
         FieldOverview fieldOverview = findNextPropertyInTemplate(templateToRender);
         for (Field nextProperty: fieldOverview.fields) {
             // this is not a property but a piece of the template, so add and forward
@@ -226,13 +228,13 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
                 continue;
             }
             String value = null;
-            if (resource != null) value = resource.getProperty(property);
+            if (resource != null) value = resource.getString(property);
             if (value != null)
                 this.buffer.append(value);
         }
     }
 
-    protected void renderTemplate(BasicTemplate template, Resource resource, boolean readOnly)
+    protected void renderTemplate(BasicTemplate template, ResourceNodeIterator resource, boolean readOnly)
     {
         // Part 1 render dynamic block, we don't care further
         Blueprint blueprint = template.getBlueprint();
@@ -354,7 +356,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
     }
 
 
-    public void renderElement(BasicTemplate propertyTemplate, Resource resource, String property, boolean readOnly) {
+    public void renderElement(BasicTemplate propertyTemplate, ResourceNodeIterator resource, String property, boolean readOnly) {
         // if element is src or href???
         //
         String propAttribute = null;
@@ -375,7 +377,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 
             if (resource != null) {
                 if (property != null) {
-                    value = resource.getProperty(property);
+                    value = resource.getString(property);
                 } else {
 //                    value = resource.getProperty(RDFS.Resource.toString());
                 }
@@ -397,7 +399,6 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
             }
 
             extraAttributes.put(propAttribute, value);
-            String caption = getCaption(propertyTemplate.getName());
 
         }
 
@@ -483,20 +484,20 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
     }
 
     public BasicTemplate getProperty(BasicTemplate template, String propertyName, int index, boolean readOnly) {
-        BasicTemplate retVal = PropertyFinder.findProperty(propertyName, template.getProperties(), index);
+        BasicTemplate retVal = PropertyFinder.findProperty(propertyName, template, index);
         BasicTemplate blueprintProperty = null;
         if (template.getBlueprint() != null) {
-            blueprintProperty = PropertyFinder.findProperty(propertyName, template.getBlueprint().getProperties(), index);
+            blueprintProperty = PropertyFinder.findProperty(propertyName, template.getBlueprint(), index);
         }
 
         if (retVal == null && blueprintProperty != null) retVal = blueprintProperty;
 
         if (retVal instanceof Singleton && this.fetchSingletons){
-            BlockId singletonId = ((Singleton) retVal).getId();
-            StoredTemplate singleton = Blocks.database().fetch(singletonId, this.locale.getLanguage(), Blocks.factory().getSingletonClass());
-            if (singleton != null) {
-                retVal = singleton;
-            }
+            String singletonId = ((Singleton) retVal).getId();
+//            StoredTemplate singleton = Blocks.database().fetch(singletonId, this.locale.getLanguage(), Blocks.factory().getSingletonClass());
+//            if (singleton != null) {
+//                retVal = singleton;
+//            }
         }
 
         boolean propertyReadOnly = readOnly;
@@ -537,121 +538,4 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         return name + "/" + ParserConstants.CAPTION;
     }
 
-//    private List<RDFNode> getRDFValues(RDFNode resource, Property property, String language) {
-//        String id = null;
-//        List<RDFNode> retVal = new ArrayList<>();
-//        if (language == null) language = Locale.ROOT.getLanguage();
-//        if (resource != null && resource.isResource()) {
-//            if (resource.isAnon()) {
-//                id = resource.asResource().getId().toString();
-//            } else {
-//                id = resource.asResource().getURI();
-//            }
-//        }
-//        if (id != null) {
-//            if (!this.rdfCache.containsKey(id)) {
-//                this.rdfCache.put(id, new HashMap());
-//            }
-//            HashMap<String, HashMap<String, ArrayList<RDFNode>>> properties = this.rdfCache.get(id);
-//            if (!properties.containsKey(property.getURI())) {
-//                properties.put(property.getURI(), new HashMap<String, ArrayList<RDFNode>>());
-//
-//                HashMap<String, ArrayList<RDFNode>> values = properties.get(property.getURI());
-//                if (!values.containsKey(Locale.ROOT.getLanguage())) {
-//                    values.put(Locale.ROOT.getLanguage(), new ArrayList<RDFNode>());
-//                }
-//                if (!values.containsKey(language)) {
-//                    values.put(language, new ArrayList<RDFNode>());
-//                }
-//
-//                NodeIterator it = model.listObjectsOfProperty(resource.asResource(), property);
-//                while (it.hasNext()) {
-//                    RDFNode value = it.next();
-//                    if (value.isLiteral()) {
-//                        if (!values.containsKey(value.asLiteral().getLanguage())) {
-//                            values.put(value.asLiteral().getLanguage(), new ArrayList<RDFNode>());
-//                        }
-//                        values.get(value.asLiteral().getLanguage()).add(value);
-//                    } else {
-//                        values.get(Locale.ROOT.getLanguage()).add(value);
-//                    }
-//                }
-//
-//            }
-//            HashMap<String, ArrayList<RDFNode>> values = properties.get(property.getURI());
-//            if (values.get(Locale.ROOT.getLanguage()).size() > values.get(language).size()) {
-//                for (int i = values.get(language).size(); i < values.get(Locale.ROOT.getLanguage()).size(); i++) {
-//                    values.get(language).add(values.get(Locale.ROOT.getLanguage()).get(i));
-//                }
-//            }
-//            retVal = values.get(language);
-//        }
-//        return retVal;
-//    }
-
-//
-//    private RDFNode getRDFValue(RDFNode resource, Property property, String language) {
-//        List<RDFNode> values = getRDFValues(resource, property, language);
-//        Integer index= getPropertyIndex(resource, property);
-//        RDFNode retVal = null;
-//        if (values.size() > index) {
-//            retVal = values.get(index);
-//        }
-//        return retVal;
-//    }
-//
-//    private void rdfPropertyUsed(RDFNode resource, Property property) {
-//        String id = null;
-//        if (resource.isResource()) {
-//            if (resource.isAnon()) {
-//                id = resource.asResource().getId().toString();
-//            } else {
-//                id = resource.asResource().getURI();
-//            }
-//        }
-//
-//        if (id != null) {
-//            if (!this.rdfPropertyUsed.containsKey(id)) {
-//                this.rdfPropertyUsed.put(id, new HashMap());
-//            }
-//
-//            HashMap<String, Integer> properties = this.rdfPropertyUsed.get(id);
-//            if (!properties.containsKey(property.getURI())) {
-//                properties.put(property.getURI(), 0);
-//            }
-//            properties.put(property.getURI(), properties.get(property.getURI() + 1));
-//        }
-//
-//    }
-//
-//    private Integer getFieldsLeft(RDFNode resource, Property property, String language) {
-//        return  getRDFValues(resource, property, language).size() - getPropertyIndex(resource, property);
-//
-//    }
-//
-//    private Integer getPropertyIndex(RDFNode resource, Property property) {
-//        String id = null;
-//        Integer retVal = 0;
-//        if (resource != null && resource.isResource()) {
-//            if (resource.isAnon()) {
-//                id = resource.asResource().getId().toString();
-//            } else {
-//                id = resource.asResource().getURI();
-//            }
-//        }
-//
-//        if (id != null) {
-//            if (!this.rdfPropertyUsed.containsKey(id)) {
-//                this.rdfPropertyUsed.put(id, new HashMap());
-//            }
-//
-//            HashMap<String, Integer> properties = this.rdfPropertyUsed.get(id);
-//            if (!properties.containsKey(property.getURI())) {
-//                properties.put(property.getURI(), 0);
-//            }
-//            retVal = properties.get(property.getURI());
-//
-//        }
-//        return retVal;
-//    }
 }

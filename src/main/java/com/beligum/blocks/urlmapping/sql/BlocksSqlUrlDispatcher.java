@@ -3,7 +3,10 @@ package com.beligum.blocks.urlmapping.sql;
 import com.beligum.base.server.R;
 import com.beligum.base.server.RequestContext;
 import com.beligum.blocks.base.Blocks;
+import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.identifiers.BlockId;
+import com.beligum.blocks.models.SiteUrl;
+import com.beligum.blocks.models.account.Subject;
 import com.beligum.blocks.urlmapping.BlocksUrlDispatcher;
 import org.apache.commons.lang3.StringUtils;
 
@@ -12,6 +15,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 
 /**
  * Created by wouter on 19/04/15.
@@ -22,23 +26,34 @@ public class BlocksSqlUrlDispatcher implements BlocksUrlDispatcher
     private HashSet<String> possibleLanguages = null;
 
     @Override
-    public BlockId findId(URL url)
+    public SiteUrl findId(URL url)
     {
         if (url == null) return null;
+        SiteUrl retVal = null;
         String cleanUrl = "/" + StringUtils.join(getUrlWithoutLanguage(splitUrl(url)), "/");
         EntityManager em = RequestContext.getEntityManager();
+        List<SiteUrl> urls = RequestContext.getEntityManager().createQuery("SELECT s FROM SiteUrl s WHERE s.url = '" +cleanUrl+ "'",  SiteUrl.class)
+                                             .getResultList();
 //        em.find()
-        return null;
+        if (urls.size() > 0) {
+            retVal = urls.get(0);
+        }
+        return retVal;
     }
     @Override
     public BlockId findPreviousId(URL url)
     {
         return null;
     }
-    @Override
-    public void addId(URL url, BlockId id, String language)
-    {
 
+    @Override
+    public void addId(URL url, URL view, URL resource, String language)
+    {
+        String cleanUrl = "/" + StringUtils.join(getUrlWithoutLanguage(splitUrl(url)), "/");
+        String viewUrl = view != null ? view.toString() : null;
+        String resourceUrl = resource != null ? resource.toString() : null;
+        SiteUrl newUrl = new SiteUrl(cleanUrl, viewUrl, resourceUrl, language);
+        RequestContext.getEntityManager().persist(newUrl);
     }
     @Override
     public void removeId(URL url) throws Exception
@@ -52,10 +67,13 @@ public class BlocksSqlUrlDispatcher implements BlocksUrlDispatcher
         return null;
     }
 
+
     @Override
     public String getLanguage(URL url)
     {
-        return getLanguage(splitUrl(url));
+        String retVal = getLanguage(splitUrl(url));
+        if (retVal == null) retVal = Blocks.config().getDefaultLanguage();
+        return retVal;
     }
 
     @Override

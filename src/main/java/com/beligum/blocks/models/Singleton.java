@@ -8,7 +8,7 @@ import org.jsoup.nodes.Element;
 /**
  * Created by wouter on 26/03/15.
  */
-public abstract class Singleton extends StoredTemplate
+public class Singleton extends StoredTemplate
 {
     private final String defaultName = "DEFAULT";
     private String singletonName;

@@ -1,6 +1,7 @@
 package com.beligum.blocks.urlmapping;
 
 import com.beligum.blocks.identifiers.BlockId;
+import com.beligum.blocks.models.SiteUrl;
 
 import java.net.URL;
 
@@ -9,11 +10,11 @@ import java.net.URL;
  */
 public interface BlocksUrlDispatcher
 {
-    public BlockId findId(URL url);
+    public SiteUrl findId(URL url);
 
     public BlockId findPreviousId(URL url);
 
-    public void addId(URL url, BlockId id, String language);
+    public void addId(URL url, URL view, URL resource,  String language);
 
     public void removeId(URL url) throws Exception;
 

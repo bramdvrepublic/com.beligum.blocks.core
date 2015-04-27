@@ -2,13 +2,22 @@ package com.beligum.blocks.wiki;
 
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.exceptions.DatabaseException;
-import com.beligum.blocks.models.Entity;
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.models.jsonld.JsonLDGraph;
+import com.beligum.blocks.models.jsonld.Node;
+import com.beligum.blocks.models.jsonld.NodeFactory;
+import com.beligum.blocks.models.jsonld.ResourceNode;
+import com.beligum.blocks.models.jsonld.jackson.ResourceNodeSerializer;
 import com.beligum.blocks.models.rdf.OrderedMemGraph;
-import com.beligum.blocks.utils.URLFactory;
+import com.beligum.blocks.search.SimpleIndexer;
+import com.beligum.blocks.utils.UrlFactory;
+import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Resource;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.util.AntPathMatcher;
 import org.joda.time.LocalDateTime;
@@ -23,15 +32,35 @@ import java.util.*;
  */
 public abstract class WikiParser
 {
+    public static final String NL = "nl";
+    public static final String EN = "en";
+    public static final String FR = "fr";
+
+    public static final String[] LANGUAGES = new String[] {NL, FR, EN};
+
+    protected SimpleIndexer indexer;
     protected AntPathMatcher pathMatcher;
     // Objects with fields and languages for fields
     protected HashMap<String, HashMap<String, HashMap<String,String>>> items = new HashMap<String, HashMap<String, HashMap<String,String>>>();
-    protected ArrayList<Entity> entities = new ArrayList<Entity>();
+    protected ArrayList<HashMap<String, ResourceNode>> entities = new ArrayList<HashMap<String, ResourceNode>>();
+    protected ObjectMapper mapper;
 
     public WikiParser()
     {
 
         pathMatcher = new AntPathMatcher();
+        try {
+            indexer = new SimpleIndexer(new File(Blocks.config().getLuceneIndex()));
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        final SimpleModule module = new SimpleModule("customerSerializationModule", new Version(1, 0, 0, "static version"));
+        module.addSerializer(ResourceNode.class, new ResourceNodeSerializer());
+
+        mapper = new ObjectMapper();
+        mapper.registerModule(module);
+
     }
 
     public void parse(Path path)
@@ -112,70 +141,111 @@ public abstract class WikiParser
         }
     }
 
-    public void createEntities() {
+    public void createEntities()
+    {
         // loop through items
         // loop through languages
         // create entity per language
-        for (String key: this.items.keySet()) {
-            HashMap<String, HashMap<String,String>> item = this.items.get(key);
+        try {
 
-            makeEntity();
-            fillEntity(item, "nl");
-            fillEntity(item, "fr");
-            fillEntity(item, "en");
-            Entity entity = addEntity();
 
-            if (entity.getProperties().size() > 0) {
-                this.entities.add(changeEntity(entity));
-                saveEntity(entity);
+            try {
+                int count = 0;
+
+                for (String key : this.items.keySet()) {
+                    HashMap<String, HashMap<String, String>> item = this.items.get(key);
+
+                    makeEntity();
+                    HashMap entity = new HashMap<String, ResourceNode>();
+                    for (String language : new String[] { NL, FR, EN }) {
+                        fillEntity(item, language);
+                        ResourceNode resource = addEntity(language);
+
+                        if (resource.unwrap().keySet().size() > 0) {
+                            entity.put(language, changeEntity(resource, language));
+                            this.entities.add(entity);
+                            count++;
+
+                            Logger.info("saving entity: " + count);
+                        }
+                    }
+                    saveEntity((ResourceNode) entity.get(NL));
+
+                }
+                indexer.commit();
+            }
+            catch (Exception e) {
+                Logger.error(e);
+            } finally {
+                if (indexer != null) indexer.close();
             }
 
         }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
 
+
+    }
+
+    public void addDocument(String id, ResourceNode resource) throws IOException
+    {
+        String content = mapper.writeValueAsString(resource);
+        indexer.addDocument(id, content);
     }
 
     public abstract void makeEntity();
 
-    public abstract Entity addEntity();
+    public abstract ResourceNode addEntity(String language);
 
-    public abstract Entity changeEntity(Entity entity);
+    public abstract ResourceNode changeEntity(ResourceNode entity, String language);
 
-    public abstract void saveEntity(Entity entity);
+    public abstract void saveEntity(ResourceNode entity);
 
+    public abstract ResourceNode fillEntity(HashMap<String, HashMap<String, String>> item, String lang);
 
-    public abstract Entity fillEntity(HashMap<String, HashMap<String, String>> item, String lang);
-
-    public void splitField(Entity entity, String field) {
-        String name = Blocks.rdfFactory().ensureAbsoluteRdfValue(field);
-        HashMap<String, ArrayList<String>> property = (HashMap<String, ArrayList<String>>)entity.getProperties().get(name);
-        entity.getProperties().remove(name);
-        for (String language: new String[]{"nl", "fr", "en"}) {
-            if (property != null && property.containsKey(language)) {
-                for (String value : property.get(language)) {
-                    String[] splitValue = value.split("\\|");
+    public void splitField(ResourceNode entity, String field, String language) {
+        String name = UrlFactory.createLocalType(field);
+        Node property = entity.get(name);
+        entity.remove(name);
+        if (property != null && property.isList()) {
+            for (Node value : property.getList()) {
+                if (value.isString()) {
+                    String[] splitValue = value.getString().split("\\|");
                     for (String v : splitValue) {
-                        entity.addProperty(field, v.trim(), language);
+                        entity.add(field, NodeFactory.createAndGuess(v.trim(), language));
                     }
                 }
             }
+        } else if (property != null && property.isString()) {
+            String[] splitValue = property.getString().split("\\|");
+            for (String v : splitValue) {
+                entity.add(field, NodeFactory.createAndGuess(v.trim(), language));
+            }
         }
+
     }
 
-    public void prependField(Entity entity, String field, String prefix) {
-        String name = Blocks.rdfFactory().ensureAbsoluteRdfValue(field);
-        HashMap<String, ArrayList<String>> property = (HashMap<String, ArrayList<String>>)entity.getProperties().get(name);
-        entity.getProperties().remove(name);
-        for (String language: new String[]{"nl", "fr", "en"}) {
-            if (property != null && property.containsKey(language)) {
-                for (String value : property.get(language)) {
-                    entity.addProperty(field, prefix + value.trim(), language);
+    public void prependField(ResourceNode entity, String field, String prefix, String language) {
+        String name = UrlFactory.createLocalType(field);
+        Node property = entity.get(name);
+        entity.remove(name);
+        if (property != null && property.isList()) {
+            for (Node node: property.getList()) {
+                if (node.isString()) {
+                    entity.add(field, NodeFactory.createAndGuess(prefix + node.getString().trim(), language));
 
                 }
             }
+        } else if (property.isString()) {
+            entity.add(field, NodeFactory.createAndGuess(prefix + property.getString().trim(), language));
         }
+
+
+
     }
 
-    public void addToEntity(String newFieldName, String[] oldFields, Entity entity, String language, HashMap<String, HashMap<String,String>> item) {
+    public void addToEntity(String newFieldName, String[] oldFields, ResourceNode entity, String language, HashMap<String, HashMap<String,String>> item) {
         String value = null;
         for (String field: oldFields) {
             if (item.containsKey(field) && item.get(field).containsKey(language)) {
@@ -184,26 +254,12 @@ public abstract class WikiParser
             }
         }
         if (value != null) value = value.trim();
-        if (!StringUtils.isEmpty(value)) {
-            value = value.trim();
-            if (newFieldName.equals("createdBy")) {
-                entity.addProperty("createdBy", value);
-            } else if (newFieldName.equals("createdAt")) {
-                try {
-                    Long millis = Long.parseLong(value);
-                    LocalDateTime c = new LocalDateTime(millis*1000);
-                    entity.addProperty("createdAt", c.toString());
-                } catch(Exception e) {
-                    Logger.debug("Could not parse time", e);
-                }
-            } else {
-                entity.addProperty(newFieldName, value, language);
-            }
-        }
+
+        add(newFieldName, value, entity, language);
     }
 
     // Add the first filled field
-    public void addToEntityOR(String newFieldName, String[] oldFields, Entity entity, String language, HashMap<String, HashMap<String,String>> item) {
+    public void addToEntityOR(String newFieldName, String[] oldFields, ResourceNode entity, String language, HashMap<String, HashMap<String,String>> item) {
         String value = null;
         for (String field: oldFields) {
             if (item.containsKey(field) && item.get(field).containsKey(language)) {
@@ -211,25 +267,10 @@ public abstract class WikiParser
                 break;
             }
         }
-        if (!StringUtils.isEmpty(value)) {
-            value = value.trim();
-            if (newFieldName.equals("createdBy")) {
-                entity.addProperty("createdBy", value);
-            } else if (newFieldName.equals("createdAt")) {
-                try {
-                    Long millis = Long.parseLong(value);
-                    LocalDateTime c = new LocalDateTime(millis*1000);
-                    entity.addProperty("createdAt", c.toString());
-                } catch(Exception e) {
-                    Logger.debug("Could not parse time", e);
-                }
-            } else {
-                entity.addProperty(newFieldName, value, language);
-            }
-        }
+
     }
 
-    public void addToEntityJoined(String newFieldName, String[] oldFields, Entity entity, String language, HashMap<String, HashMap<String,String>> item, String joint) {
+    public void addToEntityJoined(String newFieldName, String[] oldFields, ResourceNode entity, String language, HashMap<String, HashMap<String,String>> item, String joint) {
         String value = null;
         for (String field: oldFields) {
             if (item.containsKey(field) && item.get(field).containsKey(language)) {
@@ -237,25 +278,30 @@ public abstract class WikiParser
                 value += item.get(field).get(language);
             }
         }
+
+        add(newFieldName, value, entity, language);
+
+    }
+
+
+    public void add(String newFieldName, String value, ResourceNode entity, String language) {
         if (!StringUtils.isEmpty(value)) {
             value = value.trim();
             if (newFieldName.equals("createdBy")) {
-                entity.addProperty("createdBy", value);
+                entity.add("createdBy", NodeFactory.createAndGuess(value));
             } else if (newFieldName.equals("createdAt")) {
                 try {
                     Long millis = Long.parseLong(value);
                     LocalDateTime c = new LocalDateTime(millis*1000);
-                    entity.addProperty("createdAt", c.toString());
+                    entity.add("createdAt", NodeFactory.createAndGuess(c.toString()));
                 } catch(Exception e) {
                     Logger.debug("Could not parse time", e);
                 }
             } else {
-                entity.addProperty(newFieldName, value, language);
+                entity.add(UrlFactory.createLocalType(newFieldName), NodeFactory.createAndGuess(value, language));
             }
         }
     }
-
-
 
 
 }

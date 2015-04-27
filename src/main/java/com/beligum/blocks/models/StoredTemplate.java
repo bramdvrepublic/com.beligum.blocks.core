@@ -3,44 +3,49 @@ package com.beligum.blocks.models;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
+import com.beligum.blocks.models.jsonld.JsonLDGraph;
+import com.beligum.blocks.models.jsonld.Node;
 import com.beligum.blocks.renderer.BlocksTemplateRenderer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Tag;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * Created by wouter on 16/03/15.
  */
-public abstract class StoredTemplate extends StorableTemplate
+public class StoredTemplate extends BasicTemplate
 {
 
-    protected String pageTemplateName;
-    protected String pageTitle;
+    public static final String pageTemplateName = ParserConstants.BLOCKS_SCHEMA + "pageTemplateName";
+    public static final String pageTitle= ParserConstants.BLOCKS_SCHEMA + "pageTitle";
+//
+//    protected String pageTemplateName;
+//    protected String pageTitle;
+    private String language;
 
     public StoredTemplate() {
         super();
+        this.language = Blocks.config().getDefaultLanguage();
     }
 
+    public StoredTemplate(Blueprint blueprint, String language) {
+        for (String key: blueprint.getFields()) {
+            Node property = blueprint.get(key);
+            this.set(key, property.copy());
+        }
+    }
 
     public StoredTemplate(Element node, String language) throws ParseException
     {
-        super(node, language);
+        super(node);
+        this.language = language;
         this.setPageTemplateName(findPageTemplateName());
     }
 
-
-    public StoredTemplate(Element node, URL url) throws ParseException
-    {
-        this(node, Blocks.urlDispatcher().getLanguage(url));
-        this.setId(Blocks.urlDispatcher().findId(url));
-    }
-
-
-    public void setLanguage(String language) {
-        this.language = language;
-    }
 
     protected String findPageTemplateName() {
         String retVal = ParserConstants.DEFAULT_PAGE_TEMPLATE;
@@ -52,14 +57,15 @@ public abstract class StoredTemplate extends StorableTemplate
     }
 
     public String getPageTemplateName() {
-        if (this.pageTemplateName == null) {
-            this.pageTemplateName = findPageTemplateName();
+        String retVal = getString(StoredTemplate.pageTemplateName);
+        if (retVal == null) {
+            retVal = findPageTemplateName();
         }
-        return this.pageTemplateName;
+        return retVal;
     }
 
     public void setPageTemplateName(String pageTemplateName) {
-        this.pageTemplateName = pageTemplateName;
+        setString(StoredTemplate.pageTemplateName, pageTemplateName, this.language);
     }
 
     public String getPageTitle() {
@@ -71,7 +77,7 @@ public abstract class StoredTemplate extends StorableTemplate
     }
 
     public void setPageTitle(String pageTitle) {
-        this.pageTitle = pageTitle;
+        setString(StoredTemplate.pageTitle, pageTitle, this.language);
     }
 
     @JsonIgnore
@@ -88,5 +94,10 @@ public abstract class StoredTemplate extends StorableTemplate
         retVal = this.renderedTransientElement.clone();
         if (retVal == null) retVal = new Element(Tag.valueOf("div"), null);
         return retVal;
+    }
+
+    public String getLanguage()
+    {
+        return language;
     }
 }

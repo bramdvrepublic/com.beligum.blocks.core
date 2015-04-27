@@ -1,7 +1,9 @@
 package com.beligum.blocks.urlmapping;
 
 import com.beligum.blocks.base.Blocks;
+import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.identifiers.BlockId;
+import com.beligum.blocks.models.SiteUrl;
 import com.beligum.blocks.models.interfaces.BlocksStorable;
 
 import java.net.URL;
@@ -35,7 +37,7 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
 
 
 
-    public BlockId findId(URL url) {
+    public SiteUrl findId(URL url) {
         BlockId retVal = null;
         ArrayList<String> paths = splitUrl(url);
         String language = getLanguage(paths);
@@ -45,7 +47,7 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
         if (branch != null) {
             retVal =  Blocks.factory().getIdForString(branch.getStoredTemplateId());
         }
-        return retVal;
+        return null;
     }
 
     @Override
@@ -137,7 +139,7 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
         return retVal;
     }
 
-    public String getLanguageOrNull(URL url) {
+    public String getLanguageOrDefault(URL url) {
         return getLanguage(splitUrl(url));
     }
 
@@ -150,6 +152,5 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
         if (retVal.size() > 0 && isPossibleLanguage(retVal.get(0))) retVal.remove(0);
         return retVal;
     }
-
 
 }

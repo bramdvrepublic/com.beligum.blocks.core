@@ -6,6 +6,7 @@ import com.beligum.blocks.identifiers.BlockId;
 import com.beligum.blocks.models.*;
 import com.beligum.blocks.models.interfaces.BlocksStorable;
 import com.beligum.blocks.models.interfaces.BlocksVersionedStorable;
+import com.beligum.blocks.models.jsonld.ResourceNode;
 import com.beligum.blocks.urlmapping.BlocksUrlDispatcher;
 import org.joda.time.LocalDateTime;
 
@@ -59,26 +60,31 @@ public abstract class AbstractBlockDatabase implements BlocksDatabase
         return retVal;
     }
 
-    public JsonLDWrapper fetchEntity(BlockId id) {
-        return doFetch(id, JsonLDWrapper.class);
-    }
 
-    public StoredTemplate fetchTemplate(BlockId id, String language) {
-        return fetch(id, language, Blocks.factory().getStoredTemplateClass());
-    }
 
-    public Blueprint fetchBlueprint(BlockId id, String language) {
-        return fetch(id, language, Blocks.factory().getBlueprintClass());
-    }
 
-    public StoredTemplate fetchPageTemplate(BlockId id, String language) {
-        return fetch(id, language, Blocks.factory().getPageTemplateClass());
-    }
+    public abstract ResourceNode fetchResource(String blockId, String language);
 
-    public Singleton fetchSingleton(BlockId id, String language) {
-        return fetch(id, language, Blocks.factory().getSingletonClass());
-    }
+    public abstract void save(ResourceContext context);
 
+
+
+//    public StoredTemplate fetchTemplate(BlockId id, String language) {
+//        return fetch(id, language, Blocks.factory().getStoredTemplateClass());
+//    }
+//
+//    public Blueprint fetchBlueprint(BlockId id, String language) {
+//        return fetch(id, language, Blocks.factory().getBlueprintClass());
+//    }
+//
+//    public StoredTemplate fetchPageTemplate(BlockId id, String language) {
+//        return fetch(id, language, Blocks.factory().getPageTemplateClass());
+//    }
+//
+//    public Singleton fetchSingleton(BlockId id, String language) {
+//        return fetch(id, language, Blocks.factory().getSingletonClass());
+//    }
+//
 
     public void save(BlocksStorable storable) throws DatabaseException
     {
@@ -88,75 +94,75 @@ public abstract class AbstractBlockDatabase implements BlocksDatabase
 
     public void save(BlocksVersionedStorable storable) throws DatabaseException
     {
-        if (storable.getId() != null) {
-            boolean deleted = false;
-            // Get the current version in the database
-            BlocksVersionedStorable oldStorable = fetch(storable.getId(), storable.getLanguage(), storable.getClass());
-            if (oldStorable == null) {
-                oldStorable = doFetchPrevious(storable.getId(), storable.getLanguage(), storable.getClass());
-                deleted = true;
-            }
-
-            if (oldStorable != null && (deleted || !oldStorable.equals(storable))) {
-                // save current version to history
-                doSaveHistory(oldStorable);
-                // upodate metadata
-                touch(storable);
-
-            }
-        }
-        doSave(storable);
+//        if (storable.getId() != null) {
+//            boolean deleted = false;
+//            // Get the current version in the database
+//            BlocksVersionedStorable oldStorable = fetch(storable.getId(), storable.getLanguage(), storable.getClass());
+//            if (oldStorable == null) {
+//                oldStorable = doFetchPrevious(storable.getId(), storable.getLanguage(), storable.getClass());
+//                deleted = true;
+//            }
+//
+//            if (oldStorable != null && (deleted || !oldStorable.equals(storable))) {
+//                // save current version to history
+//                doSaveHistory(oldStorable);
+//                // upodate metadata
+//                touch(storable);
+//
+//            }
+//        }
+//        doSave(storable);
 
     }
 
 
-    public void saveEntity(Entity entity) throws DatabaseException
+    public void saveEntity(ResourceNode entity) throws DatabaseException
     {
-        ArrayList<Entity> entities = entity.flatten(new ArrayList<Entity>());
-        for (Entity e: entities) {
-//            save(e);
-        }
+//        ArrayList<ResourceNode> entities = entity.flatten(new ArrayList<Entity>());
+//        for (ResourceNode e: entities) {
+////            save(e);
+//        }
     }
 
 
     public void remove(BlocksVersionedStorable storable) throws DatabaseException
     {
-        if (storable.getId() != null) {
-            BlocksVersionedStorable oldStorable = null;
-            for (String lang : Blocks.config().getLanguages()) {
-
-                oldStorable = doFetch(storable.getId(), lang, storable.getClass());
-                if (oldStorable != null) {
-                    doSaveHistory(oldStorable);
-                }
-                doRemove(storable);
-
-            }
-        }
+//        if (storable.getId() != null) {
+//            BlocksVersionedStorable oldStorable = null;
+//            for (String lang : Blocks.config().getLanguages()) {
+//
+//                oldStorable = doFetch(storable.getId(), lang, storable.getClass());
+//                if (oldStorable != null) {
+//                    doSaveHistory(oldStorable);
+//                }
+//                doRemove(storable);
+//
+//            }
+//        }
     }
 
     public void remove(BlocksVersionedStorable storable, String language) throws DatabaseException
     {
-        if (storable.getId() != null) {
-            BlocksVersionedStorable oldStorable = null;
-            for (String lang : Blocks.config().getLanguages()) {
-                if (lang.equals(language)) {
-                    oldStorable = doFetch(storable.getId(), lang, storable.getClass());
-                    if (oldStorable != null) {
-                        doSaveHistory(oldStorable);
-                    }
-                    doRemove(storable);
-                }
-
-            }
-        }
+//        if (storable.getId() != null) {
+//            BlocksVersionedStorable oldStorable = null;
+//            for (String lang : Blocks.config().getLanguages()) {
+//                if (lang.equals(language)) {
+//                    oldStorable = doFetch(storable.getId(), lang, storable.getClass());
+//                    if (oldStorable != null) {
+//                        doSaveHistory(oldStorable);
+//                    }
+//                    doRemove(storable);
+//                }
+//
+//            }
+//        }
     }
 
     public void remove(BlocksStorable storable) throws DatabaseException
     {
-        if (storable.getId() != null) {
-            doRemove(storable);
-        }
+//        if (storable.getId() != null) {
+//            doRemove(storable);
+//        }
     }
 
     protected abstract <T extends BlocksStorable> T doFetch(BlockId id, Class<T> clazz);
@@ -164,7 +170,7 @@ public abstract class AbstractBlockDatabase implements BlocksDatabase
     protected abstract <T extends BlocksVersionedStorable> T doFetch(BlockId id, String language, Class<T> clazz);
     public abstract BlocksUrlDispatcher fetchUrlDispatcher();
 
-    public abstract ArrayList<JsonLDWrapper> fetchEntities(String query);
+    public abstract List<ResourceContext> fetchEntities(String query);
 
     protected abstract void doSave(BlocksVersionedStorable storable) throws DatabaseException;
     protected abstract void doSave(BlocksStorable storable) throws DatabaseException;

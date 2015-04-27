@@ -1,7 +1,6 @@
 package com.beligum.blocks.parsers;
 
 import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.utils.URLFactory;
 import org.jsoup.nodes.Element;
 
 import java.net.MalformedURLException;
@@ -74,21 +73,21 @@ public class ElementParser
         return node.hasAttr(ParserConstants.INLIST);
     }
 
-    public static URL getHref(Element node) {
-        URL retVal = null;
-        try {
-            if (node.hasAttr("href")) {
-                retVal = URLFactory.createURL(node.attr("href"));
-            } else if (node.hasAttr("src")) {
-                retVal = URLFactory.createURL(node.attr("src"));
-            }
-        }
-        catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
-        return retVal;
-    }
-
+//    public static URL getHref(Element node) {
+//        URL retVal = null;
+//        try {
+//            if (node.hasAttr("href")) {
+//                retVal = URLFactory.createURL(node.attr("href"));
+//            } else if (node.hasAttr("src")) {
+//                retVal = URLFactory.createURL(node.attr("src"));
+//            }
+//        }
+//        catch (MalformedURLException e) {
+//            e.printStackTrace();
+//        }
+//        return retVal;
+//    }
+//
 
 
     public static String getBlueprintName(Element node)

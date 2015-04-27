@@ -7,8 +7,6 @@ import com.beligum.blocks.identifiers.BlockId;
  */
 public interface BlocksStorable
 {
-    public <T extends BlockId> T getId();
-    public <T extends BlockId> void setId(T id);
 
         /**
      * @return the creator of this storable

@@ -6,7 +6,6 @@ import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.models.BasicTemplate;
 import com.beligum.blocks.models.StoredTemplate;
 import com.beligum.blocks.renderer.VelocityBlocksRenderer;
-import com.beligum.blocks.utils.URLFactory;
 import org.jsoup.nodes.Element;
 
 import java.util.ArrayList;
@@ -37,7 +36,7 @@ public class TranslationList implements DynamicBlockListener
 
         renderer.append("<ul>");
         for(String language : Blocks.config().getLanguages()){
-            getListItem(renderer, language, basicTemplate.getLanguage());
+//            getListItem(renderer, language, basicTemplate.getLanguage());
         }
         renderer.append("</ul>");
         renderer.renderEndElement(basicTemplate.getBlueprint().getElement().getTag());
@@ -51,7 +50,7 @@ public class TranslationList implements DynamicBlockListener
     }
 
     public String getType(){
-        return Blocks.rdfFactory().ensureAbsoluteRdfValue(ParserConstants.DynamicBlocks.TRANSLATION_LIST);
+        return ParserConstants.DynamicBlocks.TRANSLATION_LIST;
     }
 
     /**

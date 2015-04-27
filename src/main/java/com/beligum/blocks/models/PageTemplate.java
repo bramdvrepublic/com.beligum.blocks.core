@@ -12,7 +12,7 @@ import org.jsoup.nodes.Element;
 /**
  * Created by wouter on 16/03/15.
  */
-public abstract class PageTemplate extends Blueprint
+public class PageTemplate extends Blueprint
 {
 
     public PageTemplate() {
@@ -25,7 +25,7 @@ public abstract class PageTemplate extends Blueprint
         element.children().remove();
         while (element.parent() != null) {
             if (ElementParser.isPageTemplateRoot(element)) {
-                this.name = ElementParser.getPagetemplateName(element);
+                this.setName(ElementParser.getPagetemplateName(element));
             }
             element = element.parent();
         }
@@ -34,7 +34,7 @@ public abstract class PageTemplate extends Blueprint
 
     @Override
     protected PagetemplateVisitor getVisitor() {
-        return new PagetemplateVisitor(this.name);
+        return new PagetemplateVisitor(this, this.getName());
     }
 
     @Override

@@ -24,6 +24,19 @@ public class ParserConstants
         }
     }
 
+    public final static String RESOURCE_ENDPOINT= "/v1/resource/";
+
+    public final static String BLOCKS_SCHEMA = "http://www.beligum.com/blocks/schema/";
+    public final static String BLOCKS_SCHEMA_prefix = "blocks:";
+    public final static String JSONLD_ID = "@id";
+    public final static String JSONLD_TYPE = "@type";
+    public final static String JSONLD_VALUE = "@value";
+    public final static String JSONLD_LANGUAGE = "@language";
+    public final static String JSONLD_GRAPH = "@graph";
+    public final static String JSONLD_CONTEXT = "@context";
+
+
+
     public final static String TEMPLATE_PROPERTY_START = "%%BLOCKS-PROPERTY-START%%";
     public final static String TEMPLATE_PROPERTY_END = "%%BLOCKS-PROPERTY-END%%";
     public final static String TEMPLATE_HEAD = "%%BLOCKS-HEAD%%";

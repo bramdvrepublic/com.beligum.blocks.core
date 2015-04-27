@@ -7,6 +7,7 @@ import com.beligum.blocks.models.BasicTemplate;
 import com.beligum.blocks.parsers.ElementParser;
 import com.beligum.blocks.parsers.visitors.BasicVisitor;
 import com.beligum.blocks.renderer.BlocksTemplateRenderer;
+import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
@@ -18,8 +19,16 @@ import java.util.ArrayList;
  */
 public class PropertyVisitor extends BasicVisitor
 {
-    ArrayList<BasicTemplate> properties = new ArrayList<>();
-    BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
+
+    private BasicTemplate template;
+
+    public PropertyVisitor(BasicTemplate template) {
+        this.template = template;
+    }
+
+    public BasicTemplate getTemplate() {
+        return this.template;
+    }
 
     @Override
     public Node head(Node node, int depth) throws ParseException
@@ -36,12 +45,19 @@ public class PropertyVisitor extends BasicVisitor
             BasicTemplate property = null;
             if (ElementParser.isSingleton((Element)node)) {
                 property = Blocks.factory().createSingleton((Element) node.clone(), ElementParser.getLanguage((Element) node));
+                this.getTemplate().add(propertyName, property);
             } else {
-                property = new BasicTemplate((Element) node.clone(), ElementParser.getLanguage((Element)node));
+                if (!StringUtils.isEmpty(propertyName)) {
+                    this.getTemplate().addProperty(propertyName, (Element) node.clone());
+                } else if (this.getTemplate().isWrapper()) {
+                    throw new ParseException("Wrapper blueprint can only have 1 empty property");
+                } else {
+                    this.getTemplate().setWrapper(true);
+                }
             }
 
 
-            this.properties.add(property);
+//            this.properties.add(property);
         }
 
         return retVal;
@@ -54,9 +70,9 @@ public class PropertyVisitor extends BasicVisitor
     }
 
 
-    public ArrayList<BasicTemplate> getProperties() {
-        return this.properties;
-    }
+//    public ArrayList<BasicTemplate> getProperties() {
+//        return this.properties;
+//    }
 
     protected Node replacePropertyWithID(Element element, String key) {
         if (key == null) key = "";

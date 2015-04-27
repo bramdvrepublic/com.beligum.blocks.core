@@ -4,7 +4,9 @@ package com.beligum.blocks.config;
 import com.beligum.base.server.R;
 import com.beligum.base.security.Authentication;
 import com.beligum.base.security.Principal;
+import com.beligum.base.server.RequestContext;
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.base.Blocks;
 import org.apache.shiro.UnavailableSecurityManagerException;
 
 import java.io.IOException;
@@ -27,13 +29,19 @@ public class BlocksConfig
 
 
     /**the languages this site can work with, ordered from most preferred languages, to less preferred*/
-    public static ArrayList<String> cachedLanguages;
+    private static LinkedHashSet<String> cachedLanguages;
+    private static String defaultLanguage;
     public static String projectVersion = null;
 
 
 
     public BlocksConfig() {
 
+    }
+
+    public String getLuceneIndex()
+    {
+        return getConfiguration("blocks.lucene-index");
     }
 
     public String getTemplateFolder()
@@ -122,20 +130,18 @@ public class BlocksConfig
      *
      * @return The languages this site can work with, ordered from most preferred language, to less preferred. If no such languages are specified in the configuration xml, an array with a default language is returned.
      */
-    public ArrayList<String> getLanguages(){
+    public LinkedHashSet<String> getLanguages(){
         if(cachedLanguages==null){
-            cachedLanguages = new ArrayList<String>();
+            cachedLanguages = new LinkedHashSet<>();
             ArrayList<String> cachedLanguagesTemp = new ArrayList<String>(Arrays.asList(R.configuration().getStringArray("blocks.site.languages")));
 
             for(String l: cachedLanguagesTemp){
                 Locale locale = new Locale(l);
                 String language = locale.getLanguage();
-
                 cachedLanguages.add(language);
             }
             if(cachedLanguages.size() == 0){
-                Locale locale = new Locale("en");
-                cachedLanguages.add(locale.getLanguage());
+                cachedLanguages.add(Locale.ENGLISH.getLanguage());
             }
         }
         return cachedLanguages;
@@ -164,7 +170,30 @@ public class BlocksConfig
      * @return The first languages in the languages-list, or the no-language-constant if no such list is present in the configuration-xml.
      */
     public String getDefaultLanguage(){
-        return getLanguages().get(0);
+        String retVal = null;
+        if (BlocksConfig.defaultLanguage == null) {
+            if (getLanguages().iterator().hasNext()) {
+                BlocksConfig.defaultLanguage = getLanguages().iterator().next();
+            } else {
+                BlocksConfig.defaultLanguage = Locale.ENGLISH.getLanguage();
+            }
+        } else {
+            retVal = BlocksConfig.defaultLanguage;
+        }
+        return retVal;
+    }
+
+    public String getRequestDefaultLanguage() {
+        String retVal = null;
+        List<Locale> languages = RequestContext.getJaxRsRequest().getAcceptableLanguages();
+        while (retVal == null && languages.iterator().hasNext()) {
+            Locale loc = languages.iterator().next();
+            if (Blocks.config().getLanguages().contains(loc.getLanguage())) {
+                retVal = loc.getLanguage();
+            }
+        }
+        if (retVal == null) retVal = getDefaultLanguage();
+        return retVal;
     }
 
     /**

@@ -10,6 +10,7 @@ import com.beligum.blocks.renderer.BlocksTemplateRenderer;
 import com.beligum.blocks.usermanagement.Permissions;
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.utils.UrlFactory;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.hibernate.validator.constraints.NotBlank;
 import org.jsoup.Jsoup;
@@ -47,19 +48,28 @@ public class EntitiesEndpoint
     {
         Blueprint blueprint = Blocks.templateCache().getBlueprint(entityClassName);
         URL pageURL = new URL(pageUrl);
-        BlockId existingId = Blocks.urlDispatcher().findId(pageURL);
+        SiteUrl existingId = Blocks.urlDispatcher().findId(pageURL);
 
         if (existingId != null) {
             // template exists
             throw new Exception("Cannot create already existing entity with url '" + pageURL + "'.");
         }
 
-        Element element = blueprint.getRenderedTemplateAsElement();
+//        Element element = blueprint.getRenderedTemplateAsElement();
         String language = Blocks.urlDispatcher().getLanguage(pageURL);
-        StoredTemplate newPage = Blocks.factory().createStoredTemplate(element, language);
-        Blocks.database().save(newPage);
+        if (language == null) language = Blocks.config().getDefaultLanguage();
+        StoredTemplate newPage = new StoredTemplate(blueprint, language);
+        ResourceContext context = new ResourceContext(newPage, language);
+        context.setLanguage(language);
+        context.createUUID();
+        newPage.setId(UrlFactory.createLocalResourceId(newPage.getBlueprintName(), context.getBlockId()));
+        context.setBlockId(newPage.getId());
 
-        Blocks.urlDispatcher().addId(pageURL, newPage.getId(), language);
+        // TODO check if we found a resource
+
+        Blocks.database().save(context);
+
+        Blocks.urlDispatcher().addId(pageURL, new URL(context.getBlockId()), null, language);
         /*
          * Redirect the client to the newly created entity's page
          */
@@ -100,11 +110,11 @@ public class EntitiesEndpoint
             // only properties should be a) singletons, b) 1 property that is not a singelton (with reference-to (or resource)) this will replace entity with id of url
             // only other properties allowed in root are properties with typeof
             URL pageUrl = new URL(Blocks.config().getSiteDomainUrl(), pageUrlPath);
-            BlockId id = Blocks.urlDispatcher().findId(pageUrl);
+            SiteUrl id = Blocks.urlDispatcher().findId(pageUrl);
 
             if (id == null) {
                 if (fetchDeleted) {
-                    id = Blocks.urlDispatcher().findPreviousId(pageUrl);
+//                    id = Blocks.urlDispatcher().findPreviousId(pageUrl);
                 }
                 if (id == null) {
                     throw new Exception("Cannot update entity which doesn't exist: '" + pageUrl + ".");
@@ -124,13 +134,13 @@ public class EntitiesEndpoint
                 pageContent = Blocks.factory().createStoredTemplate(pageContent.getRenderedTemplateAsElement(), language);
 
 //                All entities on this page without a parent (need to be saved)
-                List<Entity> entities = pageContent.getRootEntities();
+//                List<Entity> entities = pageContent.getRootEntities();
+//
+//                for (Entity entity: entities) {
+//                    Blocks.database().saveEntity(entity);
+//                }
 
-                for (Entity entity: entities) {
-                    Blocks.database().saveEntity(entity);
-                }
-
-                Blocks.database().save(htmlFromClientVisitor.getContent());
+//                Blocks.database().save(htmlFromClientVisitor.getContent());
             }
 
             ArrayList<StoredTemplate> other = htmlFromClientVisitor.getOther();
@@ -139,14 +149,14 @@ public class EntitiesEndpoint
 
                 if (singleton instanceof Singleton) {
                     Blocks.factory().createSingleton(singleton.getRenderedTemplateAsElement(), language);
-                    Blocks.database().save(singleton);
+//                    Blocks.database().save(singleton);
 
 
-                    List<Entity> entities = singleton.getRootEntities();
-
-                    for (Entity entity : entities) {
-                        Blocks.database().saveEntity(entity);
-                    }
+//                    List<Entity> entities = singleton.getRootEntities();
+//
+//                    for (Entity entity : entities) {
+//                        Blocks.database().saveEntity(entity);
+//                    }
 
                 }else {
                     otherWithoutSingletons.add(singleton);
@@ -158,11 +168,11 @@ public class EntitiesEndpoint
                 storedTemplate = Blocks.factory().createStoredTemplate(storedTemplate.getRenderedTemplateAsElement(), language);
 //                    Blocks.database().save(storedTemplate);
 
-                List<Entity> entities = storedTemplate.getRootEntities();
-
-                for (Entity entity: entities) {
-                    Blocks.database().saveEntity(entity);
-                }
+//                List<Entity> entities = storedTemplate.getRootEntities();
+//
+//                for (Entity entity: entities) {
+//                    Blocks.database().saveEntity(entity);
+//                }
             }
 
             return Response.ok(pageUrl.getPath()).build();
@@ -178,16 +188,16 @@ public class EntitiesEndpoint
     {
         try {
             URL pageUrl = new URL(url);
-            BlockId id = Blocks.urlDispatcher().findId(pageUrl);
+            SiteUrl id = Blocks.urlDispatcher().findId(pageUrl);
             String language = Blocks.urlDispatcher().getLanguage(pageUrl);
 
             if (id == null) {
                 throw new Exception("Cannot delete entity which doesn't exist: '" + pageUrl + ".");
             }
 
-            StoredTemplate storedTemplate = Blocks.database().fetchTemplate(id, language);
+//            StoredTemplate storedTemplate = Blocks.database().fetchTemplate(id, language);
             Blocks.urlDispatcher().removeId(pageUrl);
-            Blocks.database().remove(storedTemplate);
+//            Blocks.database().remove(storedTemplate);
             return Response.ok(pageUrl.toString()).build();
         }
         catch(Exception e){
@@ -241,16 +251,16 @@ public class EntitiesEndpoint
                     throws Exception
     {
         URL url = new URL(id);
-        BlockId blockId = Blocks.urlDispatcher().findId(url);
+        SiteUrl blockId = Blocks.urlDispatcher().findId(url);
         String language = Blocks.urlDispatcher().getLanguage(url);
         if (blockId != null) {
             PageTemplate pageTemplate = Blocks.templateCache().getPagetemplate(templateName);
             if (pageTemplate == null) {
                 throw new Exception("Page template does not exist");
             }
-            StoredTemplate storedTemplate = Blocks.database().fetchTemplate(blockId, language);
-            storedTemplate.setPageTemplateName(templateName);
-            Blocks.database().save(storedTemplate);
+//            StoredTemplate storedTemplate = Blocks.database().fetchTemplate(blockId, language);
+//            storedTemplate.setPageTemplateName(templateName);
+//            Blocks.database().save(storedTemplate);
         }
 
         return Response.ok().build();

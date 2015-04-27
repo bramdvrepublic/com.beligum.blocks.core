@@ -2,6 +2,7 @@ package com.beligum.blocks.parsers.visitors.template;
 
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
+import com.beligum.blocks.models.PageTemplate;
 import com.beligum.blocks.parsers.ElementParser;
 import com.beligum.base.utils.Logger;
 import org.jsoup.nodes.Element;
@@ -14,10 +15,15 @@ import org.jsoup.nodes.TextNode;
 public class PagetemplateVisitor extends BlueprintVisitor
 {
 
-    private String pageTemplateName = ParserConstants.DEFAULT_PAGE_TEMPLATE;
+//    private String pageTemplateName = ParserConstants.DEFAULT_PAGE_TEMPLATE;
 
-    public PagetemplateVisitor(String name) {
-        if (name != null) this.pageTemplateName = name;
+    public PagetemplateVisitor(PageTemplate template, String name) {
+        super(template);
+        if (name != null) this.getBlueprint().setPageTemplateName(name);
+    }
+
+    public PageTemplate getPageTemplate() {
+        return (PageTemplate) this.getTemplate();
     }
 
     @Override
@@ -27,7 +33,7 @@ public class PagetemplateVisitor extends BlueprintVisitor
             if (node instanceof Element && ElementParser.isProperty((Element)node)) {
                 // check if singleton and if not add
                 if (ElementParser.isUseBlueprint((Element) node) && !ElementParser.isSingleton((Element) node)) {
-                    node.attr(ParserConstants.SINGLETON, this.pageTemplateName);
+                    node.attr(ParserConstants.SINGLETON, this.getPageTemplate().getPageTemplateName());
                 }
             }
 

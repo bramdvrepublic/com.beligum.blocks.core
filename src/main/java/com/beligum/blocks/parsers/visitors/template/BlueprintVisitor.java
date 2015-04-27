@@ -1,6 +1,7 @@
 package com.beligum.blocks.parsers.visitors.template;
 
 import com.beligum.blocks.exceptions.ParseException;
+import com.beligum.blocks.models.Blueprint;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
@@ -15,6 +16,15 @@ public class BlueprintVisitor extends PropertyVisitor
     private LinkedHashSet<String> links = new LinkedHashSet<String>();
     /**the (javascript-)scripts that need to be injected*/
     private LinkedHashSet<String> scripts = new LinkedHashSet<String>();
+
+
+    public BlueprintVisitor(Blueprint blueprint) {
+        super(blueprint);
+    }
+
+    public Blueprint getBlueprint() {
+        return (Blueprint)getTemplate();
+    }
 
     @Override
     public Node head(Node node, int depth) throws ParseException
@@ -31,15 +41,15 @@ public class BlueprintVisitor extends PropertyVisitor
                 if (node.nodeName().equals("link")) {
                     //if an include has been found, import the wanted html-file
 
-                    this.links.add(node.outerHtml());
+                    this.getBlueprint().addLink(node.outerHtml());
                     Node emtpyNode = new TextNode("", null);
                     node.replaceWith(emtpyNode);
                     node = emtpyNode;
 
                 } else if (node.nodeName().equals("script")) {
                     //if a script has been found, add it to the scripts-stack
-
-                    this.scripts.add(node.outerHtml());
+                    this.getBlueprint().addScript(node.outerHtml());
+//                    this.scripts.add(node.outerHtml());
                     Node emtpyNode = new TextNode("", null);
                     node.replaceWith(emtpyNode);
                     node = emtpyNode;

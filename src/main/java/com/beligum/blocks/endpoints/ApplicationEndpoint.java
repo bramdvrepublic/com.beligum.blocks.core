@@ -6,14 +6,11 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.CacheException;
-import com.beligum.blocks.identifiers.BlockId;
 import com.beligum.blocks.models.*;
+import com.beligum.blocks.models.jsonld.ResourceNode;
+import com.beligum.blocks.models.jsonld.ResourceNodeInf;
 import com.beligum.blocks.renderer.BlocksTemplateRenderer;
 import com.beligum.blocks.usermanagement.Permissions;
-import com.beligum.base.server.R;
-import com.beligum.base.server.RequestContext;
-import com.beligum.base.templating.ifaces.Template;
-import com.beligum.base.utils.Logger;
 import gen.com.beligum.blocks.core.fs.html.views.new_page;
 import gen.com.beligum.blocks.endpoints.UsersEndpointRoutes;
 import org.apache.shiro.SecurityUtils;
@@ -21,15 +18,30 @@ import org.apache.shiro.authz.AuthorizationException;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 @Path("/")
 public class ApplicationEndpoint
 {
+
+
+    @Path(ParserConstants.RESOURCE_ENDPOINT + "{block_id:.*}")
+    @GET
+    public Response getPageWithId(@PathParam("block_id") String blockId, @QueryParam("view") String view_block_id, @QueryParam("language") String language)
+                    throws MalformedURLException
+    {
+        String url = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri().toString();
+
+        if (language == null) language = Blocks.config().getRequestDefaultLanguage();
+        ResourceNode view = Blocks.database().fetchResource(view_block_id, language);
+
+
+        return Response.ok().build();
+    }
+
 
     //using regular expression to let all requests to undefined paths end up here
     @Path("/{randomPage:.*}")
@@ -48,13 +60,7 @@ public class ApplicationEndpoint
             // set language
             String language = Blocks.urlDispatcher().getLanguageOrNull(url);
             if (language == null) {
-                List<Locale> languages = RequestContext.getJaxRsRequest().getAcceptableLanguages();
-                while (language == null && languages.iterator().hasNext()) {
-                    Locale loc = languages.iterator().next();
-                    if (Blocks.config().getLanguages().contains(loc.getLanguage())) {
-                        language = loc.getLanguage();
-                    }
-                }
+                language = Blocks.config().getRequestDefaultLanguage();
             }
             //
             if (!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
@@ -65,16 +71,24 @@ public class ApplicationEndpoint
             }
 
             //if no language info is specified in the url, or if the specified language doesn't exist, the default language will still be shown
-            BlockId id = Blocks.urlDispatcher().findId(url);
+            SiteUrl siteUrl = Blocks.urlDispatcher().findId(url);
             StoredTemplate storedTemplate = null;
+            ResourceNode resource = null;
+            if (siteUrl != null) {
+                ResourceNode view = Blocks.database().fetchResource(siteUrl.getViewUrl(), language);
+                storedTemplate = new StoredTemplate();
+                storedTemplate.wrap(view.unwrap());
 
-            if (id != null) {
-                storedTemplate = Blocks.database().fetchTemplate(id, language);
+
+                if (siteUrl.getResourceUrl() != null) {
+                    ResourceNode resourceContext = Blocks.database().fetchResource(siteUrl.getResourceUrl(), language);
+                    resource = resourceContext;
+                }
 
             } else if (fetchDeleted) {
-                id = Blocks.urlDispatcher().findPreviousId(url);
-                if (id != null) {
-                    storedTemplate = Blocks.database().fetchPrevious(id, language, Blocks.factory().getStoredTemplateClass());
+//                id = Blocks.urlDispatcher().findPreviousId(url);
+                if (siteUrl != null) {
+//                    storedTemplate = Blocks.database().fetchPrevious(id, language, Blocks.factory().getStoredTemplateClass());
                 }
             }
 
@@ -90,16 +104,16 @@ public class ApplicationEndpoint
                 }
 
             } else {
-                Resource resource= null;
 //                if (storedTemplate.getEntity() != null) {
-                    ArrayList<JsonLDWrapper> model = Blocks.database().fetchEntities("{ '@graph.@id': 'mot:/" + storedTemplate.getId().toString() + "'}");
+//                    ArrayList<JsonLDWrapper> model = Blocks.database().fetchEntities("{ '@graph.@id': 'mot:/" + storedTemplate.getId().toString() + "'}");
 
-                if (model.iterator().hasNext()) resource = model.iterator().next().getMainResource(storedTemplate.getLanguage());
+//                if (model.iterator().hasNext()) resource = model.iterator().next().getMainResource(storedTemplate.getLanguage());
 //                }
 
                 PageTemplate pageTemplate = Blocks.templateCache().getPagetemplate(storedTemplate.getPageTemplateName());
                 BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
-                // Todo render enttity
+
+                // Todo render entity
                 String page = renderer.render(pageTemplate, storedTemplate, resource, storedTemplate.getLanguage());
                 return Response.ok(page).build();
             }

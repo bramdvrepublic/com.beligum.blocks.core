@@ -185,7 +185,6 @@ public class TemplateCache implements BlocksTemplateCache
 
                 }
 
-
                 BlocksScriptVisitor visitor = new BlocksScriptVisitor();
                 Document doc = visitor.getSource(Blocks.config().getFrontEndScripts());
                 Traversor.traverseDeep(doc, visitor);

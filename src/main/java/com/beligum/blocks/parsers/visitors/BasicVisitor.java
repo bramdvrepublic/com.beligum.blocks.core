@@ -3,7 +3,6 @@ package com.beligum.blocks.parsers.visitors;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.parsers.FileAnalyzer;
-import com.beligum.blocks.utils.URLFactory;
 import com.beligum.base.utils.Logger;
 import com.google.common.collect.HashBiMap;
 import org.apache.commons.io.IOUtils;

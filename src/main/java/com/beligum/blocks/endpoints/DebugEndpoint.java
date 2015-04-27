@@ -26,6 +26,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 
 /**
  * Created by bas on 27.01.15.
@@ -143,7 +144,7 @@ public class DebugEndpoint
     @Path("/sitemap")
     public Response viewSiteMap(@QueryParam("lang") String language) throws UrlIdMappingException
     {
-        ArrayList<String> languages = Blocks.config().getLanguages();
+        LinkedHashSet<String> languages = Blocks.config().getLanguages();
 
         Template template = sitemap.instance.getNewTemplate();
         BlocksUrlDispatcher sitemap = Blocks.urlDispatcher();

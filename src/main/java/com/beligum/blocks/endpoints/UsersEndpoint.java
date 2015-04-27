@@ -643,7 +643,11 @@ public class UsersEndpoint
     {
         try {
             EntityManager em = RequestContext.getEntityManager();
-            return em.find(Person.class, getCurrentUserId());
+            Person person = RequestContext.getEntityManager()
+                          .createQuery("SELECT p FROM Person p WHERE p.subject.id = :id", Person.class)
+                          .setParameter("id", getCurrentUserId()).getSingleResult();
+
+            return person;
         }catch (ClassCastException e){
             throw new RuntimeException("Found unsupported cookieprincipal of class '" + SecurityUtils.getSubject().getPrincipal().getClass().getName() + "'.");
         }
