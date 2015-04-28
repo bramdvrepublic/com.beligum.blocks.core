@@ -3,14 +3,12 @@ package com.beligum.blocks.wiki;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.models.Entity;
+import com.beligum.blocks.wiki.search.SimpleIndexer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.util.AntPathMatcher;
 import org.joda.time.LocalDateTime;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -27,9 +25,13 @@ public abstract class WikiParser
     protected HashMap<String, HashMap<String, HashMap<String, String>>> items = new HashMap<String, HashMap<String, HashMap<String, String>>>();
     protected ArrayList<Entity> entities = new ArrayList<Entity>();
 
-    public WikiParser()
-    {
 
+    protected Integer counter = 0;
+    protected SimpleIndexer indexer;
+
+    public WikiParser() throws IOException
+    {
+        this.indexer = new SimpleIndexer(new File(Blocks.config().getLuceneIndex()));
         pathMatcher = new AntPathMatcher();
     }
 
@@ -112,14 +114,17 @@ public abstract class WikiParser
         }
     }
 
-    public void createEntities()
+    public void createEntities() throws IOException
     {
         // loop through items
         // loop through languages
         // create entity per language
+        Integer total = this.items.keySet().size();
+        Integer count = 0;
         for (String key : this.items.keySet()) {
             HashMap<String, HashMap<String, String>> item = this.items.get(key);
-
+            count++;
+            Logger.info("Counter: "+count+"/"+total);
             makeEntity();
             fillEntity(item, "nl");
             fillEntity(item, "fr");
@@ -132,6 +137,9 @@ public abstract class WikiParser
             }
 
         }
+
+        this.indexer.commit();
+        this.indexer.close();
 
     }
 

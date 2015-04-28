@@ -34,6 +34,12 @@ public class BlocksConfig
 
     }
 
+
+    public String getLuceneIndex()
+    {
+        return getConfiguration("blocks.lucene-index");
+    }
+
     public String getTemplateFolder()
     {
         return getConfiguration("blocks.template-folder");

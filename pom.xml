@@ -114,6 +114,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>com.sindicetech.siren</groupId>
+            <artifactId>siren-qparser</artifactId>
+            <version>1.4</version>
+        </dependency>
 
 
 
