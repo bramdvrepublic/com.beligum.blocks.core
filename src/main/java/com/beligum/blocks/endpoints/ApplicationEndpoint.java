@@ -10,13 +10,15 @@ import com.beligum.blocks.models.*;
 import com.beligum.blocks.models.jsonld.ResourceNode;
 import com.beligum.blocks.models.jsonld.ResourceNodeInf;
 import com.beligum.blocks.renderer.BlocksTemplateRenderer;
-import com.beligum.blocks.usermanagement.Permissions;
 import com.beligum.base.server.R;
 import com.beligum.base.server.RequestContext;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.security.Permissions;
 import gen.com.beligum.blocks.core.fs.html.views.new_page;
+import gen.com.beligum.blocks.endpoints.UsersEndpointRoutes;
 import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.authz.AuthorizationException;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
@@ -100,7 +102,7 @@ public class ApplicationEndpoint
                     // Todo add flash message
                 }
                 if (SecurityUtils.getSubject().isAuthenticated()) {
-                    return injectParameters(new_page.instance.getNewTemplate());
+                    return injectParameters(new_page.get().getNewTemplate());
                 } else {
                     throw new NotFoundException();
                 }
@@ -112,7 +114,7 @@ public class ApplicationEndpoint
                 //                if (model.iterator().hasNext()) resource = model.iterator().next().getMainResource(storedTemplate.getLanguage());
                 //                }
 
-                PageTemplate pageTemplate = Blocks.templateCache().getPagetemplate(storedTemplate.getPageTemplateName());
+                PageTemplate pageTemplate = Blocks.templateCache().getPageTemplate(storedTemplate.getPageTemplateName());
                 BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
 
                 // Todo render entity

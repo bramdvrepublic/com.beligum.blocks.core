@@ -10,6 +10,7 @@ import com.beligum.blocks.parsers.Traversor;
 import com.beligum.blocks.parsers.visitors.template.HtmlFromClientVisitor;
 import com.beligum.blocks.renderer.BlocksTemplateRenderer;
 import com.beligum.blocks.security.Permissions;
+import com.beligum.blocks.utils.URLFactory;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.hibernate.validator.constraints.NotBlank;
 import org.jsoup.Jsoup;
@@ -63,7 +64,7 @@ public class EntitiesEndpoint
         ResourceContext context = new ResourceContext(newPage, language);
         context.setLanguage(language);
         context.createUUID();
-        newPage.setId(UrlFactory.createLocalResourceId(newPage.getBlueprintName(), context.getBlockId()));
+        newPage.setId(URLFactory.createLocalResourceId(newPage.getBlueprintName(), context.getBlockId()));
         context.setBlockId(newPage.getId());
 
         // TODO check if we found a resource
@@ -166,11 +167,11 @@ public class EntitiesEndpoint
                 storedTemplate = Blocks.factory().createStoredTemplate(storedTemplate.getRenderedTemplateAsElement(), language);
                 //                    Blocks.database().save(storedTemplate);
 
-                List<Entity> entities = storedTemplate.getRootEntities();
-
-                for (Entity entity: entities) {
-                    Blocks.database().saveEntity(entity);
-                }
+//                List<Entity> entities = storedTemplate.getRootEntities();
+//
+//                for (Entity entity: entities) {
+//                    Blocks.database().saveEntity(entity);
+//                }
             }
 
             return Response.ok(pageUrl.getPath()).build();

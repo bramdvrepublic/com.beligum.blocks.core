@@ -1,13 +1,17 @@
 package com.beligum.blocks.dynamic;
 
+import com.beligum.base.server.RequestContext;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.models.BasicTemplate;
 import com.beligum.blocks.models.StoredTemplate;
 import com.beligum.blocks.renderer.VelocityBlocksRenderer;
+import com.beligum.blocks.urlmapping.UrlDispatcher;
 import org.jsoup.nodes.Element;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,12 +35,22 @@ public class TranslationList implements DynamicBlockListener
      */
     public StringBuilder render(BasicTemplate basicTemplate)
     {
+        String activeLanguage = Blocks.config().getDefaultLanguage();
+        try {
+            activeLanguage = Blocks.urlDispatcher().getLanguage(new URL(RequestContext.getJaxRsRequest().getUriInfo().getAbsolutePath().toString()));
+            if (activeLanguage == null) {
+                Blocks.config().getDefaultLanguage();
+            }
+        }
+        catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
         VelocityBlocksRenderer renderer = new VelocityBlocksRenderer();
         renderer.renderStartElement(basicTemplate, true, null);
 
         renderer.append("<ul>");
         for (String language : Blocks.config().getLanguages()) {
-            getListItem(renderer, language, basicTemplate.getLanguage());
+            getListItem(renderer, language, activeLanguage);
         }
         renderer.append("</ul>");
         renderer.renderEndElement(basicTemplate.getBlueprint().getElement().getTag());

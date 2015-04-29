@@ -10,8 +10,9 @@ import com.beligum.blocks.models.jsonld.NodeFactory;
 import com.beligum.blocks.models.jsonld.ResourceNode;
 import com.beligum.blocks.models.jsonld.jackson.ResourceNodeSerializer;
 import com.beligum.blocks.models.rdf.OrderedMemGraph;
+
 import com.beligum.blocks.search.SimpleIndexer;
-import com.beligum.blocks.utils.UrlFactory;
+import com.beligum.blocks.utils.URLFactory;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -19,8 +20,6 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Resource;
 import org.apache.commons.io.FileUtils;
-import com.beligum.blocks.models.Entity;
-import com.beligum.blocks.wiki.search.SimpleIndexer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.util.AntPathMatcher;
 import org.joda.time.LocalDateTime;
@@ -52,7 +51,6 @@ public abstract class WikiParser
 
 
     protected Integer counter = 0;
-    protected SimpleIndexer indexer;
 
     public WikiParser() throws IOException
     {
@@ -215,7 +213,7 @@ public abstract class WikiParser
     public abstract ResourceNode fillEntity(HashMap<String, HashMap<String, String>> item, String lang);
 
     public void splitField(ResourceNode entity, String field, String language) {
-        String name = UrlFactory.createLocalType(field);
+        String name = URLFactory.createLocalType(field);
         Node property = entity.get(name);
         entity.remove(name);
         if (property != null && property.isList()) {
@@ -237,7 +235,7 @@ public abstract class WikiParser
     }
 
     public void prependField(ResourceNode entity, String field, String prefix, String language) {
-        String name = UrlFactory.createLocalType(field);
+        String name = URLFactory.createLocalType(field);
         Node property = entity.get(name);
         entity.remove(name);
         if (property != null && property.isList()) {
@@ -312,7 +310,7 @@ public abstract class WikiParser
                     Logger.debug("Could not parse time", e);
                 }
             } else {
-                entity.add(UrlFactory.createLocalType(newFieldName), NodeFactory.createAndGuess(value, language));
+                entity.add(URLFactory.createLocalType(newFieldName), NodeFactory.createAndGuess(value, language));
             }
         }
     }

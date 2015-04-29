@@ -6,7 +6,7 @@ import com.beligum.blocks.config.ParserConstants;
 /**
  * Created by wouter on 27/04/15.
  */
-public class UrlFactory
+public class URLFactory
 {
 
     public static String createLocalType(String type) {

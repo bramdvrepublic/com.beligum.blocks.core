@@ -37,12 +37,6 @@ public class BlocksConfig
 
     }
 
-
-    public String getLuceneIndex()
-    {
-        return getConfiguration("blocks.lucene-index");
-    }
-
     public String getLuceneIndex()
     {
         return getConfiguration("blocks.lucene-index");

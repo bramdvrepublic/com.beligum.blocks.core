@@ -7,6 +7,7 @@ import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.parsers.ElementParser;
 import com.beligum.blocks.parsers.visitors.BasicVisitor;
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.utils.URLFactory;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
@@ -53,7 +54,7 @@ public class HtmlFilesVisitor extends BasicVisitor
 
                 // TypeOf has to be a blueprint
                 if(ElementParser.isTypeOf((Element) node)) {
-                    node.attr(ParserConstants.TYPE_OF, Blocks.rdfFactory().ensureAbsoluteRdfValue(ElementParser.getTypeOf((Element) node)));
+                    node.attr(ParserConstants.TYPE_OF, URLFactory.createLocalType(ElementParser.getTypeOf((Element) node)));
                     if (!ElementParser.isBlueprint((Element)node)) {
                         node.attr(ParserConstants.BLUEPRINT, ElementParser.getTypeOf((Element) node));
                     }
@@ -61,10 +62,6 @@ public class HtmlFilesVisitor extends BasicVisitor
 
                 if (ElementParser.isBlueprint((Element) node)) {
                     node.attr(ParserConstants.USE_BLUEPRINT, node.attr(ParserConstants.BLUEPRINT));
-                }
-
-                if (ElementParser.isUseBlueprint((Element)node)) {
-                    node.attr(ParserConstants.USE_BLUEPRINT, Blocks.rdfFactory().ensureAbsoluteRdfValue(ElementParser.getBlueprintName((Element) node)));
                 }
 
                 //if a blueprint node is not a property of it's parent, place a property on it using it's blueprint type
@@ -75,7 +72,7 @@ public class HtmlFilesVisitor extends BasicVisitor
 
                 // make properties absolute
                 if (ElementParser.isProperty((Element)node) && ElementParser.getProperty((Element)node) != null) {
-                    node.attr(ParserConstants.PROPERTY, Blocks.rdfFactory().ensureAbsoluteRdfValue(ElementParser.getProperty((Element) node)));
+                    node.attr(ParserConstants.PROPERTY, ElementParser.getProperty((Element) node));
                 }
 
                 if (ElementParser.isBlueprint((Element) node)) {

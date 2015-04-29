@@ -3,22 +3,17 @@ package com.beligum.blocks.models;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
-import com.beligum.blocks.models.jsonld.Node;
 import com.beligum.blocks.models.jsonld.ResourceNode;
 import com.beligum.blocks.parsers.ElementParser;
 import com.beligum.blocks.parsers.Traversor;
-import com.beligum.blocks.parsers.visitors.template.PropertyVisitor;
 import com.beligum.blocks.parsers.visitors.template.PropertyVisitor;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
 import org.jsoup.parser.Tag;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
 //import org.jsoup.nodes.Node;
 
@@ -174,7 +169,7 @@ public class BasicTemplate extends ResourceNode
 
     public HtmlElement getElement() {
         HtmlElement retval = null;
-        Node element = getFirst(BasicTemplate.htmlElement);
+        com.beligum.blocks.models.jsonld.Node element = getFirst(BasicTemplate.htmlElement);
         if (element != null && element.isResource()) {
             retval = new HtmlElement((ResourceNode)element);
         }
@@ -236,30 +231,6 @@ public class BasicTemplate extends ResourceNode
 
 
 
-    @Override
-    public boolean equals(Object o)
-    {
-        if (this == o)
-            return true;
-        if (!(o instanceof BasicTemplate))
-            return false;
-
-        BasicTemplate that = (BasicTemplate) o;
-
-        if (!properties.equals(that.properties))
-            return false;
-        if (!value.equals(that.value))
-            return false;
-
-        return true;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        int result = value.hashCode();
-        result = 31 * result + properties.hashCode();
-        return result;
     public String getValue() {
         String retVal = getString(BasicTemplate.value);
         if (retVal == null) retVal = "";

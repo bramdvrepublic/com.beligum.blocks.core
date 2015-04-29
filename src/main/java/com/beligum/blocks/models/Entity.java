@@ -36,7 +36,7 @@
 //    }
 //
 //    public Entity(String value) {
-//        this.addProperty(UrlFactory.createLocalType(value));
+//        this.addProperty(URLFactory.createLocalType(value));
 //    }
 //
 //    public BlockId getId() {
