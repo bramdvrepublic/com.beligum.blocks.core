@@ -34,12 +34,20 @@
             <folder>/another/path/to/external/resources</folder>
         </custom-resources-folder>
         -->
-        <temp-dir>/home/bram/tmp</temp-dir>
+        <!--<temp-dir>/home/bram/tmp</temp-dir>-->
 
         <media-mount-points>
             <mount-point>
                 <name>local1</name>
-                <uri>file:///home/bram/media/</uri>
+                <uri>file:///home/bram/media/mount1</uri>
+            </mount-point>
+            <mount-point>
+                <name>local1</name>
+                <uri>file:///home/bram/media/mount2</uri>
+            </mount-point>
+            <mount-point>
+                <name>local1</name>
+                <uri>file:///home/bram/media/mount3</uri>
             </mount-point>
             <!--<mount-point>-->
             <!--<name>local2</name>-->

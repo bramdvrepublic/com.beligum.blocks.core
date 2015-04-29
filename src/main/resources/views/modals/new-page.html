@@ -1,0 +1,12 @@
+#define($body-html)
+<form action="/entities" method="post" id="newpage">
+    <input type="hidden" name="page-url" value="$entityUrl"/>
+    <select name="page-class-name" class="form-control">
+        #foreach($entityClass in $entityClasses)
+            <option value="$entityClass.getName()">$!entityClass.getName()</option>
+        #end
+    </select>
+</form>
+#end
+
+#parse("/views/modals/modal-main.html")

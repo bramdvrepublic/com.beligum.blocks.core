@@ -1,7 +1,7 @@
 package com.beligum.blocks.models;
 
-import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.base.Blocks;
+import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.models.jsonld.Node;
 import com.beligum.blocks.models.jsonld.StringNode;
@@ -42,7 +42,8 @@ public class Blueprint extends StoredTemplate
 //    /**the scripts this abstract template needs*/
 //    protected LinkedHashSet<String> scripts = new LinkedHashSet<>();
 
-    public Blueprint() {
+    public Blueprint()
+    {
 
     }
 
@@ -77,6 +78,29 @@ public class Blueprint extends StoredTemplate
         return blueprintVisitor;
     }
 
+    //    private Element addBlockCssClass(Element element) throws ParseException
+    //    {
+    //        String blueprintCssClass = getBlueprintCssClass(element);
+    //        if(!element.classNames().contains(blueprintCssClass)){
+    //            Set<String> classNames = element.classNames();
+    //            LinkedHashSet<String> newClassNames = new LinkedHashSet<>();
+    //            newClassNames.add(blueprintCssClass);
+    //            newClassNames.addAll(classNames);
+    //            element.classNames(newClassNames);
+    //        }
+    //        return element;
+    //    }
+    //
+    //    public String getBlueprintCssClass(Node node) throws ParseException
+    //    {
+    //        String type = getBlueprintName();
+    //        if(StringUtils.isEmpty(type)){
+    //            return null;
+    //        }
+    //        else{
+    //            return ParserConstants.CSS_CLASS_PREFIX + type;
+    //        }
+    //    }
 
     public boolean isFixed() {
         return !getBoolean(Blueprint.canChange);
@@ -100,6 +124,9 @@ public class Blueprint extends StoredTemplate
                     links.add(node.getString());
                 }
             }
+
+    
+    
         }
         return links;
     }
@@ -148,12 +175,14 @@ public class Blueprint extends StoredTemplate
     public String getTemplate() { return this.getValue();}
 
     @Override
-    public Blueprint getBlueprint() {
+    public Blueprint getBlueprint()
+    {
         return this;
     }
 
     @Override
-    protected String findPageTemplateName() {
+    protected String findPageTemplateName()
+    {
         return ParserConstants.DEFAULT_PAGE_TEMPLATE;
     }
 

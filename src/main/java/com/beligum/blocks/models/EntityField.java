@@ -8,15 +8,18 @@ public class EntityField
     public static final String NO_LANGUAGE = "default";
     private String value;
 
-    public EntityField() {
+    public EntityField()
+    {
 
     }
 
-    public EntityField(String value) {
+    public EntityField(String value)
+    {
         this.value = value;
     }
 
-    public String getValue() {
+    public String getValue()
+    {
         return this.value;
     }
 

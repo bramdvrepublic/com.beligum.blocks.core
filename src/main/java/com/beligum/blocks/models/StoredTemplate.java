@@ -27,7 +27,8 @@ public class StoredTemplate extends BasicTemplate
 //    protected String pageTitle;
     private String language;
 
-    public StoredTemplate() {
+    public StoredTemplate()
+    {
         super();
         this.language = Blocks.config().getDefaultLanguage();
     }
@@ -68,7 +69,8 @@ public class StoredTemplate extends BasicTemplate
         setString(StoredTemplate.pageTemplateName, pageTemplateName, this.language);
     }
 
-    public String getPageTitle() {
+    public String getPageTitle()
+    {
         String retVal = Blocks.config().getDefaultPageTitle();
         if (this.pageTitle != null) {
             retVal = this.pageTitle;
@@ -92,7 +94,8 @@ public class StoredTemplate extends BasicTemplate
             this.renderedTransientElement = parse(template);
         }
         retVal = this.renderedTransientElement.clone();
-        if (retVal == null) retVal = new Element(Tag.valueOf("div"), null);
+        if (retVal == null)
+            retVal = new Element(Tag.valueOf("div"), null);
         return retVal;
     }
 

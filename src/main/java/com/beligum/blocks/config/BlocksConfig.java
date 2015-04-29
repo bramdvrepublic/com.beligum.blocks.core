@@ -1,10 +1,9 @@
 package com.beligum.blocks.config;
 
-
-import com.beligum.base.server.R;
 import com.beligum.base.security.Authentication;
 import com.beligum.base.security.Principal;
 import com.beligum.base.server.RequestContext;
+import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.base.Blocks;
 import org.apache.shiro.UnavailableSecurityManagerException;
@@ -33,10 +32,15 @@ public class BlocksConfig
     private static String defaultLanguage;
     public static String projectVersion = null;
 
+    public BlocksConfig()
+    {
+
+    }
 
 
-    public BlocksConfig() {
-
+    public String getLuceneIndex()
+    {
+        return getConfiguration("blocks.lucene-index");
     }
 
     public String getLuceneIndex()
@@ -53,9 +57,11 @@ public class BlocksConfig
         return getConfiguration("blocks.blueprints-folder");
     }
 
-    public String getDefaultPageTitle() {
+    public String getDefaultPageTitle()
+    {
         String retVal = getConfiguration("blocks.default-page-title");
-        if (retVal == null) retVal = "";
+        if (retVal == null)
+            retVal = "";
         return retVal;
     }
 
@@ -88,12 +94,14 @@ public class BlocksConfig
         return getConfiguration("blocks.rdf.schema.prefix");
     }
 
-    public String getFrontEndScripts(){
+    public String getFrontEndScripts()
+    {
         return getConfiguration("blocks.scripts.frontend");
     }
 
-    public String getProjectVersion(){
-        if(projectVersion == null) {
+    public String getProjectVersion()
+    {
+        if (projectVersion == null) {
             Properties prop = new Properties();
             InputStream input = null;
             try {
@@ -125,9 +133,7 @@ public class BlocksConfig
         return projectVersion;
     }
 
-
     /**
-     *
      * @return The languages this site can work with, ordered from most preferred language, to less preferred. If no such languages are specified in the configuration xml, an array with a default language is returned.
      */
     public LinkedHashSet<String> getLanguages(){
@@ -135,7 +141,7 @@ public class BlocksConfig
             cachedLanguages = new LinkedHashSet<>();
             ArrayList<String> cachedLanguagesTemp = new ArrayList<String>(Arrays.asList(R.configuration().getStringArray("blocks.site.languages")));
 
-            for(String l: cachedLanguagesTemp){
+            for (String l : cachedLanguagesTemp) {
                 Locale locale = new Locale(l);
                 String language = locale.getLanguage();
                 cachedLanguages.add(language);
@@ -147,9 +153,10 @@ public class BlocksConfig
         return cachedLanguages;
     }
 
-    public String getCurrentUserName(){
+    public String getCurrentUserName()
+    {
         Principal currentPrincipal;
-        try{
+        try {
             currentPrincipal = Authentication.getCurrentPrincipal();
             if (currentPrincipal != null) {
                 return currentPrincipal.getUsername();
@@ -159,11 +166,10 @@ public class BlocksConfig
             }
         }
         //if no Shiro securitymanager is present, this means we're still starting up the server (and thus no securitymanager is configured yet)
-        catch(UnavailableSecurityManagerException e){
+        catch (UnavailableSecurityManagerException e) {
             return DatabaseConstants.SERVER_START_UP;
         }
     }
-
 
     /**
      *
@@ -198,14 +204,16 @@ public class BlocksConfig
 
     /**
      * return the text from the applications configuration file in specified tag
+     *
      * @param configTag the configuration-tag
      * @return the value present in the configuration-tag, if '/' is the last character, it is removed
      */
-    private String getConfiguration(String configTag){
+    private String getConfiguration(String configTag)
+    {
         String retVal = R.configuration().getString(configTag);
         if (retVal != null) {
             if (retVal.charAt(retVal.length() - 1) == '/') {
-                retVal = retVal.substring(0, retVal.length()-1);
+                retVal = retVal.substring(0, retVal.length() - 1);
             }
         }
         return retVal;

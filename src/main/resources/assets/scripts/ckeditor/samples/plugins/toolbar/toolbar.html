@@ -134,7 +134,7 @@ CKEDITOR.replace( <em>'textarea_id'</em>, {
             // Toolbar groups doesn't count in this case - print only toolbar.
             else {
                 output += '// Toolbar configuration.\n' +
-                dumpToolbarConfiguration(editor);
+                        dumpToolbarConfiguration(editor);
             }
 
             // Recreate to avoid old IE from loosing whitespaces on filling <pre> content.

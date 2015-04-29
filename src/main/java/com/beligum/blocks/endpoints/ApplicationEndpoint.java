@@ -11,10 +11,12 @@ import com.beligum.blocks.models.jsonld.ResourceNode;
 import com.beligum.blocks.models.jsonld.ResourceNodeInf;
 import com.beligum.blocks.renderer.BlocksTemplateRenderer;
 import com.beligum.blocks.usermanagement.Permissions;
+import com.beligum.base.server.R;
+import com.beligum.base.server.RequestContext;
+import com.beligum.base.templating.ifaces.Template;
+import com.beligum.base.utils.Logger;
 import gen.com.beligum.blocks.core.fs.html.views.new_page;
-import gen.com.beligum.blocks.endpoints.UsersEndpointRoutes;
 import org.apache.shiro.SecurityUtils;
-import org.apache.shiro.authz.AuthorizationException;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
@@ -47,8 +49,8 @@ public class ApplicationEndpoint
     @Path("/{randomPage:.*}")
     @GET
     public Response getPageWithId(@PathParam("randomPage") String randomURLPath, @QueryParam("version") Long version, @QueryParam("deleted") @DefaultValue("false") boolean fetchDeleted)
+                    throws Exception
     {
-
         try {
 
             //            if(fetchDeleted && !SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)){
@@ -86,9 +88,9 @@ public class ApplicationEndpoint
                 }
 
             } else if (fetchDeleted) {
-//                id = Blocks.urlDispatcher().findPreviousId(url);
+                //                id = Blocks.urlDispatcher().findPreviousId(url);
                 if (siteUrl != null) {
-//                    storedTemplate = Blocks.database().fetchPrevious(id, language, Blocks.factory().getStoredTemplateClass());
+                    //                    storedTemplate = Blocks.database().fetchPrevious(id, language, Blocks.factory().getStoredTemplateClass());
                 }
             }
 
@@ -104,11 +106,11 @@ public class ApplicationEndpoint
                 }
 
             } else {
-//                if (storedTemplate.getEntity() != null) {
-//                    ArrayList<JsonLDWrapper> model = Blocks.database().fetchEntities("{ '@graph.@id': 'mot:/" + storedTemplate.getId().toString() + "'}");
+                //                if (storedTemplate.getEntity() != null) {
+                //                    ArrayList<JsonLDWrapper> model = Blocks.database().fetchEntities("{ '@graph.@id': 'mot:/" + storedTemplate.getId().toString() + "'}");
 
-//                if (model.iterator().hasNext()) resource = model.iterator().next().getMainResource(storedTemplate.getLanguage());
-//                }
+                //                if (model.iterator().hasNext()) resource = model.iterator().next().getMainResource(storedTemplate.getLanguage());
+                //                }
 
                 PageTemplate pageTemplate = Blocks.templateCache().getPagetemplate(storedTemplate.getPageTemplateName());
                 BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
@@ -122,7 +124,7 @@ public class ApplicationEndpoint
         }
         //if the index was not found, redirect to user login, else throw exception
         catch(NotFoundException e){
-                return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
+            return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
         }
         catch(AuthorizationException e){
             throw e;
@@ -135,6 +137,7 @@ public class ApplicationEndpoint
 
     /**
      * Injects all parameters needed to create a new page into a template.
+     *
      * @param newPageTemplate
      * @throws InterruptedException
      * @throws CacheException
@@ -146,6 +149,5 @@ public class ApplicationEndpoint
         newPageTemplate.set(ParserConstants.BLUEPRINTS, pageBlocks);
         return Response.ok(newPageTemplate).build();
     }
-
 
 }

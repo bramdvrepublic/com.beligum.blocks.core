@@ -1,5 +1,6 @@
 package com.beligum.blocks.wiki;
 
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.exceptions.DatabaseException;
 import com.beligum.base.utils.Logger;
@@ -18,6 +19,8 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Resource;
 import org.apache.commons.io.FileUtils;
+import com.beligum.blocks.models.Entity;
+import com.beligum.blocks.wiki.search.SimpleIndexer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.util.AntPathMatcher;
 import org.joda.time.LocalDateTime;
@@ -25,7 +28,9 @@ import org.joda.time.LocalDateTime;
 import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  * Created by wouter on 2/04/15.
@@ -45,9 +50,13 @@ public abstract class WikiParser
     protected ArrayList<HashMap<String, ResourceNode>> entities = new ArrayList<HashMap<String, ResourceNode>>();
     protected ObjectMapper mapper;
 
-    public WikiParser()
-    {
 
+    protected Integer counter = 0;
+    protected SimpleIndexer indexer;
+
+    public WikiParser() throws IOException
+    {
+        this.indexer = new SimpleIndexer(new File(Blocks.config().getLuceneIndex()));
         pathMatcher = new AntPathMatcher();
         try {
             indexer = new SimpleIndexer(new File(Blocks.config().getLuceneIndex()));
@@ -74,7 +83,6 @@ public abstract class WikiParser
                 String path = filePath.toString();
                 WikiItem item = new WikiItem();
 
-
                 try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(path), "8859_1"))) {
                     String line;
                     Integer line_nr = 0;
@@ -82,11 +90,13 @@ public abstract class WikiParser
                         if (line_nr == 0 && !line.contains("pmwiki")) {
                             Logger.error("This is not a pmwiki file: " + path + ". Skip!");
                             return FileVisitResult.CONTINUE;
-                        } else if (line_nr > 0) {
+                        }
+                        else if (line_nr > 0) {
                             int index = line.indexOf("=");
                             if (index > -1) {
                                 item.addField(line.substring(0, index), line.substring(index + 1));
-                            } else if (!StringUtils.isEmpty(line)) {
+                            }
+                            else if (!StringUtils.isEmpty(line)) {
                                 Logger.error("Invalid line found in file: " + path + " ");
                             }
 
@@ -96,13 +106,14 @@ public abstract class WikiParser
                     }
 
                     if (item.isValid()) {
-                        HashMap<String, HashMap<String,String>> storedValue = new HashMap<String, HashMap<String,String>>();
+                        HashMap<String, HashMap<String, String>> storedValue = new HashMap<String, HashMap<String, String>>();
                         if (items.containsKey(item.getId())) {
                             storedValue = items.get(item.getId());
                         }
                         storedValue = item.addToData(storedValue);
                         items.put(item.getId(), storedValue);
-                    } else {
+                    }
+                    else {
                         Logger.error("Item is not valid and will not be added");
                     }
 
@@ -110,8 +121,6 @@ public abstract class WikiParser
                 catch (Exception e) {
                     Logger.error("Error while reading file " + path, e);
                 }
-
-
 
                 return FileVisitResult.CONTINUE;
             }
@@ -125,17 +134,18 @@ public abstract class WikiParser
         }
     }
 
-    public void listFields() {
+    public void listFields()
+    {
         HashSet<String> fieldNames = new HashSet<String>();
-        for (String key: this.items.keySet()) {
-            HashMap<String, HashMap<String,String>> item = this.items.get(key);
-            for (String fieldKey: item.keySet()) {
+        for (String key : this.items.keySet()) {
+            HashMap<String, HashMap<String, String>> item = this.items.get(key);
+            for (String fieldKey : item.keySet()) {
                 fieldNames.add(fieldKey);
             }
         }
         Logger.info("-----------Fields----------");
-        for(Object field: fieldNames.toArray()) {
-            if (!((String)field).contains("title")) {
+        for (Object field : fieldNames.toArray()) {
+            if (!((String) field).contains("title")) {
                 Logger.info((String) field);
             }
         }
@@ -247,9 +257,10 @@ public abstract class WikiParser
 
     public void addToEntity(String newFieldName, String[] oldFields, ResourceNode entity, String language, HashMap<String, HashMap<String,String>> item) {
         String value = null;
-        for (String field: oldFields) {
+        for (String field : oldFields) {
             if (item.containsKey(field) && item.get(field).containsKey(language)) {
-                if (value == null) value = "";
+                if (value == null)
+                    value = "";
                 value += item.get(field).get(language) + " ";
             }
         }
@@ -261,7 +272,7 @@ public abstract class WikiParser
     // Add the first filled field
     public void addToEntityOR(String newFieldName, String[] oldFields, ResourceNode entity, String language, HashMap<String, HashMap<String,String>> item) {
         String value = null;
-        for (String field: oldFields) {
+        for (String field : oldFields) {
             if (item.containsKey(field) && item.get(field).containsKey(language)) {
                 value = item.get(field).get(language) + " ";
                 break;
@@ -272,9 +283,12 @@ public abstract class WikiParser
 
     public void addToEntityJoined(String newFieldName, String[] oldFields, ResourceNode entity, String language, HashMap<String, HashMap<String,String>> item, String joint) {
         String value = null;
-        for (String field: oldFields) {
+        for (String field : oldFields) {
             if (item.containsKey(field) && item.get(field).containsKey(language)) {
-                if (value == null) value = ""; else value += joint + " ";
+                if (value == null)
+                    value = "";
+                else
+                    value += joint + " ";
                 value += item.get(field).get(language);
             }
         }

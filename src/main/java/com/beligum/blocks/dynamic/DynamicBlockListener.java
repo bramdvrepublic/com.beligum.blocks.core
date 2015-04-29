@@ -16,12 +16,14 @@ public interface DynamicBlockListener
 
     /**
      * Main function of a dynamic block which generates it's html.
+     *
      * @throws ParseException
      */
     public StringBuilder render(BasicTemplate basicTemplate);
 
     /**
      * function that allows to tamper block before save.
+     *
      * @throws ParseException
      */
     public void save(StoredTemplate storedTemplate);
@@ -32,13 +34,11 @@ public interface DynamicBlockListener
     public String getType();
 
     /**
-     *
      * @return an ordered list with all link-nodes needed to render this dynamic block
      */
     public List<Element> getLinks();
 
     /**
-     *
      * @return an ordered list with all script-nodes needed to render this dynamic block
      */
     public List<Element> getScripts();

@@ -16,18 +16,15 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
 {
 
     private HashSet<String> possibleLanguages = null;
-    private HashMap<String, String>  idToUrl = new HashMap<String, String>();
+    private HashMap<String, String> idToUrl = new HashMap<String, String>();
 
-
-
-    public UrlDispatcher() {
+    public UrlDispatcher()
+    {
         this.resetIdToUrl();
     }
 
-
-
-
-    protected void resetIdToUrl() {
+    protected void resetIdToUrl()
+    {
         Stack<UrlBranch> stack = new Stack<>();
         this.idToUrl = collectIdsForUrl(stack);
         if (this.storedTemplateId != null) {
@@ -45,13 +42,14 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
         UrlBranch branch = findBranch(paths, language, 0, false, SEARCH_OPTION.NORMAL);
 
         if (branch != null) {
-            retVal =  Blocks.factory().getIdForString(branch.getStoredTemplateId());
+            retVal = Blocks.factory().getIdForString(branch.getStoredTemplateId());
         }
         return null;
     }
 
     @Override
-    public BlockId findPreviousId(URL url) {
+    public BlockId findPreviousId(URL url)
+    {
         BlockId retVal = null;
         ArrayList<String> paths = splitUrl(url);
         String language = getLanguage(paths);
@@ -61,7 +59,7 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
         if (branch != null) {
             ArrayList<UrlBranchHistory> history = branch.getDeleted();
             if (history.size() > 0) {
-                UrlBranchHistory last = history.get(history.size()-1);
+                UrlBranchHistory last = history.get(history.size() - 1);
                 retVal = Blocks.factory().getIdForString(last.getStoredTemplateId());
             }
         }
@@ -80,12 +78,12 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
 
         try {
             Blocks.database().save(this);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
 
         }
 
     }
-
 
     public void removeId(URL urlWithLanguage) throws Exception
     {
@@ -95,26 +93,29 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
         paths = getUrlWithoutLanguage(paths);
         UrlBranch branch = findBranch(paths, language, 0, false, SEARCH_OPTION.NORMAL);
         if (branch != null) {
-                this.idToUrl.remove(branch.getStoredTemplateId());
-                branch.remove();
-        } else {
+            this.idToUrl.remove(branch.getStoredTemplateId());
+            branch.remove();
+        }
+        else {
             throw new Exception("Url does not exits. could not delete.");
         }
 
         // Save the sitemap to the  database
         try {
             Blocks.database().save(this);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
 
         }
     }
 
-    public String getUrlForId(String id) {
+    public String getUrlForId(String id)
+    {
         return this.idToUrl.get(id);
     }
 
-
-    private ArrayList<String> splitUrl(URL url) {
+    private ArrayList<String> splitUrl(URL url)
+    {
         String[] paths = url.getPath().split("/");
         ArrayList<String> list = new ArrayList<String>(Arrays.asList(paths));
         if (list.size() > 0 && list.get(0).isEmpty()) {
@@ -123,7 +124,8 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
         return list;
     }
 
-    private boolean isPossibleLanguage(String language) {
+    private boolean isPossibleLanguage(String language)
+    {
         if (possibleLanguages == null) {
             this.possibleLanguages = new HashSet<>();
             this.possibleLanguages.addAll(Blocks.config().getLanguages());
@@ -131,10 +133,11 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
         return this.possibleLanguages.contains(language);
     }
 
-    public String getLanguage(URL url) {
-        String retVal =  getLanguage(splitUrl(url));
+    public String getLanguage(URL url)
+    {
+        String retVal = getLanguage(splitUrl(url));
         if (retVal == null) {
-            retVal =  Blocks.config().getDefaultLanguage();
+            retVal = Blocks.config().getDefaultLanguage();
         }
         return retVal;
     }
@@ -143,13 +146,19 @@ public abstract class UrlDispatcher extends UrlBranch implements BlocksUrlDispat
         return getLanguage(splitUrl(url));
     }
 
-    private String getLanguage(ArrayList<String> paths) {
-        if (paths.size() > 0 && isPossibleLanguage(paths.get(0))) return paths.get(0); else return null;
+    private String getLanguage(ArrayList<String> paths)
+    {
+        if (paths.size() > 0 && isPossibleLanguage(paths.get(0)))
+            return paths.get(0);
+        else
+            return null;
     }
 
-    private ArrayList<String> getUrlWithoutLanguage(ArrayList<String> paths) {
-        ArrayList<String> retVal = (ArrayList<String>)paths.clone();
-        if (retVal.size() > 0 && isPossibleLanguage(retVal.get(0))) retVal.remove(0);
+    private ArrayList<String> getUrlWithoutLanguage(ArrayList<String> paths)
+    {
+        ArrayList<String> retVal = (ArrayList<String>) paths.clone();
+        if (retVal.size() > 0 && isPossibleLanguage(retVal.get(0)))
+            retVal.remove(0);
         return retVal;
     }
 

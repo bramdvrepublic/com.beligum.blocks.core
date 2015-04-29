@@ -25,7 +25,8 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "blocks.core.Cons
     var maxColumn;
 
 
-    this.activate = function(value) {
+    this.activate = function (value)
+    {
         active = value;
         dragColumns = [];
         currentDragColumn = 0;
@@ -36,17 +37,17 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "blocks.core.Cons
     };
 
 
-
     // update the position of the handle element in the dom
-    var moveHandleElement = function () {
+    var moveHandleElement = function ()
+    {
 
     };
 
 
-
     var activeRowElement = null;
 
-    var setCursor = function(value) {
+    var setCursor = function (value)
+    {
         if (value && activeRowElement != null) {
             activeRowElement.addClass(Constants.RESIZING_CLASS);
         } else if (!value && activeRowElement != null) {
@@ -56,14 +57,13 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "blocks.core.Cons
     };
 
 
-
-
     /*
      * bind to jQuery mousemove event
      * show dragHandle
      * init triggerpoints to resize our column (initdrag)
      * */
-    this.startDrag = function (handle) {
+    this.startDrag = function (handle)
+    {
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         BlockMenu.hideMenu();
         activeResizeHandle = handle;
@@ -77,7 +77,8 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "blocks.core.Cons
         setCursor(false);
         activeRowElement = handle.leftColumn.parent.element;
         setCursor(true);
-        $(document).on("mousemove.resizehandledrag", function (event) {
+        $(document).on("mousemove.resizehandledrag", function (event)
+        {
             doDrag(event)
         });
 
@@ -91,7 +92,8 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "blocks.core.Cons
      * remove handle
      * send DOM_DID_CHANGE EVENT
      * */
-    this.endDrag = function (handle) {
+    this.endDrag = function (handle)
+    {
         if (dragging) {
             dragging = false;
             $("body").removeClass(Constants.FORCE_RESIZE_CURSOR);
@@ -101,7 +103,8 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "blocks.core.Cons
         }
     };
 
-    var doDrag = function (event) {
+    var doDrag = function (event)
+    {
         if (dragging) {
             checkDrag(event);
         }
@@ -111,7 +114,8 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "blocks.core.Cons
      * Before dragging calculate all the possible columns
      *
      * */
-    var initDrag = function (resizeHandle) {
+    var initDrag = function (resizeHandle)
+    {
         activeResizeHandle = resizeHandle;
         var row;
         if (resizeHandle.leftColumn != null) {
@@ -132,7 +136,7 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "blocks.core.Cons
         var widthLeftColumn = 0;
         var widthRightColumn = 0;
 
-        for (var i=0; i < columns.length; i++) {
+        for (var i = 0; i < columns.length; i++) {
             if (columns[i] == resizeHandle.leftColumn) {
                 widthLeftColumn = DOM.getColumnWidth(columns[i].element);
                 if (resizeHandle.rightColumn != null) {
@@ -181,14 +185,15 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "blocks.core.Cons
      * if so resize our column
      *
      * */
-    var checkDrag = function (event) {
+    var checkDrag = function (event)
+    {
         var curCol = dragColumns[currentDragColumn];
-        if (curCol != null && (event.pageX > curCol.start && event.pageX < curCol.end) ) {
+        if (curCol != null && (event.pageX > curCol.start && event.pageX < curCol.end)) {
             //Logger.debug("No column change");
             return;
         }
 
-        for (var i=minColumn; i <= maxColumn; i++ ) {
+        for (var i = minColumn; i <= maxColumn; i++) {
             var diff = i - currentDragColumn;
             if (event.pageX > dragColumns[currentDragColumn + diff].start &&
                 event.pageX < dragColumns[currentDragColumn + diff].end) {
@@ -216,7 +221,6 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "blocks.core.Cons
             }
         }
     };
-
 
 
     // On boot

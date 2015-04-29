@@ -1,11 +1,11 @@
 package com.beligum.blocks.models.factory;
 
+import com.beligum.blocks.exceptions.ParseException;
+import com.beligum.blocks.identifiers.BlockId;
 import com.beligum.blocks.models.*;
 import com.beligum.blocks.models.jsonld.ResourceNode;
 import com.beligum.blocks.renderer.BlocksTemplateRenderer;
 import com.beligum.blocks.urlmapping.BlocksUrlDispatcher;
-import com.beligum.blocks.exceptions.ParseException;
-import com.beligum.blocks.identifiers.BlockId;
 import com.beligum.blocks.urlmapping.UrlDispatcher;
 import org.jsoup.nodes.Element;
 
@@ -18,7 +18,9 @@ import java.util.HashMap;
 public interface BlocksFactory
 {
     public StoredTemplate createStoredTemplate(Element element, String language) throws ParseException;
+
     public StoredTemplate createStoredTemplate(Element element, URL url) throws ParseException;
+
     public Blueprint createBlueprint(Element element, String language) throws ParseException;
     public PageTemplate createPageTemplate(Element element, String language)  throws ParseException;
     public ResourceNode createEntity(String name);
@@ -34,12 +36,17 @@ public interface BlocksFactory
 
     public Class<? extends ResourceNode> getEntityClass();
     public Class<? extends StoredTemplate> getStoredTemplateClass();
+
     public Class<? extends Blueprint> getBlueprintClass();
+
     public Class<? extends PageTemplate> getPageTemplateClass();
+
     public Class<? extends Singleton> getSingletonClass();
     public Class<? extends BlocksUrlDispatcher> getUrlDispatcherClass();
 
     public BlocksTemplateRenderer createTemplateRenderer();
+
     public BlocksUrlDispatcher createUrlDispatcher();
+
     public BlockId getIdForString(String s);
 }

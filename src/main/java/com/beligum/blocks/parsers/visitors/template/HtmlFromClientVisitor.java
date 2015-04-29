@@ -1,7 +1,7 @@
 package com.beligum.blocks.parsers.visitors.template;
 
-import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.base.Blocks;
+import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.models.StoredTemplate;
 import com.beligum.blocks.parsers.ElementParser;
@@ -23,7 +23,8 @@ public class HtmlFromClientVisitor extends BasicVisitor
     private ArrayList<StoredTemplate> other = new ArrayList<>();
     private URL htmlUrl = null;
 
-    public HtmlFromClientVisitor(URL url) {
+    public HtmlFromClientVisitor(URL url)
+    {
         this.htmlUrl = url;
     }
 
@@ -34,11 +35,12 @@ public class HtmlFromClientVisitor extends BasicVisitor
         String language = Blocks.urlDispatcher().getLanguage(htmlUrl);
         Node retVal = node;
         if (node instanceof Element) {
-            if (ElementParser.getReferenceUrl((Element)node) != null || ( ElementParser.isUseBlueprint((Element) node) && ElementParser.isSingleton((Element) node))) {
+            if (ElementParser.getReferenceUrl((Element) node) != null || (ElementParser.isUseBlueprint((Element) node) && ElementParser.isSingleton((Element) node))) {
                 // This is or a singleton blueprint or an entity
                 this.other.add(Blocks.factory().createSingleton((Element) node, language));
                 this.addProperty((Element) node);
-            } else if (ElementParser.isProperty((Element)node) || ElementParser.isUseBlueprint((Element) node)) {
+            }
+            else if (ElementParser.isProperty((Element) node) || ElementParser.isUseBlueprint((Element) node)) {
                 // this is probably the content of the template
                 if (content != null) {
                     throw new ParseException("Template can only contain 1 content property");
@@ -46,18 +48,20 @@ public class HtmlFromClientVisitor extends BasicVisitor
                 node.attr(ParserConstants.RESOURCE, this.htmlUrl.toString());
                 this.content = Blocks.factory().createStoredTemplate((Element) node, this.htmlUrl);
                 this.addProperty((Element) node);
-            }  else if (ElementParser.isTypeOf((Element)node)) {
+            }
+            else if (ElementParser.isTypeOf((Element) node)) {
                 // save this entity but this should not happen
                 StoredTemplate storedTemplate = Blocks.factory().createStoredTemplate((Element) node, language);
                 if (this.content == null) {
                     this.content = storedTemplate;
-                } else {
+                }
+                else {
                     this.other.add(storedTemplate);
                 }
                 this.addProperty((Element) node);
             }
 
-            if (ElementParser.isTypeOf((Element)node) && !ElementParser.isResource((Element)node)) {
+            if (ElementParser.isTypeOf((Element) node) && !ElementParser.isResource((Element) node)) {
                 UUID id = UUID.randomUUID();
                 node.attr(ParserConstants.RESOURCE, "/" + id.toString());
             }
@@ -71,17 +75,20 @@ public class HtmlFromClientVisitor extends BasicVisitor
         return node;
     }
 
-    public void addProperty(Element element) {
+    public void addProperty(Element element)
+    {
         if (!ElementParser.isProperty(element)) {
             element.attr(ParserConstants.PROPERTY, "");
         }
     }
 
-    public StoredTemplate getContent() {
+    public StoredTemplate getContent()
+    {
         return this.content;
     }
 
-    public ArrayList<StoredTemplate> getOther() {
+    public ArrayList<StoredTemplate> getOther()
+    {
         return this.other;
     }
 

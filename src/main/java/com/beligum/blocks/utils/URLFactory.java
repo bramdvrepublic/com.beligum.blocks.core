@@ -28,8 +28,10 @@ public class UrlFactory
 
     public static String makeAbsolute(String host, String relativePath) {
         host = host.trim();
-        if (!host.endsWith("/") && !host.endsWith("#") && !host.endsWith(":")) host += "/";
-        if (relativePath.startsWith("/")) relativePath = relativePath.substring(1);
+        if (!host.endsWith("/") && !host.endsWith("#") && !host.endsWith(":"))
+            host += "/";
+        if (relativePath.startsWith("/"))
+            relativePath = relativePath.substring(1);
         return host + relativePath;
     }
 

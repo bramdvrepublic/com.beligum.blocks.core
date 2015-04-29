@@ -1,14 +1,13 @@
 package com.beligum.blocks.utils;
 
 import org.apache.commons.beanutils.PropertyUtils;
-import org.apache.commons.collections.ListUtils;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.text.DecimalFormat;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by bram on 10/13/14.
@@ -67,24 +66,24 @@ public class Utils
     }
 
     /**
-     *
      * @param obj
      * @return a map of all accessible field names mapped to the toString() values of its fields
      */
-    public static Map<String, String> toHash(Object obj){
+    public static Map<String, String> toHash(Object obj)
+    {
         Map<String, String> hash = new HashMap<>();
         Field[] fields = getAllFields(obj);
-        for(Field field : fields) {
+        for (Field field : fields) {
             try {
                 Object fieldValue = field.get(obj);
                 hash.put(field.getName(), fieldValue.toString());
             }
-            catch(Exception e) {
+            catch (Exception e) {
                 try {
                     Object fieldValue = PropertyUtils.getProperty(obj, field.getName());
                     hash.put(field.getName(), fieldValue.toString());
                 }
-                catch (Exception ex){
+                catch (Exception ex) {
                     //the field cannot be added to the hash, since it is not accessible, do nothing
                 }
             }
@@ -95,22 +94,24 @@ public class Utils
     /**
      * Method wiring all string value's corresponding to field names of a model object into the fields of that model.
      * Only accessible fields which can be written to will be changed.
-     * @param hash map of pairs (fieldName -> fieldValue)
+     *
+     * @param hash  map of pairs (fieldName -> fieldValue)
      * @param model
      */
-    public static void autowireDaoToModel(Map<String, String> hash, Object model){
+    public static void autowireDaoToModel(Map<String, String> hash, Object model)
+    {
         Field[] fields = getAllFields(model);
         Map<String, Field> fieldsMap = new HashMap<>();
-        for(Field field : fields){
+        for (Field field : fields) {
             fieldsMap.put(field.getName(), field);
         }
-        for(String key : hash.keySet()){
-            if(fieldsMap.containsKey(key)){
+        for (String key : hash.keySet()) {
+            if (fieldsMap.containsKey(key)) {
                 Field field = fieldsMap.get(key);
-                try{
+                try {
                     field.set(model, field.get(model));
                 }
-                catch (Exception e){
+                catch (Exception e) {
                     try {
                         String fieldValueString = hash.get(field.getName());
                         Object fieldValue = null;
@@ -138,7 +139,7 @@ public class Utils
                         }
                         PropertyUtils.setProperty(model, field.getName(), fieldValue);
                     }
-                    catch (Exception ex){
+                    catch (Exception ex) {
                         //no getter or setter found for the property, so cannot wire it
                     }
                 }
@@ -146,18 +147,17 @@ public class Utils
         }
     }
 
-    public static Field[] getAllFields(Object obj){
+    public static Field[] getAllFields(Object obj)
+    {
         Field[] fields = obj.getClass().getDeclaredFields();
         Class superClass = obj.getClass().getSuperclass();
-        while(!superClass.equals(Object.class)){
+        while (!superClass.equals(Object.class)) {
             Field[] superFields = superClass.getDeclaredFields();
             fields = ArrayUtils.addAll(fields, superFields);
             superClass = superClass.getSuperclass();
         }
         return fields;
     }
-
-
 
     //-----PROTECTED METHODS-----
 

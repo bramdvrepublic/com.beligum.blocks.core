@@ -1,4 +1,5 @@
-function queryParam(paramName) {
+function queryParam(paramName)
+{
     var query = window.location.search.split("?");
     if (query.length > 1) {
         var paramPairs = query[1].split("&");
@@ -16,26 +17,29 @@ function queryParam(paramName) {
 
 var showInactive = queryParam("inactive");
 
-function changeActiveView(){
+function changeActiveView()
+{
     showInactive = !showInactive;
-    if(showInactive) {
+    if (showInactive) {
         $("#changeActiveView").text("Hide inactive");
         $(".inactive").show();
     }
-    else{
+    else {
         $("#changeActiveView").text("Show inactive");
         $(".inactive").hide();
     }
     var sortingLinks = $(".sortlink");
     var i;
-    for(i = 0; i<sortingLinks.length; i++){
+    for (i = 0; i < sortingLinks.length; i++) {
         var sortLink = sortingLinks[i];
-        sortLink.href ="/users?sort=" + sortLink.name + "&inactive="+showInactive;
+        sortLink.href = "/users?sort=" + sortLink.name + "&inactive=" + showInactive;
     }
 }
 
-jQuery(document).ready(function($) {
-    $(".red-table tr td").click(function() {
+jQuery(document).ready(function ($)
+{
+    $(".red-table tr td").click(function ()
+    {
         if ($(this).attr("href")) {
             window.document.location = $(this).attr("href");
         }
@@ -43,26 +47,30 @@ jQuery(document).ready(function($) {
 
     //all beneath implement the hover-behaviour for a table-line, making sure the trash-icon has it's own proper behaviour
     $(".red-table tr").hover(
-        function onEntry() {
+        function onEntry()
+        {
             var trashIconHovered = $(this).children(".delete").children(".hover");
-            if(!trashIconHovered.length>0){
+            if (!trashIconHovered.length > 0) {
                 $(this).addClass("hover");
             }
             $(this).select(".delete").addClass("nohover");
         },
-        function out() {
+        function out()
+        {
             $(this).removeClass("hover");
             $(this).select(".delete").removeClass("nohover");
         }
     );
     $(".red-table tr .delete").hover(
-        function onEntry() {
+        function onEntry()
+        {
             $(".red-table tr").removeClass("hover");
             $(".red-table tr").addClass("nohover");
             $(this).children().removeClass("nohover");
             $(this).children().addClass("hover");
         },
-        function out() {
+        function out()
+        {
             $(this).parentsUntil(".red-table").addClass("hover");
             $(".red-table tr").removeClass("nohover");
             $(this).children().addClass("nohover");
@@ -72,7 +80,8 @@ jQuery(document).ready(function($) {
 });
 
 
-function deleteUser(userId){
+function deleteUser(userId)
+{
     var deleteDialog = new BootstrapDialog()
         .setTitle('Delete')
         .setMessage('Do you want to delete this user?')
@@ -80,18 +89,21 @@ function deleteUser(userId){
         .setButtons([
             {
                 label: 'Cancel',
-                action: function(deleteDialog){
+                action: function (deleteDialog)
+                {
                     deleteDialog.close();
                 }
             },
             {
                 label: 'Delete',
                 cssClass: 'btn-danger',
-                action: function(deleteDialog){
+                action: function (deleteDialog)
+                {
                     $.ajax({
                         url: "/users/" + userId,
                         type: 'delete',
-                        success: function(response){
+                        success: function (response)
+                        {
                             deleteDialog.close();
                             var message = response ? response : "The user has been deleted.";
                             var successModal = new BootstrapDialog()
@@ -99,15 +111,17 @@ function deleteUser(userId){
                                 .setType(BootstrapDialog.TYPE_SUCCESS)
                                 .setMessage(message)
                                 .setButtons([{
-                                    label : 'OK',
-                                    action: function(successModal){
+                                    label: 'OK',
+                                    action: function (successModal)
+                                    {
                                         successModal.close();
                                         toUsersIndex()
                                     }
                                 }])
                                 .open();
                         },
-                        error: function(response){
+                        error: function (response)
+                        {
                             deleteDialog.close();
                             var message = response.status == 403 ? response.responseText : "An error occurred while deleting the user.";
                             var errorModal = new BootstrapDialog()
@@ -115,8 +129,9 @@ function deleteUser(userId){
                                 .setType(BootstrapDialog.TYPE_DANGER)
                                 .setMessage(message)
                                 .setButtons({
-                                    label : 'OK',
-                                    action: function(errorModal){
+                                    label: 'OK',
+                                    action: function (errorModal)
+                                    {
                                         errorModal.close();
                                     }
                                 })
@@ -129,6 +144,7 @@ function deleteUser(userId){
         .open();
 }
 
-function toUsersIndex(){
+function toUsersIndex()
+{
     window.location = "/users";
 }

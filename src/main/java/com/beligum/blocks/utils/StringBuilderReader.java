@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 package com.beligum.blocks.utils;
-
 
 import java.io.IOException;
 import java.io.Reader;
@@ -60,7 +59,8 @@ public class StringBuilderReader extends Reader
     // The mark position. The default value 0 means the start of the text.
     private int mark = 0;
 
-    public StringBuilderReader(StringBuilder sb) {
+    public StringBuilderReader(StringBuilder sb)
+    {
         set(sb);
     }
 
@@ -73,7 +73,8 @@ public class StringBuilderReader extends Reader
     }
 
     @Override
-    public void close() {
+    public void close()
+    {
         synchronized (lock) {
             sb = null;
         }
@@ -91,8 +92,9 @@ public class StringBuilderReader extends Reader
      * @exception IOException If an I/O error occurs
      */
     @Override
-    public void mark(int readAheadLimit) throws IOException {
-        if (readAheadLimit < 0){
+    public void mark(int readAheadLimit) throws IOException
+    {
+        if (readAheadLimit < 0) {
             throw new IllegalArgumentException("Read-ahead limit cannpt be negative: " + readAheadLimit);
         }
         synchronized (lock) {
@@ -102,12 +104,14 @@ public class StringBuilderReader extends Reader
     }
 
     @Override
-    public boolean markSupported() {
+    public boolean markSupported()
+    {
         return true;
     }
 
     @Override
-    public int read() throws IOException {
+    public int read() throws IOException
+    {
         synchronized (lock) {
             ensureOpen();
             return next >= length ? -1 : sb.charAt(next++);
@@ -115,7 +119,8 @@ public class StringBuilderReader extends Reader
     }
 
     @Override
-    public int read(char cbuf[], int off, int len) throws IOException {
+    public int read(char cbuf[], int off, int len) throws IOException
+    {
         synchronized (lock) {
             ensureOpen();
 
@@ -140,7 +145,8 @@ public class StringBuilderReader extends Reader
     }
 
     @Override
-    public boolean ready() throws IOException {
+    public boolean ready() throws IOException
+    {
         synchronized (lock) {
             ensureOpen();
             return true;
@@ -148,7 +154,8 @@ public class StringBuilderReader extends Reader
     }
 
     @Override
-    public void reset() throws IOException {
+    public void reset() throws IOException
+    {
         synchronized (lock) {
             ensureOpen();
             next = mark;
@@ -156,7 +163,8 @@ public class StringBuilderReader extends Reader
         }
     }
 
-    public void set(StringBuilder sb) {
+    public void set(StringBuilder sb)
+    {
         synchronized (lock) {
             this.sb = sb;
             length = sb.length();
@@ -165,7 +173,8 @@ public class StringBuilderReader extends Reader
     }
 
     @Override
-    public long skip(long ns) throws IOException {
+    public long skip(long ns) throws IOException
+    {
         synchronized (lock) {
             ensureOpen();
             if (next >= length) {

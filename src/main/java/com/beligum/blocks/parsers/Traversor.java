@@ -33,9 +33,10 @@ public class Traversor
 
                     node = node.nextSibling();
                 }
-            } else {
+            }
+            else {
                 while (node.nextSibling() == null && depth > 0) {
-//                    node = visitor.tail(node, depth);
+                    //                    node = visitor.tail(node, depth);
                     node = node.parentNode();
                     depth--;
                 }
@@ -53,30 +54,31 @@ public class Traversor
         boolean foundProperty = false;
 
         while (node != null) {
-                if (depth > 0 && node instanceof Element) {
-                    node = visitor.head((Element) node, depth);
-                    if (node.hasAttr(ParserConstants.PROPERTY) || node.hasAttr(ParserConstants.PAGE_TEMPLATE_CONTENT_ATTR)) foundProperty = true;
-                }
-
-                if (node.childNodeSize() > 0 && !foundProperty) {
-                    node = node.childNode(0);
-                    depth++;
-                }
-
-                else {
-                    foundProperty = false;
-                    while (node.nextSibling() == null && depth > 0) {
-                        if (node instanceof Element) {
-                            node = visitor.tail(node, depth);
-                        }
-                        node = node.parentNode();
-                        depth--;
-                    }
-//                    node = visitor.tail((Element) node, depth);
-
-                    node = node.nextSibling();
-                }
+            if (depth > 0 && node instanceof Element) {
+                node = visitor.head((Element) node, depth);
+                if (node.hasAttr(ParserConstants.PROPERTY) || node.hasAttr(ParserConstants.PAGE_TEMPLATE_CONTENT_ATTR))
+                    foundProperty = true;
             }
+
+            if (node.childNodeSize() > 0 && !foundProperty) {
+                node = node.childNode(0);
+                depth++;
+            }
+
+            else {
+                foundProperty = false;
+                while (node.nextSibling() == null && depth > 0) {
+                    if (node instanceof Element) {
+                        node = visitor.tail(node, depth);
+                    }
+                    node = node.parentNode();
+                    depth--;
+                }
+                //                    node = visitor.tail((Element) node, depth);
+
+                node = node.nextSibling();
+            }
+        }
 
         return visitor;
     }

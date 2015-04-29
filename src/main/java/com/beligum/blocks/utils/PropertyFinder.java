@@ -24,7 +24,8 @@ public class PropertyFinder
         return findProperty(key, template, getPropertyIndex(key));
     }
 
-    public void propertyFound(String key) {
+    public void propertyFound(String key)
+    {
         propertyCounter.put(key, getPropertyIndex(key) + 1);
     }
 
@@ -32,8 +33,10 @@ public class PropertyFinder
         return findProperty(key, template, 0);
     }
 
-    public Integer getPropertyIndex(String key) {
-        if (!propertyCounter.containsKey(key)) propertyCounter.put(key, 0);
+    public Integer getPropertyIndex(String key)
+    {
+        if (!propertyCounter.containsKey(key))
+            propertyCounter.put(key, 0);
         return propertyCounter.get(key);
     }
 

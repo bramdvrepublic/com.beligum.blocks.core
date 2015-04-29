@@ -16,10 +16,10 @@
   }
 
   &.block-hover {
-//    border-bottom: 3px solid rgba(66, 66, 66, 0.8);
-//    border-right: 3px solid rgba(66, 66, 66, 0.8);
-//    border: 1px solid rgba(0, 0, 0, 0.8);
-//    background-color: rgba(210, 219, 242, 0.3);
+    //    border-bottom: 3px solid rgba(66, 66, 66, 0.8);
+    //    border-right: 3px solid rgba(66, 66, 66, 0.8);
+    //    border: 1px solid rgba(0, 0, 0, 0.8);
+    //    background-color: rgba(210, 219, 242, 0.3);
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.8);
     border: none;
   }
@@ -37,12 +37,10 @@
   background-color: rgba(00, 102, 204, 0.5);
 }
 
-
-.property-overlay  {
+.property-overlay {
   position: absolute;
   border: 1px dotted rgba(100, 100, 100, 0.8);
   cursor: text;
-
 
   &.left {
     border-left: none;
@@ -70,7 +68,6 @@
 
 }
 
-
 .column-resize-handle {
   position: absolute;
   background-color: #d3d3d3;
@@ -84,7 +81,7 @@
   cursor: -webkit-grabbing !important;
 }
 
-body.force-col-resize-cursor, body.force-col-resize-cursor *  {
+body.force-col-resize-cursor, body.force-col-resize-cursor * {
   cursor: col-resize !important;
 }
 
@@ -104,7 +101,6 @@ body.force-col-resize-cursor, body.force-col-resize-cursor *  {
   height: 100%;
 }
 
-
 .not-visible {
   opacity: 0.2;
   -webkit-filter: blur(5px) grayscale(1);
@@ -113,8 +109,6 @@ body.force-col-resize-cursor, body.force-col-resize-cursor *  {
   -ms-filter: blur(5px) grayscale(20%);
   filter: blur(5px) grayscale(1);
 }
-
-
 
 .blocks-selected-block {
   outline: 1px dotted rgba(0, 0, 0, 0.8);
@@ -130,8 +124,6 @@ body.force-col-resize-cursor, body.force-col-resize-cursor *  {
   user-select: none;
 }
 
-
-
 iframe {
   pointer-events: none;
 }
@@ -144,8 +136,9 @@ iframe {
 iframe.edit {
   pointer-events: auto;
 }
+
 // ckeditor also uses iframes
-iframe.cke_panel_frame  {
+iframe.cke_panel_frame {
   pointer-events: auto;
 }
 
@@ -154,14 +147,12 @@ iframe.cke_panel_frame  {
   padding: 10px 10px;
 }
 
-
 // used to flip to backend
 .flip {
   -webkit-transform: rotateY(180deg);
   transform: rotateY(180deg);
 
 }
-
 
 .blocks-resizing {
   cursor: col-resize;
@@ -182,12 +173,11 @@ iframe.cke_panel_frame  {
 //  color: deepskyblue;
 //}
 
-
 // container type btn-group-xs waar alle knopjes inzitten.
 // Wordt gecentreerd
 .block-menu {
   right: 100%;
-  min-width:150px;
+  min-width: 150px;
   max-width: 100%;
 
   .block-menu-handle {
@@ -213,7 +203,7 @@ iframe.cke_panel_frame  {
     min-width: 150px;
   }
 
-  &.open .block-menu-item  {
+  &.open .block-menu-item {
     display: block;
 
     &.disabled {
@@ -221,8 +211,6 @@ iframe.cke_panel_frame  {
     }
   }
 }
-
-
 
 .blocks-main-menu {
   position: fixed;
@@ -264,8 +252,6 @@ iframe.cke_panel_frame  {
   display: block;
 }
 
-
-
 .blocks-main-edit-button {
   position: fixed;
   font-size: 40px;
@@ -275,10 +261,10 @@ iframe.cke_panel_frame  {
   z-index: 10000;
 }
 
-.sitemap-list{
+.sitemap-list {
   list-style-type: disc;
   padding-left: 40px;
-  .sitemap-item{
+  .sitemap-item {
 
   }
 }

@@ -5,7 +5,8 @@ import com.beligum.blocks.models.jsonld.ResourceNode;
 import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Element;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 /**
  * Created by wouter on 19/03/15.
@@ -52,6 +53,5 @@ public class HtmlElement extends ResourceNode
     public HashMap<String, String> getAttributes() {
         return this.attributes;
     }
-
 
 }

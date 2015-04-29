@@ -39,15 +39,18 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
     var directionVector = {x1: 0, y1: 0, x2: 0, y2: 0};
 
     var layoutTree = null;
-    var lastMoveEvent = $.Event("mousemove", {pageX:0, pageY:0});
+    var lastMoveEvent = $.Event("mousemove", {pageX: 0, pageY: 0});
 
-    this.getLastMove = function() {
+    this.getLastMove = function ()
+    {
         return lastMoveEvent;
     }
 
 
-    this.registerMouseMove = function() {
-        $(document).on("mousemove.blocks_broadcaster", function (event) {
+    this.registerMouseMove = function ()
+    {
+        $(document).on("mousemove.blocks_broadcaster", function (event)
+        {
             var direction = calculateDirection(event);
             lastMoveEvent = event;
             lastMoveEvent.block = Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
@@ -55,21 +58,25 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
         });
     };
 
-    this.unregisterMouseMove = function() {
+    this.unregisterMouseMove = function ()
+    {
         $(document).off("mousemove.blocks_broadcaster");
     };
 
 
-    this.block = function() {
+    this.block = function ()
+    {
         return hoveredBlocks;
     };
 
-    this.property = function() {
+    this.property = function ()
+    {
         return properties;
     };
 
     // http://stackoverflow.com/questions/9043805/test-if-two-lines-intersect-javascript-function
-    function intersects(a,b,c,d,p,q,r,s) {
+    function intersects(a, b, c, d, p, q, r, s)
+    {
         var det, gamma, lambda;
         det = (c - a) * (s - q) - (r - p) * (d - b);
         if (det === 0) {
@@ -82,8 +89,8 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
     }
 
 
-
-    this.mouseDirectionForBlock = function(block) {
+    this.mouseDirectionForBlock = function (block)
+    {
         if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.left, block.top, block.right, block.top)) {
             return Constants.DIRECTION.UP;
         } else if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.left, block.bottom, block.right, block.bottom)) {
@@ -98,7 +105,7 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
     }
 
     // returns the current mouse direction
-    var old_direction = {x: false, y:false};
+    var old_direction = {x: false, y: false};
     var prevX = -1;
     var prevY = -1;
     var distance = 0;
@@ -112,37 +119,40 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
     var variance = 0;
     var prevTime = new Date().getTime();
 
-    function updateDistanceAndDirection(curX, curY){
+    function updateDistanceAndDirection(curX, curY)
+    {
         var angle = Math.atan2(prevY - curY, prevX - curX);
         sins[index] = Math.sin(angle);
         coss[index] = Math.cos(angle);
-        lengths[index] = Math.sqrt((curX-prevX)*(curX-prevX) + (curY-prevY)*(curY-prevY));
+        lengths[index] = Math.sqrt((curX - prevX) * (curX - prevX) + (curY - prevY) * (curY - prevY));
         var time = new Date().getTime();
         times[index] = time - prevTime;
 
-        variance = 1.0 - Math.sqrt(sum(coss)*sum(coss)+sum(sins)*sum(sins))/sins.length;
+        variance = 1.0 - Math.sqrt(sum(coss) * sum(coss) + sum(sins) * sum(sins)) / sins.length;
 
-        direction = Math.atan2(1/sins.length*sum(sins),1/coss.length*sum(coss));
-        var speed = sum(lengths)/(sum(times)/200);
+        direction = Math.atan2(1 / sins.length * sum(sins), 1 / coss.length * sum(coss));
+        var speed = sum(lengths) / (sum(times) / 200);
         distance = Math.min(Math.max(40, speed), 100);
         prevTime = time;
-        index = (index+1)%limit;
+        index = (index + 1) % limit;
         prevX = curX;
         prevY = curY;
     }
 
-    var sum = function(array){
+    var sum = function (array)
+    {
         var s = 0.0;
-        for(var i=0; i<array.length; i++){
+        for (var i = 0; i < array.length; i++) {
             s += array[i];
         }
         return s;
     };
 
     /*
-    * Gives the current direction of the mouse in degrees
-    * */
-    var calculateDirection = function(event) {
+     * Gives the current direction of the mouse in degrees
+     * */
+    var calculateDirection = function (event)
+    {
         updateDistanceAndDirection(event.pageX, event.pageY);
         directionVector.x1 = event.pageX;
         directionVector.y1 = event.pageY;
@@ -154,16 +164,17 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
             directionVector.y2 = directionVector.y1 - sin;
         }
 //        Logger.debug(directionVector.x1 + ", "+directionVector.y1+ " - " +directionVector.x2 +", "+ directionVector.y2);
-        var angle = direction * (180/Math.PI);
+        var angle = direction * (180 / Math.PI);
 //        Logger.debug("Hoek: " + angle + " - variance: " + variance);
         return direction;
     };
 
-/*
-* Rests all parameters for the hoovering.
-* This means that the next mousemove will trigger a HOOVER_ENTER_EVENT
-* */
-    this.resetHover = function() {
+    /*
+     * Rests all parameters for the hoovering.
+     * This means that the next mousemove will trigger a HOOVER_ENTER_EVENT
+     * */
+    this.resetHover = function ()
+    {
         fields = {current: null, previous: null};
         hoveredBlocks = {current: null, previous: null};
         properties = {current: null, previous: null};
@@ -173,9 +184,10 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
     };
 
     /*
-    * sets the current hovered block based on teh mouse coordinates
-    * */
-    this.getHooveredBlockForPosition = function (x, y) {
+     * sets the current hovered block based on teh mouse coordinates
+     * */
+    this.getHooveredBlockForPosition = function (x, y)
+    {
         var currentField = fields.current;
         fields.current = null;
 
@@ -199,7 +211,7 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
         // Our shortcut failed so search the full page
         // we loop the trees of elements to find the smallest active element
         if (fields.current == null) {
-            if  (Broadcaster.getContainer() != null) {
+            if (Broadcaster.getContainer() != null) {
                 var bb = Broadcaster.getContainer().findActiveElement(x, y);
                 if (bb != null && (bb instanceof blocks.elements.Block || bb instanceof blocks.elements.Property)) {
                     fields.current = bb;
@@ -244,18 +256,19 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
 
 
     /*
-    * This function sends an event and automatically creates a blockevent with all current paramaters
-    * GIves us the location on the page for the mouse, the smallest block we hover over (and the previous one),
-    * the property we hover over (and the previous one)
-    * custom is the paramter used with the send function. The event is triggered on the document
-    * */
-    this.send = function(eventName, custom) {
+     * This function sends an event and automatically creates a blockevent with all current paramaters
+     * GIves us the location on the page for the mouse, the smallest block we hover over (and the previous one),
+     * the property we hover over (and the previous one)
+     * custom is the paramter used with the send function. The event is triggered on the document
+     * */
+    this.send = function (eventName, custom)
+    {
         if (eventName == Broadcaster.EVENTS.START_BLOCKS) {
             Broadcaster.active = true;
         }
 
         if (Broadcaster.active) {
-        //Logger.debug(eventName);
+            //Logger.debug(eventName);
             var e = $.Event(eventName);
             e.pageX = lastMoveEvent.pageX;
             e.pageY = lastMoveEvent.pageY;
@@ -273,7 +286,8 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
         }
     };
 
-    this.sendToElement = function(element, eventName, custom) {
+    this.sendToElement = function (element, eventName, custom)
+    {
         if (Broadcaster.active) {
 //        Logger.debug(eventName);
             var e = $.Event(eventName);
@@ -293,15 +307,18 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
      * If we set this to null then then the top level block(s) are  the container
      * */
 
-    this.setContainer = function(value) {
+    this.setContainer = function (value)
+    {
         layoutTree = value
     };
 
-    this.getContainer = function() {
+    this.getContainer = function ()
+    {
         return layoutTree;
     };
 
-    var isContainer = function(element) {
+    var isContainer = function (element)
+    {
         return DOM.canLayout(element);
     };
 
@@ -316,15 +333,14 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
      */
 
 
-
-
     var oldLayoutTree = null;
     var oldContainerParent = null;
 
-    this.buildLayoutTree = function () {
+    this.buildLayoutTree = function ()
+    {
         oldLayoutTree = null;
         oldContainerParent = null;
-        layoutTree = new blocks.elements.Container( $("body"), null);
+        layoutTree = new blocks.elements.Container($("body"), null);
         Broadcaster.resetHover();
         lastMoveEvent.block = Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
         Logger.debug(layoutTree);
@@ -332,7 +348,8 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
 
     // We set the current block as the new container
     // this enables us to drag only inside this block
-    this.zoom = function() {
+    this.zoom = function ()
+    {
         if (oldLayoutTree == null) {
             oldLayoutTree = layoutTree;
             var current = hoveredBlocks.current;
@@ -340,7 +357,7 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
 
 
                 layoutTree = current.getContainer();
-                var elements = layoutTree.findElements(0,0);
+                var elements = layoutTree.findElements(0, 0);
                 oldContainerParent = layoutTree.parent;
                 layoutTree.parent = null;
             }
@@ -348,7 +365,8 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
     };
 
     // reset container to whole page
-    this.unzoom = function() {
+    this.unzoom = function ()
+    {
         if (oldLayoutTree != null) {
             layoutTree.parent = oldContainerParent;
             oldContainerParent = null;
@@ -357,9 +375,6 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
         }
 
     };
-
-
-
 
 
     this.EVENTS = {};

@@ -1,0 +1,26 @@
+#define($body-html)
+<div class="container new-page">
+    <div class="row">
+        <div class="col-sm-12">
+
+            <h1>Do you want to create a new page?</h1>
+
+            <form role="form" method="POST" action="/entities" class="form-inline">
+                <input type="hidden" name="page-url" value="$entityUrl"/>
+
+                <div class="form-group">
+                    <select name="page-class-name" id="class-selection" class="form-control">
+                        #foreach($blueprint in $blueprints)
+                            <option value="$blueprint.getName()">$!blueprint.getName()</option>
+                        #end
+                    </select>
+
+                    <button type="submit" class="btn btn-primary">New page</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+#end
+
+#parse("/templates/main.html")

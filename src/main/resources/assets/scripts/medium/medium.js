@@ -9,11 +9,13 @@
  * Version: master
  */
 
-(function (w, d) {
+(function (w, d)
+{
 
     'use strict';
 
-    var Medium = (function () {
+    var Medium = (function ()
+    {
 
         var //two modes, wild (native) or domesticated (rangy + undo.js)
             rangy = w['rangy'] || null,
@@ -126,19 +128,22 @@
              * @constructor
              * @param {Object} [userSettings] user options
              */
-            Medium = function (userSettings) {
+            Medium = function (userSettings)
+            {
                 var medium = this,
                     action = new Medium.Action(),
                     cache = new Medium.Cache(),
                     cursor = new Medium.Cursor(),
                     selection = new Medium.Selection(),
                     intercept = {
-                        focus: function (e) {
+                        focus: function (e)
+                        {
                             e = e || w.event;
                             Medium.activeElement = el;
                             medium.placeholders();
                         },
-                        blur: function (e) {
+                        blur: function (e)
+                        {
                             e = e || w.event;
                             if (Medium.activeElement === el) {
                                 Medium.activeElement = null;
@@ -146,7 +151,8 @@
 
                             medium.placeholders();
                         },
-                        down: function (e) {
+                        down: function (e)
+                        {
                             e = e || w.event;
 
                             var keepEvent = true;
@@ -154,19 +160,24 @@
                             //in Chrome it sends out this event before every regular event, not sure why
                             if (e.keyCode === 229) return;
 
-                            utils.isCommand(settings, e, function () {
+                            utils.isCommand(settings, e, function ()
+                            {
                                 cache.cmd = true;
-                            }, function () {
+                            }, function ()
+                            {
                                 cache.cmd = false;
                             });
 
-                            utils.isShift(e, function () {
+                            utils.isShift(e, function ()
+                            {
                                 cache.shift = true;
-                            }, function () {
+                            }, function ()
+                            {
                                 cache.shift = false;
                             });
 
-                            utils.isModifier(settings, e, function (cmd) {
+                            utils.isModifier(settings, e, function (cmd)
+                            {
                                 if (cache.cmd) {
 
                                     if (( (settings.mode === Medium.inlineMode) || (settings.mode === Medium.partialMode) ) && cmd !== "paste") {
@@ -218,11 +229,14 @@
 
                             return keepEvent;
                         },
-                        up: function (e) {
+                        up: function (e)
+                        {
                             e = e || w.event;
-                            utils.isCommand(settings, e, function () {
+                            utils.isCommand(settings, e, function ()
+                            {
                                 cache.cmd = false;
-                            }, function () {
+                            }, function ()
+                            {
                                 cache.cmd = true;
                             });
                             medium.clean();
@@ -233,7 +247,7 @@
                             if (
                                 settings.keyContext !== null
                                 && ( keyContext = settings.keyContext[e.keyCode] )
-                                ) {
+                            ) {
                                 var el = cursor.parent();
 
                                 if (el) {
@@ -244,31 +258,37 @@
                             action.preserveElementFocus();
                         },
                         command: {
-                            bold: function (e) {
+                            bold: function (e)
+                            {
                                 utils.preventDefaultEvent(e);
                                 (new Medium.Element(medium, 'bold'))
                                     .setClean(false)
                                     .invoke(settings.beforeInvokeElement);
                             },
-                            underline: function (e) {
+                            underline: function (e)
+                            {
                                 utils.preventDefaultEvent(e);
                                 (new Medium.Element(medium, 'underline'))
                                     .setClean(false)
                                     .invoke(settings.beforeInvokeElement);
                             },
-                            italicize: function (e) {
+                            italicize: function (e)
+                            {
                                 utils.preventDefaultEvent(e);
                                 (new Medium.Element(medium, 'italic'))
                                     .setClean(false)
                                     .invoke(settings.beforeInvokeElement);
                             },
-                            quote: function (e) {
+                            quote: function (e)
+                            {
                             },
-                            paste: function (e) {
+                            paste: function (e)
+                            {
                                 medium.makeUndoable();
                                 if (settings.pasteAsText) {
                                     var sel = utils.selection.saveSelection();
-                                    utils.pasteHook(function (text) {
+                                    utils.pasteHook(function (text)
+                                    {
                                         utils.selection.restoreSelection(sel);
 
                                         text = text.replace(/\n/g, '<br>');
@@ -286,8 +306,9 @@
                                 }
                             }
                         },
-                        enterKey: function (e) {
-                            if( settings.mode === Medium.inlineMode || settings.mode === Medium.inlineRichMode ){
+                        enterKey: function (e)
+                        {
+                            if (settings.mode === Medium.inlineMode || settings.mode === Medium.inlineRichMode) {
                                 return utils.preventDefaultEvent(e);
                             }
 
@@ -313,7 +334,7 @@
                                     && settings.autoHR
                                     && settings.mode !== 'partial'
                                     && settings.tags.horizontalRule
-                                    ) {
+                                ) {
 
                                     utils.preventDefaultEvent(e);
 
@@ -322,7 +343,7 @@
                                         && lastChild.nodeName.toLowerCase() === settings.tags.paragraph;
 
                                     if (makeHR && children.length >= 2) {
-                                        secondToLast = children[ children.length - 2 ];
+                                        secondToLast = children[children.length - 2];
 
                                         if (secondToLast.nodeName.toLowerCase() === settings.tags.horizontalRule) {
                                             makeHR = false;
@@ -343,7 +364,8 @@
 
                             return true;
                         },
-                        backspaceOrDeleteKey: function (e) {
+                        backspaceOrDeleteKey: function (e)
+                        {
                             if (settings.onBackspaceOrDelete !== undefined) {
                                 var result = settings.onBackspaceOrDelete.call(medium, e, el);
 
@@ -361,7 +383,7 @@
                                 lastChild
                                 && settings.tags.horizontalRule
                                 && lastChild.nodeName.toLocaleLowerCase() === settings.tags.horizontalRule
-                                ) {
+                            ) {
                                 el.removeChild(lastChild);
                             } else if (
                                 lastChild
@@ -370,7 +392,7 @@
 
                                 && beforeLastChild.nodeName.toLowerCase() === settings.tags.horizontalRule
                                 && lastChild.nodeName.toLowerCase() === settings.tags.paragraph
-                                ) {
+                            ) {
                                 el.removeChild(lastChild);
                                 el.removeChild(beforeLastChild);
                             }
@@ -407,19 +429,24 @@
                             remove: ['style', 'class']
                         },
                         pasteAsText: true,
-                        beforeInvokeElement: function () {
+                        beforeInvokeElement: function ()
+                        {
                             //this = Medium.Element
                         },
-                        beforeInsertHtml: function () {
+                        beforeInsertHtml: function ()
+                        {
                             //this = Medium.Html
                         },
-                        maxLengthReached: function (element) {
+                        maxLengthReached: function (element)
+                        {
                             //element
                         },
-                        beforeAddTag: function (tag, shouldFocus, isEditable, afterElement) {
+                        beforeAddTag: function (tag, shouldFocus, isEditable, afterElement)
+                        {
                         },
                         keyContext: null,
-                        pasteEventHandler: function(e) {
+                        pasteEventHandler: function (e)
+                        {
                             e = e || w.event;
                             medium.makeUndoable();
                             var length = medium.value().length,
@@ -459,7 +486,8 @@
                                     return false;
                                 }
                             } else {
-                                setTimeout(function() {
+                                setTimeout(function ()
+                                {
                                     medium.clean();
                                     medium.placeholders();
                                 }, 20);
@@ -480,7 +508,7 @@
                         typeof defaultSettings[i] !== 'object'
                         && defaultSettings.hasOwnProperty(i)
                         && settings.element.getAttribute('data-medium-' + key)
-                        ) {
+                    ) {
                         newVal = settings.element.getAttribute('data-medium-' + key);
 
                         if (newVal.toLowerCase() === "false" || newVal.toLowerCase() === "true") {
@@ -555,7 +583,8 @@
                 action.listen();
 
                 if (wild) {
-                    this.makeUndoable = function () {
+                    this.makeUndoable = function ()
+                    {
                     };
                 } else {
                     this.dirty = false;
@@ -568,7 +597,8 @@
                 if (settings.drag) {
                     drag = medium.drag = new Medium.Drag(medium);
 
-                    utils.addEvent(el, 'mousemove', function(e) {
+                    utils.addEvent(el, 'mousemove', function (e)
+                    {
                         e = e || w.event;
                         var target = e.target || {};
 
@@ -586,7 +616,8 @@
             utils;
 
         Medium.prototype = {
-            placeholders: function () {
+            placeholders: function ()
+            {
                 //in IE8, just gracefully degrade to no placeholders
                 if (!w.getComputedStyle) return;
 
@@ -596,7 +627,8 @@
                     el = this.element,
                     style = placeholder.style,
                     elStyle = w.getComputedStyle(el, null),
-                    qStyle = function (prop) {
+                    qStyle = function (prop)
+                    {
                         return elStyle.getPropertyValue(prop)
                     },
                     text = utils.text(el),
@@ -611,7 +643,7 @@
                     !hasFocus
                     && text.length < 1
                     && childCount < 2
-                    ) {
+                ) {
                     if (el.placeHolderActive) return;
 
                     if (!el.innerHTML.match('<' + s.tags.paragraph)) {
@@ -672,7 +704,7 @@
                         style.minHeight = el.clientHeight + 'px';
                         style.minWidth = el.clientWidth + 'px';
 
-                        if ( s.mode !== Medium.inlineMode && s.mode !== Medium.inlineRichMode ) {
+                        if (s.mode !== Medium.inlineMode && s.mode !== Medium.inlineRichMode) {
                             this.setupContents();
 
                             if (childCount === 0 && el.firstChild) {
@@ -693,7 +725,8 @@
              * Cleans element
              * @param {HtmlElement} [el] default is settings.element
              */
-            clean: function (el) {
+            clean: function (el)
+            {
 
                 /*
                  * Deletes invalid nodes
@@ -732,7 +765,8 @@
                 }
 
                 utils.traverseAll(el, {
-                    element: function(child, i, depth, parent) {
+                    element: function (child, i, depth, parent)
+                    {
                         var nodeName = child.nodeName,
                             shouldDelete = true;
 
@@ -746,11 +780,11 @@
                             }
                         }
 
-                        if ( onlyOuter === null && onlyInner === null ) {
+                        if (onlyOuter === null && onlyInner === null) {
                             return;
                         }
 
-                        if (depth  === 1 && outerSwitch[nodeName] !== undefined) {
+                        if (depth === 1 && outerSwitch[nodeName] !== undefined) {
                             shouldDelete = false;
                         } else if (depth > 1 && innerSwitch[nodeName] !== undefined) {
                             shouldDelete = false;
@@ -799,7 +833,8 @@
              * @param {Boolean} [skipChangeEvent]
              * @returns {Medium}
              */
-            insertHtml: function (html, callback, skipChangeEvent) {
+            insertHtml: function (html, callback, skipChangeEvent)
+            {
                 var result = (new Medium.Html(this, html))
                     .insert(this.settings.beforeInsertHtml);
 
@@ -814,7 +849,8 @@
                 return this;
             },
 
-            addTag: function (tag, shouldFocus, isEditable, afterElement) {
+            addTag: function (tag, shouldFocus, isEditable, afterElement)
+            {
                 if (!this.settings.beforeAddTag(tag, shouldFocus, isEditable, afterElement)) {
                     var newEl = d.createElement(tag),
                         toFocus;
@@ -850,7 +886,8 @@
              * @param {Boolean} [skipChangeEvent]
              * @returns {Medium}
              */
-            invokeElement: function (tagName, attributes, skipChangeEvent) {
+            invokeElement: function (tagName, attributes, skipChangeEvent)
+            {
                 var settings = this.settings,
                     attributes = attributes || {},
                     remove = attributes.remove || [];
@@ -882,7 +919,8 @@
             /**
              * @returns {string}
              */
-            behavior: function () {
+            behavior: function ()
+            {
                 return (wild ? Medium.wildBehavior : Medium.domesticatedBehavior);
             },
 
@@ -891,7 +929,8 @@
              * @param value
              * @returns {Medium}
              */
-            value: function (value) {
+            value: function (value)
+            {
                 if (typeof value !== 'undefined') {
                     this.element.innerHTML = value;
 
@@ -908,7 +947,8 @@
              * Focus on element
              * @returns {Medium}
              */
-            focus: function () {
+            focus: function ()
+            {
                 var el = this.element;
                 el.focus();
                 return this;
@@ -918,7 +958,8 @@
              * Select all text
              * @returns {Medium}
              */
-            select: function () {
+            select: function ()
+            {
                 var el = this.element,
                     range,
                     selection;
@@ -940,11 +981,13 @@
                 return this;
             },
 
-            isActive: function () {
+            isActive: function ()
+            {
                 return (Medium.activeElement === this.element);
             },
 
-            setupContents: function () {
+            setupContents: function ()
+            {
                 var el = this.element,
                     children = el.children,
                     childNodes = el.childNodes,
@@ -956,7 +999,7 @@
                     || children.length > 0
                     || s.mode === Medium.inlineMode
                     || s.mode === Medium.inlineRichMode
-                    ) {
+                ) {
                     return Medium.Utilities;
                 }
 
@@ -979,7 +1022,8 @@
                 return this;
             },
 
-            destroy: function () {
+            destroy: function ()
+            {
                 var el = this.element,
                     intercept = this.intercept,
                     settings = this.settings,
@@ -1010,7 +1054,8 @@
             },
 
             // Clears the element and restores the placeholder
-            clear: function () {
+            clear: function ()
+            {
                 this.element.innerHTML = '';
                 this.placeholders();
             },
@@ -1019,7 +1064,8 @@
              * Splits content in medium element at cursor
              * @returns {DocumentFragment|null}
              */
-            splitAtCaret: function() {
+            splitAtCaret: function ()
+            {
                 if (!this.isActive()) return null;
 
                 var selector = (w.getSelection || d.selection),
@@ -1043,7 +1089,8 @@
             /**
              * Deletes selection
              */
-            deleteSelection: function() {
+            deleteSelection: function ()
+            {
                 if (!this.isActive()) return;
 
                 var sel = rangy.getSelection(),
@@ -1055,7 +1102,8 @@
                 }
             },
 
-            lastChild: function () {
+            lastChild: function ()
+            {
                 return this.element.lastChild;
             }
         };
@@ -1066,7 +1114,8 @@
          * @param {Object} [attributes]
          * @constructor
          */
-        Medium.Element = function (medium, tagName, attributes) {
+        Medium.Element = function (medium, tagName, attributes)
+        {
             this.medium = medium;
             this.element = medium.settings.element;
             if (wild) {
@@ -1096,7 +1145,8 @@
          * @param {Medium} medium
          * @param {String|HtmlElement} html
          */
-        Medium.Html = function (medium, html) {
+        Medium.Html = function (medium, html)
+        {
             this.medium = medium;
             this.element = medium.settings.element;
             this.clean = true;
@@ -1106,7 +1156,8 @@
          *
          * @constructor
          */
-        Medium.Injector = function () {
+        Medium.Injector = function ()
+        {
         };
 
         if (wild) {
@@ -1115,7 +1166,8 @@
                  * @methodOf Medium.Element
                  * @param {Function} [fn]
                  */
-                invoke: function (fn) {
+                invoke: function (fn)
+                {
                     if (Medium.activeElement === this.element) {
                         if (fn) {
                             fn.apply(this);
@@ -1123,7 +1175,8 @@
                         d.execCommand(this.tagName, false);
                     }
                 },
-                setClean: function () {
+                setClean: function ()
+                {
                     return this;
                 }
             };
@@ -1135,7 +1188,8 @@
                  * @param {Boolean} [selectInserted]
                  * @returns {null}
                  */
-                inject: function (htmlRaw, selectInserted) {
+                inject: function (htmlRaw, selectInserted)
+                {
                     this.insertHTML(htmlRaw, selectInserted);
                     return null;
                 }
@@ -1145,13 +1199,15 @@
              *
              * @constructor
              */
-            Medium.Undoable = function () {
+            Medium.Undoable = function ()
+            {
             };
         }
 
         //if medium is domesticated (ie, not wild)
         else {
-            rangy.rangePrototype.insertNodeAtEnd = function (node) {
+            rangy.rangePrototype.insertNodeAtEnd = function (node)
+            {
                 var range = this.cloneRange();
                 range.collapse(false);
                 range.insertNode(node);
@@ -1164,7 +1220,8 @@
                  * @methodOf Medium.Element
                  * @param {Function} [fn]
                  */
-                invoke: function (fn) {
+                invoke: function (fn)
+                {
                     if (Medium.activeElement === this.element) {
                         if (fn) {
                             fn.apply(this);
@@ -1207,7 +1264,8 @@
                  * @param {Boolean} clean
                  * @returns {Medium.Element}
                  */
-                setClean: function (clean) {
+                setClean: function (clean)
+                {
                     this.clean = clean;
                     return this;
                 }
@@ -1219,7 +1277,8 @@
                  * @param {String|HtmlElement} htmlRaw
                  * @returns {HtmlElement}
                  */
-                inject: function (htmlRaw) {
+                inject: function (htmlRaw)
+                {
                     var html, isConverted = false;
                     if (typeof htmlRaw === 'string') {
                         var htmlConverter = d.createElement('div');
@@ -1255,33 +1314,39 @@
              * @param {Medium} medium
              * @constructor
              */
-            Medium.Undoable = function (medium) {
+            Medium.Undoable = function (medium)
+            {
                 var me = this,
                     element = medium.settings.element,
                     startValue = element.innerHTML,
                     timer,
                     stack = new Undo.Stack(),
                     EditCommand = Undo.Command.extend({
-                        constructor: function (oldValue, newValue) {
+                        constructor: function (oldValue, newValue)
+                        {
                             this.oldValue = oldValue;
                             this.newValue = newValue;
                         },
-                        execute: function () {
+                        execute: function ()
+                        {
                         },
-                        undo: function () {
+                        undo: function ()
+                        {
                             element.innerHTML = this.oldValue;
                             medium.canUndo = stack.canUndo();
                             medium.canRedo = stack.canRedo();
                             medium.dirty = stack.dirty();
                         },
-                        redo: function () {
+                        redo: function ()
+                        {
                             element.innerHTML = this.newValue;
                             medium.canUndo = stack.canUndo();
                             medium.canRedo = stack.canRedo();
                             medium.dirty = stack.dirty();
                         }
                     }),
-                    makeUndoable = function () {
+                    makeUndoable = function ()
+                    {
                         var newValue = element.innerHTML;
                         // ignore meta key presses
                         if (newValue != startValue) {
@@ -1305,7 +1370,8 @@
                 this.movingThroughStack = false;
 
                 utils
-                    .addEvent(element, 'keyup', function (e) {
+                    .addEvent(element, 'keyup', function (e)
+                    {
                         if (e.ctrlKey || e.keyCode === key.z) {
                             utils.preventDefaultEvent(e);
                             return;
@@ -1313,12 +1379,14 @@
 
                         // a way too simple algorithm in place of single-character undo
                         clearTimeout(timer);
-                        timer = setTimeout(function () {
+                        timer = setTimeout(function ()
+                        {
                             makeUndoable();
                         }, 250);
                     })
 
-                    .addEvent(element, 'keydown', function (e) {
+                    .addEvent(element, 'keydown', function (e)
+                    {
                         if (!e.ctrlKey || e.keyCode !== key.z) {
                             me.movingThroughStack = false;
                             return true;
@@ -1338,7 +1406,8 @@
         }
 
         //Thank you Tim Down (super uber genius): http://stackoverflow.com/questions/6690752/insert-html-at-caret-in-a-contenteditable-div/6691294#6691294
-        Medium.Injector.prototype.insertHTML = function (html, selectPastedContent) {
+        Medium.Injector.prototype.insertHTML = function (html, selectPastedContent)
+        {
             var sel, range;
             if (w.getSelection) {
                 // IE9 and non-IE
@@ -1392,7 +1461,8 @@
              * @param {Boolean} [selectInserted]
              * @returns {HtmlElement}
              */
-            insert: function (fn, selectInserted) {
+            insert: function (fn, selectInserted)
+            {
                 if (Medium.activeElement === this.element) {
                     if (fn) {
                         fn.apply(this);
@@ -1424,7 +1494,8 @@
              * @param clean
              * @returns {Medium.Html}
              */
-            setClean: function (clean) {
+            setClean: function (clean)
+            {
                 this.clean = clean;
                 return this;
             }
@@ -1434,31 +1505,35 @@
             /*
              * Keyboard Interface events
              */
-            isCommand: function (s, e, fnTrue, fnFalse) {
+            isCommand: function (s, e, fnTrue, fnFalse)
+            {
                 if ((s.modifier === 'ctrl' && e.ctrlKey ) ||
                     (s.modifier === 'cmd' && e.metaKey ) ||
                     (s.modifier === 'auto' && (e.ctrlKey || e.metaKey) )
-                    ) {
+                ) {
                     return fnTrue.call();
                 } else {
                     return fnFalse.call();
                 }
             },
-            isShift: function (e, fnTrue, fnFalse) {
+            isShift: function (e, fnTrue, fnFalse)
+            {
                 if (e.shiftKey) {
                     return fnTrue.call();
                 } else {
                     return fnFalse.call();
                 }
             },
-            isModifier: function (settings, e, fn) {
+            isModifier: function (settings, e, fn)
+            {
                 var cmd = settings.modifiers[e.keyCode];
                 if (cmd) {
                     return fn.call(null, cmd);
                 }
                 return false;
             },
-            special: (function () {
+            special: (function ()
+            {
                 var special = {};
 
                 special[key['backspace']] = true;
@@ -1470,7 +1545,8 @@
 
                 return special;
             })(),
-            isSpecial: function (cacheCmd, e) {
+            isSpecial: function (cacheCmd, e)
+            {
 
                 if (cacheCmd) {
                     return true;
@@ -1478,7 +1554,8 @@
 
                 return typeof Medium.Utilities.special[e.keyCode] !== 'undefined';
             },
-            navigational: (function () {
+            navigational: (function ()
+            {
                 var navigational = {};
 
                 navigational[key['upArrow']] = true;
@@ -1488,7 +1565,8 @@
 
                 return navigational;
             })(),
-            isNavigational: function (e) {
+            isNavigational: function (e)
+            {
                 return typeof Medium.Utilities.navigational[e.keyCode] !== 'undefined';
             },
 
@@ -1498,14 +1576,15 @@
              * @param func
              * @returns Medium.Utilities
              */
-            addEvents: function(element, eventNamesString, func) {
+            addEvents: function (element, eventNamesString, func)
+            {
                 var i = 0,
                     eventName,
                     eventNames = eventNamesString.split(' '),
                     max = eventNames.length,
                     utils = Medium.Utilities;
 
-                for(;i < max; i++) {
+                for (; i < max; i++) {
                     eventName = eventNames[i];
                     if (eventName.length > 0) {
                         utils.addEvent(element, eventName, func);
@@ -1517,7 +1596,8 @@
             /*
              * Handle Events
              */
-            addEvent: function addEvent(element, eventName, func) {
+            addEvent: function addEvent(element, eventName, func)
+            {
                 if (element.addEventListener) {
                     element.addEventListener(eventName, func, false);
                 } else if (element.attachEvent) {
@@ -1528,7 +1608,8 @@
 
                 return Medium.Utilities;
             },
-            removeEvent: function removeEvent(element, eventName, func) {
+            removeEvent: function removeEvent(element, eventName, func)
+            {
                 if (element.removeEventListener) {
                     element.removeEventListener(eventName, func, false);
                 } else if (element.detachEvent) {
@@ -1539,7 +1620,8 @@
 
                 return Medium.Utilities;
             },
-            preventDefaultEvent: function (e) {
+            preventDefaultEvent: function (e)
+            {
                 if (e.preventDefault) {
                     e.preventDefault();
                 } else {
@@ -1548,7 +1630,8 @@
 
                 return Medium.Utilities;
             },
-            stopPropagation: function(e) {
+            stopPropagation: function (e)
+            {
                 e = e || window.event;
                 e.cancelBubble = true;
 
@@ -1558,7 +1641,8 @@
 
                 return Medium.Utilities;
             },
-            isEventSupported: function (element, eventName) {
+            isEventSupported: function (element, eventName)
+            {
                 eventName = 'on' + eventName;
                 var el = d.createElement(element.tagName),
                     isSupported = (eventName in el);
@@ -1570,7 +1654,8 @@
                 el = null;
                 return isSupported;
             },
-            triggerEvent: function (element, eventName) {
+            triggerEvent: function (element, eventName)
+            {
                 var e;
                 if (d.createEvent) {
                     e = d.createEvent("HTMLEvents");
@@ -1585,13 +1670,14 @@
                 return Medium.Utilities;
             },
 
-            deepExtend: function (destination, source) {
+            deepExtend: function (destination, source)
+            {
                 for (var property in source) if (source.hasOwnProperty(property)) {
                     if (
                         source[property]
                         && source[property].constructor
                         && source[property].constructor === Object
-                        ) {
+                    ) {
                         destination[property] = destination[property] || {};
                         Medium.Utilities.deepExtend(destination[property], source[property]);
                     } else {
@@ -1605,7 +1691,8 @@
              * content, this ultimately converts it into
              * plain text before inserting the data.
              */
-            pasteHook: function (medium, fn) {
+            pasteHook: function (medium, fn)
+            {
                 var textarea = d.createElement('textarea'),
                     el = medium.element,
                     existingValue,
@@ -1623,7 +1710,8 @@
                 if (!wild) {
                     medium.makeUndoable();
                 }
-                setTimeout(function () {
+                setTimeout(function ()
+                {
                     el.focus();
                     if (s.maxLength > 0) {
                         existingValue = utils.text(el);
@@ -1634,12 +1722,13 @@
                         }
                     }
                     fn(textarea.value);
-                    utils.detachNode( textarea );
+                    utils.detachNode(textarea);
                 }, 2);
 
                 return Medium.Utilities;
             },
-            traverseAll: function(element, options, depth) {
+            traverseAll: function (element, options, depth)
+            {
                 var children = element.childNodes,
                     length = children.length,
                     i = 0,
@@ -1649,7 +1738,7 @@
                 options = options || {};
 
                 if (length > 0) {
-                    for(;i < length;i++) {
+                    for (; i < length; i++) {
                         node = children[i];
                         switch (node.nodeType) {
                             case 1:
@@ -1670,10 +1759,12 @@
                 }
                 return Medium.Utilities;
             },
-            trim: function (string) {
+            trim: function (string)
+            {
                 return string.replace(/^[\s]+|\s+$/g, '');
             },
-            arrayContains: function(array, variable) {
+            arrayContains: function (array, variable)
+            {
                 var i = array.length;
                 while (i--) {
                     if (array[i] === variable) {
@@ -1682,7 +1773,8 @@
                 }
                 return false;
             },
-            addClass: function(el, className) {
+            addClass: function (el, className)
+            {
                 if (el.classList)
                     el.classList.add(className);
                 else
@@ -1690,30 +1782,36 @@
 
                 return Medium.Utilities;
             },
-            removeClass: function(el, className) {
+            removeClass: function (el, className)
+            {
                 if (el.classList)
                     el.classList.remove(className);
                 else
                     el.className = el.className.replace(new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ');
                 return Medium.Utilities;
             },
-            hasClass: function(el, className) {
+            hasClass: function (el, className)
+            {
                 if (el.classList)
                     return el.classList.contains(className);
                 else
                     return new RegExp('(^| )' + className + '( |$)', 'gi').test(el.className);
             },
-            isHidden: function(el) {
+            isHidden: function (el)
+            {
                 return el.offsetWidth === 0 || el.offsetHeight === 0;
             },
-            isVisible: function(el) {
+            isVisible: function (el)
+            {
                 return el.offsetWidth !== 0 || el.offsetHeight !== 0;
             },
-            encodeHtml: function ( html ) {
-                return d.createElement( 'a' ).appendChild(
-                    d.createTextNode( html ) ).parentNode.innerHTML;
+            encodeHtml: function (html)
+            {
+                return d.createElement('a').appendChild(
+                    d.createTextNode(html)).parentNode.innerHTML;
             },
-            text: function (node, val) {
+            text: function (node, val)
+            {
                 if (val) {
                     if ((node.textContent) && (typeof (node.textContent) != "undefined")) {
                         node.textContent = val;
@@ -1737,7 +1835,8 @@
                 //for good measure
                 return '';
             },
-            changeTag: function (oldNode, newTag) {
+            changeTag: function (oldNode, newTag)
+            {
                 var newNode = d.createElement(newTag),
                     node,
                     nextNode;
@@ -1754,13 +1853,15 @@
 
                 return newNode;
             },
-            detachNode: function (el) {
+            detachNode: function (el)
+            {
                 if (el.parentNode !== null) {
                     el.parentNode.removeChild(el);
                 }
                 return el;
             },
-            baseAtCaret: function (medium) {
+            baseAtCaret: function (medium)
+            {
                 if (!medium.isActive()) return null;
 
                 var sel = w.getSelection ? w.getSelection() : document.selection;
@@ -1780,7 +1881,8 @@
 
                 return null;
             },
-            atCaret: function (medium) {
+            atCaret: function (medium)
+            {
                 var container = this.baseAtCaret(medium) || {},
                     el = medium.element;
 
@@ -1796,16 +1898,20 @@
 
                 return null;
             },
-            hide: function(el) {
+            hide: function (el)
+            {
                 el.style.display = 'none';
             },
-            show: function(el) {
+            show: function (el)
+            {
                 el.style.display = '';
             },
-            hideAnim: function(el) {
+            hideAnim: function (el)
+            {
                 el.style.opacity = 1;
             },
-            showAnim: function(el) {
+            showAnim: function (el)
+            {
                 el.style.opacity = 0.01;
                 el.style.display = '';
             }
@@ -1814,15 +1920,18 @@
         /*
          * Handle Selection Logic
          */
-        Medium.Selection = function () {
+        Medium.Selection = function ()
+        {
         };
         Medium.Selection.prototype = {
-            setBridge: function (bridge) {
+            setBridge: function (bridge)
+            {
                 for (var i in bridge) if (bridge.hasOwnProperty(i)) {
                     this[i] = bridge[i];
                 }
             },
-            saveSelection: function () {
+            saveSelection: function ()
+            {
                 if (w.getSelection) {
                     var sel = w.getSelection();
                     if (sel.rangeCount > 0) {
@@ -1834,7 +1943,8 @@
                 return null;
             },
 
-            restoreSelection: function (range) {
+            restoreSelection: function (range)
+            {
                 if (range) {
                     if (w.getSelection) {
                         var sel = w.getSelection();
@@ -1850,15 +1960,18 @@
         /*
          * Handle Cursor Logic
          */
-        Medium.Cursor = function () {
+        Medium.Cursor = function ()
+        {
         };
         Medium.Cursor.prototype = {
-            setBridge: function (bridge) {
+            setBridge: function (bridge)
+            {
                 for (var i in bridge) if (bridge.hasOwnProperty(i)) {
                     this[i] = bridge[i];
                 }
             },
-            set: function (medium, pos, el) {
+            set: function (medium, pos, el)
+            {
                 var range,
                     html = this.html;
 
@@ -1881,7 +1994,8 @@
                     range.select();
                 }
             },
-            parent: function () {
+            parent: function ()
+            {
                 var target = null, range;
 
                 if (w.getSelection) {
@@ -1891,7 +2005,7 @@
                     target = (target.nodeType === 1
                         ? target
                         : target.parentNode
-                        );
+                    );
                 }
 
                 else if (d.selection) {
@@ -1904,15 +2018,18 @@
 
                 return target;
             },
-            caretToBeginning: function (el) {
+            caretToBeginning: function (el)
+            {
                 this.set(this, 0, el);
             },
-            caretToEnd: function (el) {
+            caretToEnd: function (el)
+            {
                 this.set(this, utils.text(el).length, el);
             }
         };
 
-        Medium.Toolbar = function(medium, buttons) {
+        Medium.Toolbar = function (medium, buttons)
+        {
             var elementCreator = d.createElement('div'),
                 that = this;
 
@@ -1925,12 +2042,14 @@
             this.busy = true;
 
             utils
-                .addEvents(document, 'mouseup keyup', function(e) {
+                .addEvents(document, 'mouseup keyup', function (e)
+                {
                     if (Medium.activeElement === medium.element && !that.busy) {
                         that.goToSelection();
                     }
                 })
-                .addEvent(w, 'scroll', function() {
+                .addEvent(w, 'scroll', function ()
+                {
                     if (that.active) {
                         that.goToSelection();
                     }
@@ -1941,8 +2060,7 @@
             showClass: 'Medium-toolbar-show',
             hideClass: 'Medium-toolbar-hide',
 
-            html:
-                '<div class="Medium-toolbar">\
+            html: '<div class="Medium-toolbar">\
                     <div class="Medium-tail-outer">\
                         <div class="Medium-tail-inner"></div>\
                     </div>\
@@ -1955,7 +2073,8 @@
                     </table>\
                 </div>',
 
-            goToSelection: function() {
+            goToSelection: function ()
+            {
                 var high = this.getHighlighted(),
                     y = high.boundary.top - 5,
                     el = this.element,
@@ -1985,8 +2104,8 @@
                         style.top = (y - 65) + "px";
                         style.left = (
                             (
-                                high.boundary.left + (high.boundary.width / 2)
-                                )
+                            high.boundary.left + (high.boundary.width / 2)
+                            )
                             - (el.clientWidth / 2)
                             ) + "px";
 
@@ -1995,7 +2114,8 @@
                 }
             },
 
-            getHighlighted: function() {
+            getHighlighted: function ()
+            {
                 var selection = w.getSelection(),
                     range = (selection.anchorNode ? selection.getRangeAt(0) : false);
 
@@ -2004,19 +2124,21 @@
                 }
 
                 return {
-                    selection : selection,
-                    range : range,
-                    text : utils.trim(range.toString()),
-                    boundary : range.getBoundingClientRect()
+                    selection: selection,
+                    range: range,
+                    text: utils.trim(range.toString()),
+                    boundary: range.getBoundingClientRect()
                 };
             }
         };
 
-        Medium.Drag = function(medium) {
+        Medium.Drag = function (medium)
+        {
             this.medium = medium;
 
             var that = this,
-                iconSrc = this.iconSrc.replace(/[{][{]([a-zA-Z]+)[}][}]/g, function(ignore, match) {
+                iconSrc = this.iconSrc.replace(/[{][{]([a-zA-Z]+)[}][}]/g, function (ignore, match)
+                {
                     if (that.hasOwnProperty(match)) {
                         return that[match];
                     }
@@ -2034,7 +2156,8 @@
             this.protectedElement = null;
 
             utils
-                .addEvent(icon, 'dragstart', function(e) {
+                .addEvent(icon, 'dragstart', function (e)
+                {
                     if (that.protectedElement !== null) return;
 
                     e = e || w.event;
@@ -2043,7 +2166,8 @@
 
                     that.icon.style.opacity = 0.00;
                 })
-                .addEvent(icon, 'mouseover', function(e) {
+                .addEvent(icon, 'mouseover', function (e)
+                {
                     if (that.protectedElement !== null) return;
 
                     utils
@@ -2051,7 +2175,8 @@
                         .addClass(that.element, that.elementClass);
 
                 })
-                .addEvent(icon, 'mouseout', function(e) {
+                .addEvent(icon, 'mouseout', function (e)
+                {
                     if (that.protectedElement !== null) return;
 
                     utils
@@ -2059,10 +2184,12 @@
                         .removeClass(that.element, that.elementClass);
 
                 })
-                .addEvent(icon, 'dragend', d.body.ondragend = function(e) {
+                .addEvent(icon, 'dragend', d.body.ondragend = function (e)
+                {
                     if (that.protectedElement === null) return;
 
-                    setTimeout(function() {
+                    setTimeout(function ()
+                    {
                         that.cleanCanvas();
                         that.protectedElement = null;
                     }, 1);
@@ -2087,11 +2214,13 @@
 	</g>\
 </svg>',
             iconColor: '#231F20',
-            hide: function() {
+            hide: function ()
+            {
                 utils.hide(this.icon);
             },
 
-            show: function(el) {
+            show: function (el)
+            {
                 if (el === this.icon && this.protectedElement === null) return;
 
                 this.element = el;
@@ -2109,7 +2238,8 @@
 
                 utils.show(this.icon);
             },
-            cleanCanvas: function() {
+            cleanCanvas: function ()
+            {
                 var target,
                     inserted = false,
                     buttons = d.getElementsByClassName(this.buttonClass);
@@ -2129,15 +2259,18 @@
             }
         };
 
-        Medium.Action = function () {
+        Medium.Action = function ()
+        {
         };
         Medium.Action.prototype = {
-            setBridge: function (bridge) {
+            setBridge: function (bridge)
+            {
                 for (var i in bridge) if (bridge.hasOwnProperty(i)) {
                     this[i] = bridge[i];
                 }
             },
-            listen: function () {
+            listen: function ()
+            {
                 var el = this.element,
                     intercept = this.intercept;
 
@@ -2148,7 +2281,8 @@
                     .addEvent(el, 'blur', intercept.blur)
                     .addEvent(el, 'paste', this.settings.pasteEventHandler);
             },
-            preserveElementFocus: function () {
+            preserveElementFocus: function ()
+            {
                 // Fetch node that has focus
                 var anchorNode = w.getSelection ? w.getSelection().anchorNode : d.activeElement;
                 if (anchorNode) {
@@ -2182,13 +2316,15 @@
             }
         };
 
-        Medium.Cache = function () {
+        Medium.Cache = function ()
+        {
             this.initialized = false;
             this.cmd = false;
             this.focusedElement = null
         };
         Medium.Cache.prototype = {
-            setBridge: function (bridge) {
+            setBridge: function (bridge)
+            {
                 for (var i in bridge) if (bridge.hasOwnProperty(i)) {
                     this[i] = bridge[i];
                 }
@@ -2212,7 +2348,10 @@
     }());
 
     if (typeof define === 'function' && define['amd']) {
-        define(function () { return Medium; });
+        define(function ()
+        {
+            return Medium;
+        });
     } else if (typeof module !== 'undefined' && module.exports) {
         module.exports = Medium;
     } else if (typeof this !== 'undefined') {

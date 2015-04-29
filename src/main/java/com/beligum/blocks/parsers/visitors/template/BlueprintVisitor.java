@@ -14,7 +14,9 @@ import java.util.LinkedHashSet;
 public class BlueprintVisitor extends PropertyVisitor
 {
     private LinkedHashSet<String> links = new LinkedHashSet<String>();
-    /**the (javascript-)scripts that need to be injected*/
+    /**
+     * the (javascript-)scripts that need to be injected
+     */
     private LinkedHashSet<String> scripts = new LinkedHashSet<String>();
 
 
@@ -30,8 +32,8 @@ public class BlueprintVisitor extends PropertyVisitor
     public Node head(Node node, int depth) throws ParseException
     {
         try {
-            node = super.head(node,depth);
-            if(node instanceof Element) {
+            node = super.head(node, depth);
+            if (node instanceof Element) {
 
                 // if we find a property with use blueprint, add to properties with blueprint
 
@@ -46,7 +48,8 @@ public class BlueprintVisitor extends PropertyVisitor
                     node.replaceWith(emtpyNode);
                     node = emtpyNode;
 
-                } else if (node.nodeName().equals("script")) {
+                }
+                else if (node.nodeName().equals("script")) {
                     //if a script has been found, add it to the scripts-stack
                     this.getBlueprint().addScript(node.outerHtml());
 //                    this.scripts.add(node.outerHtml());
@@ -57,16 +60,18 @@ public class BlueprintVisitor extends PropertyVisitor
             }
             return node;
         }
-        catch (Exception e){
+        catch (Exception e) {
             throw new ParseException("Could not parse tag-head while looking for blueprints and page-templates at \n\n" + node + "\n\n", e);
         }
     }
 
-    public LinkedHashSet<String>  getLinks() {
+    public LinkedHashSet<String> getLinks()
+    {
         return this.links;
     }
 
-    public LinkedHashSet<String>  getScripts() {
+    public LinkedHashSet<String> getScripts()
+    {
         return this.scripts;
     }
 }

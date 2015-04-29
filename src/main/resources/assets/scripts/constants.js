@@ -6,7 +6,6 @@
 
 base.plugin("blocks.core.Constants", function ()
 {
-
     // Must be ordered from small to big
     this.COLUMN_WIDTH_CLASS = [
         {name: "col-xs-", min: 0, max: 767},
@@ -40,10 +39,12 @@ base.plugin("blocks.core.Constants", function ()
     this.EDIT_OTHER = "edit-other";
 
     this.maxIndex = 0;
-    this.calculateMaxIndex = function() {
-        this.maxIndex = Math.max.apply(null,$.map($('body  *'), function(e,n){
-                if($(e).css('position')=='absolute' || $(e).css('position')=='relative')
-                    return parseInt($(e).css('z-index'))||1 ;
+    this.calculateMaxIndex = function ()
+    {
+        this.maxIndex = Math.max.apply(null, $.map($('body  *'), function (e, n)
+            {
+                if ($(e).css('position') == 'absolute' || $(e).css('position') == 'relative')
+                    return parseInt($(e).css('z-index')) || 1;
             })
         );
     };

@@ -8,6 +8,7 @@ import com.beligum.blocks.models.jsonld.ResourceNode;
 import com.beligum.blocks.parsers.ElementParser;
 import com.beligum.blocks.parsers.Traversor;
 import com.beligum.blocks.parsers.visitors.template.PropertyVisitor;
+import com.beligum.blocks.parsers.visitors.template.PropertyVisitor;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -90,7 +91,7 @@ public class BasicTemplate extends ResourceNode
             this.parse();
 
         }
-//        this.html = node.outerHtml();
+        //        this.html = node.outerHtml();
 
     }
 
@@ -192,70 +193,6 @@ public class BasicTemplate extends ResourceNode
         setBoolean(BasicTemplate.readonly, value);
     }
 
-//    @JsonIgnore
-//    public Entity getEntityProperties(Entity entity)
-//    {
-//        Entity entityToFill = entity;
-//        if (this.getBlueprintName() == null) {
-//            // this is a field so store the value
-//            // Todo also catch content, language, datatype
-////            if (getElement().getAttributes().containsKey(ParserConstants.SRC)) {
-////                entityToFill.addProperty(this.name, getElement().getAttributes().get(ParserConstants.SRC), this.language);
-//////                entityToFill.addProperty(URLFactory.makeAbsolute(this.name, ParserConstants.CAPTION), value, this.language);
-////            } else if (getElement().getAttributes().containsKey(ParserConstants.HREF)) {
-////                entityToFill.addProperty(this.name, getElement().getAttributes().get(ParserConstants.HREF), this.language);
-////                entityToFill.addProperty(URLFactory.makeAbsolute(this.name, ParserConstants.CAPTION), value, this.language);
-//////            } else if (getElement().getAttributes().containsKey(ParserConstants.CONTENT)) {
-////                entityToFill.addProperty(this.name, getElement().getAttributes().get(ParserConstants.CONTENT), this.language);
-//////                entityToFill.addProperty(URLFactory.makeAbsolute(this.name, ParserConstants.CAPTION), value, this.language);
-////            } else {
-////                entityToFill.addProperty(this.name, value, this.language);
-////            }
-//        } else {
-//            // if blueprint has typeOf then create new entity
-//            Blueprint blueprint = Blocks.templateCache().getBlueprint(this.getBlueprintName());
-//            String entityName = blueprint.getRdfType();
-//            if (entityName != null) {
-////                this.entity = Blocks.factory().createEntity(entityName);
-////                entityToFill = this.entity;
-//            }
-//            // Add properties to typeof
-////            for (BasicTemplate property : properties) {
-////                entityToFill = property.getEntityProperties(entityToFill);
-////            }
-//            if (entityToFill != entity) entity.addEntity(this.name, entityToFill);
-//
-//        }
-//        return entity;
-//    }
-//
-//    public List<Entity> getRootEntities()
-//    {
-//        ArrayList<Entity> retVal = new ArrayList<Entity>();
-////        if (this.getBlueprintName() != null) {
-////            Blueprint blueprint = Blocks.templateCache().getBlueprint(this.getBlueprintName());
-////            if (blueprint != null && blueprint.getRdfType() != null) {
-//////                this.entity = Blocks.factory().createEntity(blueprint.getRdfType());
-////
-////                // Does this allready contain an id, then use this as
-////                if (this instanceof StoredTemplate && ((StoredTemplate)this).getId() != null) {
-//////                    this.entity.setId(((StoredTemplate)this).getId());
-////                }
-//////                retVal.add(this.entity);
-////                for (BasicTemplate template: this.properties) {
-//////                    template.getEntityProperties(this.entity);
-////                }
-////            } else {
-////                for (BasicTemplate template : this.properties) {
-////                    retVal.addAll(template.getRootEntities());
-////                }
-////            }
-////        }
-//        return retVal;
-//    }
-
-
-
     public static Element parse(String html){
         Element retVal = new Element(Tag.valueOf("div"), Blocks.config().getSiteDomain());
         Document parsed = Jsoup.parse(html, Blocks.config().getSiteDomain(), Parser.htmlParser());
@@ -263,20 +200,20 @@ public class BasicTemplate extends ResourceNode
          * If only part of a html-file is being parsed (which starts f.i. with a <div>-tag), Jsoup will add <html>-, <head>- and <body>-tags, which is not what we want
          * Thus if the head (or body) is empty, but the body (or head) is not, we only want the info in the body (or head).
          */
-        if(parsed.head().childNodes().isEmpty() && !parsed.body().childNodes().isEmpty()){
-            for(org.jsoup.nodes.Node child : parsed.body().childNodes()) {
+        if (parsed.head().childNodes().isEmpty() && !parsed.body().childNodes().isEmpty()) {
+            for (Node child : parsed.body().childNodes()) {
                 retVal.appendChild(child.clone());
             }
         }
-        else if(parsed.body().childNodes().isEmpty() && !parsed.head().childNodes().isEmpty()){
-            for(org.jsoup.nodes.Node child : parsed.head().childNodes()) {
+        else if (parsed.body().childNodes().isEmpty() && !parsed.head().childNodes().isEmpty()) {
+            for (Node child : parsed.head().childNodes()) {
                 retVal.appendChild(child.clone());
             }
         }
-        else if(parsed.body().childNodes().isEmpty() && parsed.body().childNodes().isEmpty()){
+        else if (parsed.body().childNodes().isEmpty() && parsed.body().childNodes().isEmpty()) {
             //add nothing to the retVal so an empty document will be returned
         }
-        else{
+        else {
             retVal = parsed;
         }
 
@@ -287,7 +224,8 @@ public class BasicTemplate extends ResourceNode
         return retVal;
     }
 
-    public static String getPropertyForKey(String key) {
+    public static String getPropertyForKey(String key)
+    {
         String retVal = key;
         String[] splittedKey = key.split("/");
         if (splittedKey.length > 1) {
@@ -296,16 +234,36 @@ public class BasicTemplate extends ResourceNode
         return retVal;
     }
 
-    public HashMap<String, Object> getEntity() {
-//        return getProperty(BasicTemplate.entity);
-        return null;
+
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o)
+            return true;
+        if (!(o instanceof BasicTemplate))
+            return false;
+
+        BasicTemplate that = (BasicTemplate) o;
+
+        if (!properties.equals(that.properties))
+            return false;
+        if (!value.equals(that.value))
+            return false;
+
+        return true;
     }
 
+    @Override
+    public int hashCode()
+    {
+        int result = value.hashCode();
+        result = 31 * result + properties.hashCode();
+        return result;
     public String getValue() {
         String retVal = getString(BasicTemplate.value);
         if (retVal == null) retVal = "";
         return retVal;
     }
-
 
 }

@@ -5,7 +5,7 @@ import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.models.*;
 import com.beligum.blocks.models.jsonld.ResourceNode;
 import com.beligum.blocks.models.jsonld.ResourceNodeIterator;
-import com.beligum.blocks.usermanagement.Permissions;
+import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.utils.PropertyFinder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
@@ -21,25 +21,34 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
     private final String CAPTION = "CAPTION";
     private final Integer START_PROPERTY_LENGTH = ParserConstants.TEMPLATE_PROPERTY_START.length();
     private final Integer END_PROPERTY_LENGTH = ParserConstants.TEMPLATE_PROPERTY_END.length();
-    private final Set<String> voidElements = new HashSet<String>(Arrays.asList("area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"));
+    private final Set<String>
+                    voidElements =
+                    new HashSet<String>(Arrays.asList("area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"));
     private final Set<String> srcElements = new HashSet<String>(Arrays.asList("frame", "iframe", "img", "input", "layer", "script", "textarea", "video", "source", "embed", "track"));
     private final Set<String> hrefElements = new HashSet<String>(Arrays.asList("a", "area", "base", "link"));
 
     // Resource -> property -> language -> value
-//    private HashMap<String, HashMap<String, HashMap<String, ArrayList<RDFNode>>>> rdfCache = new HashMap<>();
+    //    private HashMap<String, HashMap<String, HashMap<String, ArrayList<RDFNode>>>> rdfCache = new HashMap<>();
     private HashMap<String, HashMap<String, Integer>> rdfPropertyUsed = new HashMap<>();
 
-    private class Field {
-        public Field(String name) {this.name = name;};
+    private class Field
+    {
+        public Field(String name)
+        {
+            this.name = name;
+        }
+        ;
         public String name;
         public boolean property = false;
         public boolean list = false;
     }
 
-    private class FieldOverview {
+    private class FieldOverview
+    {
         public ArrayList<Field> fields;
         public HashMap<String, Integer> fieldsLeft;
-        public FieldOverview() {
+        public FieldOverview()
+        {
             this.fields = new ArrayList<>();
             this.fieldsLeft = new HashMap<>();
         }
@@ -56,7 +65,6 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
     private boolean usesEntity = false; // is set by the renderer
     private LinkedHashSet<String> links = new LinkedHashSet();
     private LinkedHashSet<String> scripts = new LinkedHashSet();
-
 
     public void setUseOnlyEntity(boolean useOnlyEntity)
     {
@@ -83,7 +91,8 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         this.readOnly = readOnly;
     }
 
-    public VelocityBlocksRenderer() {
+    public VelocityBlocksRenderer()
+    {
         this.buffer = new StringBuilder();
     }
 
@@ -110,7 +119,8 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         this.locale = new Locale(language);
         this.buffer = new StringBuilder();
 
-        if (resource != null) usesEntity = true;
+        if (resource != null)
+            usesEntity = true;
         // Render everything in the page except main content
         this.scripts.addAll(pageTemplate.getScripts());
         this.links.addAll(pageTemplate.getLinks());
@@ -123,7 +133,6 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 
         page = replace(page, ParserConstants.TEMPLATE_CONTENT, this.buffer);
 
-
         // Add all links and scripts
         StringBuilder scriptsAndLinks = new StringBuilder();
         // Append Blocks client only if logged in
@@ -133,7 +142,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
             }
         }
 
-        for (String link: this.links) {
+        for (String link : this.links) {
             scriptsAndLinks.append(link).append(System.lineSeparator());
         }
 
@@ -144,7 +153,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
             }
         }
 
-        for (String script: this.scripts) {
+        for (String script : this.scripts) {
             scriptsAndLinks.append(script).append(System.lineSeparator());
         }
 
@@ -155,13 +164,14 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         return page.toString();
     }
 
-    public StringBuilder replace(StringBuilder origin, String property, StringBuilder value) {
+    public StringBuilder replace(StringBuilder origin, String property, StringBuilder value)
+    {
         StringBuilder retVal = new StringBuilder();
         int start = origin.indexOf(property);
         if (start > -1) {
             retVal.append(origin.substring(0, start));
             retVal.append(value);
-            retVal.append(origin.substring(start+property.length()));
+            retVal.append(origin.substring(start + property.length()));
         }
         return retVal;
     }
@@ -182,14 +192,17 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
                 this.buffer.append(value);
             } else if (template.getFields().size() > 0) {
                 this.renderTemplate(template, resource, true);
-            } else if (!useOnlyEntity) {
+            }
+            else if (!useOnlyEntity) {
                 this.buffer.append(template.getValue());
             }
 
-        } else if (blueprint.isWrapper() && !template.equals(blueprint)) {
+        }
+        else if (blueprint.isWrapper() && !template.equals(blueprint)) {
             // render blueprint with value of this basicTemplate
             renderInsideWrapper(blueprint.getTemplate(), resource, property);
-        } else {
+        }
+        else {
             // Add links and scripts
             this.links.addAll(blueprint.getLinks());
             this.scripts.addAll(blueprint.getScripts());
@@ -205,23 +218,26 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
             if (readOnly) {
                 if (blueprint.getFields().size() > 0) {
                     this.renderTemplate(template, resource, true);
-                } else {
+                }
+                else {
                     this.buffer.append(blueprint.getValue());
                 }
             } else if (blueprint.getFields().size() > 0 || template.getFields().size() > 0) {
                 this.renderTemplate(template, resource, readOnly);
-            } else {
+            }
+            else {
                 this.buffer.append(template.getValue());
             }
 
         }
-        if (resource != null) resource.incrementPropertyIndex(property);
+        if (resource != null)
+            resource.incrementPropertyIndex(property);
 
     }
 
     public void renderInsideWrapper(String templateToRender, ResourceNodeIterator resource, String property) {
         FieldOverview fieldOverview = findNextPropertyInTemplate(templateToRender);
-        for (Field nextProperty: fieldOverview.fields) {
+        for (Field nextProperty : fieldOverview.fields) {
             // this is not a property but a piece of the template, so add and forward
             if (!nextProperty.property) {
                 this.buffer.append(nextProperty.name);
@@ -259,8 +275,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         // Init all the property finders
         PropertyFinder propertyFinder = new PropertyFinder();
 
-
-        for (Field nextProperty: fieldOverview.fields) {
+        for (Field nextProperty : fieldOverview.fields) {
             // this is not a property but a piece of the template, so add and forward
             if (!nextProperty.property) {
                 this.buffer.append(nextProperty.name);
@@ -276,11 +291,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 
             BasicTemplate property = getProperty(template, nextProperty.name, propertyFinder.getPropertyIndex(nextProperty.name), readOnly);
 
-
             if (property != null) {
-
-
-
 
                 renderElement(property, resource, nextProperty.name, readOnly);
 
@@ -302,7 +313,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
                 * */
                 Integer renderExtraInList = 0;
                 if (property.isInList() && fieldOverview.fieldsLeft.get(nextProperty.name) < fieldsLeft) {
-                    renderExtraInList  = fieldsLeft - fieldOverview.fieldsLeft.get(nextProperty.name);
+                    renderExtraInList = fieldsLeft - fieldOverview.fieldsLeft.get(nextProperty.name);
                 }
                 while (renderExtraInList > 0) {
                     //                        property = getProperty(template, nextProperty.name, propertyFinder.getPropertyIndex(nextProperty.name), readOnly);
@@ -311,18 +322,16 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
                     renderExtraInList--;
                 }
 
-
-
-
-            } else {
+            }
+            else {
                 // Do nothing
             }
 
         }
     }
 
-
-    protected FieldOverview findNextPropertyInTemplate(String template) {
+    protected FieldOverview findNextPropertyInTemplate(String template)
+    {
         FieldOverview retVal = new FieldOverview();
 
         int templateLength = template.length();
@@ -340,7 +349,8 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
                 retVal.fields.add(field);
                 if (retVal.fieldsLeft.containsKey(field.name)) {
                     retVal.fieldsLeft.put(field.name, retVal.fieldsLeft.get(field.name) + 1);
-                } else {
+                }
+                else {
                     retVal.fieldsLeft.put(field.name, 0);
                 }
                 oldStart = end + END_PROPERTY_LENGTH;
@@ -364,13 +374,13 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         String tag = readOnly && blueprint != null ? blueprint.getElement().getTag() : propertyTemplate.getElement().getTag();
         if (srcElements.contains(tag)) {
             propAttribute = ParserConstants.SRC;
-        } else if (hrefElements.contains(tag)) {
+        }
+        else if (hrefElements.contains(tag)) {
             propAttribute = ParserConstants.HREF;
         }
         HashMap<String, String> extraAttributes = new HashMap<>();
 
         //RDFNode entityProperty = getRDFValue(node, new PropertyImpl(Blocks.rdfFactory().ensureAbsoluteRdfValue(propertyTemplate.getName())), this.locale.getLanguage());
-
 
         if (propAttribute != null) {
             String value = null;
@@ -385,16 +395,22 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 
             if (value == null && !useOnlyEntity) {
                 value = propertyTemplate.getElement().getAttributes().get(propAttribute);
-            } else {
+            }
+            else {
                 // TODO: only increment when in list, otherwise repeat
                 resource.incrementPropertyIndex(property);
                 property = null;
             }
 
-            if (value != null && value.startsWith(Blocks.config().getDefaultRdfPrefix()+":")) {
+            if (value != null && value.startsWith(Blocks.config().getDefaultRdfPrefix() + ":")) {
                 String id = null;
-                try {id = value.split(":")[1]; } catch (Exception e) {}
-                if (id.startsWith("#") || id.startsWith("/") || id.startsWith(":")) id = id.substring(1);
+                try {
+                    id = value.split(":")[1];
+                }
+                catch (Exception e) {
+                }
+                if (id.startsWith("#") || id.startsWith("/") || id.startsWith(":"))
+                    id = id.substring(1);
                 value = Blocks.urlDispatcher().getUrlForId(id);
             }
 
@@ -426,11 +442,13 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
             attributes.remove(ParserConstants.CAN_EDIT_PROPERTY);
             attributes.remove(ParserConstants.CAN_LAYOUT);
 
-        } else if (!readOnly && blueprint != null){
+        }
+        else if (!readOnly && blueprint != null) {
             // property is can edit
             attributes.remove(ParserConstants.CAN_EDIT_PROPERTY);
             attributes.addAll(blueprint.getElement().getAttributes().keySet());
-        } else {
+        }
+        else {
             attributes.add(ParserConstants.CAN_EDIT_PROPERTY);
         }
 
@@ -439,45 +457,51 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         attributes.remove(ParserConstants.LANGUAGE);
         if (extra != null) {
             attributes.addAll(extra.keySet());
-        } else {
+        }
+        else {
             extra = new HashMap<>();
         }
 
-        for (String key: attributes) {
+        for (String key : attributes) {
             String value = extra.get(key);
-            if (value == null) value = templateElement.getAttributes().get(key);
-            if (value == null && blueprint != null)  value = blueprint.getElement().getAttributes().get(key);
+            if (value == null)
+                value = templateElement.getAttributes().get(key);
+            if (value == null && blueprint != null)
+                value = blueprint.getElement().getAttributes().get(key);
 
             // property on blueprint without typeof is not a real rdfa property
             if (key.equals(ParserConstants.PROPERTY) && blueprint != null && blueprint.getRdfType() == null) {
                 this.buffer.append(addAtribute(ParserConstants.BLUEPRINT_PROPERTY, property.getName()));
-            } else if (key.equals("class") && blueprint != null && !blueprint.equals(property)) {
+            }
+            else if (key.equals("class") && blueprint != null && !blueprint.equals(property)) {
                 LinkedHashSet<String> classes = new LinkedHashSet<>();
                 classes.addAll(Arrays.asList((ParserConstants.CSS_CLASS_PREFIX + blueprint.getName() + " " + value).split(" ")));
                 classes.addAll(Arrays.asList(blueprint.getElement().getAttributes().get(key).split(" ")));
 
                 this.buffer.append(addAtribute(key, StringUtils.join(classes.toArray(), " ")));
-            } else if (key.equals(ParserConstants.TYPE_OF)) {
+            }
+            else if (key.equals(ParserConstants.TYPE_OF)) {
                 this.buffer.append(addAtribute(ParserConstants.TYPE_OF, blueprint.getRdfType()));
-            } else if (key.equals(ParserConstants.LANGUAGE)) {
+            }
+            else if (key.equals(ParserConstants.LANGUAGE)) {
                 this.buffer.append(addAtribute(ParserConstants.LANGUAGE, this.locale.getLanguage()));
             }
-            else
-            {
+            else {
                 this.buffer.append(addAtribute(key, value));
             }
         }
         this.buffer.append(" >");
 
-
     }
 
-    private String addAtribute(String key, String value) {
+    private String addAtribute(String key, String value)
+    {
         String retVal = key;
         if (!(value == null || value.isEmpty())) {
-            retVal+= "=\"" + value + "\"";
-        } else {
-            retVal+= "=\"\"";
+            retVal += "=\"" + value + "\"";
+        }
+        else {
+            retVal += "=\"\"";
         }
         retVal += " ";
         return retVal;
@@ -490,7 +514,8 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
             blueprintProperty = PropertyFinder.findProperty(propertyName, template.getBlueprint(), index);
         }
 
-        if (retVal == null && blueprintProperty != null) retVal = blueprintProperty;
+        if (retVal == null && blueprintProperty != null)
+            retVal = blueprintProperty;
 
         if (retVal instanceof Singleton && this.fetchSingletons){
             String singletonId = ((Singleton) retVal).getId();
@@ -508,33 +533,37 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         return retVal;
     }
 
-
-
-    public void renderEndElement(String tag) {
+    public void renderEndElement(String tag)
+    {
         if (!voidElements.contains(tag)) {
             this.buffer.append("</").append(tag).append(">");
         }
     }
 
-    public VelocityBlocksRenderer append(String string) {
+    public VelocityBlocksRenderer append(String string)
+    {
         this.buffer.append(string);
         return this;
     }
 
-    public VelocityBlocksRenderer append(StringBuilder stringbuilder) {
+    public VelocityBlocksRenderer append(StringBuilder stringbuilder)
+    {
         this.buffer.append(stringbuilder);
         return this;
     }
 
-    public String toString() {
+    public String toString()
+    {
         return this.buffer.toString();
     }
 
-    public StringBuilder toStringBuilder() {
+    public StringBuilder toStringBuilder()
+    {
         return this.buffer;
     }
 
-    public static String getCaption(String name) {
+    public static String getCaption(String name)
+    {
         return name + "/" + ParserConstants.CAPTION;
     }
 

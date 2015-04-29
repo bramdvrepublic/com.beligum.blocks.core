@@ -1,7 +1,7 @@
 package com.beligum.blocks.parsers.visitors.template;
 
-import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.base.Blocks;
+import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.models.BasicTemplate;
 import com.beligum.blocks.parsers.ElementParser;
@@ -37,27 +37,24 @@ public class PropertyVisitor extends BasicVisitor
         // if property do something
         Node retVal = node;
         if (ElementParser.isProperty((Element) node)) {
-            String propertyName = ElementParser.getProperty((Element)node);
-
-
+            String propertyName = ElementParser.getProperty((Element) node);
 
             retVal = this.replacePropertyWithID((Element) node, propertyName);
             BasicTemplate property = null;
-            if (ElementParser.isSingleton((Element)node)) {
+            if (ElementParser.isSingleton((Element) node)) {
                 property = Blocks.factory().createSingleton((Element) node.clone(), ElementParser.getLanguage((Element) node));
                 this.getTemplate().add(propertyName, property);
             } else {
                 if (!StringUtils.isEmpty(propertyName)) {
                     this.getTemplate().addProperty(propertyName, (Element) node.clone());
-                } else if (this.getTemplate().isWrapper()) {
+                }
+                else if (this.getTemplate().isWrapper()) {
                     throw new ParseException("Wrapper blueprint can only have 1 empty property");
-                } else {
+                }
+                else {
                     this.getTemplate().setWrapper(true);
                 }
             }
-
-
-//            this.properties.add(property);
         }
 
         return retVal;
@@ -74,8 +71,10 @@ public class PropertyVisitor extends BasicVisitor
 //        return this.properties;
 //    }
 
-    protected Node replacePropertyWithID(Element element, String key) {
-        if (key == null) key = "";
+    protected Node replacePropertyWithID(Element element, String key)
+    {
+        if (key == null)
+            key = "";
         String templateKey = ParserConstants.TEMPLATE_PROPERTY_START + key + ParserConstants.TEMPLATE_PROPERTY_END;
         Node textNode = new TextNode(templateKey, null);
         element.replaceWith(textNode);

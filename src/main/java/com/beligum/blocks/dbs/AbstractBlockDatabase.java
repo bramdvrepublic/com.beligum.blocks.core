@@ -20,7 +20,8 @@ import java.util.List;
 public abstract class AbstractBlockDatabase implements BlocksDatabase
 {
 
-    private void touch(BlocksVersionedStorable storable) {
+    private void touch(BlocksVersionedStorable storable)
+    {
         storable.setDocumentVersion(Calendar.getInstance().getTimeInMillis());
         storable.setApplicationVersion(Blocks.config().getProjectVersion());
         storable.setUpdatedAt(LocalDateTime.now().toString());
@@ -31,7 +32,8 @@ public abstract class AbstractBlockDatabase implements BlocksDatabase
         }
     }
 
-    private void touch(BlocksStorable storable) {
+    private void touch(BlocksStorable storable)
+    {
         storable.setUpdatedAt(LocalDateTime.now().toString());
         storable.setUpdatedBy(Blocks.config().getCurrentUserName());
         if (storable.getCreatedAt() == null || storable.getCreatedBy() == null) {
@@ -40,11 +42,13 @@ public abstract class AbstractBlockDatabase implements BlocksDatabase
         }
     }
 
-    public <T extends BlocksStorable> T fetch(BlockId id, Class<T> clazz) {
+    public <T extends BlocksStorable> T fetch(BlockId id, Class<T> clazz)
+    {
         return doFetch(id, clazz);
     }
 
-    public <T extends BlocksVersionedStorable> T fetch(BlockId id, String language, Class<T> clazz) {
+    public <T extends BlocksVersionedStorable> T fetch(BlockId id, String language, Class<T> clazz)
+    {
         T retVal = doFetch(id, language, clazz);
         if (retVal == null) {
             retVal = doFetch(id, clazz);
@@ -52,7 +56,8 @@ public abstract class AbstractBlockDatabase implements BlocksDatabase
         return retVal;
     }
 
-    public <T extends BlocksVersionedStorable> T fetchPrevious(BlockId id, String language, Class<T> clazz) {
+    public <T extends BlocksVersionedStorable> T fetchPrevious(BlockId id, String language, Class<T> clazz)
+    {
         T retVal = doFetchPrevious(id, language, clazz);
         if (retVal == null) {
             retVal = doFetchPrevious(id, Blocks.config().getDefaultLanguage(), clazz);
@@ -84,7 +89,7 @@ public abstract class AbstractBlockDatabase implements BlocksDatabase
 //    public Singleton fetchSingleton(BlockId id, String language) {
 //        return fetch(id, language, Blocks.factory().getSingletonClass());
 //    }
-//
+
 
     public void save(BlocksStorable storable) throws DatabaseException
     {
@@ -118,12 +123,11 @@ public abstract class AbstractBlockDatabase implements BlocksDatabase
 
     public void saveEntity(ResourceNode entity) throws DatabaseException
     {
-//        ArrayList<ResourceNode> entities = entity.flatten(new ArrayList<Entity>());
-//        for (ResourceNode e: entities) {
-////            save(e);
-//        }
+        //        ArrayList<ResourceNode> entities = entity.flatten(new ArrayList<Entity>());
+        //        for (ResourceNode e: entities) {
+        ////            save(e);
+        //        }
     }
-
 
     public void remove(BlocksVersionedStorable storable) throws DatabaseException
     {
@@ -168,24 +172,25 @@ public abstract class AbstractBlockDatabase implements BlocksDatabase
     protected abstract <T extends BlocksStorable> T doFetch(BlockId id, Class<T> clazz);
 
     protected abstract <T extends BlocksVersionedStorable> T doFetch(BlockId id, String language, Class<T> clazz);
+
     public abstract BlocksUrlDispatcher fetchUrlDispatcher();
 
     public abstract List<ResourceContext> fetchEntities(String query);
 
     protected abstract void doSave(BlocksVersionedStorable storable) throws DatabaseException;
+
     protected abstract void doSave(BlocksStorable storable) throws DatabaseException;
+
     protected abstract void doSaveHistory(BlocksVersionedStorable versionedStorable) throws DatabaseException;
 
-
     protected abstract void doRemove(BlocksVersionedStorable storable) throws DatabaseException;
+
     protected abstract void doRemove(BlocksStorable storable) throws DatabaseException;
 
-
     protected abstract <T extends BlocksVersionedStorable> T doFetchPrevious(BlockId id, String language, Class<T> clazz);
+
     protected abstract <T extends BlocksVersionedStorable> T doFetchPreviousVersion(BlockId id, String language, Long version, Class<T> clazz);
+
     protected abstract List<Long> getVersionNumbers(BlockId id, String language);
-
-
-
 
 }

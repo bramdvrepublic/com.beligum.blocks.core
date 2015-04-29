@@ -2,7 +2,7 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.base.Blocks;
-import com.beligum.blocks.usermanagement.Permissions;
+import com.beligum.blocks.security.Permissions;
 import gen.com.beligum.blocks.core.fs.html.views.modals.change_url_modal;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
@@ -29,37 +29,37 @@ public class ModalsEndpoint
                     @QueryParam("original")
                     String originalUrl) throws MalformedURLException
     {
-        Template template = change_url_modal.instance.getNewTemplate();
+        Template template = change_url_modal.get().getNewTemplate();
         String originalPath = new URL(originalUrl).getPath();
-        String [] splitted = originalPath.split("/");
-        if(splitted.length>2) {
+        String[] splitted = originalPath.split("/");
+        if (splitted.length > 2) {
             template.set("originalUrlPathEnd", "/" + splitted[splitted.length - 1]);
         }
-        else if(splitted.length == 2){
-//            if(Languages.isNonEmptyLanguageCode(splitted[1])){
-//                template.set("originalUrlPathEnd", "");
-//            }
-//            else{
-//                template.set("originalUrlPathEnd", "/" + splitted[splitted.length - 1]);
-//            }
+        else if (splitted.length == 2) {
+            //            if(Languages.isNonEmptyLanguageCode(splitted[1])){
+            //                template.set("originalUrlPathEnd", "");
+            //            }
+            //            else{
+            //                template.set("originalUrlPathEnd", "/" + splitted[splitted.length - 1]);
+            //            }
         }
-        else{
+        else {
             template.set("originalUrlPathEnd", "");
         }
         template.set("languages", Arrays.asList(Blocks.config().getLanguages()));
         return Response.ok(template.render()).build();
     }
 
-//    @GET
-//    @Path("/newpage")
-//    @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
-//    public Response getNewPageModal(
-//                    @QueryParam("entityurl")
-//                    String entityUrl) throws Exception
-//    {
-//        Template template = R.templateEngine().getEmptyTemplate("/views/modals/" + NEW_PAGE_MODAL);
-//        template.set("entityClasses", Blocks.templateCache().getPagetemplates(Blocks.config().getDefaultLanguage()));
-//        template.set("entityUrl", entityUrl);
-//        return Response.ok(template.render()).build();
-//    }
+    //    @GET
+    //    @Path("/newpage")
+    //    @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
+    //    public Response getNewPageModal(
+    //                    @QueryParam("entityurl")
+    //                    String entityUrl) throws Exception
+    //    {
+    //        Template template = R.templateEngine().getEmptyTemplate("/views/modals/" + NEW_PAGE_MODAL);
+    //        template.set("entityClasses", Blocks.templateCache().getPagetemplates(Blocks.config().getDefaultLanguage()));
+    //        template.set("entityUrl", entityUrl);
+    //        return Response.ok(template.render()).build();
+    //    }
 }

@@ -17,6 +17,7 @@ import java.util.List;
 public interface BlocksDatabase
 {
     public <T extends BlocksStorable> T fetch(BlockId id, Class<T> clazz);
+
     public <T extends BlocksVersionedStorable> T fetch(BlockId id, String language, Class<T> clazz);
     public abstract List<ResourceContext> fetchEntities(String query);
 
@@ -29,13 +30,15 @@ public interface BlocksDatabase
 //    public StoredTemplate fetchPageTemplate(BlockId id, String language);
 
     public void save(BlocksStorable storable) throws DatabaseException;
+
     public void save(BlocksVersionedStorable storable) throws DatabaseException;
     public void saveEntity(ResourceNode entity) throws DatabaseException;
 
     public void remove(BlocksVersionedStorable storable, String language) throws DatabaseException;
-    public void remove(BlocksVersionedStorable storable) throws DatabaseException;
-    public void remove(BlocksStorable storable) throws DatabaseException;
 
+    public void remove(BlocksVersionedStorable storable) throws DatabaseException;
+
+    public void remove(BlocksStorable storable) throws DatabaseException;
 
     public ArrayList<HashMap<String, Object>> testFetch();
 
