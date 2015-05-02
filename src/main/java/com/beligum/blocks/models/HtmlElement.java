@@ -1,17 +1,16 @@
 package com.beligum.blocks.models;
 
 import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.models.jsonld.ResourceNode;
+import com.beligum.blocks.models.jsonld.ResourceImpl;
 import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Element;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 
 /**
  * Created by wouter on 19/03/15.
  */
-public class HtmlElement extends ResourceNode
+public class HtmlElement extends ResourceImpl
 {
     public static final String tag = ParserConstants.BLOCKS_SCHEMA + "tag";
     public static final String attribute = ParserConstants.BLOCKS_SCHEMA + "attribute";
@@ -24,7 +23,7 @@ public class HtmlElement extends ResourceNode
         this.setTag("div");
     }
 
-    public HtmlElement(ResourceNode resource) {
+    public HtmlElement(ResourceImpl resource) {
         super(resource);
         for (String fullAttribute: this.unwrap().keySet()) {
             String attribute = fullAttribute.substring(fullAttribute.lastIndexOf("/")+1);

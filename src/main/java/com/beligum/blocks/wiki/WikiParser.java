@@ -2,24 +2,16 @@ package com.beligum.blocks.wiki;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.base.Blocks;
-import com.beligum.blocks.exceptions.DatabaseException;
-import com.beligum.base.utils.Logger;
-import com.beligum.blocks.models.jsonld.JsonLDGraph;
 import com.beligum.blocks.models.jsonld.Node;
 import com.beligum.blocks.models.jsonld.NodeFactory;
-import com.beligum.blocks.models.jsonld.ResourceNode;
-import com.beligum.blocks.models.jsonld.jackson.ResourceNodeSerializer;
-import com.beligum.blocks.models.rdf.OrderedMemGraph;
+import com.beligum.blocks.models.jsonld.Resource;
+import com.beligum.blocks.models.jsonld.jackson.ResourceSerializer;
 
 import com.beligum.blocks.search.SimpleIndexer;
-import com.beligum.blocks.utils.URLFactory;
+import com.beligum.blocks.utils.UrlTools;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
-import com.hp.hpl.jena.rdf.model.Resource;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.util.AntPathMatcher;
 import org.joda.time.LocalDateTime;
@@ -46,7 +38,7 @@ public abstract class WikiParser
     protected AntPathMatcher pathMatcher;
     // Objects with fields and languages for fields
     protected HashMap<String, HashMap<String, HashMap<String,String>>> items = new HashMap<String, HashMap<String, HashMap<String,String>>>();
-    protected ArrayList<HashMap<String, ResourceNode>> entities = new ArrayList<HashMap<String, ResourceNode>>();
+    protected ArrayList<HashMap<String, Resource>> entities = new ArrayList<HashMap<String, Resource>>();
     protected ObjectMapper mapper;
 
 
@@ -63,7 +55,7 @@ public abstract class WikiParser
             e.printStackTrace();
         }
         final SimpleModule module = new SimpleModule("customerSerializationModule", new Version(1, 0, 0, "static version"));
-        module.addSerializer(ResourceNode.class, new ResourceNodeSerializer());
+        module.addSerializer(Resource.class, new ResourceSerializer());
 
         mapper = new ObjectMapper();
         mapper.registerModule(module);
@@ -164,10 +156,10 @@ public abstract class WikiParser
                     HashMap<String, HashMap<String, String>> item = this.items.get(key);
 
                     makeEntity();
-                    HashMap entity = new HashMap<String, ResourceNode>();
+                    HashMap entity = new HashMap<String, Resource>();
                     for (String language : new String[] { NL, FR, EN }) {
                         fillEntity(item, language);
-                        ResourceNode resource = addEntity(language);
+                        Resource resource = addEntity(language);
 
                         if (resource.unwrap().keySet().size() > 0) {
                             entity.put(language, changeEntity(resource, language));
@@ -177,7 +169,7 @@ public abstract class WikiParser
                             Logger.info("saving entity: " + count);
                         }
                     }
-                    saveEntity((ResourceNode) entity.get(NL));
+                    saveEntity((Resource) entity.get(NL));
 
                 }
                 indexer.commit();
@@ -196,7 +188,7 @@ public abstract class WikiParser
 
     }
 
-    public void addDocument(String id, ResourceNode resource) throws IOException
+    public void addDocument(String id, Resource resource) throws IOException
     {
         String content = mapper.writeValueAsString(resource);
         indexer.addDocument(id, content);
@@ -204,16 +196,16 @@ public abstract class WikiParser
 
     public abstract void makeEntity();
 
-    public abstract ResourceNode addEntity(String language);
+    public abstract Resource addEntity(String language);
 
-    public abstract ResourceNode changeEntity(ResourceNode entity, String language);
+    public abstract Resource changeEntity(Resource entity, String language);
 
-    public abstract void saveEntity(ResourceNode entity);
+    public abstract void saveEntity(Resource entity);
 
-    public abstract ResourceNode fillEntity(HashMap<String, HashMap<String, String>> item, String lang);
+    public abstract Resource fillEntity(HashMap<String, HashMap<String, String>> item, String lang);
 
-    public void splitField(ResourceNode entity, String field, String language) {
-        String name = URLFactory.createLocalType(field);
+    public void splitField(Resource entity, String field, String language) {
+        String name = UrlTools.createLocalType(field);
         Node property = entity.get(name);
         entity.remove(name);
         if (property != null && property.isList()) {
@@ -234,8 +226,8 @@ public abstract class WikiParser
 
     }
 
-    public void prependField(ResourceNode entity, String field, String prefix, String language) {
-        String name = URLFactory.createLocalType(field);
+    public void prependField(Resource entity, String field, String prefix, String language) {
+        String name = UrlTools.createLocalType(field);
         Node property = entity.get(name);
         entity.remove(name);
         if (property != null && property.isList()) {
@@ -253,7 +245,7 @@ public abstract class WikiParser
 
     }
 
-    public void addToEntity(String newFieldName, String[] oldFields, ResourceNode entity, String language, HashMap<String, HashMap<String,String>> item) {
+    public void addToEntity(String newFieldName, String[] oldFields, Resource entity, String language, HashMap<String, HashMap<String,String>> item) {
         String value = null;
         for (String field : oldFields) {
             if (item.containsKey(field) && item.get(field).containsKey(language)) {
@@ -268,7 +260,7 @@ public abstract class WikiParser
     }
 
     // Add the first filled field
-    public void addToEntityOR(String newFieldName, String[] oldFields, ResourceNode entity, String language, HashMap<String, HashMap<String,String>> item) {
+    public void addToEntityOR(String newFieldName, String[] oldFields, Resource entity, String language, HashMap<String, HashMap<String,String>> item) {
         String value = null;
         for (String field : oldFields) {
             if (item.containsKey(field) && item.get(field).containsKey(language)) {
@@ -279,7 +271,7 @@ public abstract class WikiParser
 
     }
 
-    public void addToEntityJoined(String newFieldName, String[] oldFields, ResourceNode entity, String language, HashMap<String, HashMap<String,String>> item, String joint) {
+    public void addToEntityJoined(String newFieldName, String[] oldFields, Resource entity, String language, HashMap<String, HashMap<String,String>> item, String joint) {
         String value = null;
         for (String field : oldFields) {
             if (item.containsKey(field) && item.get(field).containsKey(language)) {
@@ -296,7 +288,7 @@ public abstract class WikiParser
     }
 
 
-    public void add(String newFieldName, String value, ResourceNode entity, String language) {
+    public void add(String newFieldName, String value, Resource entity, String language) {
         if (!StringUtils.isEmpty(value)) {
             value = value.trim();
             if (newFieldName.equals("createdBy")) {
@@ -310,7 +302,7 @@ public abstract class WikiParser
                     Logger.debug("Could not parse time", e);
                 }
             } else {
-                entity.add(URLFactory.createLocalType(newFieldName), NodeFactory.createAndGuess(value, language));
+                entity.add(UrlTools.createLocalType(newFieldName), NodeFactory.createAndGuess(value, language));
             }
         }
     }

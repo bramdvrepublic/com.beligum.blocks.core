@@ -9,7 +9,6 @@ import com.beligum.blocks.models.Blueprint;
 import com.beligum.blocks.models.PageTemplate;
 import com.beligum.blocks.renderer.BlocksTemplateRenderer;
 import com.beligum.blocks.security.Permissions;
-import com.beligum.blocks.urlmapping.BlocksUrlDispatcher;
 import gen.com.beligum.blocks.core.fs.html.views.admin.*;
 import gen.com.beligum.blocks.endpoints.DebugEndpointRoutes;
 import org.apache.commons.lang3.StringUtils;
@@ -147,8 +146,7 @@ public class DebugEndpoint
         LinkedHashSet<String> languages = Blocks.config().getLanguages();
 
         Template template = sitemap.get().getNewTemplate();
-        BlocksUrlDispatcher sitemap = Blocks.urlDispatcher();
-        template.set("urlmap", sitemap);
+//        template.set("urlmap", sitemap);
         template.set("languages", languages);
 
         return Response.ok(template).build();

@@ -4,11 +4,9 @@ import com.beligum.base.cache.CacheKey;
 import com.beligum.base.server.R;
 import com.beligum.blocks.caching.BlocksTemplateCache;
 import com.beligum.blocks.config.BlocksConfig;
-import com.beligum.blocks.dbs.AbstractBlockDatabase;
 import com.beligum.blocks.dynamic.DynamicBlockHandler;
 import com.beligum.blocks.exceptions.CacheException;
 import com.beligum.blocks.models.factory.BlocksFactory;
-import com.beligum.blocks.urlmapping.BlocksUrlDispatcher;
 
 /**
  * Created by wouter on 26/03/15.
@@ -27,15 +25,6 @@ public class Blocks
         BlOCKS_RDF_FACTORY
     }
 
-    public static AbstractBlockDatabase database()
-    {
-        return (AbstractBlockDatabase) R.cacheManager().getApplicationCache().get(BlocksConfigCacheKey.BLOCKS_DB_KEY);
-    }
-
-    public static void setDatabase(AbstractBlockDatabase database)
-    {
-        R.cacheManager().getApplicationCache().put(BlocksConfigCacheKey.BLOCKS_DB_KEY, database);
-    }
 
     public static BlocksTemplateCache templateCache()
     {
@@ -56,17 +45,6 @@ public class Blocks
             R.cacheManager().getApplicationCache().put(BlocksConfigCacheKey.BLOCKS_CONFIG_KEY, new BlocksConfig());
         }
         return (BlocksConfig) R.cacheManager().getApplicationCache().get(BlocksConfigCacheKey.BLOCKS_CONFIG_KEY);
-    }
-
-    public static BlocksUrlDispatcher urlDispatcher()
-    {
-        if (!R.cacheManager().getApplicationCache().containsKey(BlocksConfigCacheKey.BLOCKS_URL_DISPATCHER_KEY)) {
-            BlocksUrlDispatcher retVal = Blocks.database().fetchUrlDispatcher();
-            if (retVal == null)
-                retVal = Blocks.factory().createUrlDispatcher();
-            R.cacheManager().getApplicationCache().put(BlocksConfigCacheKey.BLOCKS_URL_DISPATCHER_KEY, retVal);
-        }
-        return (BlocksUrlDispatcher) R.cacheManager().getApplicationCache().get(BlocksConfigCacheKey.BLOCKS_URL_DISPATCHER_KEY);
     }
 
     public static BlocksFactory factory()

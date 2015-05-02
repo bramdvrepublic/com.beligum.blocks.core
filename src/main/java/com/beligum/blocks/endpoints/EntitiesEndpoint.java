@@ -1,27 +1,34 @@
 package com.beligum.blocks.endpoints;
 
 import com.beligum.base.i18n.I18nFactory;
+import com.beligum.base.server.RequestContext;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.identifiers.BlockId;
 import com.beligum.blocks.models.*;
+import com.beligum.blocks.models.url.BlocksURL;
+import com.beligum.blocks.models.url.OkURL;
 import com.beligum.blocks.parsers.Traversor;
 import com.beligum.blocks.parsers.visitors.template.HtmlFromClientVisitor;
 import com.beligum.blocks.renderer.BlocksTemplateRenderer;
+import com.beligum.blocks.repositories.UrlRepository;
 import com.beligum.blocks.security.Permissions;
-import com.beligum.blocks.utils.URLFactory;
+import com.beligum.blocks.utils.UrlTools;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.shiro.authz.annotation.RequiresRoles;
+import org.bouncycastle.ocsp.Req;
 import org.hibernate.validator.constraints.NotBlank;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.jsoup.parser.Parser;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
+import java.net.URI;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,33 +56,28 @@ public class EntitiesEndpoint
 
     {
         Blueprint blueprint = Blocks.templateCache().getBlueprint(entityClassName);
-        URL pageURL = new URL(pageUrl);
-        SiteUrl existingId = Blocks.urlDispatcher().findId(pageURL);
+        URI pageURL = new URI(pageUrl);
 
-        if (existingId != null) {
-            // template exists
-            throw new Exception("Cannot create already existing entity with url '" + pageURL + "'.");
+
+        String language = UrlTools.getLanguage(pageURL);
+        if (language == null) {
+            throw new Exception("Could not create entity because no language was specified in the url.");
         }
 
-//        Element element = blueprint.getRenderedTemplateAsElement();
-        String language = Blocks.urlDispatcher().getLanguage(pageURL);
-        if (language == null) language = Blocks.config().getDefaultLanguage();
+        // Create a new page based on the blueprint
         StoredTemplate newPage = new StoredTemplate(blueprint, language);
         ResourceContext context = new ResourceContext(newPage, language);
-        context.setLanguage(language);
-        context.createUUID();
-        newPage.setId(URLFactory.createLocalResourceId(newPage.getBlueprintName(), context.getBlockId()));
-        context.setBlockId(newPage.getId());
+        RequestContext.getEntityManager().persist(context);
 
-        // TODO check if we found a resource
+        // Create a rout to this new page for this url
+        URI urlWithoutLanguage = UriBuilder.fromUri(pageURL).replacePath(UrlTools.getPathWithoutLanguage(Paths.get(pageURL.getPath())).toString()).build();
+        BlocksURL routing = new OkURL(urlWithoutLanguage, UriBuilder.fromUri(newPage.getId()).build(), null, language);
+        RequestContext.getEntityManager().persist(routing);
 
-        Blocks.database().save(context);
-
-        Blocks.urlDispatcher().addId(pageURL, new URL(context.getBlockId()), null, language);
         /*
          * Redirect the client to the newly created entity's page
          */
-        return Response.seeOther(pageURL.toURI()).build();
+        return Response.seeOther(pageURL).build();
     }
 
     @GET
@@ -110,8 +112,8 @@ public class EntitiesEndpoint
             // analyze html,
             // only properties should be a) singletons, b) 1 property that is not a singelton (with reference-to (or resource)) this will replace entity with id of url
             // only other properties allowed in root are properties with typeof
-            URL pageUrl = new URL(Blocks.config().getSiteDomainUrl(), pageUrlPath);
-            SiteUrl id = Blocks.urlDispatcher().findId(pageUrl);
+            URI pageUrl = UrlTools.createURI(RequestContext.getJaxRsRequest().getUriInfo().getRequestUri().getHost(), pageUrlPath);
+            BlocksURL id = UrlRepository.instance().getId(pageUrl.toString());
 
             if (id == null) {
                 if (fetchDeleted) {
@@ -122,8 +124,8 @@ public class EntitiesEndpoint
                 }
             }
 
-            String language = Blocks.urlDispatcher().getLanguage(pageUrl);
-            Document html = Jsoup.parse(pageHtml, Blocks.config().getSiteDomain(), Parser.htmlParser());
+            String language = UrlTools.getLanguage(pageUrl);
+            Document html = Jsoup.parse(pageHtml, Blocks.config().getSiteDomain().toString(), Parser.htmlParser());
             HtmlFromClientVisitor htmlFromClientVisitor = new HtmlFromClientVisitor(pageUrl);
             Traversor.traverseProperties(html, htmlFromClientVisitor);
 
@@ -187,16 +189,16 @@ public class EntitiesEndpoint
     public Response deletePage(String url)
     {
         try {
-            URL pageUrl = new URL(url);
-            SiteUrl id = Blocks.urlDispatcher().findId(pageUrl);
-            String language = Blocks.urlDispatcher().getLanguage(pageUrl);
+            URI pageUrl = new URI(url);
+            BlocksURL id = UrlRepository.instance().getId(pageUrl.toString());
+            String language = UrlTools.getLanguage(pageUrl);
 
             if (id == null) {
                 throw new Exception("Cannot delete entity which doesn't exist: '" + pageUrl + ".");
             }
 
 //            StoredTemplate storedTemplate = Blocks.database().fetchTemplate(id, language);
-            Blocks.urlDispatcher().removeId(pageUrl);
+//            Blocks.urlDispatcher().removeId(pageUrl);
 //            Blocks.database().remove(storedTemplate);
             return Response.ok(pageUrl.toString()).build();
         }
@@ -249,9 +251,9 @@ public class EntitiesEndpoint
     public Response changeTemplate(@FormParam("template") String templateName, @FormParam("id") String id)
                     throws Exception
     {
-        URL url = new URL(id);
-        SiteUrl blockId = Blocks.urlDispatcher().findId(url);
-        String language = Blocks.urlDispatcher().getLanguage(url);
+        URI url = new URI(id);
+        BlocksURL blockId = UrlRepository.instance().getId(url.toString());
+        String language = UrlTools.getLanguage(url);
         if (blockId != null) {
             PageTemplate pageTemplate = Blocks.templateCache().getPageTemplate(templateName);
             if (pageTemplate == null) {

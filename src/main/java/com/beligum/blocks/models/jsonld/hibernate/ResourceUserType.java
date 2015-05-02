@@ -1,8 +1,9 @@
 package com.beligum.blocks.models.jsonld.hibernate;
 
-import com.beligum.blocks.models.jsonld.ResourceNode;
-import com.beligum.blocks.models.jsonld.jackson.ResourceNodeDeserializer;
-import com.beligum.blocks.models.jsonld.jackson.ResourceNodeSerializer;
+import com.beligum.blocks.models.jsonld.Resource;
+import com.beligum.blocks.models.jsonld.ResourceImpl;
+import com.beligum.blocks.models.jsonld.jackson.ResourceDeserializer;
+import com.beligum.blocks.models.jsonld.jackson.ResourceSerializer;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -23,23 +24,23 @@ import java.util.Properties;
 /**
  * Created by wouter on 27/04/15.
  */
-public class ResourceNodeUserType implements UserType, ParameterizedType
+public class ResourceUserType implements UserType, ParameterizedType
 {
 
     private ObjectMapper getMapper() {
-        if (ResourceNodeUserType.MAPPER == null) {
+        if (ResourceUserType.MAPPER == null) {
             final SimpleModule module = new SimpleModule("customerSerializationModule", new Version(1, 0, 0, "static version"));
-            module.addSerializer(ResourceNode.class, new ResourceNodeSerializer());
-            module.addDeserializer(ResourceNode.class, new ResourceNodeDeserializer());
+            module.addSerializer(Resource.class, new ResourceSerializer());
+            module.addDeserializer(Resource.class, new ResourceDeserializer());
 
             final ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.registerModule(module);
-            ResourceNodeUserType.MAPPER = objectMapper;
+            ResourceUserType.MAPPER = objectMapper;
         }
-        return ResourceNodeUserType.MAPPER;
+        return ResourceUserType.MAPPER;
     }
 
-    public static final String CLASS = "ResourceNodeUserType";
+    public static final String CLASS = "ResourceUserType";
     public static final String JSONB_TYPE = "jsonb";
     private static  ObjectMapper MAPPER = null;
     private Class returnedClass;
@@ -66,7 +67,7 @@ public class ResourceNodeUserType implements UserType, ParameterizedType
      */
     @Override
     public Class returnedClass() {
-        return ResourceNode.class;
+        return Resource.class;
     }
 
     /**
@@ -117,9 +118,9 @@ public class ResourceNodeUserType implements UserType, ParameterizedType
             return null;
         }
 
-        ResourceNode json = null;
+        Resource json = null;
         try {
-            json = getMapper().readValue(rs.getBytes(names[0]), ResourceNode.class);
+            json = getMapper().readValue(rs.getBytes(names[0]), Resource.class);
         } catch (Exception e) {
             throw new HibernateException(e);
         }
@@ -170,8 +171,8 @@ public class ResourceNodeUserType implements UserType, ParameterizedType
      */
     @Override
     public Object deepCopy(Object value) throws HibernateException {
-        ResourceNode retVal = null;
-        ResourceNode resource = (ResourceNode)value;
+        Resource retVal = null;
+        Resource resource = (Resource)value;
         if (resource != null) {
             retVal = resource.copy();
         }

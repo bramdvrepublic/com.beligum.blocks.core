@@ -2,16 +2,12 @@ package com.beligum.blocks.models.jsonld;
 
 import com.beligum.base.utils.Logger;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.hibernate.annotations.Parameter;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
 
-import java.io.StringWriter;
 import java.util.*;
 
 /**
- * Created by wouter on 23/04/15.
- */
+* Created by wouter on 23/04/15.
+*/
 
 public class JsonLDGraph
 {
@@ -22,14 +18,14 @@ public class JsonLDGraph
     private int blankNodeCounter = 0;
     private Set idSet = new HashSet<String>();
     private JsonLDContext context = new JsonLDContext();
-    HashMap<String, ResourceNode> resources = new HashMap<String, ResourceNode>();
-    ResourceNode mainResource;
+    HashMap<String, ResourceImpl> resources = new HashMap<String, ResourceImpl>();
+    ResourceImpl mainResource;
 
     public JsonLDGraph() {
 
     }
 
-    public JsonLDGraph(ResourceNode resource) {
+    public JsonLDGraph(ResourceImpl resource) {
         this.mainResource = resource;
     }
 
@@ -51,8 +47,8 @@ public class JsonLDGraph
         }
     }
 
-    public ResourceNode getFirstResource() {
-        ResourceNode retVal = null;
+    public ResourceImpl getFirstResource() {
+        ResourceImpl retVal = null;
         if (resources.size() > 0) {
             retVal = resources.get(0);
         }
@@ -60,11 +56,11 @@ public class JsonLDGraph
     }
 
 
-    public ResourceNode getMainResource() {
+    public ResourceImpl getMainResource() {
         return getMainResource(null);
     }
 
-    public ResourceNode getMainResource(String id) {
+    public ResourceImpl getMainResource(String id) {
         if (this.mainResource == null) {
             this.mainResource = this.resources.get(id);
         }
@@ -77,7 +73,7 @@ public class JsonLDGraph
             if (jsonNode.has(VALUE)) {
                 retVal = createNode(jsonNode.get(VALUE));
             } else {
-                ResourceNode resource = new ResourceNode();
+                ResourceImpl resource = new ResourceImpl();
                 retVal = resource;
                 // loop through fields
                 Iterator<Map.Entry<String, JsonNode>> iterator = jsonNode.fields();
@@ -92,7 +88,7 @@ public class JsonLDGraph
                 if (!resources.containsKey(resource.getId())) {
                     resources.put(resource.getId(), resource);
                 } else {
-                    ResourceNode old = resources.get(resource.getId());
+                    ResourceImpl old = resources.get(resource.getId());
                     if (old.isEmpty()) {
                         old.wrap(resource.unwrap());
                     } else if (resource.isEmpty()) {
@@ -123,7 +119,7 @@ public class JsonLDGraph
         return retVal;
     }
 
-    private void processResourceFields(ResourceNode resource, String key, JsonNode jsonNode) {
+    private void processResourceFields(ResourceImpl resource, String key, JsonNode jsonNode) {
         if (jsonNode.isArray()) {
             Iterator<JsonNode> iterator = jsonNode.iterator();
             while (iterator.hasNext()) {

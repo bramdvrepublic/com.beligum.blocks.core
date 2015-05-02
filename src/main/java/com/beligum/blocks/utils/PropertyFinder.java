@@ -1,17 +1,10 @@
 package com.beligum.blocks.utils;
 
-import com.beligum.base.utils.Logger;
-import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.models.BasicTemplate;
-import com.beligum.blocks.models.EntityField;
 import com.beligum.blocks.models.jsonld.Node;
-import com.beligum.blocks.models.jsonld.ResourceNode;
-import com.beligum.blocks.models.jsonld.ResourceNodeInf;
+import com.beligum.blocks.models.jsonld.ResourceImpl;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Created by wouter on 2/04/15.
@@ -44,9 +37,9 @@ public class PropertyFinder
         BasicTemplate retVal = null;
         Node node = template.get(key);
         if (node != null && node.isList() && node.getList().size() > index) {
-            retVal = new BasicTemplate((ResourceNode)node.getList().get(index));
+            retVal = new BasicTemplate((ResourceImpl)node.getList().get(index));
         } else if (node != null && index == 0 && node.isResource()) {
-            retVal = new BasicTemplate((ResourceNode)node);
+            retVal = new BasicTemplate((ResourceImpl)node);
         }
         return retVal;
     }

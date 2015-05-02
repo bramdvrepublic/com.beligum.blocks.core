@@ -6,9 +6,11 @@ import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.models.StoredTemplate;
 import com.beligum.blocks.parsers.ElementParser;
 import com.beligum.blocks.parsers.visitors.BasicVisitor;
+import com.beligum.blocks.utils.UrlTools;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.UUID;
@@ -21,9 +23,9 @@ public class HtmlFromClientVisitor extends BasicVisitor
 
     private StoredTemplate content = null;
     private ArrayList<StoredTemplate> other = new ArrayList<>();
-    private URL htmlUrl = null;
+    private URI htmlUrl = null;
 
-    public HtmlFromClientVisitor(URL url)
+    public HtmlFromClientVisitor(URI url)
     {
         this.htmlUrl = url;
     }
@@ -32,7 +34,7 @@ public class HtmlFromClientVisitor extends BasicVisitor
     public Node head(Node node, int depth) throws ParseException
     {
 
-        String language = Blocks.urlDispatcher().getLanguage(htmlUrl);
+        String language = UrlTools.getLanguage(htmlUrl);
         Node retVal = node;
         if (node instanceof Element) {
             if (ElementParser.getReferenceUrl((Element) node) != null || (ElementParser.isUseBlueprint((Element) node) && ElementParser.isSingleton((Element) node))) {
@@ -46,7 +48,7 @@ public class HtmlFromClientVisitor extends BasicVisitor
                     throw new ParseException("Template can only contain 1 content property");
                 }
                 node.attr(ParserConstants.RESOURCE, this.htmlUrl.toString());
-                this.content = Blocks.factory().createStoredTemplate((Element) node, this.htmlUrl);
+                this.content = Blocks.factory().createStoredTemplate((Element) node, language);
                 this.addProperty((Element) node);
             }
             else if (ElementParser.isTypeOf((Element) node)) {

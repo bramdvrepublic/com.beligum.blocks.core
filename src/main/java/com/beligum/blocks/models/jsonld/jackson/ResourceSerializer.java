@@ -1,26 +1,25 @@
 package com.beligum.blocks.models.jsonld.jackson;
 
-import com.beligum.blocks.models.jsonld.JsonLDGraph;
 import com.beligum.blocks.models.jsonld.Node;
-import com.beligum.blocks.models.jsonld.ResourceNode;
+import com.beligum.blocks.models.jsonld.Resource;
+import com.beligum.blocks.models.jsonld.ResourceImpl;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
 
 /**
  * Created by wouter on 26/04/15.
  */
 
-public class ResourceNodeSerializer extends JsonSerializer<ResourceNode>
+public class ResourceSerializer extends JsonSerializer<Resource>
 {
 
     @Override
-    public void serialize(ResourceNode value, JsonGenerator jgen, SerializerProvider provider) throws IOException,
+    public void serialize(Resource value, JsonGenerator jgen, SerializerProvider provider) throws IOException,
                                                                                                      JsonProcessingException
     {
         printResource(jgen, value);
@@ -46,13 +45,13 @@ public class ResourceNodeSerializer extends JsonSerializer<ResourceNode>
         } else if (field.isString()) {
             jgen.writeString(field.getString());
         } else if (field.isResource()) {
-            printResource(jgen, (ResourceNode)field);
+            printResource(jgen, (ResourceImpl)field);
 
         }
 
     }
 
-    private void printResource(JsonGenerator jgen, ResourceNode resource) throws IOException {
+    private void printResource(JsonGenerator jgen, Resource resource) throws IOException {
         jgen.writeStartObject();
             if (resource.getId() != null && !resource.getId().startsWith("_b:")) {
                 jgen.writeStringField("@id", resource.getId());

@@ -28,6 +28,8 @@ public class ParserConstants
 
     public final static String RESOURCE_ENDPOINT= "/v1/resource/";
 
+    public final static String BLOCKS_BLUEPRINT_TYPE = "http://www.beligum.com/blocks/schema/Blueprint";
+    public final static String BLOCKS_PAGE_TYPE = "http://www.beligum.com/blocks/schema/Page";
     public final static String BLOCKS_SCHEMA = "http://www.beligum.com/blocks/schema/";
     public final static String BLOCKS_SCHEMA_prefix = "blocks:";
     public final static String JSONLD_ID = "@id";

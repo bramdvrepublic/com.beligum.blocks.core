@@ -6,12 +6,14 @@ import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.parsers.ElementParser;
 import com.beligum.blocks.parsers.visitors.BasicVisitor;
-import com.beligum.base.utils.Logger;
-import com.beligum.blocks.utils.URLFactory;
+import com.beligum.blocks.utils.UrlTools;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.parser.Tag;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Created by wouter on 16/03/15.
@@ -42,8 +44,8 @@ public class HtmlFilesVisitor extends BasicVisitor
 
                 if (ElementParser.isPageTemplateRoot((Element) node)) {
                     this.parsingPageTemplate = true;
-                    Element base = new Element(Tag.valueOf("base"), Blocks.config().getSiteDomain());
-                    base.attr("href", Blocks.config().getSiteDomain());
+                    Element base = new Element(Tag.valueOf("base"), Blocks.config().getSiteDomain().toString());
+                    base.attr("href", Blocks.config().getSiteDomain().toString());
                     ((Element) node).prependChild(base);
                     node = base;
                 }
@@ -54,9 +56,12 @@ public class HtmlFilesVisitor extends BasicVisitor
 
                 // TypeOf has to be a blueprint
                 if(ElementParser.isTypeOf((Element) node)) {
-                    node.attr(ParserConstants.TYPE_OF, URLFactory.createLocalType(ElementParser.getTypeOf((Element) node)));
+                    node.attr(ParserConstants.TYPE_OF, UrlTools.createLocalType(ElementParser.getTypeOf((Element) node)));
                     if (!ElementParser.isBlueprint((Element)node)) {
-                        node.attr(ParserConstants.BLUEPRINT, ElementParser.getTypeOf((Element) node));
+                        String typeOf = ElementParser.getTypeOf((Element)node);
+                        Path typeofPath = Paths.get(typeOf);
+                        typeOf = typeofPath.getName(typeofPath.getNameCount()-1).toString();
+                        node.attr(ParserConstants.BLUEPRINT, typeOf);
                     }
                 }
 
@@ -67,13 +72,9 @@ public class HtmlFilesVisitor extends BasicVisitor
                 //if a blueprint node is not a property of it's parent, place a property on it using it's blueprint type
                 if (ElementParser.isUseBlueprint((Element) node) && !(ElementParser.isProperty((Element) node))) {
                     String type = ElementParser.getBlueprintName((Element) node);
-                    node.attr(ParserConstants.PROPERTY, type);
+                    node.attr(ParserConstants.PROPERTY, UrlTools.createLocalType(type));
                 }
 
-                // make properties absolute
-                if (ElementParser.isProperty((Element)node) && ElementParser.getProperty((Element)node) != null) {
-                    node.attr(ParserConstants.PROPERTY, ElementParser.getProperty((Element) node));
-                }
 
                 if (ElementParser.isBlueprint((Element) node)) {
                     Blocks.templateCache().addBlueprint(Blocks.factory().createBlueprint((Element) node, this.language));

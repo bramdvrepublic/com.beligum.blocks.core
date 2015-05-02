@@ -39,10 +39,6 @@ public interface Node
 
     public boolean isResource();
 
-    public boolean isProxy();
-
-    public void write(StringWriter writer, boolean expanded);
-
     public Node copy();
 
 

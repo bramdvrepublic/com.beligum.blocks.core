@@ -60,10 +60,17 @@ public class BlankNode implements Node
         return null;
     }
     @Override
+    public String toString()
+    {
+        return this.getString();
+    }
+
+    @Override
     public String getString()
     {
         return "";
     }
+
     @Override
     public Double getDouble()
     {
@@ -85,20 +92,11 @@ public class BlankNode implements Node
         return null;
     }
     @Override
-    public boolean isProxy()
-    {
-        return false;
-    }
-    @Override
     public boolean isResource()
     {
         return false;
     }
 
-
-    public void write(StringWriter writer, boolean expanded) {
-
-    }
     @Override
     public Node copy()
     {

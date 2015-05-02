@@ -41,23 +41,6 @@ public class ListNode extends BlankNode
         return this.internalObject;
     }
 
-    @Override
-    public void write(StringWriter writer, boolean expanded)
-    {
-        writer.append("[");
-        boolean added = false;
-        for (Node node: internalObject) {
-            if (added) {
-                writer.append(", ");
-            }
-            node.write(writer, expanded);
-            added = true;
-        }
-        writer.append("]");
-
-    }
-
-
 
     @Override
     public Node copy()

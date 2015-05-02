@@ -5,11 +5,14 @@ import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.models.jsonld.JsonLDGraph;
 import com.beligum.blocks.models.jsonld.Node;
+import com.beligum.blocks.models.jsonld.StringNode;
 import com.beligum.blocks.renderer.BlocksTemplateRenderer;
+import com.beligum.blocks.utils.UrlTools;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Tag;
 
+import javax.ws.rs.core.UriBuilder;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,6 +41,9 @@ public class StoredTemplate extends BasicTemplate
             Node property = blueprint.get(key);
             this.set(key, property.copy());
         }
+        this.language = language;
+        this.setId(UrlTools.createLocalResourceId("Page"));
+        this.set(ParserConstants.JSONLD_TYPE, new StringNode(ParserConstants.BLOCKS_PAGE_TYPE));
     }
 
     public StoredTemplate(Element node, String language) throws ParseException

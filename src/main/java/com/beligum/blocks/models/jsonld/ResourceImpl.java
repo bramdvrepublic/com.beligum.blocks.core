@@ -1,54 +1,81 @@
 package com.beligum.blocks.models.jsonld;
 
-import java.io.StringWriter;
+import com.beligum.base.utils.Logger;
+import com.beligum.blocks.base.Blocks;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 
 /**
  * Created by wouter on 23/04/15.
  */
-public class ResourceNode extends BlankNode implements ResourceNodeInf
+public class ResourceImpl extends BlankNode implements Resource
 {
 
     private HashMap<String, Node> internalObject = new HashMap<String, Node>();
     StringNode id = null;
 
-    public ResourceNode() {
-
+    public ResourceImpl() {
     }
 
-    public ResourceNode(ResourceNode resource) {
+    public ResourceImpl(ResourceImpl resource) {
         this.wrap(resource.unwrap());
     }
 
+
+    // We expect a valid absolute URI or a relative path from our RDF Schema
+    // When we add a property we check if it starts with our domain
+    // If it is a property from our namespace, remove the namespace
+    public String fixPropertyName(String key) {
+        if (!internalObject.keySet().contains(key)) {
+            // Key does not exist as a shortened version
+            // is this already a shortened Version?
+            if (key.startsWith(Blocks.config().getDefaultRdfPrefix())) {
+                int length = Blocks.config().getDefaultRdfPrefix().toString().length();
+                key = key.substring(length);
+            }
+        }
+        return key;
+    }
+
     public void add(String key, Node node) {
-        if (node.isNull()) return;
+        key = fixPropertyName(key);
+        if (!node.isNull() && key != null) {
 
-        if (key.equals(JsonLDGraph.ID)) {
-            if (node.isString()) {
-                this.id = (StringNode)node;
+            if (key.equals(JsonLDGraph.ID)) {
+                if (node.isString()) {
+                    this.id = (StringNode) node;
+                }
             }
-        } else {
+            else {
 
-            if (!internalObject.containsKey(key)) {
-                internalObject.put(key, node);
-            } else if (internalObject.get(key).isList()) {
-                ((ListNode)internalObject.get(key)).add(node);
-            } else {
-                ListNode list = new ListNode(internalObject.get(key));
-                list.add(node);
-                internalObject.put(key, list);
+                if (!internalObject.containsKey(key)) {
+                    internalObject.put(key, node);
+                }
+                else if (internalObject.get(key).isList()) {
+                    ((ListNode) internalObject.get(key)).add(node);
+                }
+                else {
+                    ListNode list = new ListNode(internalObject.get(key));
+                    list.add(node);
+                    internalObject.put(key, list);
+                }
+
             }
-
         }
     }
 
     public void set(String key, Node node) {
-        if (node.isNull()) return;
-
-        if (key.equals(JsonLDGraph.ID)) {
-            if (node.isString()) this.id = (StringNode)node;
-        } else {
-            internalObject.put(key, node);
+        key = fixPropertyName(key);
+        if (!node.isNull() && key != null) {
+            if (key.equals(JsonLDGraph.ID)) {
+                if (node.isString())
+                    this.id = (StringNode) node;
+            }
+            else {
+                internalObject.put(key, node);
+            }
         }
     }
 
@@ -200,11 +227,11 @@ public class ResourceNode extends BlankNode implements ResourceNodeInf
         return get(key).getList();
     }
 
-    public ResourceNode getResource(String key)
+    public Resource getResource(String key)
     {
         Node retVal = this.get(key);
         if (retVal != null && retVal.isResource())
-            return (ResourceNode)retVal;
+            return (ResourceImpl)retVal;
         else
             return  null;
     }
@@ -213,35 +240,13 @@ public class ResourceNode extends BlankNode implements ResourceNodeInf
         return this.internalObject.keySet();
     }
 
-    public ResourceNode copy() {
-        ResourceNode retVal = new ResourceNode();
+    public Resource copy() {
+        ResourceImpl retVal = new ResourceImpl();
         for (String key: internalObject.keySet()) {
             Node fieldNode = internalObject.get(key);
             retVal.add(key, fieldNode.copy());
         }
         return retVal;
-    }
-
-
-    public void write(StringWriter writer, boolean expanded) {
-        writer.append("{");
-        boolean added = false;
-        if (JsonLDGraph.ID != null) {
-            writer.append(JsonLDGraph.ID).append(": ").append(getId());
-        }
-        for (String key: internalObject.keySet()) {
-            Node value = internalObject.get(key);
-            if (added) {
-                writer.append(", ");
-            }
-            writer.append(key);
-            writer.append(": ");
-            value.write(writer, expanded);
-            added = true;
-
-        }
-
-        writer.append("}");
     }
 
 }

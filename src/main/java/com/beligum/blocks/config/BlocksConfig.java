@@ -11,6 +11,7 @@ import org.apache.shiro.UnavailableSecurityManagerException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -28,9 +29,11 @@ public class BlocksConfig
 
 
     /**the languages this site can work with, ordered from most preferred languages, to less preferred*/
-    private static LinkedHashSet<String> cachedLanguages;
-    private static String defaultLanguage;
-    public static String projectVersion = null;
+    private LinkedHashSet<String> cachedLanguages;
+    private String defaultLanguage;
+    public String projectVersion = null;
+    private URI siteDomain;
+    private URI defaultRdfSchema;
 
     public BlocksConfig()
     {
@@ -59,14 +62,17 @@ public class BlocksConfig
         return retVal;
     }
 
-    public String getSiteDomain()
-    {
-        return getConfiguration("blocks.site.domain");
-    }
 
-    public URL getSiteDomainUrl() throws MalformedURLException
+    public URI getSiteDomain()
     {
-        return new URL(getSiteDomain());
+        if (this.siteDomain == null) {
+            try {
+                this.siteDomain = new URI(getConfiguration("blocks.site.domain"));
+            } catch (Exception e) {
+                Logger.error("Site domain in blocks config is not valid. We return null");
+            }
+        }
+        return this.siteDomain;
     }
 
     public String getBlocksDBHost()
@@ -78,9 +84,16 @@ public class BlocksConfig
         return Integer.parseInt(getConfiguration("blocks.db.port"));
     }
 
-    public String getDefaultRdfSchema()
+    public URI getDefaultRdfSchema()
     {
-        return getConfiguration("blocks.rdf.schema.url");
+        if (this.defaultRdfSchema == null) {
+            try {
+                this.defaultRdfSchema = new URI(getConfiguration("blocks.rdf.schema.url"));
+            } catch (Exception e) {
+                Logger.error("Default RDF Schema is not valid");
+            }
+        }
+        return this.defaultRdfSchema;
     }
 
     public String getDefaultRdfPrefix()
@@ -171,14 +184,14 @@ public class BlocksConfig
      */
     public String getDefaultLanguage(){
         String retVal = null;
-        if (BlocksConfig.defaultLanguage == null) {
+        if (defaultLanguage == null) {
             if (getLanguages().iterator().hasNext()) {
-                BlocksConfig.defaultLanguage = getLanguages().iterator().next();
+                defaultLanguage = getLanguages().iterator().next();
             } else {
-                BlocksConfig.defaultLanguage = Locale.ENGLISH.getLanguage();
+                defaultLanguage = Locale.ENGLISH.getLanguage();
             }
         } else {
-            retVal = BlocksConfig.defaultLanguage;
+            retVal = defaultLanguage;
         }
         return retVal;
     }

@@ -2,12 +2,13 @@ package com.beligum.blocks.models.jsonld;
 
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Set;
 
 /**
  * Created by wouter on 24/04/15.
  */
-public interface ResourceNodeInf extends Node
+public interface Resource extends Node
 {
 
     public void add(String key, Node node);
@@ -24,6 +25,7 @@ public interface ResourceNodeInf extends Node
 
     public boolean isEmpty();
 
+    public void remove(String key);
 
     public void addBoolean(String key, Boolean value);
 
@@ -47,7 +49,6 @@ public interface ResourceNodeInf extends Node
 
     public void setString(String key, String value);
 
-
     public Boolean getBoolean(String key);
 
     public Integer getInteger(String key);
@@ -60,13 +61,16 @@ public interface ResourceNodeInf extends Node
 
     public ArrayList<Node> getList(String key);
 
-    public ResourceNodeInf getResource(String key);
+    public Resource getResource(String key);
 
     public Set<String> getFields();
 
-    public ResourceNode copy();
+    public Resource copy();
+
+    public HashMap<String, Node> unwrap();
+
+    public void wrap(HashMap<String, Node> unwrappedResource);
 
 
-    public void write(StringWriter writer, boolean expanded);
 
 }

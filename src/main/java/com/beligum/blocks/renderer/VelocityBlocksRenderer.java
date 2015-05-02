@@ -3,8 +3,10 @@ package com.beligum.blocks.renderer;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.models.*;
-import com.beligum.blocks.models.jsonld.ResourceNode;
-import com.beligum.blocks.models.jsonld.ResourceNodeIterator;
+import com.beligum.blocks.models.jsonld.Resource;
+import com.beligum.blocks.models.jsonld.ResourceImpl;
+import com.beligum.blocks.models.jsonld.ResourceIterator;
+import com.beligum.blocks.repositories.UrlRepository;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.utils.PropertyFinder;
 import org.apache.commons.lang3.StringUtils;
@@ -17,8 +19,7 @@ import java.util.*;
  */
 public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 {
-    private final String CONTENT = "CONTENT";
-    private final String CAPTION = "CAPTION";
+
     private final Integer START_PROPERTY_LENGTH = ParserConstants.TEMPLATE_PROPERTY_START.length();
     private final Integer END_PROPERTY_LENGTH = ParserConstants.TEMPLATE_PROPERTY_END.length();
     private final Set<String>
@@ -29,7 +30,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 
     // Resource -> property -> language -> value
     //    private HashMap<String, HashMap<String, HashMap<String, ArrayList<RDFNode>>>> rdfCache = new HashMap<>();
-    private HashMap<String, HashMap<String, Integer>> rdfPropertyUsed = new HashMap<>();
+//    private HashMap<String, HashMap<String, Integer>> rdfPropertyUsed = new HashMap<>();
 
     private class Field
     {
@@ -98,7 +99,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 
 
 
-    public String render(StoredTemplate storedTemplate, ResourceNode resource, String language) {
+    public String render(StoredTemplate storedTemplate, Resource resource, String language) {
         this.locale = new Locale(language);
         this.buffer = new StringBuilder();
         if (resource != null) {
@@ -108,14 +109,14 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         if (renderDynamicBlocks && Blocks.blockHandler().isDynamicBlock(storedTemplate.getBlueprintName())) {
             this.buffer.append(Blocks.blockHandler().getDynamicBlock(storedTemplate.getBlueprintName()).render(storedTemplate));
         } else {
-            this.renderElement(storedTemplate, ResourceNodeIterator.create(resource), null, this.readOnly);
+            this.renderElement(storedTemplate, ResourceIterator.create(resource), null, this.readOnly);
         }
 
         return this.buffer.toString();
     }
 
 
-    public String render(PageTemplate pageTemplate, StoredTemplate storedTemplate, ResourceNode resource, String language) {
+    public String render(PageTemplate pageTemplate, StoredTemplate storedTemplate, Resource resource, String language) {
         this.locale = new Locale(language);
         this.buffer = new StringBuilder();
 
@@ -176,7 +177,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         return retVal;
     }
 
-    private void renderInsideElement(BasicTemplate template, ResourceNodeIterator resource,  String property, boolean readOnly)
+    private void renderInsideElement(BasicTemplate template, ResourceIterator resource,  String property, boolean readOnly)
     {
 
         String stringTemplate = template.getValue();
@@ -208,9 +209,9 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
             this.scripts.addAll(blueprint.getScripts());
 
             if (resource != null) {
-                ResourceNode newResource = resource.getResource(property);
+                Resource newResource = resource.getResource(property);
                 if (newResource != null) {
-                    resource = ResourceNodeIterator.create(newResource);
+                    resource = ResourceIterator.create(newResource);
                 }
             }
 
@@ -235,7 +236,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 
     }
 
-    public void renderInsideWrapper(String templateToRender, ResourceNodeIterator resource, String property) {
+    public void renderInsideWrapper(String templateToRender, ResourceIterator resource, String property) {
         FieldOverview fieldOverview = findNextPropertyInTemplate(templateToRender);
         for (Field nextProperty : fieldOverview.fields) {
             // this is not a property but a piece of the template, so add and forward
@@ -250,7 +251,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         }
     }
 
-    protected void renderTemplate(BasicTemplate template, ResourceNodeIterator resource, boolean readOnly)
+    protected void renderTemplate(BasicTemplate template, ResourceIterator resource, boolean readOnly)
     {
         // Part 1 render dynamic block, we don't care further
         Blueprint blueprint = template.getBlueprint();
@@ -366,7 +367,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
     }
 
 
-    public void renderElement(BasicTemplate propertyTemplate, ResourceNodeIterator resource, String property, boolean readOnly) {
+    public void renderElement(BasicTemplate propertyTemplate, ResourceIterator resource, String property, boolean readOnly) {
         // if element is src or href???
         //
         String propAttribute = null;
@@ -411,7 +412,9 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
                 }
                 if (id.startsWith("#") || id.startsWith("/") || id.startsWith(":"))
                     id = id.substring(1);
-                value = Blocks.urlDispatcher().getUrlForId(id);
+                // TODO we only accept absolute urls
+//                value = UrlRepository.getUrlForID(id);
+
             }
 
             extraAttributes.put(propAttribute, value);

@@ -1,5 +1,6 @@
 package com.beligum.blocks.endpoints;
 
+import com.beligum.base.server.R;
 import com.beligum.base.server.RequestContext;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
@@ -7,24 +8,26 @@ import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.CacheException;
 import com.beligum.blocks.models.*;
-import com.beligum.blocks.models.jsonld.ResourceNode;
-import com.beligum.blocks.models.jsonld.ResourceNodeInf;
+import com.beligum.blocks.models.jsonld.Resource;
+import com.beligum.blocks.models.jsonld.ResourceImpl;
+import com.beligum.blocks.models.url.BlocksURL;
+import com.beligum.blocks.models.url.OkURL;
 import com.beligum.blocks.renderer.BlocksTemplateRenderer;
-import com.beligum.base.server.R;
-import com.beligum.base.server.RequestContext;
-import com.beligum.base.templating.ifaces.Template;
-import com.beligum.base.utils.Logger;
+import com.beligum.blocks.repositories.ResourceRepository;
+import com.beligum.blocks.repositories.UrlRepository;
 import com.beligum.blocks.security.Permissions;
+import com.beligum.blocks.utils.UrlTools;
 import gen.com.beligum.blocks.core.fs.html.views.new_page;
-import gen.com.beligum.blocks.endpoints.UsersEndpointRoutes;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.AuthorizationException;
 
 import javax.ws.rs.*;
+import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
+import java.nio.file.Paths;
 import java.util.List;
 
 @Path("/")
@@ -32,104 +35,99 @@ public class ApplicationEndpoint
 {
 
 
+    /*
+    * Every resource on this domain has a url as id in for http://xxx.org/v1/resources/...
+    *
+    * These resources are mapped to clean urls in the routing table in the db.
+    * Currently there ar 2 types of routes:
+    * - OKURL: shows a resource (normally a view with optionally an other resource as argument, based on the current path
+    * - MovedPermanentlyURL: redirects to an other url
+    *
+    * Language is not a part of the url-path in the database.
+    *
+    * */
+
     @Path(ParserConstants.RESOURCE_ENDPOINT + "{block_id:.*}")
     @GET
-    public Response getPageWithId(@PathParam("block_id") String blockId, @QueryParam("view") String view_block_id, @QueryParam("language") String language)
-                    throws MalformedURLException
+    public Response getPageWithId(@PathParam("block_id") String blockId, @QueryParam("resource") String resource_block_id, @QueryParam("language") String language)
     {
-        String url = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri().toString();
+        URI pageUrl = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
+        language = language == null ? Blocks.config().getRequestDefaultLanguage() : language;
+        URI resourceURI = null;
+        if (resource_block_id != null) {
+            resourceURI = UriBuilder.fromUri(resource_block_id).build();
+        }
 
-        if (language == null) language = Blocks.config().getRequestDefaultLanguage();
-        ResourceNode view = Blocks.database().fetchResource(view_block_id, language);
+        OkURL okUrl = new OkURL(pageUrl, pageUrl, resourceURI, language);
 
-
-        return Response.ok().build();
+        return okUrl.response(language);
     }
 
 
-    //using regular expression to let all requests to undefined paths end up here
+    /*
+    * using regular expression to let all requests to undefined paths end up here
+    * We try to find these urls in our routing table and redirect them to the correct url
+    * */
+
     @Path("/{randomPage:.*}")
     @GET
     public Response getPageWithId(@PathParam("randomPage") String randomURLPath, @QueryParam("version") Long version, @QueryParam("deleted") @DefaultValue("false") boolean fetchDeleted)
                     throws Exception
     {
         try {
+            Response retVal = null;
+            URI currentURI = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
 
-            //            if(fetchDeleted && !SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)){
-            //                Logger.debug("Unauthorized user tried to view deleted version of page '" + randomURLPath + "'.");
-            //                fetchDeleted = false;
-            //            }
-            URL url = new URL(RequestContext.getJaxRsRequest().getUriInfo().getRequestUri().toString());
-
-            // set language
-            String language = Blocks.urlDispatcher().getLanguageOrNull(url);
+            /*
+            * Check if a language is available in this url
+            * If not, add it as first part of the url and redirect to that url
+            * */
+            String language = UrlTools.getLanguage(currentURI);
             if (language == null) {
                 language = Blocks.config().getRequestDefaultLanguage();
-            }
-            //
-            if (!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
-                //                    throw new UnauthorizedException("User is not allowed to see versioned entity: url = " + randomURLPath + ", version=" +version);
-                version = null;
-                fetchDeleted = false;
-                Logger.debug("Unauthorized user tried to view older version of page '" + randomURLPath + "'.");
-            }
-
-            //if no language info is specified in the url, or if the specified language doesn't exist, the default language will still be shown
-            SiteUrl siteUrl = Blocks.urlDispatcher().findId(url);
-            StoredTemplate storedTemplate = null;
-            ResourceNode resource = null;
-            if (siteUrl != null) {
-                ResourceNode view = Blocks.database().fetchResource(siteUrl.getViewUrl(), language);
-                storedTemplate = new StoredTemplate();
-                storedTemplate.wrap(view.unwrap());
-
-
-                if (siteUrl.getResourceUrl() != null) {
-                    ResourceNode resourceContext = Blocks.database().fetchResource(siteUrl.getResourceUrl(), language);
-                    resource = resourceContext;
+                UriBuilder uriBuilder = UriBuilder.fromUri(currentURI);
+                uriBuilder.replacePath("/" + language).path(currentURI.getPath());
+                retVal = Response.temporaryRedirect(uriBuilder.build()).build();
+            } else  {
+                /*
+                * Prevent everyone except admins from seeing previous versions of pages or viewing deleted pages
+                * */
+                if (!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
+                    version = null;
+                    fetchDeleted = false;
+                    Logger.debug("Unauthorized user tried to view older version of page '" + randomURLPath + "'.");
                 }
 
-            } else if (fetchDeleted) {
-                //                id = Blocks.urlDispatcher().findPreviousId(url);
-                if (siteUrl != null) {
-                    //                    storedTemplate = Blocks.database().fetchPrevious(id, language, Blocks.factory().getStoredTemplateClass());
-                }
-            }
 
 
-            if (storedTemplate == null) {
-                if (fetchDeleted) {
-                    // Todo add flash message
-                }
-                if (SecurityUtils.getSubject().isAuthenticated()) {
-                    return injectParameters(new_page.get().getNewTemplate());
+                /*
+                * Select all urls with the same path as this url.
+                * This code could be different per site so we have to find a way to inject it via the config file?
+                * */
+
+                java.nio.file.Path currentPath = Paths.get(currentURI.getPath());
+                currentPath = UrlTools.getPathWithoutLanguage(currentPath);
+                BlocksURL url = UrlRepository.instance().getUrlForURI(currentURI.getAuthority(), currentPath.toString(), language);
+                if (url != null) {
+                    // Routing found in DB so call this
+                    retVal = url.response(language);
                 } else {
-                    throw new NotFoundException();
+                    // No routing found. If User with correct rights is logged in -> show create new page
+                    if (SecurityUtils.getSubject().isAuthenticated() && SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
+                        retVal = injectParameters(new_page.get().getNewTemplate());
+                    } else if (R.configuration().getProduction()) {
+                        // In production show page not found
+                        throw new NotFoundException();
+                    } else {
+                        // In debug mode give option to log in.
+//                        retVal = Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
+                        throw new NotFoundException();
+                    }
                 }
 
-            } else {
-                //                if (storedTemplate.getEntity() != null) {
-                //                    ArrayList<JsonLDWrapper> model = Blocks.database().fetchEntities("{ '@graph.@id': 'mot:/" + storedTemplate.getId().toString() + "'}");
-
-                //                if (model.iterator().hasNext()) resource = model.iterator().next().getMainResource(storedTemplate.getLanguage());
-                //                }
-
-                PageTemplate pageTemplate = Blocks.templateCache().getPageTemplate(storedTemplate.getPageTemplateName());
-                BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
-
-                // Todo render entity
-                String page = renderer.render(pageTemplate, storedTemplate, resource, storedTemplate.getLanguage());
-                return Response.ok(page).build();
             }
 
-
-        }
-        //if the index was not found, redirect to user login, else throw exception
-        catch(NotFoundException e){
-            return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
-        }
-        catch(AuthorizationException e){
-            throw e;
+            return retVal;
         }
         catch(Exception e){
             Logger.error(e);

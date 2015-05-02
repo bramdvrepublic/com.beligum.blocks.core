@@ -37,10 +37,6 @@ public class BooleanNode extends BlankNode
         return internalObject.toString();
     }
 
-    public void write(StringWriter writer, boolean expanded) {
-        writer.append(Boolean.toString(this.internalObject));
-    }
-
     public Node copy() {
         return new BooleanNode(internalObject);
     }

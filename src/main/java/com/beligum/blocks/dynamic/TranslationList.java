@@ -7,7 +7,7 @@ import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.models.BasicTemplate;
 import com.beligum.blocks.models.StoredTemplate;
 import com.beligum.blocks.renderer.VelocityBlocksRenderer;
-import com.beligum.blocks.urlmapping.UrlDispatcher;
+import com.beligum.blocks.utils.UrlTools;
 import org.jsoup.nodes.Element;
 
 import java.net.MalformedURLException;
@@ -36,15 +36,11 @@ public class TranslationList implements DynamicBlockListener
     public StringBuilder render(BasicTemplate basicTemplate)
     {
         String activeLanguage = Blocks.config().getDefaultLanguage();
-        try {
-            activeLanguage = Blocks.urlDispatcher().getLanguage(new URL(RequestContext.getJaxRsRequest().getUriInfo().getAbsolutePath().toString()));
+            activeLanguage = UrlTools.getLanguage(RequestContext.getJaxRsRequest().getUriInfo().getAbsolutePath());
             if (activeLanguage == null) {
                 Blocks.config().getDefaultLanguage();
             }
-        }
-        catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
+
         VelocityBlocksRenderer renderer = new VelocityBlocksRenderer();
         renderer.renderStartElement(basicTemplate, true, null);
 

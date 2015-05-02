@@ -5,18 +5,18 @@ import java.util.HashMap;
 /**
  * Created by wouter on 24/04/15.
  */
-public class ResourceNodeIterator extends ResourceNode
+public class ResourceIterator extends ResourceImpl
 {
     HashMap<String, Integer> counter = new HashMap<>();
 
-    private ResourceNodeIterator(ResourceNode resource) {
+    private ResourceIterator(Resource resource) {
             this.wrap(resource.unwrap());
     }
 
-    public static ResourceNodeIterator create(ResourceNode resource) {
-        ResourceNodeIterator retVal = null;
+    public static ResourceIterator create(Resource resource) {
+        ResourceIterator retVal = null;
         if (resource != null) {
-            retVal = new ResourceNodeIterator(resource);
+            retVal = new ResourceIterator(resource);
         }
         return retVal;
     }

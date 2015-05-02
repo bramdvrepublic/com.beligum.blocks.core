@@ -1,19 +1,14 @@
 package com.beligum.blocks.models;
 
-import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.models.jsonld.Node;
 import com.beligum.blocks.models.jsonld.StringNode;
 import com.beligum.blocks.parsers.ElementParser;
 import com.beligum.blocks.parsers.visitors.template.BlueprintVisitor;
-import com.beligum.blocks.utils.URLFactory;
-import org.apache.jena.atlas.iterator.Iter;
-import org.apache.poi.hssf.util.HSSFColor;
+import com.beligum.blocks.utils.UrlTools;
 import org.jsoup.nodes.Element;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 
@@ -52,8 +47,8 @@ public class Blueprint extends StoredTemplate
         super(element, language);
         this.setName(this.getBlueprintName());
         this.setWrapper(false);
-        this.set(ParserConstants.JSONLD_TYPE, new StringNode(URLFactory.createLocalType("Blueprint")));
-        this.set(ParserConstants.JSONLD_ID, new StringNode(URLFactory.createLocalResourceId("Blueprint", this.getBlueprintName())));
+        this.setId(UrlTools.createLocalResourceId("blueprint", this.getBlueprintName()));
+        this.set(ParserConstants.JSONLD_TYPE, new StringNode(ParserConstants.BLOCKS_BLUEPRINT_TYPE));
         this.setAddableBlock(ElementParser.isAddableBlock(element));
         this.setPageBlock(ElementParser.isPageBlock(element));
         this.setRdfType(ElementParser.getTypeOf(element));

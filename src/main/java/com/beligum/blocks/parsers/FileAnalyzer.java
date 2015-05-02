@@ -30,8 +30,8 @@ public class FileAnalyzer
      */
     public static Document parse(String html)
     {
-        Document retVal = new Document(Blocks.config().getSiteDomain());
-        Document parsed = Jsoup.parse(html, Blocks.config().getSiteDomain(), Parser.htmlParser());
+        Document retVal = new Document(Blocks.config().getSiteDomain().toString());
+        Document parsed = Jsoup.parse(html, Blocks.config().getSiteDomain().toString(), Parser.htmlParser());
         /*
          * If only part of a html-file is being parsed (which starts f.i. with a <div>-tag), Jsoup will add <html>-, <head>- and <body>-tags, which is not what we want
          * Thus if the head (or body) is empty, but the body (or head) is not, we only want the info in the body (or head).

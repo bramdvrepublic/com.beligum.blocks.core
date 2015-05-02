@@ -3,7 +3,7 @@ package com.beligum.blocks.models;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
-import com.beligum.blocks.models.jsonld.ResourceNode;
+import com.beligum.blocks.models.jsonld.ResourceImpl;
 import com.beligum.blocks.parsers.ElementParser;
 import com.beligum.blocks.parsers.Traversor;
 import com.beligum.blocks.parsers.visitors.template.PropertyVisitor;
@@ -20,7 +20,7 @@ import org.jsoup.parser.Tag;
 /**
  * Created by wouter on 16/03/15.
  */
-public class BasicTemplate extends ResourceNode
+public class BasicTemplate extends ResourceImpl
 {
     public static final String blueprintName = ParserConstants.BLOCKS_SCHEMA + "blueprintname";
     public static final String name = ParserConstants.BLOCKS_SCHEMA + "name";
@@ -57,7 +57,7 @@ public class BasicTemplate extends ResourceNode
 
 
 
-    public BasicTemplate(ResourceNode node) {
+    public BasicTemplate(ResourceImpl node) {
         super(node);
     }
 
@@ -171,7 +171,7 @@ public class BasicTemplate extends ResourceNode
         HtmlElement retval = null;
         com.beligum.blocks.models.jsonld.Node element = getFirst(BasicTemplate.htmlElement);
         if (element != null && element.isResource()) {
-            retval = new HtmlElement((ResourceNode)element);
+            retval = new HtmlElement((ResourceImpl)element);
         }
         return retval;
     }
@@ -189,8 +189,8 @@ public class BasicTemplate extends ResourceNode
     }
 
     public static Element parse(String html){
-        Element retVal = new Element(Tag.valueOf("div"), Blocks.config().getSiteDomain());
-        Document parsed = Jsoup.parse(html, Blocks.config().getSiteDomain(), Parser.htmlParser());
+        Element retVal = new Element(Tag.valueOf("div"), Blocks.config().getSiteDomain().toString());
+        Document parsed = Jsoup.parse(html, Blocks.config().getSiteDomain().toString(), Parser.htmlParser());
         /*
          * If only part of a html-file is being parsed (which starts f.i. with a <div>-tag), Jsoup will add <html>-, <head>- and <body>-tags, which is not what we want
          * Thus if the head (or body) is empty, but the body (or head) is not, we only want the info in the body (or head).
