@@ -127,7 +127,7 @@ public class BasicTemplate implements NamedProperty
     //            // Dynamic block
     //            //
     //        } else if (Blocks.blockHandler().isDynamicBlock(this.getBlueprintName())) {
-    //            return Blocks.blockHandler().getDynamicBlock(this.getBlueprintName()).render(this);
+    //            return Blocks.blockHandler().getDynamicBlock(this.getBlueprintName()).renderContent(this);
     //        } else if (readOnly) {
     //            retVal = blueprint.getRenderedTemplate(readOnly, fetchSingeltons);
     //        } else {

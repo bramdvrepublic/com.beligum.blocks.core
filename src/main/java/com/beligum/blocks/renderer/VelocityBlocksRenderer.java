@@ -62,8 +62,8 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
     private boolean renderDynamicBlocks = true;
     private boolean readOnly = false;
     private boolean usesEntity = false; // is set by the renderer
-    private LinkedHashSet<String> links = new LinkedHashSet();
-    private LinkedHashSet<String> scripts = new LinkedHashSet();
+    private LinkedHashMap<String, String> links = new LinkedHashMap();
+    private LinkedHashMap<String, String> scripts = new LinkedHashMap();
 
     public void setUseOnlyEntity(boolean useOnlyEntity)
     {
@@ -115,11 +115,9 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         this.locale = new Locale(language);
         this.buffer = new StringBuilder();
 
-        if (resource != null)
+        if (resource != null) {
             usesEntity = true;
-        // Render everything in the page except main content
-        this.scripts.addAll(pageTemplate.getScripts());
-        this.links.addAll(pageTemplate.getLinks());
+        }
 
         this.renderTemplate(pageTemplate, null, this.readOnly);
         StringBuilder page = this.buffer;
@@ -130,27 +128,22 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         page = replace(page, ParserConstants.TEMPLATE_CONTENT, this.buffer);
 
         // Add all links and scripts
+        // Append admin css only if logged in
+        if (SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
+            this.links.putAll(Blocks.templateCache().getBlocksLinks());
+            this.scripts.putAll(Blocks.templateCache().getBlocksScripts());
+        }
+        //after the admin css, now add the css of the page template to allow custom modifications
+        this.links.putAll(pageTemplate.getScriptsLinksParser().getLinks());
+        this.scripts.putAll(pageTemplate.getScriptsLinksParser().getScripts());
+
+        //renderContent out the links and scripts
         StringBuilder scriptsAndLinks = new StringBuilder();
-        // Append Blocks client only if logged in
-        if (SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
-            for (String link : Blocks.templateCache().getBlocksLinks()) {
-                scriptsAndLinks.append(link).append(System.lineSeparator());
-            }
+        for (Map.Entry<String, String> link : this.links.entrySet()) {
+            scriptsAndLinks.append(link.getValue()).append(System.lineSeparator());
         }
-
-        for (String link : this.links) {
-            scriptsAndLinks.append(link).append(System.lineSeparator());
-        }
-
-        // Append Blocks client only if logged in
-        if (SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
-            for (String script : Blocks.templateCache().getBlocksScripts()) {
-                scriptsAndLinks.append(script).append(System.lineSeparator());
-            }
-        }
-
-        for (String script : this.scripts) {
-            scriptsAndLinks.append(script).append(System.lineSeparator());
+        for (Map.Entry<String, String> script : this.scripts.entrySet()) {
+            scriptsAndLinks.append(script.getValue()).append(System.lineSeparator());
         }
 
         page = replace(page, ParserConstants.TEMPLATE_HEAD, scriptsAndLinks);
@@ -196,13 +189,13 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 
         }
         else if (blueprint.isWrapper() && !template.equals(blueprint)) {
-            // render blueprint with value of this basicTemplate
+            // renderContent blueprint with value of this basicTemplate
             renderInsideWrapper(blueprint.getTemplate(), resource, property);
         }
         else {
             // Add links and scripts
-            this.links.addAll(blueprint.getLinks());
-            this.scripts.addAll(blueprint.getScripts());
+            this.links.putAll(blueprint.getScriptsLinksParser().getLinks());
+            this.scripts.putAll(blueprint.getScriptsLinksParser().getScripts());
 
             if (resource != null) {
                 Resource newResource = resource.getResource(property);
@@ -223,7 +216,11 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
                 this.renderTemplate(template, resource, readOnly);
             }
             else {
-                this.buffer.append(template.getValue());
+                if (blueprint != null && (blueprint.isFixed() || readOnly)) {
+                    this.buffer.append(blueprint.getValue());
+                } else {
+                    this.buffer.append(template.getValue());
+                }
             }
 
         }
@@ -251,14 +248,14 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 
     protected void renderTemplate(BasicTemplate template, Resource resource, boolean readOnly)
     {
-        // Part 1 render dynamic block, we don't care further
+        // Part 1 renderContent dynamic block, we don't care further
         Blueprint blueprint = template.getBlueprint();
         if (renderDynamicBlocks && Blocks.blockHandler().isDynamicBlock(template.getBlueprintName())) {
             this.buffer.append(Blocks.blockHandler().getDynamicBlock(template.getBlueprintName()).render(template));
             return;
         }
 
-        // We have to render this thing. Decide on the string template
+        // We have to renderContent this thing. Decide on the string template
         String templateToRender = template.getValue();
         if (blueprint != null && (blueprint.isFixed() || readOnly)) {
             templateToRender = blueprint.getTemplate();
@@ -267,7 +264,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         // List all properties in this template
         FieldOverview fieldOverview = findNextPropertyInTemplate(templateToRender);
         if (fieldOverview.fields.size() == 0) {
-            // Nothing found so just render element
+            // Nothing found so just renderContent element
             return;
         }
 
@@ -442,7 +439,6 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
             }
             attributes.remove(ParserConstants.CAN_EDIT_PROPERTY);
             attributes.remove(ParserConstants.CAN_LAYOUT);
-
         }
         else if (!readOnly && blueprint != null) {
             // property is can edit

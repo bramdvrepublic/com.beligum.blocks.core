@@ -1,5 +1,6 @@
 package com.beligum.blocks.endpoints;
 
+import com.beligum.base.server.R;
 import com.beligum.base.server.RequestContext;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
@@ -35,6 +36,10 @@ public class ApplicationEndpoint
     public Response getPageWithId(@PathParam("randomPage") String randomURLPath, @QueryParam("version") Long version, @QueryParam("deleted") @DefaultValue("false") boolean fetchDeleted)
                     throws Exception
     {
+        if (!R.configuration().getProduction()) {
+            Blocks.templateCache().reset();
+        }
+
         //            if(fetchDeleted && !SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)){
         //                Logger.debug("Unauthorized user tried to view deleted version of page '" + randomURLPath + "'.");
         //                fetchDeleted = false;
@@ -78,7 +83,7 @@ public class ApplicationEndpoint
             if (fetchDeleted) {
                 // Todo add flash message
             }
-            //if we're logged in, render out the page where we can create a new page
+            //if we're logged in, renderContent out the page where we can create a new page
             if (SecurityUtils.getSubject().isAuthenticated() || SecurityUtils.getSubject().isRemembered()) {
                 return injectParameters(new_page.get().getNewTemplate());
             }
@@ -97,11 +102,11 @@ public class ApplicationEndpoint
 
             PageTemplate pageTemplate = Blocks.templateCache().getPageTemplate(storedTemplate.getPageTemplateName());
             if (pageTemplate == null) {
-                throw new Exception("Couldn't find the page template with name '" + storedTemplate.getPageTemplateName() + "'");
+                throw new Exception("Couldn't find the page template with name '" + storedTemplate.getPageTemplateName() + "' while parsing stored template '"+storedTemplate.getName()+"'");
             }
             BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
 
-            // Todo render entity
+            // Todo renderContent entity
             return Response.ok(renderer.render(pageTemplate, storedTemplate, resource, storedTemplate.getLanguage())).build();
         }
     }

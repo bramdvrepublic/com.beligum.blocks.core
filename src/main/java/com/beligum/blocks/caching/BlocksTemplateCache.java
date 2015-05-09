@@ -4,6 +4,7 @@ import com.beligum.blocks.exceptions.CacheException;
 import com.beligum.blocks.models.Blueprint;
 import com.beligum.blocks.models.PageTemplate;
 
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -25,14 +26,14 @@ public interface BlocksTemplateCache
 
     public List<Blueprint> getBlueprints();
 
-    public List<PageTemplate> getPagetemplates();
+    public List<PageTemplate> getPageTemplates();
 
     public List<Blueprint> getPageBlocks();
 
     public List<Blueprint> getAddableBlocks();
 
-    public LinkedHashSet<String> getBlocksScripts();
+    public LinkedHashMap<String, String> getBlocksScripts();
 
-    public LinkedHashSet<String> getBlocksLinks();
+    public LinkedHashMap<String, String> getBlocksLinks();
 
 }

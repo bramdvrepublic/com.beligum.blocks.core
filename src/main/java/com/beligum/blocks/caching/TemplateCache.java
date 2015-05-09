@@ -2,20 +2,17 @@ package com.beligum.blocks.caching;
 
 import com.beligum.base.resources.ResourceSearchResult;
 import com.beligum.base.server.R;
-import com.beligum.base.templating.ifaces.Template;
-import com.beligum.base.utils.Logger;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.exceptions.CacheException;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.models.Blueprint;
 import com.beligum.blocks.models.PageTemplate;
-import com.beligum.blocks.parsers.FileAnalyzer;
 import com.beligum.blocks.parsers.Traversor;
 import com.beligum.blocks.parsers.visitors.reset.BlocksScriptVisitor;
 import org.apache.commons.io.Charsets;
-import org.apache.commons.io.IOUtils;
-import org.apache.shiro.util.AntPathMatcher;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.parser.Parser;
 
 import java.io.Reader;
 import java.nio.charset.Charset;
@@ -30,25 +27,23 @@ import java.util.*;
 public class TemplateCache implements BlocksTemplateCache
 {
     private boolean runningTroughHtmlTemplates = false;
-    private AntPathMatcher pathMatcher = new AntPathMatcher();
     private HashMap<String, Blueprint> blueprints = new HashMap<String, Blueprint>();
-    private HashMap<String, PageTemplate> pagetemplates = new HashMap<String, PageTemplate>();
-    private Set<String> pageblocks = new HashSet<String>();
-    private Set<String> addableblocks = new HashSet<String>();
-    private LinkedHashSet<String> blocksScripts = new LinkedHashSet<>();
-    private LinkedHashSet<String> blocksLinks = new LinkedHashSet<>();
+    private HashMap<String, PageTemplate> pageTemplates = new HashMap<String, PageTemplate>();
+    private Set<String> pageBlocks = new HashSet<String>();
+    private Set<String> addableBlocks = new HashSet<String>();
+    private LinkedHashMap<String, String> blocksScripts = new LinkedHashMap<>();
+    private LinkedHashMap<String, String> blocksLinks = new LinkedHashMap<>();
 
     public TemplateCache() throws CacheException
     {
         blueprints = new HashMap<String, Blueprint>();
-        pagetemplates = new HashMap<String, PageTemplate>();
-
+        pageTemplates = new HashMap<String, PageTemplate>();
     }
 
     public void reset() throws CacheException
     {
         blueprints = new HashMap<String, Blueprint>();
-        pagetemplates = new HashMap<String, PageTemplate>();
+        pageTemplates = new HashMap<String, PageTemplate>();
 
         this.fillCache();
     }
@@ -62,8 +57,8 @@ public class TemplateCache implements BlocksTemplateCache
 
     public void addPageTemplate(PageTemplate page)
     {
-        if (!this.pagetemplates.containsKey(page.getName())) {
-            this.pagetemplates.put(page.getName(), page);
+        if (!this.pageTemplates.containsKey(page.getName())) {
+            this.pageTemplates.put(page.getName(), page);
         }
     }
 
@@ -79,7 +74,7 @@ public class TemplateCache implements BlocksTemplateCache
 
     public PageTemplate getPageTemplate(String name)
     {
-        return this.pagetemplates.get(name);
+        return this.pageTemplates.get(name);
     }
 
     public List<Blueprint> getBlueprints()
@@ -87,9 +82,9 @@ public class TemplateCache implements BlocksTemplateCache
         return new ArrayList<Blueprint>(this.blueprints.values());
     }
 
-    public List<PageTemplate> getPagetemplates()
+    public List<PageTemplate> getPageTemplates()
     {
-        return new ArrayList<PageTemplate>(this.pagetemplates.values());
+        return new ArrayList<PageTemplate>(this.pageTemplates.values());
     }
 
     public List<Blueprint> getPageBlocks()
@@ -114,12 +109,13 @@ public class TemplateCache implements BlocksTemplateCache
         return list;
     }
 
-    public LinkedHashSet<String> getBlocksScripts()
+    @Override
+    public LinkedHashMap<String, String> getBlocksScripts()
     {
         return this.blocksScripts;
     }
-
-    public LinkedHashSet<String> getBlocksLinks()
+    @Override
+    public LinkedHashMap<String, String> getBlocksLinks()
     {
         return this.blocksLinks;
     }
@@ -137,20 +133,49 @@ public class TemplateCache implements BlocksTemplateCache
             try {
                 List<ResourceSearchResult> htmlFiles = R.resourceLoader().searchResourceGlob("/templates/**.{html,htm}");
                 htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/views/**.{html,htm}"));
+                htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/assets/imports/**.{html,htm}"));
+                htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/imports/**.{html,htm}"));
 
                 for (ResourceSearchResult htmlFile : htmlFiles) {
                     Path relativeAbsolutedPath = Paths.get("/").resolve(htmlFile.getResourceFolder().relativize(htmlFile.getResource()));
 
                     try (Reader reader = Files.newBufferedReader(htmlFile.getResource(), Charset.forName(Charsets.UTF_8.name()))) {
-                        Template template = R.templateEngine().getNewStringTemplate(IOUtils.toString(reader));
-                        //TODO bram: we should incorporate the language here?
-                        String html = template.render();
-                        for (String language : Blocks.config().getLanguages()) {
-                            FileAnalyzer.AnalyseHtmlFile(html, language);
-                        }
+//                        //TODO bram: we should incorporate the language here?
+////                        Template template = R.templateEngine().getNewStringTemplate(IOUtils.toString(reader));
+////                        String html = template.renderContent();
+//
+//                        Document document = this.parseHtml(IOUtils.toString(reader));
+//                        Html html = HtmlCodeFactory.create(document, relativeAbsolutedPath);
+//                        if (html instanceof HtmlImportTemplate) {
+//                            HtmlImportTemplate template = (HtmlImportTemplate)html;
+//
+//                            Logger.info("Found template <"+template.getName()+">: "+htmlFile);
+//
+//                            Iterable<HtmlScriptElement> scripts = template.getScripts();
+//                            for (HtmlElement script : scripts) {
+//                                Logger.info("script: "+script);
+//                            }
+//
+//                            Iterable<HtmlStyleElement> styles = template.getStyles();
+//                            for (HtmlElement style : styles) {
+//                                Logger.info("style: "+style);
+//                            }
+//                        }
+
+                        //Element htmlElement = new Source(html).getFirstElement("html");
+//                        if (htmlElement!=null) {
+//                            Logger.info("We found a page template; "+htmlFile.getResource());
+//                        }
+//                        else {
+//                            Logger.info("We found a snippet; "+htmlFile.getResource());
+//                        }
+
+//                        for (String language : Blocks.config().getLanguages()) {
+//                            FileAnalyzer.AnalyseHtmlFile(html, language);
+//                        }
                     }
-                    catch (ParseException e) {
-                        Logger.error("Parse error while fetching page-templates and blueprints from file '" + htmlFile + "'.", e);
+                    catch (Exception e) {
+                        throw new ParseException("Parse error while fetching page-templates and blueprints from file '" + htmlFile + "'.", e);
                     }
                 }
 
@@ -161,22 +186,20 @@ public class TemplateCache implements BlocksTemplateCache
                     blueprint.parse();
 
                     if (blueprint.isAddableBlock())
-                        this.addableblocks.add(blueprint.getName());
+                        this.addableBlocks.add(blueprint.getName());
                     if (blueprint.isPageBlock())
-                        this.pageblocks.add(blueprint.getName());
+                        this.pageBlocks.add(blueprint.getName());
                 }
 
-                for (PageTemplate pageTemplate : this.getPagetemplates()) {
+                for (PageTemplate pageTemplate : this.getPageTemplates()) {
                     pageTemplate.parse();
-
                 }
 
                 BlocksScriptVisitor visitor = new BlocksScriptVisitor();
                 Document doc = visitor.getSource(Blocks.config().getFrontEndScripts());
                 Traversor.traverseDeep(doc, visitor);
-                this.blocksScripts = visitor.getScripts();
-                this.blocksLinks = visitor.getLinks();
-
+                this.blocksScripts = visitor.getScriptsLinksParser().getScripts();
+                this.blocksLinks = visitor.getScriptsLinksParser().getLinks();
             }
             catch (Exception e) {
                 throw new CacheException("Error while filling cache: " + this, e);
@@ -187,4 +210,37 @@ public class TemplateCache implements BlocksTemplateCache
         }
     }
 
+    //-----PRIVATE METHODS-----
+    /**
+     * Parse html to jsoup-document.
+     * Note: if the html received contains an empty head, only the body-html is returned.
+     *
+     * @param html
+     */
+    private Document parseHtml(String html)
+    {
+        Document retVal = new Document(Blocks.config().getSiteDomain());
+        Document parsed = Jsoup.parse(html, Blocks.config().getSiteDomain(), Parser.htmlParser());
+        /*
+         * If only part of a html-file is being parsed (which starts f.i. with a <div>-tag), Jsoup will add <html>-, <head>- and <body>-tags, which is not what we want
+         * Thus if the head (or body) is empty, but the body (or head) is not, we only want the info in the body (or head).
+         */
+        if (parsed.head().childNodes().isEmpty() && !parsed.body().childNodes().isEmpty()) {
+            for (org.jsoup.nodes.Node child : parsed.body().childNodes()) {
+                retVal.appendChild(child.clone());
+            }
+        }
+        else if (parsed.body().childNodes().isEmpty() && !parsed.head().childNodes().isEmpty()) {
+            for (org.jsoup.nodes.Node child : parsed.head().childNodes()) {
+                retVal.appendChild(child.clone());
+            }
+        }
+        else if (parsed.body().childNodes().isEmpty() && parsed.body().childNodes().isEmpty()) {
+            //add nothing to the retVal so an empty document will be returned
+        }
+        else {
+            retVal = parsed;
+        }
+        return retVal;
+    }
 }

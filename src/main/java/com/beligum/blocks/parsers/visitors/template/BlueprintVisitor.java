@@ -1,22 +1,21 @@
 package com.beligum.blocks.parsers.visitors.template;
 
 import com.beligum.blocks.exceptions.ParseException;
+import com.beligum.blocks.parsers.ScriptsLinksParser;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
-import org.jsoup.nodes.TextNode;
-
-import java.util.LinkedHashSet;
 
 /**
  * Created by wouter on 16/03/15.
  */
 public class BlueprintVisitor extends PropertyVisitor
 {
-    private LinkedHashSet<String> links = new LinkedHashSet<String>();
-    /**
-     * the (javascript-)scripts that need to be injected
-     */
-    private LinkedHashSet<String> scripts = new LinkedHashSet<String>();
+    private ScriptsLinksParser scriptsLinksParser;
+
+    public BlueprintVisitor()
+    {
+        this.scriptsLinksParser = new ScriptsLinksParser();
+    }
 
     @Override
     public Node head(Node node, int depth) throws ParseException
@@ -30,23 +29,7 @@ public class BlueprintVisitor extends PropertyVisitor
                 // if just a property add with typeof
 
                 // add links and scripts to the stack and remove them from the html (to be re-injected later)
-                if (node.nodeName().equals("link")) {
-                    //if an include has been found, import the wanted html-file
-
-                    this.links.add(node.outerHtml());
-                    Node emtpyNode = new TextNode("", null);
-                    node.replaceWith(emtpyNode);
-                    node = emtpyNode;
-
-                }
-                else if (node.nodeName().equals("script")) {
-                    //if a script has been found, add it to the scripts-stack
-
-                    this.scripts.add(node.outerHtml());
-                    Node emtpyNode = new TextNode("", null);
-                    node.replaceWith(emtpyNode);
-                    node = emtpyNode;
-                }
+                node = this.scriptsLinksParser.parse(node);
             }
             return node;
         }
@@ -55,13 +38,8 @@ public class BlueprintVisitor extends PropertyVisitor
         }
     }
 
-    public LinkedHashSet<String> getLinks()
+    public ScriptsLinksParser getScriptsLinksParser()
     {
-        return this.links;
-    }
-
-    public LinkedHashSet<String> getScripts()
-    {
-        return this.scripts;
+        return this.scriptsLinksParser;
     }
 }
