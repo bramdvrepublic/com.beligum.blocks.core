@@ -376,7 +376,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
         }
         HashMap<String, String> extraAttributes = new HashMap<>();
 
-        //RDFNode entityProperty = getRDFValue(node, new PropertyImpl(Blocks.rdfFactory().ensureAbsoluteRdfValue(propertyTemplate.getName())), this.locale.getLanguage());
+        //RDFNode entityProperty = getRDFValue(node, new PropertyImpl(Blocks.rdfFactory().ensureAbsoluteRdfValue(propertyTemplate.getTemplateTagName())), this.locale.getLanguage());
 
         if (propAttribute != null) {
             String value = null;

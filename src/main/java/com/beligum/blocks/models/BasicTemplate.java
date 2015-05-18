@@ -144,7 +144,7 @@ public class BasicTemplate implements NamedProperty
     //        // find each property
     //        if (this.getProperties().size() > 0) {
     //            for (BasicTemplate template : this.getProperties()) {
-    //                String key = template.getName();
+    //                String key = template.getTemplateTagName();
     //                EntityField property = propertyFinder.getProperty(key, entity.getProperties());
     //                if (property != null && property instanceof Entity) {
     //                    template.fillTemplateValuesWithEntityValues((Entity) property, new PropertyFinder<EntityField>());
@@ -158,12 +158,12 @@ public class BasicTemplate implements NamedProperty
     //            }
     //        } else if (this.getBlueprintName() != null) {
     //            // Fill this template itself
-    //           EntityField field = propertyFinder.getProperty(this.getName(), entity.getProperties());
+    //           EntityField field = propertyFinder.getProperty(this.getTemplateTagName(), entity.getProperties());
     //           if (field != null && field instanceof Entity) {
     //               this.fillTemplateValuesWithEntityValues((Entity)field, propertyFinder);
     //           } else if (field != null) {
     //               this.setValue(field.getValue());
-    //               propertyFinder.propertyFound(this.getName());
+    //               propertyFinder.propertyFound(this.getTemplateTagName());
     //           } else {
     //               Logger.debug("Could not find a value in the entity to fill this template");
     //           }
@@ -249,7 +249,7 @@ public class BasicTemplate implements NamedProperty
     //        } else {
     //            PropertyFinder<BasicTemplate> propertyFinder = new PropertyFinder();
     //            for (BasicTemplate property : instanceProperties) {
-    //                String key = property.getName();
+    //                String key = property.getTemplateTagName();
     //                // get numbered property
     //                BasicTemplate instanceProperty = propertyFinder.getProperty(key, instanceProperties);
     //                BasicTemplate blueprintProperty = propertyFinder.getProperty(key, blueprintProperties);

@@ -239,7 +239,7 @@ public abstract class Entity extends EntityField implements BlocksStorable
     //            PropertyFinder<EntityField> propertyFinder = new PropertyFinder<>();
     //            for (int i=0; i < entity.getProperties().size(); i++) {
     //                EntityField property = entity.getProperties().get(i);
-    //                String key = property.getName();
+    //                String key = property.getTemplateTagName();
     //                EntityField otherProperty = propertyFinder.getProperty(key, this.getProperties());
     //                if (overwrite || otherProperty != null) {
     //                    this.getProperties().add(i, otherProperty);

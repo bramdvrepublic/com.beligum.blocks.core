@@ -149,7 +149,7 @@ public class TemplateCache implements BlocksTemplateCache
 //                        if (html instanceof HtmlImportTemplate) {
 //                            HtmlImportTemplate template = (HtmlImportTemplate)html;
 //
-//                            Logger.info("Found template <"+template.getName()+">: "+htmlFile);
+//                            Logger.info("Found template <"+template.getTemplateTagName()+">: "+htmlFile);
 //
 //                            Iterable<HtmlScriptElement> scripts = template.getScripts();
 //                            for (HtmlElement script : scripts) {
