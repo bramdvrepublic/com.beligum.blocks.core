@@ -94,7 +94,12 @@ public class HtmlParser extends AbstractAssetParser
             TagTemplateCache tagTemplateCache = this.getCachedTemplates();
             boolean isTagTemplate = false;
             if (tagTemplateCache.containsKey(src.getResolvedPath())) {
-                TagTemplate tagTemplate = tagTemplateCache.get(src.getResolvedPath());
+                //fetch the old value for the paths
+                TagTemplate oldTemplate = tagTemplateCache.get(src.getResolvedPath());
+
+                //since this method only gets called when the source file was changed, make sure we update the value in the template tag cache
+                TagTemplate tagTemplate = new TagTemplate(source, oldTemplate.getAbsolutePath(), oldTemplate.getRelativePath());
+                tagTemplateCache.put(src.getResolvedPath(), tagTemplate);
 
                 StringBuilder builder = new StringBuilder();
 
