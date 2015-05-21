@@ -7,7 +7,7 @@ import org.apache.velocity.runtime.parser.node.Node;
 /**
  * Created by bram on 4/25/15.
  */
-public abstract class AbstractTagTemplateDirective extends Directive
+public abstract class AbstractTagTemplateResourceDirective extends Directive
 {
     //-----CONSTANTS-----
 

@@ -7,8 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.nio.file.Path;
 import java.text.ParseException;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -32,6 +31,9 @@ public class TagTemplate
     private Path relativePath;
     private String name;
     private String velocityName;
+    private Map<Locale, String> titles;
+    private Map<Locale, String> descriptions;
+    private Class<?> controllerClass;
     private List<Element> inlineScriptElements;
     private List<Element> externalScriptElements;
     private List<Element> inlineStyleElements;
@@ -84,6 +86,13 @@ public class TagTemplate
         else {
             this.name = null;
             this.velocityName = null;
+        }
+
+        this.fillMetaValues(this.source, this.titles = new HashMap<>(), "title");
+        this.fillMetaValues(this.source, this.descriptions = new HashMap<>(), "description");
+        String controllerClassStr = this.getMetaValue(this.source, "controller");
+        if (!StringUtils.isEmpty(controllerClassStr)) {
+            this.controllerClass = Class.forName(controllerClassStr);
         }
 
         this.inlineStyleElements = getInlineStyles(this.source);
@@ -183,8 +192,53 @@ public class TagTemplate
     {
         return externalStyleElements;
     }
-
+    public Map<Locale, String> getTitles()
+    {
+        return titles;
+    }
+    public Map<Locale, String> getDescriptions()
+    {
+        return descriptions;
+    }
+    public Class<?> getControllerClass()
+    {
+        return controllerClass;
+    }
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+    private void fillMetaValues(Source source, Map<Locale, String> target, String property)
+    {
+        List<Element> metas = source.getAllElements("meta");
+        Iterator<Element> iter = metas.iterator();
+        while (iter.hasNext()) {
+            Element element = iter.next();
+            String propertyVal = element.getAttributeValue("property");
+            if (propertyVal!=null && propertyVal.equalsIgnoreCase(property)) {
+                Locale locale = Locale.ROOT;
+                String localeStr = element.getAttributeValue("lang");
+                if (localeStr!=null) {
+                    locale = Locale.forLanguageTag(localeStr);
+                }
+                String value = element.getAttributeValue("content");
+                target.put(locale, value);
+            }
+        }
+    }
+    private String getMetaValue(Source source, String property)
+    {
+        String retVal = null;
+
+        List<Element> metas = source.getAllElements("meta");
+        Iterator<Element> iter = metas.iterator();
+        while (retVal==null && iter.hasNext()) {
+            Element element = iter.next();
+            String propertyVal = element.getAttributeValue("property");
+            if (propertyVal!=null && propertyVal.equalsIgnoreCase(property)) {
+                retVal = element.getAttributeValue("content");
+            }
+        }
+
+        return retVal;
+    }
 }

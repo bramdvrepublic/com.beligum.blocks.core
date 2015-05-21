@@ -44,7 +44,6 @@ public class HtmlParser extends AbstractAssetParser
     //-----CONSTRUCTORS-----
     public HtmlParser()
     {
-
     }
 
     //-----PUBLIC METHODS-----
@@ -68,6 +67,21 @@ public class HtmlParser extends AbstractAssetParser
 
         return retVal.toString();
     }
+    public static TagTemplateCache getCachedTemplates()
+    {
+        TagTemplateCache retVal = (TagTemplateCache) R.cacheManager().getApplicationCache().get(CacheKeys.TAG_TEMPLATES);
+        if (retVal == null) {
+            R.cacheManager().getApplicationCache().put(CacheKeys.TAG_TEMPLATES, retVal = new TagTemplateCache());
+            try {
+                searchAllTemplates(retVal);
+            }
+            catch (Exception e) {
+                Logger.error("Caught exception while searching for all the webcomponent templates in the current classpath; this is bad and needs to fixed", e);
+            }
+        }
+
+        return retVal;
+    }
     @Override
     public ParseResult parse(ResourceDescriptor src, Map<String, String> args) throws IOException
     {
@@ -83,6 +97,9 @@ public class HtmlParser extends AbstractAssetParser
                 TagTemplate tagTemplate = tagTemplateCache.get(src.getResolvedPath());
 
                 StringBuilder builder = new StringBuilder();
+
+                //make a "proxy" from the (lazy loaded) controlle map to the $controller variable
+                builder.append("#set($controller=$").append(TagTemplateContextMap.TAG_TEMPLATE_CONTROLLERS_VARIABLE).append("['").append(tagTemplate.getTemplateName()).append("'])").append("\n");
 
                 //this blocks the resources include from being evaluated repeatedly in loops; we only need to evaluate it once per call
                 String resourceTestVar = tagTemplate.getVelocityTemplateName()+"Res";
@@ -104,10 +121,12 @@ public class HtmlParser extends AbstractAssetParser
 
                 //block this piece from evaluating again in loops
                 builder.append(" #set($").append(resourceTestVar).append("=true)").append("\n");
-                builder.append("#end");
+                builder.append("#end").append("\n");
 
                 //this is always there and is exactly one; see the TagTemplate constructor
                 builder.append(source.getAllElements("template").get(0).getContent());
+
+                builder.append("#set($controller=false)").append("\n");
 
                 source = new Source(builder.toString());
                 isTagTemplate = true;
@@ -218,22 +237,7 @@ public class HtmlParser extends AbstractAssetParser
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private TagTemplateCache getCachedTemplates()
-    {
-        TagTemplateCache retVal = (TagTemplateCache) R.cacheManager().getApplicationCache().get(CacheKeys.TAG_TEMPLATES);
-        if (retVal == null) {
-            R.cacheManager().getApplicationCache().put(CacheKeys.TAG_TEMPLATES, retVal = new TagTemplateCache());
-            try {
-                searchAllTemplates(retVal);
-            }
-            catch (Exception e) {
-                Logger.error("Caught exception while searching for all the webcomponent templates in the current classpath; this is bad and needs to fixed", e);
-            }
-        }
-
-        return retVal;
-    }
-    private void searchAllTemplates(TagTemplateCache templateCache) throws Exception
+    private static void searchAllTemplates(TagTemplateCache templateCache) throws Exception
     {
         //start with a clean slate
         templateCache.clear();

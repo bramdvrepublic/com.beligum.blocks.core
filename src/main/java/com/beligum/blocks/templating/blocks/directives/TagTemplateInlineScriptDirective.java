@@ -15,7 +15,7 @@ import java.io.Writer;
  * Created by bram on 4/25/15.
  */
 @VelocityDirective(TagTemplateInlineScriptDirective.NAME)
-public class TagTemplateInlineScriptDirective extends AbstractTagTemplateDirective
+public class TagTemplateInlineScriptDirective extends AbstractTagTemplateResourceDirective
 {
     //-----CONSTANTS-----
     //blocksTemplateInlineScript

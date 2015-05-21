@@ -36,7 +36,7 @@ public class OverloadedDefineDirective extends Define
     public boolean render(InternalContextAdapter context, Writer writer, Node node)
     {
         // contrary to the superclass implementation, this renders (and caches) the result immediately,
-        // because we need to analyze the children of thie #define right here, right now;
+        // because we need to analyze the children of the #define right here, right now;
         // On top of putting the content block of the #define directive in the context,
         // it renders all content now to make sure the styles and scripts down below are in the context,
         // so they can be found by TagTemplateResourcesDirective.render(), even if they occur after that tag.
