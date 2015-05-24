@@ -1,20 +1,20 @@
 package com.beligum.blocks.models.jsonld;
 
-import com.beligum.base.utils.Logger;
-import com.fasterxml.jackson.databind.JsonNode;
-
-import java.util.ArrayList;
-import java.util.Map;
+import com.beligum.blocks.models.jsonld.interfaces.Node;
+import com.beligum.blocks.models.jsonld.jsondb.BooleanNode;
+import com.beligum.blocks.models.jsonld.jsondb.DoubleNode;
+import com.beligum.blocks.models.jsonld.jsondb.LongNode;
+import com.beligum.blocks.models.jsonld.jsondb.StringNode;
 
 /**
  * Created by wouter on 23/04/15.
  */
-public class NodeFactory
+public class Nodefactory
 {
 
     public static Node createAndGuess(String value) {
 
-        return NodeFactory.createAndGuess(value, null);
+        return Nodefactory.createAndGuess(value, null);
     }
 
     public static Node createAndGuess(String value, String language) {

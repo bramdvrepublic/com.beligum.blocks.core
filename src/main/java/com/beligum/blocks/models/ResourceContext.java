@@ -1,24 +1,20 @@
 package com.beligum.blocks.models;
 
 import com.beligum.base.models.BasicModelImpl;
-import com.beligum.blocks.models.jsonld.JsonLDContext;
-import com.beligum.blocks.models.jsonld.Resource;
-import com.beligum.blocks.models.jsonld.ResourceImpl;
+import com.beligum.blocks.models.jsonld.interfaces.Resource;
 import com.beligum.blocks.models.jsonld.hibernate.ResourceUserType;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
 import javax.persistence.Table;
-import java.util.UUID;
+import java.util.Locale;
 
 /*
  * Created by wouter on 21/04/15.
  */
 @TypeDef(name = "jsonb", typeClass = ResourceUserType.class, parameters = {
                 @org.hibernate.annotations.Parameter(name = ResourceUserType.CLASS,
-                                value = "com.beligum.blocks.models.jsonld.Resource")})
+                                value = "com.beligum.blocks.models.jsonld.interfaces.Resource")})
 @javax.persistence.Entity
 @Table(name="resource")
 public class ResourceContext extends BasicModelImpl
@@ -27,22 +23,26 @@ public class ResourceContext extends BasicModelImpl
     @Type(type = "jsonb")
     private Resource data;
     private String blockId;
-    private String language;
+    private Locale language;
 
 
     public ResourceContext()
     {
     }
 
-    public ResourceContext(Resource resource, String language) {
+    public ResourceContext(Resource resource, Locale language) {
         this();
         this.data = resource;
-        this.setBlockId(resource.getId());
+        this.setBlockId(resource.getBlockId());
         this.language = language;
     }
 
     public Resource getResource() {
         return this.data;
+    }
+
+    public void setResource(Resource resource) {
+        this.data = resource;
     }
 
 
@@ -56,12 +56,12 @@ public class ResourceContext extends BasicModelImpl
     }
 
 
-    public String getLanguage()
+    public Locale getLanguage()
     {
         return language;
     }
 
-    public void setLanguage(String language)
+    public void setLanguage(Locale language)
     {
         this.language = language;
     }

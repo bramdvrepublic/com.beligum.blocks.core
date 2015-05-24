@@ -1,10 +1,13 @@
-package com.beligum.blocks.models.jsonld;
+package com.beligum.blocks.models.jsonld.jsondb;
+
+import com.beligum.blocks.models.jsonld.interfaces.Node;
+import com.beligum.blocks.models.jsonld.interfaces.Resource;
 
 import java.util.HashMap;
 
 /**
- * Created by wouter on 24/04/15.
- */
+* Created by wouter on 24/04/15.
+*/
 public class ResourceIterator extends ResourceImpl
 {
     HashMap<String, Integer> counter = new HashMap<>();
@@ -25,13 +28,13 @@ public class ResourceIterator extends ResourceImpl
     public Node get(String key) {
         Node retVal = super.get(key);
         if (retVal != null) {
-            if (retVal.isList()) {
+            if (retVal.isIterable()) {
                 int index = getPropertyIndex(key);
-                if (index < retVal.getList().size()) {
-                    retVal = retVal.getList().get(index);
-                }
+//                if (index < retVal.getIterable().size()) {
+////                    retVal = retVal.getIterable().get(index);
+//                }
             } else if (getPropertyIndex(key) > 0){
-                retVal = null;
+                retVal = new BlankNode();
             }
         }
         return retVal;
@@ -55,8 +58,8 @@ public class ResourceIterator extends ResourceImpl
     public int getPropertyValueCount(String key) {
         int retVal = 0;
         Node value = super.get(key);
-        if (value != null && value.isList()) {
-            retVal = value.getList().size();
+        if (value != null && value.isIterable()) {
+//            retVal = value.getIterable().size();
         } else if (value != null) {
             retVal = 1;
         }

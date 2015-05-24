@@ -1,8 +1,7 @@
-package com.beligum.blocks.models.jsonld;
+package com.beligum.blocks.models.jsonld.interfaces;
 
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.Iterator;
+import java.util.Locale;
 
 /**
  * Created by wouter on 23/04/15.
@@ -19,15 +18,15 @@ public interface Node
 
     public boolean isInt();
 
-    public boolean isList();
+    public boolean isIterable();
 
     public boolean isNull();
 
-    public LinkedHashMap<String, Node> getMap();
+    public Iterable<Node> getIterable();
 
-    public ArrayList<Node> getList();
+    public String asString();
 
-    public String getString();
+    public Locale getLanguage();
 
     public Double getDouble();
 
@@ -36,6 +35,8 @@ public interface Node
     public Boolean getBoolean();
 
     public Long getLong();
+
+    public Object getValue();
 
     public boolean isResource();
 

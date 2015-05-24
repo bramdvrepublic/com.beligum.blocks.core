@@ -1,4 +1,6 @@
-package com.beligum.blocks.models.jsonld;
+package com.beligum.blocks.models.jsonld.jsondb;
+
+import com.beligum.blocks.models.jsonld.interfaces.Node;
 
 import java.io.StringWriter;
 
@@ -34,7 +36,7 @@ public class LongNode extends BlankNode
     }
 
     @Override
-    public String getString()
+    public String asString()
     {
         return internalObject.toString();
     }

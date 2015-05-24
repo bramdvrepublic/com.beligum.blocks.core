@@ -3,9 +3,9 @@ package com.beligum.blocks.renderer;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.models.*;
-import com.beligum.blocks.models.jsonld.Resource;
-import com.beligum.blocks.models.jsonld.ResourceImpl;
-import com.beligum.blocks.models.jsonld.ResourceIterator;
+import com.beligum.blocks.models.jsonld.interfaces.Node;
+import com.beligum.blocks.models.jsonld.interfaces.Resource;
+import com.beligum.blocks.models.jsonld.jsondb.ResourceIterator;
 import com.beligum.blocks.repositories.UrlRepository;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.utils.PropertyFinder;
@@ -15,8 +15,8 @@ import org.apache.shiro.SecurityUtils;
 import java.util.*;
 
 /**
- * Created by wouter on 8/04/15.
- */
+* Created by wouter on 8/04/15.
+*/
 public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 {
 
@@ -30,7 +30,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 
     // Resource -> property -> language -> value
     //    private HashMap<String, HashMap<String, HashMap<String, ArrayList<RDFNode>>>> rdfCache = new HashMap<>();
-//    private HashMap<String, HashMap<String, Integer>> rdfPropertyUsed = new HashMap<>();
+    //    private HashMap<String, HashMap<String, Integer>> rdfPropertyUsed = new HashMap<>();
 
     private class Field
     {
@@ -99,8 +99,8 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 
 
 
-    public String render(StoredTemplate storedTemplate, Resource resource, String language) {
-        this.locale = new Locale(language);
+    public String render(StoredTemplate storedTemplate, Resource resource, Locale language) {
+        this.locale = language;
         this.buffer = new StringBuilder();
         if (resource != null) {
             usesEntity = true;
@@ -116,13 +116,16 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
     }
 
 
-    public String render(PageTemplate pageTemplate, StoredTemplate storedTemplate, Resource resource, String language) {
-        this.locale = new Locale(language);
+    public String render(PageTemplate pageTemplate, StoredTemplate storedTemplate, Resource resource, Locale language) {
+        this.locale = language;
         this.buffer = new StringBuilder();
 
         if (resource != null)
             usesEntity = true;
         // Render everything in the page except main content
+
+        if (pageTemplate == null) pageTemplate = Blocks.templateCache().getPageTemplate("main");
+
         this.scripts.addAll(pageTemplate.getScripts());
         this.links.addAll(pageTemplate.getLinks());
 
@@ -179,23 +182,38 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
 
     private void renderInsideElement(BasicTemplate template, ResourceIterator resource,  String property, boolean readOnly)
     {
-
         String stringTemplate = template.getValue();
         Blueprint blueprint = template.getBlueprint();
 
         if (blueprint == null) {
             // This is a basic block/property
             String value = null;
-            if (resource != null) {
-                value = resource.getString(property);
+            if (resource != null && !resource.get(property).isNull()) {
+                Node node = resource.get(property);
+                if (node.isString()) {
+                    value = node.asString();
+                }
             }
+
             if (value != null) {
                 this.buffer.append(value);
-            } else if (template.getFields().size() > 0) {
-                this.renderTemplate(template, resource, true);
-            }
-            else if (!useOnlyEntity) {
-                this.buffer.append(template.getValue());
+                resource.incrementPropertyIndex(property);
+            } else {
+                boolean hasProperty = false;
+                for (String field: template.getFields()) {
+                    if (!field.startsWith(ParserConstants.BLOCKS_SCHEMA)) {
+                        hasProperty = true;
+                        break;
+                    }
+                }
+
+                if (hasProperty) {
+                    // template is not a blueprint but has extra fields
+                    this.renderTemplate(template, resource, true);
+                } else if (!useOnlyEntity) {
+                    this.buffer.append(template.getValue());
+                }
+
             }
 
         }
@@ -209,9 +227,10 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
             this.scripts.addAll(blueprint.getScripts());
 
             if (resource != null) {
-                Resource newResource = resource.getResource(property);
-                if (newResource != null) {
-                    resource = ResourceIterator.create(newResource);
+                Node node = resource.get(property);
+                if (node.isResource()) {
+                    resource.incrementPropertyIndex(property);
+                    resource = ResourceIterator.create((Resource)node);
                 }
             }
 
@@ -229,10 +248,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
             else {
                 this.buffer.append(template.getValue());
             }
-
         }
-        if (resource != null)
-            resource.incrementPropertyIndex(property);
 
     }
 
@@ -387,10 +403,15 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
             String value = null;
 
             if (resource != null) {
-                if (property != null) {
-                    value = resource.getString(property);
-                } else {
-//                    value = resource.getProperty(RDFS.Resource.toString());
+                if (property != null && property.toLowerCase().equals("resource")) {
+                    value = resource.getBlockId();
+                    value = UrlRepository.instance().getUrlForResource(value);
+                }
+                else if (property != null) {
+                    Node node = resource.get(property);
+                    if (!node.isNull()) {
+                        value = node.asString();
+                    }
                 }
             }
 
@@ -413,7 +434,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
                 if (id.startsWith("#") || id.startsWith("/") || id.startsWith(":"))
                     id = id.substring(1);
                 // TODO we only accept absolute urls
-//                value = UrlRepository.getUrlForID(id);
+                //                value = UrlRepository.getUrlForResource(id);
 
             }
 
@@ -484,7 +505,7 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
                 this.buffer.append(addAtribute(key, StringUtils.join(classes.toArray(), " ")));
             }
             else if (key.equals(ParserConstants.TYPE_OF)) {
-                this.buffer.append(addAtribute(ParserConstants.TYPE_OF, blueprint.getRdfType()));
+                this.buffer.append(addAtribute(ParserConstants.TYPE_OF, blueprint.getRdfTypes()));
             }
             else if (key.equals(ParserConstants.LANGUAGE)) {
                 this.buffer.append(addAtribute(ParserConstants.LANGUAGE, this.locale.getLanguage()));
@@ -521,11 +542,11 @@ public class VelocityBlocksRenderer implements BlocksTemplateRenderer
             retVal = blueprintProperty;
 
         if (retVal instanceof Singleton && this.fetchSingletons){
-            String singletonId = ((Singleton) retVal).getId();
-//            StoredTemplate singleton = Blocks.database().fetch(singletonId, this.locale.getLanguage(), Blocks.factory().getSingletonClass());
-//            if (singleton != null) {
-//                retVal = singleton;
-//            }
+            String singletonId = ((Singleton) retVal).getBlockId();
+            //            StoredTemplate singleton = Blocks.database().fetch(singletonId, this.locale.getLanguage(), Blocks.factory().getSingletonClass());
+            //            if (singleton != null) {
+            //                retVal = singleton;
+            //            }
         }
 
         boolean propertyReadOnly = readOnly;

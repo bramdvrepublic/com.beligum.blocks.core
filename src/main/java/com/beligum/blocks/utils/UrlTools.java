@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Locale;
 
 /**
  * Created by wouter on 27/04/15.
@@ -53,14 +54,14 @@ public class UrlTools
     }
 
 
-    public static String getLanguage(URI url)
+    public static Locale getLanguage(URI url)
     {
         Path path = Paths.get(url.getPath());
-        String retVal = null;
+        Locale retVal = Locale.ROOT;
         if (path.getNameCount() > 0) {
             String pathName = path.getName(0).toString();
-            if (Blocks.config().getLanguages().contains(pathName)) {
-                retVal = pathName;
+            if (Blocks.config().getLocaleForLanguage(pathName) != null) {
+                retVal = Blocks.config().getLocaleForLanguage(pathName);
             }
         }
         return retVal;
@@ -68,7 +69,7 @@ public class UrlTools
 
     public static URI getUrlWithoutLanguage(URI url)
     {
-        String language = UrlTools.getLanguage(url);
+        Locale language = UrlTools.getLanguage(url);
         Path path = Paths.get(url.getPath());
         URI retVal = url;
         if (language != null) {

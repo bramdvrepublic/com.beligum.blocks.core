@@ -13,11 +13,12 @@ import org.jsoup.nodes.Node;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
- * Created by wouter on 20/03/15.
- */
+* Created by wouter on 20/03/15.
+*/
 public class HtmlFromClientVisitor extends BasicVisitor
 {
 
@@ -34,7 +35,7 @@ public class HtmlFromClientVisitor extends BasicVisitor
     public Node head(Node node, int depth) throws ParseException
     {
 
-        String language = UrlTools.getLanguage(htmlUrl);
+        Locale language = UrlTools.getLanguage(htmlUrl);
         Node retVal = node;
         if (node instanceof Element) {
             if (ElementParser.getReferenceUrl((Element) node) != null || (ElementParser.isUseBlueprint((Element) node) && ElementParser.isSingleton((Element) node))) {

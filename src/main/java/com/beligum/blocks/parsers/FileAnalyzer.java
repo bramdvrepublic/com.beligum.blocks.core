@@ -8,12 +8,14 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
 
+import java.util.Locale;
+
 /**
  * Created by wouter on 16/03/15.
  */
 public class FileAnalyzer
 {
-    public static void AnalyseHtmlFile(String fileHtml, String language) throws ParseException
+    public static void AnalyseHtmlFile(String fileHtml, Locale language) throws ParseException
     {
         // find all html Files
         // search for pagetemplate or blueprint

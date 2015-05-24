@@ -1,9 +1,8 @@
 package com.beligum.blocks.models.jsonld.hibernate;
 
-import com.beligum.blocks.models.jsonld.Resource;
-import com.beligum.blocks.models.jsonld.ResourceImpl;
-import com.beligum.blocks.models.jsonld.jackson.ResourceDeserializer;
-import com.beligum.blocks.models.jsonld.jackson.ResourceSerializer;
+import com.beligum.blocks.models.jsonld.interfaces.Resource;
+import com.beligum.blocks.models.jsonld.jackson.ResourceJsonLDDeserializer;
+import com.beligum.blocks.models.jsonld.jackson.ResourceJsonLDSerializer;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -30,8 +29,8 @@ public class ResourceUserType implements UserType, ParameterizedType
     private ObjectMapper getMapper() {
         if (ResourceUserType.MAPPER == null) {
             final SimpleModule module = new SimpleModule("customerSerializationModule", new Version(1, 0, 0, "static version"));
-            module.addSerializer(Resource.class, new ResourceSerializer());
-            module.addDeserializer(Resource.class, new ResourceDeserializer());
+            module.addSerializer(Resource.class, new ResourceJsonLDSerializer());
+            module.addDeserializer(Resource.class, new ResourceJsonLDDeserializer());
 
             final ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.registerModule(module);

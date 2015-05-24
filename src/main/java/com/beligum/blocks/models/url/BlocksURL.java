@@ -7,6 +7,7 @@ import com.beligum.blocks.base.Blocks;
 import javax.persistence.*;
 import javax.ws.rs.core.Response;
 import java.net.URI;
+import java.util.Locale;
 
 /**
  * Created by wouter on 30/04/15.
@@ -17,18 +18,18 @@ import java.net.URI;
 @DiscriminatorValue("ABSTRACT")
 @Table(name="routing",
                 uniqueConstraints=
-                @UniqueConstraint(columnNames={"domain", "path"}))
+                @UniqueConstraint(columnNames={"domain", "path", "language"}))
 public abstract class BlocksURL extends BasicModelImpl
 {
-    String domain;
-    String path;
-    private String language;
+    private String domain;
+    private String path;
+    private Locale language;
 
     protected BlocksURL() {
 
     }
 
-    public BlocksURL(URI url, String language) {
+    public BlocksURL(URI url, Locale language) {
         this.domain = url.getAuthority();
         this.path = url.getPath();
         this.language = language;
@@ -54,15 +55,15 @@ public abstract class BlocksURL extends BasicModelImpl
         this.path = path;
     }
 
-    public String getLanguage() {
+    public Locale getLanguage() {
         return this.language;
     }
 
-    public void setLanguage(String lang) {
+    public void setLanguage(Locale lang) {
         this.language = lang;
     }
 
-    public abstract Response response(String language);
+    public abstract Response response(Locale language);
 
     public abstract int statusCode();
 

@@ -1,8 +1,6 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.server.RequestContext;
-import com.beligum.base.utils.Logger;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.models.*;
@@ -11,12 +9,11 @@ import com.beligum.blocks.models.url.OkURL;
 import com.beligum.blocks.parsers.Traversor;
 import com.beligum.blocks.parsers.visitors.template.HtmlFromClientVisitor;
 import com.beligum.blocks.renderer.BlocksTemplateRenderer;
+import com.beligum.blocks.repositories.EntityRepository;
 import com.beligum.blocks.repositories.UrlRepository;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.utils.UrlTools;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.shiro.authz.annotation.RequiresRoles;
-import org.bouncycastle.ocsp.Req;
 import org.hibernate.validator.constraints.NotBlank;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -27,11 +24,11 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Created by bas on 07.10.14.
@@ -59,7 +56,7 @@ public class EntitiesEndpoint
         URI pageURL = new URI(pageUrl);
 
 
-        String language = UrlTools.getLanguage(pageURL);
+        Locale language = UrlTools.getLanguage(pageURL);
         if (language == null) {
             throw new Exception("Could not create entity because no language was specified in the url.");
         }
@@ -71,7 +68,7 @@ public class EntitiesEndpoint
 
         // Create a rout to this new page for this url
         URI urlWithoutLanguage = UriBuilder.fromUri(pageURL).replacePath(UrlTools.getPathWithoutLanguage(Paths.get(pageURL.getPath())).toString()).build();
-        BlocksURL routing = new OkURL(urlWithoutLanguage, UriBuilder.fromUri(newPage.getId()).build(), null, language);
+        BlocksURL routing = new OkURL(urlWithoutLanguage, UriBuilder.fromUri(newPage.getBlockId()).build(), null, language);
         RequestContext.getEntityManager().persist(routing);
 
         /*
@@ -105,106 +102,93 @@ public class EntitiesEndpoint
     /*
      * update a page-instance with id 'entityId' to be the html specified
      */
-    public Response updateEntity(@PathParam("entityUrlPath") String pageUrlPath, @QueryParam("deleted") @DefaultValue("false") boolean fetchDeleted, String pageHtml)
+    public Response updateEntity(@PathParam("entityUrlPath") String pageUrlPath, @QueryParam("deleted") @DefaultValue("false") boolean fetchDeleted, String pageHtml) throws Exception
     {
-        try {
 
-            // analyze html,
-            // only properties should be a) singletons, b) 1 property that is not a singelton (with reference-to (or resource)) this will replace entity with id of url
-            // only other properties allowed in root are properties with typeof
-            URI pageUrl = UrlTools.createURI(RequestContext.getJaxRsRequest().getUriInfo().getRequestUri().getHost(), pageUrlPath);
-            BlocksURL id = UrlRepository.instance().getId(pageUrl.toString());
+        // analyze html,
+        // only properties should be a) singletons, b) 1 property that is not a singelton (with reference-to (or resource)) this will replace entity with id of url
+        // only other properties allowed in root are properties with typeof
+        URI pageUrl = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
+        Locale language = UrlTools.getLanguage(pageUrl);
 
-            if (id == null) {
-                if (fetchDeleted) {
-//                    id = Blocks.urlDispatcher().findPreviousId(pageUrl);
-                }
-                if (id == null) {
-                    throw new Exception("Cannot update entity which doesn't exist: '" + pageUrl + ".");
-                }
-            }
+        // Find the Routing url and the page context
+        BlocksURL routing = UrlRepository.instance().getUrlForURI(pageUrl.getAuthority(), pageUrl.getPath(), language);
+        ResourceContext resourceContext = EntityRepository.instance().findContextByURI((((OkURL) routing).getViewUri()), language);
 
-            String language = UrlTools.getLanguage(pageUrl);
-            Document html = Jsoup.parse(pageHtml, Blocks.config().getSiteDomain().toString(), Parser.htmlParser());
-            HtmlFromClientVisitor htmlFromClientVisitor = new HtmlFromClientVisitor(pageUrl);
-            Traversor.traverseProperties(html, htmlFromClientVisitor);
-
-            StoredTemplate pageContent = htmlFromClientVisitor.getContent();
-
-            if (pageContent != null) {
-                // recreate this page. This way we prevent unwanted changes
-                pageContent = Blocks.factory().createStoredTemplate(pageContent.getRenderedTemplateAsElement(), language);
-
-//                All entities on this page without a parent (need to be saved)
-//                List<Entity> entities = pageContent.getRootEntities();
-//
-//                for (Entity entity: entities) {
-//                    Blocks.database().saveEntity(entity);
-//                }
-
-//                Blocks.database().save(htmlFromClientVisitor.getContent());
-            }
-
-            ArrayList<StoredTemplate> other = htmlFromClientVisitor.getOther();
-            ArrayList<StoredTemplate> otherWithoutSingletons = new ArrayList<>();
-            for (StoredTemplate singleton : other) {
-
-                if (singleton instanceof Singleton) {
-                    Blocks.factory().createSingleton(singleton.getRenderedTemplateAsElement(), language);
-//                    Blocks.database().save(singleton);
-
-
-//                    List<Entity> entities = singleton.getRootEntities();
-//
-//                    for (Entity entity : entities) {
-//                        Blocks.database().saveEntity(entity);
-//                    }
-
-                }else {
-                    otherWithoutSingletons.add(singleton);
-                }
-            }
-
-            for (StoredTemplate storedTemplate : otherWithoutSingletons) {
-                storedTemplate = Blocks.factory().createStoredTemplate(storedTemplate.getRenderedTemplateAsElement(), language);
-                //                    Blocks.database().save(storedTemplate);
-
-//                List<Entity> entities = storedTemplate.getRootEntities();
-//
-//                for (Entity entity: entities) {
-//                    Blocks.database().saveEntity(entity);
-//                }
-            }
-
-            return Response.ok(pageUrl.getPath()).build();
+        if (routing == null || resourceContext == null) {
+            throw new Exception("Cannot update entity which doesn't exist: '" + pageUrl + ".");
         }
-        catch (Exception e) {
-            Logger.error(e);
-            return Response.status(Response.Status.BAD_REQUEST).entity(I18nFactory.instance().getDefaultResourceBundle().getMessage("entitySaveFailed")).build();
+
+        // Parse the page inside a new StoredTemplate
+        Document html = Jsoup.parse(pageHtml, Blocks.config().getSiteDomain().toString(), Parser.htmlParser());
+        HtmlFromClientVisitor htmlFromClientVisitor = new HtmlFromClientVisitor(pageUrl);
+        Traversor.traverseProperties(html, htmlFromClientVisitor);
+
+        StoredTemplate pageContent = htmlFromClientVisitor.getContent();
+
+        if (pageContent != null) {
+            // Save this new content inside the old ResourceContextOf the page
+            pageContent = Blocks.factory().createStoredTemplate(pageContent.getRenderedTemplateAsElement(), language);
+            pageContent.setBlockId(resourceContext.getBlockId());
+            resourceContext.setResource(pageContent);
+            RequestContext.getEntityManager().persist(resourceContext);
+
         }
+
+        ArrayList<StoredTemplate> other = htmlFromClientVisitor.getOther();
+        ArrayList<StoredTemplate> otherWithoutSingletons = new ArrayList<>();
+        for (StoredTemplate singleton : other) {
+
+            if (singleton instanceof Singleton) {
+//                Blocks.factory().createSingleton(singleton.getRenderedTemplateAsElement(), language);
+                //                    Blocks.database().save(singleton);
+
+
+                //                    List<Entity> entities = singleton.getRootEntities();
+                //
+                //                    for (Entity entity : entities) {
+                //                        Blocks.database().saveEntity(entity);
+                //                    }
+
+            }else {
+                otherWithoutSingletons.add(singleton);
+            }
+        }
+
+        for (StoredTemplate storedTemplate : otherWithoutSingletons) {
+            storedTemplate = Blocks.factory().createStoredTemplate(storedTemplate.getRenderedTemplateAsElement(), language);
+            //                    Blocks.database().save(storedTemplate);
+
+            //                List<Entity> entities = storedTemplate.getRootEntities();
+            //
+            //                for (Entity entity: entities) {
+            //                    Blocks.database().saveEntity(entity);
+            //                }
+        }
+
+        return Response.ok(pageUrl.getPath()).build();
+
     }
 
     @POST
     @Path("/delete")
-    public Response deletePage(String url)
+    public Response deletePage(String url) throws Exception
     {
-        try {
-            URI pageUrl = new URI(url);
-            BlocksURL id = UrlRepository.instance().getId(pageUrl.toString());
-            String language = UrlTools.getLanguage(pageUrl);
+        URI pageUrl = UriBuilder.fromUri(url).build();
+        Locale language = UrlTools.getLanguage(pageUrl);
 
-            if (id == null) {
-                throw new Exception("Cannot delete entity which doesn't exist: '" + pageUrl + ".");
-            }
+        BlocksURL id = UrlRepository.instance().getUrlForURI(pageUrl.getAuthority(), UrlTools.getPathWithoutLanguage(Paths.get(pageUrl.getPath())).toString(), language);
 
-//            StoredTemplate storedTemplate = Blocks.database().fetchTemplate(id, language);
-//            Blocks.urlDispatcher().removeId(pageUrl);
-//            Blocks.database().remove(storedTemplate);
-            return Response.ok(pageUrl.toString()).build();
+        if (id == null) {
+            throw new Exception("Cannot delete entity which doesn't exist: '" + pageUrl + ".");
         }
-        catch (Exception e) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(I18nFactory.instance().getDefaultResourceBundle().getMessage("entityDeleteFailed")).build();
-        }
+
+        id.setDeleted(true);
+        RequestContext.getEntityManager().merge(id);
+
+
+        return Response.ok(pageUrl.toString()).build();
+
     }
 
     @GET
@@ -253,41 +237,41 @@ public class EntitiesEndpoint
     {
         URI url = new URI(id);
         BlocksURL blockId = UrlRepository.instance().getId(url.toString());
-        String language = UrlTools.getLanguage(url);
+        Locale language = UrlTools.getLanguage(url);
         if (blockId != null) {
             PageTemplate pageTemplate = Blocks.templateCache().getPageTemplate(templateName);
             if (pageTemplate == null) {
                 throw new Exception("Page template does not exist");
             }
-//            StoredTemplate storedTemplate = Blocks.database().fetchTemplate(blockId, language);
-//            storedTemplate.setPageTemplateName(templateName);
-//            Blocks.database().save(storedTemplate);
+            //            StoredTemplate storedTemplate = Blocks.database().fetchTemplate(blockId, language);
+            //            storedTemplate.setPageTemplateName(templateName);
+            //            Blocks.database().save(storedTemplate);
         }
 
         return Response.ok().build();
     }
 
-    //    @POST
-    //    @Path("/deletedversion")
-    //    public Response showDeletedVersion(@FormParam("page-url") String pageUrl) throws Exception
-    //    {
-    //        BlocksID id = XMLUrlIdMapper.getInstance().getLastId(new URL(pageUrl));
-    //        List<AbstractTemplate> versionList = RedisDatabase.getInstance().fetchVersionList(id, EntityTemplate.class);
-    //        EntityTemplate lastAccessibleVersion = null;
-    //        Iterator<AbstractTemplate> it = versionList.iterator();
-    //        while(lastAccessibleVersion == null && it.hasNext()){
-    //            EntityTemplate version = (EntityTemplate) it.next();
-    //            if(version != null && !version.getDeleted()){
-    //                lastAccessibleVersion = version;
+    //        @POST
+    //        @Path("/deletedversion")
+    //        public Response showDeletedVersion(@FormParam("page-url") String pageUrl) throws Exception
+    //        {
+    //            BlocksID id = XMLUrlIdMapper.getInstance().getLastId(new URL(pageUrl));
+    //            List<AbstractTemplate> versionList = RedisDatabase.getInstance().fetchVersionList(id, EntityTemplate.class);
+    //            EntityTemplate lastAccessibleVersion = null;
+    //            Iterator<AbstractTemplate> it = versionList.iterator();
+    //            while(lastAccessibleVersion == null && it.hasNext()){
+    //                EntityTemplate version = (EntityTemplate) it.next();
+    //                if(version != null && !version.getDeleted()){
+    //                    lastAccessibleVersion = version;
+    //                }
+    //            }
+    //            if(lastAccessibleVersion != null) {
+    //                String pageUrlPath = new URL(pageUrl).getPath().substring(1);
+    //                return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId(pageUrlPath, new Long(lastAccessibleVersion.getVersion()), true).getAbsoluteUrl())).build();
+    //            }
+    //            else{
+    //                Logger.error("Bad request: cannot revive '" + pageUrl + "' to the state before it was deleted, since no version is present in db which is not deleted.");
+    //                return Response.status(Response.Status.BAD_REQUEST).build();
     //            }
     //        }
-    //        if(lastAccessibleVersion != null) {
-    //            String pageUrlPath = new URL(pageUrl).getPath().substring(1);
-    //            return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId(pageUrlPath, new Long(lastAccessibleVersion.getVersion()), true).getAbsoluteUrl())).build();
-    //        }
-    //        else{
-    //            Logger.error("Bad request: cannot revive '" + pageUrl + "' to the state before it was deleted, since no version is present in db which is not deleted.");
-    //            return Response.status(Response.Status.BAD_REQUEST).build();
-    //        }
-    //    }
 }

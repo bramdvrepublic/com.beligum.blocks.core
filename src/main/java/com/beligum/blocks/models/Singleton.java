@@ -5,9 +5,11 @@ import com.beligum.blocks.parsers.ElementParser;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Element;
 
+import java.util.Locale;
+
 /**
- * Created by wouter on 26/03/15.
- */
+* Created by wouter on 26/03/15.
+*/
 public class Singleton extends StoredTemplate
 {
     private final String defaultName = "DEFAULT";
@@ -17,7 +19,7 @@ public class Singleton extends StoredTemplate
     {
     }
 
-    public Singleton(Element node, String language) throws ParseException
+    public Singleton(Element node, Locale language) throws ParseException
     {
         super(node, language);
         if (ElementParser.isSingleton(node)) {

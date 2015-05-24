@@ -2,12 +2,13 @@ package com.beligum.blocks.renderer;
 
 import com.beligum.blocks.models.PageTemplate;
 import com.beligum.blocks.models.StoredTemplate;
-import com.beligum.blocks.models.jsonld.Resource;
-import com.beligum.blocks.models.jsonld.ResourceImpl;
+import com.beligum.blocks.models.jsonld.interfaces.Resource;
+
+import java.util.Locale;
 
 /**
- * Created by wouter on 8/04/15.
- */
+* Created by wouter on 8/04/15.
+*/
 public interface BlocksTemplateRenderer
 {
 
@@ -23,6 +24,6 @@ public interface BlocksTemplateRenderer
 
     public void setReadOnly(boolean readOnly);
 
-    public String render(StoredTemplate storedTemplate, Resource resource, String language);
-    public String render(PageTemplate pageTemplate, StoredTemplate storedTemplate, Resource resource, String language);
+    public String render(StoredTemplate storedTemplate, Resource resource, Locale language);
+    public String render(PageTemplate pageTemplate, StoredTemplate storedTemplate, Resource resource, Locale language);
 }

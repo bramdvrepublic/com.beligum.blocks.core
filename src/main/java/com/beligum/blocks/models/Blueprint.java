@@ -1,9 +1,10 @@
 package com.beligum.blocks.models;
 
+import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
-import com.beligum.blocks.models.jsonld.Node;
-import com.beligum.blocks.models.jsonld.StringNode;
+import com.beligum.blocks.models.jsonld.interfaces.Node;
+import com.beligum.blocks.models.jsonld.jsondb.StringNode;
 import com.beligum.blocks.parsers.ElementParser;
 import com.beligum.blocks.parsers.visitors.template.BlueprintVisitor;
 import com.beligum.blocks.utils.UrlTools;
@@ -11,10 +12,11 @@ import org.jsoup.nodes.Element;
 
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.Locale;
 
 /**
- * Created by wouter on 16/03/15.
- */
+* Created by wouter on 16/03/15.
+*/
 public class Blueprint extends StoredTemplate
 {
 
@@ -42,12 +44,12 @@ public class Blueprint extends StoredTemplate
 
     }
 
-    public Blueprint(Element element, String language) throws ParseException
+    public Blueprint(Element element, Locale language) throws ParseException
     {
         super(element, language);
         this.setName(this.getBlueprintName());
         this.setWrapper(false);
-        this.setId(UrlTools.createLocalResourceId("blueprint", this.getBlueprintName()));
+        this.setBlockId(UrlTools.createLocalResourceId("blueprint", this.getBlueprintName()));
         this.set(ParserConstants.JSONLD_TYPE, new StringNode(ParserConstants.BLOCKS_BLUEPRINT_TYPE));
         this.setAddableBlock(ElementParser.isAddableBlock(element));
         this.setPageBlock(ElementParser.isPageBlock(element));
@@ -102,7 +104,7 @@ public class Blueprint extends StoredTemplate
     }
 
     public void setCanChange(Boolean value) {
-        setBoolean(Blueprint.canChange, value);
+        set(Blueprint.canChange, Blocks.resourceFactory().asNode(value, Locale.ROOT));
     }
 
 
@@ -110,41 +112,41 @@ public class Blueprint extends StoredTemplate
         LinkedHashSet<String> links = new LinkedHashSet<>();
         Node listNode = get(Blueprint.link);
         if (listNode != null && listNode.isString()) {
-            links.add(listNode.getString());
-        } else if (listNode != null && listNode.isList()) {
-            Iterator<Node> it = listNode.getList().iterator();
+            links.add(listNode.asString());
+        } else if (listNode != null && listNode.isIterable()) {
+            Iterator<Node> it = listNode.getIterable().iterator();
             while (it.hasNext()) {
                 Node node = it.next();
                 if (node.isString()) {
-                    links.add(node.getString());
+                    links.add(node.asString());
                 }
             }
 
-    
-    
+
+
         }
         return links;
     }
 
     public void addLink(String link) {
-        addString(Blueprint.link, link, null);
+        add(Blueprint.link, Blocks.resourceFactory().asNode(value, Locale.ROOT));
     }
 
     public void addScript(String script) {
-        addString(Blueprint.script, script, null);
+        add(Blueprint.script, Blocks.resourceFactory().asNode(value, Locale.ROOT));
     }
 
     public LinkedHashSet<String> getScripts() {
         LinkedHashSet<String> scripts = new LinkedHashSet<>();
         Node listNode = get(Blueprint.script);
         if (listNode != null && listNode.isString()) {
-            scripts.add(listNode.getString());
-        } else if (listNode != null && listNode.isList()) {
-            Iterator<Node> it = listNode.getList().iterator();
+            scripts.add(listNode.asString());
+        } else if (listNode != null && listNode.isIterable()) {
+            Iterator<Node> it = listNode.getIterable().iterator();
             while (it.hasNext()) {
                 Node node = it.next();
                 if (node.isString()) {
-                    scripts.add(node.getString());
+                    scripts.add(node.asString());
                 }
             }
         }
@@ -153,18 +155,18 @@ public class Blueprint extends StoredTemplate
 
     public boolean isAddableBlock() {return getBoolean(Blueprint.addableBlock);
     }
-    public void setAddableBlock(Boolean value) {setBoolean(Blueprint.addableBlock, value);}
+    public void setAddableBlock(Boolean value) {set(Blueprint.addableBlock, Blocks.resourceFactory().asNode(value, Locale.ROOT));}
 
     public boolean isPageBlock() {return getBoolean(Blueprint.pageBlock);}
     public void setPageBlock(Boolean value) {
-        setBoolean(Blueprint.pageBlock, value);
+        set(Blueprint.pageBlock, Blocks.resourceFactory().asNode(value, Locale.ROOT));
     }
 
-    public String getRdfType() {
+    public String getRdfTypes() {
         return this.rdfType;
     }
     public void setRdfType(String value) {
-        setString(Blueprint.rdfType, value, null);
+        set(Blueprint.rdfType, Blocks.resourceFactory().asNode(value, Locale.ROOT));
     }
 
     public String getTemplate() { return this.getValue();}

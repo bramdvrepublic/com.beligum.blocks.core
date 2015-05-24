@@ -14,6 +14,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Created by bas on 15.01.15.
@@ -35,17 +36,17 @@ public class TranslationList implements DynamicBlockListener
      */
     public StringBuilder render(BasicTemplate basicTemplate)
     {
-        String activeLanguage = Blocks.config().getDefaultLanguage();
-            activeLanguage = UrlTools.getLanguage(RequestContext.getJaxRsRequest().getUriInfo().getAbsolutePath());
-            if (activeLanguage == null) {
-                Blocks.config().getDefaultLanguage();
-            }
+        Locale activeLanguage = Blocks.config().getDefaultLanguage();
+        activeLanguage = UrlTools.getLanguage(RequestContext.getJaxRsRequest().getUriInfo().getAbsolutePath());
+        if (activeLanguage == null) {
+            Blocks.config().getDefaultLanguage();
+        }
 
         VelocityBlocksRenderer renderer = new VelocityBlocksRenderer();
         renderer.renderStartElement(basicTemplate, true, null);
 
         renderer.append("<ul>");
-        for (String language : Blocks.config().getLanguages()) {
+        for (Locale language : Blocks.config().getLanguages().values()) {
             getListItem(renderer, language, activeLanguage);
         }
         renderer.append("</ul>");
@@ -84,15 +85,15 @@ public class TranslationList implements DynamicBlockListener
         return new ArrayList<>();
     }
 
-    private void getListItem(VelocityBlocksRenderer renderer, String language, String activeLanguage)
+    private void getListItem(VelocityBlocksRenderer renderer, Locale language, Locale activeLanguage)
     {
         //if we're dealing with a translation list, we simple want the links to be a link of this page, translated into the specified language
 
         if (language.equals(activeLanguage)) {
-            renderer.append("<li><a href=\"").append(" ").append("\" class=\"").append(ACTIVE_CLASS).append("\" title=\"\" >").append(language).append("</a></li>");
+            renderer.append("<li><a href=\"").append(" ").append("\" class=\"").append(ACTIVE_CLASS).append("\" title=\"\" >").append(language.getLanguage()).append("</a></li>");
         }
         else {
-            renderer.append("<li><a href=\"").append(" ").append("\" title=\"\">").append(language).append("</a></li>");
+            renderer.append("<li><a href=\"").append(" ").append("\" title=\"\">").append(language.getLanguage()).append("</a></li>");
         }
     }
 

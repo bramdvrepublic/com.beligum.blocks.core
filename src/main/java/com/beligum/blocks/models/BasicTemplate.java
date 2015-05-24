@@ -3,7 +3,9 @@ package com.beligum.blocks.models;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
-import com.beligum.blocks.models.jsonld.ResourceImpl;
+import com.beligum.blocks.models.jsonld.OrientResource;
+import com.beligum.blocks.models.jsonld.interfaces.Resource;
+import com.beligum.blocks.models.jsonld.jsondb.ResourceImpl;
 import com.beligum.blocks.parsers.ElementParser;
 import com.beligum.blocks.parsers.Traversor;
 import com.beligum.blocks.parsers.visitors.template.PropertyVisitor;
@@ -15,11 +17,13 @@ import org.jsoup.nodes.Node;
 import org.jsoup.parser.Parser;
 import org.jsoup.parser.Tag;
 
+import java.util.Locale;
+
 //import org.jsoup.nodes.Node;
 
 /**
- * Created by wouter on 16/03/15.
- */
+* Created by wouter on 16/03/15.
+*/
 public class BasicTemplate extends ResourceImpl
 {
     public static final String blueprintName = ParserConstants.BLOCKS_SCHEMA + "blueprintname";
@@ -57,7 +61,7 @@ public class BasicTemplate extends ResourceImpl
 
 
 
-    public BasicTemplate(ResourceImpl node) {
+    public BasicTemplate(Resource node) {
         super(node);
     }
 
@@ -66,18 +70,11 @@ public class BasicTemplate extends ResourceImpl
 
         this.transientElement = node;
         this.setElement(new HtmlElement(node));
-//        this.setName(ElementParser.getProperty(node));
-//        if (this.getName() == null) {
-//            this.setName("");
-//            this.setWrapper(true);
-//        }
 
         this.setInList(ElementParser.hasInList(node));
 
         this.setBlueprintName(ElementParser.getBlueprintName(node));
         this.setReadOnly(ElementParser.isReadOnly(node));
-
-//        this.setHref(ElementParser.getHref(node));
 
         if (this.getBlueprintName() == null || this.isWrapper()) {
             this.setValue(node.html());
@@ -92,6 +89,7 @@ public class BasicTemplate extends ResourceImpl
 
 
     public BasicTemplate() {
+
     }
 
 
@@ -104,7 +102,7 @@ public class BasicTemplate extends ResourceImpl
 
     public void setWrapper(Boolean value)
     {
-        setBoolean(BasicTemplate.wrapper, value);
+        set(BasicTemplate.wrapper, Blocks.resourceFactory().asNode(value, Locale.ROOT));
     }
 
     public boolean isInList()
@@ -114,7 +112,7 @@ public class BasicTemplate extends ResourceImpl
 
     public void setInList(Boolean value)
     {
-        setBoolean(BasicTemplate.inlist, value);
+        set(BasicTemplate.inlist, Blocks.resourceFactory().asNode(value, Locale.ROOT));
     }
 
     public PropertyVisitor parse() throws ParseException
@@ -138,7 +136,7 @@ public class BasicTemplate extends ResourceImpl
     }
 
     public void setValue(String value) {
-        setString(BasicTemplate.value, value, null);
+        set(BasicTemplate.value, Blocks.resourceFactory().asNode(value, Locale.ROOT));
     }
 
 
@@ -147,7 +145,7 @@ public class BasicTemplate extends ResourceImpl
     }
 
     public void setBlueprintName(String value) {
-        setString(BasicTemplate.blueprintName, value);
+        set(BasicTemplate.blueprintName, Blocks.resourceFactory().asNode(value, Locale.ROOT));
     }
 
     public Blueprint getBlueprint() {
@@ -163,13 +161,13 @@ public class BasicTemplate extends ResourceImpl
     }
 
     public void setName(String value) {
-        setString(BasicTemplate.name, value);
+        set(BasicTemplate.name, Blocks.resourceFactory().asNode(value, Locale.ROOT));
     }
 
 
     public HtmlElement getElement() {
         HtmlElement retval = null;
-        com.beligum.blocks.models.jsonld.Node element = getFirst(BasicTemplate.htmlElement);
+        com.beligum.blocks.models.jsonld.interfaces.Node element = getFirst(BasicTemplate.htmlElement);
         if (element != null && element.isResource()) {
             retval = new HtmlElement((ResourceImpl)element);
         }
@@ -185,7 +183,7 @@ public class BasicTemplate extends ResourceImpl
     }
 
     public void setReadOnly(Boolean value) {
-        setBoolean(BasicTemplate.readonly, value);
+        set(BasicTemplate.readonly, Blocks.resourceFactory().asNode(value, Locale.ROOT));
     }
 
     public static Element parse(String html){
@@ -237,4 +235,14 @@ public class BasicTemplate extends ResourceImpl
         return retVal;
     }
 
+    @Override
+    public Object getDBId()
+    {
+        return null;
+    }
+    @Override
+    public Object setDBId()
+    {
+        return null;
+    }
 }

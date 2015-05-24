@@ -1,7 +1,12 @@
 package com.beligum.blocks.models.jsonld;
 
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.base.Blocks;
+import com.beligum.blocks.models.jsonld.interfaces.Node;
+import com.beligum.blocks.models.jsonld.interfaces.Resource;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 import java.util.*;
 
@@ -13,42 +18,42 @@ public class JsonLDGraph
 {
     public static final String ID = "@id";
     public static final String VALUE = "@value";
+    public static final String LANGUAGE = "@language";
 
 
-    private int blankNodeCounter = 0;
-    private Set idSet = new HashSet<String>();
-    private JsonLDContext context = new JsonLDContext();
-    HashMap<String, ResourceImpl> resources = new HashMap<String, ResourceImpl>();
-    ResourceImpl mainResource;
+    private Locale language;
+    private HashMap<String, Resource> resources = new HashMap<String, Resource>();
+    private Resource mainResource;
 
     public JsonLDGraph() {
 
     }
 
-    public JsonLDGraph(ResourceImpl resource) {
+    public JsonLDGraph(Resource resource, Locale language) {
+        this.language = language;
         this.mainResource = resource;
     }
 
-    public JsonLDGraph(JsonNode graphNode, JsonLDContext context) {
-
+    public JsonLDGraph(JsonNode graphNode,  Locale language) {
+        this.language = language;
         ArrayList<Node> retVal = new ArrayList<>();
-        if (context != null) this.context = context;
+//        if (context != null) this.context = context;
         if (graphNode.isArray()) {
             Iterator<JsonNode> it = graphNode.iterator();
 
             while (it.hasNext()) {
-                Node node = this.createNode(it.next());
+                Node node = this.createNode(it.next(), null);
             }
 
         } else if (graphNode.isObject()) {
-            Node node = this.createNode(graphNode);
+            Node node = this.createNode(graphNode, null);
         } else {
             Logger.error("Node is graph is not a resource?");
         }
     }
 
-    public ResourceImpl getFirstResource() {
-        ResourceImpl retVal = null;
+    public Resource getFirstResource() {
+        Resource retVal = null;
         if (resources.size() > 0) {
             retVal = resources.get(0);
         }
@@ -56,24 +61,34 @@ public class JsonLDGraph
     }
 
 
-    public ResourceImpl getMainResource() {
+    public Resource getMainResource() {
         return getMainResource(null);
     }
 
-    public ResourceImpl getMainResource(String id) {
+    public Resource getMainResource(String id) {
         if (this.mainResource == null) {
             this.mainResource = this.resources.get(id);
         }
         return this.mainResource;
     }
 
-    public Node createNode(JsonNode jsonNode) {
+    public Node createNode(JsonNode jsonNode, Locale language) {
         Node retVal = null;
         if (jsonNode.isObject()) {
             if (jsonNode.has(VALUE)) {
-                retVal = createNode(jsonNode.get(VALUE));
+                language = null;
+                if (jsonNode.has(LANGUAGE)) {
+                    String lang = jsonNode.get(LANGUAGE).asText();
+                    if (lang == null) {
+                        language = Locale.ROOT;
+                    } else {
+                        language = Blocks.config().getLocaleForLanguage(lang);
+                    }
+                }
+                retVal = createNode(jsonNode.get(VALUE), language);
             } else {
-                ResourceImpl resource = new ResourceImpl();
+                String id = jsonNode.get(ID).asText();
+                Resource resource = OrientResourceFactory.instance().createResource(id, language);
                 retVal = resource;
                 // loop through fields
                 Iterator<Map.Entry<String, JsonNode>> iterator = jsonNode.fields();
@@ -85,10 +100,10 @@ public class JsonLDGraph
                 }
 
                 // Fill reference Resources
-                if (!resources.containsKey(resource.getId())) {
-                    resources.put(resource.getId(), resource);
+                if (!resources.containsKey(resource.getBlockId())) {
+                    resources.put(resource.getBlockId(), resource);
                 } else {
-                    ResourceImpl old = resources.get(resource.getId());
+                    Resource old = resources.get(resource.getBlockId());
                     if (old.isEmpty()) {
                         old.wrap(resource.unwrap());
                     } else if (resource.isEmpty()) {
@@ -100,17 +115,17 @@ public class JsonLDGraph
         } else if (jsonNode.isNumber()) {
             if (jsonNode.isIntegralNumber()) {
                 if (jsonNode.isBigInteger()) {
-                    retVal = new LongNode(jsonNode.asLong(0));
+                    retVal = OrientResourceFactory.instance().asNode(jsonNode.asLong(0), language);
                 } else {
-                    retVal = new IntegerNode(jsonNode.asInt(0));
+                    retVal = OrientResourceFactory.instance().asNode(jsonNode.asInt(0), language);
                 }
             } else {
-                retVal = new DoubleNode(jsonNode.asDouble(0));
+                retVal = OrientResourceFactory.instance().asNode((Double)jsonNode.asDouble(0), language);
             }
         } else if (jsonNode.isBoolean()) {
-            retVal = new BooleanNode(jsonNode.asBoolean(false));
+            retVal = OrientResourceFactory.instance().asNode(jsonNode.asBoolean(false), language);
         } else if (jsonNode.isTextual()) {
-            retVal = new StringNode(jsonNode.asText(""));
+            retVal = OrientResourceFactory.instance().asNode(jsonNode.asText(""), language);
         } else if (jsonNode.isArray()) {
 
         } else {
@@ -119,45 +134,44 @@ public class JsonLDGraph
         return retVal;
     }
 
-    private void processResourceFields(ResourceImpl resource, String key, JsonNode jsonNode) {
+    private void processResourceFields(Resource resource, String key, JsonNode jsonNode) {
         if (jsonNode.isArray()) {
+            JsonNode firstElement = jsonNode.get(0);
+
+            /*
+            * If this list contains string nodes we filter for only the nodes for our current language
+            * or if there are no nodes for our current language all the nodes with our default language
+            * */
+            if (firstElement != null && firstElement.isObject() && firstElement.has(LANGUAGE)  && firstElement.get(LANGUAGE) != null) {
+                // filter for current lang
+                ArrayNode defaultLang = JsonNodeFactory.instance.arrayNode();
+                ArrayNode currentLang = JsonNodeFactory.instance.arrayNode();
+                Iterator<JsonNode> iterator = jsonNode.iterator();
+                while (iterator.hasNext()) {
+                    JsonNode node = iterator.next();
+                    if (node.get(LANGUAGE).asText().equals(Blocks.config().getDefaultLanguage())) {
+                        defaultLang.add(node);
+                    } else if (node.get(LANGUAGE).asText().equals(this.language)) {
+                        currentLang.add(node);
+                    }
+                }
+                if (currentLang.size() == 0) {
+                    jsonNode = defaultLang;
+                } else {
+                    jsonNode = currentLang;
+                }
+            }
             Iterator<JsonNode> iterator = jsonNode.iterator();
             while (iterator.hasNext()) {
                 processResourceFields(resource, key, iterator.next());
             }
         } else {
-            resource.add(key, createNode(jsonNode));
+            resource.add(key, createNode(jsonNode, null));
         }
     }
 
-    public JsonLDContext getContext() {
-        return this.getContext();
-    }
-
-//    public ResourceNodeInf getResource(String id) {
-//        return this.resources.get(id);
-//    }
-
-//    public HashMap<String, ResourceNode> getResources() {
-//        return this.resources;
-//    }
-
-//    public String write(boolean expanded) {
-//        StringWriter writer = new StringWriter();
-//        int count = 0;
-//        writer.append("{@graph: [");
-//        for (ProxyResourceNode proxy: resources.values()) {
-//            if (count>0) writer.append(", ");
-//            proxy.write(writer, expanded);
-//        }
-//        writer.append("]");
-//        if (this.context != null) {
-//            writer.append(", ");
-//            this.context.write(writer, expanded);
-//        }
-//
-//        writer.append("}");
-//        return writer.toString();
+//    public JsonLDContext getContext() {
+//        return this.getContext();
 //    }
 
 

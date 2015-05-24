@@ -1,21 +1,23 @@
-package com.beligum.blocks.models.jsonld;
+package com.beligum.blocks.models.jsonld.jsondb;
+
+import com.beligum.blocks.models.jsonld.interfaces.Node;
 
 import java.io.StringWriter;
 
 /**
  * Created by wouter on 23/04/15.
  */
-public class DoubleNode extends BlankNode
+public class IntegerNode extends BlankNode
 {
-    private Double internalObject;
+    private Integer internalObject;
 
-    public DoubleNode(Double value) {
+    public IntegerNode(Integer value) {
         this.internalObject = value;
     }
 
 
     @Override
-    public boolean isDouble()
+    public boolean isInt()
     {
         return true;
     }
@@ -27,22 +29,22 @@ public class DoubleNode extends BlankNode
     }
 
     @Override
-    public Double getDouble()
+    public Integer getInteger()
     {
         return internalObject;
     }
 
     @Override
-    public String getString()
+    public String asString()
     {
         return internalObject.toString();
     }
 
     public void write(StringWriter writer, boolean expanded) {
-        writer.append(Double.toString(this.internalObject));
+        writer.append(Integer.toString(this.internalObject));
     }
 
     public Node copy() {
-        return new DoubleNode(internalObject);
+        return new IntegerNode(internalObject);
     }
 }

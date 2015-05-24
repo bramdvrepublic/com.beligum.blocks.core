@@ -1,21 +1,19 @@
 package com.beligum.blocks.models.url;
 
 
-import com.beligum.base.models.BasicModelImpl;
 import com.beligum.blocks.base.Blocks;
-import com.beligum.blocks.endpoints.ApplicationEndpoint;
 import com.beligum.blocks.models.PageTemplate;
 import com.beligum.blocks.models.StoredTemplate;
-import com.beligum.blocks.models.jsonld.Resource;
+import com.beligum.blocks.models.jsonld.interfaces.Resource;
 import com.beligum.blocks.renderer.BlocksTemplateRenderer;
-import com.beligum.blocks.repositories.ResourceRepository;
+import com.beligum.blocks.repositories.EntityRepository;
 
 import javax.persistence.*;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
-import java.nio.file.Path;
+import java.util.Locale;
 
 /**
  * Created by wouter on 18/04/15.
@@ -34,7 +32,7 @@ public class OkURL extends BlocksURL
         super();
     }
 
-    public OkURL(URI url, URI view, URI resource, String language) {
+    public OkURL(URI url, URI view, URI resource, Locale language) {
         super(url, language);
         this.view = view.toString();
         if (resource != null) this.resource = resource.toString();
@@ -66,19 +64,29 @@ public class OkURL extends BlocksURL
     }
 
     @Override
-    public Response response(String language) {
+    public Response response(Locale language) {
 
         Response retVal = null;
         URI resourceURI = null;
         if (this.resource != null) {
-            resourceURI = UriBuilder.fromUri(this.getResourceUri().getAuthority()).path(this.getResourceUri().getPath().toString()).build();
+            resourceURI = UriBuilder.fromUri(this.getResourceUri()).build();
         }
 
         // Find the view in the database
-        Resource page = ResourceRepository.instance().findByURI(this.getViewUri(), language);
+        Resource page = EntityRepository.instance().findByURI(this.getViewUri(), language);
+
+        Resource resource = null;
+        if (resourceURI != null) {
+            resource = EntityRepository.instance().findByURI(this.getResourceUri(), language);
+            if (!Blocks.config().getDefaultLanguage().equals(language)) {
+                Resource defaultResource = EntityRepository.instance().findByURI(this.getResourceUri(), language);
+                defaultResource.merge(resource);
+                resource = defaultResource;
+            }
+        }
 
         StoredTemplate storedTemplate = null;
-        Resource resource = null;
+
         if (page != null) {
             // create a new StoredTemplate and wrap the page from the database inside it.
             storedTemplate = new StoredTemplate();

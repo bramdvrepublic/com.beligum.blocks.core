@@ -1,14 +1,14 @@
 package com.beligum.blocks.utils;
 
 import com.beligum.blocks.models.BasicTemplate;
-import com.beligum.blocks.models.jsonld.Node;
-import com.beligum.blocks.models.jsonld.ResourceImpl;
+import com.beligum.blocks.models.jsonld.interfaces.Node;
+import com.beligum.blocks.models.jsonld.interfaces.Resource;
 
 import java.util.HashMap;
 
 /**
- * Created by wouter on 2/04/15.
- */
+* Created by wouter on 2/04/15.
+*/
 public class PropertyFinder
 {
     private HashMap<String, Integer> propertyCounter = new HashMap<>();
@@ -36,11 +36,11 @@ public class PropertyFinder
     public static BasicTemplate findProperty(String key, BasicTemplate template, int index) {
         BasicTemplate retVal = null;
         Node node = template.get(key);
-        if (node != null && node.isList() && node.getList().size() > index) {
-            retVal = new BasicTemplate((ResourceImpl)node.getList().get(index));
-        } else if (node != null && index == 0 && node.isResource()) {
-            retVal = new BasicTemplate((ResourceImpl)node);
-        }
+//        if (node != null && node.isIterable() && node.getIterable().size() > index) {
+//            retVal = new BasicTemplate((Resource)node.getIterable().get(index));
+//        } else if (node != null && index == 0 && node.isResource()) {
+//            retVal = new BasicTemplate((Resource)node);
+//        }
         return retVal;
     }
 

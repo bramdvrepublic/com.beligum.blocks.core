@@ -7,6 +7,8 @@ import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.dynamic.DynamicBlockHandler;
 import com.beligum.blocks.exceptions.CacheException;
 import com.beligum.blocks.models.factory.BlocksFactory;
+import com.beligum.blocks.models.jsonld.OrientResourceFactory;
+import com.beligum.blocks.models.jsonld.interfaces.ResourceFactory;
 
 /**
  * Created by wouter on 26/03/15.
@@ -22,7 +24,7 @@ public class Blocks
         BLOCKS_FACTORY_KEY,
         BLOCKS_HANDLER_KEY,
         BLOCKS_RENDERER_KEY,
-        BlOCKS_RDF_FACTORY
+        BlOCKS_RESOURCE_FACTORY
     }
 
 
@@ -63,6 +65,14 @@ public class Blocks
             R.cacheManager().getApplicationCache().put(BlocksConfigCacheKey.BLOCKS_HANDLER_KEY, new DynamicBlockHandler());
         }
         return (DynamicBlockHandler) R.cacheManager().getApplicationCache().get(BlocksConfigCacheKey.BLOCKS_HANDLER_KEY);
+    }
+
+    public static ResourceFactory resourceFactory()
+    {
+        if (!R.cacheManager().getApplicationCache().containsKey(BlocksConfigCacheKey.BlOCKS_RESOURCE_FACTORY)) {
+            R.cacheManager().getApplicationCache().put(BlocksConfigCacheKey.BlOCKS_RESOURCE_FACTORY, OrientResourceFactory.instance());
+        }
+        return (ResourceFactory) R.cacheManager().getApplicationCache().get(BlocksConfigCacheKey.BlOCKS_RESOURCE_FACTORY);
     }
 
 }

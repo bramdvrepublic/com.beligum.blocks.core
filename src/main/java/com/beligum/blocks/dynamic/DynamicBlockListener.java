@@ -5,6 +5,7 @@ import com.beligum.blocks.models.BasicTemplate;
 import com.beligum.blocks.models.StoredTemplate;
 import org.jsoup.nodes.Element;
 
+import java.io.IOException;
 import java.util.List;
 
 /**

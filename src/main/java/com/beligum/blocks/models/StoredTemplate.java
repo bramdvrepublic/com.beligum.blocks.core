@@ -3,23 +3,19 @@ package com.beligum.blocks.models;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
-import com.beligum.blocks.models.jsonld.JsonLDGraph;
-import com.beligum.blocks.models.jsonld.Node;
-import com.beligum.blocks.models.jsonld.StringNode;
+import com.beligum.blocks.models.jsonld.OrientResourceFactory;
+import com.beligum.blocks.models.jsonld.interfaces.Node;
 import com.beligum.blocks.renderer.BlocksTemplateRenderer;
 import com.beligum.blocks.utils.UrlTools;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Tag;
 
-import javax.ws.rs.core.UriBuilder;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Locale;
 
 /**
- * Created by wouter on 16/03/15.
- */
+* Created by wouter on 16/03/15.
+*/
 public class StoredTemplate extends BasicTemplate
 {
 
@@ -28,7 +24,7 @@ public class StoredTemplate extends BasicTemplate
 //
 //    protected String pageTemplateName;
 //    protected String pageTitle;
-    private String language;
+    private Locale language;
 
     public StoredTemplate()
     {
@@ -36,17 +32,17 @@ public class StoredTemplate extends BasicTemplate
         this.language = Blocks.config().getDefaultLanguage();
     }
 
-    public StoredTemplate(Blueprint blueprint, String language) {
+    public StoredTemplate(Blueprint blueprint, Locale language) {
         for (String key: blueprint.getFields()) {
             Node property = blueprint.get(key);
             this.set(key, property.copy());
         }
         this.language = language;
-        this.setId(UrlTools.createLocalResourceId("Page"));
-        this.set(ParserConstants.JSONLD_TYPE, new StringNode(ParserConstants.BLOCKS_PAGE_TYPE));
+        this.setBlockId(UrlTools.createLocalResourceId("Page"));
+        this.set(ParserConstants.JSONLD_TYPE, OrientResourceFactory.instance().asNode(ParserConstants.BLOCKS_PAGE_TYPE, null));
     }
 
-    public StoredTemplate(Element node, String language) throws ParseException
+    public StoredTemplate(Element node, Locale language) throws ParseException
     {
         super(node);
         this.language = language;
@@ -72,7 +68,7 @@ public class StoredTemplate extends BasicTemplate
     }
 
     public void setPageTemplateName(String pageTemplateName) {
-        setString(StoredTemplate.pageTemplateName, pageTemplateName, this.language);
+        set(StoredTemplate.pageTemplateName, OrientResourceFactory.instance().asNode(pageTemplateName, this.language));
     }
 
     public String getPageTitle()
@@ -85,7 +81,7 @@ public class StoredTemplate extends BasicTemplate
     }
 
     public void setPageTitle(String pageTitle) {
-        setString(StoredTemplate.pageTitle, pageTitle, this.language);
+        set(StoredTemplate.pageTitle, OrientResourceFactory.instance().asNode(pageTitle, this.language));
     }
 
     @JsonIgnore
@@ -105,7 +101,7 @@ public class StoredTemplate extends BasicTemplate
         return retVal;
     }
 
-    public String getLanguage()
+    public Locale getLanguage()
     {
         return language;
     }

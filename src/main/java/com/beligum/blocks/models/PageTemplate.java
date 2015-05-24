@@ -5,9 +5,11 @@ import com.beligum.blocks.parsers.ElementParser;
 import com.beligum.blocks.parsers.visitors.template.PagetemplateVisitor;
 import org.jsoup.nodes.Element;
 
+import java.util.Locale;
+
 /**
- * Created by wouter on 16/03/15.
- */
+* Created by wouter on 16/03/15.
+*/
 public class PageTemplate extends Blueprint
 {
 
@@ -16,7 +18,7 @@ public class PageTemplate extends Blueprint
 
     }
 
-    public PageTemplate(Element element, String language) throws ParseException
+    public PageTemplate(Element element, Locale language) throws ParseException
     {
         super(element, language);
         element.children().remove();

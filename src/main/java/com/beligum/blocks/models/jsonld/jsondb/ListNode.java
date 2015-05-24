@@ -1,6 +1,7 @@
-package com.beligum.blocks.models.jsonld;
+package com.beligum.blocks.models.jsonld.jsondb;
 
-import java.io.StringWriter;
+import com.beligum.blocks.models.jsonld.interfaces.Node;
+
 import java.util.ArrayList;
 
 /**
@@ -33,11 +34,11 @@ public class ListNode extends BlankNode
     }
 
 
-    public boolean isList() {
+    public boolean isIterable() {
         return true;
     }
 
-    public ArrayList<Node> getList() {
+    public ArrayList<Node> getIterable() {
         return this.internalObject;
     }
 

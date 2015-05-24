@@ -1,15 +1,17 @@
 package com.beligum.blocks.models;
 
+import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.models.jsonld.ResourceImpl;
+import com.beligum.blocks.models.jsonld.jsondb.ResourceImpl;
 import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Element;
 
 import java.util.HashMap;
+import java.util.Locale;
 
 /**
- * Created by wouter on 19/03/15.
- */
+* Created by wouter on 19/03/15.
+*/
 public class HtmlElement extends ResourceImpl
 {
     public static final String tag = ParserConstants.BLOCKS_SCHEMA + "tag";
@@ -27,7 +29,7 @@ public class HtmlElement extends ResourceImpl
         super(resource);
         for (String fullAttribute: this.unwrap().keySet()) {
             String attribute = fullAttribute.substring(fullAttribute.lastIndexOf("/")+1);
-            this.attributes.put(attribute, this.unwrap().get(fullAttribute).getString());
+            this.attributes.put(attribute, this.unwrap().get(fullAttribute).asString());
         }
     }
 
@@ -36,7 +38,7 @@ public class HtmlElement extends ResourceImpl
         this.setTag(element.tagName().toLowerCase());
         for (Attribute attribute: element.attributes().asList()) {
            this.attributes.put(attribute.getKey(), attribute.getValue());
-           this.setString(HtmlElement.attribute + "/" + attribute.getKey(), attribute.getValue());
+           this.set(HtmlElement.attribute + "/" + attribute.getKey(), Blocks.resourceFactory().asNode(attribute.getValue(), Locale.ROOT));
         }
     }
 
@@ -46,7 +48,7 @@ public class HtmlElement extends ResourceImpl
     }
 
     public void setTag(String tag) {
-        setString(HtmlElement.tag, tag);
+        set(HtmlElement.tag, Blocks.resourceFactory().asNode(tag, Locale.ROOT));
     }
 
     public HashMap<String, String> getAttributes() {

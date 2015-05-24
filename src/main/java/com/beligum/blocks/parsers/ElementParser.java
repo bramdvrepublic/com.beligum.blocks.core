@@ -1,10 +1,12 @@
 package com.beligum.blocks.parsers;
 
+import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import org.jsoup.nodes.Element;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Locale;
 
 /**
  * Created by wouter on 17/03/15.
@@ -206,11 +208,12 @@ public class ElementParser
         return retVal;
     }
 
-    public static String getLanguage(Element node)
+    public static Locale getLanguage(Element node)
     {
-        String retVal = null;
+        Locale retVal = Locale.ROOT;
         if (node.hasAttr(ParserConstants.LANGUAGE) && !node.attr(ParserConstants.LANGUAGE).isEmpty()) {
-            retVal = node.attr(ParserConstants.LANGUAGE);
+            String lang = node.attr(ParserConstants.LANGUAGE);
+            if (lang != null) retVal = Blocks.config().getLocaleForLanguage(lang);
         }
         return retVal;
     }

@@ -9,8 +9,8 @@ import org.jsoup.nodes.TextNode;
 import java.util.LinkedHashSet;
 
 /**
- * Created by wouter on 16/03/15.
- */
+* Created by wouter on 16/03/15.
+*/
 public class BlueprintVisitor extends PropertyVisitor
 {
     private LinkedHashSet<String> links = new LinkedHashSet<String>();

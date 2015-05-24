@@ -12,6 +12,7 @@ import com.beligum.blocks.models.PageTemplate;
 import com.beligum.blocks.parsers.FileAnalyzer;
 import com.beligum.blocks.parsers.Traversor;
 import com.beligum.blocks.parsers.visitors.reset.BlocksScriptVisitor;
+import com.beligum.blocks.utils.UrlTools;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.shiro.util.AntPathMatcher;
@@ -145,7 +146,7 @@ public class TemplateCache implements BlocksTemplateCache
                         Template template = R.templateEngine().getNewStringTemplate(IOUtils.toString(reader));
                         //TODO bram: we should incorporate the language here?
                         String html = template.render();
-                        for (String language : Blocks.config().getLanguages()) {
+                        for (Locale language : Blocks.config().getLanguages().values()) {
                             FileAnalyzer.AnalyseHtmlFile(html, language);
                         }
                     }
@@ -164,6 +165,11 @@ public class TemplateCache implements BlocksTemplateCache
                         this.addableblocks.add(blueprint.getName());
                     if (blueprint.isPageBlock())
                         this.pageblocks.add(blueprint.getName());
+
+                    for (Locale language : Blocks.config().getLanguages().values()) {
+                        blueprint.setBlockId(UrlTools.createLocalResourceId("Blueprint", blueprint.getName()));
+//                        EntityRepository.instance().save(blueprint, language);
+                    }
                 }
 
                 for (PageTemplate pageTemplate : this.getPagetemplates()) {

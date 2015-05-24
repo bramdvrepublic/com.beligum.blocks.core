@@ -26,18 +26,15 @@ public class BlocksConfig
     public static final String PROJECT_VERSION_KEY = "appVersion";
     public static final String PROPERTIES_FILE = "blocks.properties";
 
-
-
     /**the languages this site can work with, ordered from most preferred languages, to less preferred*/
-    private LinkedHashSet<String> cachedLanguages;
-    private String defaultLanguage;
+    private HashMap<String, Locale> cachedLanguages;
+    private Locale defaultLanguage;
     public String projectVersion = null;
     private URI siteDomain;
     private URI defaultRdfSchema;
 
     public BlocksConfig()
     {
-
     }
 
     public String getLuceneIndex()
@@ -143,21 +140,30 @@ public class BlocksConfig
     /**
      * @return The languages this site can work with, ordered from most preferred language, to less preferred. If no such languages are specified in the configuration xml, an array with a default language is returned.
      */
-    public LinkedHashSet<String> getLanguages(){
+    public HashMap<String, Locale> getLanguages(){
         if(cachedLanguages==null){
-            cachedLanguages = new LinkedHashSet<>();
+            cachedLanguages = new HashMap<>();
             ArrayList<String> cachedLanguagesTemp = new ArrayList<String>(Arrays.asList(R.configuration().getStringArray("blocks.site.languages")));
 
             for (String l : cachedLanguagesTemp) {
+
                 Locale locale = new Locale(l);
-                String language = locale.getLanguage();
-                cachedLanguages.add(language);
+                if (this.defaultLanguage == null) this.defaultLanguage = locale;
+//                String language = locale;
+                cachedLanguages.put(locale.getLanguage(), locale);
             }
             if(cachedLanguages.size() == 0){
-                cachedLanguages.add(Locale.ENGLISH.getLanguage());
+                this.defaultLanguage = Locale.ENGLISH;
+                cachedLanguages.put(defaultLanguage.getLanguage(), defaultLanguage);
             }
         }
         return cachedLanguages;
+    }
+
+    public Locale getLocaleForLanguage(String language) {
+        Locale retVal = this.cachedLanguages.get(language);
+        if (retVal == null) retVal = this.getDefaultLanguage();
+        return retVal;
     }
 
     public String getCurrentUserName()
@@ -182,27 +188,18 @@ public class BlocksConfig
      *
      * @return The first languages in the languages-list, or the no-language-constant if no such list is present in the configuration-xml.
      */
-    public String getDefaultLanguage(){
-        String retVal = null;
-        if (defaultLanguage == null) {
-            if (getLanguages().iterator().hasNext()) {
-                defaultLanguage = getLanguages().iterator().next();
-            } else {
-                defaultLanguage = Locale.ENGLISH.getLanguage();
-            }
-        } else {
-            retVal = defaultLanguage;
-        }
-        return retVal;
+    public Locale getDefaultLanguage(){
+
+        return defaultLanguage;
     }
 
-    public String getRequestDefaultLanguage() {
-        String retVal = null;
+    public Locale getRequestDefaultLanguage() {
+        Locale retVal = null;
         List<Locale> languages = RequestContext.getJaxRsRequest().getAcceptableLanguages();
         while (retVal == null && languages.iterator().hasNext()) {
             Locale loc = languages.iterator().next();
-            if (Blocks.config().getLanguages().contains(loc.getLanguage())) {
-                retVal = loc.getLanguage();
+            if (Blocks.config().getLocaleForLanguage(loc.getLanguage()) != null) {
+                retVal = loc;
             }
         }
         if (retVal == null) retVal = getDefaultLanguage();

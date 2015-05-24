@@ -14,6 +14,7 @@ import org.jsoup.parser.Tag;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Locale;
 
 /**
  * Created by wouter on 16/03/15.
@@ -24,9 +25,9 @@ import java.nio.file.Paths;
 public class HtmlFilesVisitor extends BasicVisitor
 {
     private boolean parsingPageTemplate = false;
-    private String language;
+    private Locale language;
 
-    public HtmlFilesVisitor(String language)
+    public HtmlFilesVisitor(Locale language)
     {
         this.language = language;
     }

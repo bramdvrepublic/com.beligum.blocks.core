@@ -7,6 +7,7 @@ import javax.persistence.Entity;
 import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Locale;
 
 /**
  * Created by wouter on 30/04/15.
@@ -20,12 +21,12 @@ public class MovedPermanentlyURL extends BlocksURL
 
     }
 
-    public MovedPermanentlyURL(URI url, URI newUrl, String language) {
+    public MovedPermanentlyURL(URI url, URI newUrl, Locale language) {
         super(url, language);
     }
 
     @Override
-    public Response response(String language)
+    public Response response(Locale language)
     {
         return null;
     }

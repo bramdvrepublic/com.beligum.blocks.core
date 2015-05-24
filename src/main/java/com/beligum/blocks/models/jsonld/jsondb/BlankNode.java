@@ -1,8 +1,10 @@
-package com.beligum.blocks.models.jsonld;
+package com.beligum.blocks.models.jsonld.jsondb;
 
-import java.io.StringWriter;
+import com.beligum.blocks.models.jsonld.interfaces.Node;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 
 /**
  * Created by wouter on 23/04/15.
@@ -10,9 +12,9 @@ import java.util.LinkedHashMap;
 public class BlankNode implements Node
 {
 
-    public BlankNode() {
 
-    }
+    public BlankNode()
+    {}
 
     @Override
     public boolean isString()
@@ -40,7 +42,7 @@ public class BlankNode implements Node
         return false;
     }
     @Override
-    public boolean isList()
+    public boolean isIterable()
     {
         return false;
     }
@@ -49,26 +51,27 @@ public class BlankNode implements Node
     {
         return true;
     }
+
     @Override
-    public LinkedHashMap<String, Node> getMap()
-    {
-        return null;
-    }
-    @Override
-    public ArrayList<Node> getList()
+    public ArrayList<Node> getIterable()
     {
         return null;
     }
     @Override
     public String toString()
     {
-        return this.getString();
+        return this.asString();
     }
 
     @Override
-    public String getString()
+    public String asString()
     {
         return "";
+    }
+    @Override
+    public Locale getLanguage()
+    {
+        return null;
     }
 
     @Override
@@ -88,6 +91,11 @@ public class BlankNode implements Node
     }
     @Override
     public Long getLong()
+    {
+        return null;
+    }
+    @Override
+    public Object getValue()
     {
         return null;
     }

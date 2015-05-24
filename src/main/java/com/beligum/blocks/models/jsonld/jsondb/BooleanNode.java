@@ -1,6 +1,6 @@
-package com.beligum.blocks.models.jsonld;
+package com.beligum.blocks.models.jsonld.jsondb;
 
-import java.io.StringWriter;
+import com.beligum.blocks.models.jsonld.interfaces.Node;
 
 /**
  * Created by wouter on 23/04/15.
@@ -32,7 +32,7 @@ public class BooleanNode extends BlankNode
     }
 
     @Override
-    public String getString()
+    public String asString()
     {
         return internalObject.toString();
     }

@@ -7,10 +7,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
@@ -22,6 +19,7 @@ import com.sindicetech.siren.util.XSDDatatype;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,6 +35,8 @@ public class SimpleSearcher {
 
     private final SearcherManager mgr;
 
+    private TopDocs topDocs;
+
     public SimpleSearcher(final File path) throws IOException {
         dir = FSDirectory.open(path);
         mgr = new SearcherManager(dir, null);
@@ -47,17 +47,38 @@ public class SimpleSearcher {
         dir.close();
     }
 
-    public String[] search(final Query q, final int n) throws IOException {
+    public TopDocs getResultDocs() {
+        return this.topDocs;
+    }
+
+    public int getTotalHits() {
+        int retVal = 0;
+        if (getResultDocs() != null) {
+            retVal =  this.topDocs.totalHits;
+        }
+        return retVal;
+    }
+
+    public ArrayList<String>  getResultIds(int skip, int limit) throws IOException
+    {
+        ArrayList<String> retVal = new ArrayList<String>();
+        if (topDocs != null) {
+            int length = topDocs.scoreDocs.length;
+
+            for (int i = skip; i < skip + limit; i++) {
+                if (i < length) {
+                    retVal.add(this.retrieve(topDocs.scoreDocs[i].doc).get(SimpleIndexer.DEFAULT_ID_FIELD));
+                }
+            }
+        }
+        return retVal;
+    }
+
+    public void search(final Query q, final int n) throws IOException {
         IndexSearcher searcher = mgr.acquire();
         try {
-            final ScoreDoc[] results = searcher.search(q, null, n).scoreDocs;
-            final String[] ids = new String[results.length];
+            this.topDocs = searcher.search(q, null, n);
 
-            for (int i = 0; i < results.length; i++) {
-                ids[i] = this.retrieve(results[i].doc).get(SimpleIndexer.DEFAULT_ID_FIELD);
-            }
-
-            return ids;
         }
         finally {
             mgr.release(searcher);
@@ -66,7 +87,6 @@ public class SimpleSearcher {
 
     public Document retrieve(final int docID) throws IOException {
         IndexSearcher searcher = mgr.acquire();
-
         try {
             return searcher.doc(docID);
         }
@@ -79,15 +99,14 @@ public class SimpleSearcher {
         final ConciseTreeQueryParser parser = new ConciseTreeQueryParser();
         final ConciseKeywordQueryParser kParser = new ConciseKeywordQueryParser();
         kParser.setDatatypeAnalyzers(this.getDatatypeAnalyzers());
-        kParser.setAllowTwig(false);
         parser.setKeywordQueryParser(kParser);
         return parser.parse(JsonQuery, SimpleIndexer.DEFAULT_SIREN_FIELD);
     }
 
     private Map<String, Analyzer> getDatatypeAnalyzers() {
         final Map<String, Analyzer> analyzers = new HashMap<String, Analyzer>();
-        analyzers.put(XSDDatatype.XSD_STRING, new StandardAnalyzer(Version.LUCENE_46));
-        analyzers.put(JSONDatatype.JSON_FIELD, new StandardAnalyzer(Version.LUCENE_46));
+        analyzers.put(XSDDatatype.XSD_STRING, new StandardAnalyzer(Version.LUCENE_4_9));
+        analyzers.put(JSONDatatype.JSON_FIELD, new StandardAnalyzer(Version.LUCENE_4_9));
         return analyzers;
     }
 

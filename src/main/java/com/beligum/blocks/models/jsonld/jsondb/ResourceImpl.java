@@ -1,25 +1,30 @@
-package com.beligum.blocks.models.jsonld;
+package com.beligum.blocks.models.jsonld.jsondb;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.base.Blocks;
+import com.beligum.blocks.config.ParserConstants;
+import com.beligum.blocks.models.jsonld.JsonLDGraph;
+import com.beligum.blocks.models.jsonld.OrientNode;
+import com.beligum.blocks.models.jsonld.interfaces.Node;
+import com.beligum.blocks.models.jsonld.interfaces.Resource;
+import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.impls.orient.OrientGraph;
+import com.tinkerpop.blueprints.impls.orient.OrientVertex;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.*;
 
 /**
  * Created by wouter on 23/04/15.
  */
-public class ResourceImpl extends BlankNode implements Resource
+public class ResourceImpl extends OrientNode implements Resource
 {
-
     private HashMap<String, Node> internalObject = new HashMap<String, Node>();
     StringNode id = null;
 
     public ResourceImpl() {
     }
 
-    public ResourceImpl(ResourceImpl resource) {
+    public ResourceImpl(Resource resource) {
         this.wrap(resource.unwrap());
     }
 
@@ -53,7 +58,7 @@ public class ResourceImpl extends BlankNode implements Resource
                 if (!internalObject.containsKey(key)) {
                     internalObject.put(key, node);
                 }
-                else if (internalObject.get(key).isList()) {
+                else if (internalObject.get(key).isIterable()) {
                     ((ListNode) internalObject.get(key)).add(node);
                 }
                 else {
@@ -69,18 +74,33 @@ public class ResourceImpl extends BlankNode implements Resource
     public void set(String key, Node node) {
         key = fixPropertyName(key);
         if (!node.isNull() && key != null) {
-            if (key.equals(JsonLDGraph.ID)) {
+            if (key.equals(JsonLDGraph.ID))
+            {
                 if (node.isString())
                     this.id = (StringNode) node;
             }
-            else {
+            else if (key.equals(ParserConstants.JSONLD_TYPE)) {
+                if (node.isString())
+                {
+
+                } else if (node.isIterable())
+                {
+
+                } else
+                {
+                    // This is not a valid type
+                    Logger.error("Type not added to resource. Type is not valid. Use setRdfType().");
+                }
+            }
+            else
+            {
                 internalObject.put(key, node);
             }
         }
     }
 
-    public void remove(String key) {
-        internalObject.remove(key);
+    public Node remove(String key) {
+        return internalObject.remove(key);
     }
 
     @Override
@@ -96,8 +116,13 @@ public class ResourceImpl extends BlankNode implements Resource
             retVal = this.id;
         } else {
             Node node = internalObject.get(key);
-            if (node != null && node.isList()) {
-                retVal = node.getList().get(0);
+            if (node != null && node.isIterable()) {
+                Iterator<Node> it = node.getIterable().iterator();
+                if (it.hasNext()) {
+                    retVal = it.next();
+                } else {
+                    retVal = new BlankNode();
+                }
             } else if (node != null) {
                 retVal = node;
             }
@@ -117,16 +142,39 @@ public class ResourceImpl extends BlankNode implements Resource
         return retVal;
     }
 
-    public String getId() {
+    @Override
+    public Object getDBId()
+    {
+        return null;
+    }
+
+    @Override
+    public Object setDBId()
+    {
+        return null;
+    }
+
+    public String getBlockId() {
         String retVal = null;
-        if (id != null) retVal = id.getString();
+        if (id != null) retVal = id.asString();
         return retVal;
     }
 
-    public void setId(String id) {
+    public void setBlockId(String id) {
         this.id = new StringNode(id);
     }
 
+    @Override
+    public Node getRdfType()
+    {
+        return null;
+    }
+
+    @Override
+    public void setRdfType(Node node)
+    {
+
+    }
 
     public boolean isEmpty() {
         return internalObject.keySet().size() == 0;
@@ -141,67 +189,15 @@ public class ResourceImpl extends BlankNode implements Resource
     }
 
     @Override
+    public void merge(Resource resource)
+    {
+    }
+
+    @Override
     public boolean isResource()
     {
         return true;
     }
-
-
-    public void addBoolean(String key, Boolean value) {
-        BooleanNode node = new BooleanNode(value);
-        add(key, node);
-    }
-
-    public void addInteger(String key, Integer value) {
-        IntegerNode node = new IntegerNode(value);
-        add(key, node);
-    }
-
-    public void addLong(String key, Long value) {
-        LongNode node = new LongNode(value);
-        add(key, node);
-    }
-
-    public void addDouble(String key, Double value) {
-        DoubleNode node = new DoubleNode(value);
-        add(key, node);
-    }
-
-    public void addString(String key, String value, String language) {
-        StringNode node = new StringNode(value, language);
-        add(key, node);
-    }
-
-    public void setBoolean(String key, Boolean value) {
-        BooleanNode node = new BooleanNode(value);
-        set(key, node);
-    }
-
-    public void setInteger(String key, Integer value) {
-        IntegerNode node = new IntegerNode(value);
-        set(key, node);
-    }
-
-    public void setLong(String key, Long value) {
-        LongNode node = new LongNode(value);
-        set(key, node);
-    }
-
-    public void setDouble(String key, Double value) {
-        DoubleNode node = new DoubleNode(value);
-        set(key, node);
-    }
-
-    public void setString(String key, String value, String language) {
-        StringNode node = new StringNode(value, language);
-        set(key, node);
-    }
-
-    public void setString(String key, String value) {
-        StringNode node = new StringNode(value);
-        set(key, node);
-    }
-
 
     public Boolean getBoolean(String key) {
         return getFirst(key).getBoolean();
@@ -220,11 +216,12 @@ public class ResourceImpl extends BlankNode implements Resource
     }
 
     public String getString(String key) {
-        return getFirst(key).getString();
+        return getFirst(key).asString();
     }
 
-    public ArrayList<Node> getList(String key) {
-        return get(key).getList();
+
+    public Iterable<Node> getIterable(String key) {
+        return get(key).getIterable();
     }
 
     public Resource getResource(String key)
