@@ -60,6 +60,6 @@ public class ModalsEndpoint
     //        Template template = R.templateEngine().getEmptyTemplate("/views/modals/" + NEW_PAGE_MODAL);
     //        template.set("entityClasses", Blocks.templateCache().getPagetemplates(Blocks.config().getDefaultLanguage()));
     //        template.set("entityUrl", entityUrl);
-    //        return Response.ok(template.render()).build();
+    //        return Response.ok(template.renderContent()).build();
     //    }
 }

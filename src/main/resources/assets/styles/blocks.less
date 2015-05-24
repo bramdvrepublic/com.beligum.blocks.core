@@ -216,16 +216,13 @@ iframe.cke_panel_frame {
   position: fixed;
   top: 0px;
   width: 100%;
-  min-height: 40px;
-  font-size: 35px;
   z-index: 9999;
   background-color: grey;
   display: none;
-  padding: 10px;
+  padding: 5px;
 
   a {
     margin-left: 10px !important;
-
   }
 
   .drag-block-container {
@@ -244,19 +241,18 @@ iframe.cke_panel_frame {
   }
 
   .main-menu-items {
-
   }
-}
 
-.blocks-main-menu.open {
-  display: block;
+  &.open {
+    display: block;
+  }
 }
 
 .blocks-main-edit-button {
   position: fixed;
-  font-size: 40px;
-  right: 0px;
-  top: 0px;
+  font-size: 20px;
+  top: 10px;
+  right: 20px;
   cursor: pointer;
   z-index: 10000;
 }
@@ -264,6 +260,7 @@ iframe.cke_panel_frame {
 .sitemap-list {
   list-style-type: disc;
   padding-left: 40px;
+
   .sitemap-item {
 
   }

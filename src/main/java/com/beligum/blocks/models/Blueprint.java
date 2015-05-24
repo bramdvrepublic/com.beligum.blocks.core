@@ -4,6 +4,7 @@ import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.parsers.ElementParser;
+import com.beligum.blocks.parsers.ScriptsLinksParser;
 import com.beligum.blocks.parsers.visitors.template.BlueprintVisitor;
 import org.jsoup.nodes.Element;
 
@@ -27,7 +28,7 @@ public abstract class Blueprint extends StoredTemplate
     private String rdfType;
     private String rdfTypePrefix;
 
-    protected LinkedHashSet<String> links = new LinkedHashSet<>();
+    protected ScriptsLinksParser scriptsLinksParser;
     /**
      * the scripts this abstract template needs
      */
@@ -63,15 +64,17 @@ public abstract class Blueprint extends StoredTemplate
     {
         BlueprintVisitor blueprintVisitor = (BlueprintVisitor) super.parse();
         //        SimpleTraversor.traverseProperties(this.transientElement, blueprintVisitor);
-        links = blueprintVisitor.getLinks();
-        scripts = blueprintVisitor.getScripts();
+        this.scriptsLinksParser = blueprintVisitor.getScriptsLinksParser();
         this.value = this.transientElement.html();
         for (BasicTemplate property : this.properties) {
-            if (property.isWrapper())
+            if (property.isWrapper()) {
                 this.wrapper = true;
+            }
         }
-        if (this.getProperties().size() > 1 && this.wrapper)
+        if (this.getProperties().size() > 1 && this.wrapper) {
             throw new ParseException("Anonymous blueprint can have only 1 property");
+        }
+
         return blueprintVisitor;
     }
 
@@ -151,20 +154,16 @@ public abstract class Blueprint extends StoredTemplate
         return !this.canChange;
     }
 
-    public LinkedHashSet<String> getLinks()
+    public ScriptsLinksParser getScriptsLinksParser()
     {
-        return this.links;
-    }
-
-    public LinkedHashSet<String> getScripts()
-    {
-        return this.links;
+        return this.scriptsLinksParser;
     }
 
     public boolean isAddableBlock()
     {
         return this.addableBlock;
     }
+
     public boolean isPageBlock()
     {
         return this.pageBlock;

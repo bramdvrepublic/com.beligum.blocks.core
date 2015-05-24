@@ -31,7 +31,6 @@ public class HtmlFromClientVisitor extends BasicVisitor
     @Override
     public Node head(Node node, int depth) throws ParseException
     {
-
         String language = Blocks.urlDispatcher().getLanguage(htmlUrl);
         Node retVal = node;
         if (node instanceof Element) {

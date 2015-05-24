@@ -84,7 +84,7 @@ public class DebugEndpoint
     public Response getPageTemplatesPage() throws Exception
     {
         Template template = pagetemplates.get().getNewTemplate();
-        template.set("pageTemplates", Blocks.templateCache().getPagetemplates());
+        template.set("pageTemplates", Blocks.templateCache().getPageTemplates());
         return Response.ok(template).build();
     }
 
@@ -177,7 +177,7 @@ public class DebugEndpoint
             language = Blocks.config().getDefaultLanguage();
 
         String cache = "";
-        for (PageTemplate pageTemplate : Blocks.templateCache().getPagetemplates()) {
+        for (PageTemplate pageTemplate : Blocks.templateCache().getPageTemplates()) {
             cache += "----------------------------------" + pageTemplate.getBlueprintName() + "---------------------------------- \n\n" + pageTemplate.getValue() + "\n\n\n\n\n\n";
         }
         return Response.ok(cache).build();
