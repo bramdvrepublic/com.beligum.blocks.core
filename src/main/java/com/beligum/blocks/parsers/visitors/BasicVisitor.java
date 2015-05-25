@@ -1,8 +1,11 @@
 package com.beligum.blocks.parsers.visitors;
 
+import com.beligum.base.resources.ResourceDescriptor;
+import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.exceptions.ParseException;
 import com.beligum.blocks.parsers.FileAnalyzer;
+import com.google.common.base.Charsets;
 import com.beligum.base.utils.Logger;
 import com.google.common.collect.HashBiMap;
 import org.apache.commons.io.IOUtils;
@@ -11,8 +14,8 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
+import java.io.Reader;
+import java.nio.file.Files;
 
 /**
  * Created by wouter on 30/03/15.
@@ -43,13 +46,9 @@ public abstract class BasicVisitor
 
     public Document getSource(String sourcePath) throws IOException
     {
-        try (InputStream input = this.getClass().getResourceAsStream(sourcePath)) {
-            String content = "";
-            List<String> lines = IOUtils.readLines(input);
-            for (String line : lines) {
-                content += line + "\n";
-            }
-            Document source = FileAnalyzer.parse(content);
+        ResourceDescriptor resourceDescriptor = R.resourceLoader().getResource(sourcePath);
+        try (Reader reader = Files.newBufferedReader(resourceDescriptor.getParsedPath(), Charsets.UTF_8)) {
+            Document source = FileAnalyzer.parse(IOUtils.toString(reader));
             if (source.childNodes().isEmpty()) {
                 Logger.warn("Found empty file at '" + sourcePath + "'.");
             }

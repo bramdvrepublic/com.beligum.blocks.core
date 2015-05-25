@@ -220,7 +220,7 @@ public class EntitiesEndpoint
     public Response listTemplates() throws Exception
     {
         List<String> templateNames = new ArrayList<String>();
-        for (PageTemplate e : Blocks.templateCache().getPagetemplates()) {
+        for (PageTemplate e : Blocks.templateCache().getPageTemplates()) {
             if (!e.getName().equals(ParserConstants.DEFAULT_PAGE_TEMPLATE)) {
                 templateNames.add(e.getName());
             }

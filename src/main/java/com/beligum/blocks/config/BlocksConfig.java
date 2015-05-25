@@ -5,14 +5,16 @@ import com.beligum.base.security.Principal;
 import com.beligum.base.server.RequestContext;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
+import com.google.common.base.Charsets;
 import com.beligum.blocks.base.Blocks;
 import org.apache.shiro.UnavailableSecurityManagerException;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.Reader;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -107,11 +109,9 @@ public class BlocksConfig
     {
         if (projectVersion == null) {
             Properties prop = new Properties();
-            InputStream input = null;
-            try {
-                input = BlocksConfig.class.getResourceAsStream("/" + PROPERTIES_FILE);
+            try (Reader reader = Files.newBufferedReader(R.resourceLoader().getResource("/" + PROPERTIES_FILE).getParsedPath(), Charsets.UTF_8)) {
                 // load a properties file
-                prop.load(input);
+                prop.load(reader);
                 // get the property value and print it out
                 projectVersion = prop.getProperty(PROJECT_VERSION_KEY);
             }
@@ -122,16 +122,6 @@ public class BlocksConfig
                 //get current date time with Date()
                 Date date = new Date();
                 projectVersion = dateFormat.format(date);
-            }
-            finally {
-                if (input != null) {
-                    try {
-                        input.close();
-                    }
-                    catch (IOException e) {
-                        Logger.error("Error while closing inputstream of properties-file.", e);
-                    }
-                }
             }
         }
         return projectVersion;

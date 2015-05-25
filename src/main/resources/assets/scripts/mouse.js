@@ -109,9 +109,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             // check for left mouse click
             if (event.which == 1) {
                 var block = Broadcaster.getHooveredBlockForPosition(event.pageX, event.pageY);
-                if (draggingStatus == BaseConstants.DRAGGING.NO &&
-                    block.current != null && block.current.canDrag) {
-
+                if (draggingStatus == BaseConstants.DRAGGING.NO && block.current != null && block.current.canDrag) {
                     draggingStatus = BaseConstants.DRAGGING.WAITING;
                     draggingStart = event;
 //                    disableSelection();

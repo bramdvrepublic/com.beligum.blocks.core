@@ -3,75 +3,78 @@ package com.beligum.blocks.models;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
-import com.beligum.blocks.models.jsonld.interfaces.Node;
-import com.beligum.blocks.models.jsonld.jsondb.StringNode;
 import com.beligum.blocks.parsers.ElementParser;
+import com.beligum.blocks.parsers.ScriptsLinksParser;
 import com.beligum.blocks.parsers.visitors.template.BlueprintVisitor;
-import com.beligum.blocks.utils.UrlTools;
 import org.jsoup.nodes.Element;
 
-import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.Locale;
 
 /**
-* Created by wouter on 16/03/15.
-*/
-public class Blueprint extends StoredTemplate
+ * Created by wouter on 16/03/15.
+ */
+public abstract class Blueprint extends StoredTemplate
 {
 
-    public static final String pageBlock = ParserConstants.BLOCKS_SCHEMA + "pageBlock";
-    public static final String addableBlock = ParserConstants.BLOCKS_SCHEMA + "addableBlock";
-    public static final String canChange = ParserConstants.BLOCKS_SCHEMA + "canChange";
-    public static final String rdfType = ParserConstants.BLOCKS_SCHEMA + "rdfType,";
-    public static final String link = ParserConstants.BLOCKS_SCHEMA + "link,";
-    public static final String script = ParserConstants.BLOCKS_SCHEMA + "script,";
+    /**
+     * true if this is a class which can be created as a new page
+     */
+    private boolean pageBlock;
+    /**
+     * true if this is a class which can be added as a new block
+     */
+    private boolean addableBlock;
+    private boolean canChange;
+    private String rdfType;
+    private String rdfTypePrefix;
 
-
-    /**true if this is a class which can be created as a new page*/
-//    private boolean pageBlock;
-    /**true if this is a class which can be added as a new block*/
-//    private boolean addableBlock;
-//    private boolean canChange;
-//    private String rdfType;
-
-//    protected LinkedHashSet<String> links = new LinkedHashSet<>();
-//    /**the scripts this abstract template needs*/
-//    protected LinkedHashSet<String> scripts = new LinkedHashSet<>();
+    protected ScriptsLinksParser scriptsLinksParser;
+    /**
+     * the scripts this abstract template needs
+     */
+    protected LinkedHashSet<String> scripts = new LinkedHashSet<>();
 
     public Blueprint()
     {
 
     }
 
-    public Blueprint(Element element, Locale language) throws ParseException
+    public Blueprint(Element element, String language) throws ParseException
     {
         super(element, language);
-        this.setName(this.getBlueprintName());
-        this.setWrapper(false);
-        this.setBlockId(UrlTools.createLocalResourceId("blueprint", this.getBlueprintName()));
-        this.set(ParserConstants.JSONLD_TYPE, new StringNode(ParserConstants.BLOCKS_BLUEPRINT_TYPE));
-        this.setAddableBlock(ElementParser.isAddableBlock(element));
-        this.setPageBlock(ElementParser.isPageBlock(element));
-        this.setRdfType(ElementParser.getTypeOf(element));
-        this.setCanChange(ElementParser.isCanLayout(element));
+        this.name = this.blueprintName;
+        this.wrapper = false;
+
+        this.addableBlock = ElementParser.isAddableBlock(element);
+        this.pageBlock = ElementParser.isPageBlock(element);
+        this.rdfType = ElementParser.getTypeOf(element);
+        this.canChange = ElementParser.isCanLayout(element);
         String pageTemplateName = ElementParser.getPagetemplateName(element);
-        this.setPageTemplateName(pageTemplateName != null ? pageTemplateName : this.getPageTemplateName());
+        this.pageTemplateName = pageTemplateName != null ? pageTemplateName : this.pageTemplateName;
     }
 
     @Override
-    protected BlueprintVisitor getVisitor() {
-        return new BlueprintVisitor(this);
+    protected BlueprintVisitor getVisitor()
+    {
+        return new BlueprintVisitor();
     }
 
     @Override
     public BlueprintVisitor parse() throws ParseException
     {
-        BlueprintVisitor blueprintVisitor = (BlueprintVisitor)super.parse();
-//        SimpleTraversor.traverseProperties(this.transientElement, blueprintVisitor);
-//        links = blueprintVisitor.getLinks();
-//        scripts = blueprintVisitor.getScripts();
-        this.setValue(this.transientElement.html());
+        BlueprintVisitor blueprintVisitor = (BlueprintVisitor) super.parse();
+        //        SimpleTraversor.traverseProperties(this.transientElement, blueprintVisitor);
+        this.scriptsLinksParser = blueprintVisitor.getScriptsLinksParser();
+        this.value = this.transientElement.html();
+        for (BasicTemplate property : this.properties) {
+            if (property.isWrapper()) {
+                this.wrapper = true;
+            }
+        }
+        if (this.getProperties().size() > 1 && this.wrapper) {
+            throw new ParseException("Anonymous blueprint can have only 1 property");
+        }
+
         return blueprintVisitor;
     }
 
@@ -99,77 +102,87 @@ public class Blueprint extends StoredTemplate
     //        }
     //    }
 
-    public boolean isFixed() {
-        return !getBoolean(Blueprint.canChange);
-    }
+    //    public Element getTemplateAsElement(boolean readOnly) throws Exception
+    //    {
+    //        Element retVal = this.getElement();
+    //        Blueprint blueprint = TemplateCache.getInstance().getBlueprint(this.blueprint, this.language);
+    //        if (properties.values().size() > 0) {
+    //            SimpleTraversor.traverseProperties((Element)retVal, new ToHtmlVisitor(readOnly, blueprint.isReadOnly(), properties, blueprint.getProperties(), language));
+    //        }
+    //        return retVal;
+    //
+    //    }
 
-    public void setCanChange(Boolean value) {
-        set(Blueprint.canChange, Blocks.resourceFactory().asNode(value, Locale.ROOT));
-    }
-
-
-    public LinkedHashSet<String> getLinks() {
-        LinkedHashSet<String> links = new LinkedHashSet<>();
-        Node listNode = get(Blueprint.link);
-        if (listNode != null && listNode.isString()) {
-            links.add(listNode.asString());
-        } else if (listNode != null && listNode.isIterable()) {
-            Iterator<Node> it = listNode.getIterable().iterator();
-            while (it.hasNext()) {
-                Node node = it.next();
-                if (node.isString()) {
-                    links.add(node.asString());
-                }
+    public void setRdfTypeAndPrefix(String property) throws ParseException
+    {
+        if (property.startsWith("http://")) {
+            int lastIndex = property.lastIndexOf("#");
+            if (lastIndex == -1) {
+                lastIndex = property.lastIndexOf("/");
             }
-
-
-
+            String schemaUrl = property.substring(0, lastIndex + 1);
+            this.rdfType = property.substring(lastIndex + 1, property.length());
+            this.rdfTypePrefix = Blocks.rdfFactory().getPrefixForSchema(schemaUrl);
         }
-        return links;
-    }
-
-    public void addLink(String link) {
-        add(Blueprint.link, Blocks.resourceFactory().asNode(value, Locale.ROOT));
-    }
-
-    public void addScript(String script) {
-        add(Blueprint.script, Blocks.resourceFactory().asNode(value, Locale.ROOT));
-    }
-
-    public LinkedHashSet<String> getScripts() {
-        LinkedHashSet<String> scripts = new LinkedHashSet<>();
-        Node listNode = get(Blueprint.script);
-        if (listNode != null && listNode.isString()) {
-            scripts.add(listNode.asString());
-        } else if (listNode != null && listNode.isIterable()) {
-            Iterator<Node> it = listNode.getIterable().iterator();
-            while (it.hasNext()) {
-                Node node = it.next();
-                if (node.isString()) {
-                    scripts.add(node.asString());
-                }
+        else {
+            String[] namespacedName = this.rdfType.split(":");
+            if (namespacedName.length == 2) {
+                this.rdfTypePrefix = namespacedName[0];
+                this.name = namespacedName[1];
+            }
+            else if (namespacedName.length > 2) {
+                throw new ParseException("Illegal prefix for property");
+            }
+            else {
+                this.rdfTypePrefix = Blocks.config().getDefaultRdfPrefix();
             }
         }
-        return scripts;
+        int x = 0;
     }
 
-    public boolean isAddableBlock() {return getBoolean(Blueprint.addableBlock);
-    }
-    public void setAddableBlock(Boolean value) {set(Blueprint.addableBlock, Blocks.resourceFactory().asNode(value, Locale.ROOT));}
+    //    public StringBuilder getRenderedTemplate(boolean readOnly, boolean fetchSingleton)
+    //    {
+    //        StringBuilder retVal = new StringBuilder(this.value);
+    //        if (properties.size() > 0) {
+    //            retVal = this.renderTemplate(retVal, readOnly, this, fetchSingleton);
+    //        }
+    //        return this.renderInsideElement(retVal, readOnly);
+    //    }
 
-    public boolean isPageBlock() {return getBoolean(Blueprint.pageBlock);}
-    public void setPageBlock(Boolean value) {
-        set(Blueprint.pageBlock, Blocks.resourceFactory().asNode(value, Locale.ROOT));
+    public boolean isFixed()
+    {
+        return !this.canChange;
     }
 
-    public String getRdfTypes() {
+    public ScriptsLinksParser getScriptsLinksParser()
+    {
+        return this.scriptsLinksParser;
+    }
+
+    public boolean isAddableBlock()
+    {
+        return this.addableBlock;
+    }
+
+    public boolean isPageBlock()
+    {
+        return this.pageBlock;
+    }
+
+    public String getRdfType()
+    {
         return this.rdfType;
     }
-    public void setRdfType(String value) {
-        set(Blueprint.rdfType, Blocks.resourceFactory().asNode(value, Locale.ROOT));
+
+    public String getRdfTypePrefix()
+    {
+        return this.rdfTypePrefix;
     }
 
-    public String getTemplate() { return this.getValue();}
+    public String getTemplate()
+    {
+        return this.value;
+    }
 
     @Override
     public Blueprint getBlueprint()
@@ -182,6 +195,5 @@ public class Blueprint extends StoredTemplate
     {
         return ParserConstants.DEFAULT_PAGE_TEMPLATE;
     }
-
 
 }

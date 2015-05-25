@@ -19,7 +19,9 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
     var dragBlocksContainer = $('<div class="drag-block-container"></div>');
     var dragBlockText = $('<div class="drag-create-block drag-block-text" create-block-type="building">Building</div>');
     var dragBlockCustom = $('<div class="drag-create-block drag-block-text" >Custom</div>');
-    menuBar.append(dragBlocksContainer.append(dragBlockText).append(dragBlockCustom));
+
+    //TODO: activate this again (commented while styling)
+    //menuBar.append(dragBlocksContainer.append(dragBlockText).append(dragBlockCustom));
 
     /*
      * Hide show bar on click of menu button

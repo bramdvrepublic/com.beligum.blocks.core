@@ -35,12 +35,12 @@ public interface DynamicBlockListener
     public String getType();
 
     /**
-     * @return an ordered list with all link-nodes needed to render this dynamic block
+     * @return an ordered list with all link-nodes needed to renderContent this dynamic block
      */
     public List<Element> getLinks();
 
     /**
-     * @return an ordered list with all script-nodes needed to render this dynamic block
+     * @return an ordered list with all script-nodes needed to renderContent this dynamic block
      */
     public List<Element> getScripts();
 

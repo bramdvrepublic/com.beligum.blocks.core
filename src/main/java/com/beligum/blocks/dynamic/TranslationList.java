@@ -67,7 +67,7 @@ public class TranslationList implements DynamicBlockListener
     }
 
     /**
-     * @return an ordered list with all link-nodes needed to render this dynamic block
+     * @return an ordered list with all link-nodes needed to renderContent this dynamic block
      */
     @Override
     public List<Element> getLinks()
@@ -76,7 +76,7 @@ public class TranslationList implements DynamicBlockListener
         return new ArrayList<>();
     }
     /**
-     * @return an ordered list with all script-nodes needed to render this dynamic block
+     * @return an ordered list with all script-nodes needed to renderContent this dynamic block
      */
     @Override
     public List<Element> getScripts()

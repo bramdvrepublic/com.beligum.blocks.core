@@ -68,6 +68,15 @@ public class ApplicationEndpoint
     public Response getPageWithId(@PathParam("randomPage") String randomURLPath, @QueryParam("version") Long version, @QueryParam("deleted") @DefaultValue("false") boolean fetchDeleted)
                     throws Exception
     {
+        if (!R.configuration().getProduction()) {
+            Blocks.templateCache().reset();
+        }
+
+        //            if(fetchDeleted && !SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)){
+        //                Logger.debug("Unauthorized user tried to view deleted version of page '" + randomURLPath + "'.");
+        //                fetchDeleted = false;
+        //            }
+        URL url = new URL(RequestContext.getJaxRsRequest().getUriInfo().getRequestUri().toString());
         try {
             Response retVal = null;
             URI currentURI = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
@@ -118,6 +127,36 @@ public class ApplicationEndpoint
             }
             return retVal;
         }
+
+//        if (storedTemplate == null) {
+//            if (fetchDeleted) {
+//                // Todo add flash message
+//            }
+//            //if we're logged in, renderContent out the page where we can create a new page
+//            if (SecurityUtils.getSubject().isAuthenticated() || SecurityUtils.getSubject().isRemembered()) {
+//                return injectParameters(new_page.get().getNewTemplate());
+//            }
+//            else {
+//                throw new NotFoundException();
+//            }
+//        }
+//        else {
+//            Resource resource = null;
+//            //                if (storedTemplate.getEntity() != null) {
+//            ArrayList<JsonLDWrapper> model = Blocks.database().fetchEntities("{ '@graph.@id': 'mot:/" + storedTemplate.getId().toString() + "'}");
+//
+//            if (model.iterator().hasNext())
+//                resource = model.iterator().next().getMainResource(storedTemplate.getLanguage());
+//            //                }
+//
+//            PageTemplate pageTemplate = Blocks.templateCache().getPageTemplate(storedTemplate.getPageTemplateName());
+//            if (pageTemplate == null) {
+//                throw new Exception("Couldn't find the page template with name '" + storedTemplate.getPageTemplateName() + "' while parsing stored template '"+storedTemplate.getName()+"'");
+//            }
+//            BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
+//
+//            // Todo renderContent entity
+//            return Response.ok(renderer.render(pageTemplate, storedTemplate, resource, storedTemplate.getLanguage())).build();
         catch(Exception e){
             Logger.error(e);
             throw new NotFoundException("The page '" + randomURLPath + "' could not be found.", e);
