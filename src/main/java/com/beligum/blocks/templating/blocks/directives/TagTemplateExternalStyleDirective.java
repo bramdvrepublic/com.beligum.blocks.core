@@ -15,7 +15,7 @@ import java.io.Writer;
  * Created by bram on 4/25/15.
  */
 @VelocityDirective(TagTemplateExternalStyleDirective.NAME)
-public class TagTemplateExternalStyleDirective extends AbstractTagTemplateResourceDirective
+public class TagTemplateExternalStyleDirective extends AbstractTagTemplateDirective
 {
     //-----CONSTANTS-----
     //blocksTemplateExternalStyle
@@ -27,6 +27,11 @@ public class TagTemplateExternalStyleDirective extends AbstractTagTemplateResour
 
     //-----PUBLIC METHODS-----
     @Override
+    public int getType()
+    {
+        return BLOCK;
+    }
+    @Override
     public String getName()
     {
         return NAME;
@@ -34,9 +39,9 @@ public class TagTemplateExternalStyleDirective extends AbstractTagTemplateResour
     @Override
     public boolean render(InternalContextAdapter context, Writer writer, Node node) throws IOException, ResourceNotFoundException, ParseErrorException, MethodInvocationException
     {
-        boolean print = (boolean) this.readArg(context, node, 0);
-        String href = (String) this.readArg(context, node, 1);
-        String element = this.readValue(context, node);
+        boolean print = (boolean) AbstractTagTemplateDirective.readArg(context, node, 0);
+        String href = (String) AbstractTagTemplateDirective.readArg(context, node, 1);
+        String element = AbstractTagTemplateDirective.readValue(context, node);
         TagTemplateResourcesDirective.getContextResources(context).addExternalStyle(print, href, element);
 
         if (print) {

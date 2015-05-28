@@ -219,12 +219,12 @@ public class BasicTemplate implements NamedProperty
 
     //    protected String findNextPropertyInTemplate(StringBuilder template) {
     //        String retVal = null;
-    //        int start = template.indexOf(ParserConstants.TEMPLATE_PROPERTY_START);
-    //        if (start > -1) {
+    //        int created = template.indexOf(ParserConstants.TEMPLATE_PROPERTY_START);
+    //        if (created > -1) {
     //            int end = template.indexOf(ParserConstants.TEMPLATE_PROPERTY_END);
-    //            if (end > -1 && end > start) {
-    //                start += ParserConstants.TEMPLATE_PROPERTY_START.length();
-    //                retVal = template.substring(start, end);
+    //            if (end > -1 && end > created) {
+    //                created += ParserConstants.TEMPLATE_PROPERTY_START.length();
+    //                retVal = template.substring(created, end);
     //            }
     //        }
     //        return retVal;
@@ -262,7 +262,7 @@ public class BasicTemplate implements NamedProperty
     //                if (blueprintProperty != null && (blueprintReadOnly || blueprintProperty.isReadOnly())) {
     //                    retVal.add(blueprintProperty);
     //                } else if (blueprintProperty == null && blueprintReadOnly) {
-    //                    // TODO put nothing or instance?
+    //                    // TODO put nothing or created?
     //                    retVal.add(instanceProperty);
     //                } else {
     //                    retVal.add(instanceProperty);

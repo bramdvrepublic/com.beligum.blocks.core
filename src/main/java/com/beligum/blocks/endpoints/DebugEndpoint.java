@@ -34,7 +34,7 @@ import java.util.ArrayList;
 @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
 public class DebugEndpoint
 {
-    public static final String ENTTIY_INSTANCE_TYPE = "instance";
+    public static final String ENTTIY_INSTANCE_TYPE = "created";
     public static final String BLUEPRINT_TYPE = "blueprint";
     public static final String PAGE_TEMPLATE_TYPE = "template";
     public static final String XML_TEMPLATE_TYPE = "xml";
@@ -207,7 +207,7 @@ public class DebugEndpoint
     //        }
     //        else if(template instanceof PageTemplate){
     //            Blueprint defaultBlueprint = BlueprintsCache.getInstance().get(ParserConstants.DEFAULT_BLUEPRINT);
-    //            return Response.ok(TemplateParser.renderTemplate(TemplateParser.parse(template.getTemplate()), Blocks.config().getSiteDomainUrl(), id.getLanguage(), template.getLinks(), template.getScripts()).outerHtml()).build();
+    //            return Response.ok(TemplateParser.renderTemplate(TemplateParser.parse(template.getTemplate()), Blocks.putConfig().getSiteDomainUrl(), id.getLanguage(), template.getLinks(), template.getScripts()).outerHtml()).build();
     //        }
     //        else{
     //            return Response.ok(TemplateParser.renderTemplate(template, id.getLanguage())).build();

@@ -31,9 +31,10 @@ public class TagTemplate
     private Path relativePath;
     private String name;
     private String velocityName;
+    private String controllerMapVariable;
     private Map<Locale, String> titles;
     private Map<Locale, String> descriptions;
-    private Class<?> controllerClass;
+    private Class<TagTemplateController> controllerClass;
     private List<Element> inlineScriptElements;
     private List<Element> externalScriptElements;
     private List<Element> inlineStyleElements;
@@ -51,7 +52,7 @@ public class TagTemplate
             this.templateElement = templateElements.get(0);
         }
         else {
-            throw new Exception("Encountered tag template with an invalid <template> tag setup (found " + (templateElements == null ? null : templateElements.size()) + " tags); " + this.absolutePath);
+            throw new Exception("Encountered tag template with an invalid <template> tag config (found " + (templateElements == null ? null : templateElements.size()) + " tags); " + this.absolutePath);
         }
 
         //we might as well do this here to save time
@@ -62,7 +63,7 @@ public class TagTemplate
             for (String invisiblePrefix : INVISIBLE_START_FOLDERS) {
                 if (namePath.startsWith(invisiblePrefix) || namePath.startsWith(namePath.getFileSystem().getSeparator() + invisiblePrefix)) {
                     namePath = namePath.subpath(1, namePath.getNameCount());
-                    //this is a safe choice that might change in the future: do we want to keep eating first folders? Of so, then we should actually start over, no?
+                    //this is a safe choice that might change in the future: do we want to keep eating first folders? Of so, then we should actually created over, no?
                     break;
                 }
             }
@@ -82,17 +83,25 @@ public class TagTemplate
             }
 
             this.velocityName = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, this.name);
+            this.controllerMapVariable = new StringBuilder().append("$").append(TagTemplateContextMap.TAG_TEMPLATE_CONTROLLERS_VARIABLE).append("['").append(this.getTemplateName()).append("']").toString();
         }
         else {
             this.name = null;
             this.velocityName = null;
+            this.controllerMapVariable = null;
         }
 
         this.fillMetaValues(this.source, this.titles = new HashMap<>(), "title");
         this.fillMetaValues(this.source, this.descriptions = new HashMap<>(), "description");
         String controllerClassStr = this.getMetaValue(this.source, "controller");
         if (!StringUtils.isEmpty(controllerClassStr)) {
-            this.controllerClass = Class.forName(controllerClassStr);
+            Class<?> clazz = Class.forName(controllerClassStr);
+            if (TagTemplateController.class.isAssignableFrom(clazz)) {
+                this.controllerClass = (Class<TagTemplateController>) clazz;
+            }
+            else {
+                throw new ParseException("Encountered template with a controller that doesn't implement "+TagTemplateController.class.getSimpleName()+"; "+relativePath, 0);
+            }
         }
 
         this.inlineStyleElements = getInlineStyles(this.source);
@@ -159,6 +168,10 @@ public class TagTemplate
     public String getVelocityTemplateName()
     {
         return velocityName;
+    }
+    public String getControllerMapVariable()
+    {
+        return controllerMapVariable;
     }
     public Element getTemplateElement()
     {

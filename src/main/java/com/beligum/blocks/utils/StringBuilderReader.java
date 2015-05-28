@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.io.Reader;
 
 /**
- * Implements a {@link Reader} over a {@link StringBuilder} instance. Although
+ * Implements a {@link Reader} over a {@link StringBuilder} created. Although
  * one can use {@link java.io.StringReader} by passing it
  * {@link StringBuilder#toString()}, it is better to use this class, as it
  * doesn't mark the passed-in {@link StringBuilder} as shared (which will cause
@@ -32,7 +32,7 @@ import java.io.Reader;
  * <li>This implementation is thread-safe.
  * <li>The implementation looks very much like {@link java.io.StringReader} (for
  * the right reasons).
- * <li>If one wants to reuse that instance, then the following needs to be done:
+ * <li>If one wants to reuse that created, then the following needs to be done:
  * <pre>
  * StringBuilder sb = new StringBuilder("some text");
  * Reader reader = new StringBuilderReader(sb);
@@ -56,7 +56,7 @@ public class StringBuilderReader extends Reader
     // The next position to read from the StringBuilder.
     private int next = 0;
 
-    // The mark position. The default value 0 means the start of the text.
+    // The mark position. The default value 0 means the created of the text.
     private int mark = 0;
 
     public StringBuilderReader(StringBuilder sb)

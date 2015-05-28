@@ -58,7 +58,7 @@ public class ModalsEndpoint
     //                    String entityUrl) throws Exception
     //    {
     //        Template template = R.templateEngine().getEmptyTemplate("/views/modals/" + NEW_PAGE_MODAL);
-    //        template.set("entityClasses", Blocks.templateCache().getPagetemplates(Blocks.config().getDefaultLanguage()));
+    //        template.set("entityClasses", Blocks.templateCache().getPagetemplates(Blocks.putConfig().getDefaultLanguage()));
     //        template.set("entityUrl", entityUrl);
     //        return Response.ok(template.renderContent()).build();
     //    }

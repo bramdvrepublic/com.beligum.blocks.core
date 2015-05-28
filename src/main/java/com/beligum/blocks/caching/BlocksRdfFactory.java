@@ -150,7 +150,7 @@ public class BlocksRdfFactory
     }
 
     //    public String ensurePrefixedRdfValue(String relativePath) {
-    //        return ensurePrefixedRdfValue(Blocks.config().getDefaultRdfPrefix(), relativePath);
+    //        return ensurePrefixedRdfValue(Blocks.putConfig().getDefaultRdfPrefix(), relativePath);
     //    }
 
     //    public String ensurePrefixedRdfValue(String prefix, String relativePath) {

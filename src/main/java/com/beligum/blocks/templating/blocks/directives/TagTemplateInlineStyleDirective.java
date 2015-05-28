@@ -15,7 +15,7 @@ import java.io.Writer;
  * Created by bram on 4/25/15.
  */
 @VelocityDirective(TagTemplateInlineStyleDirective.NAME)
-public class TagTemplateInlineStyleDirective extends AbstractTagTemplateResourceDirective
+public class TagTemplateInlineStyleDirective extends AbstractTagTemplateDirective
 {
     //-----CONSTANTS-----
     //blocksTemplateInlineStyle
@@ -27,6 +27,11 @@ public class TagTemplateInlineStyleDirective extends AbstractTagTemplateResource
 
     //-----PUBLIC METHODS-----
     @Override
+    public int getType()
+    {
+        return BLOCK;
+    }
+    @Override
     public String getName()
     {
         return NAME;
@@ -34,8 +39,8 @@ public class TagTemplateInlineStyleDirective extends AbstractTagTemplateResource
     @Override
     public boolean render(InternalContextAdapter context, Writer writer, Node node) throws IOException, ResourceNotFoundException, ParseErrorException, MethodInvocationException
     {
-        boolean print = (boolean) this.readArg(context, node, 0);
-        String element = this.readValue(context, node);
+        boolean print = (boolean) AbstractTagTemplateDirective.readArg(context, node, 0);
+        String element = AbstractTagTemplateDirective.readValue(context, node);
         TagTemplateResourcesDirective.getContextResources(context).addInlineStyle(print, element);
 
         if (print) {

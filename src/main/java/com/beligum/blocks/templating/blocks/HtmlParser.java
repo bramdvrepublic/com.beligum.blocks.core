@@ -9,10 +9,7 @@ import com.beligum.base.resources.parsers.results.StringParseResult;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.templating.blocks.directives.TagTemplateExternalScriptDirective;
-import com.beligum.blocks.templating.blocks.directives.TagTemplateExternalStyleDirective;
-import com.beligum.blocks.templating.blocks.directives.TagTemplateInlineScriptDirective;
-import com.beligum.blocks.templating.blocks.directives.TagTemplateInlineStyleDirective;
+import com.beligum.blocks.templating.blocks.directives.*;
 import net.htmlparser.jericho.*;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.lang3.StringUtils;
@@ -103,9 +100,6 @@ public class HtmlParser extends AbstractAssetParser
 
                 StringBuilder builder = new StringBuilder();
 
-                //make a "proxy" from the (lazy loaded) controlle map to the $controller variable
-                builder.append("#set($controller=$").append(TagTemplateContextMap.TAG_TEMPLATE_CONTROLLERS_VARIABLE).append("['").append(tagTemplate.getTemplateName()).append("'])").append("\n");
-
                 //this blocks the resources include from being evaluated repeatedly in loops; we only need to evaluate it once per call
                 String resourceTestVar = tagTemplate.getVelocityTemplateName()+"Res";
                 builder.append("#if(!$").append(resourceTestVar).append(")").append("\n");
@@ -124,14 +118,34 @@ public class HtmlParser extends AbstractAssetParser
                     builder.append("#").append(TagTemplateExternalScriptDirective.NAME).append("(false,'").append(script.getAttributeValue("src")).append("')").append(script.toString()).append("#end").append("\n");
                 }
 
-                //block this piece from evaluating again in loops
+                //block this piece from evaluating again in loops because it's expensive
                 builder.append(" #set($").append(resourceTestVar).append("=true)").append("\n");
                 builder.append("#end").append("\n");
 
                 //this is always there and is exactly one; see the TagTemplate constructor
-                builder.append(source.getAllElements("template").get(0).getContent());
+                Segment templateHtml = source.getAllElements("template").get(0).getContent();
+                OutputDocument output = new OutputDocument(templateHtml);
 
-                builder.append("#set($controller=false)").append("\n");
+                //find and replace all property tags
+                List<Element> allPropertyElements = templateHtml.getAllElements("property", notEmptyPropertyAttrValue);
+                for (Element property : allPropertyElements) {
+                    String name = property.getAttributeValue("property");
+                    String value = property.toString();
+                    StringBuilder sb = new StringBuilder();
+                    //if there's no property active in this context, use the (default) value of the template
+                    //sb.append("#if(!$").append(name).append(")").append("\n");
+                    sb.append("#if(!$").append(TagTemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("'])").append("\n");
+                    sb.append(property.toString()).append("\n");
+                    sb.append("#else").append("\n");
+                    //sb.append("$").append(name).append("\n");
+                    sb.append("$").append(TagTemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("']").append("\n");
+                    sb.append("#end").append("\n");
+
+                    output.replace(property, sb);
+                }
+
+
+                builder.append(output.toString());
 
                 source = new Source(builder.toString());
                 isTagTemplate = true;
@@ -146,7 +160,7 @@ public class HtmlParser extends AbstractAssetParser
                     Map<String, String> attributes = new HashMap<>();
                     tagInstance.getAttributes().populateMap(attributes, false);
 
-                    //copy in all the attributes of the template to the instance map, except the ones that were already set in the instance
+                    //copy in all the attributes of the template to the created map, except the ones that were already set in the created
                     Attributes templateAttributes = tagTemplate.getTemplateElement().getAttributes();
                     for (Attribute attribute : templateAttributes) {
                         if (!attributes.containsKey(attribute.getName())) {
@@ -160,27 +174,42 @@ public class HtmlParser extends AbstractAssetParser
                     for (Element property : allPropertyElements) {
                         String name = property.getAttributeValue("property");
                         String value = property.toString();
-                        if (!properties.containsKey(name)) {
-                            properties.put(name, value);
+
+                        // if we specify multiple properties with the same name,
+                        // make a "list" out of them
+                        if (properties.containsKey(name)) {
+                            value = properties.get(name)+value;
                         }
+
+                        properties.put(name, value);
                     }
 
-                    //now start building the new tag
+                    //now created building the new tag
                     StringBuilder builder = new StringBuilder();
 
-                    //the start tag
+                    //the created tag
                     builder.append("<").append(tagTemplate.getTemplateName());
 
                     //the optional attributes
                     if (!attributes.isEmpty()) {
                         builder.append(Attributes.generateHTML(attributes));
                     }
-                    //close the start tag
+                    //close the created tag
                     builder.append(">").append("\n");
 
-                    //the 'body'
+                    //the 'body' starts here
+
+                    //push the controller
+                    builder.append("#").append(TagTemplateControllerStackDirective.NAME).append("(true,").append(tagTemplate.getControllerMapVariable());
+                    for (Map.Entry<String, String> attribute : attributes.entrySet()) {
+                        builder.append(",\"").append(attribute.getKey()).append("\",\"").append(attribute.getValue()).append("\"");
+                    }
+                    builder.append(")").append("\n");
+
+                    //define the properties in the context
                     for (Map.Entry<String, String> property : properties.entrySet()) {
-                        builder.append("#define( $").append(property.getKey()).append(" )").append(property.getValue()).append("#end").append("\n");
+                        //builder.append("#define( $").append(property.getKey()).append(" )").append(property.getValue()).append("#end").append("\n");
+                        builder.append("#").append(TagTemplateDefinePropertyDirective.NAME).append("($").append(property.getKey()).append(")").append(property.getValue()).append("#end").append("\n");
                     }
                     // embedding the code chunk in the file (instead of linking to it) is a lot faster, but messes up the auto-cache-reload in dev mode
                     if (R.configuration().getProduction()) {
@@ -191,6 +220,9 @@ public class HtmlParser extends AbstractAssetParser
                         //use a classic parse to parse the defines from above
                         builder.append("#parse('").append(tagTemplate.getRelativePath()).append("')").append("\n");
                     }
+
+                    //pop the controller
+                    builder.append("#").append(TagTemplateControllerStackDirective.NAME).append("(false").append(")").append("\n");
 
                     //the end tag
                     builder.append(tagInstance.getEndTag());
@@ -244,7 +276,7 @@ public class HtmlParser extends AbstractAssetParser
     //-----PRIVATE METHODS-----
     private static void searchAllTemplates(TagTemplateCache templateCache) throws Exception
     {
-        //start with a clean slate
+        //created with a clean slate
         templateCache.clear();
 
         //TODO clean this up
