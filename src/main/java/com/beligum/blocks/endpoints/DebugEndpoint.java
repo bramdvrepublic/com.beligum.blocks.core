@@ -24,7 +24,7 @@ import javax.ws.rs.core.Response;
 @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
 public class DebugEndpoint
 {
-    public static final String ENTTIY_INSTANCE_TYPE = "instance";
+    public static final String ENTTIY_INSTANCE_TYPE = "created";
     public static final String BLUEPRINT_TYPE = "blueprint";
     public static final String PAGE_TEMPLATE_TYPE = "template";
     public static final String XML_TEMPLATE_TYPE = "xml";

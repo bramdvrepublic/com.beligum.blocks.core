@@ -17,6 +17,9 @@ import java.util.Map;
 public class TagTemplateContextMap implements TemplateContextMap
 {
     //-----CONSTANTS-----
+    public static final String TAG_TEMPLATE_PROPERTIES_VARIABLE = "property";
+    public static final String TAG_TEMPLATE_CONTROLLER_VARIABLE = "controller";
+    public static final String TAG_TEMPLATE_CONTROLLER_STACK_VARIABLE = "controllerStack";
     public static final String TAG_TEMPLATE_CONTROLLERS_VARIABLE = "templateControllers";
 
     //-----VARIABLES-----
@@ -32,6 +35,7 @@ public class TagTemplateContextMap implements TemplateContextMap
     public void fillTemplateContext(TemplateContext templateContext)
     {
         templateContext.set(TAG_TEMPLATE_CONTROLLERS_VARIABLE, this.getTemplateControllers());
+        templateContext.set(TAG_TEMPLATE_PROPERTIES_VARIABLE, new OverloadedPropertyMap());
     }
 
     //-----PROTECTED METHODS-----
@@ -56,12 +60,12 @@ public class TagTemplateContextMap implements TemplateContextMap
     class LazyLoadedControllerMap extends HashMap<String, Object>
     {
         @Override
-        public Object get(Object key)
+        public TagTemplateController get(Object key)
         {
-            Object retVal = null;
+            TagTemplateController retVal = null;
             if (!RequestContext.getRequestCache().containsKey(key)) {
                 if (key!=null) {
-                    Class controllerClass = (Class) super.get(key);
+                    Class<TagTemplateController> controllerClass = (Class<TagTemplateController>) super.get(key);
                     if (controllerClass != null) {
                         try {
                             retVal = controllerClass.newInstance();
@@ -75,10 +79,13 @@ public class TagTemplateContextMap implements TemplateContextMap
                 RequestContext.getRequestCache().put(key, retVal);
             }
             else {
-                retVal = RequestContext.getRequestCache().get(key);
+                retVal = (TagTemplateController) RequestContext.getRequestCache().get(key);
             }
 
             return retVal;
         }
+    }
+    class OverloadedPropertyMap extends HashMap<String, Object>
+    {
     }
 }

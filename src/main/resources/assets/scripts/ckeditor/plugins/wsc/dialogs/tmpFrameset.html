@@ -34,8 +34,8 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
             var sFramesetRows = ( parseInt(oParams.firstframeh, 10) || '30') + ",*," + ( parseInt(oParams.thirdframeh, 10) || '150' ) + ',0';
             document.getElementById('itFrameset').rows = sFramesetRows;
 
-            // dynamic including init frames and crossdomain transport code
-            // from config sproxy_js_frameset url
+            // dynamic including config frames and crossdomain transport code
+            // from putConfig sproxy_js_frameset url
             var addScriptUrl = oParams.sproxy_js_frameset;
             doLoadScript(addScriptUrl);
         }
