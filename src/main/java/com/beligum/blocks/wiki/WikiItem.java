@@ -102,7 +102,7 @@ public class WikiItem
         int found_vars = 0;
         Integer start_key = findStartField(text);
         while (start_key > 0) {
-            // #search start of key.If not found then all fields are found and exit
+            // #search created of key.If not found then all fields are found and exit
 
             //            #search for text between fields, just to check that we don 't miss unknown important info
 

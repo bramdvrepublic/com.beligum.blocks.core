@@ -170,7 +170,7 @@ public class TemplateCache implements BlocksTemplateCache
 //                            Logger.info("We found a snippet; "+htmlFile.getResource());
 //                        }
 
-//                        for (String language : Blocks.config().getLanguages()) {
+//                        for (String language : Blocks.putConfig().getLanguages()) {
 //                            FileAnalyzer.AnalyseHtmlFile(html, language);
 //                        }
                     }

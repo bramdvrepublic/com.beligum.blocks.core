@@ -7,7 +7,7 @@ import org.apache.velocity.runtime.parser.node.Node;
 /**
  * Created by bram on 4/25/15.
  */
-public abstract class AbstractTagTemplateResourceDirective extends Directive
+public abstract class AbstractTagTemplateDirective extends Directive
 {
     //-----CONSTANTS-----
 
@@ -16,14 +16,9 @@ public abstract class AbstractTagTemplateResourceDirective extends Directive
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    @Override
-    public int getType()
-    {
-        return BLOCK;
-    }
 
     //-----PROTECTED METHODS-----
-    protected Object readArg(InternalContextAdapter context, Node node, int index)
+    protected static Object readArg(InternalContextAdapter context, Node node, int index)
     {
         Object retVal = null;
 
@@ -34,7 +29,7 @@ public abstract class AbstractTagTemplateResourceDirective extends Directive
 
         return retVal;
     }
-    protected String readValue(InternalContextAdapter context, Node node)
+    protected static String readValue(InternalContextAdapter context, Node node)
     {
         return node.jjtGetChild(node.jjtGetNumChildren()-1).literal();
     }

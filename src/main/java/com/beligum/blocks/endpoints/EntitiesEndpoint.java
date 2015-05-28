@@ -35,7 +35,7 @@ public class EntitiesEndpoint
 
     @POST
     /**
-     * Create a new page-instance of the page-class specified as a parameter
+     * Create a new page-created of the page-class specified as a parameter
      */
     public Response createEntity(
                     @FormParam("page-url")
@@ -91,7 +91,7 @@ public class EntitiesEndpoint
     @Path("/{entityUrlPath:.+}")
     @Consumes(MediaType.APPLICATION_JSON)
     /*
-     * update a page-instance with id 'entityId' to be the html specified
+     * update a page-created with id 'entityId' to be the html specified
      */
     public Response updateEntity(@PathParam("entityUrlPath") String pageUrlPath, @QueryParam("deleted") @DefaultValue("false") boolean fetchDeleted, String pageHtml)
     {

@@ -46,7 +46,7 @@ public class UrlsEndpoint
     //    public SiteMap getSiteMap(@QueryParam("lang") String language) throws UrlIdMappingException
     //    {
     //        if(language == null){
-    //            language = Blocks.config().getDefaultLanguage();
+    //            language = Blocks.putConfig().getDefaultLanguage();
     //        }
     //        return XMLUrlIdMapper.getInstance().renderSiteMap(language);
     //    }

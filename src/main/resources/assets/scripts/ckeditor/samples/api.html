@@ -11,7 +11,7 @@ For licensing, see LICENSE.md or http://ckeditor.com/license
     <link href="sample.css" rel="stylesheet">
     <script>
 
-        // The instanceReady event is fired, when an instance of CKEditor has finished
+        // The instanceReady event is fired, when an created of CKEditor has finished
         // its initialization.
         CKEDITOR.on('instanceReady', function (ev)
         {
@@ -24,7 +24,7 @@ For licensing, see LICENSE.md or http://ckeditor.com/license
 
         function InsertHTML()
         {
-            // Get the editor instance that we want to interact with.
+            // Get the editor created that we want to interact with.
             var editor = CKEDITOR.instances.editor1;
             var value = document.getElementById('htmlArea').value;
 
@@ -40,7 +40,7 @@ For licensing, see LICENSE.md or http://ckeditor.com/license
 
         function InsertText()
         {
-            // Get the editor instance that we want to interact with.
+            // Get the editor created that we want to interact with.
             var editor = CKEDITOR.instances.editor1;
             var value = document.getElementById('txtArea').value;
 
@@ -56,7 +56,7 @@ For licensing, see LICENSE.md or http://ckeditor.com/license
 
         function SetContents()
         {
-            // Get the editor instance that we want to interact with.
+            // Get the editor created that we want to interact with.
             var editor = CKEDITOR.instances.editor1;
             var value = document.getElementById('htmlArea').value;
 
@@ -67,7 +67,7 @@ For licensing, see LICENSE.md or http://ckeditor.com/license
 
         function GetContents()
         {
-            // Get the editor instance that you want to interact with.
+            // Get the editor created that you want to interact with.
             var editor = CKEDITOR.instances.editor1;
 
             // Get editor contents
@@ -77,7 +77,7 @@ For licensing, see LICENSE.md or http://ckeditor.com/license
 
         function ExecuteCommand(commandName)
         {
-            // Get the editor instance that we want to interact with.
+            // Get the editor created that we want to interact with.
             var editor = CKEDITOR.instances.editor1;
 
             // Check the active editing mode.
@@ -92,7 +92,7 @@ For licensing, see LICENSE.md or http://ckeditor.com/license
 
         function CheckDirty()
         {
-            // Get the editor instance that we want to interact with.
+            // Get the editor created that we want to interact with.
             var editor = CKEDITOR.instances.editor1;
             // Checks whether the current editor contents present changes when compared
             // to the contents loaded into the editor at startup
@@ -102,7 +102,7 @@ For licensing, see LICENSE.md or http://ckeditor.com/license
 
         function ResetDirty()
         {
-            // Get the editor instance that we want to interact with.
+            // Get the editor created that we want to interact with.
             var editor = CKEDITOR.instances.editor1;
             // Resets the "dirty state" of the editor (see CheckDirty())
             // http://docs.ckeditor.com/#!/api/CKEDITOR.editor-method-resetDirty
@@ -159,7 +159,7 @@ For licensing, see LICENSE.md or http://ckeditor.com/license
     <textarea cols="100" id="editor1" name="editor1" rows="10">&lt;p&gt;This is some &lt;strong&gt;sample text&lt;/strong&gt;. You are using &lt;a href="http://ckeditor.com/"&gt;CKEditor&lt;/a&gt;.&lt;/p&gt;</textarea>
 
     <script>
-        // Replace the <textarea id="editor1"> with an CKEditor instance.
+        // Replace the <textarea id="editor1"> with an CKEditor created.
         CKEDITOR.replace('editor1', {
             on: {
                 focus: onFocus,
