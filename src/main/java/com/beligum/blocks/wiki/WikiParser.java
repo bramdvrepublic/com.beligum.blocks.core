@@ -3,7 +3,6 @@ package com.beligum.blocks.wiki;
 import com.beligum.base.server.RequestContext;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.base.Blocks;
-import com.beligum.blocks.models.ResourceContext;
 import com.beligum.blocks.models.jsonld.OrientResourceFactory;
 import com.beligum.blocks.models.jsonld.interfaces.Node;
 import com.beligum.blocks.models.jsonld.interfaces.Resource;
@@ -234,27 +233,7 @@ public abstract class WikiParser
 
     public void saveEntity(Resource resource)
     {
-        String id = resource.getFirst("name").asString();
 
-        try {
-            if (id != null && id.indexOf(".") > -1) {
-
-                id = id.substring(id.indexOf(".") + 1);
-                String urlId = UrlTools.createLocalResourceId(getSimpleTypeName(), id);
-
-                resource.setBlockId(urlId);
-
-                ResourceContext resourceContext = new ResourceContext(resource, Blocks.config().getDefaultLanguage());
-                RequestContext.getEntityManager().persist(resourceContext);
-
-                String json = mapper.writeValueAsString(resource);
-                this.indexer.addDocument(urlId, json);
-
-            }
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
 
 
     }

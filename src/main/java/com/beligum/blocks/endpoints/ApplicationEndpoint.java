@@ -7,7 +7,6 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.CacheException;
-import com.beligum.blocks.models.Blueprint;
 import com.beligum.blocks.models.url.BlocksURL;
 import com.beligum.blocks.models.url.OkURL;
 import com.beligum.blocks.repositories.UrlRepository;
@@ -76,7 +75,7 @@ public class ApplicationEndpoint
         //                Logger.debug("Unauthorized user tried to view deleted version of page '" + randomURLPath + "'.");
         //                fetchDeleted = false;
         //            }
-        URL url = new URL(RequestContext.getJaxRsRequest().getUriInfo().getRequestUri().toString());
+//        URL url = new URL(RequestContext.getJaxRsRequest().getUriInfo().getRequestUri().toString());
         try {
             Response retVal = null;
             URI currentURI = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
@@ -172,9 +171,9 @@ public class ApplicationEndpoint
      */
     private Response injectParameters(Template newPageTemplate) throws Exception
     {
-        List<Blueprint> pageBlocks = Blocks.templateCache().getPageBlocks();
+//        List<Blueprint> pageBlocks = Blocks.templateCache().getPageBlocks();
         newPageTemplate.set(ParserConstants.ENTITY_URL, RequestContext.getJaxRsRequest().getUriInfo().getRequestUri().toString());
-        newPageTemplate.set(ParserConstants.BLUEPRINTS, pageBlocks);
+//        newPageTemplate.set(ParserConstants.BLUEPRINTS, pageBlocks);
         return Response.ok(newPageTemplate).build();
     }
 

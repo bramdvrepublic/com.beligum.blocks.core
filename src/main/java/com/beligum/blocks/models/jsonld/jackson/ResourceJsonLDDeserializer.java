@@ -3,7 +3,6 @@ package com.beligum.blocks.models.jsonld.jackson;
 import com.beligum.base.server.RequestContext;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.models.jsonld.JsonLDContext;
 import com.beligum.blocks.models.jsonld.JsonLDGraph;
 import com.beligum.blocks.models.jsonld.interfaces.Resource;
 import com.beligum.blocks.utils.UrlTools;
@@ -30,7 +29,7 @@ public class ResourceJsonLDDeserializer extends JsonDeserializer<Resource>
         Resource retVal = null;
         JsonLDGraph graph = null;
         JsonNode treeNode = jp.getCodec().readTree(jp);
-        JsonLDContext context = null;
+//        JsonLDContext context = null;
 
         Locale language  = UrlTools.getLanguage(RequestContext.getJaxRsRequest().getUriInfo().getRequestUri());
         if (language != null) {
@@ -43,18 +42,18 @@ public class ResourceJsonLDDeserializer extends JsonDeserializer<Resource>
         } else if (treeNode.isObject() && treeNode.has(ParserConstants.JSONLD_GRAPH)) {
             graphNode = treeNode.get(ParserConstants.JSONLD_GRAPH);
             if (treeNode.has(ParserConstants.JSONLD_CONTEXT)) {
-                context = new JsonLDContext(treeNode.get(ParserConstants.JSONLD_CONTEXT));
+//                context = new JsonLDContext(treeNode.get(ParserConstants.JSONLD_CONTEXT));
             }
-            graph = new JsonLDGraph(graphNode, context, language);
+            graph = new JsonLDGraph(graphNode, language);
             // TODO find base resource with id and return this
 
         } else if (treeNode.isObject() && treeNode.has(ParserConstants.JSONLD_ID)) {
             String id = treeNode.get(ParserConstants.JSONLD_ID).asText();
             graphNode = treeNode;
             if (treeNode.has(ParserConstants.JSONLD_CONTEXT)) {
-                context = new JsonLDContext(treeNode.get(ParserConstants.JSONLD_CONTEXT));
+//                context = new JsonLDContext(treeNode.get(ParserConstants.JSONLD_CONTEXT));
             }
-            graph = new JsonLDGraph(graphNode, context, language);
+            graph = new JsonLDGraph(graphNode, language);
             retVal = graph.getMainResource(id);
         }  else {
             throw new IOException("Expected an object or list for jsonld object. Scalar found");

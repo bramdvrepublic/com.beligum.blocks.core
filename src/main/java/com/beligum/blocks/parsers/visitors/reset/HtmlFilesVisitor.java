@@ -52,7 +52,7 @@ public class HtmlFilesVisitor extends BasicVisitor
                 }
                 else if (parsingPageTemplate && ElementParser.isPageTemplateContentNode((Element) node)) {
                     this.parsingPageTemplate = false;
-                    Blocks.templateCache().addPageTemplate(Blocks.factory().createPageTemplate((Element) node, this.language));
+//                    Blocks.templateCache().addPageTemplate(Blocks.factory().createPageTemplate((Element) node, this.language));
                 }
 
                 // TypeOf has to be a blueprint
@@ -78,7 +78,7 @@ public class HtmlFilesVisitor extends BasicVisitor
 
 
                 if (ElementParser.isBlueprint((Element) node)) {
-                    Blocks.templateCache().addBlueprint(Blocks.factory().createBlueprint((Element) node, this.language));
+//                    Blocks.templateCache().addBlueprint(Blocks.factory().createBlueprint((Element) node, this.language));
                 }
 
                 if (node.nodeName().equals("link")) {

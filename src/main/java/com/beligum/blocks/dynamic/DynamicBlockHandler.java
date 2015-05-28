@@ -18,12 +18,12 @@ public class DynamicBlockHandler
 
     public void register(DynamicBlockListener blockListener)
     {
-        if (!listeners.containsKey(blockListener.getType())) {
-            listeners.put(blockListener.getType(), blockListener);
-        }
-        else {
-            Logger.error("Trying to register blocklistener twice: " + blockListener.getType());
-        }
+//        if (!listeners.containsKey(blockListener.getType())) {
+//            listeners.put(blockListener.getType(), blockListener);
+//        }
+//        else {
+//            Logger.error("Trying to register blocklistener twice: " + blockListener.getType());
+//        }
     }
 
     public boolean isDynamicBlock(String type)

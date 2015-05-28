@@ -2,10 +2,7 @@ package com.beligum.blocks.models.url;
 
 
 import com.beligum.blocks.base.Blocks;
-import com.beligum.blocks.models.PageTemplate;
-import com.beligum.blocks.models.StoredTemplate;
 import com.beligum.blocks.models.jsonld.interfaces.Resource;
-import com.beligum.blocks.renderer.BlocksTemplateRenderer;
 import com.beligum.blocks.repositories.EntityRepository;
 
 import javax.persistence.*;
@@ -85,20 +82,20 @@ public class OkURL extends BlocksURL
             }
         }
 
-        StoredTemplate storedTemplate = null;
+//        StoredTemplate storedTemplate = null;
 
         if (page != null) {
             // create a new StoredTemplate and wrap the page from the database inside it.
-            storedTemplate = new StoredTemplate();
-            storedTemplate.wrap(page.unwrap());
-
-            // Get the page template to render the page
-            PageTemplate pageTemplate = Blocks.templateCache().getPageTemplate(storedTemplate.getPageTemplateName());
-            BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
+//            storedTemplate = new StoredTemplate();
+//            storedTemplate.wrap(page.unwrap());
+//
+//            // Get the page template to render the page
+//            PageTemplate pageTemplate = Blocks.templateCache().getPageTemplate(storedTemplate.getPageTemplateName());
+//            BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
 
             // Todo render entity
-            String renderedPage = renderer.render(pageTemplate, storedTemplate, resource, storedTemplate.getLanguage());
-            retVal = Response.ok(renderedPage).build();
+//            String renderedPage = renderer.render(pageTemplate, storedTemplate, resource, storedTemplate.getLanguage());
+//            retVal = Response.ok(renderedPage).build();
 
         } else {
             throw new NotFoundException();

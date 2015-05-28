@@ -4,9 +4,6 @@ import com.beligum.base.server.RequestContext;
 import com.beligum.blocks.base.Blocks;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.ParseException;
-import com.beligum.blocks.models.BasicTemplate;
-import com.beligum.blocks.models.StoredTemplate;
-import com.beligum.blocks.renderer.VelocityBlocksRenderer;
 import com.beligum.blocks.utils.UrlTools;
 import org.jsoup.nodes.Element;
 
@@ -34,7 +31,7 @@ public class TranslationList implements DynamicBlockListener
      * @return The specified node, now with a list as it's only child
      * @throws ParseException
      */
-    public StringBuilder render(BasicTemplate basicTemplate)
+    public StringBuilder render()
     {
         Locale activeLanguage = Blocks.config().getDefaultLanguage();
         activeLanguage = UrlTools.getLanguage(RequestContext.getJaxRsRequest().getUriInfo().getAbsolutePath());
@@ -42,24 +39,24 @@ public class TranslationList implements DynamicBlockListener
             Blocks.config().getDefaultLanguage();
         }
 
-        VelocityBlocksRenderer renderer = new VelocityBlocksRenderer();
-        renderer.renderStartElement(basicTemplate, true, null);
-
-        renderer.append("<ul>");
-        for (Locale language : Blocks.config().getLanguages().values()) {
-            getListItem(renderer, language, activeLanguage);
-        }
-        renderer.append("</ul>");
-        renderer.renderEndElement(basicTemplate.getBlueprint().getElement().getTag());
-
-        return renderer.toStringBuilder();
-
-    }
-
-    public void save(StoredTemplate storedTemplate)
-    {
+//        VelocityBlocksRenderer renderer = new VelocityBlocksRenderer();
+//        renderer.renderStartElement(basicTemplate, true, null);
+//
+//        renderer.append("<ul>");
+//        for (Locale language : Blocks.config().getLanguages().values()) {
+//            getListItem(renderer, language, activeLanguage);
+//        }
+//        renderer.append("</ul>");
+//        renderer.renderEndElement(basicTemplate.getBlueprint().getElement().getTag());
+//
+        return new StringBuilder();
 
     }
+
+//    public void save(StoredTemplate storedTemplate)
+//    {
+//
+//    }
 
     public String getType()
     {
@@ -69,7 +66,7 @@ public class TranslationList implements DynamicBlockListener
     /**
      * @return an ordered list with all link-nodes needed to renderContent this dynamic block
      */
-    @Override
+
     public List<Element> getLinks()
     {
         //a translation-list doesn't need any css-files to be rendered
@@ -78,23 +75,22 @@ public class TranslationList implements DynamicBlockListener
     /**
      * @return an ordered list with all script-nodes needed to renderContent this dynamic block
      */
-    @Override
     public List<Element> getScripts()
     {
         //a translation-list doesn't need any javascript-files to be rendered
         return new ArrayList<>();
     }
 
-    private void getListItem(VelocityBlocksRenderer renderer, Locale language, Locale activeLanguage)
-    {
-        //if we're dealing with a translation list, we simple want the links to be a link of this page, translated into the specified language
-
-        if (language.equals(activeLanguage)) {
-            renderer.append("<li><a href=\"").append(" ").append("\" class=\"").append(ACTIVE_CLASS).append("\" title=\"\" >").append(language.getLanguage()).append("</a></li>");
-        }
-        else {
-            renderer.append("<li><a href=\"").append(" ").append("\" title=\"\">").append(language.getLanguage()).append("</a></li>");
-        }
-    }
+//    private void getListItem(VelocityBlocksRenderer renderer, Locale language, Locale activeLanguage)
+//    {
+//        //if we're dealing with a translation list, we simple want the links to be a link of this page, translated into the specified language
+//
+//        if (language.equals(activeLanguage)) {
+//            renderer.append("<li><a href=\"").append(" ").append("\" class=\"").append(ACTIVE_CLASS).append("\" title=\"\" >").append(language.getLanguage()).append("</a></li>");
+//        }
+//        else {
+//            renderer.append("<li><a href=\"").append(" ").append("\" title=\"\">").append(language.getLanguage()).append("</a></li>");
+//        }
+//    }
 
 }
