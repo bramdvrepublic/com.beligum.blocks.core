@@ -39,7 +39,7 @@ public class OverloadedDefineDirective extends Define
         // because we need to analyze the children of the #define right here, right now;
         // On top of putting the content block of the #define directive in the context,
         // it renders all content now to make sure the styles and scripts down below are in the context,
-        // so they can be found by TagTemplateResourcesDirective.render(), even if they occur after that tag.
+        // so they can be found by TemplateResourcesDirective.render(), even if they occur after that tag.
         context.put(key, new ImmediateReference(context, this));
 
         return true;

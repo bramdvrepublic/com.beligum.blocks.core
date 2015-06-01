@@ -10,7 +10,7 @@ import java.util.Set;
 /**
  * Created by bram on 5/18/15.
  */
-public class TagTemplateResources
+public class TemplateResources
 {
     //-----CONSTANTS-----
 
@@ -20,7 +20,7 @@ public class TagTemplateResources
     private Set<Resource> scripts;
 
     //-----CONSTRUCTORS-----
-    public TagTemplateResources()
+    public TemplateResources()
     {
         this.styles = new LinkedHashSet<>();
         this.scripts = new LinkedHashSet<>();
