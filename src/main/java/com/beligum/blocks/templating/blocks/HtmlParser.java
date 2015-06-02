@@ -14,18 +14,12 @@ import net.htmlparser.jericho.*;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -44,6 +38,12 @@ public class HtmlParser extends AbstractAssetParser
     }
 
     //-----PUBLIC METHODS-----
+    /**
+     * Strips all lines beginning with "##" (starting from that position) and returns all the rest.
+     * @param html
+     * @return
+     * @throws IOException
+     */
     public static String eatVelocityComments(String html) throws IOException
     {
         StringBuilder retVal = new StringBuilder();
@@ -55,7 +55,7 @@ public class HtmlParser extends AbstractAssetParser
                 if (commentIdx != -1) {
                     line = line.substring(0, commentIdx);
                 }
-                //if the entire line got eaten, we can discard it?
+                //if the entire line got eaten, I assume we can discard it
                 if (!StringUtils.isEmpty(line)) {
                     retVal.append(line).append("\n");
                 }
@@ -64,11 +64,11 @@ public class HtmlParser extends AbstractAssetParser
 
         return retVal.toString();
     }
-    public static TagTemplateCache getCachedTemplates()
+    public static TemplateCache getCachedTemplates()
     {
-        TagTemplateCache retVal = (TagTemplateCache) R.cacheManager().getApplicationCache().get(CacheKeys.TAG_TEMPLATES);
+        TemplateCache retVal = (TemplateCache) R.cacheManager().getApplicationCache().get(CacheKeys.TAG_TEMPLATES);
         if (retVal == null) {
-            R.cacheManager().getApplicationCache().put(CacheKeys.TAG_TEMPLATES, retVal = new TagTemplateCache());
+            R.cacheManager().getApplicationCache().put(CacheKeys.TAG_TEMPLATES, retVal = new TemplateCache());
             try {
                 searchAllTemplates(retVal);
             }
@@ -87,44 +87,66 @@ public class HtmlParser extends AbstractAssetParser
             String sourceStr = eatVelocityComments(new String(Files.readAllBytes(src.getResolvedPath())));
             Source source = new Source(sourceStr);
 
-            // if we're dealing with a tag template, we're only interested in the html between the <template> tags
-            TagTemplateCache tagTemplateCache = this.getCachedTemplates();
+            // if we're dealing with a template, replace the source with the html in the template
             boolean isTagTemplate = false;
-            if (tagTemplateCache.containsKey(src.getResolvedPath())) {
-                //fetch the old value for the paths
-                TagTemplate oldTemplate = tagTemplateCache.get(src.getResolvedPath());
-
-                //since this method only gets called when the source file was changed, make sure we update the value in the template tag cache
-                TagTemplate tagTemplate = new TagTemplate(source, oldTemplate.getAbsolutePath(), oldTemplate.getRelativePath());
-                tagTemplateCache.put(src.getResolvedPath(), tagTemplate);
+            TemplateCache templateCache = this.getCachedTemplates();
+            if (templateCache.containsKey(src.getResolvedPath())) {
+                //first of all, since this method is only called when something changed, update the cache value
+                HtmlTemplate oldTemplate = templateCache.get(src.getResolvedPath());//fetch the old value for the paths
+                HtmlTemplate tagTemplate = HtmlTemplate.create(source, oldTemplate.getAbsolutePath(), oldTemplate.getRelativePath());
+                templateCache.put(src.getResolvedPath(), tagTemplate);
 
                 StringBuilder builder = new StringBuilder();
 
-                //this blocks the resources include from being evaluated repeatedly in loops; we only need to evaluate it once per call
-                String resourceTestVar = tagTemplate.getVelocityTemplateName()+"Res";
-                builder.append("#if(!$").append(resourceTestVar).append(")").append("\n");
-
-                // note that the "false" argument in the directives means it must be eaten (and spit out somewhere else)
-                for (Element style : tagTemplate.getInlineStyleElements()) {
-                    builder.append("#").append(TagTemplateInlineStyleDirective.NAME).append("(false)").append(style.toString()).append("#end").append("\n");
-                }
-                for (Element style : tagTemplate.getExternalStyleElements()) {
-                    builder.append("#").append(TagTemplateExternalStyleDirective.NAME).append("(false,'").append(style.getAttributeValue("href")).append("')").append(style.toString()).append("#end").append("\n");
-                }
-                for (Element script : tagTemplate.getInlineScriptElements()) {
-                    builder.append("#").append(TagTemplateInlineScriptDirective.NAME).append("(false)").append(script.toString()).append("#end").append("\n");
-                }
-                for (Element script : tagTemplate.getExternalScriptElements()) {
-                    builder.append("#").append(TagTemplateExternalScriptDirective.NAME).append("(false,'").append(script.getAttributeValue("src")).append("')").append(script.toString()).append("#end").append("\n");
-                }
-
-                //block this piece from evaluating again in loops because it's expensive
-                builder.append(" #set($").append(resourceTestVar).append("=true)").append("\n");
-                builder.append("#end").append("\n");
-
-                //this is always there and is exactly one; see the TagTemplate constructor
-                Segment templateHtml = source.getAllElements("template").get(0).getContent();
+                //this is the base for all coming preprocessing
+                Segment templateHtml = tagTemplate.getHtml();
                 OutputDocument output = new OutputDocument(templateHtml);
+
+                if (tagTemplate instanceof TagTemplate) {
+                    isTagTemplate = true;
+
+                    //this blocks the resources include from being evaluated repeatedly in loops; we only need to evaluate it once per call
+                    String resourceTestVar = "R_"+tagTemplate.getVelocityTemplateName();
+                    builder.append("#if(!$").append(resourceTestVar).append(")").append("\n");
+
+                    // note that this "false" means it must be eaten (and spit out somewhere else)
+                    boolean renderResources = false;
+                    for (Element style : tagTemplate.getInlineStyleElements()) {
+                        builder.append("#").append(TagTemplateInlineStyleResourceDirective.NAME).append("(").append(renderResources).append(")").append(style.toString()).append("#end").append("\n");
+                    }
+                    for (Element style : tagTemplate.getExternalStyleElements()) {
+                        builder.append("#").append(TagTemplateExternalStyleResourceDirective.NAME).append("(").append(renderResources).append(",'").append(style.getAttributeValue("href")).append("')").append(style.toString())
+                               .append("#end").append("\n");
+                    }
+                    for (Element script : tagTemplate.getInlineScriptElements()) {
+                        builder.append("#").append(TagTemplateInlineScriptResourceDirective.NAME).append("(").append(renderResources).append(")").append(script.toString()).append("#end").append("\n");
+                    }
+                    for (Element script : tagTemplate.getExternalScriptElements()) {
+                        builder.append("#").append(TagTemplateExternalScriptResourceDirective.NAME).append("(").append(renderResources).append(",'").append(script.getAttributeValue("src")).append("')")
+                               .append(script.toString())
+                               .append("#end").append("\n");
+                    }
+
+                    //block this piece from evaluating again in loops because it's expensive
+                    builder.append(" #set($").append(resourceTestVar).append("=true)").append("\n");
+                    builder.append("#end").append("\n");
+                }
+                // the only preprocessing we do with a page template is fill in the template attribute with the name of the template
+                // so we know what template was used when the code comes back from the client
+                else if (tagTemplate instanceof PageTemplate) {
+                    Element html = templateHtml.getFirstElement("template", null);
+                    if (!html.getName().equalsIgnoreCase("html")) {
+                        throw new IOException("Found a template attribute on a non-html element, this shouldn't happen since it's been checked before; "+src.getResolvedPath());
+                    }
+                    //a little bit verbose, but I didn't find a shorter way...
+                    Attributes templateAttr = html.getAttributes();
+                    Map<String,String> attrs = new HashMap<>();
+                    templateAttr.populateMap(attrs, true);
+                    attrs.put("template", tagTemplate.getTemplateName());
+                    output.replace(templateAttr, Attributes.generateHTML(attrs));
+                }
+
+                //from here, it's the same for a Tag or Page template; preprocess the replaceable properties
 
                 //find and replace all property tags
                 List<Element> allPropertyElements = templateHtml.getAllElements("property", notEmptyPropertyAttrValue);
@@ -133,83 +155,92 @@ public class HtmlParser extends AbstractAssetParser
                     String value = property.toString();
                     StringBuilder sb = new StringBuilder();
                     //if there's no property active in this context, use the (default) value of the template
-                    //sb.append("#if(!$").append(name).append(")").append("\n");
-                    sb.append("#if(!$").append(TagTemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("'])").append("\n");
+                    sb.append("#if(!$").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("'])").append("\n");
                     sb.append(property.toString()).append("\n");
                     sb.append("#else").append("\n");
-                    //sb.append("$").append(name).append("\n");
-                    sb.append("$").append(TagTemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("']").append("\n");
+                    sb.append("$").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("']").append("\n");
                     sb.append("#end").append("\n");
 
                     output.replace(property, sb);
                 }
 
-
                 builder.append(output.toString());
 
+                //replace the source with the (parsed) <template> content
                 source = new Source(builder.toString());
-                isTagTemplate = true;
             }
 
+            //parse the main html
             OutputDocument output = new OutputDocument(source);
-            for (TagTemplate tagTemplate : tagTemplateCache.values()) {
-                List<net.htmlparser.jericho.Element> tagInstances = source.getAllElements(tagTemplate.getTemplateName());
-                for (net.htmlparser.jericho.Element tagInstance : tagInstances) {
+            Collection<HtmlTemplate> allTemplates = templateCache.values();
+            for (HtmlTemplate tagTemplate : allTemplates) {
+
+                List<net.htmlparser.jericho.Element> templateInstances = source.getAllElements(tagTemplate.getTemplateName());
+                for (net.htmlparser.jericho.Element templateInstance : templateInstances) {
 
                     //build the attributes map
                     Map<String, String> attributes = new HashMap<>();
-                    tagInstance.getAttributes().populateMap(attributes, false);
+                    templateInstance.getAttributes().populateMap(attributes, false);
 
-                    //copy in all the attributes of the template to the created map, except the ones that were already set in the created
-                    Attributes templateAttributes = tagTemplate.getTemplateElement().getAttributes();
-                    for (Attribute attribute : templateAttributes) {
-                        if (!attributes.containsKey(attribute.getName())) {
-                            attributes.put(attribute.getName(), attribute.getValue());
+                    //copy in all the attributes of the template to the attributes map, except the ones that were already set in the instance
+                    Attributes templateAttributes = tagTemplate.getAttributes();
+                    if (templateAttributes != null) {
+                        for (Attribute attribute : templateAttributes) {
+                            if (!attributes.containsKey(attribute.getName())) {
+                                attributes.put(attribute.getName(), attribute.getValue());
+                            }
                         }
                     }
 
                     //build the properties map
                     Map<String, String> properties = new HashMap<>();
-                    List<Element> allPropertyElements = tagInstance.getAllElements("property", notEmptyPropertyAttrValue);
-                    for (Element property : allPropertyElements) {
-                        String name = property.getAttributeValue("property");
-                        String value = property.toString();
+                    // note: this is a tricky one. It doesn't have to be the immediate children, but we can't cross the "boundary"
+                    // of another template instance either (otherwise the grandchild-properties would get assigned to the grandparent)
+                    // In practice, restricting this to the immediate children works pretty well (and neatly conforms to the WebComponents standard)
+                    List<Element> allImmediatePropertyElements = templateInstance.getChildElements();
+                    for (Element immediateChild : allImmediatePropertyElements) {
+                        String name = immediateChild.getAttributeValue("property");
+                        if (name!=null) {
+                            String value = immediateChild.toString();
 
-                        // if we specify multiple properties with the same name,
-                        // make a "list" out of them
-                        if (properties.containsKey(name)) {
-                            value = properties.get(name)+value;
+                            // if we specify multiple properties with the same name,
+                            // make a "list" out of them
+                            if (properties.containsKey(name)) {
+                                value = properties.get(name) + value;
+                            }
+
+                            properties.put(name, value);
                         }
-
-                        properties.put(name, value);
                     }
 
-                    //now created building the new tag
+                    //now start building the new tag
                     StringBuilder builder = new StringBuilder();
 
-                    //the created tag
-                    builder.append("<").append(tagTemplate.getTemplateName());
+                    //render the start tag, except if the template is eg. a page template
+                    if (tagTemplate.renderTemplateTag()) {
+                        builder.append("<").append(tagTemplate.getTemplateName());
 
-                    //the optional attributes
-                    if (!attributes.isEmpty()) {
-                        builder.append(Attributes.generateHTML(attributes));
+                        //the optional attributes
+                        if (!attributes.isEmpty()) {
+                            builder.append(Attributes.generateHTML(attributes));
+                        }
+                        //close the start tag
+                        builder.append(">").append("\n");
                     }
-                    //close the created tag
-                    builder.append(">").append("\n");
 
                     //the 'body' starts here
 
-                    //push the controller
-                    builder.append("#").append(TagTemplateControllerStackDirective.NAME).append("(true,").append(tagTemplate.getControllerMapVariable());
+                    //push the controller with the attributes as arguments
+                    builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.STACK.ordinal()).append(",\"").append(tagTemplate.getTemplateName()).append("\"");
                     for (Map.Entry<String, String> attribute : attributes.entrySet()) {
-                        builder.append(",\"").append(attribute.getKey()).append("\",\"").append(attribute.getValue()).append("\"");
+                        String value = attribute.getValue();
+                        builder.append(",\"").append(attribute.getKey()).append("\",\"").append(value == null? "" : value).append("\"");
                     }
                     builder.append(")").append("\n");
 
                     //define the properties in the context
                     for (Map.Entry<String, String> property : properties.entrySet()) {
-                        //builder.append("#define( $").append(property.getKey()).append(" )").append(property.getValue()).append("#end").append("\n");
-                        builder.append("#").append(TagTemplateDefinePropertyDirective.NAME).append("($").append(property.getKey()).append(")").append(property.getValue()).append("#end").append("\n");
+                        builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.DEFINE.ordinal()).append(",\"").append(property.getKey()).append("\")").append(property.getValue()).append("#end").append("\n");
                     }
                     // embedding the code chunk in the file (instead of linking to it) is a lot faster, but messes up the auto-cache-reload in dev mode
                     if (R.configuration().getProduction()) {
@@ -222,44 +253,49 @@ public class HtmlParser extends AbstractAssetParser
                     }
 
                     //pop the controller
-                    builder.append("#").append(TagTemplateControllerStackDirective.NAME).append("(false").append(")").append("\n");
+                    builder.append("#end").append("\n");
 
                     //the end tag
-                    builder.append(tagInstance.getEndTag());
+                    if (tagTemplate.renderTemplateTag()) {
+                        builder.append(templateInstance.getEndTag());
+                    }
 
-                    //replace the tag in the output with it's rendered tag
-                    output.replace(tagInstance, builder);
+                    //replace the tag in the output with it's instance
+                    output.replace(templateInstance, builder);
+
+                    //if we don't do this, and the inner tag templates get processed first, it will be overwritten by the output of the outer tag template
+                    source = new Source(output.toString());
                 }
             }
 
-            // if we're not dealing with a tag template, make sure we wrap all styles and scripts so we can perform a match-and-mix
+            // if we're not dealing with a template (but a regular html file), make sure we wrap all styles and scripts so we can perform a match-and-mix
             // note that the "true" argument in the directives means it really needs to end up in the html (after registering it)
             if (!isTagTemplate) {
                 List<Element> elements = TagTemplate.getInlineStyles(source);
                 for (Element element : elements) {
                     StringBuilder builder = new StringBuilder();
-                    builder.append("#").append(TagTemplateInlineStyleDirective.NAME).append("(true)").append(element.toString()).append("#end");
+                    builder.append("#").append(TagTemplateInlineStyleResourceDirective.NAME).append("(true)").append(element.toString()).append("#end");
                     output.replace(element, builder.toString());
                 }
 
                 elements = TagTemplate.getExternalStyles(source);
                 for (Element element : elements) {
                     StringBuilder builder = new StringBuilder();
-                    builder.append("#").append(TagTemplateExternalStyleDirective.NAME).append("(true,'").append(element.getAttributeValue("href")).append("')").append(element.toString()).append("#end");
+                    builder.append("#").append(TagTemplateExternalStyleResourceDirective.NAME).append("(true,'").append(element.getAttributeValue("href")).append("')").append(element.toString()).append("#end");
                     output.replace(element, builder.toString());
                 }
 
                 elements = TagTemplate.getInlineScripts(source);
                 for (Element element : elements) {
                     StringBuilder builder = new StringBuilder();
-                    builder.append("#").append(TagTemplateInlineScriptDirective.NAME).append("(true)").append(element.toString()).append("#end");
+                    builder.append("#").append(TagTemplateInlineScriptResourceDirective.NAME).append("(true)").append(element.toString()).append("#end");
                     output.replace(element, builder.toString());
                 }
 
                 elements = TagTemplate.getExternalScripts(source);
                 for (Element element : elements) {
                     StringBuilder builder = new StringBuilder();
-                    builder.append("#").append(TagTemplateExternalScriptDirective.NAME).append("(true,'").append(element.getAttributeValue("src")).append("')").append(element.toString()).append("#end");
+                    builder.append("#").append(TagTemplateExternalScriptResourceDirective.NAME).append("(true,'").append(element.getAttributeValue("src")).append("')").append(element.toString()).append("#end");
                     output.replace(element, builder.toString());
                 }
             }
@@ -274,9 +310,9 @@ public class HtmlParser extends AbstractAssetParser
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private static void searchAllTemplates(TagTemplateCache templateCache) throws Exception
+    private static void searchAllTemplates(TemplateCache templateCache) throws Exception
     {
-        //created with a clean slate
+        //start with a clean slate
         templateCache.clear();
 
         //TODO clean this up
@@ -287,14 +323,12 @@ public class HtmlParser extends AbstractAssetParser
         htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/imports/**.{html,htm}"));
 
         for (ResourceSearchResult htmlFile : htmlFiles) {
-            // Note: this code re-occurs in JsoupHtmlImportTemplate.checkReload(), so check there if you modify important things!
             try (Reader reader = Files.newBufferedReader(htmlFile.getResource(), Charset.forName(Charsets.UTF_8.name()))) {
-                Path relativePath = Paths.get("/").resolve(htmlFile.getResourceFolder().relativize(htmlFile.getResource()));
                 Path absolutePath = htmlFile.getResource();
-
+                Path relativePath = Paths.get("/").resolve(htmlFile.getResourceFolder().relativize(htmlFile.getResource()));
                 Source source = new Source(reader);
-                if (TagTemplate.representsHtmlImportTemplate(source)) {
-                    TagTemplate template = new TagTemplate(source, absolutePath, relativePath);
+                HtmlTemplate template = HtmlTemplate.create(source, absolutePath, relativePath);
+                if (template!=null) {
                     templateCache.put(absolutePath, template);
                 }
             }

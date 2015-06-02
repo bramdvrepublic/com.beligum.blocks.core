@@ -1,21 +1,19 @@
 package com.beligum.blocks.templating.blocks;
 
-import java.nio.file.Path;
 import java.util.HashMap;
 
 /**
- * Created by bram on 5/10/15.
+ * Created by bram on 5/27/15.
  */
-public class TagTemplateCache extends HashMap<Path, TagTemplate>
+public class TemplateConfig extends HashMap<String, String>
 {
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    public TagTemplateCache()
+    public TemplateConfig()
     {
-        super();
     }
 
     //-----PUBLIC METHODS-----

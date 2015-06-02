@@ -1,13 +1,12 @@
 package com.beligum.blocks.templating.blocks.directives;
 
 import org.apache.velocity.context.InternalContextAdapter;
-import org.apache.velocity.runtime.directive.Directive;
 import org.apache.velocity.runtime.parser.node.Node;
 
 /**
  * Created by bram on 4/25/15.
  */
-public abstract class AbstractTagTemplateDirective extends Directive
+public class TagTemplateDirectiveUtils
 {
     //-----CONSTANTS-----
 
