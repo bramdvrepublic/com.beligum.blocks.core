@@ -41,14 +41,6 @@ public class UrlsEndpoint
         return Response.ok(newURL.toString()).build();
     }
 
-    //    @GET
-    //    @Produces(MediaType.APPLICATION_JSON)
-    //    public SiteMap getSiteMap(@QueryParam("lang") String language) throws UrlIdMappingException
-    //    {
-    //        if(language == null){
-    //            language = Blocks.putConfig().getDefaultLanguage();
-    //        }
-    //        return XMLUrlIdMapper.getInstance().renderSiteMap(language);
-    //    }
+
 
 }

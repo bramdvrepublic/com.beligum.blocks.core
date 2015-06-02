@@ -1,6 +1,8 @@
 package com.beligum.blocks.search;
 
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.node.Node;
 
 /**
@@ -13,9 +15,9 @@ public class ElasticSearchClient
 
 
     private ElasticSearchClient() {
-        Node node = ElasticSearchServer.instance().getNode();
+//        Node node = ElasticSearchServer.instance().getNode();
 
-        this.client = node.client();
+        this.client = new TransportClient().addTransportAddress(new InetSocketTransportAddress("localhost", 9300));
     }
 
     public static ElasticSearchClient instance()

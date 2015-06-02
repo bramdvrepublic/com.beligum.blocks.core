@@ -67,7 +67,7 @@
 //        RequestContext.getEntityManager().persist(context);
 //
 //        // Create a rout to this new page for this url
-//        URI urlWithoutLanguage = UriBuilder.fromUri(pageURL).replacePath(UrlTools.getPathWithoutLanguage(Paths.get(pageURL.getPath())).toString()).build();
+//        URI urlWithoutLanguage = UriBuilder.fromUri(pageURL).replacePath(UrlTools.getPathWithoutLanguage(Paths.get(pageURL.getSimplePath())).toString()).build();
 //        BlocksURL routing = new OkURL(urlWithoutLanguage, UriBuilder.fromUri(newPage.getBlockId()).build(), null, language);
 //        RequestContext.getEntityManager().persist(routing);
 //
@@ -85,7 +85,7 @@
 //        Blueprint blueprint = Blocks.templateCache().getBlueprint(blueprintName);
 //        if (blueprint != null) {
 //            BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
-//            String classHtml = renderer.render(blueprint, null, Blocks.config().getDefaultLanguage()).toString();
+//            String classHtml = renderer.render(blueprint, null, BlocksConfig.instance().getDefaultLanguage()).toString();
 //            HashMap<String, String> json = new HashMap<String, String>();
 //            json.put("template", classHtml);
 //            return Response.ok(json).build();
@@ -112,7 +112,7 @@
 //        Locale language = UrlTools.getLanguage(pageUrl);
 //
 //        // Find the Routing url and the page context
-//        BlocksURL routing = UrlRepository.instance().getUrlForURI(pageUrl.getAuthority(), pageUrl.getPath(), language);
+//        BlocksURL routing = UrlRepository.instance().getUrlForURI(pageUrl.getAuthority(), pageUrl.getSimplePath(), language);
 //        ResourceContext resourceContext = EntityRepository.instance().findContextByURI((((OkURL) routing).getViewUri()), language);
 //
 //        if (routing == null || resourceContext == null) {
@@ -120,7 +120,7 @@
 //        }
 //
 //        // Parse the page inside a new StoredTemplate
-//        Document html = Jsoup.parse(pageHtml, Blocks.config().getSiteDomain().toString(), Parser.htmlParser());
+//        Document html = Jsoup.parse(pageHtml, BlocksConfig.instance().getSiteDomain().toString(), Parser.htmlParser());
 //        HtmlFromClientVisitor htmlFromClientVisitor = new HtmlFromClientVisitor(pageUrl);
 //        Traversor.traverseProperties(html, htmlFromClientVisitor);
 //
@@ -166,7 +166,7 @@
 //            //                }
 //        }
 //
-//        return Response.ok(pageUrl.getPath()).build();
+//        return Response.ok(pageUrl.getSimplePath()).build();
 //
 //    }
 //
@@ -177,7 +177,7 @@
 //        URI pageUrl = UriBuilder.fromUri(url).build();
 //        Locale language = UrlTools.getLanguage(pageUrl);
 //
-//        BlocksURL id = UrlRepository.instance().getUrlForURI(pageUrl.getAuthority(), UrlTools.getPathWithoutLanguage(Paths.get(pageUrl.getPath())).toString(), language);
+//        BlocksURL id = UrlRepository.instance().getUrlForURI(pageUrl.getAuthority(), UrlTools.getPathWithoutLanguage(Paths.get(pageUrl.getSimplePath())).toString(), language);
 //
 //        if (id == null) {
 //            throw new Exception("Cannot delete entity which doesn't exist: '" + pageUrl + ".");
@@ -266,7 +266,7 @@
 //    //                }
 //    //            }
 //    //            if(lastAccessibleVersion != null) {
-//    //                String pageUrlPath = new URL(pageUrl).getPath().substring(1);
+//    //                String pageUrlPath = new URL(pageUrl).getSimplePath().substring(1);
 //    //                return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId(pageUrlPath, new Long(lastAccessibleVersion.getVersion()), true).getAbsoluteUrl())).build();
 //    //            }
 //    //            else{

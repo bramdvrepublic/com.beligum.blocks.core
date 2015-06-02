@@ -1,22 +1,23 @@
 package com.beligum.blocks.wiki;
 
-import com.beligum.base.server.RequestContext;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.base.Blocks;
-import com.beligum.blocks.models.jsonld.OrientResourceFactory;
-import com.beligum.blocks.models.jsonld.interfaces.Node;
-import com.beligum.blocks.models.jsonld.interfaces.Resource;
-import com.beligum.blocks.models.jsonld.jackson.ResourceJsonLDSerializer;
-import com.beligum.blocks.search.SimpleIndexer;
+import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.controllers.OrientResourceController;
+import com.beligum.blocks.models.resources.orient.OrientResourceFactory;
+import com.beligum.blocks.models.resources.interfaces.Node;
+import com.beligum.blocks.models.resources.interfaces.Resource;
+import com.beligum.blocks.models.resources.jackson.ResourceJsonLDSerializer;
+import com.beligum.blocks.search.ElasticSearchClient;
+import com.beligum.blocks.search.ElasticSearchServer;
 import com.beligum.blocks.utils.UrlTools;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.orientechnologies.orient.core.db.document.ODatabaseDocument;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
-import com.tinkerpop.blueprints.impls.orient.OrientGraph;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.util.AntPathMatcher;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.joda.time.LocalDateTime;
 
 import java.io.*;
@@ -32,13 +33,12 @@ import java.util.Locale;
  */
 public abstract class WikiParser
 {
-    public static final Locale NL = Blocks.config().getLocaleForLanguage("nl");
+    public static final Locale NL = BlocksConfig.instance().getLocaleForLanguage("nl");
     public static final Locale EN = Locale.ENGLISH;
     public static final Locale FR = Locale.FRENCH;
 
     public static final Locale[] LANGUAGES = new Locale[] {NL, FR, EN};
 
-    protected SimpleIndexer indexer;
     protected AntPathMatcher pathMatcher;
     // Objects with fields and languages for fields
     protected HashMap<String, HashMap<String, HashMap<String,String>>> items = new HashMap<String, HashMap<String, HashMap<String,String>>>();
@@ -47,25 +47,24 @@ public abstract class WikiParser
     protected ObjectMapper mapper;
     protected String blueprintId;
 
+    BulkRequestBuilder bulkRequest;
+
 
     protected Integer counter = 0;
 
     public WikiParser() throws IOException
     {
 
-//        this.indexer = new SimpleIndexer(new File(Blocks.config().getLuceneIndex()));
+        //        this.indexer = new SimpleIndexer(new File(BlocksConfig.instance().getLuceneIndex()));
         pathMatcher = new AntPathMatcher();
-        try {
-            indexer = new SimpleIndexer(new File(Blocks.config().getLuceneIndex()));
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
+
         final SimpleModule module = new SimpleModule("customerSerializationModule", new Version(1, 0, 0, "static version"));
         module.addSerializer(Resource.class, new ResourceJsonLDSerializer());
 
         mapper = new ObjectMapper();
         mapper.registerModule(module);
+
+        this.bulkRequest = ElasticSearchClient.instance().getClient().prepareBulk();
 
     }
 
@@ -150,76 +149,65 @@ public abstract class WikiParser
 
     public void createEntities()
     {
-        try {
-            try {
-                int count = 0;
-                ODatabaseDocumentTx graph = OrientResourceFactory.instance().getGraph();
-                for (String key : this.items.keySet()) {
-                    HashMap<String, HashMap<String, String>> item = this.items.get(key);
-                    // create a new id taken from a field of the item
-                    // this makes that we dont have to assign a random number as id
-                    String id = createId(item);
-                    if (id == null) {
-                        Logger.warn("Resource skipped because no id was available");
-                        continue;
-                    }
-                    makeEntity(id);
 
-                    // Convert the hashmaps to a Resource Object (created by makeEntity)
-                    for (Locale language : LANGUAGES) {
-                        fillEntity(item, language);
-                    }
-
-                    // When multiple resources are filled e.g person and his address, we connect them here
-                    Resource resource = addEntity();
-
-                    // fix some fields
-                    changeEntity(resource);
-
-                    //Save to DB
-//                    saveEntity(resource);
-                    OrientResourceFactory.instance().save(resource);
-
-                    count++;
-                    if (count % 100 == 0) {
-//                        OrientGraph graph = (OrientGraph)OrientResourceFactory.instance().getGraph();
-//                        graph.commit();
-//                        graph.begin();
-
-//                        ProtectedLazyEntityManager em = (ProtectedLazyEntityManager)RequestContext.getEntityManager();
-//                        em.getEntityManager().getTransaction().commit();
-
-//                        em.getEntityManager().clear();
-//                        em.getEntityManager().getTransaction().begin();
-                        Logger.info("saving entity: " + count);
-                        break;
-
-                    }
-                }
-
-                graph.commit();
-                Logger.debug("finish!");
-                indexer.commit();
+        int count = 0;
+        ODatabaseDocumentTx graph = OrientResourceController.instance().getDatabase();
+        for (String key : this.items.keySet()) {
+            HashMap<String, HashMap<String, String>> item = this.items.get(key);
+            // create a new id taken from a field of the item
+            // this makes that we dont have to assign a random number as id
+            String id = createId(item);
+            if (id == null) {
+                Logger.warn("Resource skipped because no id was available");
+                continue;
             }
-            catch (Exception e) {
-                Logger.error(e);
-            } finally {
-                if (indexer != null) indexer.close();
+            makeEntity(id);
+
+            // Convert the hashmaps to a Resource Object (created by makeEntity)
+            for (Locale language : LANGUAGES) {
+                fillEntity(item, language);
             }
 
+            // When multiple resources are filled e.g person and his address, we connect them here
+            Resource resource = addEntity();
+
+            // fix some fields
+            changeEntity(resource);
+
+            //Save to DB
+            //                    saveEntity(resource);
+            OrientResourceFactory.instance().save(resource);
+            toLucene();
+
+
+            count++;
+            if (count % 100 == 0) {
+                //                        OrientGraph graph = (OrientGraph)OrientResourceFactory.instance().getDatabase();
+                //                        graph.commit();
+                //                        graph.begin();
+
+                //                        ProtectedLazyEntityManager em = (ProtectedLazyEntityManager)RequestContext.getEntityManager();
+                //                        em.getEntityManager().getTransaction().commit();
+
+                //                        em.getEntityManager().clear();
+                //                        em.getEntityManager().getTransaction().begin();
+                Logger.info("saving entity: " + count);
+                //                        break;
+
+            }
         }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
+
+        graph.commit();
+        Logger.debug("finish!");
+
+        BulkResponse bulkResponse = this.bulkRequest.execute().actionGet();
+
+
 
 
     }
 
-    public void addDocument(String id, Resource resource) throws IOException
-    {
-        String content = mapper.writeValueAsString(resource);
-        indexer.addDocument(id, content);
-    }
+
 
     public abstract String createId(HashMap<String, HashMap<String, String>> item);
 
@@ -231,11 +219,13 @@ public abstract class WikiParser
 
     public abstract String getSimpleTypeName();
 
-    public void saveEntity(Resource resource)
+    public abstract void toLucene();
+
+    protected void addToLuceneIndex(String id, String json, Locale locale)
     {
-
-
-
+        this.bulkRequest.add(ElasticSearchClient.instance().getClient().prepareIndex(ElasticSearchServer.instance().getResourceIndexName(locale), "resource")
+                                                .setSource(json)
+                                                .setId(id));
     }
 
     public abstract Resource fillEntity(HashMap<String, HashMap<String, String>> item, Locale lang);
@@ -245,11 +235,11 @@ public abstract class WikiParser
         Node property = entity.get(name);
         entity.remove(name);
         if (property != null && property.isIterable()) {
-            for (Node value : property.getIterable()) {
+            for (Node value : property) {
                 if (value.isString()) {
                     String[] splitValue = value.asString().split("\\|");
                     for (String v : splitValue) {
-                        entity.add(field, OrientResourceFactory.instance().asNode(v.trim(), Blocks.config().getDefaultLanguage()));
+                        entity.add(field, OrientResourceFactory.instance().asNode(v.trim(), BlocksConfig.instance().getDefaultLanguage()));
                     }
                 }
             }
@@ -267,7 +257,7 @@ public abstract class WikiParser
         Node property = entity.get(name);
         entity.remove(name);
         if (property != null && property.isIterable()) {
-            for (Node node: property.getIterable()) {
+            for (Node node: property) {
                 if (node.isString()) {
                     entity.add(field, OrientResourceFactory.instance().asNode(prefix + node.asString().trim(), property.getLanguage()));
 
@@ -292,10 +282,10 @@ public abstract class WikiParser
         }
         if (value != null) value = value.trim();
 
-        if (!StringUtils.isEmpty(value) && langTo.equals(Locale.ROOT) && language != Blocks.config().getDefaultLanguage()) {
+        if (!StringUtils.isEmpty(value) && langTo.equals(Locale.ROOT) && language != BlocksConfig.instance().getDefaultLanguage()) {
             Logger.warn("Text added to root note by translation available for field " + newFieldName);
-        } else if (langTo !=Locale.ROOT  && language != Blocks.config().getDefaultLanguage() && StringUtils.isEmpty(value)) {
-            addToEntityOR(newFieldName, oldFields, entity, Blocks.config().getDefaultLanguage(), item, langTo);
+        } else if (langTo !=Locale.ROOT  && language != BlocksConfig.instance().getDefaultLanguage() && StringUtils.isEmpty(value)) {
+            addToEntityOR(newFieldName, oldFields, entity, BlocksConfig.instance().getDefaultLanguage(), item, langTo);
         } else {
             add(newFieldName, value, entity, langTo);
         }
@@ -311,10 +301,10 @@ public abstract class WikiParser
             }
         }
 
-        if (!StringUtils.isEmpty(value) && langTo.equals(Locale.ROOT) && language != Blocks.config().getDefaultLanguage()) {
+        if (!StringUtils.isEmpty(value) && langTo.equals(Locale.ROOT) && language != BlocksConfig.instance().getDefaultLanguage()) {
             Logger.warn("Text added to root note by translation available for field " + newFieldName);
-        } else if (langTo !=Locale.ROOT  && language != Blocks.config().getDefaultLanguage() && StringUtils.isEmpty(value)) {
-            addToEntityOR(newFieldName, oldFields, entity, Blocks.config().getDefaultLanguage(), item, langTo);
+        } else if (langTo !=Locale.ROOT  && language != BlocksConfig.instance().getDefaultLanguage() && StringUtils.isEmpty(value)) {
+            addToEntityOR(newFieldName, oldFields, entity, BlocksConfig.instance().getDefaultLanguage(), item, langTo);
         } else {
             add(newFieldName, value, entity, langTo);
         }
@@ -332,10 +322,10 @@ public abstract class WikiParser
             }
         }
 
-        if (!StringUtils.isEmpty(value) && langTo.equals(Locale.ROOT) && language != Blocks.config().getDefaultLanguage()) {
+        if (!StringUtils.isEmpty(value) && langTo.equals(Locale.ROOT) && language != BlocksConfig.instance().getDefaultLanguage()) {
             Logger.warn("Text added to root note by translation available for field " + newFieldName);
-        } else if (langTo !=Locale.ROOT  && language != Blocks.config().getDefaultLanguage() && StringUtils.isEmpty(value)) {
-            addToEntityOR(newFieldName, oldFields, entity, Blocks.config().getDefaultLanguage(), item, langTo);
+        } else if (langTo !=Locale.ROOT  && language != BlocksConfig.instance().getDefaultLanguage() && StringUtils.isEmpty(value)) {
+            addToEntityOR(newFieldName, oldFields, entity, BlocksConfig.instance().getDefaultLanguage(), item, langTo);
         } else {
             add(newFieldName, value, entity, langTo);
         }

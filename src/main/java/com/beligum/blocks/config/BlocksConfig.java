@@ -6,7 +6,6 @@ import com.beligum.base.server.RequestContext;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.google.common.base.Charsets;
-import com.beligum.blocks.base.Blocks;
 import org.apache.shiro.UnavailableSecurityManagerException;
 
 import java.io.IOException;
@@ -24,7 +23,7 @@ import java.util.*;
  */
 public class BlocksConfig
 {
-
+    public static BlocksConfig instance;
     public static final String PROJECT_VERSION_KEY = "appVersion";
     public static final String PROPERTIES_FILE = "blocks.properties";
 
@@ -35,31 +34,17 @@ public class BlocksConfig
     private URI siteDomain;
     private URI defaultRdfSchema;
 
-    public BlocksConfig()
+    private BlocksConfig()
     {
     }
 
-    public String getLuceneIndex()
-    {
-        return getConfiguration("blocks.lucene-index");
+    public static BlocksConfig instance() {
+        if (BlocksConfig.instance == null) {
+            BlocksConfig.instance = new BlocksConfig();
+        }
+        return BlocksConfig.instance;
     }
 
-    public String getTemplateFolder()
-    {
-        return getConfiguration("blocks.template-folder");
-    }
-    public String getBlueprintsFolder()
-    {
-        return getConfiguration("blocks.blueprints-folder");
-    }
-
-    public String getDefaultPageTitle()
-    {
-        String retVal = getConfiguration("blocks.default-page-title");
-        if (retVal == null)
-            retVal = "";
-        return retVal;
-    }
 
 
     public URI getSiteDomain()
@@ -179,7 +164,9 @@ public class BlocksConfig
      * @return The first languages in the languages-list, or the no-language-constant if no such list is present in the configuration-xml.
      */
     public Locale getDefaultLanguage(){
-
+        if (defaultLanguage == null) {
+            this.getLanguages();
+        }
         return defaultLanguage;
     }
 
@@ -188,7 +175,7 @@ public class BlocksConfig
         List<Locale> languages = RequestContext.getJaxRsRequest().getAcceptableLanguages();
         while (retVal == null && languages.iterator().hasNext()) {
             Locale loc = languages.iterator().next();
-            if (Blocks.config().getLocaleForLanguage(loc.getLanguage()) != null) {
+            if (BlocksConfig.instance().getLocaleForLanguage(loc.getLanguage()) != null) {
                 retVal = loc;
             }
         }

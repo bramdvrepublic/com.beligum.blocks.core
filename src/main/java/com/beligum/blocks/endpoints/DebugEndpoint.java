@@ -1,9 +1,7 @@
 package com.beligum.blocks.endpoints;
 
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.base.Blocks;
-import com.beligum.blocks.exceptions.CacheException;
-import com.beligum.blocks.models.jsonld.OrientResourceFactory;
+import com.beligum.blocks.controllers.OrientResourceController;
 import com.beligum.blocks.security.Permissions;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocument;
 import com.orientechnologies.orient.core.sql.OCommandSQL;
@@ -13,8 +11,6 @@ import org.joda.time.LocalDateTime;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 /**
@@ -24,17 +20,7 @@ import javax.ws.rs.core.Response;
 @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
 public class DebugEndpoint
 {
-    public static final String ENTTIY_INSTANCE_TYPE = "created";
-    public static final String BLUEPRINT_TYPE = "blueprint";
-    public static final String PAGE_TEMPLATE_TYPE = "template";
-    public static final String XML_TEMPLATE_TYPE = "xml";
 
-//    @GET
-//    public Response debugIndex()
-//    {
-////        return Response.seeOther(URI.create(DebugEndpointRoutes.getBlueprintsPage().getPath())).build();
-//
-//    }
 
     @GET
     @Path("/flush")
@@ -43,34 +29,11 @@ public class DebugEndpoint
         Logger.warn("Database has been flushed by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
 
         Logger.warn("Url-id mapping has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
-        Blocks.templateCache().reset();
-        ODatabaseDocument graph = OrientResourceFactory.instance().getGraph();
+        ODatabaseDocument graph = OrientResourceController.instance().getDatabase();
         graph.command(new OCommandSQL("DELETE VERTEX LocalizedResource")).execute();
         return Response.ok("<ul><li>Database emptied</li><li>Cache reset</li><li>Url-id mapping reset</li></ul>").build();
     }
 
-    @GET
-    @Path("/reset")
-    @Produces(MediaType.TEXT_PLAIN)
-    public Response resetCache() throws Exception
-    {
-        try {
-            //            BlueprintsCache.getInstance().reset();
-            //            PageTemplateCache.getInstance().reset();
-            //            BlueprintsCache.getInstance();
-            //            PageTemplateCache.getInstance();
-            Blocks.templateCache().reset();
-            Logger.warn("Cache has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
-            return Response.ok("Cache reset").build();
-        }
-        catch (CacheException e) {
-            String errorMessage = "Error while resetting: \n";
-            errorMessage += e.getMessage();
-            Logger.error(errorMessage, e.getCause());
-            //TODO: if parse errors occurred, display a log file to user
-            return Response.ok(errorMessage).build();
-        }
-    }
 
 //    @GET
 //    @Path("/pagetemplates")
@@ -90,7 +53,7 @@ public class DebugEndpoint
 //                    String language) throws Exception
 //    {
 //        if (StringUtils.isEmpty(language)) {
-//            language = Blocks.config().getDefaultLanguage();
+//            language = BlocksConfig.instance().getDefaultLanguage();
 //        }
 //        PageTemplate pageTemplate = Blocks.templateCache().getPageTemplate(pageTemplateName);
 //        Template template = pagetemplate.get().getNewTemplate();
@@ -99,7 +62,7 @@ public class DebugEndpoint
 //        template.set("pageTemplate", pageTemplate);
 //        template.set("activeLanguage", language);
 //        //TODO: rendering should include links ands scripts for full view of blueprint
-//        //        String resourcePath = XMLUrlIdMapper.getInstance().getUrl(pageTemplate.getId()).getPath().substring(1);
+//        //        String resourcePath = XMLUrlIdMapper.getInstance().getUrl(pageTemplate.getId()).getSimplePath().substring(1);
 //        //        template.set("src", DebugEndpointRoutes.showTemplate(resourcePath, null, PAGE_TEMPLATE_TYPE).getAbsoluteUrl());
 //        return Response.ok(template).build();
 //    }
@@ -118,7 +81,7 @@ public class DebugEndpoint
 //    public Response getBlueprintPage(@PathParam("blueprintName") String blueprintName, @QueryParam("lang") String language) throws Exception
 //    {
 //        if (StringUtils.isEmpty(language)) {
-//            language = Blocks.config().getDefaultLanguage();
+//            language = BlocksConfig.instance().getDefaultLanguage();
 //        }
 //        Blueprint blueprintObj = Blocks.templateCache().getBlueprint(blueprintName);
 //        Template template = blueprint.get().getNewTemplate();
@@ -128,7 +91,7 @@ public class DebugEndpoint
 //        template.set("activeLanguage", language);
 //        //TODO: rendering should include links ands scripts for full view of blueprint
 //        BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
-//        template.set("src", renderer.render(blueprintObj, null, Blocks.config().getDefaultLanguage()));
+//        template.set("src", renderer.render(blueprintObj, null, BlocksConfig.instance().getDefaultLanguage()));
 //        return Response.ok(template).build();
 //    }
 //
@@ -136,7 +99,7 @@ public class DebugEndpoint
 //    @Path("/sitemap")
 //    public Response viewSiteMap(@QueryParam("lang") String language) throws UrlIdMappingException
 //    {
-//        ArrayList<String> languages = Blocks.config().getLanguages();
+//        ArrayList<String> languages = BlocksConfig.instance().getLanguages();
 //
 //        Template template = sitemap.get().getNewTemplate();
 //        BlocksUrlDispatcher sitemap = Blocks.urlDispatcher();
@@ -152,7 +115,7 @@ public class DebugEndpoint
 //    public Response getBlueprintsCache(@QueryParam("lang") String language) throws Exception
 //    {
 //        if (language == null)
-//            language = Blocks.config().getDefaultLanguage();
+//            language = BlocksConfig.instance().getDefaultLanguage();
 //
 //        String cache = "";
 //        for (Blueprint blueprint : Blocks.templateCache().getBlueprints()) {
@@ -167,7 +130,7 @@ public class DebugEndpoint
 //    public Response getPageTemplateCache(@QueryParam("lang") String language) throws Exception
 //    {
 //        if (language == null)
-//            language = Blocks.config().getDefaultLanguage();
+//            language = BlocksConfig.instance().getDefaultLanguage();
 //
 //        String cache = "";
 //        for (PageTemplate pageTemplate : Blocks.templateCache().getPageTemplates()) {
@@ -200,7 +163,7 @@ public class DebugEndpoint
 //    //        }
 //    //        else if(template instanceof PageTemplate){
 //    //            Blueprint defaultBlueprint = BlueprintsCache.getInstance().get(ParserConstants.DEFAULT_BLUEPRINT);
-//    //            return Response.ok(TemplateParser.renderTemplate(TemplateParser.parse(template.getTemplate()), Blocks.config().getSiteDomainUrl(), id.getLanguage(), template.getLinks(), template.getScripts()).outerHtml()).build();
+//    //            return Response.ok(TemplateParser.renderTemplate(TemplateParser.parse(template.getTemplate()), BlocksConfig.instance().getSiteDomainUrl(), id.getLanguage(), template.getLinks(), template.getScripts()).outerHtml()).build();
 //    //        }
 //    //        else{
 //    //            return Response.ok(TemplateParser.renderTemplate(template, id.getLanguage())).build();
@@ -319,7 +282,7 @@ public class DebugEndpoint
 //        if (!StringUtils.isEmpty(fragment)) {
 //            resourcePath += "#" + fragment;
 //        }
-//        return new URL(Blocks.config().getSiteDomain() + "/" + resourcePath);
+//        return new URL(BlocksConfig.instance().getSiteDomain() + "/" + resourcePath);
 //    }
     //
     //    private Class<? extends AbstractTemplate> determineType(String typeName){

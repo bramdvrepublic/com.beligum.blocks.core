@@ -180,7 +180,7 @@
 //        person.setEmail(newUser.email);
 //        em.merge(person);
 //        R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "userCreated"));
-//        return Response.seeOther(URI.create(UsersEndpointRoutes.users(FIRST_NAME, true).getPath())).build();
+//        return Response.seeOther(URI.create(UsersEndpointRoutes.users(FIRST_NAME, true).getSimplePath())).build();
 //    }
 //
 //    @GET
@@ -226,8 +226,8 @@
 //        }
 //        Response retVal = null;
 //        URI referer = URI.create(RequestContext.getJaxRsRequest().getHeaders().getFirst(HttpHeaders.REFERER));
-//        if (referer.getPath().equalsIgnoreCase(UsersEndpointRoutes.login().getPath())) {
-//            retVal = Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId("", null, false).getPath())).build();
+//        if (referer.getSimplePath().equalsIgnoreCase(UsersEndpointRoutes.login().getSimplePath())) {
+//            retVal = Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId("", null, false).getSimplePath())).build();
 //        } else {
 //            retVal = Response.seeOther(referer).build();
 //        }
@@ -247,7 +247,7 @@
 //         */
 //        SecurityUtils.getSubject().logout();
 //
-//        return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId("", null, false).getPath())).build();
+//        return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId("", null, false).getSimplePath())).build();
 //    }
 //
 //    @GET
@@ -343,7 +343,7 @@
 //    public Response getCurrentUserProfile(){
 //        DefaultCookiePrincipal principal = (DefaultCookiePrincipal) SecurityUtils.getSubject().getPrincipal();
 //        long currentUserId = principal.getId();
-//        return Response.seeOther(URI.create(UsersEndpointRoutes.getUserProfile(currentUserId).getPath())).build();
+//        return Response.seeOther(URI.create(UsersEndpointRoutes.getUserProfile(currentUserId).getSimplePath())).build();
 //    }
 //    private Response updateUser(long userId, EditUser editUser, boolean needsConfirmation, boolean isProfile) throws Exception
 //    {
@@ -359,10 +359,10 @@
 //            if(!emailUser.isEmpty()){
 //                R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.ERROR, "emailAlreadyInUse"));
 //                if(isProfile){
-//                    return Response.seeOther(URI.create(UsersEndpointRoutes.getUserProfile(userId).getPath())).build();
+//                    return Response.seeOther(URI.create(UsersEndpointRoutes.getUserProfile(userId).getSimplePath())).build();
 //                }
 //                else {
-//                    return Response.seeOther(URI.create(UsersEndpointRoutes.getUser(userId).getPath())).build();
+//                    return Response.seeOther(URI.create(UsersEndpointRoutes.getUser(userId).getSimplePath())).build();
 //                }
 //            }
 //            else {
@@ -389,10 +389,10 @@
 //        }
 //        R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "updateUser"));
 //        if(isProfile){
-//            return Response.seeOther(URI.create(UsersEndpointRoutes.getUserProfile(userId).getPath())).build();
+//            return Response.seeOther(URI.create(UsersEndpointRoutes.getUserProfile(userId).getSimplePath())).build();
 //        }
 //        else {
-//            return Response.seeOther(URI.create(UsersEndpointRoutes.getUser(userId).getPath())).build();
+//            return Response.seeOther(URI.create(UsersEndpointRoutes.getUser(userId).getSimplePath())).build();
 //        }
 //    }
 //
@@ -464,15 +464,15 @@
 //                person.getSubject().setConfirmation(null);
 //                em.merge(person);
 //                R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "emailChangedSuccess"));
-//                return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
+//                return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getSimplePath())).build();
 //            }
 //            else {
 //                R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.ERROR, "emailConfirmationFailure"));
-//                return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
+//                return Response.seeOther(URI.create(UsersEndpointRoutes.getLogin().getSimplePath())).build();
 //            }
 //        }
 //        else{
-//            return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId("", null, false).getPath())).build();
+//            return Response.seeOther(URI.create(ApplicationEndpointRoutes.getPageWithId("", null, false).getSimplePath())).build();
 //        }
 //    }
 //
@@ -528,10 +528,10 @@
 //        em.merge(user);
 //        R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "changedPassword"));
 //        if(isCurrentUser && !user.getSubject().getRole().equals(Permissions.ADMIN_ROLE_NAME)){
-//            return Response.seeOther(URI.create(UsersEndpointRoutes.getUserProfile(userId).getPath())).build();
+//            return Response.seeOther(URI.create(UsersEndpointRoutes.getUserProfile(userId).getSimplePath())).build();
 //        }
 //        else{
-//            return Response.seeOther(URI.create(UsersEndpointRoutes.getUser(userId).getPath())).build();
+//            return Response.seeOther(URI.create(UsersEndpointRoutes.getUser(userId).getSimplePath())).build();
 //        }
 //    }
 //
@@ -559,7 +559,7 @@
 //            sendForgotPasswordEmail(person);
 //        }
 //        R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, FORGOT_PASSWORD));
-//        return Response.seeOther(URI.create(UsersEndpointRoutes.getForgotPassword().getPath())).build();
+//        return Response.seeOther(URI.create(UsersEndpointRoutes.getForgotPassword().getSimplePath())).build();
 //    }
 //
 //    private boolean sendForgotPasswordEmail(Person person) throws EmailException {
@@ -594,7 +594,7 @@
 //            person.getSubject().setConfirmation(null);
 //        }
 //        R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "forgotPasswordFinal"));
-//        return Response.ok(URI.create(UsersEndpointRoutes.getLogin().getPath())).build();
+//        return Response.ok(URI.create(UsersEndpointRoutes.getLogin().getSimplePath())).build();
 //    }
 //
 //    @GET
