@@ -3,25 +3,25 @@ package com.beligum.blocks.templating.blocks;
 /**
  * Created by bram on 5/27/15.
  */
-public abstract class DefaultTagTemplateController implements TagTemplateController
+public abstract class DefaultTemplateController implements TemplateController
 {
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    protected TagTemplateConfig config = new TagTemplateConfig();
+    protected TemplateConfig config = new TemplateConfig();
 
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
     @Override
-    public TagTemplateController resetConfig()
+    public TemplateController resetConfig()
     {
         this.config.clear();
 
         return this;
     }
     @Override
-    public TagTemplateConfig putConfig(String key, String value)
+    public TemplateConfig putConfig(String key, String value)
     {
         this.config.put(key, value);
 

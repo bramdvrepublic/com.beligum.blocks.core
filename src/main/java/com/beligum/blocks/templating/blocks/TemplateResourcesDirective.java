@@ -14,8 +14,8 @@ import java.io.Writer;
 /**
  * Created by bram on 4/25/15.
  */
-@VelocityDirective(TagTemplateResourcesDirective.NAME)
-public class TagTemplateResourcesDirective extends Directive
+@VelocityDirective(TemplateResourcesDirective.NAME)
+public class TemplateResourcesDirective extends Directive
 {
     //-----CONSTANTS-----
     public static final String NAME = "blocksTagResources";
@@ -38,11 +38,11 @@ public class TagTemplateResourcesDirective extends Directive
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    public static TagTemplateResources getContextResources(InternalContextAdapter context)
+    public static TemplateResources getContextResources(InternalContextAdapter context)
     {
-        TagTemplateResources retVal = (TagTemplateResources) context.get(TagTemplateResourcesDirective.BLOCKS_TEMPLATE_RESOURCES);
+        TemplateResources retVal = (TemplateResources) context.get(TemplateResourcesDirective.BLOCKS_TEMPLATE_RESOURCES);
         if (retVal==null) {
-            context.localPut(TagTemplateResourcesDirective.BLOCKS_TEMPLATE_RESOURCES, retVal = new TagTemplateResources());
+            context.localPut(TemplateResourcesDirective.BLOCKS_TEMPLATE_RESOURCES, retVal = new TemplateResources());
         }
 
         return retVal;
@@ -76,7 +76,7 @@ public class TagTemplateResourcesDirective extends Directive
 //            }
 //        }
 
-        TagTemplateResources resources = (TagTemplateResources) context.get(BLOCKS_TEMPLATE_RESOURCES);
+        TemplateResources resources = (TemplateResources) context.get(BLOCKS_TEMPLATE_RESOURCES);
         //if we have nothing to check, let's move on
         if (resources!=null) {
             Argument arg = Argument.all;
@@ -118,9 +118,9 @@ public class TagTemplateResourcesDirective extends Directive
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private void writeResources(Iterable<TagTemplateResources.Resource> resources, Writer writer) throws IOException
+    private void writeResources(Iterable<TemplateResources.Resource> resources, Writer writer) throws IOException
     {
-        for (TagTemplateResources.Resource res : resources) {
+        for (TemplateResources.Resource res : resources) {
             writer.write(res.getValue());
             writer.write("\n");
         }
