@@ -3,9 +3,7 @@ package com.beligum.blocks.models.resources.orient;
 import com.beligum.blocks.models.resources.interfaces.Resource;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Locale;
 
 /**
@@ -48,7 +46,7 @@ public class OrientResourceIterable implements Iterable<Resource>
         @Override
         public Resource next()
         {
-            return OrientResourceFactory.instance().asResource(internalIterator.next(), locale);
+            return OrientResourceController.instance().asResource(internalIterator.next(), locale);
         }
         @Override
         public void remove()

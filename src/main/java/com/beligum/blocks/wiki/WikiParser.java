@@ -1,15 +1,19 @@
 package com.beligum.blocks.wiki;
 
+import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
-import com.beligum.blocks.controllers.OrientResourceController;
-import com.beligum.blocks.models.resources.orient.OrientResourceFactory;
+import com.beligum.blocks.models.resources.orient.OrientResourceController;
 import com.beligum.blocks.models.resources.interfaces.Node;
 import com.beligum.blocks.models.resources.interfaces.Resource;
 import com.beligum.blocks.models.resources.jackson.ResourceJsonLDSerializer;
+import com.beligum.blocks.pages.DefaultWebPageController;
+import com.beligum.blocks.pages.WebPageParser;
+import com.beligum.blocks.pages.ifaces.WebPage;
+import com.beligum.blocks.routing.ORouteController;
 import com.beligum.blocks.search.ElasticSearchClient;
 import com.beligum.blocks.search.ElasticSearchServer;
-import com.beligum.blocks.utils.UrlTools;
+import com.beligum.blocks.utils.RdfTools;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -18,9 +22,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.util.AntPathMatcher;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.joda.time.DateTime;
 import org.joda.time.LocalDateTime;
 
+import javax.ws.rs.core.UriBuilder;
 import java.io.*;
+import java.net.URI;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -151,12 +158,12 @@ public abstract class WikiParser
     {
 
         int count = 0;
-        ODatabaseDocumentTx graph = OrientResourceController.instance().getDatabase();
+        ODatabaseDocumentTx graph = com.beligum.blocks.controllers.OrientResourceController.instance().getDatabase();
         for (String key : this.items.keySet()) {
             HashMap<String, HashMap<String, String>> item = this.items.get(key);
             // create a new id taken from a field of the item
             // this makes that we dont have to assign a random number as id
-            String id = createId(item);
+            URI id = createId(item);
             if (id == null) {
                 Logger.warn("Resource skipped because no id was available");
                 continue;
@@ -173,10 +180,10 @@ public abstract class WikiParser
 
             // fix some fields
             changeEntity(resource);
-
+            createWebPages(resource);
             //Save to DB
             //                    saveEntity(resource);
-            OrientResourceFactory.instance().save(resource);
+            OrientResourceController.instance().save(resource);
             toLucene();
 
 
@@ -209,9 +216,9 @@ public abstract class WikiParser
 
 
 
-    public abstract String createId(HashMap<String, HashMap<String, String>> item);
+    public abstract URI createId(HashMap<String, HashMap<String, String>> item);
 
-    public abstract void makeEntity(String id);
+    public abstract void makeEntity(URI id);
 
     public abstract Resource addEntity();
 
@@ -220,6 +227,8 @@ public abstract class WikiParser
     public abstract String getSimpleTypeName();
 
     public abstract void toLucene();
+
+    public abstract String getTemplatename();
 
     protected void addToLuceneIndex(String id, String json, Locale locale)
     {
@@ -231,7 +240,7 @@ public abstract class WikiParser
     public abstract Resource fillEntity(HashMap<String, HashMap<String, String>> item, Locale lang);
 
     public void splitField(Resource entity, String field) {
-        String name = UrlTools.createLocalType(field);
+        URI name = RdfTools.createLocalType(field);
         Node property = entity.get(name);
         entity.remove(name);
         if (property != null && property.isIterable()) {
@@ -239,32 +248,32 @@ public abstract class WikiParser
                 if (value.isString()) {
                     String[] splitValue = value.asString().split("\\|");
                     for (String v : splitValue) {
-                        entity.add(field, OrientResourceFactory.instance().asNode(v.trim(), BlocksConfig.instance().getDefaultLanguage()));
+                        entity.add(name, OrientResourceController.instance().asNode(v.trim(), BlocksConfig.instance().getDefaultLanguage()));
                     }
                 }
             }
         } else if (property != null && property.isString()) {
             String[] splitValue = property.asString().split("\\|");
             for (String v : splitValue) {
-                entity.add(field, OrientResourceFactory.instance().asNode(v.trim(), property.getLanguage()));
+                entity.add(name, OrientResourceController.instance().asNode(v.trim(), property.getLanguage()));
             }
         }
 
     }
 
     public void prependField(Resource entity, String field, String prefix) {
-        String name = UrlTools.createLocalType(field);
+        URI name = RdfTools.createLocalType(field);
         Node property = entity.get(name);
         entity.remove(name);
         if (property != null && property.isIterable()) {
             for (Node node: property) {
                 if (node.isString()) {
-                    entity.add(field, OrientResourceFactory.instance().asNode(prefix + node.asString().trim(), property.getLanguage()));
+                    entity.add(name, OrientResourceController.instance().asNode(prefix + node.asString().trim(), property.getLanguage()));
 
                 }
             }
         } else if (property.isString()) {
-            entity.add(field, OrientResourceFactory.instance().asNode(prefix + property.asString().trim(), property.getLanguage()));
+            entity.add(name, OrientResourceController.instance().asNode(prefix + property.asString().trim(), property.getLanguage()));
         }
 
 
@@ -336,19 +345,36 @@ public abstract class WikiParser
         if (!StringUtils.isEmpty(value)) {
             value = value.trim();
             if (newFieldName.equals("createdBy")) {
-                entity.add("createdBy", OrientResourceFactory.instance().asNode(value, language));
+                entity.setCreatedBy(value);
             } else if (newFieldName.equals("createdAt")) {
                 try {
                     Long millis = Long.parseLong(value);
-                    LocalDateTime c = new LocalDateTime(millis*1000);
-                    entity.add("createdAt", OrientResourceFactory.instance().asNode(c.toString(), language));
+                    DateTime c = new LocalDateTime(millis*1000).toDateTime();
+                    entity.setCreatedAt(c.toDate());
                 } catch(Exception e) {
                     Logger.debug("Could not parse time", e);
                 }
             } else {
-                entity.add(newFieldName, OrientResourceFactory.instance().asNode(value, language));
+                entity.add(RdfTools.makeAbsolute(newFieldName), OrientResourceController.instance().asNode(value, language));
             }
         }
+    }
+
+    public WebPage createWebPages(Resource resource) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<main-content><div property=\"body-html\">").append("<").append(getTemplatename()).append(" property=\"waterput\" resource='").append(resource.getBlockId()).append("' ></").append(getTemplatename()).append(">").append("</div></main-content>");
+        String html = sb.toString();
+        String source = R.templateEngine().getNewStringTemplate(html).render();
+
+        WebPage page = DefaultWebPageController.instance().createPage(BlocksConfig.instance().getDefaultLanguage());
+        URI url = UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path("/nl/resource/waterput/" + resource.get("http://www.mot.be/ontology/name")).build();
+        WebPageParser parser = null;
+        try {
+            parser = new WebPageParser(page, url, source, ORouteController.instance());
+        } catch (Exception e) {
+            Logger.error("Problem creating Web page", e);
+        }
+        return page;
     }
 
 

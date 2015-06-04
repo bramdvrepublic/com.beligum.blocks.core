@@ -19,6 +19,8 @@ public interface Node extends Iterable<Node>
 
     public boolean isIterable();
 
+    public boolean isMap();
+
     public boolean isNull();
 
     public boolean isResource();
@@ -37,9 +39,5 @@ public interface Node extends Iterable<Node>
 
     public Object getValue();
 
-
-    public Node copy();
-
-
-
+    public ResourceController getResourceController();
 }

@@ -1,5 +1,9 @@
 package com.beligum.blocks.models.resources.interfaces;
 
+import java.net.URI;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.Set;
 
 /**
@@ -10,15 +14,15 @@ public interface Resource extends Node
 
 
 
-    public void add(String key, Node node);
+    public void add(URI key, Node node);
 
-    public void set(String key, Node node);
+    public void set(URI key, Node node);
 
-    public Node remove(String key);
+    public Node remove(URI key);
 
-    public Node get(String key);
+    public Node get(URI key);
 
-
+    public Node get(String field);
 
     public Object getDBId();
 
@@ -28,14 +32,28 @@ public interface Resource extends Node
 
     public void setRdfType(Node node);
 
+    public HashMap<String, String> getContext();
+
     public boolean isEmpty();
 
-    public Set<String> getFields();
-
-    public Resource copy();
-
-    public void wrap(Resource resource);
+    public Set<URI> getFields();
 
     public void merge(Resource resource);
+
+    public void setCreatedAt(Date date);
+
+    public Calendar getCreatedAt();
+
+    public void setCreatedBy(String user);
+
+    public String getCreatedBy();
+
+    public void setUpdatedAt(Date date);
+
+    public Calendar getUpdatedAt();
+
+    public void setUpdatedBy(String user);
+
+    public String getUpdatedBy();
 
 }

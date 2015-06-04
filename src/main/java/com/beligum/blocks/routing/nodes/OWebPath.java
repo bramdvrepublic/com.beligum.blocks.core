@@ -1,6 +1,7 @@
 package com.beligum.blocks.routing.nodes;
 
 import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.routing.ORouteController;
 import com.beligum.blocks.routing.ifaces.nodes.WebNode;
 import com.beligum.blocks.routing.ifaces.nodes.WebPath;
 import com.tinkerpop.blueprints.Direction;
@@ -36,10 +37,10 @@ public class OWebPath extends OrientEdge implements WebPath
         if (locale == null) {
             locale = Locale.ROOT;
         }
-        String fieldName = ORouteNodeFactory.getLocalizedNameField(locale);
+        String fieldName = ORouteController.getLocalizedNameField(locale);
         String retVal = this.edge.getProperty(fieldName);
         if (retVal == null) {
-            retVal = this.edge.getProperty(ORouteNodeFactory.getLocalizedNameField(Locale.ROOT));
+            retVal = this.edge.getProperty(ORouteController.getLocalizedNameField(Locale.ROOT));
         }
         return retVal;
     }
@@ -51,12 +52,12 @@ public class OWebPath extends OrientEdge implements WebPath
     public void setName(String name, Locale locale)
     {
 
-        String fieldName = ORouteNodeFactory.getLocalizedNameField(locale);
+        String fieldName = ORouteController.getLocalizedNameField(locale);
         this.edge.setProperty(fieldName, name);
 
         // Make sure there is always a default fieldname
         if (getName(Locale.ROOT) == null || locale.equals(BlocksConfig.instance().getDefaultLanguage())) {
-            this.edge.setProperty(ORouteNodeFactory.getLocalizedNameField(Locale.ROOT), name);
+            this.edge.setProperty(ORouteController.getLocalizedNameField(Locale.ROOT), name);
         }
 
     }

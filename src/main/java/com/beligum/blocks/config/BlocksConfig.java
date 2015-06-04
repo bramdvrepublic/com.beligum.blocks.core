@@ -136,8 +136,10 @@ public class BlocksConfig
     }
 
     public Locale getLocaleForLanguage(String language) {
-        Locale retVal = this.cachedLanguages.get(language);
-        if (retVal == null) retVal = this.getDefaultLanguage();
+        Locale retVal = this.getDefaultLanguage();
+        if (this.cachedLanguages.containsKey(language)) {
+            retVal = this.cachedLanguages.get(language);
+        }
         return retVal;
     }
 

@@ -1,7 +1,6 @@
 package com.beligum.blocks.search;
 
 import com.beligum.base.server.R;
-import com.beligum.blocks.base.Blocks;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.client.Client;

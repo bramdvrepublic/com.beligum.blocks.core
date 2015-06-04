@@ -4,9 +4,7 @@ package com.beligum.blocks.models.resources;
 import com.beligum.blocks.models.resources.interfaces.Node;
 
 import java.text.DecimalFormatSymbols;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by wouter on 31/05/15.
@@ -20,6 +18,7 @@ public abstract class AbstractNode implements Node
     protected Boolean isBoolean = null;
     protected Boolean isInt = null;
     protected Boolean isIterable = null;
+    protected Boolean isMap = null;
     protected Locale language = Locale.ROOT;
 
     // ---- CONSTRUCTORS -------
@@ -39,7 +38,8 @@ public abstract class AbstractNode implements Node
                 try {
                     this.wrappedObject = Double.parseDouble(str);
 
-                    if (((Double)this.wrappedObject).longValue() == this.wrappedObject) {
+                    // Check if our numeric has decimals. If not it is a Long or an Int
+                    if (this.wrappedObject.equals(Math.rint((Double)this.wrappedObject))) {
                         Long longValue = ((Double)this.wrappedObject).longValue();
                         if (longValue < Integer.MAX_VALUE && longValue > Integer.MIN_VALUE) {
                             this.wrappedObject = ((Double)this.wrappedObject).intValue();
@@ -51,12 +51,14 @@ public abstract class AbstractNode implements Node
                     } else {
                         this.isDouble = true;
                     }
-
                 } catch (Exception e) {
                     this.isString = true;
                 }
 
-            } else if (Boolean.parseBoolean(str) || (str.length() == 5 && str.toLowerCase().equals("false"))) {
+            }
+            // Special parse for boolean because Boolean.parseBoolean always returns false if string != 'true'
+            // What would make all our strings into fals booleans
+            else if (Boolean.parseBoolean(str) || (str.length() == 5 && str.toLowerCase().equals("false"))) {
                 this.wrappedObject = Boolean.parseBoolean(str);
                 this.isBoolean = true;
             } else {
@@ -64,6 +66,8 @@ public abstract class AbstractNode implements Node
             }
         } else if (this.wrappedObject instanceof List || this.wrappedObject instanceof Set) {
             isIterable = true;
+        } else if (this.wrappedObject instanceof Map) {
+            isMap = true;
         } else if (this.wrappedObject instanceof Boolean) {
             isBoolean = true;
         } else if (this.wrappedObject instanceof Double) {
@@ -135,6 +139,17 @@ public abstract class AbstractNode implements Node
         isIterable = retVal;
         return retVal;
     }
+
+    @Override
+    public boolean isMap() {
+        boolean retVal = false;
+        if ((isMap != null && isMap) ||  (wrappedObject instanceof Map  && !this.isResource())){
+            retVal = true;
+        }
+        isIterable = retVal;
+        return retVal;
+    }
+
     @Override
     public boolean isNull()
     {
@@ -214,16 +229,28 @@ public abstract class AbstractNode implements Node
     }
 
     @Override
-    public Node copy()
+    public Iterator<Node> iterator()
     {
-        return null;
+        Iterator retVal = null;
+        if (this.isIterable()) {
+            retVal = new NodeIterator(((Iterable)wrappedObject).iterator(), language);
+        } else {
+            List list = new ArrayList();
+            list.add(wrappedObject);
+            retVal = new NodeIterator(((Iterable)wrappedObject).iterator(), language);
+        }
+        return retVal;
     }
+
+
+
 
     // ----- PRIVATE METHODS --------
 
     private boolean isNumeric(String str) {
         {
             str = str.trim();
+            if (str.equals("")) return false;
             DecimalFormatSymbols currentLocaleSymbols = DecimalFormatSymbols.getInstance();
             char localeMinusSign = currentLocaleSymbols.getMinusSign();
 
@@ -245,6 +272,38 @@ public abstract class AbstractNode implements Node
                 }
             }
             return true;
+        }
+    }
+
+    private class NodeIterator implements Iterator<Node>
+    {
+        private Iterator internalIterator;
+        private Locale locale;
+
+        public NodeIterator(Iterator value, Locale locale) {
+            internalIterator = value;
+            this.locale = locale;
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return internalIterator.hasNext();
+        }
+
+        @Override
+        public Node next()
+        {
+            Node retVal = null;
+            Object value = internalIterator.next();
+            retVal =  getResourceController().asNode(value, locale);
+            return retVal;
+
+        }
+        @Override
+        public void remove()
+        {
+            internalIterator.remove();
         }
     }
 

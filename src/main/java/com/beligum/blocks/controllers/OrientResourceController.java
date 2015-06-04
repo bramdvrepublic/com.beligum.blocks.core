@@ -6,8 +6,7 @@ import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.models.resources.interfaces.Resource;
 import com.beligum.blocks.models.resources.jackson.ResourceJsonDeserializer;
 import com.beligum.blocks.models.resources.jackson.ResourceJsonSerializer;
-import com.beligum.blocks.models.resources.orient.OrientResourceFactory;
-import com.beligum.blocks.routing.nodes.ORouteNodeFactory;
+import com.beligum.blocks.routing.ORouteController;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -16,6 +15,7 @@ import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.tinkerpop.blueprints.Parameter;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.impls.orient.OrientEdgeType;
 import com.tinkerpop.blueprints.impls.orient.OrientGraph;
 import com.tinkerpop.blueprints.impls.orient.OrientGraphFactory;
 import com.tinkerpop.blueprints.impls.orient.OrientVertexType;
@@ -39,41 +39,42 @@ public class OrientResourceController
 
         OrientGraph graph = this.getGraph();
 
-        if (graph.getVertexType(OrientResourceFactory.DEFAULT_CLASS) == null) {
-            OrientVertexType defaultResourceClass = graph.createVertexType(OrientResourceFactory.DEFAULT_CLASS);
+        if (graph.getVertexType(com.beligum.blocks.models.resources.orient.OrientResourceController.DEFAULT_CLASS) == null) {
+            OrientVertexType defaultResourceClass = graph.createVertexType(com.beligum.blocks.models.resources.orient.OrientResourceController.DEFAULT_CLASS);
             defaultResourceClass.createProperty(ParserConstants.JSONLD_ID, OType.STRING);
-            defaultResourceClass.createProperty(OrientResourceFactory.TYPE_FIELD, OType.EMBEDDEDSET);
-            graph.createIndex(OrientResourceFactory.TYPE_FIELD, Vertex.class, new Parameter("class", OrientResourceFactory.DEFAULT_CLASS));
-            graph.createIndex(ParserConstants.JSONLD_ID, Vertex.class, new Parameter("type", "UNIQUE"), new Parameter("class", OrientResourceFactory.DEFAULT_CLASS));
+            defaultResourceClass.createProperty(com.beligum.blocks.models.resources.orient.OrientResourceController.TYPE_FIELD, OType.EMBEDDEDSET);
+            graph.createIndex(
+                            com.beligum.blocks.models.resources.orient.OrientResourceController.TYPE_FIELD, Vertex.class, new Parameter("class", com.beligum.blocks.models.resources.orient.OrientResourceController.DEFAULT_CLASS));
+            graph.createIndex(ParserConstants.JSONLD_ID, Vertex.class, new Parameter("type", "UNIQUE"), new Parameter("class", com.beligum.blocks.models.resources.orient.OrientResourceController.DEFAULT_CLASS));
         }
 
-        if (graph.getVertexType(OrientResourceFactory.LOCALIZED_CLASS) == null) {
-            OrientVertexType localizedResourceClass = graph.createVertexType(OrientResourceFactory.LOCALIZED_CLASS);
+        if (graph.getVertexType(com.beligum.blocks.models.resources.orient.OrientResourceController.LOCALIZED_CLASS) == null) {
+            OrientVertexType localizedResourceClass = graph.createVertexType(com.beligum.blocks.models.resources.orient.OrientResourceController.LOCALIZED_CLASS);
             localizedResourceClass.createProperty(ParserConstants.JSONLD_LANGUAGE, OType.STRING);
         }
 
-        if (graph.getVertexType(ORouteNodeFactory.NODE_CLASS) == null) {
-            OrientVertexType nodeClass = graph.createVertexType(ORouteNodeFactory.NODE_CLASS);
-            nodeClass.createProperty(ORouteNodeFactory.STATUS_FIELD, OType.INTEGER);
-            nodeClass.createProperty(ORouteNodeFactory.PAGE_FIELD, OType.STRING);
-            graph.createIndex(ORouteNodeFactory.PAGE_FIELD, Vertex.class, new Parameter("class", ORouteNodeFactory.NODE_CLASS));
-            graph.createIndex(ORouteNodeFactory.STATUS_FIELD, Vertex.class, new Parameter("class", ORouteNodeFactory.NODE_CLASS));
+        if (graph.getVertexType(ORouteController.NODE_CLASS) == null) {
+            OrientVertexType nodeClass = graph.createVertexType(ORouteController.NODE_CLASS);
+            nodeClass.createProperty(ORouteController.STATUS_FIELD, OType.INTEGER);
+            nodeClass.createProperty(ORouteController.PAGE_FIELD, OType.STRING);
+            graph.createIndex(ORouteController.PAGE_FIELD, Vertex.class, new Parameter("class", ORouteController.NODE_CLASS));
+            graph.createIndex(ORouteController.STATUS_FIELD, Vertex.class, new Parameter("class", ORouteController.NODE_CLASS));
         }
 
-        if (graph.getVertexType(ORouteNodeFactory.ROOT_NODE_CLASS) == null) {
-            OrientVertexType rootNodeClass = graph.createVertexType(ORouteNodeFactory.ROOT_NODE_CLASS, ORouteNodeFactory.NODE_CLASS);
-            rootNodeClass.createProperty(ORouteNodeFactory.ROOT_HOST_NAME, OType.STRING);
-            graph.createIndex(ORouteNodeFactory.ROOT_HOST_NAME, Vertex.class, new Parameter("class", ORouteNodeFactory.ROOT_NODE_CLASS));
+        if (graph.getVertexType(ORouteController.ROOT_NODE_CLASS) == null) {
+            OrientVertexType rootNodeClass = graph.createVertexType(ORouteController.ROOT_NODE_CLASS, ORouteController.NODE_CLASS);
+            rootNodeClass.createProperty(ORouteController.ROOT_HOST_NAME, OType.STRING);
+            graph.createIndex(ORouteController.ROOT_HOST_NAME, Vertex.class, new Parameter("class", ORouteController.ROOT_NODE_CLASS));
         }
 
-        if (graph.getEdgeType(ORouteNodeFactory.PATH_CLASS_NAME) == null) {
-            OrientVertexType pathClass = graph.createVertexType(ORouteNodeFactory.PATH_CLASS_NAME);
-            pathClass.createProperty(ORouteNodeFactory.NAME_FIELD, OType.STRING);
-            graph.createIndex(ORouteNodeFactory.NAME_FIELD, Vertex.class, new Parameter("class", ORouteNodeFactory.PATH_CLASS_NAME));
+        if (graph.getEdgeType(ORouteController.PATH_CLASS_NAME) == null) {
+            OrientEdgeType pathClass = graph.createEdgeType(ORouteController.PATH_CLASS_NAME);
+            pathClass.createProperty(ORouteController.NAME_FIELD, OType.STRING);
+            graph.createIndex(ORouteController.NAME_FIELD, Vertex.class, new Parameter("class", ORouteController.PATH_CLASS_NAME));
             for (Locale locale: BlocksConfig.instance().getLanguages().values()) {
-                String field = ORouteNodeFactory.getLocalizedNameField(locale);
+                String field = ORouteController.getLocalizedNameField(locale);
                 pathClass.createProperty(field, OType.STRING);
-                graph.createIndex(field, Vertex.class, new Parameter("class", ORouteNodeFactory.PATH_CLASS_NAME));
+                graph.createIndex(field, Vertex.class, new Parameter("class", ORouteController.PATH_CLASS_NAME));
             }
         }
 
@@ -87,10 +88,10 @@ public class OrientResourceController
     }
 
     public static OrientResourceController instance() {
-        if (OrientResourceController.instance == null) {
-            OrientResourceController.instance = new OrientResourceController();
+        if (com.beligum.blocks.controllers.OrientResourceController.instance == null) {
+            com.beligum.blocks.controllers.OrientResourceController.instance = new OrientResourceController();
         }
-        return OrientResourceController.instance;
+        return com.beligum.blocks.controllers.OrientResourceController.instance;
     }
 
 

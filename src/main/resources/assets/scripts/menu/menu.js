@@ -79,8 +79,8 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
             deleted = false;
         }
         $.ajax({
-                type: 'PUT',
-                url: "/entities/" + window.location.pathname + "?deleted=" + deleted,
+                type: 'POST',
+                url: "/blocks/admin/page/save/" + window.location.href,
                 data: page,
                 contentType: 'application/json; charset=UTF-8',
                 success: function (url, textStatus, response)

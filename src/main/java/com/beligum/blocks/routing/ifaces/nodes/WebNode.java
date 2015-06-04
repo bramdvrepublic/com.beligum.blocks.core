@@ -10,8 +10,14 @@ public interface WebNode
     public Integer getStatusCode();
     public String getPageUrl();
 
+    public void setStatusCode(Integer statusCode);
+    public void setPageUrl(String pageUrl);
+
     public WebPath getChildPath(String name, Locale locale);
     public WebPath getParentPath(String name, Locale locale);
 
+    public boolean isNotFound();
+    public boolean isPage();
+    public boolean isRedirect();
 
 }

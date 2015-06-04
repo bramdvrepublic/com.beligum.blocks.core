@@ -3,30 +3,29 @@ package com.beligum.blocks.models.resources.orient;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.config.ParserConstants;
+import com.beligum.blocks.models.resources.AbstractResource;
 import com.beligum.blocks.models.resources.interfaces.Node;
 import com.beligum.blocks.models.resources.interfaces.Resource;
-import com.beligum.blocks.utils.UrlTools;
+import com.beligum.blocks.models.resources.interfaces.ResourceController;
+import com.beligum.blocks.utils.RdfTools;
 import com.orientechnologies.orient.core.db.record.ORecordElement;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 
+import javax.ws.rs.core.UriBuilder;
+import java.net.URI;
 import java.util.*;
 
 /**
  * Created by wouter on 13/05/15.
  **/
-public class OrientResource extends OrientNode implements Resource
+public class OrientResource extends AbstractResource
 {
-
-
-
 
     // The default resource that this localized resource translates
     // if not this is corrected on save.
     protected ODocument defaultResource;
     // The translated fields of this resource
     protected ODocument localizedResource;
-
-    protected HashMap<String, HashMap<String, String>> context;
 
 
     // Resource can only be created by resourceFactory
@@ -49,21 +48,6 @@ public class OrientResource extends OrientNode implements Resource
     }
 
     @Override
-    public String getBlockId()
-    {
-        return this.defaultResource.field(ParserConstants.JSONLD_ID);
-    }
-    @Override
-    public Node getRdfType()
-    {
-        return get(OrientResourceFactory.TYPE_FIELD);
-    }
-    @Override
-    public void setRdfType(Node node)
-    {
-        set(OrientResourceFactory.TYPE_FIELD, node);
-    }
-    @Override
     public Locale getLanguage()
     {
         Locale retVal = this.language;
@@ -77,177 +61,171 @@ public class OrientResource extends OrientNode implements Resource
         return retVal;
     }
 
-
     // ------- FUNCTIONS FOR RESOURCE INTERFACE ------
 
     @Override
-    public void add(String key, Node node)
-    {
-        try {
-            key = addFieldToContext(key);
-
-            if (!node.isNull()) {
-                if (node.isResource()) {
+    public void addFieldDirect(String key, Node node) {
+        if (!node.isNull()) {
+            if (node.isResource()) {
+                add(this.defaultResource, key, node);
+            }
+            else {
+                if (this.localizedResource != null && node.getLanguage().getLanguage().equals(this.language.getLanguage())) {
+                    // add to default
+                    add(this.localizedResource, key, node);
+                }
+                else if (node.getLanguage().getLanguage().equals(Locale.ROOT.getLanguage())) {
+                    // add to translation
                     add(this.defaultResource, key, node);
                 }
                 else {
-                    if (this.localizedResource != null && node.getLanguage().getLanguage().equals(this.language.getLanguage())) {
-                        // add to default
-                        add(this.localizedResource, key, node);
-                    }
-                    else if (node.getLanguage().getLanguage().equals(Locale.ROOT.getLanguage())) {
-                        // add to translation
-                        add(this.defaultResource, key, node);
-                    }
-                    else {
-                        Logger.error("Node has wrong language. Could not add to resource.");
-//                        Resource otherLocalized = OrientResourceFactory.instance().createResource(this.getBlockId(), node.getLanguage());
-//                        otherLocalized.set(key, node);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            Logger.error("Could not set field of resource. Fieldname is invalid: " + key);
-        }
-    }
-
-
-    @Override
-    public void set(String key, Node node)
-    {
-        // TODO special case for @Type
-        try {
-            key = addFieldToContext(key);
-
-            if (!node.isNull()) {
-                ODocument vertex = defaultResource;
-                if (node.isResource()) {
-                    ArrayList<ODocument> list = new ArrayList<>();
-                    list.add((ODocument)node.getValue());
-                    vertex.field(key, list);
-                } else if (this.localizedResource != null && node.getLanguage().getLanguage().equals(this.language.getLanguage())) {
-                    vertex = this.localizedResource;
-                    vertex.field(key, node.getValue());
-                } else if (node.getLanguage().equals(Locale.ROOT)) {
-                    vertex.field(key, node.getValue());
-                } else {
                     Logger.error("Node has wrong language. Could not add to resource.");
-//                    Resource otherLocalized = OrientResourceFactory.instance().createResource(this.getBlockId(), node.getLanguage());
-//                    otherLocalized.set(key, node);
+                    //                        Resource otherLocalized = OrientResourceFactory.instance().createResource(this.getBlockId(), node.getLanguage());
+                    //                        otherLocalized.set(key, node);
                 }
             }
-        } catch (Exception e) {
-            Logger.error("Could not set field of resource. Fieldname is invalid: " + key);
         }
     }
 
-
     @Override
-    public Node get(String key)
-    {
-        Node retVal = null;
-        try {
-
-            key = getShortFieldName(key);
-            Locale lang = this.getLanguage();
-            Object fieldValue = null;
-            if (this.localizedResource != null) {
-                fieldValue = this.localizedResource.field(key);
+    public void setFieldDirect(String key, Object value, Locale locale) {
+        if (value != null) {
+            ODocument vertex = defaultResource;
+            if (value instanceof ODocument) {
+                ArrayList<ODocument> list = new ArrayList<>();
+                list.add((ODocument)value);
+                vertex.field(key, list);
+            } else if (this.localizedResource != null && locale.getLanguage().equals(this.language.getLanguage())) {
+                vertex = this.localizedResource;
+                vertex.field(key, value);
+            } else if (locale.equals(Locale.ROOT)) {
+                vertex.field(key, value);
+            } else {
+                Logger.error("Node has wrong language. Could not add to resource.");
+                //                    Resource otherLocalized = OrientResourceFactory.instance().createResource(this.getBlockId(), node.getLanguage());
+                //                    otherLocalized.set(key, node);
             }
-
-            if (fieldValue == null) {
-                fieldValue = this.defaultResource.field(key);
-                // If this value is not an other resource then it has no language because
-                // it sits in the defaultResource
-                if (!(fieldValue instanceof ORecordElement)) {
-                    lang = Locale.ROOT;
-                }
-            }
-
-            retVal = OrientResourceFactory.instance().asNode(fieldValue, lang);
-        } catch (Exception e) {
-            Logger.error("Could not find value for field. Invalid fieldname: " + key);
-            retVal = OrientResourceFactory.instance().asNode(null, this.getLanguage());
         }
-        return retVal;
     }
 
     @Override
-    public boolean isEmpty()
-    {
-        return getFields().size() > 0;
-    }
-
-    @Override
-    public Node remove(String key)
-    {
-        Node retVal = null;
+    public Node getFieldDirect(String key) {
         Locale lang = this.getLanguage();
-        try {
-            key = getShortFieldName(key);
-            Object fieldValue = null;
-            if (this.localizedResource != null) {
-                fieldValue = this.localizedResource.field(key);
-            }
+        Object fieldValue = null;
+        if (this.localizedResource != null) {
+            fieldValue = this.localizedResource.field(key);
+        }
 
-            if (fieldValue == null) {
-                fieldValue = this.defaultResource.field(key);
+        if (fieldValue == null) {
+            fieldValue = this.defaultResource.field(key);
+            // If this value is not an other resource then it has no language because
+            // it sits in the defaultResource
+            if (!(fieldValue instanceof ORecordElement)) {
                 lang = Locale.ROOT;
-                if (fieldValue != null) {
-                    fieldValue = this.defaultResource.removeField(key);
-                }
             }
-            else {
-                fieldValue = this.localizedResource.removeField(key);
-            }
-            removeFieldFromContext(key);
-            retVal = OrientResourceFactory.instance().asNode(fieldValue, lang);
-        } catch(Exception e) {
-            Logger.error("Could not remove value from resource: invalid fieldname: " + key);
-            retVal = OrientResourceFactory.instance().asNode(null, lang);
         }
-        return retVal;
+
+        return getResourceController().asNode(fieldValue, lang);
+    }
+
+    @Override
+    public Node removeFieldDirect(String key) {
+        Locale lang = this.getLanguage();
+        Object fieldValue = null;
+        if (this.localizedResource != null) {
+            fieldValue = this.localizedResource.field(key);
+        }
+
+        if (fieldValue == null) {
+            fieldValue = this.defaultResource.field(key);
+            lang = Locale.ROOT;
+            if (fieldValue != null) {
+                fieldValue = this.defaultResource.removeField(key);
+            }
+        }
+        else {
+            fieldValue = this.localizedResource.removeField(key);
+        }
+        return getResourceController().asNode(fieldValue, lang);
     }
 
 
     @Override
-    public Set<String> getFields()
+    public Set<URI> getFields()
     {
-        Set<String> retVal = new HashSet();
+        Set<String> fields = new HashSet();
+        Set<URI> retVal = new HashSet();
         if (this.isResource()) {
-            for (String fieldName: this.defaultResource.fieldNames()) {
-                if (isPlainField(fieldName)) {
-                    retVal.add(fieldName);
-                }
-            }
+            fields.addAll(Arrays.asList(this.defaultResource.fieldNames()));
+
             if (this.localizedResource != null) {
-                for (String fieldName: this.localizedResource.fieldNames()) {
-                    if (isPlainField(fieldName)) {
-                        retVal.add(fieldName);
-                    }
+                fields.addAll(Arrays.asList(this.localizedResource.fieldNames()));
+            }
+
+            for (String key: fields) {
+                String field = this.getContext().get(key);
+                if (field != null) {
+                    retVal.add(UriBuilder.fromUri(field).build());
                 }
             }
         }
         return retVal;
     }
 
+    @Override
+    public ResourceController getResourceController() {
+        return OrientResourceController.instance();
+    }
+
 
     @Override
-    public Resource copy()
+    public void setCreatedAt(Date date)
     {
-        return null;
+        this.localizedResource.field(OrientResourceController.CREATED_AT, date);
+    }
+    @Override
+    public Calendar getCreatedAt()
+    {
+        return this.localizedResource.field(OrientResourceController.CREATED_AT);
     }
 
     @Override
-    public void wrap(Resource resource)
+    public void setCreatedBy(String user)
     {
-
+        this.localizedResource.field(OrientResourceController.CREATED_BY, user);
     }
+
     @Override
-    public void merge(Resource resource)
+    public String getCreatedBy()
     {
-
+        return this.localizedResource.field(OrientResourceController.CREATED_BY);
     }
+
+    @Override
+    public void setUpdatedAt(Date date)
+    {
+        this.localizedResource.field(OrientResourceController.UPDATED_AT, date);
+    }
+
+    @Override
+    public Calendar getUpdatedAt()
+    {
+        return this.localizedResource.field(OrientResourceController.UPDATED_AT);
+    }
+
+    @Override
+    public void setUpdatedBy(String user)
+    {
+        this.localizedResource.field(OrientResourceController.UPDATED_BY, user);
+    }
+
+    @Override
+    public String getUpdatedBy()
+    {
+        return this.localizedResource.field(OrientResourceController.UPDATED_BY);
+    }
+
+
 
     // -------- PRIVATE METHODS ---------
 
@@ -284,65 +262,11 @@ public class OrientResource extends OrientNode implements Resource
 
     private boolean isPlainField(String fieldName) {
         boolean retVal = true;
-        if (fieldName.equals(ParserConstants.JSONLD_ID) || fieldName.equals(OrientResourceFactory.TYPE_FIELD) || fieldName.equals(ParserConstants.JSONLD_CONTEXT)) {
+        if (fieldName.equals(ParserConstants.JSONLD_ID) || fieldName.equals(OrientResourceController.TYPE_FIELD) || fieldName.equals(ParserConstants.JSONLD_CONTEXT)) {
             retVal = false;
-        } else if (fieldName.startsWith(OrientResourceFactory.LOCALIZED)) {
+        } else if (fieldName.startsWith(OrientResourceController.LOCALIZED)) {
             retVal = false;
         }
-        return retVal;
-    }
-
-
-    private String addFieldToContext(String field) throws Exception
-    {
-        // Create a context for this resource
-        if (this.defaultResource.field(ParserConstants.JSONLD_CONTEXT) == null) {
-            this.defaultResource.field(ParserConstants.JSONLD_CONTEXT, new HashMap<String, String>());
-        }
-
-        // Create a short field name
-        String shortFieldName = getShortFieldName(field);
-        if (field.equals(shortFieldName)) {
-            field = UrlTools.createLocalType(shortFieldName);
-        }
-
-        HashMap<String, String> context = this.defaultResource.field(ParserConstants.JSONLD_CONTEXT);
-        if (!context.containsKey(shortFieldName)) {
-            context.put(shortFieldName, field);
-        } else if (!context.get(shortFieldName).equals(field)) {
-            throw new Exception("A similar fieldname already exists");
-        }
-        return shortFieldName;
-    }
-
-    private void removeFieldFromContext(String shortFieldName) throws Exception
-    {
-        // Create a context for this resource
-        if (this.defaultResource.field(ParserConstants.JSONLD_CONTEXT) == null) {
-            this.defaultResource.field(ParserConstants.JSONLD_CONTEXT, new HashMap<String, String>());
-        }
-
-        HashMap<String, String> context = this.defaultResource.field(ParserConstants.JSONLD_CONTEXT);
-        if (context.containsKey(shortFieldName)) {
-            context.remove(shortFieldName);
-        }
-    }
-
-    private String getShortFieldName(String field) throws Exception
-    {
-        String retVal = field;
-        int index = Math.max(Math.max(field.lastIndexOf("/"), field.lastIndexOf("#")), field.lastIndexOf(":"));
-
-        if (field.startsWith("http://")) {
-            retVal = field.substring(index+1);
-        } else if (index > 0){
-            throw new Exception("The fieldname is not valid");
-        }
-
-        if (retVal.contains(".")) {
-            throw new Exception("The fieldname is not valid");
-        }
-
         return retVal;
     }
 
@@ -352,45 +276,7 @@ public class OrientResource extends OrientNode implements Resource
         return this.defaultResource;
     }
 
-    // ------- Methods from Node interface that are less relevant for Resource -----
 
-    @Override
-    public boolean isResource()
-    {
-        return true;
-    }
-
-    @Override
-    public boolean isNull()
-    {
-        return false;
-    }
-    @Override
-    public String asString()
-    {
-        return null;
-    }
-
-    @Override
-    public Double getDouble()
-    {
-        return null;
-    }
-    @Override
-    public Integer getInteger()
-    {
-        return null;
-    }
-    @Override
-    public Boolean getBoolean()
-    {
-        return null;
-    }
-    @Override
-    public Long getLong()
-    {
-        return null;
-    }
 
 
 }

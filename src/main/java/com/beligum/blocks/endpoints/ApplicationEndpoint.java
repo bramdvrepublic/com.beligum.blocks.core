@@ -3,11 +3,11 @@ package com.beligum.blocks.endpoints;
 import com.beligum.base.server.RequestContext;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.config.ParserConstants;
+import com.beligum.blocks.controllers.OrientResourceController;
 import com.beligum.blocks.routing.HtmlRouter;
-import com.beligum.blocks.routing.ifaces.Route;
 import com.beligum.blocks.routing.ifaces.Router;
-import com.beligum.blocks.routing.nodes.ORouteNodeFactory;
-import com.beligum.blocks.routing.RouteImpl;
+import com.beligum.blocks.routing.ORouteController;
+import com.beligum.blocks.routing.Route;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
@@ -16,6 +16,12 @@ import java.net.URI;
 @Path("/")
 public class ApplicationEndpoint
 {
+
+    @Path("/favicon.ico")
+    @GET
+    public Response favicon() {
+        throw new NotFoundException();
+    }
 
     /*
     * Every resource on this domain has a url as id in for http://xxx.org/v1/resources/...
@@ -51,9 +57,12 @@ public class ApplicationEndpoint
     {
 
         URI currentURI = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
-        Route route = new RouteImpl(currentURI, ORouteNodeFactory.instance());
+        Route route = new Route(currentURI, ORouteController.instance());
 
         Router router = new HtmlRouter(route);
+
+        // Todo Remove when this sits in db
+        OrientResourceController.instance().getGraph().commit();
 
         return router.response();
     }

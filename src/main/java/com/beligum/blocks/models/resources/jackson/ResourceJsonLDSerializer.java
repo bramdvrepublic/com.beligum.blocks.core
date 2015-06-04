@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Iterator;
 import java.util.Locale;
 
@@ -55,14 +56,12 @@ public class ResourceJsonLDSerializer extends JsonSerializer<Resource>
         }
 
         // Add other fields to json
-        Iterator<String> it = resource.getFields().iterator();
+        Iterator<URI> it = resource.getFields().iterator();
         while (it.hasNext()) {
-            String field = it.next();
-
+            URI field = it.next();
                 Node fieldNode = resource.get(field);
-                jgen.writeFieldName(field);
+                jgen.writeFieldName(field.toString());
                 printListNode(jgen, fieldNode, resource.getLanguage());
-
         }
 
         jgen.writeEndObject();

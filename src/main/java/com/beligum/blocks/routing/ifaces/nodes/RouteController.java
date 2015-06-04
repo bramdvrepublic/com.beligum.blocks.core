@@ -7,7 +7,7 @@ import java.util.Locale;
 /**
  * Created by wouter on 28/05/15.
  */
-public interface RouteNodeFactory
+public interface RouteController
 {
     public WebNode getRootNode(URI uri);
 

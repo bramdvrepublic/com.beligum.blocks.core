@@ -1,10 +1,13 @@
-package com.beligum.blocks.routing.nodes;
+package com.beligum.blocks.routing;
 
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.controllers.OrientResourceController;
-import com.beligum.blocks.routing.ifaces.nodes.RouteNodeFactory;
+import com.beligum.blocks.routing.ifaces.nodes.RouteController;
 import com.beligum.blocks.routing.ifaces.nodes.WebNode;
 import com.beligum.blocks.routing.ifaces.nodes.WebPath;
+import com.beligum.blocks.routing.nodes.OWebNode;
+import com.beligum.blocks.routing.nodes.OWebPath;
+import com.orientechnologies.orient.core.sql.query.OSQLSynchQuery;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.impls.orient.OrientGraph;
@@ -16,7 +19,7 @@ import java.util.Locale;
 /**
  * Created by wouter on 28/05/15.
  */
-public class ORouteNodeFactory implements RouteNodeFactory
+public class ORouteController implements RouteController
 {
 
     // The name of the path. This field should be prepended with the language code e.g. nl_name, fr_name
@@ -40,17 +43,17 @@ public class ORouteNodeFactory implements RouteNodeFactory
     // the classname for the path in the Orient DB
     public final static String PATH_CLASS_NAME = "WebPath";
 
-    public static ORouteNodeFactory instance;
+    public static ORouteController instance;
 
-    private ORouteNodeFactory() {
+    private ORouteController() {
 
     }
 
-    public static ORouteNodeFactory instance() {
-        if (ORouteNodeFactory.instance == null) {
-            ORouteNodeFactory.instance = new ORouteNodeFactory();
+    public static ORouteController instance() {
+        if (ORouteController.instance == null) {
+            ORouteController.instance = new ORouteController();
         }
-        return ORouteNodeFactory.instance;
+        return ORouteController.instance;
     }
 
     @Override
@@ -61,7 +64,7 @@ public class ORouteNodeFactory implements RouteNodeFactory
         Vertex vertex = null;
         String host = uri.getHost();
         OrientGraph graph = OrientResourceController.instance().getGraph();
-        Iterable<Vertex> vertices = graph.getVertices(ROOT_NODE_CLASS, new String[] {ROOT_HOST_NAME}, new String[] {host});
+        Iterable<Vertex> vertices = graph.command(new OSQLSynchQuery("select from " + ROOT_NODE_CLASS + " WHERE " + ROOT_HOST_NAME + " = '" + host + "' fetchplan *:0")).execute();
         for (Vertex v: vertices) {
             vertex = v;
             break;
@@ -80,18 +83,21 @@ public class ORouteNodeFactory implements RouteNodeFactory
         String host = uri.getHost();
         Vertex vertex = null;
         OrientGraph graph = OrientResourceController.instance().getGraph();
-        Iterable<Vertex> vertices = graph.getVertices(ROOT_NODE_CLASS, new String[] {ROOT_HOST_NAME}, new String[] {host});
+
+        Iterable<Vertex> vertices = graph.command(new OSQLSynchQuery("select from " + ROOT_NODE_CLASS + " WHERE " + ROOT_HOST_NAME + " = '" + host + "' fetchplan *:0")).execute();
 
         for (Vertex v: vertices) {
             vertex = v;
             break;
         }
         if (vertex == null) {
-            vertex = graph.addVertex("class:" + ROOT_NODE_CLASS, NODE_CLASS);
+            vertex = graph.addVertex("class:" + ROOT_NODE_CLASS);
+            vertex.setProperty(ROOT_HOST_NAME, uri.getHost());
             retVal = new OWebNode(vertex);
         } else {
             retVal = new OWebNode(vertex);
         }
+        retVal.setStatusCode(404);
         return retVal;
     }
 
@@ -186,7 +192,8 @@ public class ORouteNodeFactory implements RouteNodeFactory
         OrientGraph graph = OrientResourceController.instance().getGraph();
         Vertex v = graph.addVertex("class:" + NODE_CLASS);
         OWebNode retVal = new OWebNode(v);
-        Edge e = graph.addEdge(null, ((OWebNode)from).getVertex(), v, ORouteNodeFactory.PATH_CLASS_NAME);
+        retVal.setStatusCode(404);
+        Edge e = graph.addEdge(null, ((OWebNode)from).getVertex(), v, ORouteController.PATH_CLASS_NAME);
         WebPath webPath = new OWebPath(e);
         webPath.setName(path, locale);
         return retVal;

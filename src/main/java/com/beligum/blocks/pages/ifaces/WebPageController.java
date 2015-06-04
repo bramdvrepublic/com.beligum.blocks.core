@@ -1,5 +1,6 @@
 package com.beligum.blocks.pages.ifaces;
 
+import java.net.URI;
 import java.util.Locale;
 
 /**
@@ -7,9 +8,18 @@ import java.util.Locale;
  */
 public interface WebPageController
 {
-    public String show(WebPage webPage);
 
-    public WebPage save(WebPage webPage);
+    public WebPage createPage(Locale language);
+
+    public WebPage createPage(URI id, Locale language);
+
+    public WebPage get(String id, Locale language);
+
+    public String render(URI uri);
+
+    public String render(WebPage webPage);
+
+    public WebPage save(URI uri, String html) throws Exception;
 
     public WebPage delete(WebPage webPage);
 
