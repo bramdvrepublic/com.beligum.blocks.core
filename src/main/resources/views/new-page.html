@@ -5,13 +5,13 @@
 
             <h1>Do you want to create a new page?</h1>
 
-            <form role="form" method="POST" action="/entities" class="form-inline">
-                <input type="hidden" name="page-url" value="$entityUrl"/>
+            <form role="form" method="GET" action="/blocks/admin/page/template" class="form-inline">
+                <input type="hidden" name="page_url" value="$url"/>
 
                 <div class="form-group">
-                    <select name="page-class-name" id="class-selection" class="form-control">
-                        #foreach($blueprint in $blueprints)
-                            <option value="$blueprint.getName()">$!blueprint.getName()</option>
+                    <select name="page_class_name" id="class-selection" class="form-control">
+                        #foreach($template in $templates)
+                            <option value="$template.get("name")">$template.get("title")</option>
                         #end
                     </select>
 

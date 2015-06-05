@@ -2,6 +2,7 @@ package com.beligum.blocks.config;
 
 import com.beligum.base.security.Authentication;
 import com.beligum.base.security.Principal;
+import com.beligum.base.server.RequestContext;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.google.common.base.Charsets;
@@ -10,6 +11,7 @@ import org.apache.shiro.UnavailableSecurityManagerException;
 import java.io.IOException;
 import java.io.Reader;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.text.DateFormat;
@@ -21,52 +23,40 @@ import java.util.*;
  */
 public class BlocksConfig
 {
-
+    public static BlocksConfig instance;
     public static final String PROJECT_VERSION_KEY = "appVersion";
     public static final String PROPERTIES_FILE = "blocks.properties";
 
-    /**
-     * the languages this site can work with, ordered from most preferred languages, to less preferred
-     */
-    public static ArrayList<String> cachedLanguages;
-    public static String projectVersion = null;
+    /**the languages this site can work with, ordered from most preferred languages, to less preferred*/
+    private HashMap<String, Locale> cachedLanguages;
+    private Locale defaultLanguage;
+    public String projectVersion = null;
+    private URI siteDomain;
+    private URI defaultRdfSchema;
 
-    public BlocksConfig()
+    private BlocksConfig()
     {
+    }
 
+    public static BlocksConfig instance() {
+        if (BlocksConfig.instance == null) {
+            BlocksConfig.instance = new BlocksConfig();
+        }
+        return BlocksConfig.instance;
     }
 
 
-    public String getLuceneIndex()
-    {
-        return getConfiguration("blocks.lucene-index");
-    }
 
-    public String getTemplateFolder()
+    public URI getSiteDomain()
     {
-        return getConfiguration("blocks.template-folder");
-    }
-    public String getBlueprintsFolder()
-    {
-        return getConfiguration("blocks.blueprints-folder");
-    }
-
-    public String getDefaultPageTitle()
-    {
-        String retVal = getConfiguration("blocks.default-page-title");
-        if (retVal == null)
-            retVal = "";
-        return retVal;
-    }
-
-    public String getSiteDomain()
-    {
-        return getConfiguration("blocks.site.domain");
-    }
-
-    public URL getSiteDomainUrl() throws MalformedURLException
-    {
-        return new URL(getSiteDomain());
+        if (this.siteDomain == null) {
+            try {
+                this.siteDomain = new URI(getConfiguration("blocks.site.domain"));
+            } catch (Exception e) {
+                Logger.error("Site domain in blocks config is not valid. We return null");
+            }
+        }
+        return this.siteDomain;
     }
 
     public String getBlocksDBHost()
@@ -78,9 +68,16 @@ public class BlocksConfig
         return Integer.parseInt(getConfiguration("blocks.db.port"));
     }
 
-    public String getDefaultRdfSchema()
+    public URI getDefaultRdfSchema()
     {
-        return getConfiguration("blocks.rdf.schema.url");
+        if (this.defaultRdfSchema == null) {
+            try {
+                this.defaultRdfSchema = new URI(getConfiguration("blocks.rdf.schema.url"));
+            } catch (Exception e) {
+                Logger.error("Default RDF Schema is not valid");
+            }
+        }
+        return this.defaultRdfSchema;
     }
 
     public String getDefaultRdfPrefix()
@@ -118,24 +115,32 @@ public class BlocksConfig
     /**
      * @return The languages this site can work with, ordered from most preferred language, to less preferred. If no such languages are specified in the configuration xml, an array with a default language is returned.
      */
-    public ArrayList<String> getLanguages()
-    {
-        if (cachedLanguages == null) {
-            cachedLanguages = new ArrayList<String>();
+    public HashMap<String, Locale> getLanguages(){
+        if(cachedLanguages==null){
+            cachedLanguages = new HashMap<>();
             ArrayList<String> cachedLanguagesTemp = new ArrayList<String>(Arrays.asList(R.configuration().getStringArray("blocks.site.languages")));
 
             for (String l : cachedLanguagesTemp) {
-                Locale locale = new Locale(l);
-                String language = locale.getLanguage();
 
-                cachedLanguages.add(language);
+                Locale locale = new Locale(l);
+                if (this.defaultLanguage == null) this.defaultLanguage = locale;
+//                String language = locale;
+                cachedLanguages.put(locale.getLanguage(), locale);
             }
-            if (cachedLanguages.size() == 0) {
-                Locale locale = new Locale("en");
-                cachedLanguages.add(locale.getLanguage());
+            if(cachedLanguages.size() == 0){
+                this.defaultLanguage = Locale.ENGLISH;
+                cachedLanguages.put(defaultLanguage.getLanguage(), defaultLanguage);
             }
         }
         return cachedLanguages;
+    }
+
+    public Locale getLocaleForLanguage(String language) {
+        Locale retVal = this.getDefaultLanguage();
+        if (this.cachedLanguages.containsKey(language)) {
+            retVal = this.cachedLanguages.get(language);
+        }
+        return retVal;
     }
 
     public String getCurrentUserName()
@@ -157,11 +162,27 @@ public class BlocksConfig
     }
 
     /**
+     *
      * @return The first languages in the languages-list, or the no-language-constant if no such list is present in the configuration-xml.
      */
-    public String getDefaultLanguage()
-    {
-        return getLanguages().get(0);
+    public Locale getDefaultLanguage(){
+        if (defaultLanguage == null) {
+            this.getLanguages();
+        }
+        return defaultLanguage;
+    }
+
+    public Locale getRequestDefaultLanguage() {
+        Locale retVal = null;
+        List<Locale> languages = RequestContext.getJaxRsRequest().getAcceptableLanguages();
+        while (retVal == null && languages.iterator().hasNext()) {
+            Locale loc = languages.iterator().next();
+            if (BlocksConfig.instance().getLocaleForLanguage(loc.getLanguage()) != null) {
+                retVal = loc;
+            }
+        }
+        if (retVal == null) retVal = getDefaultLanguage();
+        return retVal;
     }
 
     /**

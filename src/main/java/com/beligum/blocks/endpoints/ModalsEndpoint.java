@@ -1,7 +1,7 @@
 package com.beligum.blocks.endpoints;
 
 import com.beligum.base.templating.ifaces.Template;
-import com.beligum.blocks.base.Blocks;
+import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.security.Permissions;
 import gen.com.beligum.blocks.core.fs.html.views.modals.change_url_modal;
 import org.apache.shiro.authz.annotation.RequiresRoles;
@@ -46,20 +46,9 @@ public class ModalsEndpoint
         else {
             template.set("originalUrlPathEnd", "");
         }
-        template.set("languages", Arrays.asList(Blocks.config().getLanguages()));
+        template.set("languages", Arrays.asList(BlocksConfig.instance().getLanguages()));
         return Response.ok(template.render()).build();
     }
 
-    //    @GET
-    //    @Path("/newpage")
-    //    @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
-    //    public Response getNewPageModal(
-    //                    @QueryParam("entityurl")
-    //                    String entityUrl) throws Exception
-    //    {
-    //        Template template = R.templateEngine().getEmptyTemplate("/views/modals/" + NEW_PAGE_MODAL);
-    //        template.set("entityClasses", Blocks.templateCache().getPagetemplates(Blocks.putConfig().getDefaultLanguage()));
-    //        template.set("entityUrl", entityUrl);
-    //        return Response.ok(template.renderContent()).build();
-    //    }
+
 }

@@ -26,97 +26,21 @@ public class ParserConstants
         }
     }
 
-    public final static String TEMPLATE_PROPERTY_START = "%%BLOCKS-PROPERTY-START%%";
-    public final static String TEMPLATE_PROPERTY_END = "%%BLOCKS-PROPERTY-END%%";
-    public final static String TEMPLATE_HEAD = "%%BLOCKS-HEAD%%";
-    public final static String TEMPLATE_CONTENT = "%%BLOCKS-TEMPLATE-CONTENT%%";
+    public final static String RESOURCE_ENDPOINT= "/v1/resource/";
+
+
+    public final static String JSONLD_ID = "@id";
+    public final static String JSONLD_TYPE = "@type";
+    public final static String JSONLD_VALUE = "@value";
+    public final static String JSONLD_LANGUAGE = "@language";
+    public final static String JSONLD_GRAPH = "@graph";
+    public final static String JSONLD_CONTEXT = "@context";
 
     public final static String CAN_LAYOUT = "can-layout";
     public final static String CAN_EDIT_PROPERTY = "can-edit";
-    public final static String CAN_NOT_EDIT_PROPERTY = "can-not-edit";
-    public final static String CAN_CHANGE = "can-change";
 
-    public final static String INCLUDE = "include";
 
-    public final static String DEFAULT_BLUEPRINT = "default";
-    public final static String DEFAULT_PAGE_TEMPLATE = "default";
-
-    /**
-     * the attribute indicating a html-file defines a page-template
-     */
-    public final static String PAGE_TEMPLATE_ATTR = "template";
-    /**
-     * the attribute indicating the template-content should be pasted their
-     */
-    public final static String PAGE_TEMPLATE_CONTENT_ATTR = "template-content";
-
-    /**
-     * the name of the variable in the template containing the entity to be rendered inside
-     */
-    public static final String PAGE_TEMPLATE_ENTITY_VARIABLE_NAME = "entity";
-
-    /**
-     * the name of the variable in the new-page template, containing all possible entity-classes
-     */
-    public static final String BLUEPRINTS = "blueprints";
-    /**
-     * the name of the variable in the new-page template, containing the url of the new Entity
-     */
     public static final String ENTITY_URL = "entityUrl";
-    public static final String SINGLETON = "singleton";
 
-    /**
-     * the html-language attribute
-     */
-    public static final String LANGUAGE = "lang";
-
-    /**
-     * the form a reference-node takes inside parsed templates
-     */
-    public static final String REFERENCE_TO = "reference-to";
-    /**
-     * the keyword indicating a certain entity is a copy of the entity-class (blueprint)
-     */
-    public static final String USE_BLUEPRINT = "use-blueprint";
-    /**
-     * the keyword indicating a certain html element defines a class blueprint
-     */
-    public static final String BLUEPRINT = "blueprint";
-    /**
-     * the keyword indicating a certain property value is a copy of the property in the entity-class (blueprint)
-     */
-    public static final String USE_DEFAULT = "use-default";
-
-    public static final String PAGE_BLOCK = "page-block";
-    public static final String NOT_ADDABLE_BLOCK = "not-addable-block";
-
-    public static final String CSS_CLASS_PREFIX = "block-";
-
-    /**
-     * Dynamic templates
-     */
-    public class DynamicBlocks
-    {
-        /**
-         * the type indicating a block is a translation-block
-         */
-        public static final String TRANSLATION_LIST = "translation-list";
-    }
-
-    /**
-     * RDFa-constants
-     */
-    public static final String RESOURCE = "resource";
-    public static final String PROPERTY = "property";
-    public static final String BLUEPRINT_PROPERTY = "blueprint-property";
-    public static final String PROPERTY_NAME = "name";
-    public static final String TYPE_OF = "typeof";
-    public static final String SRC = "src";
-    public static final String HREF = "href";
-    public static final String PREFIX = "prefix";
-    public static final String INLIST = "inlist";
-    public static final String CONTENT = "content";
-
-    public static final String CAPTION = "caption";
 
 }

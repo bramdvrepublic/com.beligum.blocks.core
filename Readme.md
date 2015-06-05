@@ -108,3 +108,16 @@ find url -> id
 find translated url -> lang/url -> id
 find url+lang -> translated url
 find id+lang -> translated url
+
+
+# resources
+
+- everything is a resource
+
+
+# flow
+- in blueprints make all properties and typeof attributes absolute uri's (http://www.mot.be/ontology/name) or relative from local schema (name)
+- blueprint tag takes a name (e.g. address) which is the short form of the blueprint URI (http://www.mot.be/v1/resource/blueprint/address)
+
+
+

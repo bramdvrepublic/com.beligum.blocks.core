@@ -1,128 +1,88 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.base.server.R;
 import com.beligum.base.server.RequestContext;
 import com.beligum.base.templating.ifaces.Template;
-import com.beligum.base.utils.Logger;
-import com.beligum.blocks.base.Blocks;
+import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.exceptions.CacheException;
-import com.beligum.blocks.identifiers.BlockId;
-import com.beligum.blocks.models.*;
-import com.beligum.blocks.renderer.BlocksTemplateRenderer;
-import gen.com.beligum.blocks.core.fs.html.views.new_page;
-import org.apache.shiro.SecurityUtils;
+import com.beligum.blocks.database.OBlocksDatabase;
+import com.beligum.blocks.routing.HtmlRouter;
+import com.beligum.blocks.routing.ifaces.Router;
+import com.beligum.blocks.routing.Route;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
+import javax.ws.rs.core.UriBuilder;
+import java.net.URI;
 import java.util.Locale;
 
 @Path("/")
 public class ApplicationEndpoint
 {
-    //using regular expression to let all requests to undefined paths end up here
-    @Path("/")
+
+    @Path("/favicon.ico")
     @GET
-    public Response getIndex() throws Exception
-    {
-        return this.getPageWithId(null, null, false);
+    public Response favicon() {
+        throw new NotFoundException();
     }
-    //using regular expression to let all requests to undefined paths end up here
+
+    /*
+    * Every resource on this domain has a url as id in for http://xxx.org/v1/resources/...
+    *
+    * These resources are mapped to clean urls in the routing table in the db.
+    * Currently there ar 2 types of routes:
+    * - OKURL: shows a resource (normally a view with optionally an other resource as argument, based on the current path
+    * - MovedPermanentlyURL: redirects to an other url
+    *
+    * Language is not a part of the url-path in the database.
+    *
+    * */
+
+    @Path(ParserConstants.RESOURCE_ENDPOINT + "{block_id:.*}")
+    @GET
+    public Response getPageWithId(@PathParam("block_id") String blockId, @QueryParam("resource") String resource_block_id, @QueryParam("language") String lang)
+    {
+
+
+        return Response.ok().build();
+    }
+
+
+    /*
+    * using regular expression to let all requests to undefined paths end up here
+    * We try to find these urls in our routing table and redirect them to the correct url
+    * */
+
     @Path("/{randomPage:.*}")
     @GET
     public Response getPageWithId(@PathParam("randomPage") String randomURLPath, @QueryParam("version") Long version, @QueryParam("deleted") @DefaultValue("false") boolean fetchDeleted)
                     throws Exception
     {
-        if (!R.configuration().getProduction()) {
-            Blocks.templateCache().reset();
+        Response retVal;
+        URI currentURI = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
+
+        Route route = new Route(currentURI, OBlocksDatabase.instance());
+        if (!route.getLocale().equals(Locale.ROOT)) {
+            Router router = new HtmlRouter(route);
+            retVal = router.response();
+            // Todo Remove when this sits in db
+            OBlocksDatabase.instance().getGraph().commit();
+        } else {
+            URI url = UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path(BlocksConfig.instance().getDefaultLanguage().getLanguage()).path(route.getLanguagedPath().toString()).build();
+            retVal = Response.seeOther(url).build();
         }
-
-        //            if(fetchDeleted && !SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)){
-        //                Logger.debug("Unauthorized user tried to view deleted version of page '" + randomURLPath + "'.");
-        //                fetchDeleted = false;
-        //            }
-        URL url = new URL(RequestContext.getJaxRsRequest().getUriInfo().getRequestUri().toString());
-
-        // set language
-        String language = Blocks.urlDispatcher().getLanguageOrNull(url);
-        if (language == null) {
-            List<Locale> languages = RequestContext.getJaxRsRequest().getAcceptableLanguages();
-            while (language == null && languages.iterator().hasNext()) {
-                Locale loc = languages.iterator().next();
-                if (Blocks.config().getLanguages().contains(loc.getLanguage())) {
-                    language = loc.getLanguage();
-                }
-            }
-        }
-        //
-        if (!SecurityUtils.getSubject().isPermitted(com.beligum.blocks.security.Permissions.ENTITY_MODIFY)) {
-            //                    throw new UnauthorizedException("User is not allowed to see versioned entity: url = " + randomURLPath + ", version=" +version);
-            version = null;
-            fetchDeleted = false;
-            Logger.debug("Unauthorized user tried to view older version of page '" + randomURLPath + "'.");
-        }
-
-        //if no language info is specified in the url, or if the specified language doesn't exist, the default language will still be shown
-        BlockId id = Blocks.urlDispatcher().findId(url);
-        StoredTemplate storedTemplate = null;
-
-        if (id != null) {
-            storedTemplate = Blocks.database().fetchTemplate(id, language);
-        }
-        else if (fetchDeleted) {
-            id = Blocks.urlDispatcher().findPreviousId(url);
-            if (id != null) {
-                storedTemplate = Blocks.database().fetchPrevious(id, language, Blocks.factory().getStoredTemplateClass());
-            }
-        }
-
-        if (storedTemplate == null) {
-            if (fetchDeleted) {
-                // Todo add flash message
-            }
-            //if we're logged in, renderContent out the page where we can create a new page
-            if (SecurityUtils.getSubject().isAuthenticated() || SecurityUtils.getSubject().isRemembered()) {
-                return injectParameters(new_page.get().getNewTemplate());
-            }
-            else {
-                throw new NotFoundException();
-            }
-        }
-        else {
-            Resource resource = null;
-            //                if (storedTemplate.getEntity() != null) {
-            ArrayList<JsonLDWrapper> model = Blocks.database().fetchEntities("{ '@graph.@id': 'mot:/" + storedTemplate.getId().toString() + "'}");
-
-            if (model.iterator().hasNext())
-                resource = model.iterator().next().getMainResource(storedTemplate.getLanguage());
-            //                }
-
-            PageTemplate pageTemplate = Blocks.templateCache().getPageTemplate(storedTemplate.getPageTemplateName());
-            if (pageTemplate == null) {
-                throw new Exception("Couldn't find the page template with name '" + storedTemplate.getPageTemplateName() + "' while parsing stored template '"+storedTemplate.getName()+"'");
-            }
-            BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
-
-            // Todo renderContent entity
-            return Response.ok(renderer.render(pageTemplate, storedTemplate, resource, storedTemplate.getLanguage())).build();
-        }
+        return retVal;
     }
 
     /**
      * Injects all parameters needed to create a new page into a template.
      *
      * @param newPageTemplate
-     * @throws InterruptedException
-     * @throws CacheException
      */
-    private Response injectParameters(Template newPageTemplate) throws Exception
+    private Response injectParameters(Template newPageTemplate)
     {
-        List<Blueprint> pageBlocks = Blocks.templateCache().getPageBlocks();
+        //        List<Blueprint> pageBlocks = Blocks.templateCache().getPageBlocks();
         newPageTemplate.set(ParserConstants.ENTITY_URL, RequestContext.getJaxRsRequest().getUriInfo().getRequestUri().toString());
-        newPageTemplate.set(ParserConstants.BLUEPRINTS, pageBlocks);
+        //        newPageTemplate.set(ParserConstants.BLUEPRINTS, pageBlocks);
         return Response.ok(newPageTemplate).build();
     }
 
