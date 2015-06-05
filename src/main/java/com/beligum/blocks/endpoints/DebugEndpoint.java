@@ -1,7 +1,7 @@
 package com.beligum.blocks.endpoints;
 
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.controllers.OrientResourceController;
+import com.beligum.blocks.database.OBlocksDatabase;
 import com.beligum.blocks.security.Permissions;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocument;
 import com.orientechnologies.orient.core.sql.OCommandSQL;
@@ -29,8 +29,8 @@ public class DebugEndpoint
         Logger.warn("Database has been flushed by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
 
         Logger.warn("Url-id mapping has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
-        ODatabaseDocument graph = OrientResourceController.instance().getDatabase();
-        graph.command(new OCommandSQL("DELETE VERTEX LocalizedResource")).execute();
+        ODatabaseDocument graph = OBlocksDatabase.instance().getDatabase();
+        graph.command(new OCommandSQL("DELETE VERTEX")).execute();
         return Response.ok("<ul><li>Database emptied</li><li>Cache reset</li><li>Url-id mapping reset</li></ul>").build();
     }
 

@@ -2,16 +2,18 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.server.RequestContext;
 import com.beligum.base.templating.ifaces.Template;
+import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.controllers.OrientResourceController;
+import com.beligum.blocks.database.OBlocksDatabase;
 import com.beligum.blocks.routing.HtmlRouter;
 import com.beligum.blocks.routing.ifaces.Router;
-import com.beligum.blocks.routing.ORouteController;
 import com.beligum.blocks.routing.Route;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.util.Locale;
 
 @Path("/")
 public class ApplicationEndpoint
@@ -55,16 +57,20 @@ public class ApplicationEndpoint
     public Response getPageWithId(@PathParam("randomPage") String randomURLPath, @QueryParam("version") Long version, @QueryParam("deleted") @DefaultValue("false") boolean fetchDeleted)
                     throws Exception
     {
-
+        Response retVal;
         URI currentURI = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
-        Route route = new Route(currentURI, ORouteController.instance());
 
-        Router router = new HtmlRouter(route);
-
-        // Todo Remove when this sits in db
-        OrientResourceController.instance().getGraph().commit();
-
-        return router.response();
+        Route route = new Route(currentURI, OBlocksDatabase.instance());
+        if (!route.getLocale().equals(Locale.ROOT)) {
+            Router router = new HtmlRouter(route);
+            retVal = router.response();
+            // Todo Remove when this sits in db
+            OBlocksDatabase.instance().getGraph().commit();
+        } else {
+            URI url = UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path(BlocksConfig.instance().getDefaultLanguage().getLanguage()).path(route.getLanguagedPath().toString()).build();
+            retVal = Response.seeOther(url).build();
+        }
+        return retVal;
     }
 
     /**

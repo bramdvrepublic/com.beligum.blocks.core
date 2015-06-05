@@ -1,4 +1,4 @@
-package com.beligum.blocks.models.resources.interfaces;
+package com.beligum.blocks.resources.interfaces;
 
 import java.net.URI;
 import java.util.Calendar;
@@ -26,7 +26,7 @@ public interface Resource extends Node
 
     public Object getDBId();
 
-    public String getBlockId();
+    public URI getBlockId();
 
     public Node getRdfType();
 
@@ -55,5 +55,7 @@ public interface Resource extends Node
     public void setUpdatedBy(String user);
 
     public String getUpdatedBy();
+
+    public String toJson();
 
 }

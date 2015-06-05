@@ -5,11 +5,13 @@ package com.beligum.blocks.endpoints;
 // */
 
 import com.beligum.base.server.R;
+import com.beligum.blocks.database.OBlocksDatabase;
 import com.beligum.blocks.routing.Route;
-import com.beligum.blocks.routing.ORouteController;
+import com.beligum.blocks.routing.RouteController;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.PageTemplate;
+import com.orientechnologies.orient.core.processor.block.OAbstractBlock;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -52,7 +54,7 @@ public class PageEndpoint
                     throws Exception
 
     {
-        Route route = new Route(new URI(url), ORouteController.instance());
+        Route route = new Route(new URI(url), OBlocksDatabase.instance());
 
         // parse html
         // 1. get text

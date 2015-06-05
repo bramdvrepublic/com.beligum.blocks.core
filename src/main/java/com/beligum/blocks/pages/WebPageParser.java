@@ -1,20 +1,19 @@
 package com.beligum.blocks.pages;
 
 import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.database.interfaces.BlocksDatabase;
 import com.beligum.blocks.exceptions.RdfException;
-import com.beligum.blocks.models.resources.interfaces.Resource;
+import com.beligum.blocks.resources.interfaces.Resource;
 import com.beligum.blocks.pages.ifaces.WebPage;
 import com.beligum.blocks.routing.Route;
-import com.beligum.blocks.routing.ifaces.nodes.RouteController;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
+import com.beligum.blocks.utils.RdfTools;
 import net.htmlparser.jericho.*;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -31,7 +30,7 @@ public class WebPageParser
 {
     private WebPage webPage;
     private Source source;
-    private RouteController routeController;
+    private BlocksDatabase database;
     private StringBuilder parsedHtml = new StringBuilder();
     private String text = "";
     private Set<HashMap<String, String>> links = new HashSet<HashMap<String, String>>();
@@ -49,14 +48,14 @@ public class WebPageParser
     private URI base;
     private boolean inBody = false;
     private String vocab;
-    private HashMap<String, String> prefixes;
+    private HashMap<String, URI> prefixes;
 
-    public WebPageParser(WebPage webpage, URI uri, String source, RouteController routeController) throws RdfException, URISyntaxException
+    public WebPageParser(WebPage webpage, URI uri, String source, BlocksDatabase database) throws RdfException, URISyntaxException
     {
         this.webPage = webpage;
         this.source = new Source(source);
         this.source.fullSequentialParse();
-        this.routeController = routeController;
+        this.database = database;
         this.vocab = BlocksConfig.instance().getDefaultRdfSchema().toString();
 
         Element base = this.source.getFirstElement("base");
@@ -111,16 +110,16 @@ public class WebPageParser
         }
         textPos = element.getBegin();
 
-        if (element.getAttributes().contains("typeof")) {
+        if (element.getAttributeValue("typeof") != null) {
             // set resource id on tag.
             // set new resource to add values to.
             URI typeOf = getAbsoluterRdfName(element.getAttributeValue("typeof"));
 
-            if (!element.getAttributes().contains("resource")) {
+            if (element.getAttributeValue("resource") == null) {
                 // create new resource
                 textPos = element.getStartTag().getEnd();
             }
-        } else if (element.getAttributes().contains("property")) {
+        } else if (element.getAttributeValue("property") != null) {
 
         }
 
@@ -130,7 +129,7 @@ public class WebPageParser
                 parsedHtml.append(source.subSequence(element.getStartTag().getBegin(), element.getStartTag().getEnd()));
             }
 
-            while (element.encloses(next)) {
+            while (next != null && element.encloses(next)) {
                 next = parse(next, textPos, resource, false);
                 textPos = element.getEnd();
             }
@@ -139,15 +138,15 @@ public class WebPageParser
                 parsedHtml.append(source.subSequence(element.getEndTag().getBegin(), element.getEndTag().getEnd()));
             }
         }
-        else if (element.getAttributes().contains("property") || element.getAttributes().contains("data-property")) {
-            while (element.encloses(next)) {
+        else if (element.getAttributeValue("property") != null || element.getAttributeValue("data-property") != null) {
+            while (next != null && element.encloses(next)) {
+                Element prev = next;
                 next = parse(next, textPos, resource, true);
-                textPos = next.getEnd();
+                textPos = prev.getEnd();
             }
 
             if (textPos < element.getEnd()) {
                 parsedHtml.append(source.subSequence(textPos, element.getEnd()));
-                textPos = element.getEnd();
             }
         }
 
@@ -165,11 +164,11 @@ public class WebPageParser
         while (elementPosition < elements.size() && !found) {
             retVal = elements.get(elementPosition);
             elementPosition++;
-            if (retVal.getAttributes().contains("typeof")) {
+            if (retVal.getAttributeValue("typeof") != null) {
                 found = true;
-            } else if (retVal.getAttributes().contains("property")) {
+            } else if (retVal.getAttributeValue("property") != null) {
                 found = true;
-            } else if (retVal.getAttributes().contains("data-property")) {
+            } else if (retVal.getAttributeValue("data-property") != null) {
                 found = true;
             } else if (siteTags.contains(retVal.getStartTag().getName())) {
                 found = true;
@@ -185,39 +184,27 @@ public class WebPageParser
             }
 
             if (inBody) {
-                if (retVal.getAttributes().contains("src")) {
+                if (retVal.getAttributeValue("src") != null) {
                     addLink(retVal.getAttributeValue("src"));
                 }
-                else if (retVal.getAttributes().contains("href")) {
+                else if (retVal.getAttributeValue("href") != null) {
                     // add to links
                     addLink(retVal.getAttributeValue("href"));
                 }
             }
 
-            if (retVal.getAttributes().contains("vocab")) {
+            if (retVal.getAttributeValue("vocab") != null) {
                 // set vocab
                 this.vocab = retVal.getAttributeValue("vocab");
-            } else if (retVal.getAttributes().contains("prefixes")) {
+            } else if (retVal.getAttributeValue("prefixes") != null) {
                 // add prefixes
-                String prefixString = retVal.getAttributes().get("prefixes").getValue().trim();
-                prefixString = prefixString.replaceAll(" *?", " ");
-                String[] prefixes = prefixString.split(" ");
-
-                if (prefixes.length % 2 != 0) {
-                    throw new RdfException("Prefixes could not be parsed. Uneven number. Prefix attribute value should be of type 'ex: http://www.example.com/' ");
-                }
-
-                int count = 0;
-                while (count < prefixes.length) {
-                    String prefix = prefixes[count];
-                    String prefixValue = prefixes[count + 1];
-                    count = count + 2;
-                    if (prefix.endsWith(":") && prefix.length() > 1) {
-                        prefix = prefix.substring(0, prefix.length() -1);
+                HashMap<String, URI> prefix = RdfTools.parsePrefixes(retVal.getAttributeValue("prefixes"));
+                for (String p: prefix.keySet()) {
+                    if (this.prefixes.containsKey(p) && !(this.prefixes.get(p).equals(prefix.get(p)))) {
+                        throw new RdfException("Prefix is used twice in page with different URI's");
                     } else {
-                        throw new RdfException("Prefixes could not be parsed. Uneven number. Prefix attribute value should be of type 'ex: http://www.example.com/' ");
+                        this.prefixes.put(p, prefix.get(p));
                     }
-                    this.prefixes.put(prefix, prefixValue);
                 }
 
             }
@@ -226,43 +213,42 @@ public class WebPageParser
         return retVal;
     }
 
+    /*
+    * Add the found link to this parser, to be used by WebPage Object
+    * */
     private void addLink(String link) {
         URI absoluteLink = makeLinkAbsolute(link);
-        String pageId = getPageId(absoluteLink);
+        URI pageId = getPageId(absoluteLink);
         HashMap<String, String> newLink = new HashMap<String, String>();
         newLink.put("html", link);
         newLink.put("absolute", absoluteLink.toString());
-        newLink.put("page", pageId);
+        newLink.put("page", pageId.toString());
         this.links.add(newLink);
     }
 
     /*
     * Makes a relative link absolute based on the base for this page
+    *
+    * TODO: see difference between  'test.html' '/test.html' and '../test.html'
     * */
     private URI makeLinkAbsolute(String link) {
-        String retVal = link;
+        URI retVal;
         URI uri = UriBuilder.fromUri(link).build();
-        String host = uri.getHost();
-        String scheme = uri.getScheme();
-        String path = uri.getPath();
-
-        if (host == null) {
-            host = this.base.getHost();
+        if (RdfTools.isValidAbsoluteURI(uri)) {
+            retVal = uri;
+        } else  {
+            UriBuilder builder = UriBuilder.fromUri(this.base).path(link);
+            retVal = builder.build();
         }
-        if (scheme == null) {
-            scheme = this.base.getScheme();
-        }
-        Path mergedPath = Paths.get(this.base.getPath()).resolve(path);
-
-        return UriBuilder.fromUri("#").scheme(scheme).host(host).path(mergedPath.toString()).build();
+        return retVal;
     }
 
     /*
     * Get the pageid for a give url. Returns null if non page exists at this url
     * */
-    private String getPageId(URI link) {
-        String retVal= null;
-        Route route = new Route(link, this.routeController);
+    private URI getPageId(URI link) {
+        URI retVal= null;
+        Route route = new Route(link, database);
         if (route.exists() && route.getNode().getStatusCode() == 200) {
             retVal = route.getNode().getPageUrl();
         }
@@ -273,10 +259,12 @@ public class WebPageParser
     * Sets the base for all relative urls in this page
     * */
     private void setBase(Element base, URI contextUri) {
-        URI baseUri = UriBuilder.fromUri(base.getAttributeValue("href")).build();
-
-        if (base != null && baseUri.getHost() != null && baseUri.getScheme() != null) {
-            this.base = cleanUri(baseUri);
+        URI baseUri = null;
+        if (base != null) {
+            baseUri = UriBuilder.fromUri(base.getAttributeValue("href")).build();
+        }
+        if (base != null && baseUri != null && baseUri.getHost() != null && baseUri.getScheme() != null) {
+            this.base = cleanUri(UriBuilder.fromUri(base.getAttributeValue("href")).build());
         } else if (contextUri != null && contextUri.getHost() != null && contextUri.getScheme() != null) {
             this.base = cleanUri(contextUri);
         } else {
@@ -297,7 +285,7 @@ public class WebPageParser
             if (index > -1) {
                 String prefix = name.substring(0, index);
                 name = name.substring(index+1);
-                String prefixValue = this.prefixes.get(prefix);
+                String prefixValue = this.prefixes.get(prefix).toString();
                 if (prefixValue != null) {
                     retVal = new URI(prefixValue + name);
                 } else {

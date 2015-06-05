@@ -1,6 +1,6 @@
-package com.beligum.blocks.models.resources.jackson;
+package com.beligum.blocks.resources.jackson;
 
-import com.beligum.blocks.models.resources.interfaces.Resource;
+import com.beligum.blocks.resources.interfaces.Resource;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;

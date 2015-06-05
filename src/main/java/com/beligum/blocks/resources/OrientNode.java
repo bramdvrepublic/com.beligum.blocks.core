@@ -1,8 +1,8 @@
-package com.beligum.blocks.models.resources.orient;
+package com.beligum.blocks.resources;
 
-import com.beligum.blocks.models.resources.AbstractNode;
-import com.beligum.blocks.models.resources.interfaces.Node;
-import com.beligum.blocks.models.resources.interfaces.ResourceController;
+import com.beligum.blocks.database.OBlocksDatabase;
+import com.beligum.blocks.database.interfaces.BlocksDatabase;
+import com.beligum.blocks.resources.AbstractNode;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 
 import java.util.*;
@@ -17,7 +17,7 @@ public class OrientNode extends AbstractNode
 
     }
 
-    protected OrientNode(Object value, Locale locale) {
+    public OrientNode(Object value, Locale locale) {
         super(value, locale);
     }
 
@@ -32,8 +32,8 @@ public class OrientNode extends AbstractNode
     }
 
     @Override
-    public ResourceController getResourceController() {
-        return OrientResourceController.instance();
+    public BlocksDatabase getDatabase() {
+        return OBlocksDatabase.instance();
     }
 
 }

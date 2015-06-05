@@ -1,6 +1,7 @@
-package com.beligum.blocks.models.resources.orient;
+package com.beligum.blocks.resources;
 
-import com.beligum.blocks.models.resources.interfaces.Resource;
+import com.beligum.blocks.database.OBlocksDatabase;
+import com.beligum.blocks.resources.interfaces.Resource;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 
 import java.util.Iterator;
@@ -46,7 +47,7 @@ public class OrientResourceIterable implements Iterable<Resource>
         @Override
         public Resource next()
         {
-            return OrientResourceController.instance().asResource(internalIterator.next(), locale);
+            return (Resource)OBlocksDatabase.instance().createNode(internalIterator.next(), locale);
         }
         @Override
         public void remove()

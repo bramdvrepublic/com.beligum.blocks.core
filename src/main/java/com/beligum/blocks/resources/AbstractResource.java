@@ -1,10 +1,16 @@
-package com.beligum.blocks.models.resources;
+package com.beligum.blocks.resources;
 
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.models.resources.interfaces.Node;
-import com.beligum.blocks.models.resources.interfaces.Resource;
-import com.beligum.blocks.models.resources.orient.OrientResourceController;
+import com.beligum.blocks.database.OBlocksDatabase;
+import com.beligum.blocks.resources.interfaces.Node;
+import com.beligum.blocks.resources.interfaces.Resource;
+import com.beligum.blocks.resources.jackson.ResourceJsonDeserializer;
+import com.beligum.blocks.resources.jackson.ResourceJsonSerializer;
 import com.beligum.blocks.utils.RdfTools;
+import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
@@ -17,15 +23,16 @@ public abstract class AbstractResource extends AbstractNode implements Resource
 {
 
     @Override
-    public String getBlockId()
+    public URI getBlockId()
     {
-        return getFieldDirect(ParserConstants.JSONLD_ID).asString();
+        return UriBuilder.fromUri(getFieldDirect(ParserConstants.JSONLD_ID).asString()).build();
     }
     @Override
     public Node getRdfType()
     {
-        return getResourceController().asNode(getFieldDirect(OrientResourceController.TYPE_FIELD), Locale.ROOT);
+        return getDatabase().createNode(getFieldDirect(OBlocksDatabase.RESOURCE_TYPE_FIELD), Locale.ROOT);
     }
+
     @Override
     public void setRdfType(Node node)
     {
@@ -33,7 +40,7 @@ public abstract class AbstractResource extends AbstractNode implements Resource
         for (Node n: node) {
             list.add(n);
         }
-        this.setFieldDirect(OrientResourceController.TYPE_FIELD, node.getValue(), node.getLanguage());
+        this.setFieldDirect(OBlocksDatabase.RESOURCE_TYPE_FIELD, node.getValue(), node.getLanguage());
     }
 
     @Override
@@ -134,7 +141,25 @@ public abstract class AbstractResource extends AbstractNode implements Resource
         return shortFieldName;
     }
 
+    @Override
+    public String toJson()
+    {
+        String retVal = null;
+        // Jackson mapper that can serialize Resource objects
+        // TODO move mapper to other class
+        final SimpleModule module = new SimpleModule("customerSerializationModule", new Version(1, 0, 0, "static version"));
+        module.addSerializer(Resource.class, new ResourceJsonSerializer());
+        module.addDeserializer(Resource.class, new ResourceJsonDeserializer());
 
+        final ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(module);
+        try {
+            retVal = objectMapper.writeValueAsString(this);
+        } catch (Exception e) {
+            Logger.error("Could not serialize resource.");
+        }
+        return retVal;
+    }
 
 
     // ------- Methods from Node interface that are less relevant for Resource -----

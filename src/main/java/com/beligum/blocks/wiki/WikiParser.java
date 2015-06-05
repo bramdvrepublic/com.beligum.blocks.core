@@ -3,14 +3,13 @@ package com.beligum.blocks.wiki;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
-import com.beligum.blocks.models.resources.orient.OrientResourceController;
-import com.beligum.blocks.models.resources.interfaces.Node;
-import com.beligum.blocks.models.resources.interfaces.Resource;
-import com.beligum.blocks.models.resources.jackson.ResourceJsonLDSerializer;
-import com.beligum.blocks.pages.DefaultWebPageController;
+import com.beligum.blocks.database.OBlocksDatabase;
+import com.beligum.blocks.resources.interfaces.Node;
+import com.beligum.blocks.resources.interfaces.Resource;
+import com.beligum.blocks.resources.jackson.ResourceJsonLDSerializer;
 import com.beligum.blocks.pages.WebPageParser;
 import com.beligum.blocks.pages.ifaces.WebPage;
-import com.beligum.blocks.routing.ORouteController;
+import com.beligum.blocks.routing.Route;
 import com.beligum.blocks.search.ElasticSearchClient;
 import com.beligum.blocks.search.ElasticSearchServer;
 import com.beligum.blocks.utils.RdfTools;
@@ -158,7 +157,7 @@ public abstract class WikiParser
     {
 
         int count = 0;
-        ODatabaseDocumentTx graph = com.beligum.blocks.controllers.OrientResourceController.instance().getDatabase();
+        ODatabaseDocumentTx graph = OBlocksDatabase.instance().getDatabase();
         for (String key : this.items.keySet()) {
             HashMap<String, HashMap<String, String>> item = this.items.get(key);
             // create a new id taken from a field of the item
@@ -183,9 +182,9 @@ public abstract class WikiParser
             createWebPages(resource);
             //Save to DB
             //                    saveEntity(resource);
-            OrientResourceController.instance().save(resource);
+            OBlocksDatabase.instance().saveResource(resource);
+            graph.commit();
             toLucene();
-
 
             count++;
             if (count % 100 == 0) {
@@ -204,7 +203,7 @@ public abstract class WikiParser
             }
         }
 
-        graph.commit();
+
         Logger.debug("finish!");
 
         BulkResponse bulkResponse = this.bulkRequest.execute().actionGet();
@@ -248,14 +247,14 @@ public abstract class WikiParser
                 if (value.isString()) {
                     String[] splitValue = value.asString().split("\\|");
                     for (String v : splitValue) {
-                        entity.add(name, OrientResourceController.instance().asNode(v.trim(), BlocksConfig.instance().getDefaultLanguage()));
+                        entity.add(name, OBlocksDatabase.instance().createNode(v.trim(), BlocksConfig.instance().getDefaultLanguage()));
                     }
                 }
             }
         } else if (property != null && property.isString()) {
             String[] splitValue = property.asString().split("\\|");
             for (String v : splitValue) {
-                entity.add(name, OrientResourceController.instance().asNode(v.trim(), property.getLanguage()));
+                entity.add(name, OBlocksDatabase.instance().createNode(v.trim(), property.getLanguage()));
             }
         }
 
@@ -268,12 +267,12 @@ public abstract class WikiParser
         if (property != null && property.isIterable()) {
             for (Node node: property) {
                 if (node.isString()) {
-                    entity.add(name, OrientResourceController.instance().asNode(prefix + node.asString().trim(), property.getLanguage()));
+                    entity.add(name, OBlocksDatabase.instance().createNode(prefix + node.asString().trim(), property.getLanguage()));
 
                 }
             }
         } else if (property.isString()) {
-            entity.add(name, OrientResourceController.instance().asNode(prefix + property.asString().trim(), property.getLanguage()));
+            entity.add(name, OBlocksDatabase.instance().createNode(prefix + property.asString().trim(), property.getLanguage()));
         }
 
 
@@ -355,7 +354,7 @@ public abstract class WikiParser
                     Logger.debug("Could not parse time", e);
                 }
             } else {
-                entity.add(RdfTools.makeAbsolute(newFieldName), OrientResourceController.instance().asNode(value, language));
+                entity.add(RdfTools.makeLocalAbsolute(newFieldName), OBlocksDatabase.instance().createNode(value, language));
             }
         }
     }
@@ -366,14 +365,24 @@ public abstract class WikiParser
         String html = sb.toString();
         String source = R.templateEngine().getNewStringTemplate(html).render();
 
-        WebPage page = DefaultWebPageController.instance().createPage(BlocksConfig.instance().getDefaultLanguage());
+        WebPage page = OBlocksDatabase.instance().createWebPage(BlocksConfig.instance().getDefaultLanguage());
         URI url = UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path("/nl/resource/waterput/" + resource.get("http://www.mot.be/ontology/name")).build();
         WebPageParser parser = null;
+
         try {
-            parser = new WebPageParser(page, url, source, ORouteController.instance());
+            parser = new WebPageParser(page, url, source, OBlocksDatabase.instance());
         } catch (Exception e) {
             Logger.error("Problem creating Web page", e);
         }
+
+        page.setHtml(parser.getParsedHtml());
+
+        Route route = new Route(url, OBlocksDatabase.instance());
+        if (!route.exists()) route.create();
+
+        route.getNode().setStatusCode(200);
+        route.getNode().setPageUrl(page.getBlockId());
+
         return page;
     }
 

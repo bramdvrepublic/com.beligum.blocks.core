@@ -2,12 +2,12 @@ package com.beligum.blocks.routing;
 
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.BlocksConfig;
-import com.beligum.blocks.routing.ifaces.nodes.RouteController;
-import com.beligum.blocks.routing.ifaces.nodes.WebNode;
+import com.beligum.blocks.database.interfaces.BlocksDatabase;
+import com.beligum.blocks.routing.ifaces.WebNode;
+import com.beligum.blocks.routing.ifaces.WebPath;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Locale;
@@ -24,7 +24,7 @@ public class Route
     private URI uri;
 
 
-    private RouteController routeController;
+    private BlocksDatabase database;
     // simplePath is path without language e.g. /test
     private Path simplePath;
     // languagedPath is path with language e.g. /en/test
@@ -34,9 +34,9 @@ public class Route
     private WebNode finalNode;
 
 
-    public Route(URI uri, RouteController controller)
+    public Route(URI uri, BlocksDatabase database)
     {
-        this.routeController = controller;
+        this.database = database;
 
         if (uri == null) {
             uri = BlocksConfig.instance().getSiteDomain();
@@ -51,9 +51,9 @@ public class Route
             domain = BlocksConfig.instance().getSiteDomain();
         }
 
-        this.rootNode = routeController.getRootNode(domain);
+        this.rootNode = database.getRootWebNode(domain.getHost());
         if (this.rootNode == null) {
-            this.rootNode = routeController.createRootNode(domain);
+            this.rootNode = database.createRootWebNode(domain.getHost());
         }
 
         this.locale = getLanguageFromPath(currentPath);
@@ -66,7 +66,7 @@ public class Route
             this.simplePath = currentPath.subpath(1, currentPath.getNameCount());
         }
 
-        this.finalNode = routeController.getNodeFromNodeWithPath(this.rootNode, this.simplePath, this.locale);
+        this.finalNode = getNodeFromNodeWithPath(this.rootNode, this.simplePath, this.locale);
 
     }
 
@@ -76,7 +76,7 @@ public class Route
 
     public void create() {
         if (!this.exists()) {
-            this.finalNode = routeController.addPathToNode(this.rootNode, this.getPath(), this.locale);
+            this.finalNode = addPathToNode(this.rootNode, this.getPath(), this.locale);
         }
     }
 
@@ -103,6 +103,10 @@ public class Route
         return this.finalNode;
     }
 
+    public BlocksDatabase getBlocksDatabase() {
+        return this.database;
+    }
+
     private Locale getLanguageFromPath(Path path)
     {
         Locale retVal = null;
@@ -110,17 +114,86 @@ public class Route
             String lang = path.getName(0).toString();
             retVal = BlocksConfig.instance().getLanguages().get(lang);
             if (retVal == null) {
-                try {
-                    retVal = new Locale(lang);
-                } catch (Exception e) {
-                    retVal = Locale.ROOT;
-                }
+                retVal = Locale.ROOT;
             }
         } else {
             retVal= Locale.ROOT;
         }
         return retVal;
     }
+
+    /*
+    * returns the end node following a path starting from a source,
+    * if no node is found return null
+    *
+    * @Param srcNode: node to start form
+    * @Param path: path without a language
+    * @Param locale: locale to search in
+    * */
+    public WebNode getNodeFromNodeWithPath(WebNode srcNode, Path path, Locale locale)
+    {
+        if (locale.equals(Locale.ROOT)) {
+            locale = BlocksConfig.instance().getDefaultLanguage();
+        }
+
+        WebNode currentNode = srcNode;
+        /*
+        * Starting from the root node, find each sub path. First find 1 for the currnet language
+        * If subpath is not found find a path with this name for the default language and without a path for the current language
+        * */
+        for (int i =0; i < path.getNameCount(); i++) {
+            if (currentNode != null) {
+                WebPath subPath = currentNode.getChildPath(path.getName(i).toString(), locale);
+                if (subPath == null && !locale.equals(BlocksConfig.instance().getDefaultLanguage())) {
+                    subPath = currentNode.getChildPath(path.getName(i).toString(), BlocksConfig.instance().getDefaultLanguage());
+
+                }
+                if (subPath != null) {
+                    currentNode = subPath.getChildWebNode();
+                } else {
+                    currentNode = null;
+                }
+            } else {
+                break;
+            }
+        }
+        return currentNode;
+
+    }
+
+    /*
+    * Create a path in the database starting from the given node
+    *
+    * @param srcNode    the node to start from
+    * @param path       the path to create
+    * @param locale     the language of the path
+    * @return           returns the last node of the path
+    * */
+    public WebNode addPathToNode(WebNode srcNode, Path path, Locale locale)
+    {
+        if (locale.equals(Locale.ROOT)) {
+            locale = BlocksConfig.instance().getDefaultLanguage();
+        }
+
+        WebNode retVal = srcNode;
+        /*
+        * Starting from the root node, find each sub path. First find 1 for the current language
+        * If subpath is not found find a path with this name for the default language and without a path for the current language
+        * */
+        for (int i =0; i < path.getNameCount(); i++) {
+            if (retVal != null) {
+                WebNode prev = retVal;
+                retVal = getNodeFromNodeWithPath(retVal, path.getName(i), locale);
+                if (retVal == null) {
+                    retVal = database.createNode(prev, path.getName(i).toString(), locale);
+                }
+            } else {
+                break;
+            }
+        }
+        return retVal;
+    }
+
 
 
 }

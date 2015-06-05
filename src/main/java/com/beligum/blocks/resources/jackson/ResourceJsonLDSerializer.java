@@ -1,8 +1,8 @@
-package com.beligum.blocks.models.resources.jackson;
+package com.beligum.blocks.resources.jackson;
 
 import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.models.resources.interfaces.Node;
-import com.beligum.blocks.models.resources.interfaces.Resource;
+import com.beligum.blocks.resources.interfaces.Node;
+import com.beligum.blocks.resources.interfaces.Resource;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -35,7 +35,7 @@ public class ResourceJsonLDSerializer extends JsonSerializer<Resource>
 
         // Add @id to json
         if (resource.getBlockId() != null) {
-            jgen.writeStringField(ParserConstants.JSONLD_ID, resource.getBlockId());
+            jgen.writeStringField(ParserConstants.JSONLD_ID, resource.getBlockId().toString());
         }
 
         // Add @type to json

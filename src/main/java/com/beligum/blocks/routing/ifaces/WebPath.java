@@ -1,4 +1,4 @@
-package com.beligum.blocks.routing.ifaces.nodes;
+package com.beligum.blocks.routing.ifaces;
 
 import java.util.Locale;
 

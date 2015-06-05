@@ -1,5 +1,6 @@
-package com.beligum.blocks.routing.ifaces.nodes;
+package com.beligum.blocks.routing.ifaces;
 
+import java.net.URI;
 import java.util.Locale;
 
 /**
@@ -8,10 +9,10 @@ import java.util.Locale;
 public interface WebNode
 {
     public Integer getStatusCode();
-    public String getPageUrl();
+    public URI getPageUrl();
 
     public void setStatusCode(Integer statusCode);
-    public void setPageUrl(String pageUrl);
+    public void setPageUrl(URI pageUrl);
 
     public WebPath getChildPath(String name, Locale locale);
     public WebPath getParentPath(String name, Locale locale);

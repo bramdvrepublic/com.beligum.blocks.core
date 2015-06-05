@@ -1,7 +1,4 @@
-package com.beligum.blocks.models.resources.interfaces;
-
-import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
-import com.orientechnologies.orient.core.record.impl.ODocument;
+package com.beligum.blocks.resources.interfaces;
 
 import java.net.URI;
 import java.util.Locale;

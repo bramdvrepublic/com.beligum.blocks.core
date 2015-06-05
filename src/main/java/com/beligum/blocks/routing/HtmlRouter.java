@@ -4,6 +4,8 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.endpoints.PageEndpoint;
+import com.beligum.blocks.pages.ifaces.WebPage;
+import com.beligum.blocks.routing.ifaces.WebNode;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
@@ -14,7 +16,6 @@ import com.google.common.collect.Iterables;
 import gen.com.beligum.blocks.core.fs.html.views.new_page;
 import org.apache.shiro.SecurityUtils;
 
-import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
 import java.util.*;
@@ -131,7 +132,11 @@ public class HtmlRouter extends AbstractRouter
     * Gets a page from the database and renders it.
     * */
     public Response showPage() {
-        return Response.ok().build();
+        StringBuilder rb = new StringBuilder();
+        WebNode node = this.route.getNode();
+        WebPage page = this.route.getBlocksDatabase().getWebPage(node.getPageUrl(), this.route.getLocale());
+        rb.append("<main-content>").append(page.getHtml()).append("</main-content>");
+        return Response.ok(R.templateEngine().getNewStringTemplate(rb.toString())).build();
     }
 
     public Response redirect() {

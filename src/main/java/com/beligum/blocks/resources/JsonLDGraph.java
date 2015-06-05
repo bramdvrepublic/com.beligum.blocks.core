@@ -1,17 +1,5 @@
-package com.beligum.blocks.models.resources;
+package com.beligum.blocks.resources;
 
-import com.beligum.base.utils.Logger;
-import com.beligum.blocks.config.BlocksConfig;
-import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.models.resources.interfaces.Node;
-import com.beligum.blocks.models.resources.interfaces.Resource;
-import com.beligum.blocks.models.resources.orient.OrientResourceController;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-
-import java.net.URI;
-import java.util.*;
 
 /**
 * Created by wouter on 23/04/15.

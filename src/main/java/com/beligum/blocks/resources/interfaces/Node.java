@@ -1,4 +1,6 @@
-package com.beligum.blocks.models.resources.interfaces;
+package com.beligum.blocks.resources.interfaces;
+
+import com.beligum.blocks.database.interfaces.BlocksDatabase;
 
 import java.util.Locale;
 
@@ -39,5 +41,5 @@ public interface Node extends Iterable<Node>
 
     public Object getValue();
 
-    public ResourceController getResourceController();
+    public BlocksDatabase getDatabase();
 }

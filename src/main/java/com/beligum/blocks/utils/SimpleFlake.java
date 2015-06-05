@@ -2,6 +2,10 @@ package com.beligum.blocks.utils;
 
 /**
  * Created by wouter on 2/05/15.
+ *
+ * copied from: https://github.com/emidln/simpleflake-java/blob/master/src/main/java/com/outjected/simpleflake/SimpleFlake.java
+ *
+ * See: http://engineering.custommade.com/simpleflake-distributed-id-generation-for-the-lazy/
  */
 import java.nio.ByteBuffer;
 import java.util.Date;

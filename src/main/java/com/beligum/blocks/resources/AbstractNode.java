@@ -1,7 +1,7 @@
-package com.beligum.blocks.models.resources;
+package com.beligum.blocks.resources;
 
 
-import com.beligum.blocks.models.resources.interfaces.Node;
+import com.beligum.blocks.resources.interfaces.Node;
 
 import java.text.DecimalFormatSymbols;
 import java.util.*;
@@ -39,7 +39,7 @@ public abstract class AbstractNode implements Node
                     this.wrappedObject = Double.parseDouble(str);
 
                     // Check if our numeric has decimals. If not it is a Long or an Int
-                    if (this.wrappedObject.equals(Math.rint((Double)this.wrappedObject))) {
+                    if (this.wrappedObject.equals(Math.rint((Double) this.wrappedObject))) {
                         Long longValue = ((Double)this.wrappedObject).longValue();
                         if (longValue < Integer.MAX_VALUE && longValue > Integer.MIN_VALUE) {
                             this.wrappedObject = ((Double)this.wrappedObject).intValue();
@@ -296,7 +296,7 @@ public abstract class AbstractNode implements Node
         {
             Node retVal = null;
             Object value = internalIterator.next();
-            retVal =  getResourceController().asNode(value, locale);
+            retVal =  getDatabase().createNode(value, locale);
             return retVal;
 
         }

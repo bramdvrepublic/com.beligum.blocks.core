@@ -1,13 +1,18 @@
-package com.beligum.blocks.models.resources.orient;
+package com.beligum.blocks.resources;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.models.resources.AbstractResource;
-import com.beligum.blocks.models.resources.interfaces.Node;
-import com.beligum.blocks.models.resources.interfaces.Resource;
-import com.beligum.blocks.models.resources.interfaces.ResourceController;
-import com.beligum.blocks.utils.RdfTools;
+import com.beligum.blocks.database.OBlocksDatabase;
+import com.beligum.blocks.database.interfaces.BlocksDatabase;
+import com.beligum.blocks.resources.AbstractResource;
+import com.beligum.blocks.resources.interfaces.Node;
+import com.beligum.blocks.resources.interfaces.Resource;
+import com.beligum.blocks.resources.jackson.ResourceJsonDeserializer;
+import com.beligum.blocks.resources.jackson.ResourceJsonSerializer;
+import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.orientechnologies.orient.core.db.record.ORecordElement;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 
@@ -125,7 +130,7 @@ public class OrientResource extends AbstractResource
             }
         }
 
-        return getResourceController().asNode(fieldValue, lang);
+        return getDatabase().createNode(fieldValue, lang);
     }
 
     @Override
@@ -146,7 +151,7 @@ public class OrientResource extends AbstractResource
         else {
             fieldValue = this.localizedResource.removeField(key);
         }
-        return getResourceController().asNode(fieldValue, lang);
+        return getDatabase().createNode(fieldValue, lang);
     }
 
 
@@ -173,58 +178,57 @@ public class OrientResource extends AbstractResource
     }
 
     @Override
-    public ResourceController getResourceController() {
-        return OrientResourceController.instance();
+    public BlocksDatabase getDatabase() {
+        return OBlocksDatabase.instance();
     }
 
 
     @Override
     public void setCreatedAt(Date date)
     {
-        this.localizedResource.field(OrientResourceController.CREATED_AT, date);
+        this.localizedResource.field(OBlocksDatabase.RESOURCE_CREATED_AT, date);
     }
     @Override
     public Calendar getCreatedAt()
     {
-        return this.localizedResource.field(OrientResourceController.CREATED_AT);
+        return this.localizedResource.field(OBlocksDatabase.RESOURCE_CREATED_AT);
     }
 
     @Override
     public void setCreatedBy(String user)
     {
-        this.localizedResource.field(OrientResourceController.CREATED_BY, user);
+        this.localizedResource.field(OBlocksDatabase.RESOURCE_CREATED_BY, user);
     }
 
     @Override
     public String getCreatedBy()
     {
-        return this.localizedResource.field(OrientResourceController.CREATED_BY);
+        return this.localizedResource.field(OBlocksDatabase.RESOURCE_CREATED_BY);
     }
 
     @Override
     public void setUpdatedAt(Date date)
     {
-        this.localizedResource.field(OrientResourceController.UPDATED_AT, date);
+        this.localizedResource.field(OBlocksDatabase.RESOURCE_UPDATED_AT, date);
     }
 
     @Override
     public Calendar getUpdatedAt()
     {
-        return this.localizedResource.field(OrientResourceController.UPDATED_AT);
+        return this.localizedResource.field(OBlocksDatabase.RESOURCE_UPDATED_AT);
     }
 
     @Override
     public void setUpdatedBy(String user)
     {
-        this.localizedResource.field(OrientResourceController.UPDATED_BY, user);
+        this.localizedResource.field(OBlocksDatabase.RESOURCE_UPDATED_BY, user);
     }
 
     @Override
     public String getUpdatedBy()
     {
-        return this.localizedResource.field(OrientResourceController.UPDATED_BY);
+        return this.localizedResource.field(OBlocksDatabase.RESOURCE_UPDATED_BY);
     }
-
 
 
     // -------- PRIVATE METHODS ---------
@@ -262,9 +266,9 @@ public class OrientResource extends AbstractResource
 
     private boolean isPlainField(String fieldName) {
         boolean retVal = true;
-        if (fieldName.equals(ParserConstants.JSONLD_ID) || fieldName.equals(OrientResourceController.TYPE_FIELD) || fieldName.equals(ParserConstants.JSONLD_CONTEXT)) {
+        if (fieldName.equals(ParserConstants.JSONLD_ID) || fieldName.equals(OBlocksDatabase.RESOURCE_TYPE_FIELD) || fieldName.equals(ParserConstants.JSONLD_CONTEXT)) {
             retVal = false;
-        } else if (fieldName.startsWith(OrientResourceController.LOCALIZED)) {
+        } else if (fieldName.startsWith(OBlocksDatabase.RESOURCE_LOCALIZED_FIELD)) {
             retVal = false;
         }
         return retVal;

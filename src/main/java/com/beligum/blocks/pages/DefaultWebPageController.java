@@ -1,19 +1,13 @@
 package com.beligum.blocks.pages;
 
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.controllers.OrientResourceController;
+import com.beligum.blocks.database.interfaces.BlocksDatabase;
 import com.beligum.blocks.pages.ifaces.WebPage;
-import com.beligum.blocks.pages.ifaces.WebPageController;
-import com.beligum.blocks.routing.ORouteController;
+import com.beligum.blocks.routing.RouteController;
 import com.beligum.blocks.routing.Route;
-import com.beligum.blocks.routing.ifaces.nodes.RouteController;
-import com.beligum.blocks.routing.ifaces.nodes.WebNode;
-import com.beligum.blocks.utils.RdfTools;
-import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.blueprints.impls.orient.OrientGraph;
+import com.beligum.blocks.routing.ifaces.WebNode;
 
 import java.net.URI;
-import java.util.Locale;
 
 /**
  * Created by wouter on 1/06/15.
@@ -21,65 +15,14 @@ import java.util.Locale;
  * Contains all the logic to show, save or delete a page.
  *
  */
-public class DefaultWebPageController implements WebPageController
+public class DefaultWebPageController
 {
 
-    private static DefaultWebPageController instance;
 
-    private DefaultWebPageController() {
-
-    }
-
-    public static DefaultWebPageController instance() {
-        if (DefaultWebPageController.instance == null) {
-            DefaultWebPageController.instance = new DefaultWebPageController();
-        }
-        return DefaultWebPageController.instance;
-    }
-
-    @Override
-    public WebPage createPage(Locale locale)
+    public WebPage save(URI uri, String html, BlocksDatabase database) throws Exception
     {
-        URI id = RdfTools.createLocalResourceId(OWebPage.CLASS_NAME);
-        return createPage(id, locale);
-    }
-
-    @Override
-    public WebPage get(String id, Locale language)
-    {
-        return null;
-    }
-
-    @Override
-    public WebPage createPage(URI id, Locale locale)
-    {
-        OrientGraph graph = OrientResourceController.instance().getGraph();
-        Vertex v = graph.addVertex("class:" + OWebPage.CLASS_NAME);
-        v.setProperty(OWebPage.ID, id);
-        v.setProperty(OWebPage.LANGUAGE, locale.getLanguage());
-        WebPage webPage = new OWebPage(v, locale);
-        return webPage;
-    }
-
-
-    @Override
-    public String render(URI uri)
-    {
-        return null;
-    }
-
-    @Override
-    public String render(WebPage WebPage)
-    {
-        return null;
-    }
-
-
-    @Override
-    public WebPage save(URI uri, String html) throws Exception
-    {
-        RouteController routeController = ORouteController.instance();
-        Route route = new Route(uri, routeController);
+        RouteController routeController = RouteController.instance();
+        Route route = new Route(uri, database);
         if (!route.exists()) {
             route.create();
         }
@@ -93,15 +36,15 @@ public class DefaultWebPageController implements WebPageController
 
         if (webnode.isNotFound()) {
             // create a new page
-            webPage = createPage(route.getLocale());
+            webPage = database.createWebPage(route.getLocale());
             webnode.setPageUrl(webPage.getBlockId());
         } else if (webnode.isPage()) {
-            webPage = get(webnode.getPageUrl(), route.getLocale());
+            webPage = database.getWebPage(webnode.getPageUrl(), route.getLocale());
         }
 
         WebPageParser webPageParser = null;
         try {
-            webPageParser = new WebPageParser(webPage, uri, html, routeController);
+            webPageParser = new WebPageParser(webPage, uri, html, database);
             webPage = webPageParser.getWebPage();
         }
         catch (Exception e) {
@@ -113,15 +56,6 @@ public class DefaultWebPageController implements WebPageController
 
         // TODO commit
         return null;
-    }
-
-
-    @Override
-    public WebPage delete(WebPage webPage)
-    {
-        OrientGraph graph = OrientResourceController.instance().getGraph();
-        // TODO commit
-        return webPage;
     }
 
 
