@@ -130,8 +130,9 @@ public class WebPageParser
             }
 
             while (next != null && element.encloses(next)) {
+                Element prev = next;
                 next = parse(next, textPos, resource, false);
-                textPos = element.getEnd();
+                textPos = prev.getEnd();
             }
             // write end tag
             if (textPos < element.getEndTag().getEnd()) {
@@ -222,7 +223,9 @@ public class WebPageParser
         HashMap<String, String> newLink = new HashMap<String, String>();
         newLink.put("html", link);
         newLink.put("absolute", absoluteLink.toString());
-        newLink.put("page", pageId.toString());
+        if (pageId != null) {
+            newLink.put("page", pageId.toString());
+        }
         this.links.add(newLink);
     }
 

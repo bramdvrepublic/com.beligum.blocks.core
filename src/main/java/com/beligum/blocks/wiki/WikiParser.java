@@ -179,10 +179,11 @@ public abstract class WikiParser
 
             // fix some fields
             changeEntity(resource);
+            OBlocksDatabase.instance().saveResource(resource);
             createWebPages(resource);
             //Save to DB
             //                    saveEntity(resource);
-            OBlocksDatabase.instance().saveResource(resource);
+
             graph.commit();
             toLucene();
 

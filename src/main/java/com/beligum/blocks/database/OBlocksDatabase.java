@@ -241,6 +241,7 @@ public class OBlocksDatabase implements BlocksDatabase
 
     @Override
     public Resource saveResource(Resource resource) {
+        getDatabase().save((ODocument)resource.getValue());
         return resource;
     }
 
