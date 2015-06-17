@@ -56,11 +56,12 @@ public class OBlocksDatabase implements BlocksDatabase
     public final static String PATH_CLASS_NAME = "WebPath";
 
     public static String WEB_PAGE_CLASS = "WebPage";
-    public static String WEB_PAGE_TEMPLATE = "title";
     public static String WEB_PAGE_HTML = "html";
+    public static String WEB_PAGE_TEXT = "text";
     public static String WEB_PAGE_RESOURCES = "resources";
     public static String WEB_PAGE_LINKS = "links";
     public static String WEB_PAGE_PROPERTIES = "properties";
+    public static String WEB_PAGE_TEMPLATES = "templates";
 
 
     public static final String RESOURCE_CLASS = "DefaultResource";
@@ -161,7 +162,7 @@ public class OBlocksDatabase implements BlocksDatabase
         } else {
             retVal = new OWebNode(vertex);
         }
-        retVal.setStatusCode(404);
+        retVal.setPageNotFound();
         graph.commit();
         graph.begin();
         return retVal;
@@ -198,7 +199,7 @@ public class OBlocksDatabase implements BlocksDatabase
         OrientGraph graph = getGraph();
         Vertex v = graph.addVertex("class:" + WEB_NODE_CLASS);
         OWebNode retVal = new OWebNode(v);
-        retVal.setStatusCode(404);
+        retVal.setPageNotFound();
         Edge e = graph.addEdge(null, ((OWebNode)from).getVertex(), v, PATH_CLASS_NAME);
         WebPath webPath = new OWebPath(e);
         webPath.setName(path, locale);

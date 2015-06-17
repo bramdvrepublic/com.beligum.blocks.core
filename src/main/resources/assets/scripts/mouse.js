@@ -60,7 +60,7 @@
  *
  */
 
-base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "blocks.core.Constants", "blocks.core.BlockMenu", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, Menu)
+base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "constants.blocks.common", "blocks.core.Sidebar", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, SideBar)
 {
     // flag if this module is active
     var Mouse = this;
@@ -113,6 +113,12 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                     draggingStatus = BaseConstants.DRAGGING.WAITING;
                     draggingStart = event;
 //                    disableSelection();
+                } else if (draggingStatus == BaseConstants.DRAGGING.NO && event.target != null && ($(event.target).hasClass("blocks-create-block") || $(event.target).parents(".blocks-create-block").length > 0)) {
+                    draggingStatus = BaseConstants.DRAGGING.WAITING;
+                    draggingStart = event;
+                    Logger.debug("Start new drag");
+                } else if ($(event.target).hasClass("blocks-main-edit-button") || $(event.target).parents(".blocks-main-edit-button").length > 0) {
+
                 } else {
                     Logger.debug("We can not start because dragging is already in place or not allowed. " + draggingStatus);
                     Mouse.resetMouse();
@@ -142,9 +148,11 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 var oldDragStatus = draggingStatus;
                 if (oldDragStatus == BaseConstants.DRAGGING.YES) {
                     Broadcaster.send(Broadcaster.EVENTS.END_DRAG);
-                } else if (Broadcaster.property().current != null && Broadcaster.property().current.editType != BlocksConstants.EDIT_NONE) {
-                    Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
+                //} else if (Broadcaster.property().current != null && Broadcaster.property().current.editType != BlocksConstants.EDIT_NONE) {
+                //    Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
 
+                } else {
+                    SideBar.update();
                 }
 
             }
@@ -172,7 +180,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
      * */
     var mouseMove = function (event)
     {
-        if (active && !Menu.mouseOverMenu()) {
+        if (active) {
             var changedBlock = false;
             var block = Broadcaster.block();
             // check if block changed since last mouse move

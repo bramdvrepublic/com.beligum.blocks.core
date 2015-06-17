@@ -2,7 +2,7 @@
  * Created by wouter on 9/03/15.
  */
 
-base.plugin("blocks.core.Elements.Column", ["base.core.Class", "blocks.core.Constants", function (Class, Constants)
+base.plugin("blocks.core.Elements.Column", ["base.core.Class", "base.core.Constants", function (Class, Constants)
 {
     blocks = window['blocks'] || {};
     // A column (inside a row) -> Can contain rows or templates
@@ -11,13 +11,9 @@ base.plugin("blocks.core.Elements.Column", ["base.core.Class", "blocks.core.Cons
         constructor: function (element, parent, index)
         {
             blocks.elements.Column.Super.call(this, element, parent, index);
-
-
             this.canDrag = true;
             this.generateChildrenForColumn();
             this.overlay = null;
-
-
         },
 
         isOuterLeft: function ()
@@ -53,6 +49,11 @@ base.plugin("blocks.core.Elements.Column", ["base.core.Class", "blocks.core.Cons
                 dropspots = this.parent.calculateDropspots(side, dropspots);
             }
             return dropspots;
+        },
+
+        generateProperties: function() {
+
         }
+
     });
 }]);

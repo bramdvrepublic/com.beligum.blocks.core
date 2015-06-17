@@ -37,7 +37,7 @@ public class DefaultWebPageController
         if (webnode.isNotFound()) {
             // create a new page
             webPage = database.createWebPage(route.getLocale());
-            webnode.setPageUrl(webPage.getBlockId());
+            webnode.setPageOk(webPage.getBlockId());
         } else if (webnode.isPage()) {
             webPage = database.getWebPage(webnode.getPageUrl(), route.getLocale());
         }

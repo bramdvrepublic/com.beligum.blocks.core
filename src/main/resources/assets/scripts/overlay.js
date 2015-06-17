@@ -1,4 +1,4 @@
-base.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broadcaster", function (Constants, Broadcaster)
+base.plugin("blocks.core.Overlay", ["blocks.core.Broadcaster", function (Broadcaster)
 {
     var Overlay = this;
 
@@ -6,7 +6,7 @@ base.plugin("blocks.core.Overlay", ["blocks.core.Constants", "blocks.core.Broadc
     {
         var elements = Broadcaster.getContainer().findElements(0, 9);
         for (var i = 0; i < elements.length; i++) {
-            if (elements[i].editType != Constants.EDIT_NONE || elements[i].canDrag) {
+            if (elements[i].canDrag) {
                 elements[i].showOverlay();
             }
         }

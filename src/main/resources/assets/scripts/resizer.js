@@ -12,7 +12,7 @@
  *
  * */
 
-base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "blocks.core.Constants", "blocks.core.DomManipulation", "blocks.core.BlockMenu", function (Broadcaster, Constants, DOM, BlockMenu)
+base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks.common", "blocks.core.DomManipulation",  function (Broadcaster, Constants, DOM)
 {
     var Resizer = this;
     var active = false;
@@ -65,7 +65,6 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "blocks.core.Cons
     this.startDrag = function (handle)
     {
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
-        BlockMenu.hideMenu();
         activeResizeHandle = handle;
         DOM.disableSelection();
         DOM.disableContextMenu();

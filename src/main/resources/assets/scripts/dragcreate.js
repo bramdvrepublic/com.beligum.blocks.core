@@ -2,7 +2,7 @@
  * Created by wouter on 12/03/15.
  */
 
-base.plugin("blocks.core.DragCreate", ["blocks.core.Constants", "blocks.core.DragDrop", "blocks.core.Broadcaster", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.core.Notification", function (Constants, DragDrop, Broadcaster, DOM, Layouter, Notification)
+base.plugin("blocks.core.DragCreate", ["constants.blocks.common", "blocks.core.DragDrop", "blocks.core.Broadcaster", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.core.Notification", function (Constants, DragDrop, Broadcaster, DOM, Layouter, Notification)
 {
     FakeDragDrop = this;
 

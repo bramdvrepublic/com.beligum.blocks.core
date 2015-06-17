@@ -28,7 +28,7 @@
  *
  * */
 
-base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.DomManipulation", function (Constants, DOM)
+base.plugin("blocks.core.Broadcaster", ["base.core.Constants", "blocks.core.DomManipulation", function (Constants, DOM)
 {
     var Broadcaster = this;
 
@@ -251,9 +251,25 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
             properties.previous = currentProperty;
         }
 
+
         return hoveredBlocks;
     };
 
+
+    this.createEvent = function(eventName, custom) {
+        //Logger.debug(eventName);
+        var e = $.Event(eventName);
+        e.target = lastMoveEvent.target;
+        e.pageX = lastMoveEvent.pageX;
+        e.pageY = lastMoveEvent.pageY;
+        e.clientX = lastMoveEvent.clientX;
+        e.clientY = lastMoveEvent.clientY;
+        e.direction = lastMoveEvent.direction;
+        e.block = hoveredBlocks;
+        e.property = properties;
+        e.custom = custom;
+        return e;
+    }
 
     /*
      * This function sends an event and automatically creates a blockevent with all current paramaters
@@ -268,16 +284,7 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
         }
 
         if (Broadcaster.active) {
-            //Logger.debug(eventName);
-            var e = $.Event(eventName);
-            e.pageX = lastMoveEvent.pageX;
-            e.pageY = lastMoveEvent.pageY;
-            e.clientX = lastMoveEvent.clientX;
-            e.clientY = lastMoveEvent.clientY;
-            e.direction = lastMoveEvent.direction;
-            e.block = hoveredBlocks;
-            e.property = properties;
-            e.custom = custom;
+            var e = Broadcaster.createEvent(eventName, custom);
             // send the event with jquery
             $(document).triggerHandler(e);
         }
@@ -317,10 +324,6 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
         return layoutTree;
     };
 
-    var isContainer = function (element)
-    {
-        return DOM.canLayout(element);
-    };
 
 
     /*
@@ -336,46 +339,16 @@ base.plugin("blocks.core.Broadcaster", ["blocks.core.Constants", "blocks.core.Do
     var oldLayoutTree = null;
     var oldContainerParent = null;
 
+
     this.buildLayoutTree = function ()
     {
         oldLayoutTree = null;
         oldContainerParent = null;
-        layoutTree = new blocks.elements.Container($("body"), null);
+        layoutTree = new blocks.elements.Page();
         Broadcaster.resetHover();
         lastMoveEvent.block = Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
         Logger.debug(layoutTree);
     };
-
-    // We set the current block as the new container
-    // this enables us to drag only inside this block
-    this.zoom = function ()
-    {
-        if (oldLayoutTree == null) {
-            oldLayoutTree = layoutTree;
-            var current = hoveredBlocks.current;
-            if (current != null) {
-
-
-                layoutTree = current.getContainer();
-                var elements = layoutTree.findElements(0, 0);
-                oldContainerParent = layoutTree.parent;
-                layoutTree.parent = null;
-            }
-        }
-    };
-
-    // reset container to whole page
-    this.unzoom = function ()
-    {
-        if (oldLayoutTree != null) {
-            layoutTree.parent = oldContainerParent;
-            oldContainerParent = null;
-            layoutTree = oldLayoutTree;
-            oldLayoutTree = null;
-        }
-
-    };
-
 
     this.EVENTS = {};
     // EVents with callback

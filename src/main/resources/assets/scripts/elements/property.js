@@ -2,7 +2,7 @@
  * Created by wouter on 5/03/15.
  */
 
-base.plugin("blocks.core.Elements.Property", ["base.core.Class", "blocks.core.Constants", "blocks.core.DomManipulation", "blocks.core.Edit", function (Class, Constants, DOM, Edit)
+base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Constants", "constants.blocks.common", "blocks.core.DomManipulation", "blocks.core.Edit", function (Class, BaseConstants, BlocksConstants, DOM, Edit)
 {
 
     var body = $("body");
@@ -14,8 +14,8 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "blocks.core.Co
         constructor: function (element, parent, index)
         {
             blocks.elements.Property.Super.call(this, element, parent, index);
-            var ct = this.getContainer();
-            ct.blocks.push(this);
+            //var ct = this.getContainer();
+            //ct.blocks.push(this);
 
             if (this.element.siblings().length == 0 && this.element.parent == parent.element) {
                 this.left = this.parent.left;
@@ -25,25 +25,20 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "blocks.core.Co
             }
 
             this.canDrag = false;
-            this.isField = !DOM.isEntity(element);
-            this.isEntity = !this.isField;
-            this.canEdit = DOM.canEdit(element);
+            this.isField = !DOM.isTemplate(element);
+            this.isTemplate = !this.isField;
 
-            var edit = Edit.makeEditable(this);
-            this.editFunction = edit.editFunction;
-            this.editType = edit.editType;
+            this.editFunction = Edit.makeEditable(this);
+            this.canEdit = this.editFunction != null;
 
-            this.overlay = $("<div />").css("z-index", Constants.maxIndex);
+            this.overlay = $("<div />").css("z-index", base.utils.maxIndex);
 
             var block = this.parent.parent;
-            if (this.isEntity) {
-                this.overlay.addClass(Constants.BLOCK_OVERLAY_CLASS);
-            } else //if  (this.parent.parent.isEntity)
+            if (this.isTemplate) {
+                this.overlay.addClass(BlocksConstants.BLOCK_OVERLAY_CLASS);
+            } else
             {
-                this.overlay.addClass(Constants.PROPERTY_OVERLAY_CLASS);
-                if (this.editType == Constants.EDIT_OTHER) {
-                    this.overlay.addClass(Constants.NO_TEXT_CLASS);
-                }
+                this.overlay.addClass(BlocksConstants.PROPERTY_OVERLAY_CLASS);
             }
 
             // Remove sides of layout lines to prevent overlap
@@ -57,9 +52,6 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "blocks.core.Co
                     this.overlay.addClass("top");
                 }
             }
-
-
-            this.container = new blocks.elements.Container(element, this);
         },
 
         isNear: function (one, two)
@@ -72,17 +64,17 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "blocks.core.Co
             return retVal;
         },
 
-        findActiveElement: function (x, y)
-        {
-            var retVal = null;
-            if (this.isTriggered(x, y)) {
-                retVal = this.container.findActiveElement(x, y);
-                if (retVal == null || retVal == this.container) {
-                    retVal = this;
-                }
-            }
-            return retVal;
-        },
+        //findActiveElement: function (x, y)
+        //{
+        //    var retVal = null;
+        //    if (this.isTriggered(x, y)) {
+        //        retVal = this.findActiveElement(x, y, -1);
+        //        if (retVal == null) {
+        //            retVal = this;
+        //        }
+        //    }
+        //    return retVal;
+        //},
 
         // Easily walk the tree and find the block that contains the coordinates
         findElements: function (minSearchLevel, maxSearchLevel)
@@ -94,8 +86,8 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "blocks.core.Co
                 retVal.push(this);
             }
             if (maxSearchLevel != 0) {
-                for (var i = 0; i < this.container.children.length; i++) {
-                    var props = this.container.children[i].findElements(minSearchLevel - 1, maxSearchLevel - 1);
+                for (var i = 0; i < this.children.length; i++) {
+                    var props = this.children[i].findElements(minSearchLevel - 1, maxSearchLevel - 1);
                     for (var j = 0; j < props.length; j++) {
                         retVal.push(props[j]);
                     }
@@ -122,30 +114,45 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "blocks.core.Co
         getElementAtSide: function (side)
         {
             if (DOM.isColumn(this.element)) {
-                if (side == Constants.SIDE.LEFT) {
+                if (side == BaseConstants.SIDE.LEFT) {
                     return this.getPrevious();
-                } else if (side == Constants.SIDE.RIGHT) {
+                } else if (side == BaseConstants.SIDE.RIGHT) {
                     return this.getNext();
                 } else {
                     return null;
                 }
-            } else if (side == Constants.SIDE.TOP) {
+            } else if (side == BaseConstants.SIDE.TOP) {
                 return this.getPrevious();
-            } else if (side == Constants.SIDE.BOTTOM) {
+            } else if (side == BaseConstants.SIDE.BOTTOM) {
                 return this.getNext();
             } else {
                 return null;
             }
         },
 
-        // Container is a LayoutElement without a parent
-        getContainer: function ()
-        {
-            var parent = this.parent;
-            while (parent != null && !(parent instanceof blocks.elements.Container)) {
-                parent = parent.parent;
+
+
+        generateProperties: function(parent, index) {
+            var children = parent.children();
+            var childcount = children.length;
+            for (var i=0; i < childcount; i++) {
+                var child = $(children[i]);
+                if (child[0].tagName == "BOOTSTRAP-LAYOUT") {
+                    var b = new blocks.elements.Container($(child.children(".container")[0]), this, index);
+                    this.children.push(b);
+                    index++;
+                } else if (child.hasAttribute("property")) {
+                    var b = new blocks.elements.Property(child, this, index);
+                    this.children.push(b);
+                    index++;
+                } else if (child[0].tagName.indexOf("-") > 0) {
+                    var b = new blocks.elements.Block(child, this, index, false);
+                    this.children.push(b);
+                    index++;
+                } else if (child.children.length > 0) {
+                    this.generateProperties(child, index);
+                }
             }
-            return parent;
         }
 
     });

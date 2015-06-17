@@ -9,7 +9,7 @@
  *      - if this property is can-layout then the property creates a new container
  *      - etc ...
  * */
-blocks.plugin("blocks.core.Elements", ["base.core.Class", "blocks.core.Constants", "blocks.core.DomManipulation", "blocks.core.Edit", function (Class, Constants, DOM, Edit)
+blocks.plugin("blocks.core.Elements", [ function ()
 {
     blocks.elements = {};
     blocks.elements.ResizeHandle = resizeHandle;
@@ -18,4 +18,5 @@ blocks.plugin("blocks.core.Elements", ["base.core.Class", "blocks.core.Constants
     blocks.elements.Block = block;
     blocks.elements.Column = column;
     blocks.elements.Property = property;
+    blocks.elements.Page = page;
 }]);

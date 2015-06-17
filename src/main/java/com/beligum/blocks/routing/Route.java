@@ -63,7 +63,11 @@ public class Route
             this.uri = UriBuilder.fromUri("").scheme(this.uri.getScheme()).userInfo(this.uri.getUserInfo()).host(this.uri.getHost()).port(this.uri.getPort()).path(this.languagedPath.toString()).replaceQuery(this.uri.getQuery()).fragment(this.uri.getFragment()).build();
         } else {
             this.languagedPath = currentPath;
-            this.simplePath = currentPath.subpath(1, currentPath.getNameCount());
+            if (currentPath.getNameCount() > 1) {
+                this.simplePath = currentPath.subpath(1, currentPath.getNameCount());
+            } else {
+                this.simplePath = Paths.get("/");
+            }
         }
 
         this.finalNode = getNodeFromNodeWithPath(this.rootNode, this.simplePath, this.locale);

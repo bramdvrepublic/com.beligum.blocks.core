@@ -1,10 +1,13 @@
 package com.beligum.blocks.endpoints;
 
+import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.database.OBlocksDatabase;
 import com.beligum.blocks.security.Permissions;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocument;
 import com.orientechnologies.orient.core.sql.OCommandSQL;
+import gen.com.beligum.blocks.core.fs.html.views.blocks.menu;
+import gen.com.beligum.blocks.core.fs.html.views.blocks.side;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.joda.time.LocalDateTime;
@@ -34,8 +37,27 @@ public class DebugEndpoint
         return Response.ok("<ul><li>Database emptied</li><li>Cache reset</li><li>Url-id mapping reset</li></ul>").build();
     }
 
+    @GET
+    @Path("/menu")
+    public Response getMenu() {
+        return Response.ok(R.templateEngine().getNewStringTemplate("<blocks-menu></blocks-menu>")).build();
+    }
 
-//    @GET
+
+    @GET
+    @Path("/sidebar")
+    public Response getSideBar() {
+        return Response.ok(R.templateEngine().getNewStringTemplate("<blocks-side></blocks-side>")).build();
+    }
+
+    @GET
+    @Path("/toolbar")
+    public Response getSToolbar() {
+        return Response.ok(R.templateEngine().getNewStringTemplate("<blocks-editor-toolbar></blocks-editor-toolbar>")).build();
+    }
+
+
+    //    @GET
 //    @Path("/pagetemplates")
 //    public Response getPageTemplatesPage() throws Exception
 //    {

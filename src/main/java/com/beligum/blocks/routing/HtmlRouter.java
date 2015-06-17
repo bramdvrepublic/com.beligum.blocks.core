@@ -135,7 +135,7 @@ public class HtmlRouter extends AbstractRouter
         StringBuilder rb = new StringBuilder();
         WebNode node = this.route.getNode();
         WebPage page = this.route.getBlocksDatabase().getWebPage(node.getPageUrl(), this.route.getLocale());
-        rb.append("<main-content>").append(page.getHtml()).append("</main-content>");
+        rb.append("<main-content>").append(page.getParsedHtml()).append("</main-content>");
         return Response.ok(R.templateEngine().getNewStringTemplate(rb.toString())).build();
     }
 

@@ -4,9 +4,9 @@ import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.database.OBlocksDatabase;
 import com.beligum.blocks.database.interfaces.BlocksDatabase;
+import com.beligum.blocks.pages.ifaces.WebPage;
 import com.beligum.blocks.resources.AbstractResource;
 import com.beligum.blocks.resources.interfaces.Node;
-import com.beligum.blocks.pages.ifaces.WebPage;
 import com.tinkerpop.blueprints.Vertex;
 
 import javax.ws.rs.core.UriBuilder;
@@ -98,13 +98,25 @@ public class OWebPage extends AbstractResource implements WebPage
     }
 
     @Override
-    public String getHtml()
+    public String getParsedHtml()
     {
         return (String)vertex.getProperty(OBlocksDatabase.WEB_PAGE_HTML);
     }
 
     @Override
-    public void setHtml(String html)
+    public void setParsedHtml(String html)
+    {
+        vertex.setProperty(OBlocksDatabase.WEB_PAGE_HTML, html);
+    }
+
+    @Override
+    public String getText()
+    {
+        return (String)vertex.getProperty(OBlocksDatabase.WEB_PAGE_HTML);
+    }
+
+    @Override
+    public void setText(String html)
     {
         vertex.setProperty(OBlocksDatabase.WEB_PAGE_HTML, html);
     }
@@ -125,6 +137,34 @@ public class OWebPage extends AbstractResource implements WebPage
         return null;
     }
 
+
+    @Override
+    public Set<String> getTemplates()
+    {
+        Set<String> retVal = vertex.getProperty(OBlocksDatabase.WEB_PAGE_TEMPLATES);
+        if (retVal == null) {
+            retVal = new HashSet<String>();
+        }
+        return retVal;
+    }
+
+    @Override
+    public void setTemplates(Set<String> templates)
+    {
+        if (templates == null) {
+            templates = new HashSet<String>();
+        }
+        vertex.setProperty(OBlocksDatabase.WEB_PAGE_TEMPLATES, templates);
+    }
+
+    @Override
+    public void addTemplate(String template)
+    {
+        Set<String> retVal = getResources();
+        retVal.add(template);
+        this.vertex.setProperty(OBlocksDatabase.WEB_PAGE_TEMPLATES, retVal);
+    }
+
     @Override
     public Set<String> getResources()
     {
@@ -136,37 +176,48 @@ public class OWebPage extends AbstractResource implements WebPage
     }
 
     @Override
+    public void setResources(Set<String> resources)
+    {
+        if (resources == null) {
+            resources = new HashSet<String>();
+        }
+        vertex.setProperty(OBlocksDatabase.WEB_PAGE_RESOURCES, resources);
+    }
+
+    @Override
     public void addResource(String resource)
     {
         Set<String> retVal = getResources();
-        if (retVal == null) {
-            retVal = new HashSet<String>();
-        }
         retVal.add(resource);
         this.vertex.setProperty(OBlocksDatabase.WEB_PAGE_RESOURCES, retVal);
     }
 
     @Override
-    public Set<String> getLinks()
+    public Set<HashMap<String, String>> getLinks()
     {
-        Set<String> retVal = vertex.getProperty(OBlocksDatabase.WEB_PAGE_LINKS);
+        Set<HashMap<String, String>> retVal = vertex.getProperty(OBlocksDatabase.WEB_PAGE_LINKS);
         if (retVal == null) {
-            retVal = new HashSet<String>();
+            retVal = new HashSet<HashMap<String, String>>();
         }
         return retVal;
     }
 
     @Override
-    public void addLink(String link)
+    public void setLinks(Set<HashMap<String, String>> links)
     {
-        Set<String> retVal = getLinks();
+        this.vertex.setProperty(OBlocksDatabase.WEB_PAGE_LINKS, links);
+    }
+
+    @Override
+    public void addLink(HashMap<String, String> link)
+    {
+        Set<HashMap<String, String>> retVal = getLinks();
         if (retVal == null) {
-            retVal = new HashSet<String>();
+            retVal = new HashSet<HashMap<String, String>>();
         }
         retVal.add(link);
         this.vertex.setProperty(OBlocksDatabase.WEB_PAGE_LINKS, retVal);
     }
-
 
     @Override
     public Set<URI> getFields()

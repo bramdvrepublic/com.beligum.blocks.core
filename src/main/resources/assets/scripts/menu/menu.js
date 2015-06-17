@@ -1,14 +1,19 @@
-base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notification", function (Broadcaster, Notification)
+base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notification", "constants.blocks.common", function (Broadcaster, Notification, Constants)
 {
-    this.MainMenu = this;
+    var MainMenu = this;
 
     /*
     * Create the html for top bar
     * */
-    var menuBtn = $('<div class="blocks-main-edit-button"><i class="glyphicon glyphicon-cog"></i></div>');
-    var menuBar = $('<div class="blocks-main-menu"></div>');
-    var btnList = menuBar;
+    this.menuStartButton = $('<div class="blocks-main-edit-button"><i class="glyphicon glyphicon-cog"></i></div>');
 
+    this.menuBar = $("<div class='" + Constants.PAGE_MENU_CLASS + "'></div>");
+    this.menuBar.load("/debug/menu");
+
+    this.sideBar = $("<div class='" + Constants.PAGE_SIDEBAR_CLASS + "'></div>");
+    this.sideBar.load("/debug/sidebar");
+
+    var btnList = this.menuBar;
     var saveBtn = $('<a class="btn btn-default" href="#">Save</a>');
     btnList.append(saveBtn);
     var deleteBtn = $('<a class="btn btn-default" href="#">Delete</a>');
@@ -16,9 +21,7 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
     var changeUrlBtn = $('<a class="btn btn-default" href="#">Change url</a>');
     btnList.append(changeUrlBtn);
 
-    var dragBlocksContainer = $('<div class="drag-block-container"></div>');
-    var dragBlockText = $('<div class="drag-create-block drag-block-text" create-block-type="building">Building</div>');
-    var dragBlockCustom = $('<div class="drag-create-block drag-block-text" >Custom</div>');
+
 
     //TODO: activate this again (commented while styling)
     //menuBar.append(dragBlocksContainer.append(dragBlockText).append(dragBlockCustom));
@@ -28,25 +31,25 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
      * */
     var oldBodyMargin = parseInt($("body").css("padding-top"));
     var menuAnimationSpeed = 300;
-    menuBtn.on("click", function (event)
+
+    $(document).on("click", ".blocks-main-edit-button", function (event)
     {
-        if (menuBar.hasClass("open")) {
-            menuBar.animate({top: -(oldBodyMargin + menuBar.outerHeight()) + "px"}, menuAnimationSpeed, function ()
-            {
-                menuBar.removeClass("open");
-            });
-            $("body").animate({"margin-top": oldBodyMargin + "px"}, menuAnimationSpeed);
+        if ($("body").children("." + Constants.PAGE_MENU_CLASS).length == 0) {
+
+            var body = $("body").html();
+            $("body").empty();
+            $("body").append(MainMenu.menuBar);
+            $("body").append($("<div class='" + Constants.PAGE_CONTENT_CLASS + "' />").append(body));
+            $("body").append(MainMenu.sideBar);
+
+            Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS);
+
+        } else {
+            var content = $("." + Constants.PAGE_CONTENT_CLASS).html();
+            $("body").empty();
+            $("body").append(content);
 
             Broadcaster.send(Broadcaster.EVENTS.STOP_BLOCKS);
-        } else {
-            menuBar.css("top", -(oldBodyMargin + menuBar.outerHeight()) + "px");
-            menuBar.addClass("open");
-            menuBar.animate({top: "0px"}, menuAnimationSpeed, function ()
-            {
-                Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS);
-            });
-            $("body").animate({"margin-top": oldBodyMargin + menuBar.outerHeight() + "px"}, menuAnimationSpeed - 50);
-
         }
     });
 
@@ -210,8 +213,7 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
 
     var create = function ()
     {
-        $("body").prepend(menuBar);
-        $("body").append(menuBtn);
+        $("body").append(MainMenu.menuStartButton);
     };
 
 

@@ -3,7 +3,7 @@
  * the draw-surface is the surface that will be drawn in the dom (can be bigger or smaller).
  * left and rightcolumn are the columns that this handle will resize when dragged
  */
-base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "blocks.core.Constants", "blocks.core.Resizer", function (Class, Constants, Resizer)
+base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.blocks.common", "blocks.core.Resizer", function (Class, Constants, Resizer)
 {
     var body = $("body");
     blocks = window['blocks'] || {};
@@ -66,7 +66,7 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "blocks.cor
             this.overlay.css("height", height);
             this.overlay.css("left", left);
             this.overlay.css("width", width);
-            this.overlay.css("z-index", Constants.maxIndex + 2);
+            this.overlay.css("z-index", base.utils.maxIndex + 2);
             body.append(this.overlay);
         },
 

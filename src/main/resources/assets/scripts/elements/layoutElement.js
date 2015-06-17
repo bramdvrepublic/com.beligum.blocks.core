@@ -8,7 +8,7 @@
  * */
 
 
-base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "blocks.core.Constants", "blocks.core.DomManipulation", function (Class, Constants, DOM)
+base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core.Constants", "blocks.core.DomManipulation", function (Class, Constants, DOM)
 {
     var body = $("body");
 
@@ -60,13 +60,15 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "blocks.co
             this.children = [];
             this.resizeHandles = [];
             this.totalBlocks = null;
+            // only for containers
             this.canLayout = false;
+            // only for first level blocks inside a container
             this.canDrag = false;
             this.canEdit = false;
             this.overlay = null;
-            this.isEntity = false;
+            this.isTemplate = false;
 
-
+            this.generateProperties(this.element);
         },
 
         // Easily walk the tree and find the block that contains the coordinates
@@ -226,8 +228,10 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "blocks.co
         // Creates rows or templates inside a column
         generateChildrenForColumn: function ()
         {
-            var childType = Constants.ROW_CLASS;
-            var rows = this.element.children("." + Constants.ROW_CLASS);
+            var ROW_TYPE = "row";
+            var BLOCK_TYPE = "block";
+            var childType = ROW_TYPE;
+            var rows = this.element.children("." + ROW_TYPE);
             if (rows.length == 0) {
                 var rows = this.element.children();
                 //var templates = true;
@@ -238,14 +242,11 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "blocks.co
                         break;
                     }
                 }
-                childType = Constants.BLOCK_CLASS;
+                childType = BLOCK_TYPE;
             }
 
             var innerZone = new blocks.elements.Surface(this.top, this.bottom, this.left, this.right);
-//                if (this.element.siblings("." + Constants.COLUMN_CLASS) > 0) {
-//                    innerZone.top = this.top + dropspot.WIDTH;
-//                    innerZone.bottom = this.bottom - dropspot.WIDTH;
-//                }
+
 
             if (rows.length > 0) {
                 var rowCount = rows.length;
@@ -263,10 +264,10 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "blocks.co
                         zoneBottom = (this.calculateBottom(currentRow) + this.calculateTop(nextRow)) / 2;
                     }
 
-                    if (childType == Constants.ROW_CLASS) {
+                    if (childType == ROW_TYPE) {
                         this.children.push(new blocks.elements.Row(currentRow, this, i));
-                    } else if (childType == Constants.BLOCK_CLASS) {
-                        this.children.push(new blocks.elements.Block(currentRow, this, i));
+                    } else if (childType == BLOCK_TYPE) {
+                        this.children.push(new blocks.elements.Block(currentRow, this, i, true));
                     }
 
                 }
@@ -278,7 +279,6 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "blocks.co
         generateChildrenForRow: function ()
         {
             // check only for columns
-//                var columns = this.element.children("." + Constants.COLUMN_CLASS);
             var tColumns = this.element.children();
             var columns = [];
 
@@ -434,21 +434,14 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "blocks.co
             return this.totalBlocks;
         },
 
-        getLayoutContainer: function ()
+        // Container is a LayoutElement without a parent
+        getContainer: function ()
         {
-            var retVal = null;
-            if (this instanceof blocks.elements.Container && this.canLayout) {
-                return this;
+            var parent = this.parent;
+            while (parent != null && !(parent instanceof blocks.elements.Container)) {
+                parent = parent.parent;
             }
-            if (this instanceof blocks.elements.Property) {
-                retVal = this.container.getLayoutContainer();
-            } else {
-                for (var i = 0; i < this.children.length; i++) {
-                    retVal = this.children[i].getLayoutContainer();
-                    if (retVal != null) return retVal;
-                }
-            }
-            return retVal;
+            return parent;
         },
 
         showOverlay: function ()

@@ -63,9 +63,13 @@
   }
 
   &.property-no-text {
-    cursor: url('/assets/images/blocks/utils/pencil.png'), default;
+//    cursor: url('/assets/images/blocks/utils/pencil.png'), default;
   }
 
+}
+
+.opacity {
+  opacity: 0.3;
 }
 
 .column-resize-handle {
@@ -213,31 +217,27 @@ iframe.cke_panel_frame {
 }
 
 .blocks-main-menu {
-  position: fixed;
-  top: 0px;
-  width: 100%;
-  z-index: 9999;
-  background-color: grey;
-  display: none;
-  padding: 5px;
-
+  padding-top: 10px;
+  padding-bottom: 10px;
   a {
     margin-left: 10px !important;
   }
 
-  .drag-block-container {
-    width: 300px;
-    font-size: 12px;
-    margin-left: auto;
-    margin-right: auto;
+  ul {
+    display: inline;
+  }
 
-    .drag-block-text {
-      width: 100px;
-      height: 40px;
-      background-image: url("/assets/images/blocks/utils/Text-Button.svg");
-      background-position: left;
-      background-size: contain;
-    }
+  ul > li {
+    display: inline;
+    margin-left: 7px;
+    padding: 4px;
+    border: 1px solid black;
+    border-radius: 5px;
+  }
+
+  ul > li:hover {
+    background-color: #d3d3d3;
+    cursor: pointer;
   }
 
   .main-menu-items {
@@ -246,6 +246,16 @@ iframe.cke_panel_frame {
   &.open {
     display: block;
   }
+}
+
+.blocks-page-content {
+  float: left;
+  width: 80%;
+}
+
+.blocks-sidebar {
+  float: left;
+  width: 20%;
 }
 
 .blocks-main-edit-button {

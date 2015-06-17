@@ -1,11 +1,11 @@
 // Special kind of row that can contains a template
 // Draggable templates are the elements inside a column
-base.plugin("blocks.core.Elements.Block", ["base.core.Class", "blocks.core.Constants", function (Class, Constants)
+base.plugin("blocks.core.Elements.Block", ["base.core.Class", "base.core.Constants", "constants.blocks.common", function (Class, Constants, BlocksConstants)
 {
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};
     blocks.elements.Block = Class.create(blocks.elements.Property, {
-        constructor: function (element, parent, index)
+        constructor: function (element, parent, index, canDrag)
         {
             blocks.elements.Block.Super.call(this, element, parent, index);
             // if a block is editable does not depend on the parent
@@ -19,8 +19,8 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "blocks.core.Const
                 this.bottom += Math.floor((this.calculateTop(next) - this.bottom) / 2);
             }
 
-            this.canDrag = true;
-            this.overlay.addClass(Constants.BLOCK_DRAGGABLE_CLASS);
+            this.canDrag = canDrag;
+            this.overlay.addClass(BlocksConstants.BLOCK_DRAGGABLE_CLASS);
             this.dropspots = {};
         },
 

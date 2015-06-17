@@ -1,5 +1,6 @@
 package com.beligum.blocks.pages;
 
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.database.interfaces.BlocksDatabase;
 import com.beligum.blocks.exceptions.RdfException;
@@ -9,11 +10,15 @@ import com.beligum.blocks.routing.Route;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.utils.RdfTools;
-import net.htmlparser.jericho.*;
+import net.htmlparser.jericho.Element;
+import net.htmlparser.jericho.Source;
+import net.htmlparser.jericho.TextExtractor;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -22,7 +27,7 @@ import java.util.*;
  * This baby rips everything interesting out of a webpage and puts it in a WebPage object
  * values for resources are put inside resource
  *
- * we save used templates, resources, links and linked pages, a short html version for the renderer and
+ * We save used templates, resources, links and linked pages, a short html version for the renderer and
  * a text version of the body element
  *
  */
@@ -48,7 +53,7 @@ public class WebPageParser
     private URI base;
     private boolean inBody = false;
     private String vocab;
-    private HashMap<String, URI> prefixes;
+    private HashMap<String, URI> prefixes = new HashMap<>();
 
     public WebPageParser(WebPage webpage, URI uri, String source, BlocksDatabase database) throws RdfException, URISyntaxException
     {
@@ -68,7 +73,7 @@ public class WebPageParser
 
         Element next = findNextElement();
         while (next != null) {
-            next = parse(next, next.getBegin(), null, false);
+            next = parse(next, next.getBegin(), webpage, false);
         }
     }
 
@@ -89,6 +94,12 @@ public class WebPageParser
     }
 
     public WebPage getWebPage() {
+        if (this.webPage.getParsedHtml() != this.getParsedHtml()) {
+            this.webPage.setParsedHtml(this.getParsedHtml());
+            this.webPage.setLinks(this.getLinks());
+            this.webPage.setResources(this.resources.keySet());
+            this.webPage.setTemplates(this.getTemplates());
+        }
         return this.webPage;
     }
 
@@ -110,17 +121,64 @@ public class WebPageParser
         }
         textPos = element.getBegin();
 
+        Resource newResource = null;
         if (element.getAttributeValue("typeof") != null) {
             // set resource id on tag.
             // set new resource to add values to.
-            URI typeOf = getAbsoluterRdfName(element.getAttributeValue("typeof"));
+            URI typeOf = getAbsoluteRdfName(element.getAttributeValue("typeof"));
 
             if (element.getAttributeValue("resource") == null) {
-                // create new resource
-                textPos = element.getStartTag().getEnd();
-            }
-        } else if (element.getAttributeValue("property") != null) {
+                // create a new resource
+                URI resourceid = RdfTools.createLocalResourceId(getShortTypeNamefromUri(typeOf));
+                newResource = this.database.createResource(resourceid, typeOf, webPage.getLanguage());
 
+                // add new resource id to parsed html
+                parsedHtml.append(source.subSequence(textPos, element.getStartTag().getEnd()-1));
+                parsedHtml.append("resource=\"").append(resourceid.toString()).append("\" >");
+                textPos = element.getStartTag().getEnd();
+            } else {
+                // Fetch resource from db with id
+                URI resourceId = getAbsoluteRdfName(element.getAttributeValue("resource"));
+                if (!RdfTools.isValidAbsoluteURI(resourceId)) {
+                    Logger.error("Resource found in html but not with a valid uri.");
+                    throw new RdfException("Resource found in html but not with a valid uri.");
+                }
+                newResource = this.database.getResource(resourceId, this.webPage.getLanguage());
+                if (newResource == null) {
+                    // create a new resource
+                    Logger.warn("Resource found in html with a resource id, but no resource found in db. Creating a new resource...");
+                    URI resourceid = RdfTools.createLocalResourceId(getShortTypeNamefromUri(typeOf));
+                    newResource = this.database.createResource(resourceid, typeOf, webPage.getLanguage());
+                }
+            }
+
+            // Add new resource to resources
+            if (newResource != null) {
+                this.resources.put(newResource.getBlockId().toString(), newResource);
+            }
+        }
+
+        // Set property value of current resource when property is content-editable
+        if (element.getAttributeValue("property") != null && element.getAttributeValue("contenteditable") != null && element.getAttributeValue("contenteditable").toLowerCase().equals("true")) {
+            URI property = getAbsoluteRdfName(element.getAttributeValue("property"));
+
+            if (newResource != null && !(resource instanceof WebPage)) {
+                resource.set(property, newResource);
+            } else if (element.getAttributeValue("content") != null) {
+                resource.set(property, this.database.createNode(element.getAttributeValue("content"), this.webPage.getLanguage()));
+            } else if (element.getAttributeValue("src") != null) {
+                resource.set(property, this.database.createNode(element.getAttributeValue("src"), Locale.ROOT));
+            } else if (element.getAttributeValue("href") != null) {
+                resource.set(property, this.database.createNode(element.getAttributeValue("href"), Locale.ROOT));
+            } else {
+                resource.set(property, this.database.createNode(element.getContent().toString(), Locale.ROOT));
+            }
+        }
+
+        // If new resource was found, make this the new basic resource
+        // so all nested properties are added to this resource
+        if (newResource != null) {
+            resource= newResource;
         }
 
         if (siteTags.contains(element.getStartTag().getName())) {
@@ -232,7 +290,7 @@ public class WebPageParser
     /*
     * Makes a relative link absolute based on the base for this page
     *
-    * TODO: see difference between  'test.html' '/test.html' and '../test.html'
+    * TODO: see difference between 'test.html' '/test.html' and '../test.html'
     * */
     private URI makeLinkAbsolute(String link) {
         URI retVal;
@@ -252,7 +310,7 @@ public class WebPageParser
     private URI getPageId(URI link) {
         URI retVal= null;
         Route route = new Route(link, database);
-        if (route.exists() && route.getNode().getStatusCode() == 200) {
+        if (route.exists() && route.getNode().isPage()) {
             retVal = route.getNode().getPageUrl();
         }
         return retVal;
@@ -279,7 +337,7 @@ public class WebPageParser
     * Get the absolute value of a rdf type or property based in vocab and prefixes.
     * Of none are found we assume vocab = default ontology in the config
     * */
-    public URI getAbsoluterRdfName(String name) throws RdfException, URISyntaxException
+    public URI getAbsoluteRdfName(String name) throws RdfException, URISyntaxException
     {
         URI retVal = null;
         name = name.trim();
@@ -300,6 +358,32 @@ public class WebPageParser
             }
         } else {
             retVal = new URI(name);
+        }
+        return retVal;
+    }
+
+    /*
+   * Get the absolute value of a rdf type or property based in vocab and prefixes.
+   * Of none are found we assume vocab = default ontology in the config
+   * */
+    public String getShortTypeNamefromUri(URI uri) throws RdfException, URISyntaxException
+    {
+        // First we take a shortname out of the typeof uri to create the resourceid
+        // if the typeof uri has a fragment, use that, else use the last part of the path
+        // else use unknown
+        String retVal = uri.getFragment().trim();
+        if (retVal != null && retVal.indexOf("/") < retVal.length() - 1) {
+            if (retVal.indexOf("/") > -1) {
+                retVal = retVal.substring(retVal.indexOf("/"));
+            }
+        } else {
+            retVal = uri.getPath().trim();
+            Path typePath = Paths.get(retVal);
+            if (typePath.getNameCount() > 0) {
+                retVal = typePath.getName(typePath.getNameCount() - 1).toString();
+            } else {
+                retVal = "unknown";
+            }
         }
         return retVal;
     }

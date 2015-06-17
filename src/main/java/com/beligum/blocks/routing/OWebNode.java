@@ -35,15 +35,34 @@ public class OWebNode implements WebNode
     {
         return UriBuilder.fromUri((String)vertex.getProperty(OBlocksDatabase.WEB_NODE_PAGE_FIELD)).build();
     }
+
     @Override
-    public void setStatusCode(Integer statusCode)
+    public void setPageOk(URI pageUrl)
     {
-        vertex.setProperty(OBlocksDatabase.WEB_NODE_STATUS_FIELD, statusCode);
+        if (pageUrl == null) {
+            setPageNotFound();
+        } else {
+            vertex.setProperty(OBlocksDatabase.WEB_NODE_PAGE_FIELD, pageUrl);
+            this.setStatusCode(WebNode.OK);
+        }
     }
+
     @Override
-    public void setPageUrl(URI pageUrl)
+    public void setPageRedirect(URI pageUrl)
     {
-        vertex.setProperty(OBlocksDatabase.WEB_NODE_PAGE_FIELD, pageUrl);
+        if (pageUrl == null) {
+            setPageNotFound();
+        } else {
+            vertex.setProperty(OBlocksDatabase.WEB_NODE_PAGE_FIELD, pageUrl);
+            this.setStatusCode(WebNode.REDIRECT);
+        }
+    }
+
+    @Override
+    public void setPageNotFound()
+    {
+        vertex.setProperty(OBlocksDatabase.WEB_NODE_PAGE_FIELD, null);
+        this.setStatusCode(WebNode.NOT_FOUND);
     }
 
     /*
@@ -95,5 +114,11 @@ public class OWebNode implements WebNode
     @Override
     public boolean isPage() {
         return this.getStatusCode().equals(200);
+    }
+
+    // ---- PRIVATE METHODS -------
+
+    protected void setStatusCode(Integer code) {
+        this.vertex.setProperty(OBlocksDatabase.WEB_NODE_STATUS_FIELD, code);
     }
 }

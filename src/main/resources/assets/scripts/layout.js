@@ -17,15 +17,12 @@
  *
  */
 
-base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.Constants", "blocks.core.DomManipulation", function (Broadcaster, Constants, DOM)
+base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "base.core.Constants", "blocks.core.DomManipulation", function (Broadcaster, Constants, DOM)
 {
     var Layouter = this;
-    // Helper function to return the jQuery Element of the drop location
-    // and prepare the dropLocation for the drop
-    // 1. if drop location is block with siblings in column and side left/right
-    //      -> wrap in rows
-    // 2. if droplocation has can-layout class prevent drop outside layoutable area
-    //      -> take first or last row
+
+
+    // When dropped on a container we have to find the right element to drop on
     var findDropLocationElement = function (dropLocation, side)
     {
         var dropLocationElement = dropLocation.element;
@@ -35,18 +32,27 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.Con
         // Or we drop on the 1 element inside the container
         if (dropLocation instanceof blocks.elements.Container) {
             var childrenRows = dropLocationElement.children();
-            if (childrenRows.length > 1) {
-                retVal = DOM.createRow().append(DOM.createColumn().append(childrenRows.remove()));
-                dropLocationElement.append(retVal);
-            } else if (childrenRows.length == 1) {
-                if (side == Constants.SIDE.TOP) {
-                    retVal = $(childrenRows[0].children[0]);
-                } else {
-                    retVal = $(childrenRows[0].children[childrenRows[0].children.length - 1]);
-                }
+            if (side == Constants.SIDE.TOP) {
+                retVal = $(childrenRows[0]);
+            } else if (side == Constants.SIDE.BOTTOM) {
+                retVal = $(childrenRows[childrenRows.length - 1]);
             } else {
-                Logger.debug("This should never happen!")
+                if (childrenRows.length > 1) {
+                    retVal = DOM.createRow().append(DOM.createColumn().append(childrenRows.remove()));
+                    dropLocationElement.append(retVal);
+                } else if (childrenRows.length == 1) {
+                    if (side == Constants.SIDE.LEFT) {
+                        // first column inside row insdide container
+                        retVal = $(childrenRows[0].children[0]);
+                    } else {
+                        // last column inside row insdide container
+                        retVal = $(childrenRows[0].children[childrenRows[0].children.length - 1]);
+                    }
+                } else {
+                    Logger.debug("This should never happen!")
+                }
             }
+
         }
         return retVal;
     };
@@ -146,8 +152,9 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.Con
      * Function to call to add a block relative to a block
      * This function changes the dom
      * */
-    var drop = function (droppedElement, dropLocationElement, side)
+    var drop = function (droppedElement, dropLocationElement, droppedContainer, dropContainer, side)
     {
+
         // If we drop on the edge of the container, wrap the container so we drop inside
         // (because we drop always outside the droplocation)
         var subj = "block";
@@ -165,13 +172,29 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.Con
         var s = (side == Constants.SIDE.TOP || side == Constants.SIDE.BOTTOM) ? "vertical" : "horizontal";
         var dropString = "drop-" + s + "-on-" + obj;
         var droppedString = "drop-" + subj + "-" + s;
+        var originalDroppedElement = droppedElement;
         dropLocationElement = dropOnFunctions[dropString](droppedElement, dropLocationElement);
         droppedElement = droppedFunctions[droppedString](droppedElement, dropLocationElement);
 
-        DOM.appendElement(droppedElement, dropLocationElement, side, function ()
-        {
-            Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
-            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+        var finish = function() {
+            droppedElement.toggle(200, function() {
+                Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
+                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+            });
+        };
+
+        droppedElement.toggle(200, function() {
+
+            droppedElement.hide();
+            DOM.appendElement(droppedElement, dropLocationElement, side, function () {
+            if (droppedContainer == null || droppedContainer == dropContainer) {
+                DOM.cleanup(dropContainer, finish);
+            } else {
+                DOM.cleanup(droppedContainer, function() {});
+                DOM.cleanup(dropContainer, finish);
+            }
+
+            });
         });
 
     };
@@ -185,31 +208,20 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "blocks.core.Con
     {
         // remove dropped block
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
-        // Get column width of the dropped element
-        var columnWidthDroppedElement = 12;
-        if (DOM.isColumn(block.element.parent())) {
-            columnWidthDroppedElement = DOM.getColumnWidth(block.element.parent());
-        } else if (DOM.isColumn(block.element.parent().parent())) {
-            columnWidthDroppedElement = DOM.getColumnWidth(block.element.parent().parent());
-        }
-        DOM.removeBlock(block, 200, function ()
-        {
-
-            var dropLocationElement = findDropLocationElement(dropLocation, side);
-            drop(block.element, dropLocationElement, side);
-        });
+        droppedElement = block.element;
+        dropLocationElement = findDropLocationElement(dropLocation, side);
+        drop(droppedElement, dropLocationElement, block.getContainer().element, dropLocation.getContainer().element, side);
 
 
     };
 
     // Add new jquery Object at bottom of dropLocation
-    this.addNewBlockAtLocation = function (side, blockElement, dropLocation)
+    this.addNewBlockAtLocation = function (blockElement,  dropLocation, side)
     {
-        dropLocationElement = dropLocation.element;
+        dropLocationElement = dropLocationElement = findDropLocationElement(dropLocation, side);
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
-        Broadcaster.send(Broadcaster.EVENTS.DOM_WILL_CHANGE);
 
-        drop(blockElement, dropLocationElement, side);
+        drop(blockElement, dropLocationElement, null, dropLocation.getContainer().element, side);
 
         // TODO return false if invalid so we can cancel everything
     };

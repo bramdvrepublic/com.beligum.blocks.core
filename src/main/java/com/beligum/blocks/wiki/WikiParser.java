@@ -101,9 +101,7 @@ public abstract class WikiParser
                             else if (!StringUtils.isEmpty(line)) {
                                 Logger.error("Invalid line found in file: " + path + " ");
                             }
-
                         }
-
                         line_nr++;
                     }
 
@@ -210,8 +208,6 @@ public abstract class WikiParser
         BulkResponse bulkResponse = this.bulkRequest.execute().actionGet();
 
 
-
-
     }
 
 
@@ -275,8 +271,6 @@ public abstract class WikiParser
         } else if (property.isString()) {
             entity.add(name, OBlocksDatabase.instance().createNode(prefix + property.asString().trim(), property.getLanguage()));
         }
-
-
 
     }
 
@@ -376,16 +370,14 @@ public abstract class WikiParser
             Logger.error("Problem creating Web page", e);
         }
 
-        page.setHtml(parser.getParsedHtml());
+        page.setParsedHtml(parser.getParsedHtml());
 
         Route route = new Route(url, OBlocksDatabase.instance());
         if (!route.exists()) route.create();
 
-        route.getNode().setStatusCode(200);
-        route.getNode().setPageUrl(page.getBlockId());
+        route.getNode().setPageOk(page.getBlockId());
 
         return page;
     }
-
 
 }

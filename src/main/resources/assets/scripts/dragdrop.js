@@ -1,4 +1,5 @@
 /**
+ *
  * Plugin that handles the dragging of blocks
  *
  * While dragging we create 2 dropPointers, "anchor" and "other".
@@ -8,7 +9,7 @@
  *
  */
 
-base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "blocks.core.Constants", "blocks.core.Overlay", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, Overlay)
+base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "constants.blocks.common", "blocks.core.Overlay", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, Overlay)
 {
     var DragDrop = this;
     var draggingEnabled = false;
@@ -186,6 +187,43 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                 Overlay.removeOverlays();
                 resetDragDrop();
                 Layouter.changeBlockLocation(currentDraggedBlock, lastDropLocation.anchor, lastDropLocation.side);
+            } else if (currentDraggedBlock == null && lastDropLocation != null  && insideWindow(blockEvent.clientX, blockEvent.clientY)) {
+               // We added a new block
+                Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+                // show select box with all blocks
+                var box = $("<div />");
+
+                box.load("/blocks/admin/page/blocks", function() {
+                    var select = box.find("select");
+                    var description = $("<div />");
+                    select.change(function() {
+                        description.html(select.find(":selected").attr("description"));
+                    });
+                    box.append(description);
+                    BootstrapDialog.show({
+                        message: function() {return box},
+                        buttons: [{
+                            label: 'Cancel',
+                            action: function(dialogRef) {
+                                DragDrop.dragAborted();
+                                dialogRef.close();
+                            }
+                        }, {
+                            label: 'OK',
+                            cssClass: 'btn-primary',
+                            action: function(dialogRef){
+                                dialogRef.close();
+                                var name = select.val();
+                                $.getJSON("/blocks/admin/page/block/" + name, function(data) {
+                                    var block = $(data.html);
+                                    Overlay.removeOverlays();
+                                    resetDragDrop();
+                                    Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side);
+                                });
+                            }
+                        }]
+                    });
+                });
 
             } else {
                 Logger.debug("No drop for block");
@@ -244,7 +282,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     var createDropPointerElement = function ()
     {
         Logger.debug("create droppointer ");
-        var zindex = BlocksConstants.maxIndex + 3;
+        var zindex = base.utils.maxIndex + 3;
         if (dropPointerElements == null) {
             dropPointerElements = $("<div class='blocks-dropspot' />");
             dropPointerElements.css("z-index", zindex);
@@ -284,96 +322,10 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             if (side != null) {
                 dropPointerElements.css(cssSide[side], "5px solid rgba(0, 0, 119, 1)");
             }
-            //
-            //// Scroll element xx pixels into view
-            //var SCROLL_THRESHOLD = 100;
-            //var currentScrollPosition = $(window).scrollTop();
-            //var clientHeight = window.innerHeight;
-            //Logger.debug("top: " + currentScrollPosition + " - height client: " + clientHeight);
-            //if (side == Constants.SIDE.LEFT || side == Constants.SIDE.RIGHT) {
-            //    // element is not completely visible on screen
-            //    if (!(surface.top > currentScrollPosition && surface.bottom < currentScrollPosition + clientHeight)) {
-            //        var scrollDiff = clientHeight - (surface.bottom - surface.top);
-            //        // element fits inside screen
-            //        if (scrollDiff > 0) {
-            //            // make top visible
-            //            if (surface.top < currentScrollPosition) {
-            //                scrollDiff = surface.top - SCROLL_THRESHOLD;
-            //            } else {
-            //                scrollDiff = surface.bottom + SCROLL_THRESHOLD;
-            //            }
-            //        } else {
-            //            scrollDiff = surface.top + Math.floor(scrollDiff / 2);
-            //        }
-            //        Logger.debug("Scroll: " + scrollDiff);
-            //        $("html, body").animate({scrollTop: scrollDiff + "px"}, 300);
-            //    }
-            //} else if (side == Constants.SIDE.TOP && (surface.top < currentScrollPosition || surface.top > currentScrollPosition + clientHeight)) {
-            //    // Top is not visible
-            //    Logger.debug("Scroll Top: " + scrollDiff);
-            //    $("html, body").animate({scrollTop: (surface.top - SCROLL_THRESHOLD) + "px"}, 300);
-            //}  else if (side == Constants.SIDE.BOTTOM && (surface.bottom < currentScrollPosition || surface.bottom > currentScrollPosition + clientHeight)) {
-            //    // Top is not visible
-            //    Logger.debug("Scroll Bottom: " + scrollDiff);
-            //    $("html, body").animate({scrollTop: (surface.bottom + SCROLL_THRESHOLD) + "px"}, 300);
-            //}
-            //showArrowInDroppointerElement(dropPointerElements[name], side);
+
         } else {
             hideDropPointerElement();
         }
-    };
-
-    // show arrow in droppointer overlay
-    var showArrowInDroppointerElement = function (droppointer, side)
-    {
-        //var arrowContainer = $(droppointer.children()[0]);
-        //var arrow = $(arrowContainer.children()[0]).removeClass();
-        //var maxSize = 48;
-        //var minSize = 5;
-        //var height = droppointer.height() - 5;
-        //if (height > maxSize) {
-        //    height = maxSize;
-        //} else if (height < minSize) {
-        //    height = minSize;
-        //}
-        //var width = droppointer.width() - 5;
-        //if (width > maxSize) {
-        //    width = maxSize;
-        //} else if (width < minSize) {
-        //    width = minSize;
-        //}
-        //
-        //arrowContainer.css("left", "");
-        //arrowContainer.css("right", "");
-        //arrowContainer.css("top", "");
-        //arrowContainer.css("bottom", "");
-        //arrow.css("top", "");
-        //arrow.css("left", "");
-        //arrow.css("font-size", height + "px");
-        //
-        //Logger.debug("CW: " + arrow.width() + " CH:" + arrow.height());
-        //if (side == Constants.SIDE.TOP) {
-        //    arrowContainer.css("left", "50%");
-        //    arrowContainer.css("top", "0px");
-        //
-        //    arrow.css("left", -(width/2) + "px");
-        //} else if (side == Constants.SIDE.BOTTOM) {
-        //    arrowContainer.css("left", "50%");
-        //    arrowContainer.css("bottom", "0px");
-        //    arrow.css("left", -(width/2) + "px");
-        //} else if (side == Constants.SIDE.LEFT) {
-        //    arrowContainer.css("top", "50%");
-        //    arrowContainer.css("left", "0px");
-        //    arrow.css("top", -(height/2) + "px");
-        //} else if (side == Constants.SIDE.RIGHT) {
-        //    arrowContainer.css("top", "50%");
-        //    arrowContainer.css("right", "0px");
-        //    arrow.css("top", -(height/2) + "px");
-        //}
-        //
-        //Logger.debug(" arrow height: " + arrow.height() + "  arrow width: " + arrow.width());
-        //arrow.addClass("glyphicon");
-        //arrow.addClass(cssArrowClass[side]);
     };
 
     function isElementInViewport(el)

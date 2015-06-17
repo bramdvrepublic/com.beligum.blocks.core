@@ -1,6 +1,6 @@
 // A row inside a column or a container
 // Can only contain columns
-base.plugin("blocks.core.Elements.Row", ["base.core.Class", "blocks.core.Constants", function (Class, Constants)
+base.plugin("blocks.core.Elements.Row", ["base.core.Class", "base.core.Constants", function (Class, Constants)
 {
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};
@@ -84,6 +84,10 @@ base.plugin("blocks.core.Elements.Row", ["base.core.Class", "blocks.core.Constan
             for (var j = 0; j < this.resizeHandles.length; j++) {
                 this.resizeHandles[j].removeOverlay();
             }
+
+        },
+
+        generateProperties: function() {
 
         }
 

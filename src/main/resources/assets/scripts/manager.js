@@ -3,8 +3,24 @@
  *
  * The manager is the central point. here we catch all the events to keep an overview
  */
-base.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.BlockMenu", "blocks.core.Highlighter", "blocks.core.Overlay", "blocks.core.Edit", "blocks.core.DomManipulation", "blocks.core.DragCreate", function (Constants, Broadcaster, Mouse, DragDrop, Resizer, BlockMenu, Highlighter, Overlay, Edit, DOM, DragCreate)
+base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Highlighter", "blocks.core.Overlay", "blocks.core.Edit", "blocks.core.DomManipulation", "blocks.core.DragCreate", "blocks.core.Sidebar", function (Constants, Broadcaster, Mouse, DragDrop, Resizer, Highlighter, Overlay, Edit, DOM, DragCreate, Sidebar)
 {
+
+    /*
+     * Because there is no good place to put this we hang this here to the base inside a utils package
+     * This is referenced from different lot of locations
+     * */
+    base.utils = base.functions || {};
+    base.utils.maxIndex = 0;
+    base.utils.calculateMaxIndex = function ()
+    {
+        this.maxIndex = Math.max.apply(null, $.map($('body  *'), function (e, n)
+            {
+                if ($(e).css('position') == 'absolute' || $(e).css('position') == 'relative')
+                    return parseInt($(e).css('z-index')) || 1;
+            })
+        );
+    };
 
     // On Window resize
     var resizeTimeout = null;
@@ -34,7 +50,7 @@ base.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broadc
     {
         Broadcaster.setContainer(null);
         Broadcaster.registerMouseMove();
-        BlockMenu.createMenu();
+
 
         // prevent all clicks to links
         $(document).on("click.blocks_manager", function (event)
@@ -53,7 +69,6 @@ base.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broadc
         Broadcaster.unregisterMouseMove();
         Overlay.removeOverlays();
         Broadcaster.setContainer(null);
-        BlockMenu.removeMenu();
 
         $(document).off("click.blocks_manager");
 
@@ -89,7 +104,7 @@ base.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broadc
     $(document).on(Broadcaster.EVENTS.DOM_DID_CHANGE, function ()
     {
         Broadcaster.resetHover();
-        Constants.calculateMaxIndex();
+        base.utils.calculateMaxIndex();
         Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, null);
     });
 
@@ -132,15 +147,12 @@ base.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broadc
     $(document).on(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, function (event)
     {
         Highlighter.showBlockOverlay(event.block.current);
-        BlockMenu.showMenu(event.block.current);
     });
 
     $(document).on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, function (event)
     {
         Highlighter.removeBlockOverlay();
-        if (!BlockMenu.mouseOverMenu()) {
-            BlockMenu.hideMenu();
-        }
+
     });
 
     $(document).on(Broadcaster.EVENTS.HOOVER_OVER_BLOCK, function (event)
@@ -157,7 +169,6 @@ base.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broadc
 
         //Broadcaster.zoom();
         DOM.disableContextMenu();
-        BlockMenu.hideMenu();
         Highlighter.removeBlockOverlay();
         Highlighter.removePropertyOverlay();
         DragDrop.dragStarted(event);
@@ -226,14 +237,14 @@ base.plugin("blocks.core.Manager", ["blocks.core.Constants", "blocks.core.Broadc
         Highlighter.removeBlockOverlay();
         Highlighter.removePropertyOverlay();
         Overlay.removeOverlays();
-        BlockMenu.hideMenu();
-        Broadcaster.property().current.editFunction(event);
+
 
     });
 
     $(document).on(Broadcaster.EVENTS.END_EDIT_FIELD, function (event)
     {
         Edit.endEdit();
+        Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
         Overlay.showOverlays();
         Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
     });

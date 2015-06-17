@@ -5,10 +5,10 @@
 // block-parsedContent class
 
 
-base.plugin("blocks.core.BlockMenu.delete", ["blocks.core.BlockMenu", "blocks.core.Layouter", "blocks.core.Notification", function (Menu, Layouter, Notification)
+base.plugin("blocks.core.BlockMenu.delete", ["blocks.core.Layouter", "blocks.core.Notification", function (Layouter, Notification)
 {
     var button = $('<div class="block-menu-item"><i class="glyphicon glyphicon-trash"></i> Delete</div>')
-    Menu.addButton({
+   /* Menu.addButton({
         element: button,
         priority: 105,
         enabled: function (block)
@@ -53,7 +53,7 @@ base.plugin("blocks.core.BlockMenu.delete", ["blocks.core.BlockMenu", "blocks.co
 
             })
         }
-    });
+    });*/
 
 }]);
 

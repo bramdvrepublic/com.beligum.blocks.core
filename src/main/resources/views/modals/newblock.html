@@ -1,0 +1,6 @@
+
+<select>
+    #foreach($block in $templates)
+        <option value="$block.get("name")" description="$block.get("description")">$block.get("title")</option>
+    #end
+</select>

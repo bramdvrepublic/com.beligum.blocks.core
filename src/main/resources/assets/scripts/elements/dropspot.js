@@ -12,7 +12,7 @@
  * y coordinate of 6
  *
  * */
-base.plugin("blocks.core.Elements.Dropspot", ["base.core.Class", "blocks.core.Constants", function (Class, Constants)
+base.plugin("blocks.core.Elements.Dropspot", ["base.core.Class", "base.core.Constants", function (Class, Constants)
 {
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};
@@ -60,7 +60,12 @@ base.plugin("blocks.core.Elements.Dropspot", ["base.core.Class", "blocks.core.Co
                 current = y;
 //                    var prev = this.anchor.verticalDropspots.slice(0, this.index);
 //                    var next = this.anchor.verticalDropspots.slice(this.index + 1, this.anchor.verticalDropspots.length);
-                nrDropspots = this.block.verticalDropspots.length;
+                if (this.block.verticalDropspots != null) {
+                    nrDropspots = this.block.verticalDropspots.length;
+                } else {
+                    Logger.debug("No vertical dropspots");
+                }
+
                 dropspots = this.block.verticalDropspots;
 
             } else {
@@ -69,13 +74,16 @@ base.plugin("blocks.core.Elements.Dropspot", ["base.core.Class", "blocks.core.Co
                 current = x;
 //                    var prev = this.anchor.horizontalDropspots.slice(0, this.index);
 //                    var next = this.anchor.horizontalDropspots.slice(this.index + 1, this.anchor.horizontalDropspots.length);
-                nrDropspots = this.block.horizontalDropspots.length;
+                if (this.block.horizontalDropspots != null) {
+                    nrDropspots = this.block.horizontalDropspots.length;
+                }
                 dropspots = this.block.horizontalDropspots;
             }
 
-            var border_threshold = Math.round((right - left) / nrDropspots);
-            if (border_threshold > BORDER_THRESHOLD) border_threshold = BORDER_THRESHOLD;
-            var inner_threshold = (right - left) - (border_threshold * (nrDropspots - 1));
+            if (nrDropspots > 0) {
+                var border_threshold = Math.round((right - left) / nrDropspots);
+                if (border_threshold > BORDER_THRESHOLD) border_threshold = BORDER_THRESHOLD;
+                var inner_threshold = (right - left) - (border_threshold * (nrDropspots - 1));
 
 //                var min = (current - ((threshold * prevLength) + (threshold/2)));
 //                if (min < left) min = left;
@@ -83,29 +91,30 @@ base.plugin("blocks.core.Elements.Dropspot", ["base.core.Class", "blocks.core.Co
 //                    min = right - (threshold * nrDropspots);
 //                }
 
-            var i = 0;
-            var min = left;
-            while (i < nrDropspots) {
-                var currentDP = dropspots[i];
-                currentDP.setTrigger(min, min + border_threshold);
+                var i = 0;
+                var min = left;
+                while (i < nrDropspots) {
+                    var currentDP = dropspots[i];
+                    currentDP.setTrigger(min, min + border_threshold);
 
-                if (i + 1 < nrDropspots && (dropspots[i + 1].side != currentDP.side)) {
-                    if (currentDP.side == direction) {
-                        currentDP.setTrigger(min, min + inner_threshold);
-                    } else if (dropspots[i + 1].side == direction) {
-                        min += border_threshold;
-                        dropspots[i + 1].setTrigger(min, min + inner_threshold);
-                        i++;
+                    if (i + 1 < nrDropspots && (dropspots[i + 1].side != currentDP.side)) {
+                        if (currentDP.side == direction) {
+                            currentDP.setTrigger(min, min + inner_threshold);
+                        } else if (dropspots[i + 1].side == direction) {
+                            min += border_threshold;
+                            dropspots[i + 1].setTrigger(min, min + inner_threshold);
+                            i++;
+                        }
+                        min += inner_threshold
+                    } else {
+                        min += border_threshold
                     }
-                    min += inner_threshold
-                } else {
-                    min += border_threshold
-                }
 
-                i++;
+                    i++;
+                }
+                dropspots[0].min = left;
+                dropspots[dropspots.length - 1].max = right;
             }
-            dropspots[0].min = left;
-            dropspots[dropspots.length - 1].max = right;
             return true;
         },
 
