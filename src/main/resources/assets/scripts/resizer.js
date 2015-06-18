@@ -70,7 +70,7 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
         DOM.disableContextMenu();
         $("." + Constants.BLOCK_OVERLAY_CLASS).hide();
         $("." + Constants.PROPERTY_OVERLAY_CLASS).hide();
-        $("body").addClass(Constants.FORCE_RESIZE_CURSOR);
+        $("body").addClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
 
         draggingEnabled = true;
         setCursor(false);
@@ -95,7 +95,7 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
     {
         if (dragging) {
             dragging = false;
-            $("body").removeClass(Constants.FORCE_RESIZE_CURSOR);
+            $("body").removeClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
             DOM.enableContextMenu();
             Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
@@ -202,6 +202,7 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
                     activeResizeHandle.rightColumn.element.before(element);
                     activeResizeHandle.leftColumn = new blocks.elements.Column(0, 0, 0, 0, element, null, 0);
                     DOM.setColumnWidth(activeResizeHandle.rightColumn.element, DOM.getColumnWidth(activeResizeHandle.rightColumn.element) - diff);
+                    activeResizeHandle.updateHeight();
 
                 } else if (activeResizeHandle.rightColumn == null) {
 
@@ -209,10 +210,11 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
                     activeResizeHandle.rightColumn.element = $('<div class="col-md-1"><div></div></div>');
                     DOM.setColumnWidth(activeResizeHandle.leftColumn.element, DOM.getColumnWidth(activeResizeHandle.leftColumn.element) + diff);
                     activeResizeHandle.leftColumn.element.after(activeResizeHandle.rightColumn.element);
+                    activeResizeHandle.updateHeight();
                 } else {
                     DOM.setColumnWidth(activeResizeHandle.leftColumn.element, DOM.getColumnWidth(activeResizeHandle.leftColumn.element) + diff);
                     DOM.setColumnWidth(activeResizeHandle.rightColumn.element, DOM.getColumnWidth(activeResizeHandle.rightColumn.element) - diff);
-
+                    activeResizeHandle.updateHeight();
                 }
                 // move resizehandle
                 activeResizeHandle.update();

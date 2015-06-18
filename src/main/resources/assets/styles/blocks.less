@@ -1,5 +1,7 @@
 // Overlay when editing and for dialogs
-.block-overlay {
+@import "/constants/blocks/common?type=less";
+
+.@{BLOCK_OVERLAY_CLASS} {
   top: 0px;
   left: 0px;
   right: 0px;
@@ -32,12 +34,12 @@
   }
 }
 
-.dragged-block-overlay {
+.@{DRAGGED_BLOCK_OVERLAY_CLASS} {
   position: absolute;
   background-color: rgba(00, 102, 204, 0.5);
 }
 
-.property-overlay {
+.@{PROPERTY_OVERLAY_CLASS} {
   position: absolute;
   border: 1px dotted rgba(100, 100, 100, 0.8);
   cursor: text;
@@ -58,54 +60,14 @@
     border-bottom: none;
   }
 
-  &.property-hover {
+  &.@{PROPERTY_HOVER_CLASS} {
     border: 1px solid rgba(0, 0, 0, 1);
   }
 
-  &.property-no-text {
-//    cursor: url('/assets/images/blocks/utils/pencil.png'), default;
-  }
 
 }
 
-.opacity {
-  opacity: 0.3;
-}
-
-.column-resize-handle {
-  position: absolute;
-  background-color: #d3d3d3;
-  cursor: col-resize;
-}
-
-// Classes for the body that force the cursor in a certain style
-.force-dragging-cursor {
-  cursor: grabbing !important;
-  cursor: -moz-grabbing !important;
-  cursor: -webkit-grabbing !important;
-}
-
-body.force-col-resize-cursor, body.force-col-resize-cursor * {
-  cursor: col-resize !important;
-}
-
-// Class put when a property is content-editable and active
-// so when cvan set the outline we want for this property
-.property-edit {
-  outline: 1px dotted rgba(100, 100, 100, 0.8);
-}
-
-.canvas {
-  position: absolute;
-  left: 0px;
-  right: 0px;
-  top: 0px;
-  bottom: 0px;
-  width: 100%;
-  height: 100%;
-}
-
-.not-visible {
+.@{OPACITY_CLASS} {
   opacity: 0.2;
   -webkit-filter: blur(5px) grayscale(1);
   -moz-filter: blur(5px) grayscale(20%);
@@ -114,12 +76,30 @@ body.force-col-resize-cursor, body.force-col-resize-cursor * {
   filter: blur(5px) grayscale(1);
 }
 
-.blocks-selected-block {
-  outline: 1px dotted rgba(0, 0, 0, 0.8);
-  outline-offset: 3px;
+.@{COLUMN_RESIZER_CLASS} {
+  position: absolute;
+  background-color: #d3d3d3;
+  cursor: col-resize;
 }
 
-.no-select {
+// Classes for the body that force the cursor in a certain style
+.@{FORCE_RESIZE_CURSOR_CLASS} {
+  cursor: grabbing !important;
+  cursor: -moz-grabbing !important;
+  cursor: -webkit-grabbing !important;
+}
+
+body.@{FORCE_RESIZE_CURSOR_CLASS}, body.@{FORCE_DRAG_CURSOR_CLASS} * {
+  cursor: col-resize !important;
+}
+
+// Class put when a property is content-editable and active
+// so when cvan set the outline we want for this property
+.@{PROPERTY_EDIT_CLASS} {
+  outline: 1px dotted rgba(100, 100, 100, 0.8);
+}
+
+.@{PREVENT_SELECTION_CLASS} {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   -khtml-user-select: none;
@@ -141,82 +121,13 @@ iframe.edit {
   pointer-events: auto;
 }
 
-// ckeditor also uses iframes
-iframe.cke_panel_frame {
-  pointer-events: auto;
-}
-
-// Div that contains the panel for the backend
-.admin-backend {
-  padding: 10px 10px;
-}
-
-// used to flip to backend
-.flip {
-  -webkit-transform: rotateY(180deg);
-  transform: rotateY(180deg);
-
-}
 
 .blocks-resizing {
   cursor: col-resize;
 }
 
-//// grijze vlakken die over de blocken waarnaast gedropt zal worden, wordt gelegd.
-//.templates-dropspot {
-//
-//}
-//
-//// locatie container voor de pijl
-//.droppointer-arrow-container {
-//
-//}
-//// De pijltjes tijdens het draggen
-//// font size is automatisch!
-//.droppointer-arrow {
-//  color: deepskyblue;
-//}
 
-// container type btn-group-xs waar alle knopjes inzitten.
-// Wordt gecentreerd
-.block-menu {
-  right: 100%;
-  min-width: 150px;
-  max-width: 100%;
-
-  .block-menu-handle {
-    font-size: 20px;
-    padding: 8px 8px 4px 8px;
-    border: 2px solid black;
-    background-color: white;
-    opacity: 0.4;
-    float: right;
-    clear: both;
-    cursor: pointer;
-  }
-
-  .block-menu-item {
-    cursor: pointer;
-    background-color: white;
-    color: black;
-    border: 1px solid black;
-    padding: 7px 5px 7px 5px;
-    float: right;
-    clear: both;
-    display: none;
-    min-width: 150px;
-  }
-
-  &.open .block-menu-item {
-    display: block;
-
-    &.disabled {
-      display: none;
-    }
-  }
-}
-
-.blocks-main-menu {
+.@{PAGE_MENU_CLASS} {
   padding-top: 10px;
   padding-bottom: 10px;
   a {
@@ -248,17 +159,17 @@ iframe.cke_panel_frame {
   }
 }
 
-.blocks-page-content {
+.@{PAGE_CONTENT_CLASS} {
   float: left;
   width: 80%;
 }
 
-.blocks-sidebar {
+.@{PAGE_SIDEBAR_CLASS} {
   float: left;
   width: 20%;
 }
 
-.blocks-main-edit-button {
+.@{BLOCKS_START_BUTTON} {
   position: fixed;
   font-size: 20px;
   top: 10px;
@@ -267,14 +178,44 @@ iframe.cke_panel_frame {
   z-index: 10000;
 }
 
-.sitemap-list {
-  list-style-type: disc;
-  padding-left: 40px;
+.@{HIGHLIGHT_ANIMATION_CLASS} {
+    -webkit-transition: 0.4s;
+    -moz-transition: 0.4s;
+    transition: 0.4s;
+}
 
-  .sitemap-item {
+.@{HIGHLIGHT_CLASS} {
+  outline: blue dotted thick;
+}
 
+.@{REMOVE_BLOCK_CLASS} {
+  margin-bottom: 0px;
+  .panel-body {
+    padding-top:3px;
+    padding-bottom: 3px;
+  }
+  .text {
+    line-height: 32px;
+  }
+
+  .confirm-text {
+    padding-bottom: 5px;
+  }
+
+  .btn {
+    margin-right: 10px;
   }
 }
+
+
+blocks-editor-toolbar {
+  ul > li {
+    display: inline;
+  }
+
+}
+
+
 
 
 

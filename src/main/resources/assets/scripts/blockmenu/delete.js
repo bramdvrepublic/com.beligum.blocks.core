@@ -7,7 +7,7 @@
 
 base.plugin("blocks.core.BlockMenu.delete", ["blocks.core.Layouter", "blocks.core.Notification", function (Layouter, Notification)
 {
-    var button = $('<div class="block-menu-item"><i class="glyphicon glyphicon-trash"></i> Delete</div>')
+
    /* Menu.addButton({
         element: button,
         priority: 105,

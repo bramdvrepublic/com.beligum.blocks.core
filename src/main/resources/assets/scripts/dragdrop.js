@@ -71,13 +71,13 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             // we have to set both
             // html for undefined area and baody to override default cursor of body.
 
-            $("body").addClass(BlocksConstants.FORCE_DRAG_CURSOR);
+            $("body").addClass(BlocksConstants.FORCE_DRAG_CURSOR_CLASS);
         } else if (currentDraggedBlock == null) {
             dragging = true
             Broadcaster.getContainer().createAllDropspots();
             Overlay.removeResizehandles();
             createDropPointerElement();
-            $("body").addClass(BlocksConstants.FORCE_DRAG_CURSOR);
+            $("body").addClass(BlocksConstants.FORCE_DRAG_CURSOR_CLASS);
         }
     };
 
@@ -240,7 +240,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
 
     var resetDragDrop = function ()
     {
-        $("body").removeClass(BlocksConstants.FORCE_DRAG_CURSOR);
+        $("body").removeClass(BlocksConstants.FORCE_DRAG_CURSOR_CLASS);
         removeDropPointerElement();
         removeDraggedOverlay();
         draggingEnabled = false;

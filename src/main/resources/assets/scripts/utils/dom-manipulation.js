@@ -360,7 +360,7 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
     };
 
     // Function to remove a block and clean up
-    this.removeElement = function (element, animationTime, callback)
+    this.removeBlock = function (element, animationTime, callback)
     {
         element.toggle(animationTime, function ()
         {
@@ -490,7 +490,7 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
         var sel = window.getSelection();
         sel.removeAllRanges();
         var html = $("html");
-        html.addClass("no-select");
+        html.addClass(BlocksConstants.PREVENT_SELECTION_CLASS);
         window.ondragstart = function ()
         {
             return false;
@@ -502,7 +502,7 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
     {
         //http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
         var html = $("html");
-        html.removeClass("no-select");
+        html.removeClass(BlocksConstants.PREVENT_SELECTION_CLASS);
         window.ondragstart = function ()
         {
             return true;

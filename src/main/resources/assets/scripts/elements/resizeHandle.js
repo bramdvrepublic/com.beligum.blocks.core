@@ -44,7 +44,7 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
                     Resizer.startDrag(_this);
                     $(document).on("mouseup.resizehandle", function (event)
                     {
-                        $(document).off("mouseup.resizehandledrag");
+                        $(document).off("mouseup.resizehandle");
                         Resizer.endDrag(null);
 
                     });
@@ -68,6 +68,11 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
             this.overlay.css("width", width);
             this.overlay.css("z-index", base.utils.maxIndex + 2);
             body.append(this.overlay);
+        },
+
+        updateHeight: function() {
+            var height = this.leftColumn.parent.element.height();
+            this.overlay.css("height", height);
         },
 
         removeOverlay: function ()

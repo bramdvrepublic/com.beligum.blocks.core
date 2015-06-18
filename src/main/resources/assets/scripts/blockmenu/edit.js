@@ -104,7 +104,15 @@ base.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "constants.blocks.co
     var editFunction = function (property)
     {
         var element = property.element;
-        return registeredByTag[element.prop("tagName").toUpperCase()];
+
+        var retVal = null;
+        if (property instanceof blocks.elements.Page) {
+            retVal = registeredByTag[Constants.PAGE_CONTENT_CLASS.toUpperCase()];
+        } else {
+            retVal = registeredByTag[element.prop("tagName").toUpperCase()];
+        }
+
+        return retVal;
     };
 
 

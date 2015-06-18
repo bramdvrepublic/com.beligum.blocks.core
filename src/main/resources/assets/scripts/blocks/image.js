@@ -1,34 +1,20 @@
 /*
  * Allows editiong of an image when youy click on it
  * */
-base.plugin("blocks.core.image", ["blocks.finder", "blocks.core.Edit", "blocks.core.Notification", "blocks.core.Broadcaster", function (Finder, Edit, Notification, Broadcaster)
+base.plugin("blocks.edit.Image", ["constants.blocks.common", "blocks.core.Edit", "blocks.core.Sidebar",  function (Constants, Edit, Sidebar)
 {
-    var dialogContent = $('<div class="form-inline" role="form"><div class="form-group">' +
-    '<label for="imagelabel" class="sr-only">Geef de url van een afbeelding: </label>' +
-    '<input type="text"  class="form-control"  placeholder="Geef een url" id="imageselect" />' +
 
-    '</select></div></div>');
-
-    var editImage = function (blockEvent)
-    {
-        var element = blockEvent.property.current.element;
-        if (element.prop("tagName") == "IMG") {
-
-            Finder.open({
-                onSelect: function (file)
-                {
-                    element.attr("src", "/media/public/" + file);
-                    Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
-                },
-                onClose: function ()
-                {
-                    Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
-                }
-            });
-        }
+    this.focus = function(property) {
+        var element = property.element.children("img");
+        var windowID = Sidebar.createWindow(Constants.CONTENT, property, "Afbeelding");
+        Sidebar.addValueAttribute(windowID, element, "image url", "src", true);
     };
 
-    Edit.registerByTag("IMG", editImage);
+    this.blur = function() {
+
+    };
+
+    Edit.registerByTag("BLOCKS-IMAGE", this);
 
 
 }]);

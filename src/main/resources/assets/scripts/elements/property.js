@@ -25,7 +25,7 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Cons
             }
 
             this.canDrag = false;
-            this.isField = !DOM.isTemplate(element);
+            this.isField = !(this instanceof blocks.elements.Block);
             this.isTemplate = !this.isField;
 
             this.editFunction = Edit.makeEditable(this);

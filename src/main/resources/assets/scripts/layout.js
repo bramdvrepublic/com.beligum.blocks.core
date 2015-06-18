@@ -230,11 +230,15 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "base.core.Const
     this.removeBlock = function (block)
     {
         if (block instanceof blocks.elements.Block) {
+            var container = block.getContainer();
             Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
-            DOM.removeBlock(block, 300, function ()
+            DOM.removeBlock(block.element, 300, function ()
             {
-                Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
-                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+                DOM.cleanup(container.element, function() {
+                    Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
+                    Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+                });
+
             })
         }
     };

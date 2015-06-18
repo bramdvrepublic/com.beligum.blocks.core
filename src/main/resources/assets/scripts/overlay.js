@@ -45,13 +45,6 @@ base.plugin("blocks.core.Overlay", ["blocks.core.Broadcaster", function (Broadca
         }
     };
 
-    //Overlay.showHover = function(block) {
-    //    block.overlay.addClass(Constants.BLOCK_HOVER_CLASS);
-    //};
-    //
-    //Overlay.removeHover = function(block) {
-    //    block.overlay.removeClass(Constants.BLOCK_HOVER_CLASS);
-    //};
 
 
     var hideAll = function (element)

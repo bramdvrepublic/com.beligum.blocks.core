@@ -5,7 +5,7 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
     /*
     * Create the html for top bar
     * */
-    this.menuStartButton = $('<div class="blocks-main-edit-button"><i class="glyphicon glyphicon-cog"></i></div>');
+    this.menuStartButton = $('<div class="'+ Constants.BLOCKS_START_BUTTON +'"><i class="glyphicon glyphicon-cog"></i></div>');
 
     this.menuBar = $("<div class='" + Constants.PAGE_MENU_CLASS + "'></div>");
     this.menuBar.load("/debug/menu");
@@ -32,7 +32,7 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
     var oldBodyMargin = parseInt($("body").css("padding-top"));
     var menuAnimationSpeed = 300;
 
-    $(document).on("click", ".blocks-main-edit-button", function (event)
+    $(document).on("click", "."+ Constants.BLOCKS_START_BUTTON, function (event)
     {
         if ($("body").children("." + Constants.PAGE_MENU_CLASS).length == 0) {
 

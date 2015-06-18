@@ -3,7 +3,7 @@
  *
  * The manager is the central point. here we catch all the events to keep an overview
  */
-base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Highlighter", "blocks.core.Overlay", "blocks.core.Edit", "blocks.core.DomManipulation", "blocks.core.DragCreate", "blocks.core.Sidebar", function (Constants, Broadcaster, Mouse, DragDrop, Resizer, Highlighter, Overlay, Edit, DOM, DragCreate, Sidebar)
+base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Highlighter", "blocks.core.Overlay", "blocks.core.Edit", "blocks.core.DomManipulation", "blocks.core.Sidebar", function (Constants, Broadcaster, Mouse, DragDrop, Resizer, Highlighter, Overlay, Edit, DOM, DragCreate, Sidebar)
 {
 
     /*
@@ -83,7 +83,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
         Broadcaster.resetHover();
 
         DragDrop.setActive(true);
-        DragCreate.activate();
+        //DragCreate.activate();
         Highlighter.showBlockOverlay(Broadcaster.block().current);
         Highlighter.showPropertyOverlay(Broadcaster.property().current);
 
@@ -94,7 +94,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
     {
         Mouse.deactivate();
         Broadcaster.resetHover();
-        DragCreate.deactivate()
+        //DragCreate.deactivate()
         DragDrop.setActive(false);
         DOM.enableSelection();
 
@@ -237,7 +237,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
         Highlighter.removeBlockOverlay();
         Highlighter.removePropertyOverlay();
         Overlay.removeOverlays();
-
+        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
 
     });
 

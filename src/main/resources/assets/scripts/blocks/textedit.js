@@ -1,6 +1,5 @@
-base.plugin("blocks.core.TextEdit", ["constants.blocks.common", "blocks.core.Broadcaster", "blocks.core.Edit", "blocks.core.Editor", "blocks.core.Sidebar",  function (Constants, Broadcaster, Edit, Editor, Sidebar)
+base.plugin("blocks.core.edit.Text", ["constants.blocks.common", "blocks.core.Broadcaster", "blocks.core.Edit", "blocks.core.Editor", "blocks.core.Sidebar",  function (Constants, Broadcaster, Edit, Editor, Sidebar)
 {
-
 
     var getRangeFromPosition = function (x, y)
     {
@@ -50,11 +49,12 @@ base.plugin("blocks.core.TextEdit", ["constants.blocks.common", "blocks.core.Bro
             element.attr("data-old-value", element.html());
         }
 
-        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         element.addClass(Constants.PROPERTY_EDIT_CLASS);
 
         // Add toolbar to sidebar
-        Sidebar.addUIForProperty(Constants.STYLE, property, Editor.toolbarElement);
+        var windowID = Sidebar.createWindow(Constants.STYLE, property, "Tekst");
+        Sidebar.addUIForProperty(windowID, property.element, Editor.toolbarElement);
+
         setCursor(blockEvent.clientX, blockEvent.clientY);
 
     };
