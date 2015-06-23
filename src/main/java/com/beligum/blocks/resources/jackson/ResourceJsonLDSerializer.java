@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Created by wouter on 26/04/15.
@@ -40,19 +41,14 @@ public class ResourceJsonLDSerializer extends JsonSerializer<Resource>
 
         // Add @type to json
         if (resource.getRdfType() != null) {
-            Node typeNode = resource.getRdfType();
+            Set<URI> typeNode = resource.getRdfType();
             jgen.writeFieldName(ParserConstants.JSONLD_TYPE);
-            if (typeNode.isIterable()) {
                 jgen.writeStartArray();
-                for (Node fieldValue: typeNode) {
-                    jgen.writeString(fieldValue.asString());
+                for (URI fieldValue : typeNode) {
+                    jgen.writeString(fieldValue.toString());
                 }
                 jgen.writeEndArray();
-            } else if (typeNode.isString()) {
-                jgen.writeString(typeNode.asString());
-            } else {
-                jgen.writeString("");
-            }
+
         }
 
         // Add other fields to json

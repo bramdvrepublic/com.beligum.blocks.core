@@ -84,7 +84,8 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         currentBlock = null;
         currentProperty = null;
         //var docWidth = $(document).width();
-        var docWidth = 1000;
+        var docWidth = $("." + BlocksConstants.PAGE_CONTENT_CLASS).width();
+        //docWidth = 1000;
         if (docWidth > 920) {
             Broadcaster.send(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG);
             draggingStatus = BaseConstants.DRAGGING.NO;
@@ -151,7 +152,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 //    Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
 
                 } else {
-                    SideBar.update();
+                    // do nothing
                 }
 
             }

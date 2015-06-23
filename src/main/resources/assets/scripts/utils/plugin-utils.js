@@ -1,7 +1,7 @@
 /**
  * Created by wouter on 18/06/15.
  */
-base.plugin("blocks.core.Plugin-Utils", [ function () {
+base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.finder", function (Constants, Finder) {
 
     var Plugin = this;
 
@@ -152,12 +152,15 @@ base.plugin("blocks.core.Plugin-Utils", [ function () {
         return content;
     };
 
-    this.addValueAttribute = function(element, label, name, confirm) {
+    this.addValueAttribute = function(element, label, name, confirm, textSelect, serverSelect, url) {
         var id = Plugin.makeid();
         var content = $("<div class='form-group' />");
         content.append($('<label for="'+ id +'">' + label + '</label>'));
         var group = $('<div class="input-group" />');
         var input = $('<input "'+id+'" type="text" class="form-control" />');
+        if (!textSelect) {
+            input.attr("disabled", "");
+        }
 
         if (element.hasAttribute(name) != null) {
             input.val(element.attr(name));
@@ -187,6 +190,39 @@ base.plugin("blocks.core.Plugin-Utils", [ function () {
                 oldvalue = input.val();
 
             });
+        }
+
+        if (serverSelect) {
+            var fileButton = $('<button class="btn btn-primary">File from server</button>');
+
+            var close = function() {
+                $("." + Constants.PAGE_CONTENT_CLASS).show();
+                $("." + Constants.BLOCKS_START_BUTTON).show();
+                $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_CONTENT_ID +'"]').tab('show')
+            };
+
+            Finder.setOnSelect(function(file) {
+                if (file != null) {
+                    input.val(file);
+                    element.attr(name, file);
+                    close();
+                }
+            });
+
+
+            fileButton.click(function() {
+                $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_FILES_ID +'"]').tab('show')
+                $("." + Constants.PAGE_CONTENT_CLASS).hide();
+                $("." + Constants.BLOCKS_START_BUTTON).hide();
+                // add close button
+                var closeBtn = $('<div class="btn '+ Constants.CLOSE_FINDER_BUTTON +'">X</div>');
+                $("#" + Constants.SIDEBAR_FILES_ID).append(closeBtn);
+
+                closeBtn.click(function() {
+                    close();
+                });
+            });
+            content.append(fileButton);
         }
 
         return content;

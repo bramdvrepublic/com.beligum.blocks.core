@@ -1,12 +1,14 @@
 package com.beligum.blocks.routing.ifaces;
 
+import com.beligum.blocks.resources.interfaces.DocumentInfo;
+
 import java.net.URI;
 import java.util.Locale;
 
 /**
  * Created by wouter on 28/05/15.
  */
-public interface WebNode
+public interface WebNode extends DocumentInfo
 {
     public final Integer NOT_FOUND = 404;
     public final Integer REDIRECT = 303;

@@ -1,5 +1,7 @@
 package com.beligum.blocks.resources.interfaces;
 
+import sun.util.resources.CalendarData_cs;
+
 import java.net.URI;
 import java.util.Calendar;
 import java.util.Date;
@@ -9,10 +11,8 @@ import java.util.Set;
 /**
  * Created by wouter on 24/04/15.
  */
-public interface Resource extends Node
+public interface Resource extends Node, DocumentInfo
 {
-
-
 
     public void add(URI key, Node node);
 
@@ -28,9 +28,9 @@ public interface Resource extends Node
 
     public URI getBlockId();
 
-    public Node getRdfType();
+    public Set<URI> getRdfType();
 
-    public void setRdfType(Node node);
+    public void setRdfType(Set<URI> uris);
 
     public HashMap<String, String> getContext();
 
@@ -39,22 +39,6 @@ public interface Resource extends Node
     public Set<URI> getFields();
 
     public void merge(Resource resource);
-
-    public void setCreatedAt(Date date);
-
-    public Calendar getCreatedAt();
-
-    public void setCreatedBy(String user);
-
-    public String getCreatedBy();
-
-    public void setUpdatedAt(Date date);
-
-    public Calendar getUpdatedAt();
-
-    public void setUpdatedBy(String user);
-
-    public String getUpdatedBy();
 
     public String toJson();
 

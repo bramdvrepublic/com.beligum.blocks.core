@@ -184,14 +184,20 @@ public class OrientResource extends AbstractResource
 
 
     @Override
-    public void setCreatedAt(Date date)
+    public void setCreatedAt(Calendar date)
     {
-        this.localizedResource.field(OBlocksDatabase.RESOURCE_CREATED_AT, date);
+        this.localizedResource.field(OBlocksDatabase.RESOURCE_CREATED_AT, date.getTime());
     }
     @Override
     public Calendar getCreatedAt()
     {
-        return this.localizedResource.field(OBlocksDatabase.RESOURCE_CREATED_AT);
+        Calendar retVal = null;
+        Date date = this.localizedResource.field(OBlocksDatabase.RESOURCE_CREATED_AT);
+        if (date != null) {
+            retVal = Calendar.getInstance();
+            retVal.setTime(date);
+        }
+        return retVal;
     }
 
     @Override
@@ -207,15 +213,21 @@ public class OrientResource extends AbstractResource
     }
 
     @Override
-    public void setUpdatedAt(Date date)
+    public void setUpdatedAt(Calendar date)
     {
-        this.localizedResource.field(OBlocksDatabase.RESOURCE_UPDATED_AT, date);
+        this.localizedResource.field(OBlocksDatabase.RESOURCE_UPDATED_AT, date.getTime());
     }
 
     @Override
     public Calendar getUpdatedAt()
     {
-        return this.localizedResource.field(OBlocksDatabase.RESOURCE_UPDATED_AT);
+        Calendar retVal = null;
+        Date date = this.localizedResource.field(OBlocksDatabase.RESOURCE_UPDATED_AT);
+        if (date != null) {
+            retVal = Calendar.getInstance();
+            retVal.setTime(date);
+        }
+        return retVal;
     }
 
     @Override

@@ -2,7 +2,7 @@
 <meta property="description" content="A Carousel for images" >
 
 <template>
-    <div id="carousel-123" class="carousel slide" data-ride="carousel">
+    <div id="carousel-123" class="carousel slide" data-ride="carousel" >
         <!-- Indicators -->
         <ol class="carousel-indicators">
             <li data-target="#carousel-123" data-slide-to="0" class="active"></li>
@@ -10,12 +10,23 @@
 
         <!-- Wrapper for slides -->
         <div class="carousel-inner" role="listbox">
-            <div class="item active">
-                <img src="http://i300.photobucket.com/albums/nn30/rumblebee_bucket/van%20alles%20wat/geile%20wijven/dikke_tieten_large_1.jpg" alt="dikke tieten">
-                <div class="carousel-caption">
-                    An image
+            #if ($PROPERTY['image'].size() > 0)
+
+                #foreach($image in $PROPERTY['image'])
+                    <div class="item active">
+                        $image
+                        $image-caption
+                    </div>
+                #end
+
+            #else
+                <div class="item active">
+                    <img property="image" width="100%" src="http://cdn.banquenationale.ca/cdnbnc/2013/06/ruisseau.jpg" >
+                    <div property="image-caption" class="carousel-caption">
+                        An image
+                    </div>
                 </div>
-            </div>
+            #end
         </div>
 
         <!-- Controls -->

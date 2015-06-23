@@ -25,22 +25,32 @@ public abstract class AbstractResource extends AbstractNode implements Resource
     @Override
     public URI getBlockId()
     {
-        return UriBuilder.fromUri(getFieldDirect(ParserConstants.JSONLD_ID).asString()).build();
+        Node value = getFieldDirect(ParserConstants.JSONLD_ID);
+        URI retVal = null;
+        if (value != null && !value.isNull()) {
+            retVal = UriBuilder.fromUri(value.asString()).build();
+        }
+        return retVal;
     }
     @Override
-    public Node getRdfType()
+    public Set<URI> getRdfType()
     {
-        return getDatabase().createNode(getFieldDirect(OBlocksDatabase.RESOURCE_TYPE_FIELD), Locale.ROOT);
+        Set<URI> retVal = new HashSet<>();
+        Node list = getFieldDirect(OBlocksDatabase.RESOURCE_TYPE_FIELD);
+        for (Node node: list) {
+            retVal.add(UriBuilder.fromUri(node.asString()).build());
+        }
+        return retVal;
     }
 
     @Override
-    public void setRdfType(Node node)
+    public void setRdfType(Set<URI> uris)
     {
-        List list = new ArrayList();
-        for (Node n: node) {
-            list.add(n);
+        Set<String> list = new HashSet();
+        for (URI uri: uris) {
+            list.add(uri.toString());
         }
-        this.setFieldDirect(OBlocksDatabase.RESOURCE_TYPE_FIELD, node.getValue(), node.getLanguage());
+        this.setFieldDirect(OBlocksDatabase.RESOURCE_TYPE_FIELD, list, Locale.ROOT);
     }
 
     @Override
@@ -92,6 +102,8 @@ public abstract class AbstractResource extends AbstractNode implements Resource
         return getFields().size() > 0;
     }
 
+    @Override
+    public abstract Object getValue();
 
     public abstract void setFieldDirect(String key, Object value, Locale locale);
 
@@ -201,6 +213,7 @@ public abstract class AbstractResource extends AbstractNode implements Resource
     {
         return null;
     }
+
 
 
 }

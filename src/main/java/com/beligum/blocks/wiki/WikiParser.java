@@ -1,9 +1,11 @@
 package com.beligum.blocks.wiki;
 
 import com.beligum.base.server.R;
+import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
-import com.beligum.blocks.database.OBlocksDatabase;
+import com.beligum.blocks.database.DummyBlocksDatabase;
+import com.beligum.blocks.endpoints.PageEndpoint;
 import com.beligum.blocks.resources.interfaces.Node;
 import com.beligum.blocks.resources.interfaces.Resource;
 import com.beligum.blocks.resources.jackson.ResourceJsonLDSerializer;
@@ -24,15 +26,13 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDateTime;
 
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.io.*;
 import java.net.URI;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Locale;
+import java.util.*;
 
 /**
  * Created by wouter on 2/04/15.
@@ -155,7 +155,7 @@ public abstract class WikiParser
     {
 
         int count = 0;
-        ODatabaseDocumentTx graph = OBlocksDatabase.instance().getDatabase();
+//        ODatabaseDocumentTx graph = OBlocksDatabase.instance().getDatabase();
         for (String key : this.items.keySet()) {
             HashMap<String, HashMap<String, String>> item = this.items.get(key);
             // create a new id taken from a field of the item
@@ -177,13 +177,16 @@ public abstract class WikiParser
 
             // fix some fields
             changeEntity(resource);
-            OBlocksDatabase.instance().saveResource(resource);
-            createWebPages(resource);
+
+            //OBlocksDatabase.instance().saveResource(resource);
+            for (Locale language : LANGUAGES) {
+                createWebPages(resource, language);
+            }
             //Save to DB
             //                    saveEntity(resource);
 
-            graph.commit();
-            toLucene();
+//            graph.commit();
+//            toLucene();
 
             count++;
             if (count % 100 == 0) {
@@ -197,15 +200,16 @@ public abstract class WikiParser
                 //                        em.getEntityManager().clear();
                 //                        em.getEntityManager().getTransaction().begin();
                 Logger.info("saving entity: " + count);
-                //                        break;
+                break;
 
             }
+            break;
         }
 
 
         Logger.debug("finish!");
 
-        BulkResponse bulkResponse = this.bulkRequest.execute().actionGet();
+//        BulkResponse bulkResponse = this.bulkRequest.execute().actionGet();
 
 
     }
@@ -244,14 +248,14 @@ public abstract class WikiParser
                 if (value.isString()) {
                     String[] splitValue = value.asString().split("\\|");
                     for (String v : splitValue) {
-                        entity.add(name, OBlocksDatabase.instance().createNode(v.trim(), BlocksConfig.instance().getDefaultLanguage()));
+                        entity.add(name, DummyBlocksDatabase.instance().createNode(v.trim(), BlocksConfig.instance().getDefaultLanguage()));
                     }
                 }
             }
         } else if (property != null && property.isString()) {
             String[] splitValue = property.asString().split("\\|");
             for (String v : splitValue) {
-                entity.add(name, OBlocksDatabase.instance().createNode(v.trim(), property.getLanguage()));
+                entity.add(name, DummyBlocksDatabase.instance().createNode(v.trim(), property.getLanguage()));
             }
         }
 
@@ -264,12 +268,12 @@ public abstract class WikiParser
         if (property != null && property.isIterable()) {
             for (Node node: property) {
                 if (node.isString()) {
-                    entity.add(name, OBlocksDatabase.instance().createNode(prefix + node.asString().trim(), property.getLanguage()));
+                    entity.add(name, DummyBlocksDatabase.instance().createNode(prefix + node.asString().trim(), property.getLanguage()));
 
                 }
             }
         } else if (property.isString()) {
-            entity.add(name, OBlocksDatabase.instance().createNode(prefix + property.asString().trim(), property.getLanguage()));
+            entity.add(name, DummyBlocksDatabase.instance().createNode(prefix + property.asString().trim(), property.getLanguage()));
         }
 
     }
@@ -343,41 +347,19 @@ public abstract class WikiParser
             } else if (newFieldName.equals("createdAt")) {
                 try {
                     Long millis = Long.parseLong(value);
-                    DateTime c = new LocalDateTime(millis*1000).toDateTime();
-                    entity.setCreatedAt(c.toDate());
+                    Date date = new Date(millis*1000);
+                    Calendar cal = Calendar.getInstance();
+                    cal.setTime(date);
+                    entity.setCreatedAt(cal);
                 } catch(Exception e) {
                     Logger.debug("Could not parse time", e);
                 }
             } else {
-                entity.add(RdfTools.makeLocalAbsolute(newFieldName), OBlocksDatabase.instance().createNode(value, language));
+                entity.add(RdfTools.makeLocalAbsolute(newFieldName), DummyBlocksDatabase.instance().createNode(value, language));
             }
         }
     }
 
-    public WebPage createWebPages(Resource resource) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<main-content><div property=\"body-html\">").append("<").append(getTemplatename()).append(" property=\"waterput\" resource='").append(resource.getBlockId()).append("' ></").append(getTemplatename()).append(">").append("</div></main-content>");
-        String html = sb.toString();
-        String source = R.templateEngine().getNewStringTemplate(html).render();
-
-        WebPage page = OBlocksDatabase.instance().createWebPage(BlocksConfig.instance().getDefaultLanguage());
-        URI url = UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path("/nl/resource/waterput/" + resource.get("http://www.mot.be/ontology/name")).build();
-        WebPageParser parser = null;
-
-        try {
-            parser = new WebPageParser(page, url, source, OBlocksDatabase.instance());
-        } catch (Exception e) {
-            Logger.error("Problem creating Web page", e);
-        }
-
-        page.setParsedHtml(parser.getParsedHtml());
-
-        Route route = new Route(url, OBlocksDatabase.instance());
-        if (!route.exists()) route.create();
-
-        route.getNode().setPageOk(page.getBlockId());
-
-        return page;
-    }
+    public abstract void createWebPages(Resource resource, Locale locale);
 
 }

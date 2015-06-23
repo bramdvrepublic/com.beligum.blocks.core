@@ -4,6 +4,7 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.endpoints.PageEndpoint;
+import com.beligum.blocks.pages.ifaces.MasterWebPage;
 import com.beligum.blocks.pages.ifaces.WebPage;
 import com.beligum.blocks.routing.ifaces.WebNode;
 import com.beligum.blocks.security.Permissions;
@@ -134,7 +135,14 @@ public class HtmlRouter extends AbstractRouter
     public Response showPage() {
         StringBuilder rb = new StringBuilder();
         WebNode node = this.route.getNode();
-        WebPage page = this.route.getBlocksDatabase().getWebPage(node.getPageUrl(), this.route.getLocale());
+        MasterWebPage master = this.route.getBlocksDatabase().getMasterWebPage(node.getPageUrl());
+        WebPage page = master.getPageForLocale(this.route.getLocale());
+        if (page == null) {
+            // this language does not exist so show default language for this master page
+            Locale locale = master.getDefaultLanguage();
+            page = master.getPageForLocale(locale);
+
+        }
         rb.append("<main-content>").append(page.getParsedHtml()).append("</main-content>");
         return Response.ok(R.templateEngine().getNewStringTemplate(rb.toString())).build();
     }

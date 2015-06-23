@@ -11,7 +11,7 @@ base.plugin("blocks.core.Editor", [function() {
     this.scribe = null;
     this.toolbar = null;
 
-    this.toolbarElement = $("<div/>").load("/debug/toolbar");
+    this.toolbarElement = $("<div/>").load("/templates/editor/toolbar");
 
     require({
         paths: {
@@ -26,10 +26,10 @@ base.plugin("blocks.core.Editor", [function() {
 
         });
 
-    this.getEditor = function(element) {
+    this.getEditor = function(element, inline) {
         var editor = editors[element];
         if (editor == null) {
-            editor = new Scribe.scribe(element.first()[0]);
+            editor = new Scribe.scribe(element.first()[0], {allowBlockElements: inline});
             editors[element] = editor;
             editor.use(Scribe.toolbar(Editor.toolbarElement[0]));
         }

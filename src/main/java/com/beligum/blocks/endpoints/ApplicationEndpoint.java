@@ -65,7 +65,7 @@ public class ApplicationEndpoint
             Router router = new HtmlRouter(route);
             retVal = router.response();
             // Todo Remove when this sits in db
-            OBlocksDatabase.instance().getGraph().commit();
+//            OBlocksDatabase.instance().getGraph().commit();
         } else {
             URI url = UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path(BlocksConfig.instance().getDefaultLanguage().getLanguage()).path(route.getLanguagedPath().toString()).build();
             retVal = Response.seeOther(url).build();

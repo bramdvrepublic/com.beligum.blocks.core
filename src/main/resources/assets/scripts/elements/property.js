@@ -28,7 +28,7 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Cons
             this.isField = !(this instanceof blocks.elements.Block);
             this.isTemplate = !this.isField;
 
-            this.editFunction = Edit.makeEditable(this);
+            this.editFunction = Edit.makeEditable(this.element);
             this.canEdit = this.editFunction != null;
 
             this.overlay = $("<div />").css("z-index", base.utils.maxIndex);
@@ -141,10 +141,10 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Cons
                     var b = new blocks.elements.Container($(child.children(".container")[0]), this, index);
                     this.children.push(b);
                     index++;
-                } else if (child.hasAttribute("property")) {
-                    var b = new blocks.elements.Property(child, this, index);
-                    this.children.push(b);
-                    index++;
+                //} else if (child.hasAttribute("property")) {
+                //    var b = new blocks.elements.Property(child, this, index);
+                //    this.children.push(b);
+                //    index++;
                 } else if (child[0].tagName.indexOf("-") > 0) {
                     var b = new blocks.elements.Block(child, this, index, false);
                     this.children.push(b);

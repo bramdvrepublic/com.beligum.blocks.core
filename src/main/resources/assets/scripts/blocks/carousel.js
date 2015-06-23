@@ -4,10 +4,10 @@
 base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edit", "blocks.core.Sidebar", "blocks.core.Plugin-Utils",  function (Constants, Edit, Sidebar, Plugin)
 {
 
-    this.focus = function(property) {
-        var element = property.element.find(".carousel");
-        var contentID = Sidebar.createWindow(Constants.CONTENT, property, "Carousel");
-        var styleID = Sidebar.createWindow(Constants.STYLE, property, "Carousel");
+    this.focus = function(propertyElement, blockEvent) {
+        var element = blockEvent.block.current.element.find(".carousel");
+        var contentID = Sidebar.createWindow(Constants.CONTENT, blockEvent.block.current.element, "Carousel");
+        var styleID = Sidebar.createWindow(Constants.STYLE, blockEvent.block.current.element, "Carousel");
 
         var items = element.find(".item");
         var listGroup = $('<div class="list-group" />')
@@ -21,9 +21,9 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
         Sidebar.addUIForProperty(contentID, element, addImageButton(listGroup, element));
         Sidebar.addUIForProperty(contentID, element, listGroup);
 
-        Sidebar.addValueAttribute(styleID, element, "Slide interval in ms:", "data-interval", false);
-        Sidebar.addUniqueAttributeValue(styleID, element, "Pause on hoover:", "data-interval", [{name: "Yes", value: "true"}, {name: "No", value: "false"}]);
-        Sidebar.addUniqueAttributeValue(styleID, element, "Auto cycle:", "data-interval", [{name: "Yes", value: "true"}, {name: "No", value: "false"}]);
+        Sidebar.addValueAttribute(styleID, element, "Slide interval in ms:", "data-interval", false, true);
+        Sidebar.addUniqueAttributeValue(styleID, element, "Pause on hoover:", "data-pause", [{name: "Yes", value: "true"}, {name: "No", value: "false"}]);
+        Sidebar.addUniqueAttributeValue(styleID, element, "Auto cycle:", "data-wrap", [{name: "Yes", value: "true"}, {name: "No", value: "false"}]);
 
     };
 
@@ -99,8 +99,8 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
         var button = $('<button class="btn btn-primary">Add image</button>');
 
         button.click(function() {
-            var image = $('<img src="http://content.erooups.com/img3/20140401/6/four_sexy_and_naked_girls_-_abby_maria_lola_tess_1.jpg" >');
-            var caption = $('<div class="carousel-caption" />');
+            var image = $('<img property="image" src="http://cdn.banquenationale.ca/cdnbnc/2013/06/ruisseau.jpg" >');
+            var caption = $('<div property="image-caption" class="carousel-caption" />');
             var item = $('<div class="item" />');
             item.append(image).append(caption);
             items.append(item);

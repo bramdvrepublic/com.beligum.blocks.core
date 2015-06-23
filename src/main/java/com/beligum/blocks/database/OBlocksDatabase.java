@@ -4,28 +4,33 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.database.interfaces.BlocksDatabase;
+import com.beligum.blocks.pages.OMasterWebPage;
+import com.beligum.blocks.pages.OVersionedWebPage;
 import com.beligum.blocks.pages.OWebPage;
+import com.beligum.blocks.pages.ifaces.MasterWebPage;
 import com.beligum.blocks.pages.ifaces.WebPage;
 import com.beligum.blocks.resources.OrientNode;
 import com.beligum.blocks.resources.OrientResource;
+import com.beligum.blocks.resources.interfaces.DocumentInfo;
 import com.beligum.blocks.resources.interfaces.Node;
 import com.beligum.blocks.resources.interfaces.Resource;
 import com.beligum.blocks.routing.OWebNode;
 import com.beligum.blocks.routing.OWebPath;
 import com.beligum.blocks.routing.ifaces.WebNode;
 import com.beligum.blocks.routing.ifaces.WebPath;
-import com.beligum.blocks.utils.RdfTools;
 import com.orientechnologies.orient.core.db.ODatabaseRecordThreadLocal;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.sql.query.OSQLSynchQuery;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Parameter;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.impls.orient.*;
 
 import java.net.URI;
+import java.util.Calendar;
 import java.util.Iterator;
 import java.util.Locale;
 
@@ -55,14 +60,19 @@ public class OBlocksDatabase implements BlocksDatabase
     // the classname for the path in the Orient DB
     public final static String PATH_CLASS_NAME = "WebPath";
 
+    public static String MASTER_WEB_PAGE_CLASS = "MasterWebPage";
     public static String WEB_PAGE_CLASS = "WebPage";
+    public static String WEB_PAGE_LOCALIZED_CLASS = "LocalizedWebPage";
+    public static String WEB_PAGE_VERSIONED_CLASS = "versionedWebPage";
+    public static String WEB_PAGE_PREVIOUS = "previouspage";
+
     public static String WEB_PAGE_HTML = "html";
+    public static String WEB_PAGE_TEMPLATE = "template";
     public static String WEB_PAGE_TEXT = "text";
     public static String WEB_PAGE_RESOURCES = "resources";
     public static String WEB_PAGE_LINKS = "links";
     public static String WEB_PAGE_PROPERTIES = "properties";
     public static String WEB_PAGE_TEMPLATES = "templates";
-
 
     public static final String RESOURCE_CLASS = "DefaultResource";
     public static final String LOCALIZED_RESOURCE_CLASS = "LocalizedResource";
@@ -92,27 +102,64 @@ public class OBlocksDatabase implements BlocksDatabase
         return OBlocksDatabase.instance;
     }
 
-    @Override
-    public WebPage createWebPage(Locale locale)
-    {
-        URI uri = RdfTools.createLocalResourceId(WEB_PAGE_CLASS);
-        return createWebPage(uri, locale);
-    }
+//    @Override
+//    public WebPage createWebPage(Locale locale)
+//    {
+//        URI uri = RdfTools.createLocalResourceId(WEB_PAGE_CLASS);
+//        return createWebPage(uri, locale);
+//    }
 
     @Override
-    public WebPage createWebPage(URI id, Locale locale)
+    public MasterWebPage createMasterWebPage(URI id)
     {
         OrientGraph graph = getGraph();
-        Vertex v = graph.addVertex("class:" + WEB_PAGE_CLASS);
-        v.setProperty(ParserConstants.JSONLD_ID, id.toString());
-        v.setProperty(ParserConstants.JSONLD_LANGUAGE, locale.getLanguage());
-        WebPage webPage = new OWebPage(v, locale);
+
+        Vertex master = graph.addVertex("class:" + MASTER_WEB_PAGE_CLASS);
+        master.setProperty(ParserConstants.JSONLD_ID, id.toString());
+        // The current default langauage. This page (url) will always show a page for this language
+        master.setProperty(ParserConstants.JSONLD_LANGUAGE, BlocksConfig.instance().getDefaultLanguage().getLanguage());
+        MasterWebPage webPage = new OMasterWebPage(master);
+        this.touch(webPage);
         return webPage;
     }
 
+    @Override
+    public WebPage createLocalizedPage(MasterWebPage masterWebPage, URI id, Locale locale)
+    {
+        OrientGraph graph = getGraph();
+
+        WebPage retVal;
+        retVal = masterWebPage.getPageForLocale(locale);
+        if (retVal == null) {
+            Vertex v = graph.addVertex("class:" + WEB_PAGE_CLASS);
+            v.setProperty(ParserConstants.JSONLD_ID, id.toString());
+            v.setProperty(ParserConstants.JSONLD_LANGUAGE, locale.getLanguage());
+
+            Edge e = graph.addEdge(null, ((OMasterWebPage)masterWebPage).getVertex(), v, WEB_PAGE_LOCALIZED_CLASS);
+            e.setProperty(ParserConstants.JSONLD_LANGUAGE, locale.getLanguage());
+            retVal = new OWebPage(v, locale);
+        }
+
+
+        this.touch(retVal);
+        return retVal;
+    }
 
     @Override
-    public WebPage getWebPage(URI id, Locale locale)
+    public MasterWebPage getMasterWebPage(URI id)
+    {
+        MasterWebPage retVal = null;
+        OrientGraph graph = getGraph();
+        Iterable<Vertex> vertices = graph.command(new OSQLSynchQuery("select from " + MASTER_WEB_PAGE_CLASS + " WHERE @id = '" + id + "' fetchplan *:0")).execute();
+        for (Vertex v: vertices) {
+            retVal = new OMasterWebPage(v);
+            break;
+        }
+        return retVal;
+    }
+
+    @Override
+    public WebPage getLocalizedWebPage(URI id, Locale locale)
     {
         WebPage retVal = null;
         OrientGraph graph = getGraph();
@@ -136,7 +183,32 @@ public class OBlocksDatabase implements BlocksDatabase
     }
 
     @Override
-    public WebPage save(WebPage webPage) {
+    public WebPage saveWebPage(WebPage webPage, boolean doVersion) {
+        OrientGraph graph = getGraph();
+
+        if (doVersion) {
+            Vertex versionedVertex = graph.addVertex("class:" + WEB_PAGE_CLASS);
+            OVersionedWebPage versioned = new OVersionedWebPage(versionedVertex, webPage);
+
+            Iterable<Edge> edges = ((OWebPage) webPage).getVertex().query().direction(Direction.OUT).labels(WEB_PAGE_PREVIOUS).edges();
+            Edge previous = null;
+            for (Edge edge : edges) {
+                previous = edge;
+                break;
+            }
+            if (previous != null) {
+                Vertex previousVersionedVertex = previous.getVertex(Direction.IN);
+                previous.remove();
+                graph.addEdge(null, ((OWebPage) webPage).getVertex(), versionedVertex, WEB_PAGE_PREVIOUS);
+                graph.addEdge(null, versionedVertex, previousVersionedVertex, WEB_PAGE_PREVIOUS);
+            }
+            else {
+                graph.addEdge(null, ((OWebPage) webPage).getVertex(), versionedVertex, WEB_PAGE_PREVIOUS);
+            }
+        }
+
+        webPage = (WebPage)this.touch(webPage);
+//        graph.commit();
         return webPage;
     }
 
@@ -149,20 +221,16 @@ public class OBlocksDatabase implements BlocksDatabase
         Vertex vertex = null;
         OrientGraph graph = getGraph();
 
-        Iterable<Vertex> vertices = graph.command(new OSQLSynchQuery("select from " + ROOT_WEB_NODE_CLASS + " WHERE " + ROOT_WEB_NODE_HOST_NAME + " = '" + host + "' fetchplan *:0")).execute();
+        retVal = getRootWebNode(host);
 
-        for (Vertex v: vertices) {
-            vertex = v;
-            break;
-        }
-        if (vertex == null) {
+        if (retVal == null) {
             vertex = graph.addVertex("class:" + ROOT_WEB_NODE_CLASS);
             vertex.setProperty(ROOT_WEB_NODE_HOST_NAME, host);
             retVal = new OWebNode(vertex);
-        } else {
-            retVal = new OWebNode(vertex);
+            retVal.setPageNotFound();
+            this.touch(retVal);
         }
-        retVal.setPageNotFound();
+
         graph.commit();
         graph.begin();
         return retVal;
@@ -195,7 +263,7 @@ public class OBlocksDatabase implements BlocksDatabase
  * */
 
     @Override
-    public WebNode createNode(WebNode from, String path, Locale locale) {
+    public WebNode createWebNode(WebNode from, String path, Locale locale) {
         OrientGraph graph = getGraph();
         Vertex v = graph.addVertex("class:" + WEB_NODE_CLASS);
         OWebNode retVal = new OWebNode(v);
@@ -203,10 +271,29 @@ public class OBlocksDatabase implements BlocksDatabase
         Edge e = graph.addEdge(null, ((OWebNode)from).getVertex(), v, PATH_CLASS_NAME);
         WebPath webPath = new OWebPath(e);
         webPath.setName(path, locale);
+        this.touch(webPath);
+        this.touch(retVal);
         graph.commit();
         graph.begin();
         return retVal;
     }
+
+//    @Override
+//    public WebNode createPreviousFromWebNode(WebNode from) {
+//        OrientGraph graph = getGraph();
+//        Vertex v = graph.addVertex("class:" + WEB_NODE_CLASS);
+//        OWebNode retVal = new OWebNode(v);
+////
+////        retVal.setPageNotFound();
+////        Edge e = graph.addEdge(null, ((OWebNode)from).getVertex(), v, PATH_CLASS_NAME);
+////        WebPath webPath = new OWebPath(e);
+////        webPath.setName(path, locale);
+////        this.touch(webPath);
+////        this.touch(retVal);
+////        graph.commit();
+////        graph.begin();
+//        return retVal;
+//    }
 
 
     @Override
@@ -224,7 +311,9 @@ public class OBlocksDatabase implements BlocksDatabase
         if (language == null || language.equals(Locale.ROOT)) language = BlocksConfig.instance().getDefaultLanguage();
         ODocument localized = getOrCreateLocalizedVertex(defaultVertex, language);
         retVal = new OrientResource(defaultVertex, localized);
-
+        this.getDatabase().save(defaultVertex);
+        this.getDatabase().save(localized);
+        this.touch(retVal);
         return retVal;
     }
 
@@ -242,6 +331,7 @@ public class OBlocksDatabase implements BlocksDatabase
 
     @Override
     public Resource saveResource(Resource resource) {
+        this.touch(resource);
         getDatabase().save((ODocument)resource.getValue());
         return resource;
     }
@@ -396,6 +486,12 @@ public class OBlocksDatabase implements BlocksDatabase
             }
         }
 
+        if (graph.getEdgeType(WEB_PAGE_LOCALIZED_CLASS) == null) {
+            OrientEdgeType pathClass = graph.createEdgeType(WEB_PAGE_LOCALIZED_CLASS);
+            pathClass.createProperty(ParserConstants.JSONLD_LANGUAGE, OType.STRING);
+
+        }
+
     }
 
     /*
@@ -414,6 +510,20 @@ public class OBlocksDatabase implements BlocksDatabase
             retVal = locale.getLanguage() + "_" + PATH_NAME_FIELD;
         }
         return retVal;
+    }
+
+    private DocumentInfo touch(DocumentInfo resource) {
+        if (resource.getCreatedAt() == null) {
+            resource.setCreatedAt(Calendar.getInstance());
+        }
+
+        if (resource.getCreatedBy() == null) {
+            resource.setCreatedBy(BlocksConfig.instance().getCurrentUserName());
+        }
+
+        resource.setUpdatedAt(Calendar.getInstance());
+        resource.setUpdatedBy(BlocksConfig.instance().getCurrentUserName());
+        return resource;
     }
 
 }

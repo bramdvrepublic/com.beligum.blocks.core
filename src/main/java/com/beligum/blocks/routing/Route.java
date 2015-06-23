@@ -189,7 +189,7 @@ public class Route
                 WebNode prev = retVal;
                 retVal = getNodeFromNodeWithPath(retVal, path.getName(i), locale);
                 if (retVal == null) {
-                    retVal = database.createNode(prev, path.getName(i).toString(), locale);
+                    retVal = database.createWebNode(prev, path.getName(i).toString(), locale);
                 }
             } else {
                 break;

@@ -19,6 +19,7 @@ import java.util.*;
 public class OWebPage extends AbstractResource implements WebPage
 {
 
+    private boolean hasChanged = false;
     private Vertex vertex;
     private Locale locale;
 
@@ -110,15 +111,26 @@ public class OWebPage extends AbstractResource implements WebPage
     }
 
     @Override
+    public void setPageTemplate(String template)
+    {
+        vertex.setProperty(OBlocksDatabase.WEB_PAGE_TEMPLATE, template);
+    }
+    @Override
+    public String getPageTemplate()
+    {
+        return vertex.getProperty(OBlocksDatabase.WEB_PAGE_TEMPLATE);
+    }
+
+    @Override
     public String getText()
     {
-        return (String)vertex.getProperty(OBlocksDatabase.WEB_PAGE_HTML);
+        return (String)vertex.getProperty(OBlocksDatabase.WEB_PAGE_TEXT);
     }
 
     @Override
     public void setText(String html)
     {
-        vertex.setProperty(OBlocksDatabase.WEB_PAGE_HTML, html);
+        vertex.setProperty(OBlocksDatabase.WEB_PAGE_TEXT, html);
     }
 
     @Override
@@ -235,15 +247,39 @@ public class OWebPage extends AbstractResource implements WebPage
         return fields;
     }
 
+    public Vertex getVertex() {
+        return this.vertex;
+    }
+
+    public void setChanged() {
+        this.hasChanged = true;
+    }
+
+    public boolean hasChanged() {
+        return this.hasChanged;
+    }
+
     @Override
-    public void setCreatedAt(Date date)
+    public Object getValue() {
+        return this.vertex;
+    }
+
+    @Override
+    public void setCreatedAt(Calendar date)
     {
-        this.vertex.setProperty(OBlocksDatabase.RESOURCE_CREATED_AT, date);
+        this.vertex.setProperty(OBlocksDatabase.RESOURCE_CREATED_AT, date.getTime());
     }
     @Override
     public Calendar getCreatedAt()
     {
-        return this.vertex.getProperty(OBlocksDatabase.RESOURCE_CREATED_AT);
+        Calendar retVal = null;
+        Date date = this.vertex.getProperty(OBlocksDatabase.RESOURCE_CREATED_AT);
+        if (date != null) {
+            retVal = Calendar.getInstance();
+            retVal.setTime(date);
+        }
+        return retVal;
+
     }
 
     @Override
@@ -259,15 +295,22 @@ public class OWebPage extends AbstractResource implements WebPage
     }
 
     @Override
-    public void setUpdatedAt(Date date)
+    public void setUpdatedAt(Calendar date)
     {
-        this.vertex.setProperty(OBlocksDatabase.RESOURCE_UPDATED_AT, date);
+        this.vertex.setProperty(OBlocksDatabase.RESOURCE_UPDATED_AT, date.getTime());
     }
 
     @Override
     public Calendar getUpdatedAt()
     {
-        return this.vertex.getProperty(OBlocksDatabase.RESOURCE_UPDATED_AT);
+        Calendar retVal = null;
+        Date date = this.vertex.getProperty(OBlocksDatabase.RESOURCE_UPDATED_AT);
+        if (date != null) {
+            retVal = Calendar.getInstance();
+            retVal.setTime(date);
+        }
+        return retVal;
+
     }
 
     @Override

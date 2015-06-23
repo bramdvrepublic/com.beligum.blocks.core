@@ -14,7 +14,7 @@ base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.c
 
             // find everything that is a container or a template or a property
             this.overlay = null;
-            this.editFunction = Edit.makeEditable(this);
+            this.editFunction = Edit.makeEditable(this.element);
         },
 
         generateProperties: function(parent, index) {

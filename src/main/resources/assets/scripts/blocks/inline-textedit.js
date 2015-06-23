@@ -1,4 +1,4 @@
-base.plugin("blocks.core.edit.Text", ["constants.blocks.common", "blocks.core.Broadcaster", "blocks.core.Edit", "blocks.core.Editor", "blocks.core.Sidebar",  function (Constants, Broadcaster, Edit, Editor, Sidebar)
+base.plugin("blocks.core.edit.InlineText", ["constants.blocks.common", "blocks.core.Broadcaster", "blocks.core.Edit", "blocks.core.Editor", "blocks.core.Sidebar",  function (Constants, Broadcaster, Edit, Editor, Sidebar)
 {
 
     var getRangeFromPosition = function (x, y)
@@ -20,8 +20,8 @@ base.plugin("blocks.core.edit.Text", ["constants.blocks.common", "blocks.core.Br
     };
 
     /*
-    * Puts the cursor for given coordinates
-    * */
+     * Puts the cursor for given coordinates
+     * */
     var setCursor = function (x, y)
     {
         var caretPosition = getRangeFromPosition(x, y);
@@ -36,7 +36,7 @@ base.plugin("blocks.core.edit.Text", ["constants.blocks.common", "blocks.core.Br
      * Start full text editing on a block (start Scribe)
      *
      * */
-     this.focus = function (element, blockEvent)
+    this.focus = function (element, blockEvent)
     {
         // Preparation
         element.attr("contenteditable", true);
@@ -55,7 +55,6 @@ base.plugin("blocks.core.edit.Text", ["constants.blocks.common", "blocks.core.Br
         element.removeClass(Constants.PROPERTY_EDIT_CLASS);
     };
 
-
-    Edit.registerByTag("DIV", this);
+    Edit.registerByTag("SPAN", this);
 
 }]);

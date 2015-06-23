@@ -236,8 +236,10 @@ public abstract class AbstractNode implements Node
             retVal = new NodeIterator(((Iterable)wrappedObject).iterator(), language);
         } else {
             List list = new ArrayList();
-            list.add(wrappedObject);
-            retVal = new NodeIterator(((Iterable)wrappedObject).iterator(), language);
+            if (wrappedObject != null) {
+                list.add(wrappedObject);
+            }
+            retVal = new NodeIterator(list.iterator(), language);
         }
         return retVal;
     }

@@ -1,6 +1,16 @@
 // Overlay when editing and for dialogs
 @import "/constants/blocks/common?type=less";
 
+
+#@{SIDEBAR_FILES_ID} {
+  position: fixed;
+  left: 0px;
+  top: 0px;
+  bottom: 0px;
+  right: 0px;
+}
+
+
 .@{BLOCK_OVERLAY_CLASS} {
   top: 0px;
   left: 0px;
@@ -8,6 +18,7 @@
   bottom: 0px;
   position: absolute;
   border: 1px dotted rgba(100, 100, 100, 0.8);
+  pointer-events: none;
 
   &.left {
     border-left: none;
@@ -207,6 +218,12 @@ iframe.edit {
   }
 }
 
+.@{CLOSE_FINDER_BUTTON} {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+}
+
 
 blocks-editor-toolbar {
   ul > li {
@@ -214,6 +231,7 @@ blocks-editor-toolbar {
   }
 
 }
+
 
 
 

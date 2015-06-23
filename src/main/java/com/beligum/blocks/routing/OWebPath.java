@@ -9,6 +9,8 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.impls.orient.OrientEdge;
 
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
 
 /**
@@ -88,6 +90,68 @@ public class OWebPath extends OrientEdge implements WebPath
             retVal = new OWebNode(v);
         }
         return retVal;
+    }
+
+
+    @Override
+    public void setCreatedAt(Calendar date)
+    {
+        this.edge.setProperty(OBlocksDatabase.RESOURCE_CREATED_AT, date.getTime());
+    }
+    @Override
+    public Calendar getCreatedAt()
+    {
+        Calendar retVal = null;
+        Date date = this.edge.getProperty(OBlocksDatabase.RESOURCE_CREATED_AT);
+        if (date != null) {
+            retVal = Calendar.getInstance();
+            retVal.setTime(date);
+        }
+        return retVal;
+
+    }
+
+    @Override
+    public void setCreatedBy(String user)
+    {
+        this.edge.setProperty(OBlocksDatabase.RESOURCE_CREATED_BY, user);
+    }
+
+    @Override
+    public String getCreatedBy()
+    {
+        return this.edge.getProperty(OBlocksDatabase.RESOURCE_CREATED_BY);
+    }
+
+    @Override
+    public void setUpdatedAt(Calendar date)
+    {
+        this.edge.setProperty(OBlocksDatabase.RESOURCE_UPDATED_AT, date.getTime());
+    }
+
+    @Override
+    public Calendar getUpdatedAt()
+    {
+        Calendar retVal = null;
+        Date date = this.edge.getProperty(OBlocksDatabase.RESOURCE_UPDATED_AT);
+        if (date != null) {
+            retVal = Calendar.getInstance();
+            retVal.setTime(date);
+        }
+        return retVal;
+
+    }
+
+    @Override
+    public void setUpdatedBy(String user)
+    {
+        this.edge.setProperty(OBlocksDatabase.RESOURCE_UPDATED_BY, user);
+    }
+
+    @Override
+    public String getUpdatedBy()
+    {
+        return this.edge.getProperty(OBlocksDatabase.RESOURCE_UPDATED_BY);
     }
 
 

@@ -17,9 +17,11 @@ public interface WebPage extends Resource
     public String getParsedHtml();
     public void setParsedHtml(String parsedHtml);
 
+    public void setPageTemplate(String template);
+    public String getPageTemplate();
+
     public String getText();
     public void setText(String text);
-
 
     public Set<String> getTemplates();
     public void setTemplates(Set<String> templates);
@@ -34,5 +36,8 @@ public interface WebPage extends Resource
     public void addLink(HashMap<String, String> link);
 
     public Locale getLanguage();
+
+    public void setChanged();
+    public boolean hasChanged();
 
 }

@@ -1,4 +1,4 @@
-base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notification", "constants.blocks.common", function (Broadcaster, Notification, Constants)
+base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notification", "constants.blocks.common", "blocks.finder", function (Broadcaster, Notification, Constants, Finder)
 {
     var MainMenu = this;
 
@@ -8,25 +8,12 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
     this.menuStartButton = $('<div class="'+ Constants.BLOCKS_START_BUTTON +'"><i class="glyphicon glyphicon-cog"></i></div>');
 
     this.menuBar = $("<div class='" + Constants.PAGE_MENU_CLASS + "'></div>");
-    this.menuBar.load("/debug/menu");
+    this.menuBar.load("/templates/menu");
 
     this.sideBar = $("<div class='" + Constants.PAGE_SIDEBAR_CLASS + "'></div>");
-    this.sideBar.load("/debug/sidebar");
+    this.sideBar.load("/templates/sidebar");
 
-    var btnList = this.menuBar;
-    var saveBtn = $('<a class="btn btn-default" href="#">Save</a>');
-    btnList.append(saveBtn);
-    var deleteBtn = $('<a class="btn btn-default" href="#">Delete</a>');
-    btnList.append(deleteBtn);
-    var changeUrlBtn = $('<a class="btn btn-default" href="#">Change url</a>');
-    btnList.append(changeUrlBtn);
-
-
-
-    //TODO: activate this again (commented while styling)
-    //menuBar.append(dragBlocksContainer.append(dragBlockText).append(dragBlockCustom));
-
-    /*
+     /*
      * Hide show bar on click of menu button
      * */
     var oldBodyMargin = parseInt($("body").css("padding-top"));
@@ -41,6 +28,11 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
             $("body").append(MainMenu.menuBar);
             $("body").append($("<div class='" + Constants.PAGE_CONTENT_CLASS + "' />").append(body));
             $("body").append(MainMenu.sideBar);
+            if (MainMenu.sideBar.children().length > 0) {
+                Finder.init();
+            } else {
+                //TODO: Sidebar is not yet loaded so we can not initialize finder
+            }
 
             Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS);
 
@@ -73,9 +65,8 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
     /*
      * Save button: saves the page
      * */
-    saveBtn.on("click", function ()
+    $(document).on("click", "."+Constants.SAVE_PAGE_BUTTON, function ()
     {
-        menuBar.removeClass("open");
         var page = $("html")[0].outerHTML;
         var deleted = queryParam("deleted")
         if (!deleted) {
@@ -108,14 +99,15 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
     /*
      * Delete button: deletes the page
      * */
-    deleteBtn.on("click", function ()
+    $(document).on("click", "."+Constants.DELETE_PAGE_BUTTON, function ()
     {
         var onConfirm = function ()
         {
             $.ajax({
-                    type: 'POST',
-                    url: "/entities/delete",
+                    type: 'DELETE',
+                    url: "/blocks/admin/page/delete",
                     data: document.URL,
+                    contentType: 'application/json; charset=UTF-8',
                     success: function (url, textStatus, response)
                     {
                         if (url) {
@@ -166,49 +158,7 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
 
     });
 
-    changeUrlBtn.on("click", function ()
-    {
-        var translateDialog = new BootstrapDialog()
-            .setTitle('Change url')
-            .setMessage($('<div></div>').load('/modals/changeurl?original=' + window.location.href))
-            .setType(BootstrapDialog.TYPE_INFO)
-            .setButtons([
-                {
-                    label: 'Cancel',
-                    action: function (changeUrlDialog)
-                    {
-                        changeUrlDialog.close();
-                    }
-                },
-                {
-                    label: 'Change',
-                    cssClass: 'btn-info',
-                    action: function (changeUrlDialog)
-                    {
-                        changeUrlDialog.close();
-                        $.ajax({
-                            type: 'POST',
-                            url: "/urls?original=" + window.location.href + "&newpath=" + $("#new").val(),
-                            success: function (url, textStatus, response)
-                            {
-                                if (url) {
-                                    window.location = url;
-                                } else {
-                                    location.reload();
-                                }
-                            },
-                            error: function (response, textStatus, errorThrown)
-                            {
-                                var message = response.status == 400 ? response.responseText : "An error occurred while changing the url.";
-                                Notification.dialog("Error", "<div>" + message + "</div>", function ()
-                                {
-                                });
-                            }
-                        })
-                    }
-                }])
-            .open();
-    });
+
 
 
     var create = function ()

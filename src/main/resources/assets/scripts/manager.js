@@ -3,7 +3,7 @@
  *
  * The manager is the central point. here we catch all the events to keep an overview
  */
-base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Highlighter", "blocks.core.Overlay", "blocks.core.Edit", "blocks.core.DomManipulation", "blocks.core.Sidebar", function (Constants, Broadcaster, Mouse, DragDrop, Resizer, Highlighter, Overlay, Edit, DOM, DragCreate, Sidebar)
+base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Highlighter", "blocks.core.Overlay", "blocks.core.Edit", "blocks.core.DomManipulation", "blocks.core.Sidebar", function (Constants, Broadcaster, Mouse, DragDrop, Resizer, Highlighter, Overlay, Edit, DOM, Sidebar)
 {
 
     /*
@@ -53,12 +53,12 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
 
 
         // prevent all clicks to links
-        $(document).on("click.blocks_manager", function (event)
-        {
-            if (event.which == 1) {
-                event.preventDefault();
-            }
-        });
+        //$(document).on("click.blocks_manager", function (event)
+        //{
+        //    if (event.which == 1) {
+        //        event.preventDefault();
+        //    }
+        //});
 
         Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
         Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE, null);
@@ -83,6 +83,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
         Broadcaster.resetHover();
 
         DragDrop.setActive(true);
+        Sidebar.enableEditing();
         //DragCreate.activate();
         Highlighter.showBlockOverlay(Broadcaster.block().current);
         Highlighter.showPropertyOverlay(Broadcaster.property().current);
@@ -96,6 +97,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
         Broadcaster.resetHover();
         //DragCreate.deactivate()
         DragDrop.setActive(false);
+        Sidebar.disableEditing();
         DOM.enableSelection();
 
     });
@@ -172,6 +174,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
         Highlighter.removeBlockOverlay();
         Highlighter.removePropertyOverlay();
         DragDrop.dragStarted(event);
+        Sidebar.disableEditing();
     });
 
     $(document).on(Broadcaster.EVENTS.END_DRAG, function (event)
@@ -180,6 +183,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
 
         DOM.enableContextMenu();
         DragDrop.dragEnded(event);
+        Sidebar.enableEditing();
     });
 
     $(document).on(Broadcaster.EVENTS.ABORT_DRAG, function (event)
@@ -243,7 +247,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
 
     $(document).on(Broadcaster.EVENTS.END_EDIT_FIELD, function (event)
     {
-        Edit.endEdit();
         Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
         Overlay.showOverlays();
         Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);

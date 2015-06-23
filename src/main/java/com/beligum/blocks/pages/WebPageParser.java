@@ -2,8 +2,10 @@ package com.beligum.blocks.pages;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.database.DummyBlocksDatabase;
 import com.beligum.blocks.database.interfaces.BlocksDatabase;
 import com.beligum.blocks.exceptions.RdfException;
+import com.beligum.blocks.resources.interfaces.Node;
 import com.beligum.blocks.resources.interfaces.Resource;
 import com.beligum.blocks.pages.ifaces.WebPage;
 import com.beligum.blocks.routing.Route;
@@ -11,6 +13,7 @@ import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.utils.RdfTools;
 import net.htmlparser.jericho.Element;
+import net.htmlparser.jericho.Renderer;
 import net.htmlparser.jericho.Source;
 import net.htmlparser.jericho.TextExtractor;
 
@@ -33,14 +36,17 @@ import java.util.*;
  */
 public class WebPageParser
 {
-    private WebPage webPage;
+    private Locale locale;
     private Source source;
     private BlocksDatabase database;
     private StringBuilder parsedHtml = new StringBuilder();
+    private String pageTemplate;
     private String text = "";
     private Set<HashMap<String, String>> links = new HashSet<HashMap<String, String>>();
     private Set<String> templates = new HashSet<String>();
     private HashMap<String, Resource> resources = new HashMap<String, Resource>();
+
+
 
 
     // All elements in this html
@@ -54,15 +60,19 @@ public class WebPageParser
     private boolean inBody = false;
     private String vocab;
     private HashMap<String, URI> prefixes = new HashMap<>();
+    private HashMap<URI, HashMap<URI, List<PropertyValue>>> resourceMap = new HashMap<>();
+    // Resource that contains all properties that are attached to the page
+    private Resource pageResource = DummyBlocksDatabase.instance().createResource(null, null, Locale.ROOT);
 
-    public WebPageParser(WebPage webpage, URI uri, String source, BlocksDatabase database) throws RdfException, URISyntaxException
+
+    public WebPageParser(URI uri, Locale locale, String source, BlocksDatabase database) throws RdfException, URISyntaxException
     {
-        this.webPage = webpage;
+        this.locale = locale;
+        if (source == null) source = "";
         this.source = new Source(source);
         this.source.fullSequentialParse();
         this.database = database;
         this.vocab = BlocksConfig.instance().getDefaultRdfSchema().toString();
-
         Element base = this.source.getFirstElement("base");
         this.setBase(base, uri);
 
@@ -73,7 +83,7 @@ public class WebPageParser
 
         Element next = findNextElement();
         while (next != null) {
-            next = parse(next, next.getBegin(), webpage, false);
+            next = parse(next, next.getBegin(), this.pageResource, false);
         }
     }
 
@@ -93,14 +103,16 @@ public class WebPageParser
         return this.templates;
     }
 
-    public WebPage getWebPage() {
-        if (this.webPage.getParsedHtml() != this.getParsedHtml()) {
-            this.webPage.setParsedHtml(this.getParsedHtml());
-            this.webPage.setLinks(this.getLinks());
-            this.webPage.setResources(this.resources.keySet());
-            this.webPage.setTemplates(this.getTemplates());
-        }
-        return this.webPage;
+    public String getPageTemplate() {
+        return this.pageTemplate;
+    }
+
+    public HashMap<String, Resource> getResources() {
+        return this.resources;
+    }
+
+    public HashMap<URI, HashMap<URI, List<PropertyValue>>> getResourceProperties() {
+        return resourceMap;
     }
 
     // --------- PRIVATE METHODS -----------------
@@ -130,7 +142,7 @@ public class WebPageParser
             if (element.getAttributeValue("resource") == null) {
                 // create a new resource
                 URI resourceid = RdfTools.createLocalResourceId(getShortTypeNamefromUri(typeOf));
-                newResource = this.database.createResource(resourceid, typeOf, webPage.getLanguage());
+                newResource = this.database.createResource(resourceid, typeOf, locale);
 
                 // add new resource id to parsed html
                 parsedHtml.append(source.subSequence(textPos, element.getStartTag().getEnd()-1));
@@ -143,42 +155,54 @@ public class WebPageParser
                     Logger.error("Resource found in html but not with a valid uri.");
                     throw new RdfException("Resource found in html but not with a valid uri.");
                 }
-                newResource = this.database.getResource(resourceId, this.webPage.getLanguage());
+                newResource = this.database.getResource(resourceId, locale);
                 if (newResource == null) {
                     // create a new resource
                     Logger.warn("Resource found in html with a resource id, but no resource found in db. Creating a new resource...");
                     URI resourceid = RdfTools.createLocalResourceId(getShortTypeNamefromUri(typeOf));
-                    newResource = this.database.createResource(resourceid, typeOf, webPage.getLanguage());
+                    newResource = this.database.createResource(resourceid, typeOf, locale);
                 }
             }
 
             // Add new resource to resources
-            if (newResource != null) {
+            if (newResource != null && newResource.getBlockId() != null) {
                 this.resources.put(newResource.getBlockId().toString(), newResource);
             }
         }
 
         // Set property value of current resource when property is content-editable
-        if (element.getAttributeValue("property") != null && element.getAttributeValue("contenteditable") != null && element.getAttributeValue("contenteditable").toLowerCase().equals("true")) {
+        if (element.getAttributeValue("property") != null) {
             URI property = getAbsoluteRdfName(element.getAttributeValue("property"));
-
+            Node content;
             if (newResource != null && !(resource instanceof WebPage)) {
-                resource.set(property, newResource);
+                content = newResource;
             } else if (element.getAttributeValue("content") != null) {
-                resource.set(property, this.database.createNode(element.getAttributeValue("content"), this.webPage.getLanguage()));
+                content = this.database.createNode(element.getAttributeValue("content"), locale);
             } else if (element.getAttributeValue("src") != null) {
-                resource.set(property, this.database.createNode(element.getAttributeValue("src"), Locale.ROOT));
+                content = this.database.createNode(element.getAttributeValue("src"), Locale.ROOT);
             } else if (element.getAttributeValue("href") != null) {
-                resource.set(property, this.database.createNode(element.getAttributeValue("href"), Locale.ROOT));
+                content = this.database.createNode(element.getAttributeValue("href"), Locale.ROOT);
             } else {
-                resource.set(property, this.database.createNode(element.getContent().toString(), Locale.ROOT));
+                Renderer textRenderer = new Renderer(element);
+                String text = textRenderer.toString();
+                content = this.database.createNode(text, Locale.ROOT);
             }
+
+            Integer index = null;
+            String value = element.getAttributeValue("data-index");
+            if (value != null) {
+                index = Integer.parseInt(value);
+            }
+
+            readProperty(resource, property, content);
+
         }
+
 
         // If new resource was found, make this the new basic resource
         // so all nested properties are added to this resource
-        if (newResource != null) {
-            resource= newResource;
+        if (newResource == null) {
+            newResource= resource;
         }
 
         if (siteTags.contains(element.getStartTag().getName())) {
@@ -189,7 +213,7 @@ public class WebPageParser
 
             while (next != null && element.encloses(next)) {
                 Element prev = next;
-                next = parse(next, textPos, resource, false);
+                next = parse(next, textPos, newResource, false);
                 textPos = prev.getEnd();
             }
             // write end tag
@@ -200,7 +224,7 @@ public class WebPageParser
         else if (element.getAttributeValue("property") != null || element.getAttributeValue("data-property") != null) {
             while (next != null && element.encloses(next)) {
                 Element prev = next;
-                next = parse(next, textPos, resource, true);
+                next = parse(next, textPos, newResource, true);
                 textPos = prev.getEnd();
             }
 
@@ -232,6 +256,14 @@ public class WebPageParser
             } else if (siteTags.contains(retVal.getStartTag().getName())) {
                 found = true;
                 this.templates.add(retVal.getStartTag().getName());
+            }
+
+            if (retVal.getName().equals("html")) {
+                // full text
+                this.pageTemplate = retVal.getAttributeValue("template");
+                if (this.pageTemplate == null) {
+                    this.pageTemplate = "blocks-page-template";
+                }
             }
 
             if (retVal.getName().equals("body")) {
@@ -305,7 +337,7 @@ public class WebPageParser
     }
 
     /*
-    * Get the pageid for a give url. Returns null if non page exists at this url
+    * Get the pageid for a give url. Returns null if no page exists at this url
     * */
     private URI getPageId(URI link) {
         URI retVal= null;
@@ -354,7 +386,7 @@ public class WebPageParser
                 }
             }
             else {
-               retVal = new URI(this.vocab + name);
+                retVal = new URI(this.vocab + name);
             }
         } else {
             retVal = new URI(name);
@@ -371,8 +403,9 @@ public class WebPageParser
         // First we take a shortname out of the typeof uri to create the resourceid
         // if the typeof uri has a fragment, use that, else use the last part of the path
         // else use unknown
-        String retVal = uri.getFragment().trim();
+        String retVal = uri.getFragment();
         if (retVal != null && retVal.indexOf("/") < retVal.length() - 1) {
+            retVal = retVal.trim();
             if (retVal.indexOf("/") > -1) {
                 retVal = retVal.substring(retVal.indexOf("/"));
             }
@@ -394,6 +427,118 @@ public class WebPageParser
     * */
     private URI cleanUri(URI uri) {
         return UriBuilder.fromUri("").scheme(uri.getScheme()).host(uri.getHost()).path(uri.getPath()).build();
+    }
+
+
+    /*Adds a property to a map that sorts all properties / resource
+    * this just collects the properties and determines the order.
+    * When all properties for a resource are read, we can analyse them
+    * and change the resource in the DB -> see setResourceProperties
+    */
+    private void readProperty(Resource resource, URI propertyName, Node node)
+    {
+        // Resource -> property -> List of values
+        if (resource.getBlockId() != null && !resourceMap.containsKey(resource.getBlockId())) {
+            resourceMap.put(resource.getBlockId(), new HashMap<URI, List<PropertyValue>>());
+        }
+        HashMap<URI, List<PropertyValue>> properties = resourceMap.get(resource.getBlockId());
+        if (properties != null) {
+            if (!properties.containsKey(propertyName)) {
+                properties.put(propertyName, new ArrayList<PropertyValue>());
+            }
+            List<PropertyValue> propertyValues = properties.get(propertyName);
+            if (propertyValues == null) {
+                propertyValues = new ArrayList<PropertyValue>();
+                properties.put(propertyName, propertyValues);
+            }
+            propertyValues.add(new PropertyValue(node));
+        }
+
+    }
+
+    /*
+    * This sets the properties for the resource in the DB based on the values on the page
+    *
+    * Check shown properties to compare with saved properties (sometimes not all properies of resource are shown,
+    * so we an not simply delete them. Only delete shown properties that are no longer saved)
+    *
+    * Compare values to values in webpage (not value in resource object). This way default values are not saved.
+    * */
+    public static void fillResourceProperties(HashMap<String, Resource> resources, HashMap<URI, HashMap<URI, List<PropertyValue>>> resourceProperties, HashMap<URI, HashMap<URI, List<PropertyValue>>> oldResourceProperties, BlocksDatabase database, Locale locale) {
+        // TODO return only changed resources
+        for (URI resourceID: resourceProperties.keySet()) {
+            Resource resource = resources.get(resourceID.toString());
+            HashMap<URI, List<PropertyValue>> properties = resourceProperties.get(resource.getBlockId());
+            HashMap<URI, List<PropertyValue>> oldProperties = oldResourceProperties.get(resource.getBlockId());
+            if (oldProperties == null) oldProperties = new HashMap<URI, List<PropertyValue>>();
+
+            // Check for each property if it has changed
+            for (URI propertyName: properties.keySet()) {
+                List<PropertyValue> propertyValues = properties.get(propertyName);
+                if (propertyValues.size() == 0) {
+
+                } else if (propertyValues.size() == 1) {
+                    resource.set(propertyName, propertyValues.get(0).node);
+                } else {
+                    // We deal with a list, compare this with old property value
+                    // was previous property value also a list? did the list change?
+                    // Try to decide as fast as possible if the two lists are the same
+                    List<PropertyValue> oldPropertyValues = oldProperties.get(propertyName);
+                    if (resource.get(propertyName).isIterable() && oldProperties.containsKey(propertyName) && oldProperties.get(propertyName).size() != ((Collection)resource.get(propertyName).getValue()).size()) {
+                        // Not all values where shown in prev page, select not shown values to keep for later
+                        Set bag = new HashSet<Object>();
+                        List<Node> notShownProperties = new ArrayList<Node>();
+                        for (PropertyValue pv: oldProperties.get(propertyName)) {
+                            bag.add(pv.node.getValue());
+                        }
+                        for (Node node: resource.get(propertyName)) {
+                            if (!bag.contains(node.getValue())) {
+                                notShownProperties.add(node);
+                            }
+                        }
+                    }
+
+                    Node resourceNode = resource.get(propertyName);
+                    boolean changed = false;
+                    // we have 2 lists (old value and new value are both lists)
+                    if (resourceNode.isIterable() && propertyValues.size() > 1) {
+                        int counter = 0;
+                        for (Node node: resourceNode) {
+                            if (counter > propertyValues.size()) {
+                                changed = true;
+                                break;
+                            } else if (node.getValue() != propertyValues.get(counter).node.getValue()) {
+                                changed = true;
+                                break;
+                            }
+                            counter++;
+                        }
+                        // it wasn't a list but now it is a list
+                    } else {
+                        changed = true;
+                    }
+
+                    if (changed) {
+                        resource.remove(propertyName);
+                        for (PropertyValue value : propertyValues) {
+                            resource.add(propertyName, value.node);
+                        }
+                    }
+                }
+
+            }
+        }
+
+
+
+    }
+
+    private class PropertyValue {
+        public Node node;
+
+        public PropertyValue(Node node) {
+            this.node = node;
+        }
     }
 
 
