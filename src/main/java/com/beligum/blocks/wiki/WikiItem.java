@@ -5,6 +5,7 @@ import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 /**
  * Created by wouter on 2/04/15.
@@ -199,7 +200,7 @@ public class WikiItem
     {
         for (String key : this.properties.keySet()) {
             if (!stored.containsKey(key))
-                stored.put(key, new HashMap<String, String>());
+                stored.put(key, new LinkedHashMap<String, String>());
 
             for (String lang : this.properties.get(key).keySet()) {
                 if (lang != null) {

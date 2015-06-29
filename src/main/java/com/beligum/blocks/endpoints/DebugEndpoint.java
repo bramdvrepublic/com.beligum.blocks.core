@@ -2,17 +2,22 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.database.OBlocksDatabase;
+import com.beligum.blocks.search.ElasticSearchClient;
+import com.beligum.blocks.search.ElasticSearchServer;
 import com.beligum.blocks.security.Permissions;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocument;
 import com.orientechnologies.orient.core.sql.OCommandSQL;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.joda.time.LocalDateTime;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
+import java.util.Locale;
 
 /**
 * Created by bas on 27.01.15.
@@ -32,7 +37,15 @@ public class DebugEndpoint
         Logger.warn("Url-id mapping has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
         ODatabaseDocument graph = OBlocksDatabase.instance().getDatabase();
         graph.command(new OCommandSQL("DELETE VERTEX")).execute();
-        return Response.ok("<ul><li>Database emptied</li><li>Cache reset</li><li>Url-id mapping reset</li></ul>").build();
+        ElasticSearchClient.instance().getClient().admin().indices().delete(new DeleteIndexRequest("*")).actionGet();
+        String jsonMapping = "{ \"dynamic_templates\" : [{ \"string_fields\" : { \"match\" : \"*\", \"unmatch-path\" : \"*.*\" , \"match-mapping-type\" : \"string\", \"mapping\" :  { \"type\" : \"string\", \"index\" : \"analyzed\", \"fields\" : { \"raw\" : {\"type\": \"string\", \"index\" : \"not_analyzed\", \"ignore_above\" : 256} } }  } } ] }";
+        for (Locale locale: BlocksConfig.instance().getLanguages().values()) {
+            ElasticSearchClient.instance().getClient().admin().indices().prepareCreate(ElasticSearchServer.instance().getPageIndexName(locale)).addMapping("_default_", jsonMapping).execute().actionGet();
+            ElasticSearchClient.instance().getClient().admin().indices().prepareCreate(ElasticSearchServer.instance().getResourceIndexName(locale)).addMapping("_default_", jsonMapping).execute().actionGet();
+//            ElasticSearchClient.instance().getClient().admin().indices().prepareCreate(ElasticSearchServer.instance().getPageIndexName(locale)).execute().actionGet();
+//            ElasticSearchClient.instance().getClient().admin().indices().prepareCreate(ElasticSearchServer.instance().getResourceIndexName(locale)).execute().actionGet();
+        }
+        return Response.ok("<ul><li>Database emptied</li><li>Cache reset</li></ul>").build();
     }
 
 

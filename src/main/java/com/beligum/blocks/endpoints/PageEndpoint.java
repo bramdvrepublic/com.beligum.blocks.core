@@ -21,6 +21,8 @@ import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.beligum.blocks.utils.RdfTools;
+import com.tinkerpop.blueprints.Graph;
+import com.tinkerpop.blueprints.impls.orient.OrientGraph;
 import gen.com.beligum.blocks.core.fs.html.views.modals.newblock;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.hibernate.validator.constraints.NotBlank;
@@ -29,6 +31,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.*;
 
 @Path("/blocks/admin/page")
@@ -99,6 +102,8 @@ public class PageEndpoint
             // if this page does not yet exist -> create
             if (localizedWebpage == null) {
                 localizedWebpage = OBlocksDatabase.instance().createLocalizedPage(masterWebpage, RdfTools.createLocalResourceId(OBlocksDatabase.WEB_PAGE_CLASS), route.getLocale());
+            } else {
+                doVersion = true;
             }
         }
 
@@ -131,7 +136,10 @@ public class PageEndpoint
             OBlocksDatabase.instance().saveWebPage(localizedWebpage, doVersion);
         }
 
-        OBlocksDatabase.instance().getGraph().commit();
+        Graph graph = OBlocksDatabase.instance().getGraph();
+        if (graph instanceof OrientGraph) {
+            ((OrientGraph)graph).commit();
+        }
 
         return Response.ok().build();
     }
@@ -197,6 +205,8 @@ public class PageEndpoint
         return Response.ok(retVal).build();
     }
 
+
+
     @DELETE
     @Path("/delete")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -216,7 +226,10 @@ public class PageEndpoint
             route.getNode().setPageNotFound();
         }
 
-        OBlocksDatabase.instance().getGraph().commit();
+        Graph graph = OBlocksDatabase.instance().getGraph();
+        if (graph instanceof OrientGraph) {
+            ((OrientGraph)graph).commit();
+        }
 
         return Response.ok().build();
     }

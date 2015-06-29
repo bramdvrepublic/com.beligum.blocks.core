@@ -3,6 +3,8 @@ package com.beligum.blocks.search;
 import com.beligum.base.server.R;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.common.settings.ImmutableSettings;
@@ -22,6 +24,7 @@ public class ElasticSearchServer
 {
     private static ElasticSearchServer instance;
     private Node node;
+    private BulkRequestBuilder bulkRequestBuilder;
 
     // TODO put settings in config
     private ElasticSearchServer() {
@@ -72,5 +75,22 @@ public class ElasticSearchServer
             retVal = retVal + "_" + locale.getLanguage();
         }
         return retVal;
+    }
+
+    public BulkRequestBuilder getBulk() {
+        if (this.bulkRequestBuilder == null) {
+            this.bulkRequestBuilder = ElasticSearchClient.instance().getClient().prepareBulk();
+        }
+        return this.bulkRequestBuilder;
+    }
+
+    public BulkResponse saveBulk() {
+        BulkResponse retVal = null;
+        if (this.bulkRequestBuilder != null) {
+            retVal = this.bulkRequestBuilder.execute().actionGet();
+            this.bulkRequestBuilder = null;
+        }
+        return retVal;
+
     }
 }

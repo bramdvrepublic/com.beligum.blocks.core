@@ -14,6 +14,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Created by wouter on 22/06/15.
@@ -110,12 +111,17 @@ public class DummyBlocksDatabase implements BlocksDatabase
         Node retVal = null;
         if (value instanceof Resource || value instanceof Node) {
             retVal = (Node)value;
-        } else if (value instanceof List && ((List)value).size() == 2
-                   && ((List)value).get(0) instanceof HashMap
-                    && ((HashMap<String, Object>)((List)value).get(0)).containsKey(ParserConstants.JSONLD_ID)) {
-            retVal = new DummyResource((HashMap<String, Object>)((List)value).get(0), (HashMap<String, Object>)((List)value).get(0), language);
         } else {
-            retVal = new DummyNode(value, language);
+            if (value instanceof List && ((List)value).size() == 2
+                && ((List)value).get(0) instanceof HashMap
+                && ((HashMap<String, Object>)((List)value).get(0)).containsKey(ParserConstants.JSONLD_ID)) {
+                retVal = new DummyResource((HashMap<String, Object>)((List)value).get(0), (HashMap<String, Object>)((List)value).get(1), language);
+            } else if (value instanceof Map && ((Map)value).containsKey(ParserConstants.JSONLD_ID)) {
+
+                retVal = new DummyResource((Map)value, new HashMap<String, Object>(), language);
+            } else {
+                retVal = new DummyNode(value, language);
+            }
         }
 
         return retVal;

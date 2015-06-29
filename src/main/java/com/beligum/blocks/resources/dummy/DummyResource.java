@@ -5,6 +5,7 @@ import com.beligum.blocks.database.DummyBlocksDatabase;
 import com.beligum.blocks.database.interfaces.BlocksDatabase;
 import com.beligum.blocks.resources.AbstractResource;
 import com.beligum.blocks.resources.interfaces.Node;
+import com.beligum.blocks.resources.interfaces.Resource;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
@@ -16,20 +17,19 @@ import java.util.*;
 public class DummyResource extends AbstractResource
 {
 
-    private HashMap<String, Object> vertex;
-    private HashMap<String, Object> localized;
-    private Locale locale;
+    private Map<String, Object> vertex;
+    private Map<String, Object> localized;
 
-    public DummyResource(HashMap<String, Object> vertex, HashMap<String, Object> localized, Locale locale) {
+    public DummyResource(Map<String, Object> vertex, Map<String, Object> localized, Locale locale) {
         this.vertex = vertex;
         this.localized = localized;
-        this.locale = locale;
+        this.language = locale;
     }
 
     @Override
     public Object getValue()
     {
-        ArrayList<HashMap<String, Object>> retVal = new ArrayList<>();
+        ArrayList<Map<String, Object>> retVal = new ArrayList<>();
         retVal.add(vertex);
         retVal.add(localized);
         return retVal;
@@ -37,7 +37,7 @@ public class DummyResource extends AbstractResource
     @Override
     public void setFieldDirect(String key, Object value, Locale locale)
     {
-        HashMap<String, Object> vertex = localized;
+        Map<String, Object> vertex = localized;
         if (locale.equals(Locale.ROOT) || (value instanceof HashMap && ((HashMap) value).containsKey(ParserConstants.JSONLD_ID))) {
             vertex = this.vertex;
         }
@@ -57,7 +57,7 @@ public class DummyResource extends AbstractResource
     {
         Locale lang = this.getLanguage();
         Node fieldValue = null;
-        HashMap<String, Object> vertex = localized;
+        Map<String, Object> vertex = localized;
         if (!vertex.containsKey(key)) {
             vertex = this.vertex;
             lang = Locale.ROOT;
@@ -72,14 +72,13 @@ public class DummyResource extends AbstractResource
     @Override
     public void addFieldDirect(String key, Node node)
     {
-        HashMap<String, Object> vertex = localized;
+        Map<String, Object> vertex = localized;
         Object existingField = null;
-        if (!vertex.containsKey(key) || node.isResource()) {
+        if (node.getLanguage().equals(Locale.ROOT) || node.isResource()) {
             vertex = this.vertex;
-            existingField = vertex.get(key);
-        } else {
-            existingField = vertex.get(key);
         }
+
+        existingField = vertex.get(key);
 
         if (!node.isNull()) {
             if (existingField == null) {
@@ -104,17 +103,31 @@ public class DummyResource extends AbstractResource
             else {
                 List newValues = new ArrayList();
                 newValues.add(existingField);
-                newValues.add(node);
+                newValues.add(node.getValue());
                 vertex.put(key, newValues);
             }
         }
     }
+
+
+    // Just for import
+    public void addToLocale(URI field, Resource resource) {
+        String key = addFieldToContext(field);
+
+        if (this.localized != null) {
+            if (!this.localized.containsKey(key)) {
+                this.localized.put(key, new ArrayList());
+            }
+            ((List)this.localized.get(key)).add(resource.getValue());
+        }
+    }
+
     @Override
     public Node removeFieldDirect(String key)
     {
         Locale lang = this.getLanguage();
         Object fieldValue = null;
-        HashMap<String, Object> vertex = localized;
+        Map<String, Object> vertex = localized;
         if (!vertex.containsKey(key)) {
             vertex = this.vertex;
         }

@@ -1,0 +1,44 @@
+<div property="content" class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <form method="GET" class="form-inline">
+                <div class="form-group">
+                    <label for="searchbox">Search</label>
+                    <input type="search" class="form-control" id="search" name="q" placeholder="" value="$!search_query">
+                </div>
+
+                <button type="submit" class="btn btn-default">Search</button>
+            </form>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <nav>
+                <ul class="pagination">
+                    <li>
+                        <a href="$search_pages.get(0).get("url")" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+
+                    #foreach($page in $search_pages)
+                        <li #if($page.get("index").equals($search_active_page)) class="active" #end>
+                            <a href="$page.get("url")" >$page.get("index")</a>
+                        </li>
+                    #end
+
+                    <li>
+                        <a href="href="$search_pages.get($search_last_page).get("url")"" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            $results
+        </div>
+    </div>
+</div>

@@ -6,6 +6,8 @@ import com.beligum.blocks.exceptions.RdfException;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 
 /**
@@ -18,6 +20,7 @@ public class RdfTools
 {
     // Simpleflake generates a Long id, based on timestamp
     public static SimpleFlake simpleFlake = new SimpleFlake();
+    public static HashMap<URI, HashMap<String, URI>> urlcache = new HashMap<URI, HashMap<String, URI>>();
 
     /*
     * create a local type based on the ontology in the config
@@ -32,6 +35,7 @@ public class RdfTools
     * e.g. http://www.republic.be/v1/resource/address/big-street-in-antwerp
     * */
     public static URI createLocalResourceId(String type, String id) {
+
         return UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path(ParserConstants.RESOURCE_ENDPOINT).path(type.toLowerCase()).path(id).build();
     }
 
@@ -47,11 +51,23 @@ public class RdfTools
     * Make a path absolute relative to the local ontology uri
     * */
     public static URI makeLocalAbsolute(String relativePath) {
-        URI retVal;
+        return addToUri(BlocksConfig.instance().getDefaultRdfSchema(), relativePath);
+    }
+
+    /*
+   * Make a path absolute relative to the local ontology uri
+   * */
+    public static URI addToUri(URI uri, String relativePath) {
+        URI retVal = findInUrlCache(uri, relativePath);
+
+        if (retVal != null) return retVal;
+
         if (relativePath.startsWith("/")) relativePath = relativePath.substring(1);
         String fragment = BlocksConfig.instance().getDefaultRdfSchema().getFragment();
         if (fragment == null) {
-            retVal = UriBuilder.fromUri(BlocksConfig.instance().getDefaultRdfSchema()).path(relativePath).build();
+            Path path =  Paths.get(uri.getPath());
+            path = path.resolve(relativePath).normalize();
+            retVal = UriBuilder.fromUri(BlocksConfig.instance().getDefaultRdfSchema()).replacePath(path.toString()).build();
         }
         // Add to fragment
         else {
@@ -63,6 +79,9 @@ public class RdfTools
                 retVal = UriBuilder.fromUri(BlocksConfig.instance().getDefaultRdfSchema()).fragment(fragment + relativePath).build();
             }
         }
+
+        putInURLCache(uri, relativePath, retVal);
+
         return retVal;
     }
 
@@ -113,6 +132,25 @@ public class RdfTools
 
         return retVal;
 
+    }
+
+    public static URI findInUrlCache(URI uri, String path)
+    {
+        URI retVal = null;
+        if (urlcache.containsKey(uri)) {
+            HashMap<String, URI> urls = urlcache.get(uri);
+            if (urls.containsKey(path)) {
+                retVal = urls.get(path);
+            }
+        }
+        return retVal;
+    }
+
+    public static void putInURLCache(URI uri, String path, URI result) {
+        if (!urlcache.containsKey(uri)) {
+            urlcache.put(uri, new HashMap<String, URI>());
+        }
+        urlcache.get(uri).put(path, result);
     }
 
     /*

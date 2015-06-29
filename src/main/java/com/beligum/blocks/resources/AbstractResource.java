@@ -168,7 +168,7 @@ public abstract class AbstractResource extends AbstractNode implements Resource
         try {
             retVal = objectMapper.writeValueAsString(this);
         } catch (Exception e) {
-            Logger.error("Could not serialize resource.");
+            Logger.error("Could not serialize resource.", e);
         }
         return retVal;
     }

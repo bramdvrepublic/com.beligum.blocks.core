@@ -169,6 +169,8 @@ public abstract class AbstractNode implements Node
             retVal = (String)wrappedObject;
         } else if (isInt() || isBoolean() || isDouble() || isLong()) {
             retVal = wrappedObject.toString();
+        } else if (wrappedObject instanceof List) {
+            retVal = wrappedObject.toString();
         }
         return retVal;
     }

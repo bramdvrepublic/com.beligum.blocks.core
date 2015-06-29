@@ -18,21 +18,21 @@ import com.beligum.blocks.routing.OWebNode;
 import com.beligum.blocks.routing.OWebPath;
 import com.beligum.blocks.routing.ifaces.WebNode;
 import com.beligum.blocks.routing.ifaces.WebPath;
+import com.beligum.blocks.search.ElasticSearchClient;
+import com.beligum.blocks.search.ElasticSearchServer;
+import com.orientechnologies.orient.core.Orient;
+import com.orientechnologies.orient.core.config.OGlobalConfiguration;
 import com.orientechnologies.orient.core.db.ODatabaseRecordThreadLocal;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.sql.query.OSQLSynchQuery;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Parameter;
-import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.impls.orient.*;
+import org.elasticsearch.action.index.IndexResponse;
 
 import java.net.URI;
-import java.util.Calendar;
-import java.util.Iterator;
-import java.util.Locale;
+import java.util.*;
 
 /**
  * Created by wouter on 5/06/15.
@@ -85,13 +85,13 @@ public class OBlocksDatabase implements BlocksDatabase
     public static final String RESOURCE_UPDATED_AT = "updatedAt";
 
     private OrientGraphFactory graphFactory;
-    private ThreadLocal<OrientGraph> graph;
+    private ThreadLocal<OrientBaseGraph> graph;
 
 
     public static OBlocksDatabase instance;
 
     private OBlocksDatabase() {
-        OrientGraph graph = (OrientGraph)this.getGraph();
+        OrientBaseGraph graph = this.getGraph();
         createSchemaOnStartup(graph);
     }
 
@@ -112,7 +112,7 @@ public class OBlocksDatabase implements BlocksDatabase
     @Override
     public MasterWebPage createMasterWebPage(URI id)
     {
-        OrientGraph graph = getGraph();
+        Graph graph = getGraph();
 
         Vertex master = graph.addVertex("class:" + MASTER_WEB_PAGE_CLASS);
         master.setProperty(ParserConstants.JSONLD_ID, id.toString());
@@ -126,7 +126,7 @@ public class OBlocksDatabase implements BlocksDatabase
     @Override
     public WebPage createLocalizedPage(MasterWebPage masterWebPage, URI id, Locale locale)
     {
-        OrientGraph graph = getGraph();
+        Graph graph = getGraph();
 
         WebPage retVal;
         retVal = masterWebPage.getPageForLocale(locale);
@@ -149,9 +149,11 @@ public class OBlocksDatabase implements BlocksDatabase
     public MasterWebPage getMasterWebPage(URI id)
     {
         MasterWebPage retVal = null;
-        OrientGraph graph = getGraph();
+
+        OrientBaseGraph graph = getGraph();
         Iterable<Vertex> vertices = graph.command(new OSQLSynchQuery("select from " + MASTER_WEB_PAGE_CLASS + " WHERE @id = '" + id + "' fetchplan *:0")).execute();
-        for (Vertex v: vertices) {
+
+            for (Vertex v: vertices) {
             retVal = new OMasterWebPage(v);
             break;
         }
@@ -162,8 +164,9 @@ public class OBlocksDatabase implements BlocksDatabase
     public WebPage getLocalizedWebPage(URI id, Locale locale)
     {
         WebPage retVal = null;
-        OrientGraph graph = getGraph();
+        OrientBaseGraph graph = getGraph();
         Iterable<Vertex> vertices = graph.command(new OSQLSynchQuery("select from " + WEB_PAGE_CLASS + " WHERE @id = '" + id + "' fetchplan *:0")).execute();
+
         for (Vertex v: vertices) {
             retVal = new OWebPage(v, locale);
             break;
@@ -174,7 +177,7 @@ public class OBlocksDatabase implements BlocksDatabase
     @Override
     public WebPage deleteWebPage(URI id, Locale locale)
     {
-        OrientGraph graph = getGraph();
+        Graph graph = getGraph();
         Vertex v = graph.addVertex("class:" + WEB_PAGE_CLASS);
         v.setProperty(ParserConstants.JSONLD_ID, id.toString());
         v.setProperty(ParserConstants.JSONLD_LANGUAGE, locale.getLanguage());
@@ -184,7 +187,7 @@ public class OBlocksDatabase implements BlocksDatabase
 
     @Override
     public WebPage saveWebPage(WebPage webPage, boolean doVersion) {
-        OrientGraph graph = getGraph();
+        Graph graph = getGraph();
 
         if (doVersion) {
             Vertex versionedVertex = graph.addVertex("class:" + WEB_PAGE_CLASS);
@@ -208,7 +211,9 @@ public class OBlocksDatabase implements BlocksDatabase
         }
 
         webPage = (WebPage)this.touch(webPage);
-//        graph.commit();
+        this.getGraph().commit();
+        addToLucene(((OrientVertex)webPage.getValue()).getRecord().getIdentity().toString(), webPage.toJson(), webPage.getLanguage(), TYPE.WEBPAGE);
+
         return webPage;
     }
 
@@ -219,7 +224,7 @@ public class OBlocksDatabase implements BlocksDatabase
         WebNode retVal;
 
         Vertex vertex = null;
-        OrientGraph graph = getGraph();
+        OrientBaseGraph graph = getGraph();
 
         retVal = getRootWebNode(host);
 
@@ -230,9 +235,7 @@ public class OBlocksDatabase implements BlocksDatabase
             retVal.setPageNotFound();
             this.touch(retVal);
         }
-
         graph.commit();
-        graph.begin();
         return retVal;
     }
 
@@ -243,8 +246,9 @@ public class OBlocksDatabase implements BlocksDatabase
         WebNode retVal= null;
 
         Vertex vertex = null;
-        OrientGraph graph = getGraph();
+        OrientBaseGraph graph = getGraph();
         Iterable<Vertex> vertices = graph.command(new OSQLSynchQuery("select from " + ROOT_WEB_NODE_CLASS + " WHERE " + ROOT_WEB_NODE_HOST_NAME + " = '" + host + "' fetchplan *:0")).execute();
+
         for (Vertex v: vertices) {
             vertex = v;
             break;
@@ -264,7 +268,7 @@ public class OBlocksDatabase implements BlocksDatabase
 
     @Override
     public WebNode createWebNode(WebNode from, String path, Locale locale) {
-        OrientGraph graph = getGraph();
+        Graph graph = getGraph();
         Vertex v = graph.addVertex("class:" + WEB_NODE_CLASS);
         OWebNode retVal = new OWebNode(v);
         retVal.setPageNotFound();
@@ -273,27 +277,12 @@ public class OBlocksDatabase implements BlocksDatabase
         webPath.setName(path, locale);
         this.touch(webPath);
         this.touch(retVal);
-        graph.commit();
-        graph.begin();
+        if (graph instanceof OrientGraph) {
+            ((OrientGraph)graph).commit();
+            ((OrientGraph)graph).begin();
+        }
         return retVal;
     }
-
-//    @Override
-//    public WebNode createPreviousFromWebNode(WebNode from) {
-//        OrientGraph graph = getGraph();
-//        Vertex v = graph.addVertex("class:" + WEB_NODE_CLASS);
-//        OWebNode retVal = new OWebNode(v);
-////
-////        retVal.setPageNotFound();
-////        Edge e = graph.addEdge(null, ((OWebNode)from).getVertex(), v, PATH_CLASS_NAME);
-////        WebPath webPath = new OWebPath(e);
-////        webPath.setName(path, locale);
-////        this.touch(webPath);
-////        this.touch(retVal);
-////        graph.commit();
-////        graph.begin();
-//        return retVal;
-//    }
 
 
     @Override
@@ -332,7 +321,9 @@ public class OBlocksDatabase implements BlocksDatabase
     @Override
     public Resource saveResource(Resource resource) {
         this.touch(resource);
-        getDatabase().save((ODocument)resource.getValue());
+        getDatabase().save((ODocument) resource.getValue());
+        this.getGraph().commit();
+        addToLucene(((ODocument) resource.getValue()).getIdentity().toString(), resource.toJson(), resource.getLanguage(), TYPE.RESOURCE);
         return resource;
     }
 
@@ -379,7 +370,9 @@ public class OBlocksDatabase implements BlocksDatabase
         if (id == null) throw new NullPointerException();
 
         ODocument vertex = new ODocument(RESOURCE_CLASS);
-        if (rdfType != null) vertex.field(ParserConstants.JSONLD_TYPE, rdfType);
+        List list = new ArrayList<String>();
+        list.add(rdfType.toString());
+        if (rdfType != null) vertex.field(OBlocksDatabase.RESOURCE_TYPE_FIELD, list);
         vertex.field(ParserConstants.JSONLD_ID, id.toString());
         return vertex;
     }
@@ -421,17 +414,20 @@ public class OBlocksDatabase implements BlocksDatabase
     }
 
     // TODO Th
-    public OrientGraph getGraph()
+    public OrientBaseGraph getGraph()
     {
         if (this.graphFactory == null) {
-            this.graphFactory = new OrientGraphFactory("remote:/localhost/cms", "admin", "admin").setupPool(1, 10);
+//            OGlobalConfiguration.USE_WAL.setValue(false);
+            OGlobalConfiguration.INDEX_MANUAL_LAZY_UPDATES.setValue(-1);
+            this.graphFactory = new OrientGraphFactory("remote:/localhost/mot", "admin", "admin").setupPool(1, 10);
+//            this.graphFactory = new OrientGraphFactory("plocal:/Users/wouter/orientDB/databases/mot", "admin", "admin").setupPool(1, 10);
         }
 
         if (this.graph == null) {
-            final OrientGraph  db = graphFactory.getTx();
-            ODatabaseRecordThreadLocal.INSTANCE.set(db.getRawGraph());
-            this.graph = new ThreadLocal<OrientGraph>() {
-                protected OrientGraph initialValue() {
+//            final Graph  db = graphFactory.getNoTx();
+            final OrientBaseGraph  db = graphFactory.getNoTx();
+            this.graph = new ThreadLocal<OrientBaseGraph>() {
+                protected OrientBaseGraph initialValue() {
                     return db;
                 }
             };
@@ -439,21 +435,24 @@ public class OBlocksDatabase implements BlocksDatabase
         return this.graph.get();
     }
 
+
     public ODatabaseDocumentTx getDatabase()
     {
-        OrientGraph graph = getGraph();
-        ODatabaseRecordThreadLocal.INSTANCE.set(getGraph().getRawGraph());
+        OrientBaseGraph graph = getGraph();
+        ODatabaseRecordThreadLocal.INSTANCE.set(graph.getRawGraph());
         return graph.getRawGraph();
+
+
     }
 
 
-    private void createSchemaOnStartup(OrientGraph graph) {
+    private void createSchemaOnStartup(OrientBaseGraph graph) {
         if (graph.getVertexType(RESOURCE_CLASS) == null) {
             OrientVertexType defaultResourceClass = graph.createVertexType(RESOURCE_CLASS);
             defaultResourceClass.createProperty(ParserConstants.JSONLD_ID, OType.STRING);
             defaultResourceClass.createProperty(RESOURCE_TYPE_FIELD, OType.EMBEDDEDSET);
-            graph.createIndex(RESOURCE_TYPE_FIELD, Vertex.class, new Parameter("class", RESOURCE_CLASS));
-            graph.createIndex(ParserConstants.JSONLD_ID, Vertex.class, new Parameter("type", "UNIQUE"), new Parameter("class", RESOURCE_CLASS));
+//            graph.createIndex(RESOURCE_TYPE_FIELD, Vertex.class, new Parameter("class", RESOURCE_CLASS));
+//            graph.createIndex(ParserConstants.JSONLD_ID, Vertex.class, new Parameter("type", "UNIQUE"), new Parameter("class", RESOURCE_CLASS));
         }
 
         if (graph.getVertexType(LOCALIZED_RESOURCE_CLASS) == null) {
@@ -465,24 +464,24 @@ public class OBlocksDatabase implements BlocksDatabase
             OrientVertexType nodeClass = graph.createVertexType(WEB_NODE_CLASS);
             nodeClass.createProperty(WEB_NODE_STATUS_FIELD, OType.INTEGER);
             nodeClass.createProperty(WEB_NODE_PAGE_FIELD, OType.STRING);
-            graph.createIndex(WEB_NODE_PAGE_FIELD, Vertex.class, new Parameter("class", WEB_NODE_CLASS));
-            graph.createIndex(WEB_NODE_STATUS_FIELD, Vertex.class, new Parameter("class", WEB_NODE_CLASS));
+//            graph.createIndex(WEB_NODE_PAGE_FIELD, Vertex.class, new Parameter("class", WEB_NODE_CLASS));
+//            graph.createIndex(WEB_NODE_STATUS_FIELD, Vertex.class, new Parameter("class", WEB_NODE_CLASS));
         }
 
         if (graph.getVertexType(ROOT_WEB_NODE_CLASS) == null) {
             OrientVertexType rootNodeClass = graph.createVertexType(ROOT_WEB_NODE_CLASS, WEB_NODE_CLASS);
             rootNodeClass.createProperty(ROOT_WEB_NODE_HOST_NAME, OType.STRING);
-            graph.createIndex(ROOT_WEB_NODE_HOST_NAME, Vertex.class, new Parameter("class", ROOT_WEB_NODE_CLASS));
+//            graph.createIndex(ROOT_WEB_NODE_HOST_NAME, Vertex.class, new Parameter("class", ROOT_WEB_NODE_CLASS));
         }
 
         if (graph.getEdgeType(PATH_CLASS_NAME) == null) {
             OrientEdgeType pathClass = graph.createEdgeType(PATH_CLASS_NAME);
             pathClass.createProperty(PATH_NAME_FIELD, OType.STRING);
-            graph.createIndex(PATH_NAME_FIELD, Vertex.class, new Parameter("class", PATH_CLASS_NAME));
+//            graph.createIndex(PATH_NAME_FIELD, Vertex.class, new Parameter("class", PATH_CLASS_NAME));
             for (Locale locale: BlocksConfig.instance().getLanguages().values()) {
                 String field = getLocalizedNameField(locale);
                 pathClass.createProperty(field, OType.STRING);
-                graph.createIndex(field, Vertex.class, new Parameter("class", PATH_CLASS_NAME));
+//                graph.createIndex(field, Vertex.class, new Parameter("class", PATH_CLASS_NAME));
             }
         }
 
@@ -524,6 +523,25 @@ public class OBlocksDatabase implements BlocksDatabase
         resource.setUpdatedAt(Calendar.getInstance());
         resource.setUpdatedBy(BlocksConfig.instance().getCurrentUserName());
         return resource;
+    }
+
+    private void addToLucene(String id, String json, Locale locale, TYPE type) {
+        String index;
+        String name = "resource";
+        if (type.equals(TYPE.RESOURCE)) {
+            index = ElasticSearchServer.instance().getResourceIndexName(locale);
+        } else {
+            index = ElasticSearchServer.instance().getPageIndexName(locale);
+            name = "webpage";
+        }
+        ElasticSearchServer.instance().getBulk().add(ElasticSearchClient.instance().getClient().prepareIndex(index, name)
+                                                                        .setSource(json)
+                                                                        .setId(id).request());
+
+    }
+
+    private enum TYPE {
+        RESOURCE, WEBPAGE
     }
 
 }

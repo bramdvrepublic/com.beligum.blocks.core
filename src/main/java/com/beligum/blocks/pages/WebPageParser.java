@@ -58,7 +58,7 @@ public class WebPageParser
     // the base for the urls
     private URI base;
     private boolean inBody = false;
-    private String vocab;
+    private URI vocab;
     private HashMap<String, URI> prefixes = new HashMap<>();
     private HashMap<URI, HashMap<URI, List<PropertyValue>>> resourceMap = new HashMap<>();
     // Resource that contains all properties that are attached to the page
@@ -72,7 +72,7 @@ public class WebPageParser
         this.source = new Source(source);
         this.source.fullSequentialParse();
         this.database = database;
-        this.vocab = BlocksConfig.instance().getDefaultRdfSchema().toString();
+        this.vocab = BlocksConfig.instance().getDefaultRdfSchema();
         Element base = this.source.getFirstElement("base");
         this.setBase(base, uri);
 
@@ -158,9 +158,8 @@ public class WebPageParser
                 newResource = this.database.getResource(resourceId, locale);
                 if (newResource == null) {
                     // create a new resource
-                    Logger.warn("Resource found in html with a resource id, but no resource found in db. Creating a new resource...");
-                    URI resourceid = RdfTools.createLocalResourceId(getShortTypeNamefromUri(typeOf));
-                    newResource = this.database.createResource(resourceid, typeOf, locale);
+//                    Logger.warn("Resource found in html with a resource id, but no resource found in db. Creating a new resource...");
+                    newResource = this.database.createResource(resourceId, typeOf, locale);
                 }
             }
 
@@ -173,19 +172,25 @@ public class WebPageParser
         // Set property value of current resource when property is content-editable
         if (element.getAttributeValue("property") != null) {
             URI property = getAbsoluteRdfName(element.getAttributeValue("property"));
+            Locale propertyLocale = locale;
+            if (element.getAttributeValue("lang") != null) {
+                propertyLocale = Locale.ROOT;
+            } else {
+                int x = 0;
+            }
             Node content;
             if (newResource != null && !(resource instanceof WebPage)) {
                 content = newResource;
             } else if (element.getAttributeValue("content") != null) {
-                content = this.database.createNode(element.getAttributeValue("content"), locale);
+                content = this.database.createNode(element.getAttributeValue("content"), propertyLocale);
             } else if (element.getAttributeValue("src") != null) {
-                content = this.database.createNode(element.getAttributeValue("src"), Locale.ROOT);
+                content = this.database.createNode(element.getAttributeValue("src"), propertyLocale);
             } else if (element.getAttributeValue("href") != null) {
-                content = this.database.createNode(element.getAttributeValue("href"), Locale.ROOT);
+                content = this.database.createNode(element.getAttributeValue("href"), propertyLocale);
             } else {
-                Renderer textRenderer = new Renderer(element);
-                String text = textRenderer.toString();
-                content = this.database.createNode(text, Locale.ROOT);
+//                Renderer textRenderer = new Renderer(element);
+//                String text = textRenderer.toString();
+                content = this.database.createNode(element.getContent().toString(), propertyLocale);
             }
 
             Integer index = null;
@@ -240,7 +245,7 @@ public class WebPageParser
     * Get the next special element that has to be saved
     * Used while parsing the html
     * */
-    private Element findNextElement() throws RdfException
+    private Element findNextElement() throws RdfException, URISyntaxException
     {
         Element retVal = null;
         boolean found = false;
@@ -286,7 +291,9 @@ public class WebPageParser
 
             if (retVal.getAttributeValue("vocab") != null) {
                 // set vocab
-                this.vocab = retVal.getAttributeValue("vocab");
+                String vocabString = retVal.getAttributeValue("vocab");
+
+                this.vocab = new URI(vocabString);
             } else if (retVal.getAttributeValue("prefixes") != null) {
                 // add prefixes
                 HashMap<String, URI> prefix = RdfTools.parsePrefixes(retVal.getAttributeValue("prefixes"));
@@ -360,6 +367,7 @@ public class WebPageParser
             this.base = cleanUri(UriBuilder.fromUri(base.getAttributeValue("href")).build());
         } else if (contextUri != null && contextUri.getHost() != null && contextUri.getScheme() != null) {
             this.base = cleanUri(contextUri);
+            this.base = UriBuilder.fromUri(this.base).replacePath("").build();
         } else {
             this.base = cleanUri(BlocksConfig.instance().getSiteDomain());
         }
@@ -378,15 +386,15 @@ public class WebPageParser
             if (index > -1) {
                 String prefix = name.substring(0, index);
                 name = name.substring(index+1);
-                String prefixValue = this.prefixes.get(prefix).toString();
+                URI prefixValue = this.prefixes.get(prefix);
                 if (prefixValue != null) {
-                    retVal = new URI(prefixValue + name);
+                    retVal = RdfTools.addToUri(prefixValue, name);
                 } else {
                     throw new RdfException("Property or resource found with prefix but prefix value is not defined: " + prefix + ":" + name);
                 }
             }
             else {
-                retVal = new URI(this.vocab + name);
+                retVal = RdfTools.addToUri(this.vocab, name);
             }
         } else {
             retVal = new URI(name);
@@ -478,7 +486,7 @@ public class WebPageParser
                 if (propertyValues.size() == 0) {
 
                 } else if (propertyValues.size() == 1) {
-                    resource.set(propertyName, propertyValues.get(0).node);
+                    resource.set(propertyName, propertyValues.get(0).getNode());
                 } else {
                     // We deal with a list, compare this with old property value
                     // was previous property value also a list? did the list change?
@@ -489,7 +497,7 @@ public class WebPageParser
                         Set bag = new HashSet<Object>();
                         List<Node> notShownProperties = new ArrayList<Node>();
                         for (PropertyValue pv: oldProperties.get(propertyName)) {
-                            bag.add(pv.node.getValue());
+                            bag.add(pv.getNode().getValue());
                         }
                         for (Node node: resource.get(propertyName)) {
                             if (!bag.contains(node.getValue())) {
@@ -507,7 +515,7 @@ public class WebPageParser
                             if (counter > propertyValues.size()) {
                                 changed = true;
                                 break;
-                            } else if (node.getValue() != propertyValues.get(counter).node.getValue()) {
+                            } else if (node.getValue() != propertyValues.get(counter).getNode().getValue()) {
                                 changed = true;
                                 break;
                             }
@@ -521,7 +529,7 @@ public class WebPageParser
                     if (changed) {
                         resource.remove(propertyName);
                         for (PropertyValue value : propertyValues) {
-                            resource.add(propertyName, value.node);
+                            resource.add(propertyName, value.getNode());
                         }
                     }
                 }
@@ -534,11 +542,29 @@ public class WebPageParser
     }
 
     private class PropertyValue {
-        public Node node;
+        private Node node;
+        private Resource resource;
+
+        public PropertyValue(Resource node) {
+            this.resource = node;
+        }
 
         public PropertyValue(Node node) {
-            this.node = node;
+            if (node.isResource()) {
+                this.resource = (Resource)node;
+            } else {
+                this.node = node;
+            }
         }
+
+        public Node getNode() {
+            if (node != null) {
+                return node;
+            } else {
+                return resource;
+            }
+        }
+
     }
 
 

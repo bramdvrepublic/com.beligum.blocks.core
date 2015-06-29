@@ -91,6 +91,12 @@ public class OWebNode implements WebNode
         if(edges.iterator().hasNext()) {
             retVal = new OWebPath(edges.iterator().next());
         }
+        if (retVal == null) {
+            edges =  this.vertex.query().direction(Direction.OUT).labels(OBlocksDatabase.PATH_CLASS_NAME).has(OBlocksDatabase.PATH_NAME_FIELD, name).edges();
+            if(edges.iterator().hasNext()) {
+                retVal = new OWebPath(edges.iterator().next());
+            }
+        }
         return retVal;
     }
 

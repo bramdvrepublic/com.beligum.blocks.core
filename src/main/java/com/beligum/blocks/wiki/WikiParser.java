@@ -4,8 +4,11 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.database.DummyBlocksDatabase;
+import com.beligum.blocks.database.OBlocksDatabase;
 import com.beligum.blocks.endpoints.PageEndpoint;
+import com.beligum.blocks.resources.dummy.DummyResource;
 import com.beligum.blocks.resources.interfaces.Node;
 import com.beligum.blocks.resources.interfaces.Resource;
 import com.beligum.blocks.resources.jackson.ResourceJsonLDSerializer;
@@ -18,7 +21,11 @@ import com.beligum.blocks.utils.RdfTools;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.orientechnologies.orient.core.config.OGlobalConfiguration;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
+import com.orientechnologies.orient.core.intent.OIntentMassiveInsert;
+import com.orientechnologies.orient.core.record.impl.ODocument;
+import com.tinkerpop.blueprints.impls.orient.OrientGraph;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.util.AntPathMatcher;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -48,19 +55,20 @@ public abstract class WikiParser
     protected AntPathMatcher pathMatcher;
     // Objects with fields and languages for fields
     protected HashMap<String, HashMap<String, HashMap<String,String>>> items = new HashMap<String, HashMap<String, HashMap<String,String>>>();
-    protected HashMap<String, Resource> localizedResources;
-    protected ArrayList<HashMap<String, Resource>> entities = new ArrayList<HashMap<String, Resource>>();
+    protected List<HashMap<String, HashMap<String,String>>> itemsList = new ArrayList<>();
     protected ObjectMapper mapper;
-    protected String blueprintId;
+    protected int start;
+    protected int length;
 
     BulkRequestBuilder bulkRequest;
 
 
     protected Integer counter = 0;
 
-    public WikiParser() throws IOException
+    public WikiParser(int start, int length) throws IOException
     {
-
+        this.start = start;
+        this.length = length;
         //        this.indexer = new SimpleIndexer(new File(BlocksConfig.instance().getLuceneIndex()));
         pathMatcher = new AntPathMatcher();
 
@@ -112,6 +120,7 @@ public abstract class WikiParser
                         }
                         storedValue = item.addToData(storedValue);
                         items.put(item.getId(), storedValue);
+                        itemsList.add(storedValue);
                     }
                     else {
                         Logger.error("Item is not valid and will not be added");
@@ -153,11 +162,14 @@ public abstract class WikiParser
 
     public void createEntities()
     {
-
+        OBlocksDatabase.instance().getGraph().getRawGraph().declareIntent(new OIntentMassiveInsert());
         int count = 0;
-//        ODatabaseDocumentTx graph = OBlocksDatabase.instance().getDatabase();
-        for (String key : this.items.keySet()) {
-            HashMap<String, HashMap<String, String>> item = this.items.get(key);
+        int listsize = itemsList.size();
+        for (int index = start; index < start + length; index++) {
+            // last item reached in list
+            if (index >= listsize) break;
+
+            HashMap<String, HashMap<String, String>> item = this.itemsList.get(index);
             // create a new id taken from a field of the item
             // this makes that we dont have to assign a random number as id
             URI id = createId(item);
@@ -176,40 +188,31 @@ public abstract class WikiParser
             Resource resource = addEntity();
 
             // fix some fields
-            changeEntity(resource);
+            HashMap<String, Resource> basicResources = changeEntity(resource);
 
-            //OBlocksDatabase.instance().saveResource(resource);
-            for (Locale language : LANGUAGES) {
-                createWebPages(resource, language);
+            for (Locale locale : LANGUAGES) {
+                createWebPages(basicResources.get(locale.getLanguage()), locale);
             }
-            //Save to DB
-            //                    saveEntity(resource);
 
-//            graph.commit();
-//            toLucene();
 
             count++;
             if (count % 100 == 0) {
-                //                        OrientGraph graph = (OrientGraph)OrientResourceFactory.instance().getDatabase();
-                //                        graph.commit();
-                //                        graph.begin();
 
-                //                        ProtectedLazyEntityManager em = (ProtectedLazyEntityManager)RequestContext.getEntityManager();
-                //                        em.getEntityManager().getTransaction().commit();
-
-                //                        em.getEntityManager().clear();
-                //                        em.getEntityManager().getTransaction().begin();
                 Logger.info("saving entity: " + count);
-                break;
+//                break;
 
             }
-            break;
+
+
+//            if (count > 200) break;
+
         }
 
 
-        Logger.debug("finish!");
+        Logger.info("finish!");
 
-//        BulkResponse bulkResponse = this.bulkRequest.execute().actionGet();
+        ElasticSearchServer.instance().saveBulk();
+//
 
 
     }
@@ -222,13 +225,41 @@ public abstract class WikiParser
 
     public abstract Resource addEntity();
 
-    public abstract Resource changeEntity(Resource entity);
+    public abstract HashMap<String, Resource> changeEntity(Resource entity);
 
     public abstract String getSimpleTypeName();
 
     public abstract void toLucene();
 
     public abstract String getTemplatename();
+
+    public HashMap<String,Resource> createResources(HashMap<String,Resource> container, URI id, URI type)
+    {
+        container = new HashMap<>();
+//                ODocument defaultVertex = OBlocksDatabase.instance().createDefaultVertex(id, type);
+//                ODocument bnlVertex = OBlocksDatabase.instance().createLocalizedVertex(defaultVertex, BlocksConfig.instance().getLocaleForLanguage("nl"));
+        //        ODocument bfrVertex = OBlocksDatabase.instance().createLocalizedVertex(defaultVertex, Locale.FRENCH);
+        //        ODocument benVertex = OBlocksDatabase.instance().createLocalizedVertex(defaultVertex, Locale.ENGLISH);
+
+        //        container.put("nl", new OrientResource(defaultVertex, bnlVertex));
+        //        container.put("fr", new OrientResource(defaultVertex, bfrVertex));
+        //        container.put("en", new OrientResource(defaultVertex, benVertex));
+
+        HashMap<String, Object> defaultVertex = new HashMap<>();
+        HashMap<String, Object> nlVertex = new HashMap<>();
+        HashMap<String, Object> frVertex = new HashMap<>();
+        HashMap<String, Object> enVertex = new HashMap<>();
+        defaultVertex.put(ParserConstants.JSONLD_ID, id.toString());
+        Set<URI> types = new HashSet<URI>();
+        types.add(type);
+        defaultVertex.put(OBlocksDatabase.RESOURCE_TYPE_FIELD, types);
+
+        container.put("nl", new DummyResource(defaultVertex, nlVertex, BlocksConfig.instance().getDefaultLanguage()));
+        container.put("fr", new DummyResource(defaultVertex, frVertex, Locale.FRENCH));
+        container.put("en", new DummyResource(defaultVertex, enVertex, Locale.ENGLISH));
+
+        return container;
+    }
 
     protected void addToLuceneIndex(String id, String json, Locale locale)
     {
