@@ -106,7 +106,7 @@ public class HtmlParser extends AbstractAssetParser
         String sourceStr = eatVelocityComments(rawSource);
         Source source = new Source(sourceStr);
 
-        // if we're dealing with a template, replace the source with the html in the template
+        // if we're dealing with a template (eg. the file is a template, not an instance of a template), replace the source with the html in the template
         boolean isTagTemplate = false;
         TemplateCache templateCache = this.getCachedTemplates();
         if (sourcePath!=null && templateCache.containsKey(sourcePath)) {
@@ -167,7 +167,7 @@ public class HtmlParser extends AbstractAssetParser
 
             //from here, it's the same for a Tag or Page template; preprocess the replaceable properties
 
-            //find and replace all property tags
+            //find and replace all property tags to velocity variables
             List<Element> allPropertyElements = templateHtml.getAllElements("property", notEmptyPropertyAttrValue);
             for (Element property : allPropertyElements) {
                 String name = property.getAttributeValue("property");
@@ -189,7 +189,7 @@ public class HtmlParser extends AbstractAssetParser
             source = new Source(builder.toString());
         }
 
-        //parse the main html
+        //parse the main html (same for templates and instances)
         OutputDocument output = new OutputDocument(source);
         Collection<HtmlTemplate> allTemplates = templateCache.values();
         for (HtmlTemplate tagTemplate : allTemplates) {
@@ -224,6 +224,7 @@ public class HtmlParser extends AbstractAssetParser
 
                         // if we specify multiple properties with the same name,
                         // make a "list" out of them
+                        //TODO BUG; this is not a list??
                         if (properties.containsKey(name)) {
                             value = properties.get(name) + value;
                         }
@@ -284,6 +285,7 @@ public class HtmlParser extends AbstractAssetParser
 
                 //if we don't do this, and the inner tag templates get processed first, it will be overwritten by the output of the outer tag template
                 source = new Source(output.toString());
+                output = new OutputDocument(source);
             }
         }
 
