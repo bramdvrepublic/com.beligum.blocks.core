@@ -5,7 +5,6 @@ import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.database.OBlocksDatabase;
 import com.beligum.blocks.resources.interfaces.Node;
 import com.beligum.blocks.resources.interfaces.Resource;
-import com.beligum.blocks.resources.jackson.ResourceJsonDeserializer;
 import com.beligum.blocks.resources.jackson.ResourceJsonSerializer;
 import com.beligum.blocks.utils.RdfTools;
 import com.fasterxml.jackson.core.Version;
@@ -161,7 +160,7 @@ public abstract class AbstractResource extends AbstractNode implements Resource
         // TODO move mapper to other class
         final SimpleModule module = new SimpleModule("customerSerializationModule", new Version(1, 0, 0, "static version"));
         module.addSerializer(Resource.class, new ResourceJsonSerializer());
-        module.addDeserializer(Resource.class, new ResourceJsonDeserializer());
+//        module.addDeserializer(Resource.class, new ResourceJsonDeserializer());
 
         final ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(module);

@@ -8,7 +8,6 @@ import com.beligum.blocks.database.interfaces.BlocksDatabase;
 import com.beligum.blocks.resources.AbstractResource;
 import com.beligum.blocks.resources.interfaces.Node;
 import com.beligum.blocks.resources.interfaces.Resource;
-import com.beligum.blocks.resources.jackson.ResourceJsonDeserializer;
 import com.beligum.blocks.resources.jackson.ResourceJsonSerializer;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;

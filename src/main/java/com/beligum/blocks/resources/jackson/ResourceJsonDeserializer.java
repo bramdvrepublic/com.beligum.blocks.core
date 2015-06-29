@@ -19,8 +19,8 @@
 //import java.util.*;
 //
 ///**
-// * Created by wouter on 21/05/15.
-// */
+//* Created by wouter on 21/05/15.
+//*/
 //public class ResourceJsonDeserializer extends JsonDeserializer<Resource>
 //{
 //    private Resource retVal = new DummyResource(new HashMap<String, Object>(), new HashMap<String, Object>(), Locale.ROOT);
@@ -42,7 +42,7 @@
 //        return (Resource)parseObject(node);
 //    }
 //
-//    private Node parseObject(JsonNode jsonNode) throws IOException
+//    private Node parseObject(JsonNode jsonNode)
 //    {
 //        HashMap<String, Object> rootValues = new HashMap<>();
 //        HashMap<String, Object> localValues = new HashMap<>();
@@ -59,43 +59,7 @@
 //            } else  {
 //                // parse hashMap
 //            }
-//
 //        }
-//
-//        while (jsonParser.nextToken() != JsonToken.END_OBJECT && !nodeFound) {
-//            String fieldName = jsonParser.getCurrentName();
-//            JsonToken currentToken = jsonParser.getCurrentToken();
-//            if (fieldName.equals(ParserConstants.JSONLD_VALUE)) {
-//                value = parseValue(currentToken);
-//            } else if (fieldName.equals(ParserConstants.JSONLD_LANGUAGE)) {
-//                String lang = currentToken.asString();
-//                locale = BlocksConfig.instance().getLocaleForLanguage(lang);
-//                if (locale == null) {
-//                    locale = Locale.ROOT;
-//                }
-//            } else if (fieldName.equals(ParserConstants.JSONLD_ID)) {
-//                idFound = true;
-//                rootValues.put(ParserConstants.JSONLD_ID, currentToken.asString());
-//            } else if (fieldName.equals(ParserConstants.JSONLD_TYPE)) {
-//               // parse set
-//            } else if (currentToken == JsonToken.START_OBJECT) {
-//                Node node = parseObject(jsonParser, new DummyResource(new HashMap<String, Object>(), new HashMap<String, Object>(), Locale.ROOT));
-//                if (node.getLanguage().equals(Locale.ROOT)) {
-//                    rootValues.put(fieldName, node.getValue());
-//                } else {
-//                    localValues.put(fieldName, node.getValue());
-//                }
-//            } else if (currentToken == JsonToken.START_ARRAY) {
-//                // parse list
-//            } else {
-//                // this is just a normal value
-//                rootValues.put(fieldName, parseValue(currentToken));
-//            }
-//
-//            if (locale != null && value != null) {
-//                return DummyBlocksDatabase.instance().createNode(value, locale);
-//            }
-//
 //
 //
 ////            if (current == JsonToken.START_ARRAY) {
@@ -110,12 +74,12 @@
 ////            } else {
 ////
 ////            }
-//        }
-//        return null;
+//
 //    }
 //
 //
 //    private Resource parseResource(JsonNode node) {
+//
 //        HashMap<String, String> context = new HashMap<String, String>();
 //        HashMap<String, Object> rootValues = new HashMap<String, Object>();
 //        HashMap<String, Object> localValues = new HashMap<String, Object>();
@@ -152,9 +116,17 @@
 //                } else if (entry.getValue().isArray()) {
 //
 //                } else if (entry.getValue().isObject()) {
-//                    parseObject(entry.getValue());
+//                    Node t = parseObject(entry.getValue());
+//                    if (t.getLanguage().equals(Locale.ROOT)) {
+//                        rootValues.put(entry.getKey(), t.getValue());
+//                    } else {
+//                        localValues.put(entry.getKey(), t.getValue());
+//                        if (locale == null) locale = t.getLanguage();
+//                    }
+//                } else {
+//                    rootValues.put(entry.getKey(), parseValue(entry.getValue()));
 //                }
-//                parseObject(entry.getValue())
+//
 //            } else if (entry.getValue().isArray()) {
 //                // parse list
 //            } else {
@@ -183,9 +155,9 @@
 //        return retVal;
 //    }
 //
-//    private Object parseValue(JsonToken jsonNode ) throws IOException
+//    private Node parseValue(JsonNode jsonNode )
 //    {
-//        Object retVal = null;
+//        Node retVal = null;
 //        return retVal;
 //    }
 //
