@@ -194,6 +194,7 @@ public class HtmlParser extends AbstractAssetParser
         Collection<HtmlTemplate> allTemplates = templateCache.values();
         for (HtmlTemplate tagTemplate : allTemplates) {
 
+            boolean replaced = false;
             List<net.htmlparser.jericho.Element> templateInstances = source.getAllElements(tagTemplate.getTemplateName());
             for (net.htmlparser.jericho.Element templateInstance : templateInstances) {
 
@@ -282,7 +283,10 @@ public class HtmlParser extends AbstractAssetParser
 
                 //replace the tag in the output with it's instance
                 output.replace(templateInstance, builder);
+                replaced = true;
+            }
 
+            if (replaced) {
                 //if we don't do this, and the inner tag templates get processed first, it will be overwritten by the output of the outer tag template
                 source = new Source(output.toString());
                 output = new OutputDocument(source);
