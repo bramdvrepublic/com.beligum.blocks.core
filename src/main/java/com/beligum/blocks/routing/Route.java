@@ -2,9 +2,12 @@ package com.beligum.blocks.routing;
 
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.BlocksConfig;
-import com.beligum.blocks.database.interfaces.BlocksDatabase;
-import com.beligum.blocks.routing.ifaces.WebNode;
+import com.beligum.blocks.database.DummyBlocksController;
+import com.beligum.blocks.database.OBlocksDatabase;
+import com.beligum.blocks.database.interfaces.BlocksController;
 import com.beligum.blocks.routing.ifaces.WebPath;
+import com.beligum.blocks.utils.RdfTools;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
@@ -16,7 +19,7 @@ import java.util.Locale;
  * Created by wouter on 1/06/15.
  *
  * Defines an internal Blocks route based on a uri
- * this is: the language, the rootNode, the final node (node where the route ends that contains the info for the router )
+ * this is: the getLanguage, the rootNode, the final node (node where the route ends that contains the info for the router )
  *
  */
 public class Route
@@ -24,17 +27,16 @@ public class Route
     private URI uri;
 
 
-    private BlocksDatabase database;
-    // simplePath is path without language e.g. /test
+    private BlocksController database;
+    // simplePath is path without getLanguage e.g. /test
     private Path simplePath;
-    // languagedPath is path with language e.g. /en/test
+    // languagedPath is path with getLanguage e.g. /en/test
     private Path languagedPath;
     private Locale locale;
-    private WebNode rootNode;
-    private WebNode finalNode;
+    private WebPath finalNode;
 
 
-    public Route(URI uri, BlocksDatabase database)
+    public Route(URI uri, BlocksController database)
     {
         this.database = database;
 
@@ -51,26 +53,22 @@ public class Route
             domain = BlocksConfig.instance().getSiteDomain();
         }
 
-        this.rootNode = database.getRootWebNode(domain.getHost());
-        if (this.rootNode == null) {
-            this.rootNode = database.createRootWebNode(domain.getHost());
-        }
 
         this.locale = getLanguageFromPath(currentPath);
         if (locale.equals(Locale.ROOT)) {
-            this.simplePath = currentPath;
+            this.simplePath = Paths.get("/").resolve(currentPath).normalize();
             this.languagedPath = Paths.get("/").resolve(BlocksConfig.instance().getDefaultLanguage().getLanguage()).resolve(this.simplePath).normalize();
             this.uri = UriBuilder.fromUri("").scheme(this.uri.getScheme()).userInfo(this.uri.getUserInfo()).host(this.uri.getHost()).port(this.uri.getPort()).path(this.languagedPath.toString()).replaceQuery(this.uri.getQuery()).fragment(this.uri.getFragment()).build();
         } else {
-            this.languagedPath = currentPath;
+            this.languagedPath = Paths.get("/").resolve(currentPath).normalize();
             if (currentPath.getNameCount() > 1) {
-                this.simplePath = currentPath.subpath(1, currentPath.getNameCount());
+                this.simplePath = Paths.get("/").resolve(currentPath.subpath(1, currentPath.getNameCount())).normalize();
             } else {
                 this.simplePath = Paths.get("/");
             }
         }
 
-        this.finalNode = getNodeFromNodeWithPath(this.rootNode, this.simplePath, this.locale);
+        this.finalNode = DummyBlocksController.instance().getPath(simplePath, this.locale);
 
     }
 
@@ -78,18 +76,18 @@ public class Route
         return this.finalNode != null;
     }
 
-    public void create() {
-        if (!this.exists()) {
-            this.finalNode = addPathToNode(this.rootNode, this.getPath(), this.locale);
-        }
+    public void create() throws JsonProcessingException
+    {
+        WebPath retVal = DummyBlocksController.instance().createPath(RdfTools.createLocalResourceId(OBlocksDatabase.MASTER_WEB_PAGE_CLASS), this.simplePath, this.locale);
+        this.finalNode = retVal;
     }
 
-    // Path without language
+    // Path without getLanguage
     public Path getPath() {
         return this.simplePath;
     }
 
-    // Path with language
+    // Path with getLanguage
     public Path getLanguagedPath() {
         return this.languagedPath;
     }
@@ -103,13 +101,25 @@ public class Route
         return this.uri;
     }
 
-    public WebNode getNode() {
+    public WebPath getWebPath() {
         return this.finalNode;
     }
 
-    public BlocksDatabase getBlocksDatabase() {
+    public BlocksController getBlocksDatabase() {
         return this.database;
     }
+
+
+
+    public void getAlternateLocalPath() {
+        WebPath webPath = DummyBlocksController.instance().getActivePath(simplePath);
+        if (webPath != null) {
+            this.finalNode = webPath;
+            this.locale = webPath.getLanguage();
+        }
+    }
+
+
 
     private Locale getLanguageFromPath(Path path)
     {
@@ -125,78 +135,77 @@ public class Route
         }
         return retVal;
     }
-
-    /*
-    * returns the end node following a path starting from a source,
-    * if no node is found return null
-    *
-    * @Param srcNode: node to start form
-    * @Param path: path without a language
-    * @Param locale: locale to search in
-    * */
-    public WebNode getNodeFromNodeWithPath(WebNode srcNode, Path path, Locale locale)
-    {
-        if (locale.equals(Locale.ROOT)) {
-            locale = BlocksConfig.instance().getDefaultLanguage();
-        }
-
-        WebNode currentNode = srcNode;
-        /*
-        * Starting from the root node, find each sub path. First find 1 for the currnet language
-        * If subpath is not found find a path with this name for the default language and without a path for the current language
-        * */
-        for (int i =0; i < path.getNameCount(); i++) {
-            if (currentNode != null) {
-                WebPath subPath = currentNode.getChildPath(path.getName(i).toString(), locale);
-                if (subPath == null && !locale.equals(BlocksConfig.instance().getDefaultLanguage())) {
-                    subPath = currentNode.getChildPath(path.getName(i).toString(), BlocksConfig.instance().getDefaultLanguage());
-
-                }
-                if (subPath != null) {
-                    currentNode = subPath.getChildWebNode();
-                } else {
-                    currentNode = null;
-                }
-            } else {
-                break;
-            }
-        }
-        return currentNode;
-
-    }
+//    /*
+//    * returns the end node following a path starting from a source,
+//    * if no node is found return null
+//    *
+//    * @Param srcNode: node to start form
+//    * @Param path: path without a getLanguage
+//    * @Param locale: locale to search in
+//    * */
+//    public WebNode getNodeFromNodeWithPath(WebNode srcNode, Path path, Locale locale)
+//    {
+//        if (locale.equals(Locale.ROOT)) {
+//            locale = BlocksConfig.instance().getDefaultLanguage();
+//        }
+//
+//        WebNode currentNode = srcNode;
+//        /*
+//        * Starting from the root node, find each sub path. First find 1 for the currnet getLanguage
+//        * If subpath is not found find a path with this name for the default getLanguage and without a path for the current getLanguage
+//        * */
+//        for (int i =0; i < path.getNameCount(); i++) {
+//            if (currentNode != null) {
+//                WebPath subPath = currentNode.getChildPath(path.getName(i).toString(), locale);
+//                if (subPath == null && !locale.equals(BlocksConfig.instance().getDefaultLanguage())) {
+//                    subPath = currentNode.getChildPath(path.getName(i).toString(), BlocksConfig.instance().getDefaultLanguage());
+//
+//                }
+//                if (subPath != null) {
+//                    currentNode = subPath.getChildWebNode();
+//                } else {
+//                    currentNode = null;
+//                }
+//            } else {
+//                break;
+//            }
+//        }
+//        return currentNode;
+//
+//    }
 
     /*
     * Create a path in the database starting from the given node
     *
     * @param srcNode    the node to start from
     * @param path       the path to create
-    * @param locale     the language of the path
+    * @param locale     the getLanguage of the path
     * @return           returns the last node of the path
     * */
-    public WebNode addPathToNode(WebNode srcNode, Path path, Locale locale)
-    {
-        if (locale.equals(Locale.ROOT)) {
-            locale = BlocksConfig.instance().getDefaultLanguage();
-        }
-
-        WebNode retVal = srcNode;
-        /*
-        * Starting from the root node, find each sub path. First find 1 for the current language
-        * If subpath is not found find a path with this name for the default language and without a path for the current language
-        * */
-        for (int i =0; i < path.getNameCount(); i++) {
-            if (retVal != null) {
-                WebNode prev = retVal;
-                retVal = getNodeFromNodeWithPath(retVal, path.getName(i), locale);
-                if (retVal == null) {
-                    retVal = database.createWebNode(prev, path.getName(i).toString(), locale);
-                }
-            } else {
-                break;
-            }
-        }
-        return retVal;
-    }
+//    public WebNode addPathToNode(URI masterpage, Path path, Locale locale)
+//    {
+//        if (locale.equals(Locale.ROOT)) {
+//            locale = BlocksConfig.instance().getDefaultLanguage();
+//        }
+//
+//        WebNode retVal = null;
+//        /*
+//        * Starting from the root node, find each sub path. First find 1 for the current getLanguage
+//        * If subpath is not found find a path with this name for the default getLanguage and without a path for the current getLanguage
+//        * */
+//        for (int i =0; i < path.getNameCount(); i++) {
+//            if (retVal != null) {
+//                WebNode prev = retVal;
+//                retVal = getNodeFromNodeWithPath(retVal, path.getName(i), locale);
+//                if (retVal == null) {
+//                    retVal = database.createWebNode(masterpage, path.getName(i), locale);
+//                }
+//            } else {
+//                break;
+//            }
+//        }
+//        return retVal;
+//    }
 
 
 

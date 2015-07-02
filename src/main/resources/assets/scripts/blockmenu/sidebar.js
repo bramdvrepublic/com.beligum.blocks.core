@@ -35,9 +35,21 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
      * When clicking a property disable drag drop
      * */
     var setBlockFocus = function(property, block) {
+        // Defines the element outside which to click to blur
+        // is block if block is available
+        var borderingElement = null;
 
-        block.element.parents().siblings().addClass(Constants.OPACITY_CLASS);
-        block.element.siblings().addClass(Constants.OPACITY_CLASS);
+        // Blur everything visually
+        if (block != null) {
+            block.element.parents().siblings().addClass(Constants.OPACITY_CLASS);
+            block.element.siblings().addClass(Constants.OPACITY_CLASS);
+            borderingElement = block.element;
+        } else {
+            property.parents().siblings().addClass(Constants.OPACITY_CLASS);
+            property.siblings().addClass(Constants.OPACITY_CLASS);
+            borderingElement = property;
+        }
+
         var sidebarElement = $("." + Constants.PAGE_SIDEBAR_CLASS);
         sidebarElement.removeClass(Constants.OPACITY_CLASS);
         Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
@@ -53,7 +65,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 return;
             }
 
-            while (newProperty == null && element[0] != block.element[0] && element.parent().length > 0) {
+            while (newProperty == null && element[0] != borderingElement[0] && element.parent().length > 0) {
                 if (element.hasAttribute("property") || element.hasAttribute("data-property")) {
                     newProperty=element;
                 } else {
@@ -62,17 +74,21 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             }
 
             // check if we clicked outside this block
-            if (!block.element.is(e.target) && block.element.has(e.target).length === 0 && block.element != newProperty && block.element.has(newProperty).length === 0) {
+            if (!borderingElement.is(e.target) && borderingElement.has(e.target).length === 0 && borderingElement != newProperty && borderingElement.has(newProperty).length === 0) {
                 // we clicked outside the property
-                if (!block.isTriggered(e.pageX, e.pageY)) {
+                if (block == null || !block.isTriggered(e.pageX, e.pageY)) {
                     // remove this trigger
                     $(document).off("mousedown.sidebar");
                     // blur this block
                     $("." + Constants.OPACITY_CLASS).removeClass(Constants.OPACITY_CLASS);
-                    var editFunction = Edit.makeEditable(block.element);
-                    if (editFunction != null && editFunction.blur != null) {
-                        editFunction.blur(property, block);
+
+                    if (block != null) {
+                        var editFunction = Edit.makeEditable(block.element);
+                        if (editFunction != null && editFunction.blur != null) {
+                            editFunction.blur(property, block);
+                        }
                     }
+
                     if (property != null) {
                         var editFunction = Edit.makeEditable(property);
                         if (editFunction != null && editFunction.blur != null) {
@@ -86,6 +102,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
                 }
             }
+
             // We didn't change block but we did change property
             else if (newProperty != null && (property == null || newProperty[0] != property[0])) {
                 // remove this trigger
@@ -138,7 +155,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         }
 
         var block = blockEvent.property.current;
-        if (block != null) {
+        //if (block != null) {
             setBlockFocus(property, block);
             if (editFunction != null) {
                 editFunction.focus(property, blockEvent);
@@ -153,7 +170,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 }
                 block = block.parent;
             }
-        }
+        //}
 
     };
 
@@ -170,7 +187,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         button.click(function() {
             confirm.removeClass("hidden");
             text.addClass("hidden");
-            highlight(property.element);
         });
 
         no.click(function() {
@@ -179,8 +195,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         });
 
         yes.click(function() {
-            highlight(property.element);
-            SideBar.reset();
+            reset();
             $("." + Constants.OPACITY_CLASS).removeClass(Constants.OPACITY_CLASS);
             Layouter.removeBlock(property);
         })
@@ -189,6 +204,10 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
         remove.mouseenter(function() {
             highlight(property.element);
+        });
+
+        remove.mouseleave(function() {
+            unhighlight(property.element);
         });
 
         $("#inbetween").prepend(remove);
@@ -222,6 +241,10 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
             div.mouseenter(function() {
                 highlight(element);
+            });
+
+            div.mouseleave(function() {
+                unhighlight(element);
             });
         }
         return windowId
@@ -294,7 +317,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             }
             var blockEvent = Broadcaster.createEvent(event);
 
-            if (blockEvent.block.current != null) {
+            if (blockEvent.block.current != null || property != null) {
                 Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
                 update(property, blockEvent);
                 Logger.debug("test 1st click");
@@ -315,11 +338,16 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         element.addClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
         element.addClass(Constants.HIGHLIGHT_CLASS);
         setTimeout(function(){
-            element.removeClass(Constants.HIGHLIGHT_CLASS);
-            setTimeout(function(){
-                element.removeClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
-            }, 400);
-        }, 400);
+            element.removeClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
+        }, 200);
+    }
+
+    var unhighlight = function(element) {
+        element.removeClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
+        element.removeClass(Constants.HIGHLIGHT_CLASS);
+        setTimeout(function(){
+            element.removeClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
+        }, 200);
     }
 
 }]);

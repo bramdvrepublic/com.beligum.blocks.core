@@ -110,6 +110,10 @@ body.@{FORCE_RESIZE_CURSOR_CLASS}, body.@{FORCE_DRAG_CURSOR_CLASS} * {
   outline: 1px dotted rgba(100, 100, 100, 0.8);
 }
 
+[property]:focus {
+  outline: 1px dotted rgba(100, 100, 100, 0.8);
+}
+
 .@{PREVENT_SELECTION_CLASS} {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
@@ -195,8 +199,8 @@ iframe.edit {
     transition: 0.4s;
 }
 
-.@{HIGHLIGHT_CLASS} {
-  outline: blue dotted thick;
+.@{HIGHLIGHT_CLASS}, .@{HIGHLIGHT_CLASS}:focus {
+  outline: #7ec4ff dotted 2px;
 }
 
 .@{REMOVE_BLOCK_CLASS} {

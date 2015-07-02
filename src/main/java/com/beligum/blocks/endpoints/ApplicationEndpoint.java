@@ -1,41 +1,17 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.base.server.R;
 import com.beligum.base.server.RequestContext;
-import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.database.OBlocksDatabase;
-import com.beligum.blocks.resources.dummy.DummyResource;
-import com.beligum.blocks.resources.interfaces.Resource;
+import com.beligum.blocks.database.DummyBlocksController;
 import com.beligum.blocks.routing.HtmlRouter;
 import com.beligum.blocks.routing.ifaces.Router;
 import com.beligum.blocks.routing.Route;
-import com.beligum.blocks.search.ElasticSearchClient;
-import com.beligum.blocks.search.ElasticSearchServer;
-import com.beligum.blocks.search.SearchCommand;
-import com.beligum.blocks.templating.blocks.HtmlParser;
-import com.beligum.blocks.templating.blocks.HtmlTemplate;
-import com.beligum.blocks.utils.RdfTools;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import gen.com.beligum.blocks.core.fs.html.views.search;
-import org.elasticsearch.action.count.CountRequestBuilder;
-import org.elasticsearch.action.count.CountResponse;
-import org.elasticsearch.action.search.SearchRequestBuilder;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.MatchAllQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.sort.SortOrder;
 
 import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.*;
 
 @Path("/")
@@ -83,12 +59,10 @@ public class ApplicationEndpoint
         Response retVal;
         URI currentURI = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
 
-        Route route = new Route(currentURI, OBlocksDatabase.instance());
+        Route route = new Route(currentURI, DummyBlocksController.instance());
         if (!route.getLocale().equals(Locale.ROOT)) {
             Router router = new HtmlRouter(route);
             retVal = router.response();
-            // Todo Remove when this sits in db
-            //            OBlocksDatabase.instance().getGraph().commit();
         } else {
             URI url = UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path(BlocksConfig.instance().getDefaultLanguage().getLanguage()).path(route.getLanguagedPath().toString()).build();
             retVal = Response.seeOther(url).build();
@@ -97,13 +71,13 @@ public class ApplicationEndpoint
     }
 
     //    @GET
-    //    @Path("{language:.*}/resource/{name:.*}")
-    //    public Response showResource(@PathParam("language") String language, @PathParam("name") String name, @QueryParam("q") String query, @DefaultValue("1") @QueryParam("page") long page) throws Exception
+    //    @Path("{getLanguage:.*}/resource/{name:.*}")
+    //    public Response showResource(@PathParam("getLanguage") String getLanguage, @PathParam("name") String name, @QueryParam("q") String query, @DefaultValue("1") @QueryParam("page") long page) throws Exception
     //    {
     //        int RESOURCES_ON_PAGE = 25;
-    //        Locale locale = BlocksConfig.instance().getLocaleForLanguage(language);
+    //        Locale locale = BlocksConfig.instance().getLocaleForLanguage(getLanguage);
     //        java.nio.file.Path path = Paths.get(name);
-    //        if (path.getNameCount() > 1 || !locale.getLanguage().equals(language)) {
+    //        if (path.getNameCount() > 1 || !locale.getLanguage().equals(getLanguage)) {
     //            return getPageWithId(RequestContext.getJaxRsRequest().getUriInfo().getRequestUri().getPath().toString());
     //        }
     //

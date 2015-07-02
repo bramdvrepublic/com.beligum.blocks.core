@@ -46,9 +46,9 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
         var editBox = $('<div class="hidden" />');
 
         var labelRemove = $('<div class="hidden">Are you sure you want to remove the image</div>');
-        var yesButton = $('<span class="label btn btn-success pull-right"><i class="fa fa-check"></i></span>');
-        var noButton = $('<span class="label btn btn-danger pull-right"><i class="fa fa-times"></i></span>');
-        labelRemove.append(yesButton).append(noButton);
+        var yesRemoveButton = $('<span class="label btn btn-success pull-right"><i class="fa fa-check"></i></span>');
+        var noRemoveButton = $('<span class="label btn btn-danger pull-right"><i class="fa fa-times"></i></span>');
+        labelRemove.append(yesRemoveButton).append(noRemoveButton);
 
         editBox.append(labelEdit);
         editBox.append(Plugin.addValueAttribute(image, "image url", "src", true));
@@ -69,12 +69,12 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
             label.addClass("hidden");
         });
 
-        noButton.click(function() {
+        noRemoveButton.click(function() {
             label.removeClass("hidden");
             labelRemove.addClass("hidden");
         });
 
-        yesButton.click(function() {
+        yesRemoveButton.click(function() {
             label.removeClass("hidden");
             labelRemove.addClass("hidden");
             listGroupItem.remove();

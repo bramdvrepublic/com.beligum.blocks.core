@@ -18,7 +18,7 @@
 //          {
 //            "characteristics": [
 //              {
-//                "@language": "nl",
+//                "@getLanguage": "nl",
 //                "@value": "10 x 14 mm"
 //              }
 //            ],
@@ -28,79 +28,79 @@
 //              //            "paard",
 //              //            "hoepel",
 //              //            {
-//              //              "@language": "fr",
+//              //              "@getLanguage": "fr",
 //              //              "@value": "cheval"
 //              //            },
 //              //            {
-//              //              "@language": "fr",
+//              //              "@getLanguage": "fr",
 //              //              "@value": "cerceau"
 //              //            },
 //              //            {
-//              //              "@language": "en",
+//              //              "@getLanguage": "en",
 //              //              "@value": "horse"
 //              //            },
 //              //            {
-//              //              "@language": "en",
+//              //              "@getLanguage": "en",
 //              //              "@value": "hoop"
 //              //            },
 //              {
-//                "@language": "nl",
+//                "@getLanguage": "nl",
 //                "@value": "paard"
 //              },
 //              {
-//                "@language": "nl",
+//                "@getLanguage": "nl",
 //                "@value": "hoepel"
 //              }
 //            ],
 //            "id": [
 //              {
-//                "@language": "nl",
+//                "@getLanguage": "nl",
 //                "@value": "00000409"
 //              }
 //            ],
 //            "image": [
 //              {
-//                "@language": "nl",
+//                "@getLanguage": "nl",
 //                "@value": "/assets/images/resources/weblogo/MOT F 1012.1186.jpg"
 //              }
 //            ],
 //            "name": [
 //              {
-//                "@language": "nl",
+//                "@getLanguage": "nl",
 //                "@value": "WebLogoWhat.00000409"
 //              }
 //            ],
 //            "notes": [
 //              //            {
-//              //              "@language": "fr",
+//              //              "@getLanguage": "fr",
 //              //              "@value": "Made in = fabriqué à."
 //              //            },
 //              {
-//                "@language": "nl",
+//                "@getLanguage": "nl",
 //                "@value": "Made in = gemaakt in"
 //              }
 //            ],
 //            "numbers": [
 //              {
-//                "@language": "nl",
+//                "@getLanguage": "nl",
 //                "@value": "1"
 //              }
 //            ],
 //            "technique": [
 //              {
-//                "@language": "nl",
+//                "@getLanguage": "nl",
 //                "@value": "1"
 //              }
 //            ],
 //            "text": [
 //              {
-//                "@language": "nl",
+//                "@getLanguage": "nl",
 //                "@value": "SPEZIAL MADE IN GERMANY"
 //              }
 //            ],
 //            "verified": [
 //              {
-//                "@language": "nl",
+//                "@getLanguage": "nl",
 //                "@value": "1"
 //              }
 //            ],

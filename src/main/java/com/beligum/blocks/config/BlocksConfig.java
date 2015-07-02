@@ -28,7 +28,7 @@ public class BlocksConfig
     public static final String PROPERTIES_FILE = "blocks.properties";
 
     /**the languages this site can work with, ordered from most preferred languages, to less preferred*/
-    private HashMap<String, Locale> cachedLanguages;
+    private LinkedHashMap<String, Locale> cachedLanguages;
     private Locale defaultLanguage;
     public String projectVersion = null;
     private URI siteDomain;
@@ -113,18 +113,18 @@ public class BlocksConfig
     }
 
     /**
-     * @return The languages this site can work with, ordered from most preferred language, to less preferred. If no such languages are specified in the configuration xml, an array with a default language is returned.
+     * @return The languages this site can work with, ordered from most preferred getLanguage, to less preferred. If no such languages are specified in the configuration xml, an array with a default getLanguage is returned.
      */
-    public HashMap<String, Locale> getLanguages(){
+    public LinkedHashMap<String, Locale> getLanguages(){
         if(cachedLanguages==null){
-            cachedLanguages = new HashMap<>();
+            cachedLanguages = new LinkedHashMap<>();
             ArrayList<String> cachedLanguagesTemp = new ArrayList<String>(Arrays.asList(R.configuration().getStringArray("blocks.site.languages")));
 
             for (String l : cachedLanguagesTemp) {
 
                 Locale locale = new Locale(l);
                 if (this.defaultLanguage == null) this.defaultLanguage = locale;
-//                String language = locale;
+//                String getLanguage = locale;
                 cachedLanguages.put(locale.getLanguage(), locale);
             }
             if(cachedLanguages.size() == 0){
@@ -163,7 +163,7 @@ public class BlocksConfig
 
     /**
      *
-     * @return The first languages in the languages-list, or the no-language-constant if no such list is present in the configuration-xml.
+     * @return The first languages in the languages-list, or the no-getLanguage-constant if no such list is present in the configuration-xml.
      */
     public Locale getDefaultLanguage(){
         if (defaultLanguage == null) {

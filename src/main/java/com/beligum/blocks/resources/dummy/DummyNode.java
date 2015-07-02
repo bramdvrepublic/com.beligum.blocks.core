@@ -1,7 +1,7 @@
 package com.beligum.blocks.resources.dummy;
 
-import com.beligum.blocks.database.DummyBlocksDatabase;
-import com.beligum.blocks.database.interfaces.BlocksDatabase;
+import com.beligum.blocks.database.DummyBlocksController;
+import com.beligum.blocks.database.interfaces.BlocksController;
 import com.beligum.blocks.resources.AbstractNode;
 
 import java.util.Locale;
@@ -17,8 +17,8 @@ public class DummyNode extends AbstractNode
     }
 
     @Override
-    public BlocksDatabase getDatabase()
+    public BlocksController getDatabase()
     {
-        return DummyBlocksDatabase.instance();
+        return DummyBlocksController.instance();
     }
 }

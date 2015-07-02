@@ -460,6 +460,14 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core
         removeOverlay: function ()
         {
             if (this.overlay != null) this.overlay.remove();
+        },
+
+        calculateDropspots: function(side, dropspots) {
+            return [];
+        },
+
+        generateDropspots: function() {
+
         }
     });
 

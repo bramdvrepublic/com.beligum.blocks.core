@@ -14,6 +14,8 @@ public interface WebPage extends Resource
 {
     public URI getBlockId();
 
+    public URI getMasterpageId();
+
     public String getParsedHtml();
     public void setParsedHtml(String parsedHtml);
 
@@ -36,8 +38,7 @@ public interface WebPage extends Resource
     public void addLink(HashMap<String, String> link);
 
     public Locale getLanguage();
+    public void setLanguage(Locale locale);
 
-    public void setChanged();
-    public boolean hasChanged();
 
 }

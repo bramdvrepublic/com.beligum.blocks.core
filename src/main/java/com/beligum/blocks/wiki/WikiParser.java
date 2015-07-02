@@ -1,40 +1,25 @@
 package com.beligum.blocks.wiki;
 
-import com.beligum.base.server.R;
-import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.database.DummyBlocksDatabase;
+import com.beligum.blocks.database.DummyBlocksController;
 import com.beligum.blocks.database.OBlocksDatabase;
-import com.beligum.blocks.endpoints.PageEndpoint;
 import com.beligum.blocks.resources.dummy.DummyResource;
 import com.beligum.blocks.resources.interfaces.Node;
 import com.beligum.blocks.resources.interfaces.Resource;
 import com.beligum.blocks.resources.jackson.ResourceJsonLDSerializer;
-import com.beligum.blocks.pages.WebPageParser;
-import com.beligum.blocks.pages.ifaces.WebPage;
-import com.beligum.blocks.routing.Route;
 import com.beligum.blocks.search.ElasticSearchClient;
 import com.beligum.blocks.search.ElasticSearchServer;
 import com.beligum.blocks.utils.RdfTools;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.orientechnologies.orient.core.config.OGlobalConfiguration;
-import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
-import com.orientechnologies.orient.core.intent.OIntentMassiveInsert;
-import com.orientechnologies.orient.core.record.impl.ODocument;
-import com.tinkerpop.blueprints.impls.orient.OrientGraph;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.util.AntPathMatcher;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.bulk.BulkResponse;
-import org.joda.time.DateTime;
 import org.joda.time.LocalDateTime;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
 import java.io.*;
 import java.net.URI;
 import java.nio.file.*;
@@ -162,7 +147,7 @@ public abstract class WikiParser
 
     public void createEntities()
     {
-        OBlocksDatabase.instance().getGraph().getRawGraph().declareIntent(new OIntentMassiveInsert());
+//        OBlocksDatabase.instance().getGraph().getRawGraph().declareIntent(new OIntentMassiveInsert());
         int count = 0;
         int listsize = itemsList.size();
         for (int index = start; index < start + length; index++) {
@@ -229,8 +214,6 @@ public abstract class WikiParser
 
     public abstract String getSimpleTypeName();
 
-    public abstract void toLucene();
-
     public abstract String getTemplatename();
 
     public HashMap<String,Resource> createResources(HashMap<String,Resource> container, URI id, URI type)
@@ -261,12 +244,6 @@ public abstract class WikiParser
         return container;
     }
 
-    protected void addToLuceneIndex(String id, String json, Locale locale)
-    {
-        this.bulkRequest.add(ElasticSearchClient.instance().getClient().prepareIndex(ElasticSearchServer.instance().getResourceIndexName(locale), "resource")
-                                                .setSource(json)
-                                                .setId(id));
-    }
 
     public abstract Resource fillEntity(HashMap<String, HashMap<String, String>> item, Locale lang);
 
@@ -279,14 +256,14 @@ public abstract class WikiParser
                 if (value.isString()) {
                     String[] splitValue = value.asString().split("\\|");
                     for (String v : splitValue) {
-                        entity.add(name, DummyBlocksDatabase.instance().createNode(v.trim(), BlocksConfig.instance().getDefaultLanguage()));
+                        entity.add(name, DummyBlocksController.instance().createNode(v.trim(), BlocksConfig.instance().getDefaultLanguage()));
                     }
                 }
             }
         } else if (property != null && property.isString()) {
             String[] splitValue = property.asString().split("\\|");
             for (String v : splitValue) {
-                entity.add(name, DummyBlocksDatabase.instance().createNode(v.trim(), property.getLanguage()));
+                entity.add(name, DummyBlocksController.instance().createNode(v.trim(), property.getLanguage()));
             }
         }
 
@@ -299,12 +276,12 @@ public abstract class WikiParser
         if (property != null && property.isIterable()) {
             for (Node node: property) {
                 if (node.isString()) {
-                    entity.add(name, DummyBlocksDatabase.instance().createNode(prefix + node.asString().trim(), property.getLanguage()));
+                    entity.add(name, DummyBlocksController.instance().createNode(prefix + node.asString().trim(), property.getLanguage()));
 
                 }
             }
         } else if (property.isString()) {
-            entity.add(name, DummyBlocksDatabase.instance().createNode(prefix + property.asString().trim(), property.getLanguage()));
+            entity.add(name, DummyBlocksController.instance().createNode(prefix + property.asString().trim(), property.getLanguage()));
         }
 
     }
@@ -381,12 +358,12 @@ public abstract class WikiParser
                     Date date = new Date(millis*1000);
                     Calendar cal = Calendar.getInstance();
                     cal.setTime(date);
-                    entity.setCreatedAt(cal);
+                    entity.setCreatedAt(new LocalDateTime(cal.getTime()));
                 } catch(Exception e) {
                     Logger.debug("Could not parse time", e);
                 }
             } else {
-                entity.add(RdfTools.makeLocalAbsolute(newFieldName), DummyBlocksDatabase.instance().createNode(value, language));
+                entity.add(RdfTools.makeLocalAbsolute(newFieldName), DummyBlocksController.instance().createNode(value, language));
             }
         }
     }

@@ -6,7 +6,7 @@ base.plugin("blocks.edit.Image", ["constants.blocks.common", "blocks.core.Edit",
 
     this.focus = function(element, blockEvent) {
         var windowID = Sidebar.createWindow(Constants.CONTENT, blockEvent.block.current.element, "Afbeelding");
-        Sidebar.addValueAttribute(windowID, element, "image url", "src", true, false, true);
+        Sidebar.addValueAttribute(windowID, element, "image url", "src", true, true, true);
     };
 
     this.blur = function() {

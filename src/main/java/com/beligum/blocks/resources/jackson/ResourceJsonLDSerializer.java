@@ -73,30 +73,30 @@ public class ResourceJsonLDSerializer extends JsonSerializer<Resource>
             printListNode(jgen, field, locale);
         } else if (field.isBoolean()) {
             jgen.writeStartObject();
-            jgen.writeFieldName("@value");
+            jgen.writeFieldName(ParserConstants.JSONLD_VALUE);
             jgen.writeBoolean(field.getBoolean());
             jgen.writeEndObject();
         } else if (field.isInt()) {
             jgen.writeStartObject();
-            jgen.writeFieldName("@value");
+            jgen.writeFieldName(ParserConstants.JSONLD_VALUE);
             jgen.writeNumber(field.getInteger());
             jgen.writeEndObject();
         } else if (field.isDouble()) {
             jgen.writeStartObject();
-            jgen.writeFieldName("@value");
+            jgen.writeFieldName(ParserConstants.JSONLD_VALUE);
             jgen.writeNumber(field.getDouble());
             jgen.writeEndObject();
         } else if (field.isLong()) {
             jgen.writeStartObject();
-            jgen.writeFieldName("@value");
+            jgen.writeFieldName(ParserConstants.JSONLD_VALUE);
             jgen.writeString(field.getLong().toString());
             jgen.writeEndObject();
         } else if (field.isString()) {
             jgen.writeStartObject();
-            jgen.writeFieldName("@value");
+            jgen.writeFieldName(ParserConstants.JSONLD_VALUE);
             jgen.writeString(field.asString());
             if (field.getLanguage() != Locale.ROOT) {
-                jgen.writeFieldName("@language");
+                jgen.writeFieldName(ParserConstants.JSONLD_LANGUAGE);
                 jgen.writeString(field.getLanguage().getLanguage());
             }
             jgen.writeEndObject();

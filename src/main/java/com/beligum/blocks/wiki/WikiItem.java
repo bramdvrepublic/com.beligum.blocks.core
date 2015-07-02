@@ -205,7 +205,7 @@ public class WikiItem
             for (String lang : this.properties.get(key).keySet()) {
                 if (lang != null) {
                     if (stored.get(key).containsKey(lang)) {
-                        Logger.warn("Overwriting field for language " + lang + " in item " + this.getId().toString());
+                        Logger.warn("Overwriting field for getLanguage " + lang + " in item " + this.getId().toString());
                     }
                     stored.get(key).put(lang, this.cleanData(this.properties.get(key).get(lang)));
                 }

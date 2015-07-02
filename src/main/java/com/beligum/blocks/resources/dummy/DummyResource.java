@@ -1,11 +1,13 @@
 package com.beligum.blocks.resources.dummy;
 
+import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.database.DummyBlocksDatabase;
-import com.beligum.blocks.database.interfaces.BlocksDatabase;
+import com.beligum.blocks.database.DummyBlocksController;
+import com.beligum.blocks.database.interfaces.BlocksController;
 import com.beligum.blocks.resources.AbstractResource;
 import com.beligum.blocks.resources.interfaces.Node;
 import com.beligum.blocks.resources.interfaces.Resource;
+import org.joda.time.LocalDateTime;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
@@ -16,14 +18,18 @@ import java.util.*;
  */
 public class DummyResource extends AbstractResource
 {
-
+    private Object dbId;
     private Map<String, Object> vertex;
     private Map<String, Object> localized;
 
-    public DummyResource(Map<String, Object> vertex, Map<String, Object> localized, Locale locale) {
+    public DummyResource(Map<String, Object> vertex, Map<String, Object> localized) {
         this.vertex = vertex;
         this.localized = localized;
-        this.language = locale;
+    }
+
+    public DummyResource(Map<String, Object> vertex, Map<String, Object> localized, Locale language) {
+        this(vertex, localized);
+        this.language = language;
     }
 
     @Override
@@ -142,35 +148,71 @@ public class DummyResource extends AbstractResource
     @Override
     public Object getDBId()
     {
-        return this.vertex.get(ParserConstants.JSONLD_ID);
+        return this.dbId;
+    }
+
+    @Override
+    public void setDBId(Object id)
+    {
+        this.dbId = id;
     }
 
     @Override
     public Set<URI> getFields()
     {
         Set<URI>retVal = new HashSet<URI>();
-        Set<String> properties = this.vertex.keySet();
-        for (String prop: properties) {
-            if (prop.startsWith("http://")) {
-                retVal.add(UriBuilder.fromUri(prop).build());
-            }
-        }
-        properties = this.localized.keySet();
-        for (String prop: properties) {
-            if (prop.startsWith("http://")) {
-                retVal.add(UriBuilder.fromUri(prop).build());
-            }
-        }
+        retVal.addAll(getLocalizedFields());
+        retVal.addAll(getRootFields());
 
         return retVal;
     }
     @Override
-    public void setCreatedAt(Calendar date)
+    public Set<URI> getLocalizedFields()
+    {
+        Set<URI>retVal = new HashSet<URI>();
+        Set<String> properties = this.localized.keySet();
+        HashMap<String, String> context = getContext();
+        for (String prop: properties) {
+            if (context.containsKey(prop)) {
+                retVal.add(UriBuilder.fromUri(this.getContext().get(prop)).build());
+            }
+        }
+        return retVal;
+    }
+    @Override
+    public Set<URI> getRootFields()
+    {
+        Set<URI>retVal = new HashSet<URI>();
+        Set<String> properties = this.vertex.keySet();
+
+        // fetch context first to prevent ConcurrentModifictionException
+        HashMap<String, String> context = getContext();
+        for (String prop: properties) {
+            if (context.containsKey(prop)) {
+                retVal.add(UriBuilder.fromUri(this.getContext().get(prop)).build());
+            }
+        }
+        return retVal;
+    }
+
+    @Override
+    public Locale getLanguage() {
+        Locale retVal = this.language;
+        if (retVal == null) {
+            String language = (String)vertex.get(ParserConstants.JSONLD_LANGUAGE);
+            retVal = BlocksConfig.instance().getLocaleForLanguage(language);
+            this.language = retVal;
+        }
+        return retVal;
+    }
+
+    @Override
+    public void setCreatedAt(LocalDateTime date)
     {
 
     }
     @Override
-    public Calendar getCreatedAt()
+    public LocalDateTime getCreatedAt()
     {
         return null;
     }
@@ -185,12 +227,12 @@ public class DummyResource extends AbstractResource
         return null;
     }
     @Override
-    public void setUpdatedAt(Calendar date)
+    public void setUpdatedAt(LocalDateTime date)
     {
 
     }
     @Override
-    public Calendar getUpdatedAt()
+    public LocalDateTime getUpdatedAt()
     {
         return null;
     }
@@ -205,9 +247,9 @@ public class DummyResource extends AbstractResource
         return null;
     }
     @Override
-    public BlocksDatabase getDatabase()
+    public BlocksController getDatabase()
     {
-        return DummyBlocksDatabase.instance();
+        return DummyBlocksController.instance();
     }
 
     @Override

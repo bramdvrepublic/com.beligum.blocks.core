@@ -28,14 +28,14 @@ public class ResourceSearch
         URI uri = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
         Response retVal = null;
 
-        // Find the language of this url. If not found redirect internally to the default method to show pages
+        // Find the getLanguage of this url. If not found redirect internally to the default method to show pages
         Locale locale = null;
-        java.nio.file.Path path = Paths.get("uri.getPath()");
+        java.nio.file.Path path = Paths.get(uri.getPath());
         if (path.getNameCount() > 0) {
             locale = BlocksConfig.instance().getLocaleForLanguage(path.getName(0).toString());
         }
 
-        // if language does not exist -> redirect
+        // if getLanguage does not exist -> redirect
         if (locale == null) {
             ApplicationEndpoint endpoint = new ApplicationEndpoint();
             retVal = endpoint.getPageWithId(RequestContext.getJaxRsRequest().getUriInfo().getRequestUri().getPath().toString());

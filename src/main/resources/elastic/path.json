@@ -1,0 +1,38 @@
+{
+  "path": {
+    "properties": {
+      "url" : {
+        "type" : "string",
+        "index-analyzer" : "path_hierarchy",
+        "fields": {
+          "@raw": {
+            "type": "string",
+            "index": "not_analyzed"
+          }
+        }
+      },
+      "localized_url": {
+        "type" : "string",
+        "index-analyzer" : "path_hierarchy",
+        "fields": {
+          "@raw": {
+            "type": "string",
+            "index": "not_analyzed"
+          }
+        }
+      },
+      "@language": {
+        "type": "string",
+        "index": "not_analyzed"
+      },
+      "master_page": {
+        "type": "string",
+        "index": "not_analyzed"
+      },
+      "status_code": {
+        "type": "string",
+        "index": "not_analyzed"
+      }
+    }
+  }
+}

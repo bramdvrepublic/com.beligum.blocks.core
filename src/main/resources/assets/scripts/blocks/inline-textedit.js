@@ -43,7 +43,7 @@ base.plugin("blocks.core.edit.InlineText", ["constants.blocks.common", "blocks.c
         var editor = Editor.getEditor(element, false);
 
         // Add toolbar to sidebar
-        var windowID = Sidebar.createWindow(Constants.STYLE, blockEvent.block.current.element, "Tekst");
+        var windowID = Sidebar.createWindow(Constants.STYLE, element, "Tekst");
         Sidebar.addUIForProperty(windowID, element, Editor.toolbarElement);
 
         setCursor(blockEvent.clientX, blockEvent.clientY);
@@ -56,5 +56,6 @@ base.plugin("blocks.core.edit.InlineText", ["constants.blocks.common", "blocks.c
     };
 
     Edit.registerByTag("SPAN", this);
+    Edit.registerByTag("A", this);
 
 }]);

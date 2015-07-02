@@ -6,23 +6,20 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
-import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
-import com.beligum.blocks.database.DummyBlocksDatabase;
+import com.beligum.blocks.database.DummyBlocksController;
 import com.beligum.blocks.database.OBlocksDatabase;
 import com.beligum.blocks.pages.WebPageParser;
-import com.beligum.blocks.pages.ifaces.MasterWebPage;
 import com.beligum.blocks.pages.ifaces.WebPage;
 import com.beligum.blocks.resources.interfaces.Resource;
 import com.beligum.blocks.routing.Route;
+import com.beligum.blocks.search.ElasticSearchServer;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.beligum.blocks.utils.RdfTools;
-import com.tinkerpop.blueprints.Graph;
-import com.tinkerpop.blueprints.impls.orient.OrientGraph;
 import gen.com.beligum.blocks.core.fs.html.views.modals.newblock;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.hibernate.validator.constraints.NotBlank;
@@ -31,7 +28,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.*;
 
 @Path("/blocks/admin/page")
@@ -68,52 +64,42 @@ public class PageEndpoint
                     throws Exception
 
     {
+
         URI uri = new URI(url);
-        Route route = new Route(uri, OBlocksDatabase.instance());
+        // Analyze the url to find the correct Route
+        Route route = new Route(uri, DummyBlocksController.instance());
         boolean doVersion = false;
 
         if (!route.exists()) {
             route.create();
         }
 
-        // TODO: on error further on this node contains a page that does not exist yet
-        // Because node is saved but page not. We should roll back. To be fixed when DB is in core
-        WebPage localizedWebpage;
-        MasterWebPage masterWebpage = null;
+        URI masterWebpage = route.getWebPath().getMasterPage();
 
-        if (route.getNode().getPageUrl() != null) {
-            masterWebpage = OBlocksDatabase.instance().getMasterWebPage(route.getNode().getPageUrl());
+        if (route.getWebPath().isNotFound()) {
+            route.getWebPath().setPageOk(masterWebpage);
+            DummyBlocksController.instance().savePath(route.getWebPath());
+
+        } else if (route.getWebPath().isRedirect()) {
+            //TODO get path to redirect
         }
 
-        if (masterWebpage == null) {
-            // create master webpage
-            masterWebpage = OBlocksDatabase.instance().createMasterWebPage(RdfTools.createLocalResourceId(OBlocksDatabase.MASTER_WEB_PAGE_CLASS));
-            route.getNode().setPageOk(masterWebpage.getBlockId());
-            // add localized master language
-            localizedWebpage = OBlocksDatabase.instance().createLocalizedPage(masterWebpage, RdfTools.createLocalResourceId(OBlocksDatabase.WEB_PAGE_CLASS), BlocksConfig.instance().getDefaultLanguage());
-            // add localized for locale
-            if (route.getLocale() != BlocksConfig.instance().getDefaultLanguage()) {
-                localizedWebpage = OBlocksDatabase.instance().createLocalizedPage(masterWebpage, RdfTools.createLocalResourceId(OBlocksDatabase.WEB_PAGE_CLASS), route.getLocale());
-            }
-
+        // fetch page for locale
+        WebPage localizedWebpage = DummyBlocksController.instance().getWebPage(masterWebpage, route.getLocale());
+        // if this page does not yet exist -> create
+        if (localizedWebpage == null) {
+            localizedWebpage = DummyBlocksController.instance().createWebPage(masterWebpage, RdfTools.createLocalResourceId(OBlocksDatabase.WEB_PAGE_CLASS), route.getLocale());
         } else {
-            // fetch page for locale
-            localizedWebpage = masterWebpage.getPageForLocale(route.getLocale());
-            // if this page does not yet exist -> create
-            if (localizedWebpage == null) {
-                localizedWebpage = OBlocksDatabase.instance().createLocalizedPage(masterWebpage, RdfTools.createLocalResourceId(OBlocksDatabase.WEB_PAGE_CLASS), route.getLocale());
-            } else {
-                doVersion = true;
-            }
+            doVersion = true;
         }
 
-//        Parse html:
-//        1. get text
-//        2. get filtered html
-//        3. get resources - update new resources with resource-tag
-//        4. get href and src attributes
-        WebPageParser oldPageParser = new WebPageParser(uri, localizedWebpage.getLanguage(), localizedWebpage.getParsedHtml(), DummyBlocksDatabase.instance());
-        WebPageParser pageParser = new WebPageParser(uri, localizedWebpage.getLanguage(), content, OBlocksDatabase.instance());
+        //        Parse html:
+        //        1. get text
+        //        2. get filtered html
+        //        3. get resources - update new resources with resource-tag
+        //        4. get href and src attributes
+        WebPageParser oldPageParser = new WebPageParser(uri, localizedWebpage.getLanguage(), localizedWebpage.getParsedHtml(), DummyBlocksController.instance());
+        WebPageParser pageParser = new WebPageParser(uri, localizedWebpage.getLanguage(), content, DummyBlocksController.instance());
 
         if (!(pageParser.getParsedHtml().equals(localizedWebpage.getParsedHtml()))) {
             localizedWebpage.setPageTemplate(pageParser.getPageTemplate());
@@ -125,21 +111,19 @@ public class PageEndpoint
 
             // Put all found property values inside the resources'
             // return the resources that were changed
-            WebPageParser.fillResourceProperties(pageParser.getResources(), pageParser.getResourceProperties(), oldPageParser.getResourceProperties(), OBlocksDatabase.instance(), localizedWebpage.getLanguage());
+            WebPageParser.fillResourceProperties(pageParser.getResources(), pageParser.getResourceProperties(), oldPageParser.getResourceProperties(), DummyBlocksController.instance(), localizedWebpage.getLanguage());
+
             // TODO set webpage properties
             for (Resource resource: pageParser.getResources().values()) {
-                OBlocksDatabase.instance().saveResource(resource);
+                DummyBlocksController.instance().saveResource(resource);
             }
 
             // TODO update other pages that contain changed resources
 
-            OBlocksDatabase.instance().saveWebPage(localizedWebpage, doVersion);
+            DummyBlocksController.instance().saveWebPage(localizedWebpage, doVersion);
         }
 
-        Graph graph = OBlocksDatabase.instance().getGraph();
-        if (graph instanceof OrientGraph) {
-            ((OrientGraph)graph).commit();
-        }
+        ElasticSearchServer.instance().saveBulk();
 
         return Response.ok().build();
     }
@@ -156,17 +140,17 @@ public class PageEndpoint
                 String title = null;
                 String description = null;
 
-                // current language of the request
+                // current getLanguage of the request
                 if (template.getTitles().containsKey(lang)) {
                     title = template.getTitles().get(lang);
                     description = template.getDescriptions().get(lang);
                 }
-                // default language of the site
+                // default getLanguage of the site
                 else if (template.getTitles().containsKey(BlocksConfig.instance().getDefaultLanguage())) {
                     title = template.getTitles().get(BlocksConfig.instance().getDefaultLanguage());
                     description = template.getDescriptions().get(BlocksConfig.instance().getDefaultLanguage());
                 }
-                // No language if available
+                // No getLanguage if available
                 else if (template.getTitles().containsKey(Locale.ROOT)) {
                     title = template.getTitles().get(Locale.ROOT);
                     description = template.getDescriptions().get(Locale.ROOT);
@@ -215,22 +199,9 @@ public class PageEndpoint
 
     {
         URI uri = new URI(url);
-        Route route = new Route(uri, OBlocksDatabase.instance());
-        boolean doVersion = false;
-
-        if (!route.exists()) {
-            throw new Exception("Trying to delete a page for a non existing node. Could not delete");
-        } else if (!route.getNode().isPage()) {
-            throw new Exception("Node exists but no page for this node exists: could not delete.");
-        } else {
-            route.getNode().setPageNotFound();
-        }
-
-        Graph graph = OBlocksDatabase.instance().getGraph();
-        if (graph instanceof OrientGraph) {
-            ((OrientGraph)graph).commit();
-        }
-
+        Route route = new Route(uri, DummyBlocksController.instance());
+        URI masterPage = route.getWebPath().getMasterPage();
+        DummyBlocksController.instance().deleteWebPage(masterPage);
         return Response.ok().build();
     }
 

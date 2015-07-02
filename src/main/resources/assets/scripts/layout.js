@@ -178,6 +178,7 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "base.core.Const
 
         var finish = function() {
             droppedElement.toggle(200, function() {
+                droppedElement.css("display", "");
                 Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
                 Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
             });

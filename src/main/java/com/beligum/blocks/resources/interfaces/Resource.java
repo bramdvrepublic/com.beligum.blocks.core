@@ -1,5 +1,6 @@
 package com.beligum.blocks.resources.interfaces;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import sun.util.resources.CalendarData_cs;
 
 import java.net.URI;
@@ -26,7 +27,11 @@ public interface Resource extends Node, DocumentInfo
 
     public Object getDBId();
 
+    public void setDBId(Object id);
+
     public URI getBlockId();
+
+    public void setBlockId(URI id);
 
     public Set<URI> getRdfType();
 
@@ -38,8 +43,12 @@ public interface Resource extends Node, DocumentInfo
 
     public Set<URI> getFields();
 
+    public Set<URI> getLocalizedFields();
+
+    public Set<URI> getRootFields();
+
     public void merge(Resource resource);
 
-    public String toJson();
+    public String toJson() throws JsonProcessingException;
 
 }

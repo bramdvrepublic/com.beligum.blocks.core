@@ -10,7 +10,7 @@ package com.beligum.blocks.resources;
 
 public class JsonLDGraph
 {
-//   private Locale language;
+//   private Locale getLanguage;
 //    private HashMap<String, Resource> resources = new HashMap<String, Resource>();
 //    private Resource mainResource;
 //
@@ -18,13 +18,13 @@ public class JsonLDGraph
 //
 //    }
 //
-//    public JsonLDGraph(Resource resource, Locale language) {
-//        this.language = language;
+//    public JsonLDGraph(Resource resource, Locale getLanguage) {
+//        this.getLanguage = getLanguage;
 //        this.mainResource = resource;
 //    }
 //
-//    public JsonLDGraph(JsonNode graphNode,  Locale language) {
-//        this.language = language;
+//    public JsonLDGraph(JsonNode graphNode,  Locale getLanguage) {
+//        this.getLanguage = getLanguage;
 //        ArrayList<Node> retVal = new ArrayList<>();
 ////        if (context != null) this.context = context;
 //        if (graphNode.isArray()) {
@@ -61,23 +61,23 @@ public class JsonLDGraph
 //        return this.mainResource;
 //    }
 //
-//    public Node createNode(JsonNode jsonNode, Locale language) {
+//    public Node createNode(JsonNode jsonNode, Locale getLanguage) {
 //        Node retVal = null;
 //        if (jsonNode.isObject()) {
 //            if (jsonNode.has(ParserConstants.JSONLD_VALUE)) {
-//                language = null;
+//                getLanguage = null;
 //                if (jsonNode.has(ParserConstants.JSONLD_LANGUAGE)) {
 //                    String lang = jsonNode.get(ParserConstants.JSONLD_LANGUAGE).asText();
 //                    if (lang == null) {
-//                        language = Locale.ROOT;
+//                        getLanguage = Locale.ROOT;
 //                    } else {
-//                        language = BlocksConfig.instance().getLocaleForLanguage(lang);
+//                        getLanguage = BlocksConfig.instance().getLocaleForLanguage(lang);
 //                    }
 //                }
-//                retVal = createNode(jsonNode.get(ParserConstants.JSONLD_VALUE), language);
+//                retVal = createNode(jsonNode.get(ParserConstants.JSONLD_VALUE), getLanguage);
 //            } else {
 //                String id = jsonNode.get(ParserConstants.JSONLD_ID).asText();
-//                Resource resource = OrientResourceController.instance().createResource(id, language);
+//                Resource resource = OrientResourceController.instance().createResource(id, getLanguage);
 //                retVal = resource;
 //                // loop through fields
 //                Iterator<Map.Entry<String, JsonNode>> iterator = jsonNode.fields();
@@ -104,17 +104,17 @@ public class JsonLDGraph
 //        } else if (jsonNode.isNumber()) {
 //            if (jsonNode.isIntegralNumber()) {
 //                if (jsonNode.isBigInteger()) {
-//                    retVal = OrientResourceController.instance().asNode(jsonNode.asLong(0), language);
+//                    retVal = OrientResourceController.instance().asNode(jsonNode.asLong(0), getLanguage);
 //                } else {
-//                    retVal = OrientResourceController.instance().asNode(jsonNode.asInt(0), language);
+//                    retVal = OrientResourceController.instance().asNode(jsonNode.asInt(0), getLanguage);
 //                }
 //            } else {
-//                retVal = OrientResourceController.instance().asNode((Double)jsonNode.asDouble(0), language);
+//                retVal = OrientResourceController.instance().asNode((Double)jsonNode.asDouble(0), getLanguage);
 //            }
 //        } else if (jsonNode.isBoolean()) {
-//            retVal = OrientResourceController.instance().asNode(jsonNode.asBoolean(false), language);
+//            retVal = OrientResourceController.instance().asNode(jsonNode.asBoolean(false), getLanguage);
 //        } else if (jsonNode.isTextual()) {
-//            retVal = OrientResourceController.instance().asNode(jsonNode.asText(""), language);
+//            retVal = OrientResourceController.instance().asNode(jsonNode.asText(""), getLanguage);
 //        } else if (jsonNode.isArray()) {
 //
 //        } else {
@@ -128,8 +128,8 @@ public class JsonLDGraph
 //            JsonNode firstElement = jsonNode.get(0);
 //
 //            /*
-//            * If this list contains string nodes we filter for only the nodes for our current language
-//            * or if there are no nodes for our current language all the nodes with our default language
+//            * If this list contains string nodes we filter for only the nodes for our current getLanguage
+//            * or if there are no nodes for our current getLanguage all the nodes with our default getLanguage
 //            * */
 //            if (firstElement != null && firstElement.isObject() && firstElement.has(ParserConstants.JSONLD_LANGUAGE)  && firstElement.get(ParserConstants.JSONLD_LANGUAGE) != null) {
 //                // filter for current lang
@@ -140,7 +140,7 @@ public class JsonLDGraph
 //                    JsonNode node = iterator.next();
 //                    if (node.get(ParserConstants.JSONLD_LANGUAGE).asText().equals(BlocksConfig.instance().getDefaultLanguage())) {
 //                        defaultLang.add(node);
-//                    } else if (node.get(ParserConstants.JSONLD_LANGUAGE).asText().equals(this.language)) {
+//                    } else if (node.get(ParserConstants.JSONLD_LANGUAGE).asText().equals(this.getLanguage)) {
 //                        currentLang.add(node);
 //                    }
 //                }

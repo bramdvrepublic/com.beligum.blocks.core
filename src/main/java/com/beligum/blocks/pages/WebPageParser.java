@@ -2,8 +2,8 @@ package com.beligum.blocks.pages;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
-import com.beligum.blocks.database.DummyBlocksDatabase;
-import com.beligum.blocks.database.interfaces.BlocksDatabase;
+import com.beligum.blocks.database.DummyBlocksController;
+import com.beligum.blocks.database.interfaces.BlocksController;
 import com.beligum.blocks.exceptions.RdfException;
 import com.beligum.blocks.resources.interfaces.Node;
 import com.beligum.blocks.resources.interfaces.Resource;
@@ -13,7 +13,6 @@ import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.utils.RdfTools;
 import net.htmlparser.jericho.Element;
-import net.htmlparser.jericho.Renderer;
 import net.htmlparser.jericho.Source;
 import net.htmlparser.jericho.TextExtractor;
 
@@ -38,7 +37,7 @@ public class WebPageParser
 {
     private Locale locale;
     private Source source;
-    private BlocksDatabase database;
+    private BlocksController database;
     private StringBuilder parsedHtml = new StringBuilder();
     private String pageTemplate;
     private String text = "";
@@ -62,10 +61,10 @@ public class WebPageParser
     private HashMap<String, URI> prefixes = new HashMap<>();
     private HashMap<URI, HashMap<URI, List<PropertyValue>>> resourceMap = new HashMap<>();
     // Resource that contains all properties that are attached to the page
-    private Resource pageResource = DummyBlocksDatabase.instance().createResource(null, null, Locale.ROOT);
+    private Resource pageResource = DummyBlocksController.instance().createResource(RdfTools.createLocalResourceId("webpage"), RdfTools.createLocalType("Webpage"), Locale.ROOT);
 
 
-    public WebPageParser(URI uri, Locale locale, String source, BlocksDatabase database) throws RdfException, URISyntaxException
+    public WebPageParser(URI uri, Locale locale, String source, BlocksController database) throws Exception
     {
         this.locale = locale;
         if (source == null) source = "";
@@ -73,6 +72,7 @@ public class WebPageParser
         this.source.fullSequentialParse();
         this.database = database;
         this.vocab = BlocksConfig.instance().getDefaultRdfSchema();
+        this.resources.put(pageResource.getBlockId().toString(), pageResource);
         Element base = this.source.getFirstElement("base");
         this.setBase(base, uri);
 
@@ -123,7 +123,7 @@ public class WebPageParser
     * Put all property values in resource objects to save for the database
     *
     * */
-    private Element parse(Element element, int textPos, Resource resource, boolean addContent) throws URISyntaxException, RdfException
+    private Element parse(Element element, int textPos, Resource resource, boolean addContent) throws Exception
     {
         Element next = findNextElement();
 
@@ -348,10 +348,10 @@ public class WebPageParser
     * */
     private URI getPageId(URI link) {
         URI retVal= null;
-        Route route = new Route(link, database);
-        if (route.exists() && route.getNode().isPage()) {
-            retVal = route.getNode().getPageUrl();
-        }
+//        Route route = new Route(link, database);
+//        if (route.exists() && route.getNode().isPage()) {
+//            retVal = route.getNode().getPageUrl();
+//        }
         return retVal;
     }
 
@@ -470,9 +470,9 @@ public class WebPageParser
     * Check shown properties to compare with saved properties (sometimes not all properies of resource are shown,
     * so we an not simply delete them. Only delete shown properties that are no longer saved)
     *
-    * Compare values to values in webpage (not value in resource object). This way default values are not saved.
+    * TODO: Compare values to values in webpage (not value in resource object). This way default values are not saved.
     * */
-    public static void fillResourceProperties(HashMap<String, Resource> resources, HashMap<URI, HashMap<URI, List<PropertyValue>>> resourceProperties, HashMap<URI, HashMap<URI, List<PropertyValue>>> oldResourceProperties, BlocksDatabase database, Locale locale) {
+    public static void fillResourceProperties(HashMap<String, Resource> resources, HashMap<URI, HashMap<URI, List<PropertyValue>>> resourceProperties, HashMap<URI, HashMap<URI, List<PropertyValue>>> oldResourceProperties, BlocksController database, Locale locale) {
         // TODO return only changed resources
         for (URI resourceID: resourceProperties.keySet()) {
             Resource resource = resources.get(resourceID.toString());

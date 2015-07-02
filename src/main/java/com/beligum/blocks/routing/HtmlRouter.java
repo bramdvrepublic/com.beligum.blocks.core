@@ -3,10 +3,12 @@ package com.beligum.blocks.routing;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.database.DummyBlocksController;
+import com.beligum.blocks.database.interfaces.BlocksController;
 import com.beligum.blocks.endpoints.PageEndpoint;
-import com.beligum.blocks.pages.ifaces.MasterWebPage;
 import com.beligum.blocks.pages.ifaces.WebPage;
-import com.beligum.blocks.routing.ifaces.WebNode;
+import com.beligum.blocks.resources.sql.DBPage;
+import com.beligum.blocks.routing.ifaces.WebPath;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
@@ -19,6 +21,8 @@ import org.apache.shiro.SecurityUtils;
 
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.net.URI;
 import java.util.*;
 
 /**
@@ -33,6 +37,8 @@ public class HtmlRouter extends AbstractRouter
     private static final String TITLE = "title";
     private static final String DESCRIPTION = "description";
 
+    private BlocksController database;
+
     public HtmlRouter(Route route) {
         super(route);
     }
@@ -41,7 +47,7 @@ public class HtmlRouter extends AbstractRouter
     /*
     * Show all pagetemplates so the user can choose.
     *
-    * We try to find the title and description for all pagetemplates in the best language possible
+    * We try to find the title and description for all pagetemplates in the best getLanguage possible
     * */
     public Response newPage() {
         Response retVal = null;
@@ -64,17 +70,17 @@ public class HtmlRouter extends AbstractRouter
                         HashMap<String, String> pageTemplate = new HashMap();
                         String title = null;
                         String description = null;
-                        // current language of the request
+                        // current getLanguage of the request
                         if (template.getTitles().containsKey(this.route.getLocale())) {
                             title = template.getTitles().get(this.route.getLocale());
                             description = template.getDescriptions().get(this.route.getLocale());
                         }
-                        // default language of the site
+                        // default getLanguage of the site
                         else if (template.getTitles().containsKey(BlocksConfig.instance().getDefaultLanguage())) {
                             title = template.getTitles().get(BlocksConfig.instance().getDefaultLanguage());
                             description = template.getDescriptions().get(BlocksConfig.instance().getDefaultLanguage());
                         }
-                        // No language if available
+                        // No getLanguage if available
                         else if (template.getTitles().containsKey(Locale.ROOT)) {
                             title = template.getTitles().get(Locale.ROOT);
                             description = template.getDescriptions().get(Locale.ROOT);
@@ -132,19 +138,27 @@ public class HtmlRouter extends AbstractRouter
     /*
     * Gets a page from the database and renders it.
     * */
-    public Response showPage() {
+    public Response showPage() throws IOException
+    {
         StringBuilder rb = new StringBuilder();
-        WebNode node = this.route.getNode();
-        MasterWebPage master = this.route.getBlocksDatabase().getMasterWebPage(node.getPageUrl());
-        WebPage page = master.getPageForLocale(this.route.getLocale());
-        if (page == null) {
-            // this language does not exist so show default language for this master page
-            Locale locale = master.getDefaultLanguage();
-            page = master.getPageForLocale(locale);
+        WebPath path = this.route.getWebPath();
+        URI master = path.getMasterPage();
 
+        String html = null;
+
+        if (SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
+            // It could be that we just saved and ES did not refresh yet, so if user is admin, get page from DB
+            DBPage dbPage = DummyBlocksController.instance().getWebPageDB(master, route.getLocale());
+            html = dbPage.getHtml();
+        } else {
+            // get the page from ES
+            WebPage page = route.getBlocksDatabase().getWebPage(master, route.getLocale());
+            html = page.getParsedHtml();
         }
-        rb.append("<main-content>").append(page.getParsedHtml()).append("</main-content>");
+
+        rb.append("<main-content>").append(html).append("</main-content>");
         return Response.ok(R.templateEngine().getNewStringTemplate(rb.toString())).build();
+
     }
 
     public Response redirect() {

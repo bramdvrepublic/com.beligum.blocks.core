@@ -479,7 +479,7 @@ define('lodash-amd/modern/internal/baseValues',[], function() {
 define('lodash-amd/modern/lang/isObject',[], function() {
 
   /**
-   * Checks if `value` is the language type of `Object`.
+   * Checks if `value` is the getLanguage type of `Object`.
    * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
    *
    * **Note:** See the [ES5 spec](https://es5.github.io/#x8) for more details.
@@ -580,7 +580,7 @@ define('lodash-amd/modern/internal/isIndex',[], function() {
 
 define('lodash-amd/modern/internal/root',[], function() {
 
-  /** Used to determine if values are of the language type `Object`. */
+  /** Used to determine if values are of the getLanguage type `Object`. */
   var objectTypes = {
     'function': true,
     'object': true
@@ -1929,28 +1929,28 @@ define('plugins/core/events',[
        *
        * We detect when this occurs and fix it by placing the caret ourselves.
        */
-      scribe.el.addEventListener('focus', function placeCaretOnFocus() {
-        var selection = new scribe.api.Selection();
-        // In Chrome, the range is not created on or before this event loop.
-        // It doesn’t matter because this is a fix for Firefox.
-        if (selection.range) {
-
-          var isFirefoxBug = scribe.allowsBlockElements() &&
-                  selection.range.startContainer === scribe.el;
-
-          if (isFirefoxBug) {
-            var focusElement = children.firstDeepestChild(scribe.el);
-
-            var range = selection.range;
-
-            range.setStart(focusElement, 0);
-            range.setEnd(focusElement, 0);
-
-            selection.selection.removeAllRanges();
-            selection.selection.addRange(range);
-          }
-        }
-      }.bind(scribe));
+      //scribe.el.addEventListener('focus', function placeCaretOnFocus() {
+      //  var selection = new scribe.api.Selection();
+      //  // In Chrome, the range is not created on or before this event loop.
+      //  // It doesn’t matter because this is a fix for Firefox.
+      //  if (selection.range) {
+      //
+      //    var isFirefoxBug = scribe.allowsBlockElements() &&
+      //            selection.range.startContainer === scribe.el;
+      //
+      //    if (isFirefoxBug) {
+      //      var focusElement = children.firstDeepestChild(scribe.el);
+      //
+      //      var range = selection.range;
+      //
+      //      range.setStart(focusElement, 0);
+      //      range.setEnd(focusElement, 0);
+      //
+      //      selection.selection.removeAllRanges();
+      //      selection.selection.addRange(range);
+      //    }
+      //  }
+      //}.bind(scribe));
 
       /**
        * Apply the formatters when there is a DOM mutation.
@@ -8527,6 +8527,11 @@ define('config',[
       'insertList',
       'outdent',
       'createLink'
+        //'outdent',
+        //'redo',
+        //'subscript',
+        //'superscript',
+        //'undo'
     ],
 
     defaultPlugins: blockModePlugins.concat(inlineModePlugins),
@@ -8747,6 +8752,7 @@ define('scribe',[
 
     Scribe.prototype.remove = function() {
         this.el.removeEventListener('input');
+        this.el.removeEventListener('focus');
         this.transactionManager = null;
         this.undoManager = null;
         this.api = null;
@@ -8755,7 +8761,7 @@ define('scribe',[
     }
 
   Scribe.prototype.use = function (configurePlugin) {
-    configurePlugin(this);
+    this.toolbar = configurePlugin(this);
     return this;
   };
 

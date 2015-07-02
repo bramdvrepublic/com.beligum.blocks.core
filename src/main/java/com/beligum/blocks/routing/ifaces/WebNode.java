@@ -14,16 +14,12 @@ public interface WebNode extends DocumentInfo
     public final Integer REDIRECT = 303;
     public final Integer OK = 200;
 
-
     public Integer getStatusCode();
     public URI getPageUrl();
 
     public void setPageOk(URI pageUrl);
     public void setPageRedirect(URI pageUrl);
     public void setPageNotFound();
-
-    public WebPath getChildPath(String name, Locale locale);
-    public WebPath getParentPath(String name, Locale locale);
 
     public boolean isNotFound();
     public boolean isPage();

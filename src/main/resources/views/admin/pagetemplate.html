@@ -108,9 +108,9 @@
                 ##                        </div>
                 ##                        <div class="panel-body">
                 ##                            #set($index = 0)
-                ##                            #foreach($language in $pageTemplate.getLanguages())
-                ##                                <a href="/debug/pagetemplates/$pageTemplate.getTemplateTagName()?lang=$language" class="admin-link #if($language==$activeLanguage) active#else not-active#end ">
-                ##                                    $language#set($index = $index + 1)#if($index < $pageTemplate.getLanguages().size()),#end
+                ##                            #foreach($getLanguage in $pageTemplate.getLanguages())
+                ##                                <a href="/debug/pagetemplates/$pageTemplate.getTemplateTagName()?lang=$getLanguage" class="admin-link #if($getLanguage==$activeLanguage) active#else not-active#end ">
+                ##                                    $getLanguage#set($index = $index + 1)#if($index < $pageTemplate.getLanguages().size()),#end
                 ##                                </a>
                 ##                            #end
                 ##                        </div>

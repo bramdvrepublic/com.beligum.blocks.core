@@ -5,8 +5,9 @@ import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.database.OBlocksDatabase;
 import com.beligum.blocks.resources.interfaces.Node;
 import com.beligum.blocks.resources.interfaces.Resource;
-import com.beligum.blocks.resources.jackson.ResourceJsonSerializer;
+import com.beligum.blocks.resources.jackson.ResourceSerializer;
 import com.beligum.blocks.utils.RdfTools;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -31,6 +32,13 @@ public abstract class AbstractResource extends AbstractNode implements Resource
         }
         return retVal;
     }
+
+    @Override
+    public void setBlockId(URI id)
+    {
+        setFieldDirect(ParserConstants.JSONLD_ID, id.toString(), Locale.ROOT);
+    }
+
     @Override
     public Set<URI> getRdfType()
     {
@@ -55,6 +63,9 @@ public abstract class AbstractResource extends AbstractNode implements Resource
     @Override
     public void add(URI field, Node node)
     {
+        if (this.language.equals(Locale.ROOT) && !node.getLanguage().equals(Locale.ROOT)) {
+            this.language = node.getLanguage();
+        }
         String key = addFieldToContext(field);
         addFieldDirect(key, node);
     }
@@ -62,7 +73,9 @@ public abstract class AbstractResource extends AbstractNode implements Resource
     @Override
     public void set(URI field, Node node)
     {
-        // TODO special case for @Type
+        if (this.language.equals(Locale.ROOT) && !node.getLanguage().equals(Locale.ROOT)) {
+            this.language = node.getLanguage();
+        }
 
         String key = addFieldToContext(field);
         setFieldDirect(key, node.getValue(), node.getLanguage());
@@ -153,13 +166,13 @@ public abstract class AbstractResource extends AbstractNode implements Resource
     }
 
     @Override
-    public String toJson()
+    public String toJson() throws JsonProcessingException
     {
         String retVal = null;
         // Jackson mapper that can serialize Resource objects
         // TODO move mapper to other class
         final SimpleModule module = new SimpleModule("customerSerializationModule", new Version(1, 0, 0, "static version"));
-        module.addSerializer(Resource.class, new ResourceJsonSerializer());
+        module.addSerializer(Resource.class, new ResourceSerializer());
 //        module.addDeserializer(Resource.class, new ResourceJsonDeserializer());
 
         final ObjectMapper objectMapper = new ObjectMapper();

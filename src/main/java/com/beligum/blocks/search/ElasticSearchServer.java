@@ -1,6 +1,7 @@
 package com.beligum.blocks.search;
 
 import com.beligum.base.server.R;
+import com.beligum.base.utils.Logger;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -88,6 +89,9 @@ public class ElasticSearchServer
         BulkResponse retVal = null;
         if (this.bulkRequestBuilder != null) {
             retVal = this.bulkRequestBuilder.execute().actionGet();
+            if (retVal.hasFailures()) {
+                Logger.error("failed to index all elastic seacrh resources");
+            }
             this.bulkRequestBuilder = null;
         }
         return retVal;
