@@ -145,18 +145,21 @@ public class HtmlRouter extends AbstractRouter
         URI master = path.getMasterPage();
 
         String html = null;
+        String template = null;
 
         if (SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
             // It could be that we just saved and ES did not refresh yet, so if user is admin, get page from DB
             DBPage dbPage = DummyBlocksController.instance().getWebPageDB(master, route.getLocale());
             html = dbPage.getHtml();
+            template = dbPage.getPageTemplate();
         } else {
             // get the page from ES
             WebPage page = route.getBlocksDatabase().getWebPage(master, route.getLocale());
             html = page.getParsedHtml();
+            template = page.getPageTemplate();
         }
 
-        rb.append("<main-content>").append(html).append("</main-content>");
+        rb.append("<" + template + ">").append(html).append("</" + template + ">");
         return Response.ok(R.templateEngine().getNewStringTemplate(rb.toString())).build();
 
     }

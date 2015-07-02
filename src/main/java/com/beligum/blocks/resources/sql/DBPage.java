@@ -61,4 +61,8 @@ public class DBPage extends DBDocumentInfo
         this.language = webPage.getLanguage().getLanguage();
         this.masterPage = webPage.getMasterpageId().toString();
     }
+
+    public String getPageTemplate() {
+        return this.pageTemplate;
+    }
 }
