@@ -2,7 +2,12 @@ package com.beligum.blocks.resources.sql;
 
 import com.beligum.base.models.BasicModelImpl;
 import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.resources.jackson.path.PathDeserializer;
+import com.beligum.blocks.resources.jackson.path.PathSerializer;
 import com.beligum.blocks.routing.ifaces.WebPath;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.hibernate.annotations.Type;
 import org.joda.time.LocalDateTime;
 
@@ -22,6 +27,9 @@ import java.util.Locale;
 @Table(name="path")
 public class DBPath extends DBDocumentInfo implements WebPath
 {
+
+    public static  ObjectMapper PATH_MAPPER = new ObjectMapper().registerModule(new SimpleModule().addSerializer(DBPath.class, new PathSerializer()).addDeserializer(DBPath.class, new PathDeserializer()));
+
 
     private String masterPage;
 
@@ -125,8 +133,9 @@ public class DBPath extends DBDocumentInfo implements WebPath
     }
 
     @Override
-    public String toJson() {
-        return null;
+    public String toJson() throws JsonProcessingException
+    {
+        return PATH_MAPPER.writeValueAsString(this);
     }
 
 }

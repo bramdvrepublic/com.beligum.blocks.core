@@ -51,7 +51,9 @@ public class DBResource extends DBDocumentInfo
         this.rootData = rootMapper.writeValueAsBytes(resource);
         DBResourceLocalized localized = new DBResourceLocalized(localizedMapper.writeValueAsBytes(resource));
         localized.setResource(this);
-        this.localized.put(language, localized);
+        if (language != null && !"".equals(language.trim())) {
+            this.localized.put(language, localized);
+        }
     }
 
     public DBResource(Resource resource) throws JsonProcessingException
@@ -73,10 +75,12 @@ public class DBResource extends DBDocumentInfo
     {
         Resource retVal = null;
         DBResourceLocalized localized = getLocalizedResource(locale);
+        HashMap rootDataMap = mapper.readValue(this.rootData, HashMap.class);
+        HashMap<String, Object> localData = new HashMap();
         if (localized != null) {
-            HashMap localData = mapper.readValue(localized.getData(), HashMap.class);
-            retVal = new DummyResource(mapper.readValue(this.rootData, HashMap.class), localData);
+            localData = mapper.readValue(localized.getData(), HashMap.class);
         }
+        retVal = new DummyResource(rootDataMap, localData);
         return retVal;
     }
 

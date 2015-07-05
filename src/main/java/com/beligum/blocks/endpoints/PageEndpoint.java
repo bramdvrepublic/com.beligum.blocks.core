@@ -118,12 +118,15 @@ public class PageEndpoint
                 DummyBlocksController.instance().saveResource(resource);
             }
 
+            for (URI field: pageParser.getPageResource().getFields()) {
+                localizedWebpage.set(field, pageParser.getPageResource().get(field));
+            }
+
             // TODO update other pages that contain changed resources
 
             DummyBlocksController.instance().saveWebPage(localizedWebpage, doVersion);
         }
 
-        ElasticSearchServer.instance().saveBulk();
 
         return Response.ok().build();
     }

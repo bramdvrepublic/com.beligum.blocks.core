@@ -122,13 +122,12 @@ public class DummyBlocksController implements BlocksController
         DBPage dbPage = null;
         dbPage = getWebPageDB(webPage.getMasterpageId(), webPage.getLanguage());
 
+        this.touch(webPage);
         if (dbPage == null) {
             dbPage = new DBPage(webPage);
         } else {
             dbPage.setWebPage(webPage);
         }
-
-        this.touch(webPage);
         RequestContext.getEntityManager().persist(dbPage);
 
         addPageToLucene(dbPage.getId().toString(), webPage.toJson(), webPage.getLanguage());
@@ -145,7 +144,7 @@ public class DummyBlocksController implements BlocksController
         // find the path for this language
         // if this path has statuscode 404, search if this path for another language has code 200
         // use this masterpageid
-        WebPath webpath = null;
+        DBPath webpath = null;
         try {
             webpath = RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.url = :path and p.language = :language", DBPath.class).setParameter("language", locale.getLanguage()).setParameter(
                             "path", path.toString()).getSingleResult();
@@ -154,8 +153,6 @@ public class DummyBlocksController implements BlocksController
         } catch (Exception e) {
             Logger.error(e);
         }
-
-
 
         return webpath;
     }
@@ -264,6 +261,9 @@ public class DummyBlocksController implements BlocksController
     @Override
     public Resource saveResource(Resource resource) throws Exception
     {
+        // TODO: this shoul be removed. We don't want webpage resources here.
+
+        if (resource.getRdfType().contains(new URI("http://www.mot.be/ontology/Webpage"))) return null;
         DBResource dbResource = null;
 
             dbResource = findResourceInDB(resource.getBlockId());
@@ -331,21 +331,21 @@ public class DummyBlocksController implements BlocksController
 
 
     private void addResourceToLucene(String id, String type, String json, Locale locale) {
-        String index = ElasticSearchServer.instance().getResourceIndexName(locale);
-
-        ElasticSearchServer.instance().getBulk().add(ElasticSearchClient.instance().getClient().prepareIndex(index, type)
-                                                                        .setSource(json)
-                                                                        .setId(id).request());
+//        String index = ElasticSearchServer.instance().getResourceIndexName(locale);
+//
+//        ElasticSearchServer.instance().getBulk().add(ElasticSearchClient.instance().getClient().prepareIndex(index, type)
+//                                                                        .setSource(json)
+//                                                                        .setId(id).request());
 
     }
 
     private void addPageToLucene(String id, String json, Locale locale) {
 
-        String name = BlocksController.webpage;
-        String index = ElasticSearchServer.instance().getPageIndexName(locale);
-        ElasticSearchServer.instance().getBulk().add(ElasticSearchClient.instance().getClient().prepareIndex(index, name)
-                                                                        .setSource(json)
-                                                                        .setId(id).request());
+//        String name = BlocksController.webpage;
+//        String index = ElasticSearchServer.instance().getPageIndexName(locale);
+//        ElasticSearchServer.instance().getBulk().add(ElasticSearchClient.instance().getClient().prepareIndex(index, name)
+//                                                                        .setSource(json)
+//                                                                        .setId(id).request());
 //        IndexResponse is = ElasticSearchClient.instance().getClient().prepareIndex(index, name)
 //                           .setSource(json).setId(id)
 //                           .execute().actionGet();
@@ -356,11 +356,11 @@ public class DummyBlocksController implements BlocksController
 
     private void addPathToLucene(String id, String json) {
 
-        String name = BlocksController.path;
-        String index = "routing";
-        ElasticSearchClient.instance().getClient().prepareIndex(index, name)
-                           .setSource(json)
-                           .setId(id).execute().actionGet();
+//        String name = BlocksController.path;
+//        String index = "routing";
+//        ElasticSearchClient.instance().getClient().prepareIndex(index, name)
+//                           .setSource(json)
+//                           .setId(id).execute().actionGet();
     }
 
     private void removePathFromLucene(String id) {

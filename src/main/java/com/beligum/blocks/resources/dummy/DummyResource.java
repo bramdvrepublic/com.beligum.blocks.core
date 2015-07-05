@@ -29,6 +29,7 @@ public class DummyResource extends AbstractResource
 
     public DummyResource(Map<String, Object> vertex, Map<String, Object> localized, Locale language) {
         this(vertex, localized);
+        this.localized.put(ParserConstants.JSONLD_LANGUAGE, language);
         this.language = language;
     }
 
@@ -199,7 +200,7 @@ public class DummyResource extends AbstractResource
     public Locale getLanguage() {
         Locale retVal = this.language;
         if (retVal == null) {
-            String language = (String)vertex.get(ParserConstants.JSONLD_LANGUAGE);
+            String language = (String)localized.get(ParserConstants.JSONLD_LANGUAGE);
             retVal = BlocksConfig.instance().getLocaleForLanguage(language);
             this.language = retVal;
         }

@@ -78,23 +78,5 @@ public class ElasticSearchServer
         return retVal;
     }
 
-    public BulkRequestBuilder getBulk() {
-        if (this.bulkRequestBuilder == null) {
-            this.bulkRequestBuilder = ElasticSearchClient.instance().getClient().prepareBulk();
-        }
-        return this.bulkRequestBuilder;
-    }
 
-    public BulkResponse saveBulk() {
-        BulkResponse retVal = null;
-        if (this.bulkRequestBuilder != null) {
-            retVal = this.bulkRequestBuilder.execute().actionGet();
-            if (retVal.hasFailures()) {
-                Logger.error("failed to index all elastic seacrh resources");
-            }
-            this.bulkRequestBuilder = null;
-        }
-        return retVal;
-
-    }
 }

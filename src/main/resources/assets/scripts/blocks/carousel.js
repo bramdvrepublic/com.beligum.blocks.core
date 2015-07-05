@@ -18,10 +18,13 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
             var caption = item.children(".carousel-caption");
             listGroup.append(createImageEditBox(index, element, image, caption));
         });
+
+
+
         Sidebar.addUIForProperty(contentID, element, addImageButton(listGroup, element));
         Sidebar.addUIForProperty(contentID, element, listGroup);
 
-        Sidebar.addValueAttribute(styleID, element, "Slide interval in ms:", "data-interval", false, true);
+        Sidebar.addValueAttribute(styleID, element, "Slide interval in ms:", "data-interval", true, true, true);
         Sidebar.addUniqueAttributeValue(styleID, element, "Pause on hoover:", "data-pause", [{name: "Yes", value: "true"}, {name: "No", value: "false"}]);
         Sidebar.addUniqueAttributeValue(styleID, element, "Auto cycle:", "data-wrap", [{name: "Yes", value: "true"}, {name: "No", value: "false"}]);
 
@@ -38,17 +41,16 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
         var label = $("<div>Carousel image</div>");
         var editButton = $('<span class="label btn btn-primary pull-right"><i class="fa fa-pencil"></i></span>');
         var deleteButton = $('<span class="label btn btn-danger pull-right"><i class="fa fa-trash-o"></i></span>');
-        label.append(editButton).append(deleteButton);
+        label.append(editButton)
+
+
 
         var labelEdit = $("<div></div>");
         var closeButton = $('<span class="label btn pull-right"><i class="fa fa-times"></i></span>');
         labelEdit.append(closeButton);
         var editBox = $('<div class="hidden" />');
 
-        var labelRemove = $('<div class="hidden">Are you sure you want to remove the image</div>');
-        var yesRemoveButton = $('<span class="label btn btn-success pull-right"><i class="fa fa-check"></i></span>');
-        var noRemoveButton = $('<span class="label btn btn-danger pull-right"><i class="fa fa-times"></i></span>');
-        labelRemove.append(yesRemoveButton).append(noRemoveButton);
+
 
         editBox.append(labelEdit);
         editBox.append(Plugin.addValueAttribute(image, "image url", "src", true));
@@ -64,29 +66,48 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
             editBox.removeClass("hidden");
         });
 
-        deleteButton.click(function() {
-            labelRemove.removeClass("hidden");
-            label.addClass("hidden");
-        });
-
-        noRemoveButton.click(function() {
-            label.removeClass("hidden");
-            labelRemove.addClass("hidden");
-        });
-
-        yesRemoveButton.click(function() {
-            label.removeClass("hidden");
-            labelRemove.addClass("hidden");
-            listGroupItem.remove();
-            var items = carousel.find(".carousel-inner").children();
-            var indicators = carousel.find(".carousel-indicators").children();
-            $(items[index]).remove();
-            $(indicators[index]).remove();
-
-        });
-
         listGroupItem.append(label);
-        listGroupItem.append(labelRemove);
+
+        // Do not add remove when there is only one image
+        var items = carousel.find(".carousel-inner").children();
+        if (items.length > 1) {
+            label.append(deleteButton);
+            var labelRemove = $('<div class="hidden">Are you sure you want to remove the image</div>');
+            var yesRemoveButton = $('<span class="label btn btn-success pull-right"><i class="fa fa-check"></i></span>');
+            var noRemoveButton = $('<span class="label btn btn-danger pull-right"><i class="fa fa-times"></i></span>');
+            labelRemove.append(yesRemoveButton).append(noRemoveButton);
+
+            deleteButton.click(function () {
+                labelRemove.removeClass("hidden");
+                label.addClass("hidden");
+            });
+
+            noRemoveButton.click(function () {
+                label.removeClass("hidden");
+                labelRemove.addClass("hidden");
+            });
+
+            yesRemoveButton.click(function () {
+                label.removeClass("hidden");
+                labelRemove.addClass("hidden");
+                listGroupItem.remove();
+
+                var indicators = carousel.find(".carousel-indicators").children();
+                $(items[index]).remove();
+                $(indicators[index]).remove();
+                indicators = carousel.find(".carousel-indicators").children();
+                for (var i=0; i < indicators.length; i++) {
+                    $(indicators[index]).attr("data-slide-to", i);
+                }
+                carousel.find(".carousel-inner").children().removeClass("active");;
+                carousel.find(".carousel-inner").children().first().addClass("active");;
+
+            });
+
+            listGroupItem.append(labelRemove);
+
+        }
+
         listGroupItem.append(editBox);
 
         return listGroupItem
@@ -102,6 +123,7 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
             var image = $('<img property="image" src="http://cdn.banquenationale.ca/cdnbnc/2013/06/ruisseau.jpg" >');
             var caption = $('<div property="image-caption" class="carousel-caption" />');
             var item = $('<div class="item" />');
+            var indicators = carousel.find(".carousel-indicators");
             item.append(image).append(caption);
             items.append(item);
             var id = carousel.attr("id");
@@ -110,13 +132,17 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
             if (last.length == 1) {
                 nr = parseInt(last.attr("data-slide-to"));
             }
+
             indicators.append($('<li data-target="#'+id+'" data-slide-to="'+ nr +'"></li>'));
+
+            indicators = carousel.find(".carousel-indicators").children();
+            for (var i=0; i < indicators.length; i++) {
+                $(indicators[i]).attr("data-slide-to", i);
+            }
 
             listGroup.append(createImageEditBox(indicators.children().length, carousel, image, caption));
 
         });
-
-
 
         return button;
     };

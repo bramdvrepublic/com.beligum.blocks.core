@@ -172,6 +172,11 @@ public class BlocksConfig
         return defaultLanguage;
     }
 
+    public String getElasticSearchClusterName() {
+        String retVal = R.configuration().getString("elastic-search.cluster");
+        return retVal;
+    }
+
     public Locale getRequestDefaultLanguage() {
         Locale retVal = null;
         List<Locale> languages = RequestContext.getJaxRsRequest().getAcceptableLanguages();

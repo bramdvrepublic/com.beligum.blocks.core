@@ -2,14 +2,20 @@ package com.beligum.blocks.resources.sql;
 
 import com.beligum.base.models.BasicModelImpl;
 import com.beligum.base.utils.json.JsonObjectIdResolver;
+import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.pages.WebPageImpl;
 import com.beligum.blocks.pages.ifaces.WebPage;
 import com.beligum.blocks.resources.interfaces.DocumentInfo;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import org.hibernate.annotations.Type;
 import org.joda.time.LocalDateTime;
 
 import javax.persistence.*;
+import java.io.IOException;
 import java.util.Date;
+import java.util.Locale;
 
 /**
  * Created by wouter on 30/06/15.
@@ -23,42 +29,45 @@ public class DBPage extends DBDocumentInfo
 
     private String masterPage;
 
-    private String pageTemplate;
-
     @Lob
-    private String html;
+    private String webPage;
 
     private String language;
 
-    @Lob
-    private byte[] pageResource;
 
     // Default constructor for Hibernate
     public DBPage() {
 
     }
 
-    public DBPage(WebPage webPage) {
-        this.blockId = webPage.getBlockId().toString();
-        this.pageTemplate = webPage.getPageTemplate();
-        this.html = webPage.getParsedHtml();
-        this.language = webPage.getLanguage().getLanguage();
-        this.masterPage = webPage.getMasterpageId().toString();
+    public DBPage(WebPage webPage) throws JsonProcessingException
+    {
+        this.setWebPage(webPage);
     }
 
     public Long getId() {
         return this.id;
     }
 
-    public String getHtml() {
-        return html;
-    }
-
-    public void setWebPage(WebPage webPage) {
+    public void setWebPage(WebPage webPage) throws JsonProcessingException
+    {
         this.blockId = webPage.getBlockId().toString();
-        this.pageTemplate = webPage.getPageTemplate();
-        this.html = webPage.getParsedHtml();
         this.language = webPage.getLanguage().getLanguage();
         this.masterPage = webPage.getMasterpageId().toString();
+        this.webPage = webPage.toJson();
     }
+
+    public WebPage getWebPage() throws IOException
+    {
+        return WebPageImpl.pageMapper.readValue(this.webPage, WebPage.class);
+    }
+
+    public Locale getLanguage() {
+        Locale retVal = BlocksConfig.instance().getLocaleForLanguage(this.language);
+        if (retVal == null) {
+            retVal = new Locale(this.language);
+        }
+        return retVal;
+    }
+
 }
