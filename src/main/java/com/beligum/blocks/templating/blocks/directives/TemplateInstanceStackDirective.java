@@ -1,6 +1,7 @@
 package com.beligum.blocks.templating.blocks.directives;
 
 import com.beligum.base.templating.velocity.directives.VelocityDirective;
+import com.beligum.blocks.templating.blocks.PropertyArray;
 import com.beligum.blocks.templating.blocks.TemplateContextMap;
 import com.beligum.blocks.templating.blocks.TemplateController;
 import com.beligum.blocks.templating.blocks.TemplateStackFrame;
@@ -14,6 +15,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Map;
 
 /**
  * Created by bram on 5/28/15.
@@ -106,12 +108,22 @@ public class TemplateInstanceStackDirective extends Block
                 break;
 
             case DEFINE:
-
                 if (!stack.isEmpty()) {
                     try (StringWriter dummyWriter = new StringWriter()) {
                         super.render(context, dummyWriter);
                         String variable = (String) TagTemplateDirectiveUtils.readArg(context, node, 1);
-                        stack.peek().getProperties().put(variable, dummyWriter.toString());
+                        Map<String, Object> properties = stack.peek().getProperties();
+                        String propValue = dummyWriter.toString();
+                        //this allows us to assign multiple tags to a single property key
+                        // by only converting to a list when multiple mappings are present, we allow for natural coding in VTL syntax
+                        // and also save the fact "there's only one"
+                        if (!properties.containsKey(variable)) {
+                            //specially crafted ArrayList with a modified toString(), initialized to one propValue
+                            properties.put(variable, new PropertyArray(propValue));
+                        }
+                        else {
+                            ((PropertyArray)properties.get(variable)).add(propValue);
+                        }
                     }
                 }
                 else {
