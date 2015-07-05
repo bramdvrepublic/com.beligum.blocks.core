@@ -125,6 +125,8 @@ public abstract class AbstractResource extends AbstractNode implements Resource
 
     public abstract Node removeFieldDirect(String key);
 
+
+
     @Override
     public void merge(Resource resource)
     {

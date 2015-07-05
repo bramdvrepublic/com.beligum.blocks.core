@@ -4,10 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import sun.util.resources.CalendarData_cs;
 
 import java.net.URI;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by wouter on 24/04/15.
@@ -50,5 +47,7 @@ public interface Resource extends Node, DocumentInfo
     public void merge(Resource resource);
 
     public String toJson() throws JsonProcessingException;
+
+    public void setLanguage(Locale locale);
 
 }

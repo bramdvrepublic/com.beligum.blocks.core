@@ -25,8 +25,10 @@ public class ElasticSearchClient
     private ElasticSearchClient() {
         Map params = new HashMap();
         params.put("cluster.name", BlocksConfig.instance().getElasticSearchClusterName());
+        String host = BlocksConfig.instance().getElasticSearchHostName();
+        Integer port = BlocksConfig.instance().getElasticSearchPort();
         Settings settings = ImmutableSettings.settingsBuilder().put(params).build();
-        this.client = new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress("localhost", 9300));
+        this.client = new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(host, port));
         if (!this.client.admin().indices().exists(new IndicesExistsRequest(ElasticSearchServer.instance().getPageIndexName(BlocksConfig.instance().getDefaultLanguage()))).actionGet().isExists()) {
             for (Locale locale : BlocksConfig.instance().getLanguages().values()) {
                 this.client.admin().indices().prepareCreate(ElasticSearchServer.instance().getPageIndexName(locale)).execute().actionGet();

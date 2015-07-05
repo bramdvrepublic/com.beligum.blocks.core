@@ -32,6 +32,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.joda.time.LocalDateTime;
 
 import javax.persistence.NoResultException;
+import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -84,7 +85,7 @@ public class DummyBlocksController implements BlocksController
         DBPage page = null;
         try {
             page = RequestContext.getEntityManager().createQuery("select p FROM DBPage p where p.masterPage = :master AND p.language = :language", DBPage.class)
-                                          .setParameter("master", masterWebPage.toString()).setParameter("language", locale.getLanguage()).getSingleResult();
+                                 .setParameter("master", masterWebPage.toString()).setParameter("language", locale.getLanguage()).getSingleResult();
         } catch (NoResultException e) {
             Logger.debug("No webpage found in DB");
         } catch (Exception e) {
@@ -106,7 +107,7 @@ public class DummyBlocksController implements BlocksController
         // Do not remove the page but mark the path as not found
         List<DBPath> paths = RequestContext.getEntityManager().createQuery("select p FROM DBPath p where p.masterPage = :master", DBPath.class).setParameter("master", masterPage.toString()).getResultList();
         RequestContext.getEntityManager().createQuery("update DBPath p SET p.statusCode = 404 where p.masterPage = :master").setParameter("master", masterPage.toString())
-                                           .executeUpdate();
+                      .executeUpdate();
         List<Long> pages = RequestContext.getEntityManager().createQuery("select p.id FROM DBPage p where p.masterPage = :master", Long.class).setParameter("master", masterPage.toString()).getResultList();
         for (DBPath path: paths) {
             removePathFromLucene(path.getId().toString());
@@ -149,7 +150,7 @@ public class DummyBlocksController implements BlocksController
             webpath = RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.url = :path and p.language = :language", DBPath.class).setParameter("language", locale.getLanguage()).setParameter(
                             "path", path.toString()).getSingleResult();
         } catch (NoResultException e) {
-            Logger.info("Searching for path but path not found");
+            Logger.debug("Searching for path but path not found");
         } catch (Exception e) {
             Logger.error(e);
         }
@@ -159,20 +160,20 @@ public class DummyBlocksController implements BlocksController
 
     public WebPath getActivePath(Path path) {
         WebPath retVal = null;
-            // search all urls with code 200 and return the first active language code
+        // search all urls with code 200 and return the first active language code
         // in the config file
-            List<DBPath> paths = RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.url = :path and p.statusCode = 200", DBPath.class).setParameter("path", path.toString()).getResultList();
-            Map<String, DBPath> pathMap = new HashMap<String, DBPath>();
-            for (DBPath p: paths) {
-                pathMap.put(p.getLanguage().getLanguage(), p);
+        List<DBPath> paths = RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.url = :path and p.statusCode = 200", DBPath.class).setParameter("path", path.toString()).getResultList();
+        Map<String, DBPath> pathMap = new HashMap<String, DBPath>();
+        for (DBPath p: paths) {
+            pathMap.put(p.getLanguage().getLanguage(), p);
+        }
+        // now find the best match for the page -> take the order of the languages in the config file
+        for (Locale l: BlocksConfig.instance().getLanguages().values()) {
+            if (pathMap.containsKey(l.getLanguage())) {
+                retVal = pathMap.get(l.getLanguage());
+                break;
             }
-            // now find the best match for the page -> take the order of the languages in the config file
-            for (Locale l: BlocksConfig.instance().getLanguages().values()) {
-                if (pathMap.containsKey(l.getLanguage())) {
-                    retVal = pathMap.get(l.getLanguage());
-                    break;
-                }
-            }
+        }
 
         return retVal;
     }
@@ -266,7 +267,7 @@ public class DummyBlocksController implements BlocksController
         if (resource.getRdfType().contains(new URI("http://www.mot.be/ontology/Webpage"))) return null;
         DBResource dbResource = null;
 
-            dbResource = findResourceInDB(resource.getBlockId());
+        dbResource = findResourceInDB(resource.getBlockId());
 
         if (dbResource == null) {
             dbResource = new DBResource(resource);
@@ -300,10 +301,48 @@ public class DummyBlocksController implements BlocksController
             if (value instanceof List && ((List)value).size() == 2
                 && ((List)value).get(0) instanceof HashMap
                 && ((HashMap<String, Object>)((List)value).get(0)).containsKey(ParserConstants.JSONLD_ID)) {
-                retVal = new DummyResource((HashMap<String, Object>)((List)value).get(0), (HashMap<String, Object>)((List)value).get(1), language);
-            } else if (value instanceof Map && ((Map)value).containsKey(ParserConstants.JSONLD_ID)) {
+                HashMap<String, Object> rootVector = (HashMap<String, Object>) ((List) value).get(0);
+                HashMap<String, Object> localVector = (HashMap<String, Object>) ((List) value).get(1);
 
-                retVal = new DummyResource((Map)value, new HashMap<String, Object>(), language);
+                retVal = new DummyResource(rootVector, localVector, language);
+
+//            } else if (value instanceof List && ((List)value).size() == 1
+//                       && ((List)value).get(0) instanceof List
+//                       && ((HashMap<String, Object>)((List)((List)value).get(0)).get(0)).containsKey(ParserConstants.JSONLD_ID)) {
+//
+//                HashMap<String, Object> rootVector = (HashMap<String, Object>) ((List)((List) value).get(0)).get(0);
+//                HashMap<String, Object> localVector = (HashMap<String, Object>) ((List)((List) value).get(0)).get(1);
+//
+//                if (localVector.isEmpty() && rootVector.values().size() == 2) {
+//                    // get this resource from the db
+//                    try {
+//                        retVal = DummyBlocksController.instance().getResource(UriBuilder.fromUri((String) rootVector.get(ParserConstants.JSONLD_ID)).build(), language);
+//                    }
+//                    catch (Exception e) {
+//                        Logger.error("Could not fetch resource as child of parent resource");
+//                        retVal = new DummyResource(rootVector, localVector, language);
+//                    }
+//                } else {
+//                    retVal = createNode(((List)value).get(0), language);
+//                }
+
+//            } else if (value instanceof List && ((List)value).size() == 1 && ((List)value).get(0) instanceof Map && ((Map)((List)value).get(0)).containsKey(ParserConstants.JSONLD_ID) && ((Map)((List)value).get(0)).values().size() == 1) {
+//                try {
+//                    retVal = DummyBlocksController.instance().getResource(UriBuilder.fromUri((String)((Map)((List)value).get(0)).get(ParserConstants.JSONLD_ID)).build(), language);
+//                }
+//                catch (Exception e) {
+//                    Logger.error("Could not fetch resource as child of parent resource");
+//                    // TODO how to catch this?
+//                }
+            } else if (value instanceof Map && ((Map)value).containsKey(ParserConstants.JSONLD_ID)) {
+                try {
+                    retVal = DummyBlocksController.instance().getResource(UriBuilder.fromUri((String)((Map)value).get(ParserConstants.JSONLD_ID)).build(), language);
+                }
+                catch (Exception e) {
+                    Logger.error("Could not fetch resource as child of parent resource");
+                    // TODO how to catch this?
+                }
+//                retVal = new DummyResource((Map)value, new HashMap<String, Object>(), language);
             } else {
                 retVal = new DummyNode(value, language);
             }
@@ -331,36 +370,36 @@ public class DummyBlocksController implements BlocksController
 
 
     private void addResourceToLucene(String id, String type, String json, Locale locale) {
-//        String index = ElasticSearchServer.instance().getResourceIndexName(locale);
-//
-//        ElasticSearchServer.instance().getBulk().add(ElasticSearchClient.instance().getClient().prepareIndex(index, type)
-//                                                                        .setSource(json)
-//                                                                        .setId(id).request());
+        //        String index = ElasticSearchServer.instance().getResourceIndexName(locale);
+        //
+        //        ElasticSearchServer.instance().getBulk().add(ElasticSearchClient.instance().getClient().prepareIndex(index, type)
+        //                                                                        .setSource(json)
+        //                                                                        .setId(id).request());
 
     }
 
     private void addPageToLucene(String id, String json, Locale locale) {
 
-//        String name = BlocksController.webpage;
-//        String index = ElasticSearchServer.instance().getPageIndexName(locale);
-//        ElasticSearchServer.instance().getBulk().add(ElasticSearchClient.instance().getClient().prepareIndex(index, name)
-//                                                                        .setSource(json)
-//                                                                        .setId(id).request());
-//        IndexResponse is = ElasticSearchClient.instance().getClient().prepareIndex(index, name)
-//                           .setSource(json).setId(id)
-//                           .execute().actionGet();
-//        if (!is.isCreated()) {
-//            Logger.error("Webpage could not be added to Lucene");
-//        }
+        //        String name = BlocksController.webpage;
+        //        String index = ElasticSearchServer.instance().getPageIndexName(locale);
+        //        ElasticSearchServer.instance().getBulk().add(ElasticSearchClient.instance().getClient().prepareIndex(index, name)
+        //                                                                        .setSource(json)
+        //                                                                        .setId(id).request());
+        //        IndexResponse is = ElasticSearchClient.instance().getClient().prepareIndex(index, name)
+        //                           .setSource(json).setId(id)
+        //                           .execute().actionGet();
+        //        if (!is.isCreated()) {
+        //            Logger.error("Webpage could not be added to Lucene");
+        //        }
     }
 
     private void addPathToLucene(String id, String json) {
 
-//        String name = BlocksController.path;
-//        String index = "routing";
-//        ElasticSearchClient.instance().getClient().prepareIndex(index, name)
-//                           .setSource(json)
-//                           .setId(id).execute().actionGet();
+        //        String name = BlocksController.path;
+        //        String index = "routing";
+        //        ElasticSearchClient.instance().getClient().prepareIndex(index, name)
+        //                           .setSource(json)
+        //                           .setId(id).execute().actionGet();
     }
 
     private void removePathFromLucene(String id) {

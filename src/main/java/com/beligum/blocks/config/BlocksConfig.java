@@ -177,6 +177,22 @@ public class BlocksConfig
         return retVal;
     }
 
+    public String getElasticSearchHostName() {
+        String retVal = R.configuration().getString("elastic-search.host");
+        if (retVal == null) {
+            retVal = "localhost";
+        }
+        return retVal;
+    }
+
+    public Integer getElasticSearchPort() {
+        Integer retVal = R.configuration().getInt("elastic-search.port");
+        if (retVal == null) {
+            retVal = 9300;
+        }
+        return retVal;
+    }
+
     public Locale getRequestDefaultLanguage() {
         Locale retVal = null;
         List<Locale> languages = RequestContext.getJaxRsRequest().getAcceptableLanguages();

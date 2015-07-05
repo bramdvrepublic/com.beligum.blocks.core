@@ -45,7 +45,6 @@ public interface BlocksController
 
     public Node createNode(Object value, Locale language);
 
-
     // returns a webnode (containing all urls and redirects for this page)
     public WebPath getPath(URI masterPage, Locale locale);
 

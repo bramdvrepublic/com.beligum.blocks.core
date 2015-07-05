@@ -29,7 +29,7 @@ public class DummyResource extends AbstractResource
 
     public DummyResource(Map<String, Object> vertex, Map<String, Object> localized, Locale language) {
         this(vertex, localized);
-        this.localized.put(ParserConstants.JSONLD_LANGUAGE, language);
+        this.localized.put(ParserConstants.JSONLD_LANGUAGE, language.getLanguage());
         this.language = language;
     }
 
@@ -67,7 +67,7 @@ public class DummyResource extends AbstractResource
         Map<String, Object> vertex = localized;
         if (!vertex.containsKey(key)) {
             vertex = this.vertex;
-            lang = Locale.ROOT;
+//            lang = Locale.ROOT;
         }
 
         if (vertex != null) {
@@ -198,13 +198,21 @@ public class DummyResource extends AbstractResource
 
     @Override
     public Locale getLanguage() {
-        Locale retVal = this.language;
-        if (retVal == null) {
-            String language = (String)localized.get(ParserConstants.JSONLD_LANGUAGE);
+        Locale retVal = null;
+        String language = (String)localized.get(ParserConstants.JSONLD_LANGUAGE);
+        if (language != null) {
             retVal = BlocksConfig.instance().getLocaleForLanguage(language);
-            this.language = retVal;
         }
+        if (retVal == null){
+            retVal = BlocksConfig.instance().getDefaultLanguage();
+        }
+
         return retVal;
+    }
+
+    @Override
+    public void setLanguage(Locale locale) {
+        localized.put(ParserConstants.JSONLD_LANGUAGE, locale.getLanguage());
     }
 
     @Override
