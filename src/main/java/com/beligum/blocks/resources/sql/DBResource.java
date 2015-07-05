@@ -1,26 +1,16 @@
 package com.beligum.blocks.resources.sql;
 
-import com.beligum.base.models.BasicModelImpl;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.resources.dummy.DummyResource;
-import com.beligum.blocks.resources.interfaces.DocumentInfo;
 import com.beligum.blocks.resources.interfaces.Resource;
 import com.beligum.blocks.resources.jackson.ResourceLocalizedSerializer;
 import com.beligum.blocks.resources.jackson.ResourceRootSerializer;
-import com.drew.lang.annotations.NotNull;
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
-import org.hibernate.FetchMode;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.Type;
-import org.joda.time.LocalDateTime;
 
 import javax.persistence.*;
-import java.io.IOException;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;

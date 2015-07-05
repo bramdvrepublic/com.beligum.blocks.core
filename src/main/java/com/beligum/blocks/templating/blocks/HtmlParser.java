@@ -31,6 +31,10 @@ public class HtmlParser extends AbstractAssetParser
 
     //-----VARIABLES-----
     private static final Pattern notEmptyPropertyAttrValue = Pattern.compile(".+");
+    //this is the name of the RDFa property attribute (eg. the one that plays a role while parsing RDFa)
+    private static final String RDF_PROPERTY_ATTR = "property";
+    //this is the name of the property attribute that can be used in the template system, but doesn't 'mean' anything RDFa-wise
+    private static final String NON_RDF_PROPERTY_ATTR = "data-property";
 
     //-----CONSTRUCTORS-----
     public HtmlParser()
@@ -168,19 +172,17 @@ public class HtmlParser extends AbstractAssetParser
             //from here, it's the same for a Tag or Page template; preprocess the replaceable properties
 
             //find and replace all property tags to velocity variables
-            List<Element> allPropertyElements = templateHtml.getAllElements("property", notEmptyPropertyAttrValue);
+            List<Element> allPropertyElements = templateHtml.getAllElements(RDF_PROPERTY_ATTR, notEmptyPropertyAttrValue);
             for (Element property : allPropertyElements) {
-                String name = property.getAttributeValue("property");
-                String value = property.toString();
-                StringBuilder sb = new StringBuilder();
-                //if there's no property active in this context, use the (default) value of the template
-                sb.append("#if(!$").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("'])").append("\n");
-                sb.append(property.toString()).append("\n");
-                sb.append("#else").append("\n");
-                sb.append("$").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("']").append("\n");
-                sb.append("#end").append("\n");
-
-                output.replace(property, sb);
+                this.replaceTemplateProperty(RDF_PROPERTY_ATTR, property, output);
+            }
+            //now do the same for the non-rdf properties
+            List<Element> allDataPropertyElements = templateHtml.getAllElements(NON_RDF_PROPERTY_ATTR, notEmptyPropertyAttrValue);
+            for (Element property : allDataPropertyElements) {
+                //don't re-do the elements that also have a property attribute (because that one has precedence over the non-rdf attribute)
+                if (!allPropertyElements.contains(property)) {
+                    this.replaceTemplateProperty(NON_RDF_PROPERTY_ATTR, property, output);
+                }
             }
 
             builder.append(output.toString());
@@ -213,24 +215,27 @@ public class HtmlParser extends AbstractAssetParser
                 }
 
                 //build the properties map
-                Map<String, String> properties = new HashMap<>();
+                Map<String, List<String>> properties = new HashMap<>();
                 // note: this is a tricky one. It doesn't have to be the immediate children, but we can't cross the "boundary"
                 // of another template instance either (otherwise the grandchild-properties would get assigned to the grandparent)
                 // In practice, restricting this to the immediate children works pretty well (and neatly conforms to the WebComponents standard)
                 List<Element> allImmediatePropertyElements = templateInstance.getChildElements();
                 for (Element immediateChild : allImmediatePropertyElements) {
-                    String name = immediateChild.getAttributeValue("property");
+                    //since (for our template system) the RDF and non-RDF attributes are equal, we can treat them the same way
+                    String name = immediateChild.getAttributeValue(RDF_PROPERTY_ATTR);
+                    //note that this will be skipped when a valid RDF-attr is found (so if both are present, the RDF one has priority)
+                    if (name==null) {
+                        name = immediateChild.getAttributeValue(NON_RDF_PROPERTY_ATTR);
+                    }
                     if (name!=null) {
                         String value = immediateChild.toString();
 
-                        // if we specify multiple properties with the same name,
-                        // make a "list" out of them
-                        //TODO BUG; this is not a list??
-                        if (properties.containsKey(name)) {
-                            value = properties.get(name) + value;
+                        // this list allows us to specify multiple properties with the same name in the instance
+                        List<String> values = properties.get(name);
+                        if (values==null) {
+                            properties.put(name, values = new ArrayList<String>());
                         }
-
-                        properties.put(name, value);
+                        values.add(value);
                     }
                 }
 
@@ -251,7 +256,7 @@ public class HtmlParser extends AbstractAssetParser
 
                 //the 'body' starts here
 
-                //push the controller with the attributes as arguments
+                //push the controller with the tag-attributes as arguments
                 builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.STACK.ordinal()).append(",\"").append(tagTemplate.getTemplateName()).append("\"");
                 for (Map.Entry<String, String> attribute : attributes.entrySet()) {
                     String value = attribute.getValue();
@@ -260,9 +265,15 @@ public class HtmlParser extends AbstractAssetParser
                 builder.append(")").append("\n");
 
                 //define the properties in the context
-                for (Map.Entry<String, String> property : properties.entrySet()) {
-                    builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.DEFINE.ordinal()).append(",\"").append(property.getKey()).append("\")").append(property.getValue()).append("#end").append("\n");
+                for (Map.Entry<String, List<String>> property : properties.entrySet()) {
+                    //this allows us to assign multiple tags to a single property key
+                    List<String> values = property.getValue();
+                    for (String value : values) {
+                        builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.DEFINE.ordinal()).append(",\"")
+                               .append(property.getKey()).append("\")").append(value).append("#end").append("\n");
+                    }
                 }
+
                 // embedding the code chunk in the file (instead of linking to it) is a lot faster, but messes up the auto-cache-reload in dev mode
                 if (R.configuration().getProduction()) {
                     //by passing along the resourceloader (and enabling postprocessing and using the parsed path), we implement recursion
@@ -326,6 +337,20 @@ public class HtmlParser extends AbstractAssetParser
         }
 
         return output.toString();
+    }
+    private void replaceTemplateProperty(String attribute, Element property, OutputDocument output)
+    {
+        String name = property.getAttributeValue(attribute);
+        String value = property.toString();
+        StringBuilder sb = new StringBuilder();
+        //if there's no property active in this context, use the (default) value of the template
+        sb.append("#if(!$").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("'])");
+        sb.append(property.toString());
+        sb.append("#{else}");
+        sb.append("$").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("']");
+        sb.append("#end");
+
+        output.replace(property, sb);
     }
     private static void searchAllTemplates(TemplateCache templateCache) throws Exception
     {
