@@ -1,6 +1,7 @@
 package com.beligum.blocks.routing.ifaces;
 
 import com.beligum.blocks.resources.interfaces.DocumentInfo;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -34,6 +35,6 @@ public interface WebPath
     public boolean isPage();
     public boolean isRedirect();
 
-    public String toJson();
+    public String toJson() throws JsonProcessingException;
 
 }

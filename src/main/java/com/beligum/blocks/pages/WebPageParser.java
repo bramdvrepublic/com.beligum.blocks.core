@@ -72,10 +72,9 @@ public class WebPageParser
         this.source.fullSequentialParse();
         this.database = database;
         this.vocab = BlocksConfig.instance().getDefaultRdfSchema();
-        this.resources.put(pageResource.getBlockId().toString(), pageResource);
         Element base = this.source.getFirstElement("base");
         this.setBase(base, uri);
-
+        this.resources.put(pageResource.getBlockId().toString(), pageResource);
         this.elements  = this.source.getAllElements();
         for (HtmlTemplate template: HtmlParser.getCachedTemplates().values()) {
             this.siteTags.add(template.getTemplateName());
@@ -105,6 +104,10 @@ public class WebPageParser
 
     public String getPageTemplate() {
         return this.pageTemplate;
+    }
+
+    public Resource getPageResource() {
+        return this.pageResource;
     }
 
     public HashMap<String, Resource> getResources() {

@@ -42,7 +42,7 @@ public class OBlocksDatabase
 
     public static final String RESOURCE_CLASS = "DefaultResource";
     public static final String LOCALIZED_RESOURCE_CLASS = "LocalizedResource";
-    public final static String RESOURCE_TYPE_FIELD = "@rdftype";
+    public final static String RESOURCE_TYPE_FIELD = "@type";
     public static final String RESOURCE_LOCALIZED_FIELD = "localized";
 
     public static final String RESOURCE_CREATED_BY = "createdBy";

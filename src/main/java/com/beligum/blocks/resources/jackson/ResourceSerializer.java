@@ -30,7 +30,7 @@ public class ResourceSerializer<T extends Resource> extends JsonSerializer
 
     // Print all fields in an object
     protected void printResource(JsonGenerator jgen, Resource resource) throws IOException {
-        HashMap<String, String> context = new HashMap<>();
+        HashMap<String, String> context = resource.getContext();
 
         jgen.writeStartObject();
         if (printRootFields()) {
@@ -67,6 +67,7 @@ public class ResourceSerializer<T extends Resource> extends JsonSerializer
             jgen.writeEndArray();
 
         }
+
 
         if (printRootFields()) {
             // Write context

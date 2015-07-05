@@ -196,7 +196,6 @@ public abstract class WikiParser
 
         Logger.info("finish!");
 
-        ElasticSearchServer.instance().saveBulk();
 //
 
 
@@ -300,8 +299,8 @@ public abstract class WikiParser
         if (!StringUtils.isEmpty(value) && langTo.equals(Locale.ROOT) && language != BlocksConfig.instance().getDefaultLanguage()) {
             Logger.warn("Text added to root note by translation available for field " + newFieldName);
         } else if (langTo !=Locale.ROOT  && language != BlocksConfig.instance().getDefaultLanguage() && StringUtils.isEmpty(value)) {
-            addToEntityOR(newFieldName, oldFields, entity, BlocksConfig.instance().getDefaultLanguage(), item, langTo);
-        } else {
+//            addToEntityOR(newFieldName, oldFields, entity, BlocksConfig.instance().getDefaultLanguage(), item, langTo);
+        } else if (!StringUtils.isEmpty(value)) {
             add(newFieldName, value, entity, langTo);
         }
     }
