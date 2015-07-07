@@ -7,13 +7,13 @@ package com.beligum.blocks.endpoints;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.config.BlocksConfig;
-import com.beligum.blocks.database.DummyBlocksController;
-import com.beligum.blocks.database.OBlocksDatabase;
+import com.beligum.blocks.controllers.PersistenceControllerImpl;
+import com.beligum.blocks.controllers.interfaces.PersistenceController;
+import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.pages.WebPageParser;
-import com.beligum.blocks.pages.ifaces.WebPage;
-import com.beligum.blocks.resources.interfaces.Resource;
+import com.beligum.blocks.models.interfaces.WebPage;
+import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.routing.Route;
-import com.beligum.blocks.search.ElasticSearchServer;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
@@ -21,6 +21,7 @@ import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.beligum.blocks.utils.RdfTools;
 import gen.com.beligum.blocks.core.fs.html.views.modals.newblock;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -67,7 +68,7 @@ public class PageEndpoint
 
         URI uri = new URI(url);
         // Analyze the url to find the correct Route
-        Route route = new Route(uri, DummyBlocksController.instance());
+        Route route = new Route(uri, PersistenceControllerImpl.instance());
         boolean doVersion = false;
 
         if (!route.exists()) {
@@ -78,17 +79,17 @@ public class PageEndpoint
 
         if (route.getWebPath().isNotFound()) {
             route.getWebPath().setPageOk(masterWebpage);
-            DummyBlocksController.instance().savePath(route.getWebPath());
+            PersistenceControllerImpl.instance().savePath(route.getWebPath());
 
         } else if (route.getWebPath().isRedirect()) {
             //TODO get path to redirect
         }
 
         // fetch page for locale
-        WebPage localizedWebpage = DummyBlocksController.instance().getWebPage(masterWebpage, route.getLocale());
+        WebPage localizedWebpage = PersistenceControllerImpl.instance().getWebPage(masterWebpage, route.getLocale());
         // if this page does not yet exist -> create
-        if (localizedWebpage == null) {
-            localizedWebpage = DummyBlocksController.instance().createWebPage(masterWebpage, RdfTools.createLocalResourceId(OBlocksDatabase.WEB_PAGE_CLASS), route.getLocale());
+        if (localizedWebpage == null) { ResourceFactoryImpl
+                            .instance().createWebPage(masterWebpage, RdfTools.createLocalResourceId(StringUtils.capitalize(PersistenceController.WEB_PAGE_CLASS)), route.getLocale());
         } else {
             doVersion = true;
         }
@@ -98,8 +99,8 @@ public class PageEndpoint
         //        2. get filtered html
         //        3. get resources - update new resources with resource-tag
         //        4. get href and src attributes
-        WebPageParser oldPageParser = new WebPageParser(uri, localizedWebpage.getLanguage(), localizedWebpage.getParsedHtml(), DummyBlocksController.instance());
-        WebPageParser pageParser = new WebPageParser(uri, localizedWebpage.getLanguage(), content, DummyBlocksController.instance());
+        WebPageParser oldPageParser = new WebPageParser(uri, localizedWebpage.getLanguage(), localizedWebpage.getParsedHtml(), PersistenceControllerImpl.instance());
+        WebPageParser pageParser = new WebPageParser(uri, localizedWebpage.getLanguage(), content, PersistenceControllerImpl.instance());
 
         if (!(pageParser.getParsedHtml().equals(localizedWebpage.getParsedHtml()))) {
             localizedWebpage.setPageTemplate(pageParser.getPageTemplate());
@@ -111,11 +112,11 @@ public class PageEndpoint
 
             // Put all found property values inside the resources'
             // return the resources that were changed
-            WebPageParser.fillResourceProperties(pageParser.getResources(), pageParser.getResourceProperties(), oldPageParser.getResourceProperties(), DummyBlocksController.instance(), localizedWebpage.getLanguage());
+            WebPageParser.fillResourceProperties(pageParser.getResources(), pageParser.getResourceProperties(), oldPageParser.getResourceProperties(), PersistenceControllerImpl.instance(), localizedWebpage.getLanguage());
 
             // TODO set webpage properties
             for (Resource resource: pageParser.getResources().values()) {
-                DummyBlocksController.instance().saveResource(resource);
+                PersistenceControllerImpl.instance().saveResource(resource);
             }
 
             for (URI field: pageParser.getPageResource().getFields()) {
@@ -124,7 +125,7 @@ public class PageEndpoint
 
             // TODO update other pages that contain changed resources
 
-            DummyBlocksController.instance().saveWebPage(localizedWebpage, doVersion);
+            PersistenceControllerImpl.instance().saveWebPage(localizedWebpage, doVersion);
         }
 
 
@@ -202,9 +203,9 @@ public class PageEndpoint
 
     {
         URI uri = new URI(url);
-        Route route = new Route(uri, DummyBlocksController.instance());
+        Route route = new Route(uri, PersistenceControllerImpl.instance());
         URI masterPage = route.getWebPath().getMasterPage();
-        DummyBlocksController.instance().deleteWebPage(masterPage);
+        PersistenceControllerImpl.instance().deleteWebPage(masterPage);
         return Response.ok().build();
     }
 

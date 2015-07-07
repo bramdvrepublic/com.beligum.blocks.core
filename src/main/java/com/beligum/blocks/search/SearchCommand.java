@@ -1,6 +1,6 @@
 package com.beligum.blocks.search;
 
-import com.beligum.blocks.resources.interfaces.Resource;
+import com.beligum.blocks.models.interfaces.Resource;
 
 import java.util.List;
 import java.util.Locale;

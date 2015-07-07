@@ -2,13 +2,13 @@ package com.beligum.blocks.pages;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
-import com.beligum.blocks.database.DummyBlocksController;
-import com.beligum.blocks.database.interfaces.BlocksController;
+import com.beligum.blocks.controllers.PersistenceControllerImpl;
+import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import com.beligum.blocks.exceptions.RdfException;
-import com.beligum.blocks.resources.interfaces.Node;
-import com.beligum.blocks.resources.interfaces.Resource;
-import com.beligum.blocks.pages.ifaces.WebPage;
-import com.beligum.blocks.routing.Route;
+import com.beligum.blocks.models.factories.ResourceFactoryImpl;
+import com.beligum.blocks.models.interfaces.Node;
+import com.beligum.blocks.models.interfaces.Resource;
+import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.utils.RdfTools;
@@ -37,7 +37,7 @@ public class WebPageParser
 {
     private Locale locale;
     private Source source;
-    private BlocksController database;
+    private PersistenceController database;
     private StringBuilder parsedHtml = new StringBuilder();
     private String pageTemplate;
     private String text = "";
@@ -61,10 +61,10 @@ public class WebPageParser
     private HashMap<String, URI> prefixes = new HashMap<>();
     private HashMap<URI, HashMap<URI, List<PropertyValue>>> resourceMap = new HashMap<>();
     // Resource that contains all properties that are attached to the page
-    private Resource pageResource = DummyBlocksController.instance().createResource(RdfTools.createLocalResourceId("webpage"), RdfTools.createLocalType("Webpage"), Locale.ROOT);
+    private Resource pageResource = ResourceFactoryImpl.instance().createResource(RdfTools.createLocalResourceId("webpage"), RdfTools.createLocalType("Webpage"), Locale.ROOT);
 
 
-    public WebPageParser(URI uri, Locale locale, String source, BlocksController database) throws Exception
+    public WebPageParser(URI uri, Locale locale, String source, PersistenceController database) throws Exception
     {
         this.locale = locale;
         if (source == null) source = "";
@@ -145,7 +145,7 @@ public class WebPageParser
             if (element.getAttributeValue("resource") == null) {
                 // create a new resource
                 URI resourceid = RdfTools.createLocalResourceId(getShortTypeNamefromUri(typeOf));
-                newResource = this.database.createResource(resourceid, typeOf, locale);
+                newResource = ResourceFactoryImpl.instance().createResource(resourceid, typeOf, locale);
 
                 // add new resource id to parsed html
                 parsedHtml.append(source.subSequence(textPos, element.getStartTag().getEnd()-1));
@@ -162,7 +162,7 @@ public class WebPageParser
                 if (newResource == null) {
                     // create a new resource
 //                    Logger.warn("Resource found in html with a resource id, but no resource found in db. Creating a new resource...");
-                    newResource = this.database.createResource(resourceId, typeOf, locale);
+                    newResource = ResourceFactoryImpl.instance().createResource(resourceId, typeOf, locale);
                 }
             }
 
@@ -185,15 +185,15 @@ public class WebPageParser
             if (newResource != null && !(resource instanceof WebPage)) {
                 content = newResource;
             } else if (element.getAttributeValue("content") != null) {
-                content = this.database.createNode(element.getAttributeValue("content"), propertyLocale);
+                content = ResourceFactoryImpl.instance().createNode(element.getAttributeValue("content"), propertyLocale);
             } else if (element.getAttributeValue("src") != null) {
-                content = this.database.createNode(element.getAttributeValue("src"), propertyLocale);
+                content = ResourceFactoryImpl.instance().createNode(element.getAttributeValue("src"), propertyLocale);
             } else if (element.getAttributeValue("href") != null) {
-                content = this.database.createNode(element.getAttributeValue("href"), propertyLocale);
+                content = ResourceFactoryImpl.instance().createNode(element.getAttributeValue("href"), propertyLocale);
             } else {
 //                Renderer textRenderer = new Renderer(element);
 //                String text = textRenderer.toString();
-                content = this.database.createNode(element.getContent().toString(), propertyLocale);
+                content = ResourceFactoryImpl.instance().createNode(element.getContent().toString(), propertyLocale);
             }
 
             Integer index = null;
@@ -475,7 +475,7 @@ public class WebPageParser
     *
     * TODO: Compare values to values in webpage (not value in resource object). This way default values are not saved.
     * */
-    public static void fillResourceProperties(HashMap<String, Resource> resources, HashMap<URI, HashMap<URI, List<PropertyValue>>> resourceProperties, HashMap<URI, HashMap<URI, List<PropertyValue>>> oldResourceProperties, BlocksController database, Locale locale) {
+    public static void fillResourceProperties(HashMap<String, Resource> resources, HashMap<URI, HashMap<URI, List<PropertyValue>>> resourceProperties, HashMap<URI, HashMap<URI, List<PropertyValue>>> oldResourceProperties, PersistenceController database, Locale locale) {
         // TODO return only changed resources
         for (URI resourceID: resourceProperties.keySet()) {
             Resource resource = resources.get(resourceID.toString());

@@ -3,7 +3,7 @@ package com.beligum.blocks.endpoints;
 import com.beligum.base.server.RequestContext;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.database.DummyBlocksController;
+import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.routing.HtmlRouter;
 import com.beligum.blocks.routing.ifaces.Router;
 import com.beligum.blocks.routing.Route;
@@ -59,7 +59,7 @@ public class ApplicationEndpoint
         Response retVal;
         URI currentURI = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
 
-        Route route = new Route(currentURI, DummyBlocksController.instance());
+        Route route = new Route(currentURI, PersistenceControllerImpl.instance());
         if (!route.getLocale().equals(Locale.ROOT)) {
             Router router = new HtmlRouter(route);
             retVal = router.response();
@@ -102,7 +102,7 @@ public class ApplicationEndpoint
     //
     //            QueryBuilder dbQuery = QueryBuilders.boolQuery().must(termQuery).must(typeQuery);
     //
-    //            CountRequestBuilder count = ElasticSearchClient.instance().getClient().prepareCount(ElasticSearchServer.instance().getResourceIndexName(locale)).setQuery(dbQuery);
+    //            CountRequestBuilder count = ElasticSearchClient.instance().getClient().prepareCount(ElasticSearch.instance().getResourceIndexName(locale)).setQuery(dbQuery);
     //            CountResponse response = count.execute().actionGet();
     //
     //
@@ -110,7 +110,7 @@ public class ApplicationEndpoint
     //
     //
     //
-    ////            SearchRequestBuilder searchRequest = ElasticSearchClient.instance().getClient().prepareSearch(ElasticSearchServer.instance().getResourceIndexName(locale)).setQuery(dbQuery).addField(
+    ////            SearchRequestBuilder searchRequest = ElasticSearchClient.instance().getClient().prepareSearch(ElasticSearch.instance().getResourceIndexName(locale)).setQuery(dbQuery).addField(
     ////                            "@id").setFetchSource(true).setFrom((int) ((page - 1) * RESOURCES_ON_PAGE)).setSize(RESOURCES_ON_PAGE);
     ////
     ////            if (resourceName.toLowerCase().equals("waterwell") || resourceName.toLowerCase().equals("bakehouse")) {

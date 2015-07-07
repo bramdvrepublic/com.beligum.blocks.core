@@ -5,11 +5,10 @@ import com.beligum.base.server.RequestContext;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.BlocksConfig;
-import com.beligum.blocks.database.interfaces.BlocksController;
-import com.beligum.blocks.search.ElasticSearchClient;
-import com.beligum.blocks.search.ElasticSearchServer;
+import com.beligum.blocks.controllers.interfaces.PersistenceController;
+import com.beligum.blocks.search.ElasticSearch;
+import com.beligum.blocks.search.ElasticSearch;
 import com.beligum.blocks.security.Permissions;
-import com.beligum.blocks.templating.blocks.TemplateCache;
 import org.apache.commons.io.IOUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
@@ -38,7 +37,7 @@ public class DebugEndpoint
 
         Logger.warn("Url-id mapping has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
 
-        ElasticSearchClient.instance().getClient().admin().indices().delete(new DeleteIndexRequest("*")).actionGet();
+        ElasticSearch.instance().getClient().admin().indices().delete(new DeleteIndexRequest("*")).actionGet();
 
         ClassLoader classLoader = getClass().getClassLoader();
         String resourceMapping = null;
@@ -61,13 +60,13 @@ public class DebugEndpoint
 
 
         for (Locale locale: BlocksConfig.instance().getLanguages().values()) {
-            ElasticSearchClient.instance().getClient().admin().indices().prepareCreate(ElasticSearchServer.instance().getPageIndexName(locale)).setSettings(settings).addMapping(BlocksController.webpage,
+            ElasticSearch.instance().getClient().admin().indices().prepareCreate(ElasticSearch.instance().getPageIndexName(locale)).setSettings(settings).addMapping(PersistenceController.WEB_PAGE_CLASS,
                                                                                                                                                                          pageMapping).execute().actionGet();
-            ElasticSearchClient.instance().getClient().admin().indices().prepareCreate(ElasticSearchServer.instance().getResourceIndexName(locale)).setSettings(settings).addMapping("_default_",
+            ElasticSearch.instance().getClient().admin().indices().prepareCreate(ElasticSearch.instance().getResourceIndexName(locale)).setSettings(settings).addMapping("_default_",
                                                                                                                                                                                      resourceMapping).execute().actionGet();
         }
 
-        ElasticSearchClient.instance().getClient().admin().indices().prepareCreate(BlocksController.path).setSettings(settings).addMapping(BlocksController.path, pathMapping).execute().actionGet();
+        ElasticSearch.instance().getClient().admin().indices().prepareCreate(PersistenceController.PATH_CLASS).setSettings(settings).addMapping(PersistenceController.PATH_CLASS, pathMapping).execute().actionGet();
         return Response.ok("<ul><li>Database emptied</li><li>Cache reset</li></ul>").build();
     }
 

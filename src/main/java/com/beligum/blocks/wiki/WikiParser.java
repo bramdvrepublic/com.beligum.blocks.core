@@ -3,18 +3,15 @@ package com.beligum.blocks.wiki;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.database.DummyBlocksController;
-import com.beligum.blocks.database.OBlocksDatabase;
-import com.beligum.blocks.resources.dummy.DummyResource;
-import com.beligum.blocks.resources.interfaces.Node;
-import com.beligum.blocks.resources.interfaces.Resource;
-import com.beligum.blocks.resources.jackson.ResourceJsonLDSerializer;
-import com.beligum.blocks.search.ElasticSearchClient;
-import com.beligum.blocks.search.ElasticSearchServer;
+import com.beligum.blocks.controllers.PersistenceControllerImpl;
+import com.beligum.blocks.controllers.interfaces.PersistenceController;
+import com.beligum.blocks.models.ResourceImpl;
+import com.beligum.blocks.models.factories.ResourceFactoryImpl;
+import com.beligum.blocks.models.interfaces.Node;
+import com.beligum.blocks.models.interfaces.Resource;
+import com.beligum.blocks.search.ElasticSearch;
 import com.beligum.blocks.utils.RdfTools;
-import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.util.AntPathMatcher;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -57,13 +54,13 @@ public abstract class WikiParser
         //        this.indexer = new SimpleIndexer(new File(BlocksConfig.instance().getLuceneIndex()));
         pathMatcher = new AntPathMatcher();
 
-        final SimpleModule module = new SimpleModule("customerSerializationModule", new Version(1, 0, 0, "static version"));
-        module.addSerializer(Resource.class, new ResourceJsonLDSerializer());
+//        final SimpleModule module = new SimpleModule("customerSerializationModule", new Version(1, 0, 0, "static version"));
+//        module.addSerializer(Resource.class, new ResourceJsonLDSerializer());
+//
+//        mapper = new ObjectMapper();
+//        mapper.registerModule(module);
 
-        mapper = new ObjectMapper();
-        mapper.registerModule(module);
-
-        this.bulkRequest = ElasticSearchClient.instance().getClient().prepareBulk();
+        this.bulkRequest = ElasticSearch.instance().getClient().prepareBulk();
 
     }
 
@@ -234,11 +231,11 @@ public abstract class WikiParser
         defaultVertex.put(ParserConstants.JSONLD_ID, id.toString());
         Set<URI> types = new HashSet<URI>();
         types.add(type);
-        defaultVertex.put(OBlocksDatabase.RESOURCE_TYPE_FIELD, types);
+        defaultVertex.put(PersistenceController.RESOURCE_TYPE_FIELD, types);
 
-        container.put("nl", new DummyResource(defaultVertex, nlVertex, BlocksConfig.instance().getDefaultLanguage()));
-        container.put("fr", new DummyResource(defaultVertex, frVertex, Locale.FRENCH));
-        container.put("en", new DummyResource(defaultVertex, enVertex, Locale.ENGLISH));
+        container.put("nl", new ResourceImpl(defaultVertex, nlVertex, BlocksConfig.instance().getDefaultLanguage()));
+        container.put("fr", new ResourceImpl(defaultVertex, frVertex, Locale.FRENCH));
+        container.put("en", new ResourceImpl(defaultVertex, enVertex, Locale.ENGLISH));
 
         return container;
     }
@@ -255,14 +252,14 @@ public abstract class WikiParser
                 if (value.isString()) {
                     String[] splitValue = value.asString().split("\\|");
                     for (String v : splitValue) {
-                        entity.add(name, DummyBlocksController.instance().createNode(v.trim(), BlocksConfig.instance().getDefaultLanguage()));
+                        entity.add(name, ResourceFactoryImpl.instance().createNode(v.trim(), BlocksConfig.instance().getDefaultLanguage()));
                     }
                 }
             }
         } else if (property != null && property.isString()) {
             String[] splitValue = property.asString().split("\\|");
             for (String v : splitValue) {
-                entity.add(name, DummyBlocksController.instance().createNode(v.trim(), property.getLanguage()));
+                entity.add(name, ResourceFactoryImpl.instance().createNode(v.trim(), property.getLanguage()));
             }
         }
 
@@ -275,12 +272,12 @@ public abstract class WikiParser
         if (property != null && property.isIterable()) {
             for (Node node: property) {
                 if (node.isString()) {
-                    entity.add(name, DummyBlocksController.instance().createNode(prefix + node.asString().trim(), property.getLanguage()));
+                    entity.add(name, ResourceFactoryImpl.instance().createNode(prefix + node.asString().trim(), property.getLanguage()));
 
                 }
             }
         } else if (property.isString()) {
-            entity.add(name, DummyBlocksController.instance().createNode(prefix + property.asString().trim(), property.getLanguage()));
+            entity.add(name, ResourceFactoryImpl.instance().createNode(prefix + property.asString().trim(), property.getLanguage()));
         }
 
     }
@@ -362,7 +359,7 @@ public abstract class WikiParser
                     Logger.debug("Could not parse time", e);
                 }
             } else {
-                entity.add(RdfTools.makeLocalAbsolute(newFieldName), DummyBlocksController.instance().createNode(value, language));
+                entity.add(RdfTools.makeLocalAbsolute(newFieldName), ResourceFactoryImpl.instance().createNode(value, language));
             }
         }
     }

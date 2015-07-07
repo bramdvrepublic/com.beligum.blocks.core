@@ -3,12 +3,12 @@ package com.beligum.blocks.routing;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.config.BlocksConfig;
-import com.beligum.blocks.database.DummyBlocksController;
-import com.beligum.blocks.database.interfaces.BlocksController;
+import com.beligum.blocks.controllers.PersistenceControllerImpl;
+import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import com.beligum.blocks.endpoints.PageEndpoint;
-import com.beligum.blocks.pages.ifaces.WebPage;
-import com.beligum.blocks.resources.sql.DBPage;
-import com.beligum.blocks.routing.ifaces.WebPath;
+import com.beligum.blocks.models.interfaces.WebPage;
+import com.beligum.blocks.models.sql.DBPage;
+import com.beligum.blocks.models.interfaces.WebPath;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
@@ -37,7 +37,7 @@ public class HtmlRouter extends AbstractRouter
     private static final String TITLE = "title";
     private static final String DESCRIPTION = "description";
 
-    private BlocksController database;
+    private PersistenceController database;
 
     public HtmlRouter(Route route) {
         super(route);
@@ -147,14 +147,8 @@ public class HtmlRouter extends AbstractRouter
         String html = null;
         String template = null;
         WebPage page = null;
-        if (SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
-            // It could be that we just saved and ES did not refresh yet, so if user is admin, get page from DB
-            DBPage dbPage = DummyBlocksController.instance().getWebPageDB(master, route.getLocale());
-            page = dbPage.getWebPage();
-        } else {
-            // get the page from ES
-            page = route.getBlocksDatabase().getWebPage(master, route.getLocale());
-        }
+        page = route.getBlocksDatabase().getWebPage(master, route.getLocale());
+
 
         rb.append("<" + page.getPageTemplate() + ">").append(page.getParsedHtml()).append("</" + page.getPageTemplate() + ">");
         return Response.ok(R.templateEngine().getNewStringTemplate(rb.toString())).build();

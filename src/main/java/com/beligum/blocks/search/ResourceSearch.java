@@ -5,7 +5,7 @@ import com.beligum.base.server.RequestContext;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.endpoints.ApplicationEndpoint;
-import com.beligum.blocks.resources.interfaces.Resource;
+import com.beligum.blocks.models.interfaces.Resource;
 import gen.com.beligum.blocks.core.fs.html.views.search;
 
 import javax.ws.rs.core.Response;

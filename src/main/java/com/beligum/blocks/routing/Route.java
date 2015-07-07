@@ -2,18 +2,20 @@ package com.beligum.blocks.routing;
 
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.BlocksConfig;
-import com.beligum.blocks.database.DummyBlocksController;
-import com.beligum.blocks.database.OBlocksDatabase;
-import com.beligum.blocks.database.interfaces.BlocksController;
-import com.beligum.blocks.routing.ifaces.WebPath;
+import com.beligum.blocks.controllers.PersistenceControllerImpl;
+import com.beligum.blocks.controllers.interfaces.PersistenceController;
+import com.beligum.blocks.models.interfaces.WebPath;
+import com.beligum.blocks.models.sql.DBPath;
 import com.beligum.blocks.utils.RdfTools;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Created by wouter on 1/06/15.
@@ -27,7 +29,7 @@ public class Route
     private URI uri;
 
 
-    private BlocksController database;
+    private PersistenceController database;
     // simplePath is path without getLanguage e.g. /test
     private Path simplePath;
     // languagedPath is path with getLanguage e.g. /en/test
@@ -36,7 +38,7 @@ public class Route
     private WebPath finalNode;
 
 
-    public Route(URI uri, BlocksController database)
+    public Route(URI uri, PersistenceController database)
     {
         this.database = database;
 
@@ -68,7 +70,7 @@ public class Route
             }
         }
 
-        this.finalNode = DummyBlocksController.instance().getPath(simplePath, this.locale);
+        this.finalNode = PersistenceControllerImpl.instance().getPath(simplePath, this.locale);
 
     }
 
@@ -76,9 +78,32 @@ public class Route
         return this.finalNode != null;
     }
 
-    public void create() throws JsonProcessingException
+    public void create() throws Exception
     {
-        WebPath retVal = DummyBlocksController.instance().createPath(RdfTools.createLocalResourceId(OBlocksDatabase.MASTER_WEB_PAGE_CLASS), this.simplePath, this.locale);
+        WebPath retVal = PersistenceControllerImpl.instance().getPath(simplePath, locale);
+        URI masterPage = RdfTools.createLocalResourceId(PersistenceControllerImpl.MASTER_WEB_PAGE_CLASS);
+        if (retVal == null) {
+            // this path does not yet exist for this getLanguage, so we can create it
+            retVal = new DBPath(masterPage, simplePath, locale);
+
+            PersistenceControllerImpl.instance().savePath(retVal);
+
+            Map<String, WebPath> paths = PersistenceControllerImpl.instance().getPaths(masterPage);
+
+            //TODO: implement better localized paths
+            // find the subpath for this language based our current path
+            // check if this path exists, if not create
+
+            // now add paths for other languages
+            for (Locale l : BlocksConfig.instance().getLanguages().values()) {
+                if (!l.equals(locale) && !paths.containsKey(l.getLanguage())) {
+                    WebPath webPath = new DBPath(masterPage, simplePath, l);
+                    PersistenceControllerImpl.instance().savePath(webPath);
+                }
+            }
+
+        }
+
         this.finalNode = retVal;
     }
 
@@ -105,14 +130,14 @@ public class Route
         return this.finalNode;
     }
 
-    public BlocksController getBlocksDatabase() {
+    public PersistenceController getBlocksDatabase() {
         return this.database;
     }
 
 
 
     public void getAlternateLocalPath() {
-        WebPath webPath = DummyBlocksController.instance().getActivePath(simplePath);
+        WebPath webPath = PersistenceControllerImpl.instance().getActivePath(simplePath);
         if (webPath != null) {
             this.finalNode = webPath;
             this.locale = webPath.getLanguage();
