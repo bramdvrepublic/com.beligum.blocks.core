@@ -2,7 +2,7 @@
  * Created by wouter on 12/06/15.
  */
 
-base.plugin("blocks.core.Editor", [function() {
+base.plugin("blocks.core.ScribeEditor", [function() {
     var Editor = this;
 
     var editors = null;

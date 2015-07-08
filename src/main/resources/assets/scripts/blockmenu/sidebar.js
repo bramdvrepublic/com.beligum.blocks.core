@@ -52,10 +52,14 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
         var sidebarElement = $("." + Constants.PAGE_SIDEBAR_CLASS);
         sidebarElement.removeClass(Constants.OPACITY_CLASS);
+
+        // prevent blur when clicking on following elements
+        sidebarElement.addClass(Constants.PREVENT_BLUR_CLASS);
+        borderingElement.addClass(Constants.PREVENT_BLUR_CLASS);
+
         Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
 
         $(document).on("mousedown.sidebar", function(e) {
-
 
             var newProperty = null;
             var element = $(e.target);
@@ -73,8 +77,9 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 }
             }
 
+            var preventBlurElements = $("." + Constants.PREVENT_BLUR_CLASS);
             // check if we clicked outside this block
-            if (!borderingElement.is(e.target) && borderingElement.has(e.target).length === 0 && borderingElement != newProperty && borderingElement.has(newProperty).length === 0) {
+            if (!preventBlurElements.is(e.target) && preventBlurElements.has(e.target).length === 0 && preventBlurElements != newProperty && preventBlurElements.has(newProperty).length === 0) {
                 // we clicked outside the property
                 if (block == null || !block.isTriggered(e.pageX, e.pageY)) {
                     // remove this trigger
@@ -104,7 +109,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             }
 
             // We didn't change block but we did change property
-            else if (newProperty != null && (property == null || newProperty[0] != property[0])) {
+            else if (block != null && newProperty != null && (property == null || newProperty[0] != property[0])) {
                 // remove this trigger
                 $(document).off("mousedown.sidebar");
                 // blur this block

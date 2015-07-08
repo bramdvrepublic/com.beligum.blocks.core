@@ -10,7 +10,7 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
     this.menuBar = $("<div class='" + Constants.PAGE_MENU_CLASS + "'></div>");
     this.menuBar.load("/templates/menu");
 
-    this.sideBar = $("<div class='" + Constants.PAGE_SIDEBAR_CLASS + "'></div>");
+    this.sideBar = $("<div class='" + Constants.PAGE_SIDEBAR_CLASS + " " + Constants.PREVENT_EDIT_BLUR_CLASS +"'></div>");
     this.sideBar.load("/templates/sidebar");
 
      /*

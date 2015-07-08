@@ -1,4 +1,4 @@
-base.plugin("blocks.core.edit.Text", ["constants.blocks.common", "blocks.core.Broadcaster", "blocks.core.Edit", "blocks.core.Editor", "blocks.core.Sidebar",  function (Constants, Broadcaster, Edit, Editor, Sidebar)
+base.plugin("blocks.core.edit.Text", ["constants.blocks.common", "blocks.core.Broadcaster", "blocks.core.Edit", "blocks.core.MediumEditor", "blocks.core.Sidebar",  function (Constants, Broadcaster, Edit, Editor, Sidebar)
 {
 
     var getRangeFromPosition = function (x, y)
@@ -32,6 +32,15 @@ base.plugin("blocks.core.edit.Text", ["constants.blocks.common", "blocks.core.Br
         }
     };
 
+    this.blur = function(event) {
+        retVal = true;
+        var toolbar = Editor.getToolbarElement();
+        if (toolbar.is(event.target) || toolbar.has(event.target).length > 0) {
+            retVal = false;
+        }
+        return retval;
+    };
+
     /*
      * Start full text editing on a block (start Scribe)
      *
@@ -43,14 +52,16 @@ base.plugin("blocks.core.edit.Text", ["constants.blocks.common", "blocks.core.Br
         var editor = Editor.getEditor(element, false);
 
         // Add toolbar to sidebar
-        var windowID = Sidebar.createWindow(Constants.STYLE, element, "Tekst");
-        Sidebar.addUIForProperty(windowID, element, Editor.toolbarElement);
-
         setCursor(blockEvent.clientX, blockEvent.clientY);
+        var toolbar = $(Editor.getToolbarElement());
+
+        toolbar.addClass(Constants.PREVENT_BLUR_CLASS);
+
 
     };
 
     this.blur = function(element) {
+        Editor.removeEditor(element);
         element.removeAttr("contenteditable");
         element.removeClass(Constants.PROPERTY_EDIT_CLASS);
 

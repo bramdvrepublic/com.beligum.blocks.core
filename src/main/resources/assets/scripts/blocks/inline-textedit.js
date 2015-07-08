@@ -1,4 +1,4 @@
-base.plugin("blocks.core.edit.InlineText", ["constants.blocks.common", "blocks.core.Broadcaster", "blocks.core.Edit", "blocks.core.Editor", "blocks.core.Sidebar",  function (Constants, Broadcaster, Edit, Editor, Sidebar)
+base.plugin("blocks.core.edit.InlineText", ["constants.blocks.common", "blocks.core.Broadcaster", "blocks.core.Edit", "blocks.core.MediumEditor", "blocks.core.Sidebar",  function (Constants, Broadcaster, Edit, Editor, Sidebar)
 {
 
     var getRangeFromPosition = function (x, y)
