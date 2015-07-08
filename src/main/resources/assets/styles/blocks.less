@@ -19,6 +19,7 @@
   position: absolute;
   border: 1px dotted rgba(100, 100, 100, 0.8);
   pointer-events: none;
+  cursor: pointer;
 
   &.left {
     border-left: none;
@@ -36,13 +37,13 @@
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.8);
     border: none;
   }
-
-  &.draggable {
-    cursor: move; /* fallback if grab cursor is unsupported */
-    cursor: grab;
-    cursor: -moz-grab;
-    cursor: -webkit-grab;
-  }
+//
+//  &.draggable {
+//    cursor: move; /* fallback if grab cursor is unsupported */
+//    cursor: grab;
+//    cursor: -moz-grab;
+//    cursor: -webkit-grab;
+//  }
 }
 
 .@{DRAGGED_BLOCK_OVERLAY_CLASS} {
@@ -94,13 +95,13 @@
 }
 
 // Classes for the body that force the cursor in a certain style
-.@{FORCE_RESIZE_CURSOR_CLASS} {
+body.@{FORCE_DRAG_CURSOR_CLASS}, body.@{FORCE_DRAG_CURSOR_CLASS} * {
   cursor: grabbing !important;
   cursor: -moz-grabbing !important;
   cursor: -webkit-grabbing !important;
 }
 
-body.@{FORCE_RESIZE_CURSOR_CLASS}, body.@{FORCE_DRAG_CURSOR_CLASS} * {
+body.@{FORCE_RESIZE_CURSOR_CLASS}, body.@{FORCE_RESIZE_CURSOR_CLASS} * {
   cursor: col-resize !important;
 }
 
