@@ -104,18 +104,12 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     {
         var dropBlock = blockEvent.block.current;
 
-        //while (dropBlock != null && dropBlock.getContainer() != null && dropBlock.getContainer() != currentDraggedBlock.getContainer()) {
-        //    dropBlock = dropBlock.getContainer();
-        //    if (dropBlock != null) dropBlock = dropBlock.parent;
-        //}
-
 
         if (dragging) {
             // find the triggered dropspot
             // dropspot has an "anchor" block and sometimes "other" (when dropping between 2 columns, 2 rows, 2 templates)
             var dropSpot = null;
 
-// && (lastDropLocation == null || lastDropLocation.block == dropBlock)
             if (dropBlock != null && dropBlock.canDrag) {
                 var direction = Broadcaster.mouseDirectionForBlock(blockEvent.block.current);
                 // when outside container block of last droplocation is null
@@ -133,8 +127,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
 
             } else {
                 var container = Broadcaster.getContainer().getLayoutContainer();
-                //Logger.debug("dropspot is null of niet drag");
-                //Logger.debug(container);
+
                 if (blockEvent.pageY > container.top && blockEvent.pageY < container.bottom) {
                     if (blockEvent.pageX < container.left) {
                         dropSpot = new blocks.elements.Dropspot(BaseConstants.SIDE.LEFT, container, 0);
@@ -207,6 +200,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                             action: function(dialogRef) {
                                 DragDrop.dragAborted();
                                 dialogRef.close();
+                                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
                             }
                         }, {
                             label: 'OK',
