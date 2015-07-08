@@ -367,7 +367,8 @@ public class HtmlParser extends AbstractAssetParser
         for (ResourceSearchResult htmlFile : htmlFiles) {
             try (Reader reader = Files.newBufferedReader(htmlFile.getResource(), Charset.forName(Charsets.UTF_8.name()))) {
                 Path absolutePath = htmlFile.getResource();
-                Path relativePath = Paths.get("/").resolve(htmlFile.getResourceFolder().relativize(htmlFile.getResource()));
+                //note the toString(); it works around files found in jar files and throwing a ProviderMismatchException
+                Path relativePath = Paths.get("/").resolve(htmlFile.getResourceFolder().relativize(htmlFile.getResource()).toString());
                 Source source = new Source(reader);
                 HtmlTemplate template = HtmlTemplate.create(source, absolutePath, relativePath);
                 if (template!=null) {
