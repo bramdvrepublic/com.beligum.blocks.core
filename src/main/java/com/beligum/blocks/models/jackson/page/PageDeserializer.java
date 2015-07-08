@@ -52,14 +52,20 @@ public class PageDeserializer<T extends WebPage> extends ResourceJsonDeserialize
                 retVal.setPageTemplate(pageTemplate);
                 String text = node.get("text").asText();
                 retVal.setText(text);
-                String updatedBy = node.get("updated_by").asText();
-                retVal.setUpdatedBy(updatedBy);
-                String createdBy = node.get("created_by").asText();
-                retVal.setCreatedBy(createdBy);
-                LocalDateTime updatedAt = new LocalDateTime(node.get("created_by").asLong());
-                retVal.setUpdatedAt(updatedAt);
-                LocalDateTime createdAt = new LocalDateTime(node.get("created_by").asLong());
-                retVal.setCreatedAt(createdAt);
+
+                if (node.has("updated_at")) {
+                    String updatedBy = node.get("updated_by").asText();
+                    retVal.setUpdatedBy(updatedBy);
+                    LocalDateTime updatedAt = new LocalDateTime(node.get("updated_at").asLong());
+                    retVal.setUpdatedAt(updatedAt);
+                }
+
+                if (node.has("created_at")) {
+                    String createdBy = node.get("created_by").asText();
+                    retVal.setCreatedBy(createdBy);
+                    LocalDateTime createdAt = new LocalDateTime(node.get("created_at").asLong());
+                    retVal.setCreatedAt(createdAt);
+                }
 
                 Set<String> templates = new HashSet<String>();
                 if (node.get("templates").isArray()) {

@@ -17,6 +17,7 @@ import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import gen.com.beligum.blocks.core.fs.html.views.new_page;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 
 import javax.ws.rs.NotFoundException;
@@ -144,13 +145,14 @@ public class HtmlRouter extends AbstractRouter
         WebPath path = this.route.getWebPath();
         URI master = path.getMasterPage();
 
-        String html = null;
-        String template = null;
         WebPage page = null;
         page = route.getBlocksDatabase().getWebPage(master, route.getLocale());
+        String template = page.getPageTemplate();
+        if (template==null || StringUtils.isEmpty(template)) {
+            template = "main-content";
+        }
 
-
-        rb.append("<" + page.getPageTemplate() + ">").append(page.getParsedHtml()).append("</" + page.getPageTemplate() + ">");
+        rb.append("<" + template + ">").append(page.getParsedHtml()).append("</" + template + ">");
         return Response.ok(R.templateEngine().getNewStringTemplate(rb.toString())).build();
 
     }

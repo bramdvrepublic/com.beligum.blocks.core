@@ -47,14 +47,19 @@ public class PageSerializer<T extends WebPage> extends ResourceSerializer
         jgen.writeFieldName("page_template");
         jgen.writeString(webPage.getPageTemplate());
 
-        jgen.writeFieldName("updated_by");
-        jgen.writeString(webPage.getUpdatedBy());
-        jgen.writeFieldName("updated_at");
-        jgen.writeNumber(webPage.getUpdatedAt().toDateTime(DateTimeZone.UTC).getMillis());
-        jgen.writeFieldName("created_by");
-        jgen.writeString(webPage.getCreatedBy());
-        jgen.writeFieldName("created_at");
-        jgen.writeNumber(webPage.getCreatedAt().toDateTime(DateTimeZone.UTC).getMillis());
+        if (webPage.getUpdatedAt() != null) {
+            jgen.writeFieldName("updated_by");
+            jgen.writeString(webPage.getUpdatedBy());
+            jgen.writeFieldName("updated_at");
+            jgen.writeNumber(webPage.getUpdatedAt().toDateTime(DateTimeZone.UTC).getMillis());
+        }
+
+        if (webPage.getCreatedAt() != null) {
+            jgen.writeFieldName("created_by");
+            jgen.writeString(webPage.getCreatedBy());
+            jgen.writeFieldName("created_at");
+            jgen.writeNumber(webPage.getCreatedAt().toDateTime(DateTimeZone.UTC).getMillis());
+        }
 
         jgen.writeFieldName("templates");
         jgen.writeStartArray();

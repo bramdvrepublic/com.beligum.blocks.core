@@ -82,7 +82,7 @@ public class ElasticSearch
         if (bulk == null) {
             setBulkInCache();
         }
-        return bulk;
+        return getBulkFromCache();
     }
 
     // save bulk transaction for this request if one exists

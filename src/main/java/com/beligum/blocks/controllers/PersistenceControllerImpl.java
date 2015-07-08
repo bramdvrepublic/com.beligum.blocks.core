@@ -68,7 +68,9 @@ public class PersistenceControllerImpl  implements PersistenceController
         // If page is not found, double check in DB
         if (retVal == null) {
             DBPage page = findPageInDB(masterWebPage, locale);
-            retVal = page.getWebPage();
+            if (page != null) {
+                retVal = page.getWebPage();
+            }
         }
 
         return retVal;

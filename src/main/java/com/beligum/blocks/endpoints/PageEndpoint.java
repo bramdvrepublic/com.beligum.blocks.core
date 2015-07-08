@@ -88,8 +88,8 @@ public class PageEndpoint
         // fetch page for locale
         WebPage localizedWebpage = PersistenceControllerImpl.instance().getWebPage(masterWebpage, route.getLocale());
         // if this page does not yet exist -> create
-        if (localizedWebpage == null) { ResourceFactoryImpl
-                            .instance().createWebPage(masterWebpage, RdfTools.createLocalResourceId(StringUtils.capitalize(PersistenceController.WEB_PAGE_CLASS)), route.getLocale());
+        if (localizedWebpage == null) {
+            localizedWebpage = ResourceFactoryImpl.instance().createWebPage(masterWebpage, RdfTools.createLocalResourceId(StringUtils.capitalize(PersistenceController.WEB_PAGE_CLASS)), route.getLocale());
         } else {
             doVersion = true;
         }
