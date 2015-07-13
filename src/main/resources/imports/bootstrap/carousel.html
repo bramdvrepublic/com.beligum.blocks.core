@@ -2,20 +2,24 @@
 <meta property="description" content="A Carousel for images" >
 
 <template>
-    <div id="carousel-123" class="carousel slide" data-ride="carousel" >
+    <div id="carousel-123" class="carousel slide" >
         <!-- Indicators -->
         <ol class="carousel-indicators">
-            <li data-target="#carousel-123" data-slide-to="0" class="active"></li>
+            #if ($property['image'])
+                #foreach($img in $property['image'])
+                    <li data-target="#carousel-123" data-slide-to="$foreach.index" class="#if ($foreach.index == 0) active #end"></li>
+                #end
+            #else
+                <li data-target="#carousel-123" data-slide-to="0" class="active"></li>
+            #end
         </ol>
 
         <!-- Wrapper for slides -->
         <div class="carousel-inner" role="listbox">
-            #if ($PROPERTY['image'].length > 0)
-
-                #foreach($image in $PROPERTY['image'])
-                    <div class="item active">
-                        $image
-                        $image-caption
+            #if ($property['image'])
+                #foreach($img in $property['image'])
+                    <div class="item #if ($foreach.index == 0) active #end">
+                        $img
                     </div>
                 #end
 

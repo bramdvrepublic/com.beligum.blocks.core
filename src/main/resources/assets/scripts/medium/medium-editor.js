@@ -4883,22 +4883,22 @@ var Toolbar;
 
             if (this.sticky) {
                 // If it's beyond the height of the editor, position it at the bottom of the editor
-                if (scrollTop > (containerTop + container.offsetHeight - toolbarHeight)) {
-                    toolbarElement.style.top = (containerTop + container.offsetHeight - toolbarHeight) + 'px';
+                if (scrollTop > (containerTop + container.offsetHeight - (toolbarHeight + 5))) {
+                    toolbarElement.style.top = (containerTop + container.offsetHeight - (toolbarHeight + 5)) + 'px';
                     toolbarElement.classList.remove('medium-editor-sticky-toolbar');
 
                 // Stick the toolbar to the top of the window
-                } else if (scrollTop > (containerTop - toolbarHeight)) {
+                } else if (scrollTop > (containerTop - (toolbarHeight + 5))) {
                     toolbarElement.classList.add('medium-editor-sticky-toolbar');
                     toolbarElement.style.top = '0px';
 
                 // Normal static toolbar position
                 } else {
                     toolbarElement.classList.remove('medium-editor-sticky-toolbar');
-                    toolbarElement.style.top = containerTop - toolbarHeight + 'px';
+                    toolbarElement.style.top = containerTop - (toolbarHeight + 5) + 'px';
                 }
             } else {
-                toolbarElement.style.top = containerTop - toolbarHeight + 'px';
+                toolbarElement.style.top = containerTop - (toolbarHeight + 5) + 'px';
             }
 
             switch (this.align) {

@@ -14,19 +14,6 @@
 base.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "constants.blocks.common", function (Broadcaster, Constants)
 {
     var Edit = this;
-    var currentlyEditedElement = null;
-
-
-    //CKEDITOR.disableAutoInline = true;
-
-    var isIframe = function (currentBlock)
-    {
-        return currentBlock.element.find("iframe").length == 1;
-    };
-
-
-
-
 
     var registeredByClass = {};
     this.registerByClass = function (clazz, callback)
@@ -52,10 +39,12 @@ base.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "constants.blocks.co
     Edit.makeEditable = function (element)
     {
         var retVal = null;
-        if (element.hasClass(Constants.PAGE_CONTENT_CLASS)) {
-            retVal = registeredByTag[Constants.PAGE_CONTENT_CLASS.toUpperCase()];
-        } else {
-            retVal = registeredByTag[element.prop("tagName").toUpperCase()];
+        if (element != null) {
+            if (element.hasClass(Constants.PAGE_CONTENT_CLASS)) {
+                retVal = registeredByTag[Constants.PAGE_CONTENT_CLASS.toUpperCase()];
+            } else {
+                retVal = registeredByTag[element.prop("tagName").toUpperCase()];
+            }
         }
 
         return retVal;

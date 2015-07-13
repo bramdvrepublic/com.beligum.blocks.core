@@ -1,4 +1,4 @@
-base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notification", "constants.blocks.common", "blocks.finder", function (Broadcaster, Notification, Constants, Finder)
+base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Overlay", "blocks.core.DomManipulation", "constants.blocks.common", "blocks.finder", function (Broadcaster, Notification, Overlay, DOM, Constants, Finder)
 {
     var MainMenu = this;
 
@@ -22,7 +22,7 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
     $(document).on("click", "."+ Constants.BLOCKS_START_BUTTON, function (event)
     {
         if ($("body").children("." + Constants.PAGE_MENU_CLASS).length == 0) {
-
+            MainMenu.menuStartButton.remove();
             var body = $("body").html();
             $("body").empty();
             $("body").append(MainMenu.menuBar);
@@ -34,14 +34,20 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
                 //TODO: Sidebar is not yet loaded so we can not initialize finder
             }
 
-            Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS);
+            var windowWidth = $(window).width();
+            MainMenu.sideBar.css("width", (windowWidth*0.2) + "px");
+            $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth*0.8) + "px");
 
+            Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS);
+            $("body").append(MainMenu.menuStartButton);
+            enableSidebarDrag();
         } else {
             var content = $("." + Constants.PAGE_CONTENT_CLASS).html();
             $("body").empty();
             $("body").append(content);
-
             Broadcaster.send(Broadcaster.EVENTS.STOP_BLOCKS);
+            $("body").append(MainMenu.menuStartButton);
+            disableSidebarDrag();
         }
     });
 
@@ -67,11 +73,17 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
      * */
     $(document).on("click", "."+Constants.SAVE_PAGE_BUTTON, function ()
     {
+        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         var page = $("html")[0].outerHTML;
-        var deleted = queryParam("deleted")
-        if (!deleted) {
-            deleted = false;
-        }
+        var dialog = new BootstrapDialog({
+            type: BootstrapDialog.TYPE_WARNING,
+            title: 'Saving ...',
+            message: 'Please wait while we save the page. This can take a few seconds',
+            buttons: []
+        });
+
+        dialog.open();
+
         $.ajax({
                 type: 'POST',
                 url: "/blocks/admin/page/save/" + window.location.href,
@@ -79,18 +91,45 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
                 contentType: 'application/json; charset=UTF-8',
                 success: function (url, textStatus, response)
                 {
-                    if (url) {
-                        window.location = url;
-                    } else {
-                        location.reload();
-                    }
+                    dialog.close();
+                    dialog = new BootstrapDialog({
+                        type: BootstrapDialog.TYPE_SUCCESS,
+                        title: 'Page saved',
+                        message: '<p>The page was succesfully saved.</p>',
+                        buttons: [
+                            {
+                                id: 'btn-close',
+                                label: 'Ok',
+                                action: function (dialogRef)
+                                {
+                                    dialogRef.close();
+                                    Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+                                }
+                            }
+                        ]
+                    });
+                    dialog.open();
                 },
                 error: function (response, textStatus, errorThrown)
                 {
                     var message = response.status == 400 ? response.responseText : "An error occurred while saving the page";
-                    Notification.dialog("Error", "<div>" + message + "</div>", function ()
-                    {
+                    dialog = new BootstrapDialog({
+                        type: BootstrapDialog.TYPE_SUCCESS,
+                        title: 'Page saved',
+                        message: "<p>An error occurred while saving the page:</p><p>" + message + "</p>",
+                        buttons: [
+                            {
+                                id: 'btn-close',
+                                label: 'Ok',
+                                action: function (dialogRef)
+                                {
+                                    dialogRef.close();
+                                    Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+                                }
+                            }
+                        ]
                     });
+                    dialog.open();
                 }
             }
         )
@@ -159,15 +198,88 @@ base.plugin("blocks.core.menu", ["blocks.core.Broadcaster", "blocks.core.Notific
     });
 
 
+    var enableSidebarDrag = function() {
+        $(document).on("mousedown.sidebar_resize", "."+Constants.PAGE_SIDEBAR_RESIZE_CLASS, function() {
+            // On mousedown start resizing
+            Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
+            DOM.disableSelection();
+            DOM.disableContextMenu();
+            $("body").addClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
+
+            var windowWidth = $(window).width();
+            var pageContent = $("." + Constants.PAGE_CONTENT_CLASS);
+            $(document).on("mousemove.sidebar_resize", function(event) {
+                var X = event.pageX;
+                var ratioSide = windowWidth - X;
+                var ratioPage = windowWidth - ratioSide;
+                MainMenu.sideBar.css("width", ratioSide + "px");
+                pageContent.css("width", ratioPage + "px");
+
+            });
+
+            $(document).on("mouseup.sidebar_resize", function() {
+
+                // check size page content
+                // find containers and get width
+                // if container widgt is greater then page content width
+                // set container width to pagecontent width - 20
+                updateContainerWidth();
 
 
-    var create = function ()
-    {
-        $("body").append(MainMenu.menuStartButton);
+                $(document).off("mousemove.sidebar_resize");
+                $(document).off("mouseup.sidebar_resize");
+                DOM.enableSelection();
+                DOM.enableContextMenu();
+                $("body").removeClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
+                Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
+            });
+        });
     };
 
+    var disableSidebarDrag = function() {
+        $(document).off("mousedown.sidebar_resize");
+    };
 
-    create();
+    /*
+    * in bootstrap the containerwidth is fixed. to prevent the container from bleeding
+    * into our sidebar, we set the fixed with smaller then our page content wrapper
+    * */
+    var updateContainerWidth = function() {
+        var wrapper = $("." + Constants.PAGE_CONTENT_CLASS);
+        var containers = $(".container");
+        containers.removeAttr("style");
+        if (wrapper.length > 0) {
+            var wrapperWidth = wrapper.outerWidth();
+            var containerWidth = containers.width();
+            if (containerWidth > wrapperWidth) {
+                containers.css("width", (wrapperWidth - 50) + "px");
+            }
+        }
+    };
+
+    // On Window resize
+    var resizing = false;
+    $(window).on("smartresize", function() {
+        if (resizing) {
+            updateContainerWidth();
+            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, layoutContainer);
+            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+            resizing = true;
+        }
+    });
+
+    $(window).on("resize.blocks_broadcaster", function ()
+    {
+        if (resizing == false) {
+            Overlay.removeOverlays();
+            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+            resizing = true;
+        }
+    });
+
+
+    // Add the start button as only notice of our presence
+    $("body").append(MainMenu.menuStartButton);
 
 
 }]);

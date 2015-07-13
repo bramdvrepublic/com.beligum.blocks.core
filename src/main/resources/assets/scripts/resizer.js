@@ -68,13 +68,22 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
         activeResizeHandle = handle;
         DOM.disableSelection();
         DOM.disableContextMenu();
+        $("body").addClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
+
         $("." + Constants.BLOCK_OVERLAY_CLASS).hide();
         $("." + Constants.PROPERTY_OVERLAY_CLASS).hide();
-        $("body").addClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
+        // Hide all resizers except the ones in the current row
+        $("." + Constants.COLUMN_RESIZER_CLASS).hide();
+        activeRowElement = handle.leftColumn.parent.element;
+        var handles = handle.leftColumn.parent.resizeHandles || [];
+        for (var i=0; i < handles.length; i ++) {
+            handles[i].overlay.show();
+        }
+
 
         draggingEnabled = true;
         setCursor(false);
-        activeRowElement = handle.leftColumn.parent.element;
+
         setCursor(true);
         $(document).on("mousemove.resizehandledrag", function (event)
         {
@@ -154,7 +163,6 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
         var currentPosition = offsetLeft + widthLeftColumn;
         var offsetRight = currentPosition + widthRightColumn;
 
-
         // min and max column that we can drag to
         // we can drag until the outer (left or right) column is 1 unit wide
         var min = offsetLeft + 1;
@@ -216,8 +224,9 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
                     DOM.setColumnWidth(activeResizeHandle.rightColumn.element, DOM.getColumnWidth(activeResizeHandle.rightColumn.element) - diff);
                     activeResizeHandle.updateHeight();
                 }
-                // move resizehandle
+                // move resizehandle and update all handles in the current row
                 activeResizeHandle.update();
+
                 break;
             }
         }

@@ -8,7 +8,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     var SideBar = this;
     var configPanels = {};
     var currentProperty = null;
-    var currentBlock = null;
+    var currentBlockEvent = null;
 
 
     // This is called when we click the files tab
@@ -21,8 +21,10 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         // add close button
         var closeBtn = $('<div class="btn '+ Constants.CLOSE_FINDER_BUTTON +'">X</div>');
         $("#" + Constants.SIDEBAR_FILES_ID).append(closeBtn);
+        $("#" + Constants.SIDEBAR_FILES_ID).css("z-index", "2");
 
         closeBtn.click(function() {
+            $("#" + Constants.SIDEBAR_FILES_ID).css("z-index", "");
             $("." + Constants.PAGE_CONTENT_CLASS).show();
             $("." + Constants.BLOCKS_START_BUTTON).show();
             $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_STYLE_ID +'"]').tab('show')
@@ -43,10 +45,12 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         if (block != null) {
             block.element.parents().siblings().addClass(Constants.OPACITY_CLASS);
             block.element.siblings().addClass(Constants.OPACITY_CLASS);
+            block.element.addClass(Constants.PROPERTY_EDIT_CLASS);
             borderingElement = block.element;
         } else {
             property.parents().siblings().addClass(Constants.OPACITY_CLASS);
             property.siblings().addClass(Constants.OPACITY_CLASS);
+            property.addClass(Constants.PROPERTY_EDIT_CLASS);
             borderingElement = property;
         }
 
@@ -59,7 +63,9 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
         Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
 
-        $(document).on("mousedown.sidebar", function(e) {
+
+
+        $(document).on("mousedown.sidebar_edit_end", function(e) {
 
             var newProperty = null;
             var element = $(e.target);
@@ -81,37 +87,46 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             // check if we clicked outside this block
             if (!preventBlurElements.is(e.target) && preventBlurElements.has(e.target).length === 0 && preventBlurElements != newProperty && preventBlurElements.has(newProperty).length === 0) {
                 // we clicked outside the property
-                if (block == null || !block.isTriggered(e.pageX, e.pageY)) {
-                    // remove this trigger
-                    $(document).off("mousedown.sidebar");
-                    // blur this block
-                    $("." + Constants.OPACITY_CLASS).removeClass(Constants.OPACITY_CLASS);
+                // remove this trigger
+                $(document).off("mousedown.sidebar_edit_end");
+                // blur this block
+                $("." + Constants.OPACITY_CLASS).removeClass(Constants.OPACITY_CLASS);
+                $("." + Constants.PREVENT_BLUR_CLASS).removeClass(Constants.PREVENT_BLUR_CLASS);
 
-                    if (block != null) {
-                        var editFunction = Edit.makeEditable(block.element);
-                        if (editFunction != null && editFunction.blur != null) {
-                            editFunction.blur(property, block);
-                        }
+                if (block != null) {
+                    if (property == null) {
+                        block.element.addClass(Constants.BLOCK_EDIT_CLASS);
                     }
-
-                    if (property != null) {
-                        var editFunction = Edit.makeEditable(property);
-                        if (editFunction != null && editFunction.blur != null) {
-                            editFunction.blur(property, block);
-                        }
+                    var editFunction = Edit.makeEditable(block.element);
+                    if (editFunction != null && editFunction.blur != null) {
+                        editFunction.blur(property, block);
                     }
-
-                    block = null;
-                    Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
-                    reset();
-
                 }
-            }
 
+                if (property != null) {
+                    property.removeClass(Constants.PROPERTY_EDIT_CLASS);
+                    var editFunction = Edit.makeEditable(property);
+                    if (editFunction != null && editFunction.blur != null) {
+                        editFunction.blur(property, block);
+                    }
+                }
+
+                block = null;
+
+                reset();
+                event.stopPropagation();
+
+                // Only send edit_end on mouse up. Otherwise the other clicked property will start editing immediately
+                $(document).on("mouseup.sidebar_edit_end", function() {
+                    $(document).off("mouseup.sidebar_edit_end");
+                    Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
+                });
+
+            }
             // We didn't change block but we did change property
             else if (block != null && newProperty != null && (property == null || newProperty[0] != property[0])) {
                 // remove this trigger
-                $(document).off("mousedown.sidebar");
+                $(document).off("mousedown.sidebar_edit_end");
                 // blur this block
                 $("." + Constants.OPACITY_CLASS).removeClass(Constants.OPACITY_CLASS);
                 var editFunction = Edit.makeEditable(block.element);
@@ -127,6 +142,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 reset();
                 block = null;
                 update(newProperty, Broadcaster.createEvent(e));
+            } else {
+                // nothing changed
             }
 
 
@@ -136,6 +153,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     };
 
     var reset = function() {
+        currentProperty = null;
+        currentBlockEvent = null;
         configPanels = {};
         $("#" + Constants.SIDEBAR_STYLE_ID).empty();
         $("#" + Constants.SIDEBAR_CONTENT_ID).empty();
@@ -152,30 +171,33 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
      * */
     var update = function(property, blockEvent) {
         // property: add div
+        currentProperty = property;
+        currentBlockEvent = blockEvent;
+        var block = currentBlockEvent.property.current;
+        setBlockFocus(property, block);
+        SideBar.refresh();
+    };
 
-        var editFunction = null;
+    /*
+     * Drill down and add functionality for each block
+     * */
+    this.refresh = function() {
+        var block = currentBlockEvent.property.current;
 
-        if (property != null) {
-            editFunction = Edit.makeEditable(property);
+        var editFunction = Edit.makeEditable(currentProperty);
+        if (editFunction != null) {
+            editFunction.focus(currentProperty, currentBlockEvent);
         }
 
-        var block = blockEvent.property.current;
-        //if (block != null) {
-            setBlockFocus(property, block);
-            if (editFunction != null) {
-                editFunction.focus(property, blockEvent);
-            }
-
-            while (block != null) {
-                if (block instanceof blocks.elements.Block) {
-                    if (block.editFunction != null && block.editFunction.focus != null) {
-                        block.editFunction.focus(property, blockEvent);
-                    }
-                    if (block.canDrag) SideBar.addRemoveBlockButton(block);
+        while (block != null) {
+            if (block instanceof blocks.elements.Block) {
+                if (block.editFunction != null && block.editFunction.focus != null) {
+                    block.editFunction.focus(currentProperty, currentBlockEvent);
                 }
-                block = block.parent;
+                if (block.canDrag) SideBar.addRemoveBlockButton(block);
             }
-        //}
+            block = block.parent;
+        }
 
     };
 
@@ -297,7 +319,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
     this.enableEditing = function() {
 
-        $(document).on("mouseup.sidebar_start", "." + Constants.PAGE_CONTENT_CLASS, function(event) {
+        $(document).on("mouseup.sidebar_edit_start", "." + Constants.PAGE_CONTENT_CLASS, function(event) {
             // find parents until parent is <body> or until parent has property attribute
             // first property enable editing
             var element = $(event.target);
@@ -325,14 +347,12 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             if (blockEvent.block.current != null || property != null) {
                 Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
                 update(property, blockEvent);
-                Logger.debug("test 1st click");
             }
-            event.stopPropagation();
         });
     };
 
     this.disableEditing = function() {
-        $(document).off("mouseup.sidebar_start");
+        $(document).off("mouseup.sidebar_edit_start");
     };
 
     // PRIVATE

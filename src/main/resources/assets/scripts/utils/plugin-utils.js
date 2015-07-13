@@ -5,6 +5,11 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
 
     var Plugin = this;
 
+    /*
+    * element: element to change
+    * label: name to show as label
+    * values = array of objects {value: 'a value to change', name: 'name of the value}
+    * */
     this.addUniqueClass = function(element, label, values) {
         // Create selectbox to add to sidebar
         var id = Plugin.makeid();
@@ -43,6 +48,11 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
         return content;
     };
 
+    /*
+     * element: element to change
+     * label: name to show as label
+     * values = array of objects {value: 'a value to change', name: 'name of the value}
+     * */
     this.addOptionalClass = function(element, label, values) {
 // Create selectbox to add to sidebar
         var id = Plugin.makeid();
@@ -77,6 +87,11 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
         return content;
     };
 
+    /*
+     * element: element to change
+     * label: name to show as label
+     * values = array of objects {value: 'a value to change', name: 'name of the value}
+     * */
     this.addUniqueAttributeValue = function(element, label, name, values) {
         // Create selectbox to add to sidebar
         var id = Plugin.makeid();
@@ -113,6 +128,11 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
         return content;
     };
 
+    /*
+     * element: element to change
+     * label: name to show as label
+     * values = array of objects {value: 'a value to change', name: 'name of the value}
+     * */
     this.addUniqueAttribute = function(element, label, values) {
         // Create selectbox to add to sidebar
         var id = Plugin.makeid();
@@ -152,6 +172,15 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
         return content;
     };
 
+    /*
+     * element: element to change
+     * label: name to show as label
+     * name: name of the attriubute the value changes
+     * confirm: value only changes when user confirms
+     * textSelect: user can manipulate the edit field
+     * serverSelect: user can only select file from server
+     * url: user can select a local url from tree
+     * */
     this.addValueAttribute = function(element, label, name, confirm, textSelect, serverSelect, url) {
         var id = Plugin.makeid();
         var content = $("<div class='form-group' />");
@@ -202,10 +231,13 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
             };
 
             Finder.setOnSelect(function(file) {
+                close();
                 if (file != null) {
+                    if (file.charAt(0) !== "/") {
+                        file = "/" + file;
+                    }
                     input.val(file);
                     element.attr(name, file);
-                    close();
                 }
             });
 
@@ -228,6 +260,11 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
         return content;
     };
 
+    /*
+     * element: element to change
+     * label: name to show as label
+     * confirm: value only changes when user confirms
+     * */
     this.addValueHtml = function(element, label, confirm) {
         var id = Plugin.makeid();
         var content = $("<div class='form-group' />");

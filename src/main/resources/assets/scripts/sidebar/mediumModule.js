@@ -41,6 +41,7 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
 
     this.removeEditor = function(element) {
         Editor.destroy();
+        Editor = null;
     };
 
     this.setToolbarButtons = function(buttonArray) {

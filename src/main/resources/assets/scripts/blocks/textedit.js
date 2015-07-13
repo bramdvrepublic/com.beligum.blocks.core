@@ -54,17 +54,13 @@ base.plugin("blocks.core.edit.Text", ["constants.blocks.common", "blocks.core.Br
         // Add toolbar to sidebar
         setCursor(blockEvent.clientX, blockEvent.clientY);
         var toolbar = $(Editor.getToolbarElement());
-
         toolbar.addClass(Constants.PREVENT_BLUR_CLASS);
-
 
     };
 
     this.blur = function(element) {
         Editor.removeEditor(element);
         element.removeAttr("contenteditable");
-        element.removeClass(Constants.PROPERTY_EDIT_CLASS);
-
     };
 
 

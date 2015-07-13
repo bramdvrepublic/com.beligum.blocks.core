@@ -22,29 +22,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
         );
     };
 
-    // On Window resize
-    var resizeTimeout = null;
-    $(window).on("resize.blocks_broadcaster", function ()
-    {
 
-        if (resizeTimeout != null) {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = null;
-            Logger.debug("timeout cleared")
-        } else {
-            Logger.debug("timeout not cleared");
-            Overlay.removeOverlays();
-            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
-        }
-        var layoutContainer = Broadcaster.getContainer() == null ? null : Broadcaster.getContainer().element;
-        resizeTimeout = setTimeout(function ()
-        {
-            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, layoutContainer);
-            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-            resizeTimeout = null;
-        }, 700);
-
-    });
 
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function ()
     {
@@ -100,7 +78,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
     {
         Mouse.deactivate();
         Broadcaster.resetHover();
-        //DragCreate.deactivate()
         DragDrop.setActive(false);
         Sidebar.disableEditing();
         DOM.enableSelection();
@@ -188,7 +165,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
 
         DOM.enableContextMenu();
         DragDrop.dragEnded(event);
-        Sidebar.enableEditing();
     });
 
     $(document).on(Broadcaster.EVENTS.ABORT_DRAG, function (event)
@@ -247,6 +223,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
         Highlighter.removePropertyOverlay();
         Overlay.removeOverlays();
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+
 
     });
 

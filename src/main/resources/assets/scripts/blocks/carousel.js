@@ -3,39 +3,36 @@
  */
 base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edit", "blocks.core.Sidebar", "blocks.core.Plugin-Utils",  function (Constants, Edit, Sidebar, Plugin)
 {
+    var listGroup = null;
 
     this.focus = function(propertyElement, blockEvent) {
         var element = blockEvent.block.current.element.find(".carousel");
         var contentID = Sidebar.createWindow(Constants.CONTENT, blockEvent.block.current.element, "Carousel");
-        var styleID = Sidebar.createWindow(Constants.STYLE, blockEvent.block.current.element, "Carousel");
-
-        var items = element.find(".item");
-        var listGroup = $('<div class="list-group" />')
-        var index = 0;
-        items.each(function() {
-            var item = $(this);
-            var image = item.children("img");
-            var caption = item.children(".carousel-caption");
-            listGroup.append(createImageEditBox(index, element, image, caption));
-        });
+        //var styleID = Sidebar.createWindow(Constants.STYLE, blockEvent.block.current.element, "Carousel");
 
 
+        listGroup = $('<div class="list-group" />')
 
-        Sidebar.addUIForProperty(contentID, element, addImageButton(listGroup, element));
+        redraw(element);
+
+        Sidebar.addUIForProperty(contentID, element, addImageButton(element));
         Sidebar.addUIForProperty(contentID, element, listGroup);
 
-        Sidebar.addValueAttribute(styleID, element, "Slide interval in ms:", "data-interval", true, true, true);
-        Sidebar.addUniqueAttributeValue(styleID, element, "Pause on hoover:", "data-pause", [{name: "Yes", value: "true"}, {name: "No", value: "false"}]);
-        Sidebar.addUniqueAttributeValue(styleID, element, "Auto cycle:", "data-wrap", [{name: "Yes", value: "true"}, {name: "No", value: "false"}]);
+        //Sidebar.addValueAttribute(styleID, element, "Slide interval in ms:", "data-interval", true, true, true);
+        //Sidebar.addUniqueAttributeValue(styleID, element, "Pause on hoover:", "data-pause", [{name: "Yes", value: "true"}, {name: "No", value: "false"}]);
+        //Sidebar.addUniqueAttributeValue(styleID, element, "Auto cycle:", "data-wrap", [{name: "Yes", value: "true"}, {name: "No", value: "false"}]);
 
     };
 
     this.blur = function() {
-
+        listGroup = null;
     };
 
 
-    var createImageEditBox = function(index, carousel, image, caption) {
+    var createImageEditBox = function(item, items, carousel) {
+
+        var image = item.children("img");
+        var caption = item.children(".carousel-caption");
 
         var listGroupItem = $('<div class="list-group-item" />');
         var label = $("<div>Carousel image</div>");
@@ -50,10 +47,8 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
         labelEdit.append(closeButton);
         var editBox = $('<div class="hidden" />');
 
-
-
         editBox.append(labelEdit);
-        editBox.append(Plugin.addValueAttribute(image, "image url", "src", true));
+        editBox.append(Plugin.addValueAttribute(image, "image url", "src", true, true, true));
         editBox.append(Plugin.addValueHtml(caption, "image caption", false));
 
         closeButton.click(function() {
@@ -69,7 +64,6 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
         listGroupItem.append(label);
 
         // Do not add remove when there is only one image
-        var items = carousel.find(".carousel-inner").children();
         if (items.length > 1) {
             label.append(deleteButton);
             var labelRemove = $('<div class="hidden">Are you sure you want to remove the image</div>');
@@ -91,17 +85,9 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
                 label.removeClass("hidden");
                 labelRemove.addClass("hidden");
                 listGroupItem.remove();
-
-                var indicators = carousel.find(".carousel-indicators").children();
-                $(items[index]).remove();
-                $(indicators[index]).remove();
-                indicators = carousel.find(".carousel-indicators").children();
-                for (var i=0; i < indicators.length; i++) {
-                    $(indicators[index]).attr("data-slide-to", i);
-                }
-                carousel.find(".carousel-inner").children().removeClass("active");;
-                carousel.find(".carousel-inner").children().first().addClass("active");;
-
+                item.remove();
+                redrawIndicators(carousel);
+                redraw(carousel);
             });
 
             listGroupItem.append(labelRemove);
@@ -114,7 +100,7 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
 
     };
 
-    var addImageButton = function(listGroup, carousel) {
+    var addImageButton = function(carousel) {
         var items = carousel.find(".carousel-inner");
         var indicators = carousel.find(".carousel-indicators");
         var button = $('<button class="btn btn-primary">Add image</button>');
@@ -123,29 +109,41 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
             var image = $('<img property="image" src="http://cdn.banquenationale.ca/cdnbnc/2013/06/ruisseau.jpg" >');
             var caption = $('<div property="image-caption" class="carousel-caption" />');
             var item = $('<div class="item" />');
-            var indicators = carousel.find(".carousel-indicators");
+
             item.append(image).append(caption);
             items.append(item);
-            var id = carousel.attr("id");
-            var nr = 0;
-            var last = indicators.children().last();
-            if (last.length == 1) {
-                nr = parseInt(last.attr("data-slide-to"));
-            }
-
-            indicators.append($('<li data-target="#'+id+'" data-slide-to="'+ nr +'"></li>'));
-
-            indicators = carousel.find(".carousel-indicators").children();
-            for (var i=0; i < indicators.length; i++) {
-                $(indicators[i]).attr("data-slide-to", i);
-            }
-
-            listGroup.append(createImageEditBox(indicators.children().length, carousel, image, caption));
+            redrawIndicators(carousel);
+            redraw(carousel);
 
         });
 
         return button;
     };
+
+    var redrawIndicators = function(carousel) {
+        var id = carousel.attr("id");
+        var indicators = carousel.find(".carousel-indicators");
+        var items = carousel.find(".carousel-inner").children();
+        indicators.empty();
+
+        for (var i=0; i < items.length; i++) {
+            var indicator = $('<li data-target="#'+id+'" data-slide-to="'+ i +'"></li>');
+            if (i==0) indicator.addClass("active");
+            indicators.append(indicator);
+        }
+        carousel.find(".carousel-inner").children().removeClass("active");
+        carousel.find(".carousel-inner").children().first().addClass("active");
+    };
+
+
+    var redraw = function(carousel) {
+        var items = carousel.find(".item");
+        listGroup.empty();
+        for (var i=0; i<items.length; i++) {
+            var item = $(items[i]);
+            listGroup.append(createImageEditBox(item, items, carousel));
+        }
+    }
 
     Edit.registerByTag("BOOTSTRAP-CAROUSEL", this);
 

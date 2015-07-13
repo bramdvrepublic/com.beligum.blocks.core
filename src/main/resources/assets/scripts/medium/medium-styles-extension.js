@@ -93,6 +93,8 @@ base.plugin("blocks.core.MediumEditorExtensions", [function() {
             if (this.isDisplayed()) {
                 this.doFormCancel();
             }
+            this.blocks = null;
+            this.base = null;
 
             if (!this.form) {
                 return false;
@@ -101,8 +103,6 @@ base.plugin("blocks.core.MediumEditorExtensions", [function() {
             if (this.form.parentNode) {
                 this.form.parentNode.removeChild(this.form);
             }
-
-
 
             delete this.form;
         },

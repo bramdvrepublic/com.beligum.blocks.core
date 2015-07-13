@@ -11,7 +11,7 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
     blocks.elements.ResizeHandle = Class.create(blocks.elements.Surface, {
         STATIC: {
             DRAW_WIDTH: 30,
-            TRIGGER_WIDTH: 10
+            TRIGGER_WIDTH: 6
         },
 
         constructor: function (leftColumn, rightColumn)
@@ -28,8 +28,8 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
             var left = Math.floor((this.calculateLeft(this.rightColumn.element) + this.calculateRight(this.leftColumn.element)) / 2) - Math.floor(blocks.elements.ResizeHandle.TRIGGER_WIDTH / 2)
             this.overlay.css("left", left);
             var siblings = this.leftColumn.parent.resizeHandles;
-            var height = this.leftColumn.parent.bottom - this.leftColumn.parent.top;
-            for (var i = 0; i < siblings; i++) {
+            var height = this.calculateBottom(this.leftColumn.parent.element) - this.calculateTop(this.leftColumn.parent.element);
+            for (var i = 0; i < siblings.length; i++) {
                 siblings[i].overlay.css("height", height);
             }
         },
