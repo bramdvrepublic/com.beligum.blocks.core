@@ -164,7 +164,9 @@ public class PageEndpoint
                 // Random title and description
                 else if (template.getTitles().values().size() > 0) {
                     title = (String) template.getTitles().values().toArray()[0];
-                    description = (String) template.getDescriptions().values().toArray()[0];
+                    if (template.getDescriptions().size() > 0) {
+                        description = (String) template.getDescriptions().values().toArray()[0];
+                    }
                 }
                 // No title available
                 else {
