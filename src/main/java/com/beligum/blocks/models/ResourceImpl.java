@@ -1,5 +1,6 @@
 package com.beligum.blocks.models;
 
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.controllers.PersistenceControllerImpl;
@@ -40,24 +41,25 @@ public class ResourceImpl extends AbstractResource
         retVal.add(localized);
         return retVal;
     }
+
     @Override
     public void setFieldDirect(String key, Object value, Locale locale)
     {
         Map<String, Object> vertex = localized;
-        if (locale.equals(Locale.ROOT) || (value instanceof HashMap && ((HashMap) value).containsKey(ParserConstants.JSONLD_ID))) {
+        if (locale.equals(Locale.ROOT) || getFactory().isResource(value)) {
             vertex = this.vertex;
         }
 
-        if (value != null) {
-            if (value instanceof HashMap && ((HashMap) value).containsKey(ParserConstants.JSONLD_ID)) {
-                ArrayList<HashMap> list = new ArrayList<>();
-                list.add((HashMap)value);
-                vertex.put(key, list);
+        if (value != null || !(value instanceof String && ((String)value).trim().equals(""))) {
+            if (getFactory().isResource(value)) {
+                this.vertex.put(key, new ArrayList<>());
+                this.addFieldDirect(key, value, locale);
             } else {
                 vertex.put(key, value);
             }
         }
     }
+
     @Override
     public Node getFieldDirect(String key)
     {
@@ -69,49 +71,57 @@ public class ResourceImpl extends AbstractResource
             //            lang = Locale.ROOT;
         }
 
-        if (vertex != null) {
-            fieldValue = ResourceFactoryImpl.instance().createNode(vertex.get(key), lang);
-        }
+        fieldValue = ResourceFactoryImpl.instance().createNode(vertex.get(key), lang);
 
         return fieldValue;
     }
     @Override
-    public void addFieldDirect(String key, Node node)
+    public void addFieldDirect(String key, Object value, Locale locale)
     {
         Map<String, Object> vertex = localized;
         Object existingField = null;
-        if (node.getLanguage().equals(Locale.ROOT) || node.isResource()) {
+
+        if (locale.equals(Locale.ROOT) || getFactory().isResource(value)) {
             vertex = this.vertex;
         }
 
         existingField = vertex.get(key);
 
-        if (!node.isNull()) {
+        if (value != null || !(value instanceof String && ((String)value).trim().equals(""))) {
+            // we want to add so create a list for this property if there isn't a list yet
             if (existingField == null) {
-                if (node.isResource()) {
-                    List<Object> t = new ArrayList<Object>();
-                    t.add(node.getValue());
-                    vertex.put(key, t);
-                } else {
-                    vertex.put(key, node.getValue());
+                vertex.put(key, new ArrayList<Object>());
+            } else if (getFactory().isResource(existingField) || !(existingField instanceof List)) {
+                List<Object> t = new ArrayList<Object>();
+                t.add(existingField);
+                vertex.put(key, t);
+            }
+
+
+            if (getFactory().isResource(value)) {
+                // Remove this resource if it was already added
+                Iterator iterator = ((List)vertex.get(key)).iterator();
+                while (iterator.hasNext()) {
+                    Object existing = iterator.next();
+                    URI id = getFactory().getResourceId(value);
+                    if (getFactory().isResource(existing) && getFactory().getResourceId(existing).equals(id)) {
+                        iterator.remove();
+                    }
                 }
-            }
-            else if (existingField instanceof List) {
-                List valueList = ((List) existingField);
-                if (node.isIterable()) {
-                    for (Node val: node)
-                        valueList.add(val.getValue());
-                } else {
-                    valueList.add(node.getValue());
+                ((List)vertex.get(key)).add(value);
+            } else if (value instanceof  Collection) {
+                for (Object val : (Collection) value) {
+                    addFieldDirect(key, val, locale);
                 }
-                vertex.put(key, valueList);
+            } else {
+                ((List)vertex.get(key)).add(value);
             }
-            else {
-                List newValues = new ArrayList();
-                newValues.add(existingField);
-                newValues.add(node.getValue());
-                vertex.put(key, newValues);
+
+            // Clean up: flatten a list with only one value
+            if (vertex.get(key) instanceof  List && ((List)vertex.get(key)).size() == 1) {
+                vertex.put(key, ((List) vertex.get(key)).get(0));
             }
+
         }
     }
 

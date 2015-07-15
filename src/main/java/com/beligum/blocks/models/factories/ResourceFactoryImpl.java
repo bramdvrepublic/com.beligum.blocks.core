@@ -59,9 +59,7 @@ public class ResourceFactoryImpl implements ResourceFactory
         HashMap<String, Object> localized = new HashMap<String, Object>();
         Resource retVal = new ResourceImpl(vertex, localized, language);
         retVal.setBlockId(id);
-        Set<URI> typeSet = new HashSet<URI>();
-        typeSet.add(rdfType);
-        retVal.setRdfType(typeSet);
+        retVal.setRdfType(rdfType);
 
         return retVal;
     }
@@ -73,22 +71,8 @@ public class ResourceFactoryImpl implements ResourceFactory
         if (value instanceof Resource || value instanceof Node) {
             retVal = (Node)value;
         } else {
-            if (value instanceof List && ((List)value).size() == 2
-                && ((List)value).get(0) instanceof HashMap
-                && ((HashMap<String, Object>)((List)value).get(0)).containsKey(ParserConstants.JSONLD_ID)) {
-                HashMap<String, Object> rootVector = (HashMap<String, Object>) ((List) value).get(0);
-                HashMap<String, Object> localVector = (HashMap<String, Object>) ((List) value).get(1);
-
-                retVal = new ResourceImpl(rootVector, localVector, language);
-
-            } else if (value instanceof Map && ((Map)value).containsKey(ParserConstants.JSONLD_ID)) {
-                try {
-                    retVal = PersistenceControllerImpl.instance().getResource(UriBuilder.fromUri((String) ((Map) value).get(ParserConstants.JSONLD_ID)).build(), language);
-                }
-                catch (Exception e) {
-                    Logger.error("Could not fetch resource as child of parent resource");
-                    // TODO how to catch this?
-                }
+            if (isResource(value)) {
+                retVal = getResource(value, language);
             } else {
                 retVal = new NodeImpl(value, language);
             }
@@ -97,6 +81,70 @@ public class ResourceFactoryImpl implements ResourceFactory
         return retVal;
     }
 
+    @Override
+    public boolean isResource(Object value) {
+        boolean retVal = false;
+        if (value instanceof Resource) {
+            retVal = true;
+        }
+        else if (value instanceof List && ((List)value).size() == 2
+                 && ((List)value).get(0) instanceof HashMap
+                 && ((HashMap<String, Object>)((List)value).get(0)).containsKey(ParserConstants.JSONLD_ID)) {
+            retVal = true;
+        } else if (value instanceof Map && ((Map)value).containsKey(ParserConstants.JSONLD_ID)) {
+            retVal = true;
+        }
+        return retVal;
+    }
+
+    @Override
+    public Resource getResource(Object value, Locale language) {
+        Resource retVal = null;
+        if (value instanceof Resource) {
+            retVal = (Resource)value;
+        }
+        // Is this a resource wrapped as a list?
+        else if (value instanceof List && ((List)value).size() == 2
+                 && ((List)value).get(0) instanceof HashMap
+                 && ((HashMap<String, Object>)((List)value).get(0)).containsKey(ParserConstants.JSONLD_ID)) {
+            HashMap<String, Object> rootVector = (HashMap<String, Object>) ((List) value).get(0);
+            HashMap<String, Object> localVector = (HashMap<String, Object>) ((List) value).get(1);
+
+            retVal = new ResourceImpl(rootVector, localVector, language);
+        }
+        // This is a reference to a resource
+        else if (value instanceof Map && ((Map)value).containsKey(ParserConstants.JSONLD_ID)) {
+            try {
+                retVal = PersistenceControllerImpl.instance().getResource(UriBuilder.fromUri((String) ((Map) value).get(ParserConstants.JSONLD_ID)).build(), language);
+            }
+            catch (Exception e) {
+                Logger.error("Could not fetch resource as child of parent resource");
+                // TODO how to catch this?
+            }
+        }
+        return retVal;
+    }
+
+    @Override
+    public URI getResourceId(Object value) {
+        URI retVal = null;
+        if (value instanceof Resource) {
+            retVal = ((Resource)value).getBlockId();
+        }
+        // Is this a resource wrapped as a list?
+        else if (value instanceof List && ((List)value).size() == 2
+                 && ((List)value).get(0) instanceof HashMap
+                 && ((HashMap<String, Object>)((List)value).get(0)).containsKey(ParserConstants.JSONLD_ID)) {
+            String id = (String)((HashMap<String, Object>)((List)value).get(0)).get(ParserConstants.JSONLD_ID);
+
+            retVal = UriBuilder.fromUri(id).build();
+        }
+        // This is a reference to a resource
+        else if (value instanceof Map && ((Map)value).containsKey(ParserConstants.JSONLD_ID)) {
+            retVal = UriBuilder.fromUri((String) ((Map) value).get(ParserConstants.JSONLD_ID)).build();
+        }
+        return retVal;
+    }
 
 
 }

@@ -4,7 +4,6 @@ import com.beligum.base.annotations.JavascriptPackage;
 import com.beligum.base.endpoints.AssetsEndpoint;
 import com.beligum.base.resources.ResourceDescriptor;
 import com.beligum.base.server.R;
-import gen.com.beligum.blocks.core.fs.html.views.snippets.editor_toolbar;
 import gen.com.beligum.blocks.core.fs.html.views.snippets.menu;
 import gen.com.beligum.blocks.core.fs.html.views.snippets.side;
 import org.apache.commons.io.FilenameUtils;
@@ -34,11 +33,6 @@ public class TemplatesEndpoint extends AssetsEndpoint
         return Response.ok(side.get().getNewTemplate().render()).build();
     }
 
-    @GET
-    @Path("/editor/toolbar")
-    public Response getEditorToolbar() {
-        return Response.ok(editor_toolbar.get().getNewTemplate().render()).build();
-    }
 
     @GET
     @Path("/{name: .*}")

@@ -13,4 +13,7 @@ public interface ResourceFactory
     public WebPage createWebPage(URI masterWebPage, URI id, Locale locale);
     public Node createNode(Object value, Locale language);
     public WebPath createPath(URI masterPage, Path path, Locale locale);
+    public boolean isResource(Object value);
+    public Resource getResource(Object value, Locale language);
+    public URI getResourceId(Object value);
 }

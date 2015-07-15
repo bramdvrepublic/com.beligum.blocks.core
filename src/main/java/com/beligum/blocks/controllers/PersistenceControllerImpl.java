@@ -134,7 +134,7 @@ public class PersistenceControllerImpl  implements PersistenceController
         // use this masterpageid
         Map<String, WebPath> retVal = new HashMap<>();
         try {
-            List<DBPath> paths = RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.masterPage = :masterPage", DBPath.class).setParameter("masterPage", masterPage).getResultList();
+            List<DBPath> paths = RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.masterPage = :masterPage", DBPath.class).setParameter("masterPage", masterPage.toString()).getResultList();
             for (DBPath path: paths) {
                 retVal.put(path.getLanguage().getLanguage(), path);
             }
@@ -217,6 +217,17 @@ public class PersistenceControllerImpl  implements PersistenceController
         if (types.iterator().hasNext()) type = RdfTools.makeDbFieldFromUri(types.iterator().next());
 
         addResourceToLucene(dbResource.getId().toString(), type, resource.toJson(), resource.getLanguage());
+
+        // if a root value was updated, update all localized resources in elasticsearch
+        // TODO: unccommeny. Commented for batch upload resources
+//        if (!dbResource.hasUpdatedRoot()) {
+//            addResourceToLucene(dbResource.getId().toString(), type, resource.toJson(), resource.getLanguage());
+//        } else {
+//            for (Locale locale: dbResource.getLanguages()) {
+//                addResourceToLucene(dbResource.getId().toString(), type, dbResource.getResource(locale).toJson(), locale);
+//            }
+//        }
+
         return resource;
     }
 
@@ -224,7 +235,6 @@ public class PersistenceControllerImpl  implements PersistenceController
     public Resource deleteResource(Resource resource)
     {
         DBResource dbResource = findResourceInDB(resource.getBlockId());
-
         return null;
     }
 
@@ -270,12 +280,12 @@ public class PersistenceControllerImpl  implements PersistenceController
         ElasticSearch.instance().getBulk().add(ElasticSearch.instance().getClient().prepareIndex(index, name)
                                                             .setSource(json)
                                                             .setId(id).request());
-        IndexResponse is = ElasticSearch.instance().getClient().prepareIndex(index, name)
-                                        .setSource(json).setId(id)
-                                        .execute().actionGet();
-        if (!is.isCreated()) {
-            Logger.error("Webpage could not be added to Lucene");
-        }
+//        IndexResponse is = ElasticSearch.instance().getClient().prepareIndex(index, name)
+//                                        .setSource(json).setId(id)
+//                                        .execute().actionGet();
+//        if (!is.isCreated()) {
+//            Logger.error("Webpage could not be added to Lucene");
+//        }
     }
 
     private void addPathToLucene(String id, String json) {

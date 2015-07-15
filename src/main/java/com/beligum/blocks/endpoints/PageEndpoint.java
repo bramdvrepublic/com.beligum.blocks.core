@@ -116,7 +116,9 @@ public class PageEndpoint
 
             // TODO set webpage properties
             for (Resource resource: pageParser.getResources().values()) {
-                PersistenceControllerImpl.instance().saveResource(resource);
+                if (!resource.getBlockId().equals(pageParser.getPageResource().getBlockId())) {
+                    PersistenceControllerImpl.instance().saveResource(resource);
+                }
             }
 
             for (URI field: pageParser.getPageResource().getFields()) {

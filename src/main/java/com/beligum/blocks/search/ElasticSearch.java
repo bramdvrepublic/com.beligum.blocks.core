@@ -106,7 +106,7 @@ public class ElasticSearch
     }
 
     private void setBulkInCache() {
-        R.cacheManager().getRequestCache().put(ESCacheKeys.BULK_REQUEST, ElasticSearch.instance().getClient().prepareBulk());
+        R.cacheManager().getRequestCache().put(ESCacheKeys.BULK_REQUEST, this.getClient().prepareBulk());
     }
 
     private void removeBulkFromCache() {
@@ -117,7 +117,7 @@ public class ElasticSearch
         // TODO: should check for all indexes. e.g. when new language is created we don't have to remove all indexes
         if (!this.client.admin().indices().exists(new IndicesExistsRequest(getPageIndexName(BlocksConfig.instance().getDefaultLanguage()))).actionGet().isExists()) {
             // Delete all to start fresh
-            ElasticSearch.instance().getClient().admin().indices().delete(new DeleteIndexRequest("*")).actionGet();
+            this.client.admin().indices().delete(new DeleteIndexRequest("*")).actionGet();
 
             ClassLoader classLoader = getClass().getClassLoader();
             String resourceMapping = null;
@@ -135,15 +135,15 @@ public class ElasticSearch
             }
 
             for (Locale locale : BlocksConfig.instance().getLanguages().values()) {
-                ElasticSearch.instance().getClient().admin().indices().prepareCreate(ElasticSearch.instance().getPageIndexName(locale)).setSettings(settings)
+                this.client.admin().indices().prepareCreate(this.getPageIndexName(locale)).setSettings(settings)
                              .addMapping(PersistenceController.WEB_PAGE_CLASS.toLowerCase(),
                                          pageMapping).execute().actionGet();
-                ElasticSearch.instance().getClient().admin().indices().prepareCreate(ElasticSearch.instance().getResourceIndexName(locale)).setSettings(settings)
+                this.client.admin().indices().prepareCreate(this.getResourceIndexName(locale)).setSettings(settings)
                              .addMapping("_default_", resourceMapping).execute()
                              .actionGet();
             }
 
-            ElasticSearch.instance().getClient().admin().indices().prepareCreate(PersistenceController.PATH_CLASS).setSettings(settings).addMapping(PersistenceController.PATH_CLASS, pathMapping)
+            this.client.admin().indices().prepareCreate(PersistenceController.PATH_CLASS).setSettings(settings).addMapping(PersistenceController.PATH_CLASS, pathMapping)
                          .execute()
                          .actionGet();
         }
@@ -154,6 +154,11 @@ public class ElasticSearch
 
 
         init();
+    }
+
+    public void flush() {
+        this.client.admin().indices().delete(new DeleteIndexRequest("*")).actionGet();
+        this.reset();
     }
 
 }

@@ -97,15 +97,13 @@ public class ResourceJsonDeserializer extends JsonDeserializer<Resource>
             if (entry.getKey().equals(ParserConstants.JSONLD_TYPE)) {
                 // parse resource
                 JsonNode types = entry.getValue();
-                Set<URI> typeSet = new HashSet<>();
                 if (types.isArray()) {
                     for (JsonNode valueNode: entry.getValue().findValues(ParserConstants.JSONLD_TYPE)) {
-                        typeSet.add(new URI(valueNode.asText()));
+                        resource.addRdfType(new URI(valueNode.asText()));
                     }
                 } else {
-                    typeSet.add(new URI(entry.getValue().get(ParserConstants.JSONLD_TYPE).textValue()));
+                    resource.setRdfType(new URI(entry.getValue().get(ParserConstants.JSONLD_TYPE).textValue()));
                 }
-                resource.setRdfType(typeSet);
             } else if (entry.getKey().equals(ParserConstants.JSONLD_ID)) {
                 resource.setBlockId(new URI(entry.getValue().asText()));
             } else if (entry.getKey().equals(ParserConstants.JSONLD_CONTEXT)) {

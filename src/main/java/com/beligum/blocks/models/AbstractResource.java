@@ -51,33 +51,42 @@ public abstract class AbstractResource extends AbstractNode implements Resource
     }
 
     @Override
-    public void setRdfType(Set<URI> uris)
+    public void setRdfType(URI uri)
     {
         Set<String> list = new HashSet();
-        for (URI uri: uris) {
-            list.add(uri.toString());
-        }
+        list.add(uri.toString());
         this.setFieldDirect(PersistenceController.RESOURCE_TYPE_FIELD, list, Locale.ROOT);
+    }
+
+    @Override
+    public void addRdfType(URI uri)
+    {
+        Node uris = getFieldDirect(PersistenceController.RESOURCE_TYPE_FIELD);
+        Iterator<Node> iterator = uris.iterator();
+        boolean exists = false;
+        while (iterator.hasNext()) {
+            Node node = iterator.next();
+            if (node.toString().equals(uri.toString())) {
+                exists = true;
+                break;
+            }
+        }
+
+        this.addFieldDirect(PersistenceController.RESOURCE_TYPE_FIELD, uri.toString(), Locale.ROOT);
     }
 
     @Override
     public void add(URI field, Node node)
     {
-        if (this.language.equals(Locale.ROOT) && !node.getLanguage().equals(Locale.ROOT)) {
-            this.language = node.getLanguage();
-        }
+
         String key = addFieldToContext(field);
-        addFieldDirect(key, node);
+        addFieldDirect(key, node.getValue(), node.getLanguage());
     }
 
     @Override
     public void set(URI field, Node node)
     {
-        if (this.language.equals(Locale.ROOT) && !node.getLanguage().equals(Locale.ROOT)) {
-            this.language = node.getLanguage();
-        }
-
-        String key = addFieldToContext(field);
+               String key = addFieldToContext(field);
         setFieldDirect(key, node.getValue(), node.getLanguage());
     }
 
@@ -121,7 +130,7 @@ public abstract class AbstractResource extends AbstractNode implements Resource
 
     public abstract Node getFieldDirect(String key);
 
-    public abstract void addFieldDirect(String key, Node value);
+    public abstract void addFieldDirect(String key, Object value, Locale locale);
 
     public abstract Node removeFieldDirect(String key);
 

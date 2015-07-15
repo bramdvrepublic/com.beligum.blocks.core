@@ -190,7 +190,7 @@ public abstract class WikiParser
 
         }
 
-
+        ElasticSearch.instance().saveBulk();
         Logger.info("finish!");
 
 //
@@ -243,7 +243,7 @@ public abstract class WikiParser
 
     public abstract Resource fillEntity(HashMap<String, HashMap<String, String>> item, Locale lang);
 
-    public void splitField(Resource entity, String field) {
+    public void splitField(Resource entity, String field, Locale locale) {
         URI name = RdfTools.createLocalType(field);
         Node property = entity.get(name);
         entity.remove(name);
@@ -252,14 +252,14 @@ public abstract class WikiParser
                 if (value.isString()) {
                     String[] splitValue = value.asString().split("\\|");
                     for (String v : splitValue) {
-                        entity.add(name, ResourceFactoryImpl.instance().createNode(v.trim(), BlocksConfig.instance().getDefaultLanguage()));
+                        entity.add(name, ResourceFactoryImpl.instance().createNode(v.trim(), locale));
                     }
                 }
             }
         } else if (property != null && property.isString()) {
             String[] splitValue = property.asString().split("\\|");
             for (String v : splitValue) {
-                entity.add(name, ResourceFactoryImpl.instance().createNode(v.trim(), property.getLanguage()));
+                entity.add(name, ResourceFactoryImpl.instance().createNode(v.trim(), locale));
             }
         }
 

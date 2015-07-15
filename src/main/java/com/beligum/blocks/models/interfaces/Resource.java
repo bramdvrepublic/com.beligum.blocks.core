@@ -31,7 +31,9 @@ public interface Resource extends Node, DocumentInfo
 
     public Set<URI> getRdfType();
 
-    public void setRdfType(Set<URI> uris);
+    public void setRdfType(URI uri);
+
+    public void addRdfType(URI uri);
 
     public HashMap<String, String> getContext();
 

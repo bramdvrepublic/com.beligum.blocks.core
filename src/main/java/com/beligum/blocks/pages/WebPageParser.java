@@ -61,7 +61,7 @@ public class WebPageParser
     private HashMap<String, URI> prefixes = new HashMap<>();
     private HashMap<URI, HashMap<URI, List<PropertyValue>>> resourceMap = new HashMap<>();
     // Resource that contains all properties that are attached to the page
-    private Resource pageResource = ResourceFactoryImpl.instance().createResource(RdfTools.createLocalResourceId("webpage"), RdfTools.createLocalType("Webpage"), Locale.ROOT);
+    private Resource pageResource;
 
 
     public WebPageParser(URI uri, Locale locale, String source, PersistenceController database) throws Exception
@@ -74,6 +74,7 @@ public class WebPageParser
         this.vocab = BlocksConfig.instance().getDefaultRdfSchema();
         Element base = this.source.getFirstElement("base");
         this.setBase(base, uri);
+        pageResource = ResourceFactoryImpl.instance().createResource(RdfTools.createLocalResourceId("webpage"), RdfTools.createLocalType("Webpage"), locale);
         this.resources.put(pageResource.getBlockId().toString(), pageResource);
         this.elements  = this.source.getAllElements();
         for (HtmlTemplate template: HtmlParser.getCachedTemplates().values()) {

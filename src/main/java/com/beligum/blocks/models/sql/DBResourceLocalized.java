@@ -21,7 +21,7 @@ public class DBResourceLocalized extends DBDocumentInfo
 
 
     public DBResourceLocalized(byte[] data) {
-        this.data = data;
+        this.setdata(data);
     }
 
     public byte[] getData() {
