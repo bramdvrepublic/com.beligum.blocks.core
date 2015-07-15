@@ -50,7 +50,7 @@ public class ResourceImpl extends AbstractResource
             vertex = this.vertex;
         }
 
-        if (value != null || !(value instanceof String && ((String)value).trim().equals(""))) {
+        if (value != null) {
             if (getFactory().isResource(value)) {
                 this.vertex.put(key, new ArrayList<>());
                 this.addFieldDirect(key, value, locale);
@@ -87,7 +87,7 @@ public class ResourceImpl extends AbstractResource
 
         existingField = vertex.get(key);
 
-        if (value != null || !(value instanceof String && ((String)value).trim().equals(""))) {
+        if (value != null) {
             // we want to add so create a list for this property if there isn't a list yet
             if (existingField == null) {
                 vertex.put(key, new ArrayList<Object>());
