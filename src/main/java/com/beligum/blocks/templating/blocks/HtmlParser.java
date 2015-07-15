@@ -359,8 +359,8 @@ public class HtmlParser extends AbstractAssetParser
 
         //TODO clean this up
         List<ResourceSearchResult> htmlFiles = new ArrayList<>();
-        htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/templates/**.{html,htm}"));
-        htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/views/**.{html,htm}"));
+//        htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/templates/**.{html,htm}"));
+//        htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/views/**.{html,htm}"));
         htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/assets/imports/**.{html,htm}"));
         htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/imports/**.{html,htm}"));
 
