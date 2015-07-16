@@ -237,6 +237,10 @@ public abstract class AbstractNode implements Node
         Iterator retVal = null;
         if (this.isIterable()) {
             retVal = new NodeIterator(((Iterable)wrappedObject).iterator(), language);
+        } else if (this.isResource()) {
+            List list = new ArrayList();
+            list.add(this);
+            retVal = new NodeIterator(list.iterator(), language);
         } else {
             List list = new ArrayList();
             if (wrappedObject != null) {
