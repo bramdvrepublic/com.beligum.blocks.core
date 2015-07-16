@@ -229,8 +229,8 @@ public abstract class WikiParser
         HashMap<String, Object> frVertex = new HashMap<>();
         HashMap<String, Object> enVertex = new HashMap<>();
         defaultVertex.put(ParserConstants.JSONLD_ID, id.toString());
-        Set<URI> types = new HashSet<URI>();
-        types.add(type);
+        Set<String> types = new HashSet<String>();
+        types.add(type.toString());
         defaultVertex.put(PersistenceController.RESOURCE_TYPE_FIELD, types);
 
         container.put("nl", new ResourceImpl(defaultVertex, nlVertex, BlocksConfig.instance().getDefaultLanguage()));
@@ -265,19 +265,19 @@ public abstract class WikiParser
 
     }
 
-    public void prependField(Resource entity, String field, String prefix) {
+    public void prependField(Resource entity, String field, String prefix, Locale locale) {
         URI name = RdfTools.createLocalType(field);
         Node property = entity.get(name);
         entity.remove(name);
         if (property != null && property.isIterable()) {
             for (Node node: property) {
                 if (node.isString()) {
-                    entity.add(name, ResourceFactoryImpl.instance().createNode(prefix + node.asString().trim(), property.getLanguage()));
+                    entity.add(name, ResourceFactoryImpl.instance().createNode(prefix + node.asString().trim(), locale));
 
                 }
             }
         } else if (property.isString()) {
-            entity.add(name, ResourceFactoryImpl.instance().createNode(prefix + property.asString().trim(), property.getLanguage()));
+            entity.add(name, ResourceFactoryImpl.instance().createNode(prefix + property.asString().trim(), locale));
         }
 
     }
