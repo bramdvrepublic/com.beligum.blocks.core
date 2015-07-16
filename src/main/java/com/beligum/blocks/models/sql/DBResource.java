@@ -23,8 +23,8 @@ public class DBResource extends DBDocumentInfo
 {
 
     public static final ObjectMapper mapper = new ObjectMapper(new SmileFactory());
-    public static final ObjectMapper localizedMapper = new ObjectMapper(new SmileFactory()).registerModule(new SimpleModule().addSerializer(Resource.class, new ResourceLocalizedSerializer()));
-    public static final ObjectMapper rootMapper = new ObjectMapper(new SmileFactory()).registerModule(new SimpleModule().addSerializer(Resource.class, new ResourceRootSerializer()));
+//    public static final ObjectMapper localizedMapper = new ObjectMapper(new SmileFactory());
+//    public static final ObjectMapper rootMapper = new ObjectMapper(new SmileFactory());
 
 
     protected String blockId;
@@ -93,7 +93,9 @@ public class DBResource extends DBDocumentInfo
     {
         String language = resource.getLanguage().getLanguage();
 
-        byte[] newRootData = rootMapper.writeValueAsBytes(resource);
+        HashMap<String, Object> rootValues = (HashMap<String, Object>)((List)resource.getValue()).get(0);
+        HashMap<String, Object> localValues = (HashMap<String, Object>)((List)resource.getValue()).get(1);
+        byte[] newRootData = mapper.writeValueAsBytes(rootValues);
         if (!newRootData.equals(this.rootData)) {
             this.rootData = newRootData;
             this.updatedRoot = true;
@@ -102,9 +104,9 @@ public class DBResource extends DBDocumentInfo
         DBResourceLocalized localized;
         if (this.localized.containsKey(language)) {
             localized = this.localized.get(language);
-            localized.setdata(localizedMapper.writeValueAsBytes(resource));
+            localized.setdata(mapper.writeValueAsBytes(localValues));
         } else {
-            localized = new DBResourceLocalized(localizedMapper.writeValueAsBytes(resource));
+            localized = new DBResourceLocalized(mapper.writeValueAsBytes(localValues));
         }
 
         localized.setResource(this);
