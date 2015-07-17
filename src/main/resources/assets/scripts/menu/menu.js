@@ -34,6 +34,10 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 //TODO: Sidebar is not yet loaded so we can not initialize finder
             }
 
+            $(document).on("click.prevent_click_editing", "a", function(e) {
+                e.preventDefault();
+            });
+
             var windowWidth = $(window).width();
             MainMenu.sideBar.css("width", (windowWidth*0.2) + "px");
             $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth*0.8) + "px");
@@ -45,6 +49,7 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             var content = $("." + Constants.PAGE_CONTENT_CLASS).html();
             $("body").empty();
             $("body").append(content);
+            $(document).off("click.prevent_click_editing");
             Broadcaster.send(Broadcaster.EVENTS.STOP_BLOCKS);
             $("body").append(MainMenu.menuStartButton);
             disableSidebarDrag();

@@ -87,34 +87,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             // check if we clicked outside this block
             if (!preventBlurElements.is(e.target) && preventBlurElements.has(e.target).length === 0 && preventBlurElements != newProperty && preventBlurElements.has(newProperty).length === 0) {
                 // we clicked outside the property
-                // remove this trigger
-                $(document).off("mousedown.sidebar_edit_end");
-                // blur this block
-                $("." + Constants.OPACITY_CLASS).removeClass(Constants.OPACITY_CLASS);
-                $("." + Constants.PREVENT_BLUR_CLASS).removeClass(Constants.PREVENT_BLUR_CLASS);
-
-                if (block != null) {
-                    if (property == null) {
-                        block.element.addClass(Constants.BLOCK_EDIT_CLASS);
-                    }
-                    var editFunction = Edit.makeEditable(block.element);
-                    if (editFunction != null && editFunction.blur != null) {
-                        editFunction.blur(property, block);
-                    }
-                }
-
-                if (property != null) {
-                    property.removeClass(Constants.PROPERTY_EDIT_CLASS);
-                    var editFunction = Edit.makeEditable(property);
-                    if (editFunction != null && editFunction.blur != null) {
-                        editFunction.blur(property, block);
-                    }
-                }
-
-                block = null;
-
-                reset();
-                event.stopPropagation();
+                blurCurrentSelection(property, block);
 
                 // Only send edit_end on mouse up. Otherwise the other clicked property will start editing immediately
                 $(document).on("mouseup.sidebar_edit_end", function() {
@@ -125,22 +98,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             }
             // We didn't change block but we did change property
             else if (block != null && newProperty != null && (property == null || newProperty[0] != property[0])) {
-                // remove this trigger
-                $(document).off("mousedown.sidebar_edit_end");
-                // blur this block
-                $("." + Constants.OPACITY_CLASS).removeClass(Constants.OPACITY_CLASS);
-                var editFunction = Edit.makeEditable(block.element);
-                if (editFunction != null && editFunction.blur != null) {
-                    editFunction.blur(property, block);
-                }
-                if (property != null) {
-                    var editFunction = Edit.makeEditable(property);
-                    if (editFunction != null && editFunction.blur != null) {
-                        editFunction.blur(property, block);
-                    }
-                }
-                reset();
-                block = null;
+
+                blurCurrentSelection(property, block);
                 update(newProperty, Broadcaster.createEvent(e));
             } else {
                 // nothing changed
@@ -149,10 +108,33 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
         });
 
-
     };
 
+    var blurCurrentSelection = function(property, block) {
+        // remove this trigger
+        $(document).off("mousedown.sidebar_edit_end");
+
+        // blur this block
+        var editFunction = Edit.makeEditable(block.element);
+        if (editFunction != null && editFunction.blur != null) {
+            editFunction.blur(property, block);
+        }
+        if (property != null) {
+            var editFunction = Edit.makeEditable(property);
+            if (editFunction != null && editFunction.blur != null) {
+                editFunction.blur(property, block);
+            }
+        }
+        reset();
+        block = null;
+    }
+
     var reset = function() {
+        $("." + Constants.OPACITY_CLASS).removeClass(Constants.OPACITY_CLASS);
+        $("." + Constants.PREVENT_BLUR_CLASS).removeClass(Constants.PREVENT_BLUR_CLASS);
+        $("." + Constants.PROPERTY_EDIT_CLASS).removeClass(Constants.PROPERTY_EDIT_CLASS);
+        $("." + Constants.BLOCK_EDIT_CLASS).removeClass(Constants.BLOCK_EDIT_CLASS);
+
         currentProperty = null;
         currentBlockEvent = null;
         configPanels = {};
@@ -185,14 +167,24 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         var block = currentBlockEvent.property.current;
 
         var editFunction = Edit.makeEditable(currentProperty);
-        if (editFunction != null) {
-            editFunction.focus(currentProperty, currentBlockEvent);
+
+        // Add edit functionality for properties
+        // Do not check blocks
+        var property = currentProperty || block.element;
+        while (property != null && !property.hasClass(Constants.PAGE_CONTENT) && property[0].tagName.indexOf("-") < 0) {
+            var editFunction = Edit.makeEditable(property);
+            if (editFunction != null && editFunction.focus != null) {
+                editFunction.focus(currentProperty, currentBlockEvent);
+            }
+            property = property.parent();
         }
 
+        // Add editfunctionality for blocks
         while (block != null) {
             if (block instanceof blocks.elements.Block) {
-                if (block.editFunction != null && block.editFunction.focus != null) {
-                    block.editFunction.focus(currentProperty, currentBlockEvent);
+                var editFunction = Edit.makeEditable(block.element);
+                if (editFunction != null && editFunction.focus != null) {
+                    editFunction.focus(block.element, currentBlockEvent);
                 }
                 if (block.canDrag) SideBar.addRemoveBlockButton(block);
             }
