@@ -121,6 +121,7 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 error: function (response, textStatus, errorThrown)
                 {
                     var message = response.status == 400 ? response.responseText : "An error occurred while saving the page";
+                    dialog.close();
                     dialog = new BootstrapDialog({
                         type: BootstrapDialog.TYPE_SUCCESS,
                         title: 'Page saved',
