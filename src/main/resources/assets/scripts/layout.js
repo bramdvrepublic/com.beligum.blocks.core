@@ -17,7 +17,7 @@
  *
  */
 
-base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "base.core.Constants", "blocks.core.DomManipulation", function (Broadcaster, Constants, DOM)
+base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "base.core.Constants", "blocks.core.Overlay", "blocks.core.DomManipulation", function (Broadcaster, Constants, Overlay, DOM)
 {
     var Layouter = this;
 
@@ -232,6 +232,7 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "base.core.Const
     {
         if (block instanceof blocks.elements.Block) {
             var container = block.getContainer();
+            Overlay.removeOverlays();
             Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
             DOM.removeBlock(block.element, 300, function ()
             {

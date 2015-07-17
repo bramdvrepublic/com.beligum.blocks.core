@@ -18,6 +18,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
         $("." + Constants.PAGE_CONTENT_CLASS).hide();
         $("." + Constants.BLOCKS_START_BUTTON).hide();
+        $("." + Constants.PAGE_SIDEBAR_RESIZE_CLASS).hide();
         $("#" + Constants.SIDEBAR_FILES_ID).show();
         // add close button
         var closeBtn = $('<div class="btn '+ Constants.CLOSE_FINDER_BUTTON +'">X</div>');
@@ -28,6 +29,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             $("#" + Constants.SIDEBAR_FILES_ID).hide();
             $("." + Constants.PAGE_CONTENT_CLASS).show();
             $("." + Constants.BLOCKS_START_BUTTON).show();
+            $("." + Constants.PAGE_SIDEBAR_RESIZE_CLASS).show();
             $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_STYLE_ID +'"]').tab('show')
             Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
         });
