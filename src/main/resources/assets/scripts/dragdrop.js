@@ -183,6 +183,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             } else if (currentDraggedBlock == null && lastDropLocation != null  && insideWindow(blockEvent.clientX, blockEvent.clientY)) {
                // We added a new block
                 Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+                Overlay.removeOverlays();
                 // show select box with all blocks
                 var box = $("<div />");
 
