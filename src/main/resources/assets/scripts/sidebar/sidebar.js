@@ -18,13 +18,14 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
         $("." + Constants.PAGE_CONTENT_CLASS).hide();
         $("." + Constants.BLOCKS_START_BUTTON).hide();
+        $("#" + Constants.SIDEBAR_FILES_ID).show();
         // add close button
         var closeBtn = $('<div class="btn '+ Constants.CLOSE_FINDER_BUTTON +'">X</div>');
         $("#" + Constants.SIDEBAR_FILES_ID).append(closeBtn);
         $("#" + Constants.SIDEBAR_FILES_ID).css("z-index", "2");
 
         closeBtn.click(function() {
-            $("#" + Constants.SIDEBAR_FILES_ID).css("z-index", "");
+            $("#" + Constants.SIDEBAR_FILES_ID).hide();
             $("." + Constants.PAGE_CONTENT_CLASS).show();
             $("." + Constants.BLOCKS_START_BUTTON).show();
             $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_STYLE_ID +'"]').tab('show')
@@ -241,8 +242,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     this.createWindow = function(type, element, title)
     {
         var windowId = Plugin.makeid();
-        if (configPanels[type] == null) configPanels[type] = {};
-        var panels = configPanels[type];
+        if (configPanels[Constants.CONTENT] == null) configPanels[Constants.CONTENT] = {};
+        var panels = configPanels[Constants.CONTENT];
 
         if (panels[windowId] == null) {
 
@@ -272,15 +273,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     this.getWindowForId = function(id) {
         var retVal = null;
 
-        if (configPanels[Constants.STYLE] != null) {
-            var panels = configPanels[Constants.STYLE];
-            retVal = panels[id];
-        }
-
-        if (retVal == null && configPanels[Constants.CONTENT] != null) {
-            var panels = configPanels[Constants.CONTENT];
-            retVal = panels[id];
-        }
+        var panels = configPanels[Constants.CONTENT];
+        retVal = panels[id];
 
         return retVal;
     }

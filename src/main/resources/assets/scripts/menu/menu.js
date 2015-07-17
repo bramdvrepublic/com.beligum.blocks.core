@@ -7,9 +7,6 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     * */
     this.menuStartButton = $('<div class="'+ Constants.BLOCKS_START_BUTTON +'"><i class="glyphicon glyphicon-cog"></i></div>');
 
-    this.menuBar = $("<div class='" + Constants.PAGE_MENU_CLASS + "'></div>");
-    this.menuBar.load("/templates/menu");
-
     this.sideBar = $("<div class='" + Constants.PAGE_SIDEBAR_CLASS + " " + Constants.PREVENT_EDIT_BLUR_CLASS +"'></div>");
     this.sideBar.load("/templates/sidebar");
 
