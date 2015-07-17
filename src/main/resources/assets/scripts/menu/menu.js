@@ -21,11 +21,10 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
     $(document).on("click", "."+ Constants.BLOCKS_START_BUTTON, function (event)
     {
-        if ($("body").children("." + Constants.PAGE_MENU_CLASS).length == 0) {
+        if ($("body").children("." + Constants.PAGE_CONTENT_CLASS).length == 0) {
             MainMenu.menuStartButton.remove();
             var body = $("body").html();
             $("body").empty();
-            $("body").append(MainMenu.menuBar);
             $("body").append($("<div class='" + Constants.PAGE_CONTENT_CLASS + "' />").append(body));
             $("body").append(MainMenu.sideBar);
             if (MainMenu.sideBar.children().length > 0) {

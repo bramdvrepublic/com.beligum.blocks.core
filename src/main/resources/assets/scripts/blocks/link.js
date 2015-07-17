@@ -10,7 +10,6 @@ base.plugin("blocks.edit.Link", ["constants.blocks.common", "blocks.core.Edit", 
     };
 
     this.blur = function() {
-
     };
 
     Edit.registerByTag("A", this);

@@ -146,7 +146,6 @@ iframe.edit {
 
 
 .@{PAGE_MENU_CLASS} {
-  position: fixed;
   height: @MainMenuHeight;
   background-color: white;
   border-bottom: 1px solid black;
@@ -154,9 +153,10 @@ iframe.edit {
   z-index: 1;
   padding-top: 10px;
   padding-bottom: 10px;
+  overflow: hidden;
 
   a {
-    margin-left: 10px !important;
+    margin-right: 6px !important;
   }
 
   ul {
@@ -187,7 +187,7 @@ iframe.edit {
 .@{PAGE_CONTENT_CLASS} {
   position: absolute;
   z-index: 0;
-  margin-top: @MainMenuHeight;
+//  margin-top: @MainMenuHeight;
   width: 80%;
   min-height: 100%;
 
@@ -195,7 +195,7 @@ iframe.edit {
 
 .@{PAGE_SIDEBAR_CLASS} {
   position: fixed;
-  top: @MainMenuHeight;
+  top: 0px;
   width: 20%;
   right: 0px;
   bottom: 0px;
