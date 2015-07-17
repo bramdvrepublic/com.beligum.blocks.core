@@ -32,7 +32,6 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
         // Always show toolbar
         toolbarOptions.static = true;
         toolbarOptions.updateOnEmptySelection = true;
-
         toolbarOptions.buttons = defaultToolbarOptions;
 
         options.disableReturn = inline;
@@ -42,7 +41,9 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
     };
 
     this.removeEditor = function(element) {
-        Editor.destroy();
+        if (Editor != null) {
+            Editor.destroy();
+        }
         Editor = null;
     };
 
