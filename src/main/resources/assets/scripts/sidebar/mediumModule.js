@@ -18,6 +18,8 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
         return retVal;
     };
 
+
+
     this.getEditor = function(element, inline) {
         var options = {};
         var toolbarOptions = {};

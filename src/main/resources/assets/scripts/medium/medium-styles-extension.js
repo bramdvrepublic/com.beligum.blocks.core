@@ -2,7 +2,23 @@
  * Created by wouter on 8/07/15.
  */
 
-base.plugin("blocks.core.MediumEditorExtensions", [function() {
+base.plugin("blocks.core.MediumEditorExtensions", [ function() {
+
+    var editorStyles = [];
+
+    // Styles is an array with objects
+    // object is of type {value:"", text""}
+    // value = "p:red" -> text before the colon is the tag, text after the colon are the classes that will be added
+    // nothing after colon will remove allm classes, nothing before colon will not touch the tag
+    // text is the text in the dropdown
+    this.setStyles = function(newStyles) {
+        editorStyles = newStyles;
+    };
+
+    this.getStyles = function() {
+        return editorStyles;
+    };
+
 
     this.styleExtension = MediumEditor.FormExtension.extend({
 
@@ -141,16 +157,13 @@ base.plugin("blocks.core.MediumEditorExtensions", [function() {
             form.id = 'medium-editor-toolbar-form-styles-' + this.getEditorId();
 
             this.select = $(select);
-            this.select.append("<option value=':'>Normale tekst</option>");
-            this.select.append("<option value='h1:'>Header 1</option>");
-            this.select.append("<option value='h1:red'>Header 1 rood</option>");
+
+            for (var i=0; i < editorStyles.length; i++) {
+                var val = editorStyles[i];
+                this.select.append("<option value='" + val.value + "'>"+ val.text +"</option>")
+            }
 
 
-            // Add font size slider
-            //input.setAttribute('type', 'range');
-            //input.setAttribute('min', '1');
-            //input.setAttribute('max', '7');
-            //input.className = 'medium-editor-toolbar-input';
             form.appendChild(select);
 
             // Add save buton
