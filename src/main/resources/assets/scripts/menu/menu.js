@@ -44,6 +44,9 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
             Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS);
             $("body").append(MainMenu.menuStartButton);
+
+            updateContainerWidth();
+
             enableSidebarDrag();
         } else {
             var content = $("." + Constants.PAGE_CONTENT_CLASS).html();
