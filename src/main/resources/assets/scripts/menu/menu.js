@@ -41,13 +41,11 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             var windowWidth = $(window).width();
             MainMenu.sideBar.css("width", (windowWidth*0.2) + "px");
             $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth*0.8) + "px");
+            $("body").append(MainMenu.menuStartButton);
+            updateContainerWidth();
+            enableSidebarDrag();
 
             Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS);
-            $("body").append(MainMenu.menuStartButton);
-
-            updateContainerWidth();
-
-            enableSidebarDrag();
         } else {
             var content = $("." + Constants.PAGE_CONTENT_CLASS).html();
             $("body").empty();
