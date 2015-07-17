@@ -40,22 +40,20 @@ base.plugin("blocks.core.edit.InlineText", ["constants.blocks.common", "blocks.c
     {
         // Preparation
         element.attr("contenteditable", true);
-        var editor = Editor.getEditor(element, false);
+        var editor = Editor.getEditor(element, true);
 
         // Add toolbar to sidebar
-        var windowID = Sidebar.createWindow(Constants.STYLE, element, "Tekst");
-        Sidebar.addUIForProperty(windowID, element, Editor.toolbarElement);
-
         setCursor(blockEvent.clientX, blockEvent.clientY);
+        var toolbar = $(Editor.getToolbarElement());
+        toolbar.addClass(Constants.PREVENT_BLUR_CLASS);
 
     };
 
     this.blur = function(element) {
+        Editor.removeEditor(element);
         element.removeAttr("contenteditable");
-        element.removeClass(Constants.PROPERTY_EDIT_CLASS);
     };
 
     Edit.registerByTag("SPAN", this);
-    Edit.registerByTag("A", this);
 
 }]);
