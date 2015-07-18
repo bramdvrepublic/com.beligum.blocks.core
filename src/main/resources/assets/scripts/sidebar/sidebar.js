@@ -3,7 +3,7 @@
  */
 
 
-base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks.common", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.core.Plugin-Utils", "blocks.core.Edit",  function (Broadcaster, Constants, DOM, Layouter, Plugin, Edit)
+base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks.common", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.core.Plugin-Utils", "blocks.core.Edit", "blocks.finder",  function (Broadcaster, Constants, DOM, Layouter, Plugin, Edit, Finder)
 {
     var SideBar = this;
     var configPanels = {};
@@ -12,26 +12,41 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
     // This is called when we click the files tab
     // So onselect = null
-    // TODO set this id correct in constants file
-    $(document).on('click', "#ttt", function (e) {
-        Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
-        $("." + Constants.PAGE_CONTENT_CLASS).hide();
-        $("." + Constants.BLOCKS_START_BUTTON).hide();
-        $("." + Constants.PAGE_SIDEBAR_RESIZE_CLASS).hide();
-        $("#" + Constants.SIDEBAR_FILES_ID).show();
-        // add close button
-        var closeBtn = $('<div class="btn '+ Constants.CLOSE_FINDER_BUTTON +'">X</div>');
-        $("#" + Constants.SIDEBAR_FILES_ID).append(closeBtn);
-        $("#" + Constants.SIDEBAR_FILES_ID).css("z-index", "2");
+    $(document).on('click', "#"+Constants.SIDEBAR_FILES_TAB_ID, function (e) {
 
-        closeBtn.click(function() {
-            $("#" + Constants.SIDEBAR_FILES_ID).hide();
-            $("." + Constants.PAGE_CONTENT_CLASS).show();
-            $("." + Constants.BLOCKS_START_BUTTON).show();
-            $("." + Constants.PAGE_SIDEBAR_RESIZE_CLASS).show();
-            $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_STYLE_ID +'"]').tab('show')
-            Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
+        var filesContainer = $("#" + Constants.SIDEBAR_FILES_ID);
+        filesContainer.empty().show().addClass(Constants.LOADING_CLASS);
+
+        //maybe not necessary to reload this every time, but it allows us to always present a fresh uptodate view of the server content
+        filesContainer.load("/media/finder-inline", function(response, status, xhr) {
+            if (status == "error") {
+                var msg = "Error while loading the finder; ";
+                showError(msg + xhr.status + " " + xhr.statusText);
+            }
+            else {
+                Finder.init();
+                filesContainer.removeClass(Constants.LOADING_CLASS);
+            }
         });
+
+        //Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
+        //$("." + Constants.PAGE_CONTENT_CLASS).hide();
+        //$("." + Constants.BLOCKS_START_BUTTON).hide();
+        //$("." + Constants.PAGE_SIDEBAR_RESIZE_CLASS).hide();
+        //$("#" + Constants.SIDEBAR_FILES_ID).show();
+        //// add close button
+        //var closeBtn = $('<div class="btn '+ Constants.CLOSE_FINDER_BUTTON +'">X</div>');
+        //$("#" + Constants.SIDEBAR_FILES_ID).append(closeBtn);
+        //$("#" + Constants.SIDEBAR_FILES_ID).css("z-index", "2");
+        //
+        //closeBtn.click(function() {
+        //    $("#" + Constants.SIDEBAR_FILES_ID).hide();
+        //    $("." + Constants.PAGE_CONTENT_CLASS).show();
+        //    $("." + Constants.BLOCKS_START_BUTTON).show();
+        //    $("." + Constants.PAGE_SIDEBAR_RESIZE_CLASS).show();
+        //    $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_STYLE_ID +'"]').tab('show')
+        //    Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
+        //});
     });
 
 
@@ -63,10 +78,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         sidebarElement.addClass(Constants.PREVENT_BLUR_CLASS);
         borderingElement.addClass(Constants.PREVENT_BLUR_CLASS);
 
-
         Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
-
-
 
         $(document).on("mousedown.sidebar_edit_end", function(e) {
 
@@ -193,9 +205,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             }
             block = block.parent;
         }
-
     };
-
 
     this.addRemoveBlockButton = function(property) {
 
@@ -328,8 +338,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     };
 
     // PRIVATE
-
-
 
     var highlight = function(element) {
         element.addClass(Constants.HIGHLIGHT_ANIMATION_CLASS);

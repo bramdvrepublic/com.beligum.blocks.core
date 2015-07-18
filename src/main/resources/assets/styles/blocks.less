@@ -1,15 +1,8 @@
 // Overlay when editing and for dialogs
 @import "/constants/blocks/common?type=less";
+@import "/constants/blocks/finder?type=less";
 
-@MainMenuHeight: 40px;
-
-#@{SIDEBAR_FILES_ID} {
-  position: fixed;
-  left: 0px;
-  top: @MainMenuHeight;
-  bottom: 0px;
-  right: 0px;
-}
+@mainMenuHeight: 40px;
 
 .@{BLOCK_OVERLAY_CLASS} {
   top: 0px;
@@ -160,7 +153,7 @@ ul.@{PAGE_MENU_CLASS} {
 }
 
 //.@{PAGE_MENU_CLASS} {
-//  height: @MainMenuHeight;
+//  height: @mainMenuHeight;
 //  background-color: white;
 //  border-bottom: 1px solid black;
 //  width: 100%;
@@ -201,12 +194,13 @@ ul.@{PAGE_MENU_CLASS} {
 .@{PAGE_CONTENT_CLASS} {
   position: absolute;
   z-index: 0;
-  //  margin-top: @MainMenuHeight;
+  //  margin-top: @mainMenuHeight;
   width: 80%;
   min-height: 100%;
 
 }
 
+@sidebarTabHeight: 41px; //this is taken from a real world example, hope it won't change
 .@{PAGE_SIDEBAR_CLASS} {
   //Sync this with the bgColor of the finder
   @controlBgColor: #e8e8e8;
@@ -237,16 +231,39 @@ ul.@{PAGE_MENU_CLASS} {
   }
 
   .nav-tabs {
+    height: @sidebarTabHeight;
+    overflow: hidden;
     background-color: @controlBgColor;
     border-bottom: 0px;
 
+    //make the tabs work with the negative margins below
+    position: relative;
+    z-index: 1000;
+
     & > li:first-child > a {
-      margin-left: 3px;
+      border-left-width: 0;
+    }
+
+    & > li > a {
+      border: 1px solid transparent;
+      .border-radius(0 0 0 0);
+      &:hover {
+        border-color: transparent;
+      }
     }
 
     & > li.active > a {
       background-color: @bgColor;
     }
+  }
+
+  //this is the container that hold the data of the side panel (without the tabs, resizer, etc)
+  .tab-content {
+    position: relative; //needed to make some children absolute
+    //next three make the content pane 100% in height (needed for eg. finder)
+    height: 100%;
+    margin-top: -@sidebarTabHeight;
+    padding-top: @sidebarTabHeight;
   }
 
   .tab-pane {
@@ -270,6 +287,31 @@ ul.@{PAGE_MENU_CLASS} {
   right: 20px;
   cursor: pointer;
   z-index: 10000;
+}
+
+#@{SIDEBAR_FILES_ID} {
+  .setupLoader();
+
+  @finderMargin: 10px;
+  position: absolute; //absolute in relative parent pattern
+  top: @sidebarTabHeight - 1 + @finderMargin;//this this -1 comes from an extra border somewhere
+  left: @finderMargin;
+  bottom: @finderMargin;
+  right: @finderMargin;
+
+  margin-bottom: 0; //override the panel settings
+
+  .@{WINDOW_CLASS} {
+
+  }
+
+
+
+  //position: fixed;
+  //left: 0px;
+  //top: @mainMenuHeight;
+  //bottom: 0px;
+  //right: 0px;
 }
 
 .@{HIGHLIGHT_ANIMATION_CLASS} {

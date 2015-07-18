@@ -1,13 +1,13 @@
-base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Overlay", "blocks.core.DomManipulation", "constants.blocks.common", "blocks.finder", function (Broadcaster, Notification, Overlay, DOM, Constants, Finder)
+base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Overlay", "blocks.core.DomManipulation", "constants.blocks.common", function (Broadcaster, Notification, Overlay, DOM, Constants)
 {
     var MainMenu = this;
 
     /*
     * Create the html for top bar
     * */
-    this.menuStartButton = $('<div class="'+ Constants.BLOCKS_START_BUTTON +' '+ Constants.PREVENT_BLUR_CLASS +'"><i class="glyphicon glyphicon-cog"></i></div>');
+    this.menuStartButton = $('<div class="'+ Constants.BLOCKS_START_BUTTON +' '+ Constants.PREVENT_BLUR_CLASS +'"><i class="fa fa-cog"></i></div>');
 
-    this.sideBar = $("<div class='" + Constants.PAGE_SIDEBAR_CLASS + " " + Constants.PREVENT_EDIT_BLUR_CLASS +"'></div>");
+    this.sideBar = $("<div class='" + Constants.PAGE_SIDEBAR_CLASS + " " + Constants.PREVENT_BLUR_CLASS +"'></div>");
     this.sideBar.load("/templates/sidebar");
 
      /*
@@ -24,11 +24,6 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             $("body").empty();
             $("body").append($("<div class='" + Constants.PAGE_CONTENT_CLASS + "' />").append(body));
             $("body").append(MainMenu.sideBar);
-            if (MainMenu.sideBar.children().length > 0) {
-                Finder.init();
-            } else {
-                //TODO: Sidebar is not yet loaded so we can not initialize finder
-            }
 
             $(document).on("click.prevent_click_editing", "a", function(e) {
                 e.preventDefault();

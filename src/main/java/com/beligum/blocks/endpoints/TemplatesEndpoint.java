@@ -19,19 +19,11 @@ import javax.ws.rs.core.Response;
 @Path("/templates")
 public class TemplatesEndpoint extends AssetsEndpoint
 {
-//DIDN'T RESOLVE ANYMORE??
-//    @GET
-//    @Path("/menu")
-//    public Response getMenuTemplate() {
-//        return Response.ok(menu.get().getNewTemplate().render()).build();
-//    }
-
     @GET
     @Path("/sidebar")
     public Response getSidebar() {
         return Response.ok(side.get().getNewTemplate().render()).build();
     }
-
 
     @GET
     @Path("/{name: .*}")
