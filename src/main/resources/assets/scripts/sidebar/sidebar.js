@@ -203,7 +203,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
         //var remove = $("<div class='panel panel-default "+ Constants.REMOVE_BLOCK_CLASS +"'/>");
         var text = $("<div class='text'><span>Remove block</span></div>");
-        var button = $("<span class='btn btn-danger btn-sm pull-right'><i class='fa fa-trash-o'></i></span></div>");
+        var button = $("<a class='btn btn-danger btn-sm pull-right'><i class='fa fa-trash-o'></i></a></div>");
 
         button.click(function() {
             //TODO let's not ask for a confirmation but implement an undo-function later on...

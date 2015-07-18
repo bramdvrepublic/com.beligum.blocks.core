@@ -254,7 +254,9 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
                     close();
                 });
             });
-            content.append(fileButton);
+            content = $("<div>").append(content).append(fileButton);
+
+            //content.append(fileButton);
         }
 
         return content;
