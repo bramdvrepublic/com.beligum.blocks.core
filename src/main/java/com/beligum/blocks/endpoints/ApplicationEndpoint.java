@@ -17,7 +17,7 @@ import java.util.*;
 @Path("/")
 public class ApplicationEndpoint
 {
-
+    //TODO implement this?
     @Path("/favicon.ico")
     @GET
     public Response favicon() {

@@ -113,12 +113,12 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 if (draggingStatus == BaseConstants.DRAGGING.NO && block.current != null && block.current.canDrag) {
                     draggingStatus = BaseConstants.DRAGGING.WAITING;
                     draggingStart = event;
-                } else if (draggingStatus == BaseConstants.DRAGGING.NO && event.target != null && ($(event.target).hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || $(event.target).parents(BlocksConstants.CREATE_BLOCK_CLASS).length > 0)) {
+                } else if (draggingStatus == BaseConstants.DRAGGING.NO && event.target != null && ($(event.target).hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || $(event.target).parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0)) {
                     draggingStatus = BaseConstants.DRAGGING.WAITING;
                     draggingStart = event;
                     Logger.debug("Start new drag");
                 } else if ($(event.target).hasClass(BlocksConstants.BLOCKS_START_BUTTON) || $(event.target).parents("." + BlocksConstants.BLOCKS_START_BUTTON).length > 0) {
-
+                    //FIXME right that nothing is in here?
                 } else {
                     Logger.debug("We can not start because dragging is already in place or not allowed. " + draggingStatus);
                     Mouse.resetMouse();

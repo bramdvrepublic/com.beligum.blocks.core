@@ -4,7 +4,6 @@ import com.beligum.base.annotations.JavascriptPackage;
 import com.beligum.base.endpoints.AssetsEndpoint;
 import com.beligum.base.resources.ResourceDescriptor;
 import com.beligum.base.server.R;
-import gen.com.beligum.blocks.core.fs.html.views.snippets.menu;
 import gen.com.beligum.blocks.core.fs.html.views.snippets.side;
 import org.apache.commons.io.FilenameUtils;
 
@@ -20,12 +19,12 @@ import javax.ws.rs.core.Response;
 @Path("/templates")
 public class TemplatesEndpoint extends AssetsEndpoint
 {
-
-    @GET
-    @Path("/menu")
-    public Response getMenuTemplate() {
-        return Response.ok(menu.get().getNewTemplate().render()).build();
-    }
+//DIDN'T RESOLVE ANYMORE??
+//    @GET
+//    @Path("/menu")
+//    public Response getMenuTemplate() {
+//        return Response.ok(menu.get().getNewTemplate().render()).build();
+//    }
 
     @GET
     @Path("/sidebar")

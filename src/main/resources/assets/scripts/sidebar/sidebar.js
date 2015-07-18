@@ -10,7 +10,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     var currentProperty = null;
     var currentBlockEvent = null;
 
-
     // This is called when we click the files tab
     // So onselect = null
     // TODO set this id correct in constants file
@@ -63,6 +62,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         // prevent blur when clicking on following elements
         sidebarElement.addClass(Constants.PREVENT_BLUR_CLASS);
         borderingElement.addClass(Constants.PREVENT_BLUR_CLASS);
+
 
         Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
 
@@ -198,45 +198,28 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
 
     this.addRemoveBlockButton = function(property) {
-        var remove = $("<div class='panel panel-default "+ Constants.REMOVE_BLOCK_CLASS +"'/>");
-        var body = $("<div class='panel-body'><div>");
+
+        var windowID = this.createWindow(Constants.CONTENT, $("<div class='panel panel-default "+ Constants.REMOVE_BLOCK_CLASS +"'/>"), "Block");
+
+        //var remove = $("<div class='panel panel-default "+ Constants.REMOVE_BLOCK_CLASS +"'/>");
         var text = $("<div class='text'><span>Remove block</span></div>");
         var button = $("<span class='btn btn-danger btn-sm pull-right'><i class='fa fa-trash-o'></i></span></div>");
-        var confirm = $("<div class='confirm hidden'><div class='confirm-text'>Are you sure you want to remove this block?</div><div><span class='btn btn-sm btn-success'><i class='fa fa-check'></i></span><span class='btn btn-sm btn-danger'><i class='fa fa-times'></i></span></div></div>")
-        var yes = confirm.find(".btn-success");
-        var no = confirm.find(".btn-danger");
 
         button.click(function() {
-            confirm.removeClass("hidden");
-            text.addClass("hidden");
-        });
+            //TODO let's not ask for a confirmation but implement an undo-function later on...
+            //confirm.removeClass("hidden");
+            //text.addClass("hidden");
 
-        no.click(function() {
-            text.removeClass("hidden");
-            confirm.addClass("hidden");
-        });
-
-        yes.click(function() {
             reset();
             $("." + Constants.OPACITY_CLASS).removeClass(Constants.OPACITY_CLASS);
             Layouter.removeBlock(property);
-        })
-
-        remove.append(body.append(text.append(button)).append(confirm));
-
-        remove.mouseenter(function() {
-            highlight(property.element);
         });
 
-        remove.mouseleave(function() {
-            unhighlight(property.element);
-        });
-
-        $("#inbetween").prepend(remove);
+        this.addUIForProperty(windowID, text.append(button));
     };
 
-    this.addUIForProperty = function(windowId, element, html) {
-        var config = SideBar.getWindowForId(windowId, element, null);
+    this.addUIForProperty = function(windowId, html) {
+        var config = SideBar.getWindowForId(windowId);
         var content = config.children(".panel-body");
         content.append(html);
     };
@@ -269,6 +252,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 unhighlight(element);
             });
         }
+
         return windowId
     }
 
@@ -282,27 +266,27 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     }
 
     this.addUniqueClass = function(windowId, element, label, values) {
-        SideBar.addUIForProperty(windowId, element, Plugin.addUniqueClass(element, label, values));
+        SideBar.addUIForProperty(windowId, Plugin.addUniqueClass(element, label, values));
     };
 
     this.addOptionalClass = function(windowId, element, label, values) {
-        SideBar.addUIForProperty(windowId, element, Plugin.addOptionalClass(element, label, values));
+        SideBar.addUIForProperty(windowId, Plugin.addOptionalClass(element, label, values));
     };
 
     this.addUniqueAttributeValue = function(windowId, element, label, name, values) {
-        SideBar.addUIForProperty(windowId, element, Plugin.addUniqueAttributeValue(element, label, name, values));
+        SideBar.addUIForProperty(windowId, Plugin.addUniqueAttributeValue(element, label, name, values));
     };
 
     this.addUniqueAttribute = function(windowId, element, label, values) {
-        SideBar.addUIForProperty(windowId, element, Plugin.addUniqueAttribute( element, label, values));
+        SideBar.addUIForProperty(windowId, Plugin.addUniqueAttribute( element, label, values));
     };
 
     this.addValueAttribute = function(windowId, element, label, name, confirm, textSelect, serverSelect, urlSelect) {
-        SideBar.addUIForProperty(windowId, element, Plugin.addValueAttribute(element, label, name, confirm, textSelect, serverSelect, urlSelect));
+        SideBar.addUIForProperty(windowId, Plugin.addValueAttribute(element, label, name, confirm, textSelect, serverSelect, urlSelect));
     };
 
     this.addValueHtml = function(windowId, element, label, confirm) {
-        SideBar.addUIForProperty(windowId, element, Plugin.addValueHtml(element, label, confirm));
+        SideBar.addUIForProperty(windowId, Plugin.addValueHtml(element, label, confirm));
     };
 
     this.enableEditing = function() {

@@ -11,7 +11,6 @@
   right: 0px;
 }
 
-
 .@{BLOCK_OVERLAY_CLASS} {
   top: 0px;
   left: 0px;
@@ -38,13 +37,13 @@
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.8);
     border: none;
   }
-//
-//  &.draggable {
-//    cursor: move; /* fallback if grab cursor is unsupported */
-//    cursor: grab;
-//    cursor: -moz-grab;
-//    cursor: -webkit-grab;
-//  }
+  //
+  //  &.draggable {
+  //    cursor: move; /* fallback if grab cursor is unsupported */
+  //    cursor: grab;
+  //    cursor: -moz-grab;
+  //    cursor: -webkit-grab;
+  //  }
 }
 
 .@{DRAGGED_BLOCK_OVERLAY_CLASS} {
@@ -77,16 +76,24 @@
     border: 1px solid rgba(0, 0, 0, 1);
   }
 
-
 }
 
 .@{OPACITY_CLASS} {
   opacity: 0.2;
-  -webkit-filter: blur(5px) grayscale(1);
+  -webkit-filter: blur(5px) grayscale(20%);
   -moz-filter: blur(5px) grayscale(20%);
   -o-filter: blur(5px) grayscale(20%);
   -ms-filter: blur(5px) grayscale(20%);
   filter: blur(5px) grayscale(1);
+}
+
+.@{PREVENT_BLUR_CLASS} {
+  opacity: 1.0 !important;
+  -webkit-filter: blur(0) !important;
+  -moz-filter: blur(0) !important;
+  -o-filter: blur(0) !important;
+  -ms-filter: blur(0) !important;
+  filter: blur(0) !important;
 }
 
 .@{COLUMN_RESIZER_CLASS} {
@@ -138,79 +145,122 @@ iframe.edit {
   pointer-events: auto;
 }
 
-
 .blocks-resizing {
   cursor: col-resize;
 }
 
+ul.@{PAGE_MENU_CLASS} {
+  list-style-type: none;
+  padding-left: 0;
 
-
-.@{PAGE_MENU_CLASS} {
-  height: @MainMenuHeight;
-  background-color: white;
-  border-bottom: 1px solid black;
-  width: 100%;
-  z-index: 1;
-  padding-top: 10px;
-  padding-bottom: 10px;
-  overflow: hidden;
-
-  a {
-    margin-right: 6px !important;
-  }
-
-  ul {
-    display: inline;
-  }
-
-  ul > li {
-    display: inline;
-    margin-left: 7px;
-    padding: 4px;
-    border: 1px solid black;
-    border-radius: 5px;
-  }
-
-  ul > li:hover {
-    background-color: #d3d3d3;
-    cursor: pointer;
-  }
-
-  .main-menu-items {
-  }
-
-  &.open {
-    display: block;
+  li {
+    .clearfix;
+    margin-bottom: 5px;
   }
 }
+
+//.@{PAGE_MENU_CLASS} {
+//  height: @MainMenuHeight;
+//  background-color: white;
+//  border-bottom: 1px solid black;
+//  width: 100%;
+//  z-index: 1;
+//  padding-top: 10px;
+//  padding-bottom: 10px;
+//  overflow: hidden;
+//
+//  a {
+//    margin-right: 6px !important;
+//  }
+//
+//  ul {
+//    display: inline;
+//  }
+//
+//  ul > li {
+//    display: inline;
+//    margin-left: 7px;
+//    padding: 4px;
+//    border: 1px solid black;
+//    border-radius: 5px;
+//  }
+//
+//  ul > li:hover {
+//    background-color: #d3d3d3;
+//    cursor: pointer;
+//  }
+//
+//  .main-menu-items {
+//  }
+//
+//  &.open {
+//    display: block;
+//  }
+//}
 
 .@{PAGE_CONTENT_CLASS} {
   position: absolute;
   z-index: 0;
-//  margin-top: @MainMenuHeight;
+  //  margin-top: @MainMenuHeight;
   width: 80%;
   min-height: 100%;
 
 }
 
 .@{PAGE_SIDEBAR_CLASS} {
+  //Sync this with the bgColor of the finder
+  @controlBgColor: #e8e8e8;
+  @bgColor: #fafafa;
+  @resizerWidth: 6px;
   position: fixed;
   top: 0px;
   width: 20%;
   right: 0px;
   bottom: 0px;
-  background-color: white;
-  border-left: 1px solid black;
-  overflow-y: scroll;
+  overflow-y: auto;
+  padding-left: @resizerWidth;
+  .drop-shadow(-1px, 0px, 4px, 0.4);
+  background-color: @bgColor;
 
- .@{PAGE_SIDEBAR_RESIZE_CLASS} {
-   position: absolute;
-   width: 6px;
-   height:100%;
-   background-color: gray;
-   cursor: col-resize;
-   z-index: 3;
- }
+  .@{PAGE_SIDEBAR_RESIZE_CLASS} {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: @resizerWidth;
+    height: 100%;
+    cursor: col-resize;
+    background: darken(@controlBgColor, 10%) url('/assets/images/blocks/splitter_ver_padded.png') center center repeat-y;
+    border-left: 1px solid darken(@controlBgColor, 40%);
+    border-right: 1px solid darken(@controlBgColor, 15%);
+
+    z-index: 3;
+  }
+
+  .nav-tabs {
+    background-color: @controlBgColor;
+    border-bottom: 0px;
+
+    & > li:first-child > a {
+      margin-left: 3px;
+    }
+
+    & > li.active > a {
+      background-color: @bgColor;
+    }
+  }
+
+  .tab-pane {
+    .panel {
+      border-width: 1px solid lighten(@controlBgColor, 50%);
+      margin: 10px 10px;
+
+      .form-group {
+        .input-group {
+          width: 100%;
+        }
+      }
+    }
+  }
 }
 
 .@{BLOCKS_START_BUTTON} {
@@ -223,9 +273,9 @@ iframe.edit {
 }
 
 .@{HIGHLIGHT_ANIMATION_CLASS} {
-    -webkit-transition: 0.4s;
-    -moz-transition: 0.4s;
-    transition: 0.4s;
+  -webkit-transition: 0.4s;
+  -moz-transition: 0.4s;
+  transition: 0.4s;
 }
 
 .@{HIGHLIGHT_CLASS}, .@{HIGHLIGHT_CLASS}:focus {
@@ -235,7 +285,7 @@ iframe.edit {
 .@{REMOVE_BLOCK_CLASS} {
   margin-bottom: 0px;
   .panel-body {
-    padding-top:3px;
+    padding-top: 3px;
     padding-bottom: 3px;
   }
   .text {
@@ -264,13 +314,11 @@ blocks-image {
   }
 }
 
-
 .@{EDITOR_TOOLBAR_CLASS} {
   li {
     display: inline;
   }
 }
-
 
 @medium-editor-bgcolor: #fff;
 @medium-editor-border-color: #111;
@@ -342,22 +390,22 @@ blocks-image {
     color: @medium-editor-link-color;
     height: @medium-editor-button-size;
 
-//    &::-webkit-input-placeholder {
-//      color: @medium-editor-placeholder-color;
-//      color: rgba(@medium-editor-placeholder-color, .8);
-//    }
-//    &:-moz-placeholder { /* Firefox 18- */
-//      color: @medium-editor-placeholder-color;
-//      color: rgba(@medium-editor-placeholder-color, .8);
-//    }
-//    &::-moz-placeholder {  /* Firefox 19+ */
-//      color: @medium-editor-placeholder-color;
-//      color: rgba(@medium-editor-placeholder-color, .8);
-//    }
-//    &:-ms-input-placeholder {
-//      color: @medium-editor-placeholder-color;
-//      color: rgba(@medium-editor-placeholder-color, .8);
-//    }
+    //    &::-webkit-input-placeholder {
+    //      color: @medium-editor-placeholder-color;
+    //      color: rgba(@medium-editor-placeholder-color, .8);
+    //    }
+    //    &:-moz-placeholder { /* Firefox 18- */
+    //      color: @medium-editor-placeholder-color;
+    //      color: rgba(@medium-editor-placeholder-color, .8);
+    //    }
+    //    &::-moz-placeholder {  /* Firefox 19+ */
+    //      color: @medium-editor-placeholder-color;
+    //      color: rgba(@medium-editor-placeholder-color, .8);
+    //    }
+    //    &:-ms-input-placeholder {
+    //      color: @medium-editor-placeholder-color;
+    //      color: rgba(@medium-editor-placeholder-color, .8);
+    //    }
   }
 
   a {

@@ -141,7 +141,7 @@ public class PageEndpoint
         List<Map<String, String>> templates = new ArrayList<>();
         Locale lang = BlocksConfig.instance().getRequestDefaultLanguage();
         for (HtmlTemplate template : cache.values()) {
-            if (!(template instanceof PageTemplate)) {
+            if (!(template instanceof PageTemplate) && template.getDisplayType()!=HtmlTemplate.MetaDisplayType.HIDDEN) {
                 HashMap<String, String> pageTemplate = new HashMap();
                 String title = null;
                 String description = null;

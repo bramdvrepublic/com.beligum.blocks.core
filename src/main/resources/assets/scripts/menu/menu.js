@@ -5,7 +5,7 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     /*
     * Create the html for top bar
     * */
-    this.menuStartButton = $('<div class="'+ Constants.BLOCKS_START_BUTTON +'"><i class="glyphicon glyphicon-cog"></i></div>');
+    this.menuStartButton = $('<div class="'+ Constants.BLOCKS_START_BUTTON +' '+ Constants.PREVENT_BLUR_CLASS +'"><i class="glyphicon glyphicon-cog"></i></div>');
 
     this.sideBar = $("<div class='" + Constants.PAGE_SIDEBAR_CLASS + " " + Constants.PREVENT_EDIT_BLUR_CLASS +"'></div>");
     this.sideBar.load("/templates/sidebar");

@@ -15,8 +15,8 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
 
         redraw(element);
 
-        Sidebar.addUIForProperty(contentID, element, addImageButton(element));
-        Sidebar.addUIForProperty(contentID, element, listGroup);
+        Sidebar.addUIForProperty(contentID, addImageButton(element));
+        Sidebar.addUIForProperty(contentID, listGroup);
 
         //Sidebar.addValueAttribute(styleID, element, "Slide interval in ms:", "data-interval", true, true, true);
         //Sidebar.addUniqueAttributeValue(styleID, element, "Pause on hoover:", "data-pause", [{name: "Yes", value: "true"}, {name: "No", value: "false"}]);

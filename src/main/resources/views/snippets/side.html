@@ -2,23 +2,15 @@
 #constantsBlock("blocks.common")
 <div class="$PAGE_SIDEBAR_RESIZE_CLASS"></div>
 
-<div class="$PAGE_MENU_CLASS">
-    <ul>
-        <li class="$CREATE_BLOCK_CLASS"><i class="fa fa-magic"></i> New Block</li>
-        <li class="$SAVE_PAGE_BUTTON"><i class="fa fa-floppy-o"></i> Save</li>
-        <li class="$DELETE_PAGE_BUTTON"><i class="fa fa-trash-o"></i> Delete</li>
-    </ul>
-</div>
-
 <ul class="nav nav-tabs" role="tablist">
-    <li role="presentation" class="active"><a href="#$SIDEBAR_CONTENT_ID" aria-controls="content" role="tab" data-toggle="tab">Content</a></li>
-    <li role="presentation"><a href="#blocks-sidebar-pages" aria-controls="pages" role="tab" data-toggle="tab">Pages</a></li>
+    <li role="presentation" class="active"><a href="#$SIDEBAR_CONTENT_ID" aria-controls="content" role="tab" data-toggle="tab">Context</a></li>
+##    <li role="presentation"><a href="#blocks-sidebar-pages" aria-controls="pages" role="tab" data-toggle="tab">Pages</a></li>
     <li role="presentation"><a id="ttt" href="#$SIDEBAR_FILES_ID" aria-controls="files" role="tab" data-toggle="tab">Files</a></li>
 </ul>
 <div id="inbetween"></div>
 <div class="tab-content">
     <div role="tabpanel" class="tab-pane active" id="$SIDEBAR_CONTENT_ID"></div>
-    <div role="tabpanel" class="tab-pane" id="blocks-sidebar-pages"></div>
+##    <div role="tabpanel" class="tab-pane" id="blocks-sidebar-pages"></div>
     <div role="tabpanel" class="tab-pane" id="$SIDEBAR_FILES_ID" >
         #parse("/views/templates/snippets/finder.html")
     </div>

@@ -270,7 +270,7 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
         var content = $("<div class='form-group' />");
         content.append($('<label for="'+ id +'">' + label + '</label>'));
         var group = $('<div class="input-group" />');
-        var input = $('<input "'+id+'" type="text" class="form-control" />');
+        var input = $('<input id="'+id+'" type="text" class="form-control" />');
 
         input.val(element.html());
         content.append(group.append(input));

@@ -25,6 +25,11 @@ public abstract class HtmlTemplate
     protected String[] INVISIBLE_START_FOLDERS = { "import", "imports" };
     protected static final Pattern styleLinkRelAttrValue = Pattern.compile("stylesheet");
 
+    public enum MetaDisplayType {
+        DEFAULT,
+        HIDDEN
+    }
+
     //-----VARIABLES-----
     protected Source document;
     protected Segment html;
@@ -40,6 +45,7 @@ public abstract class HtmlTemplate
     protected List<Element> externalScriptElements;
     protected List<Element> inlineStyleElements;
     protected List<Element> externalStyleElements;
+    protected MetaDisplayType displayType;
 
     //-----CONSTRUCTORS-----
 
@@ -233,6 +239,12 @@ public abstract class HtmlTemplate
             }
         }
 
+        this.displayType = MetaDisplayType.DEFAULT;
+        String displayType = this.getMetaValue(this.document, "display");
+        if (!StringUtils.isEmpty(displayType)) {
+            this.displayType = MetaDisplayType.valueOf(displayType.toUpperCase());
+        }
+
         this.inlineStyleElements = getInlineStyles(this.document);
         this.externalStyleElements = getExternalStyles(this.document);
 
@@ -274,6 +286,10 @@ public abstract class HtmlTemplate
         }
 
         return retVal;
+    }
+    public MetaDisplayType getDisplayType()
+    {
+        return displayType;
     }
 
     //-----MANAGEMENT METHODS-----
