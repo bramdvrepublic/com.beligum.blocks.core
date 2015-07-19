@@ -5,7 +5,7 @@ base.plugin("blocks.edit.Link", ["constants.blocks.common", "blocks.core.Edit", 
 {
 
     this.focus = function(element, blockEvent) {
-        var windowID = Sidebar.createWindow(Constants.CONTENT, blockEvent.block.current.element, "Link");
+        var windowID = Sidebar.createWindow(Constants.CONTEXT, blockEvent.block.current.element, "Link");
         Sidebar.addValueAttribute(windowID, element, "Link", "href", true, true, true);
     };
 

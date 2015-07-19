@@ -17,10 +17,11 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         var filesContainer = $("#" + Constants.SIDEBAR_FILES_ID);
         filesContainer.empty().show().addClass(Constants.LOADING_CLASS);
 
-        //maybe not necessary to reload this every time, but it allows us to always present a fresh uptodate view of the server content
+        //TODO maybe not necessary to reload this every time, but it allows us to always present a fresh uptodate view of the server content
         filesContainer.load("/media/finder-inline", function(response, status, xhr) {
             if (status == "error") {
                 var msg = "Error while loading the finder; ";
+                //TODO not implemented yet (also not in finder, if you fix this, fix that too)
                 showError(msg + xhr.status + " " + xhr.statusText);
             }
             else {
@@ -28,25 +29,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 filesContainer.removeClass(Constants.LOADING_CLASS);
             }
         });
-
-        //Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
-        //$("." + Constants.PAGE_CONTENT_CLASS).hide();
-        //$("." + Constants.BLOCKS_START_BUTTON).hide();
-        //$("." + Constants.PAGE_SIDEBAR_RESIZE_CLASS).hide();
-        //$("#" + Constants.SIDEBAR_FILES_ID).show();
-        //// add close button
-        //var closeBtn = $('<div class="btn '+ Constants.CLOSE_FINDER_BUTTON +'">X</div>');
-        //$("#" + Constants.SIDEBAR_FILES_ID).append(closeBtn);
-        //$("#" + Constants.SIDEBAR_FILES_ID).css("z-index", "2");
-        //
-        //closeBtn.click(function() {
-        //    $("#" + Constants.SIDEBAR_FILES_ID).hide();
-        //    $("." + Constants.PAGE_CONTENT_CLASS).show();
-        //    $("." + Constants.BLOCKS_START_BUTTON).show();
-        //    $("." + Constants.PAGE_SIDEBAR_RESIZE_CLASS).show();
-        //    $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_STYLE_ID +'"]').tab('show')
-        //    Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
-        //});
     });
 
 
@@ -144,7 +126,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         block = null;
     }
 
-    var reset = function() {
+    var reset = function(skipFocus) {
         $("." + Constants.OPACITY_CLASS).removeClass(Constants.OPACITY_CLASS);
         $("." + Constants.PREVENT_BLUR_CLASS).removeClass(Constants.PREVENT_BLUR_CLASS);
         $("." + Constants.PROPERTY_EDIT_CLASS).removeClass(Constants.PROPERTY_EDIT_CLASS);
@@ -153,13 +135,15 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         currentProperty = null;
         currentBlockEvent = null;
         configPanels = {};
-        $("#" + Constants.SIDEBAR_STYLE_ID).empty();
-        $("#" + Constants.SIDEBAR_CONTENT_ID).empty();
+        $("#" + Constants.SIDEBAR_CONTEXT_ID).empty();
         $("#inbetween").empty();
         var block = Broadcaster.getContainer();
-        var editFunction = Edit.makeEditable(block.element);
-        if (editFunction != null && editFunction.focus != null) {
-            editFunction.focus(block.element, null);
+        //this allows us to also use this function outside of a DnD context
+        if (block && !skipFocus) {
+            var editFunction = Edit.makeEditable(block.element);
+            if (editFunction != null && editFunction.focus != null) {
+                //editFunction.focus(block.element, null);
+            }
         }
     };
 
@@ -209,7 +193,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
     this.addRemoveBlockButton = function(property) {
 
-        var windowID = this.createWindow(Constants.CONTENT, $("<div class='panel panel-default "+ Constants.REMOVE_BLOCK_CLASS +"'/>"), "Block");
+        var windowID = this.createWindow(Constants.CONTEXT, $("<div class='panel panel-default "+ Constants.REMOVE_BLOCK_CLASS +"'/>"), "Block");
 
         //var remove = $("<div class='panel panel-default "+ Constants.REMOVE_BLOCK_CLASS +"'/>");
         var text = $("<div class='text'><span>Remove block</span></div>");
@@ -220,12 +204,19 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             //confirm.removeClass("hidden");
             //text.addClass("hidden");
 
-            reset();
+            reset(true);
             $("." + Constants.OPACITY_CLASS).removeClass(Constants.OPACITY_CLASS);
             Layouter.removeBlock(property);
         });
 
         this.addUIForProperty(windowID, text.append(button));
+    };
+
+    /**
+     * Empties the sidebar to start adding UI with the functions below
+     */
+    this.clear = function() {
+        reset();
     };
 
     this.addUIForProperty = function(windowId, html) {
@@ -237,8 +228,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     this.createWindow = function(type, element, title)
     {
         var windowId = Plugin.makeid();
-        if (configPanels[Constants.CONTENT] == null) configPanels[Constants.CONTENT] = {};
-        var panels = configPanels[Constants.CONTENT];
+        if (configPanels[Constants.CONTEXT] == null) configPanels[Constants.CONTEXT] = {};
+        var panels = configPanels[Constants.CONTEXT];
 
         if (panels[windowId] == null) {
 
@@ -248,10 +239,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             div.append(header).append(content);
 
             panels[windowId] = div;
-            if (type == Constants.STYLE) {
-                $("#" + Constants.SIDEBAR_STYLE_ID).append(div);
-            } else if (type == Constants.CONTENT) {
-                $("#" + Constants.SIDEBAR_CONTENT_ID).append(div);
+            if (type == Constants.CONTEXT) {
+                $("#" + Constants.SIDEBAR_CONTEXT_ID).append(div);
             }
 
             div.mouseenter(function() {
@@ -269,7 +258,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     this.getWindowForId = function(id) {
         var retVal = null;
 
-        var panels = configPanels[Constants.CONTENT];
+        var panels = configPanels[Constants.CONTEXT];
         retVal = panels[id];
 
         return retVal;

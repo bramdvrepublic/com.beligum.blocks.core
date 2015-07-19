@@ -29,9 +29,10 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
         Broadcaster.setContainer(null);
         Broadcaster.registerMouseMove();
 
-        window.onbeforeunload = function() {
-            return 'Ben je zeker dat je deze pagina wil verlaten?';
-        };
+        //TODO annoying while debugging
+        //window.onbeforeunload = function() {
+        //    return 'Ben je zeker dat je deze pagina wil verlaten?';
+        //};
 
         // prevent all clicks to links
         //$(document).on("click.blocks_manager", function (event)

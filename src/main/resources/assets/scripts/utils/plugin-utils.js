@@ -224,10 +224,11 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
         if (serverSelect) {
             var fileButton = $('<button class="btn btn-primary">File from server</button>');
 
+            //TODO bram refactor
             var close = function() {
                 $("." + Constants.PAGE_CONTENT_CLASS).show();
                 $("." + Constants.BLOCKS_START_BUTTON).show();
-                $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_CONTENT_ID +'"]').tab('show')
+                $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_CONTEXT_ID +'"]').tab('show')
             };
 
             Finder.setOnSelect(function(file) {
@@ -246,13 +247,6 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
                 $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_FILES_ID +'"]').tab('show')
                 $("." + Constants.PAGE_CONTENT_CLASS).hide();
                 $("." + Constants.BLOCKS_START_BUTTON).hide();
-                // add close button
-                var closeBtn = $('<div class="btn '+ Constants.CLOSE_FINDER_BUTTON +'">X</div>');
-                $("#" + Constants.SIDEBAR_FILES_ID).append(closeBtn);
-
-                closeBtn.click(function() {
-                    close();
-                });
             });
             content = $("<div>").append(content).append(fileButton);
 

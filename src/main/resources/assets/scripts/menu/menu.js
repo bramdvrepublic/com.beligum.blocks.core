@@ -1,11 +1,12 @@
-base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Overlay", "blocks.core.DomManipulation", "constants.blocks.common", function (Broadcaster, Notification, Overlay, DOM, Constants)
+base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Overlay", "blocks.core.DomManipulation", "constants.blocks.common", "blocks.core.Sidebar", function (Broadcaster, Notification, Overlay, DOM, Constants, Sidebar)
 {
     var MainMenu = this;
 
     /*
     * Create the html for top bar
     * */
-    this.menuStartButton = $('<div class="'+ Constants.BLOCKS_START_BUTTON +' '+ Constants.PREVENT_BLUR_CLASS +'"><i class="fa fa-cog"></i></div>');
+    //note: the icon of the <i> is set in blocks.less
+    this.menuStartButton = $('<a class="'+ Constants.BLOCKS_START_BUTTON +' '+ Constants.PREVENT_BLUR_CLASS +'"></a>');
 
     this.sideBar = $("<div class='" + Constants.PAGE_SIDEBAR_CLASS + " " + Constants.PREVENT_BLUR_CLASS +"'></div>");
     this.sideBar.load("/templates/sidebar");
@@ -18,6 +19,8 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
     $(document).on("click", "."+ Constants.BLOCKS_START_BUTTON, function (event)
     {
+        var startBtn = $(this);
+
         if ($("body").children("." + Constants.PAGE_CONTENT_CLASS).length == 0) {
             MainMenu.menuStartButton.remove();
             var body = $("body").html();
@@ -29,22 +32,43 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 e.preventDefault();
             });
 
+            var INIT_SIDEBAR_WIDTH = 0.3;
             var windowWidth = $(window).width();
-            MainMenu.sideBar.css("width", (windowWidth*0.2) + "px");
-            $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth*0.8) + "px");
-            $("body").append(MainMenu.menuStartButton);
-            updateContainerWidth();
-            enableSidebarDrag();
+            MainMenu.sideBar.addClass("animated");
+            startBtn.addClass("open");
+            MainMenu.sideBar.css("width", (windowWidth*INIT_SIDEBAR_WIDTH) + "px");
+            //one() = on() but only once
+            MainMenu.sideBar.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function(event) {
+                MainMenu.sideBar.removeClass("animated");
 
-            Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS);
+                //start with a fresh empty sidebar
+                Sidebar.clear();
+                $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth*(1.0-INIT_SIDEBAR_WIDTH)) + "px");
+                $("body").append(MainMenu.menuStartButton);
+                updateContainerWidth();
+                enableSidebarDrag();
+
+                Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS);
+            });
         } else {
-            var content = $("." + Constants.PAGE_CONTENT_CLASS).html();
-            $("body").empty();
-            $("body").append(content);
-            $(document).off("click.prevent_click_editing");
-            Broadcaster.send(Broadcaster.EVENTS.STOP_BLOCKS);
-            $("body").append(MainMenu.menuStartButton);
-            disableSidebarDrag();
+            var CLOSE_SIDEBAR_WIDTH = 0.0;
+            var windowWidth = $(window).width();
+            Sidebar.clear();
+            MainMenu.sideBar.addClass("animated");
+            MainMenu.sideBar.css("width", (windowWidth*CLOSE_SIDEBAR_WIDTH) + "px");
+            //one() = on() but only once
+            MainMenu.sideBar.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function(event) {
+                MainMenu.sideBar.removeClass("animated");
+                startBtn.removeClass("open");
+
+                var content = $("." + Constants.PAGE_CONTENT_CLASS).html();
+                $("body").empty();
+                $("body").append(content);
+                $(document).off("click.prevent_click_editing");
+                Broadcaster.send(Broadcaster.EVENTS.STOP_BLOCKS);
+                $("body").append(MainMenu.menuStartButton);
+                disableSidebarDrag();
+            });
         }
     });
 

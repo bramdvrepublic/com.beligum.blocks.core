@@ -148,10 +148,15 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 var oldDragStatus = draggingStatus;
                 if (oldDragStatus == BaseConstants.DRAGGING.YES) {
                     Broadcaster.send(Broadcaster.EVENTS.END_DRAG);
-                //} else if (Broadcaster.property().current != null && Broadcaster.property().current.editType != BlocksConstants.EDIT_NONE) {
-                //    Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
+                    //} else if (Broadcaster.property().current != null && Broadcaster.property().current.editType != BlocksConstants.EDIT_NONE) {
+                    //    Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
 
-                } else {
+                } else if (oldDragStatus == BaseConstants.DRAGGING.WAITING) {
+                    if ($(event.target).hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || $(event.target).parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0) {
+                        //implemented with a popover in page.js instead
+                    }
+                }
+                else {
                     // do nothing
                 }
 
@@ -171,7 +176,6 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             draggingStatus = BaseConstants.DRAGGING.YES;
             Logger.debug("Start drag");
             Broadcaster.send(Broadcaster.EVENTS.START_DRAG, {draggingStart: draggingStart});
-
         }
     };
 

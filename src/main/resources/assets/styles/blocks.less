@@ -3,6 +3,7 @@
 @import "/constants/blocks/finder?type=less";
 
 @mainMenuHeight: 40px;
+@initSidebarWidth: 0%;
 
 .@{BLOCK_OVERLAY_CLASS} {
   top: 0px;
@@ -195,7 +196,7 @@ ul.@{PAGE_MENU_CLASS} {
   position: absolute;
   z-index: 0;
   //  margin-top: @mainMenuHeight;
-  width: 80%;
+  width: 100% - @initSidebarWidth;
   min-height: 100%;
 
 }
@@ -208,13 +209,23 @@ ul.@{PAGE_MENU_CLASS} {
   @resizerWidth: 6px;
   position: fixed;
   top: 0px;
-  width: 20%;
   right: 0px;
   bottom: 0px;
   overflow-y: auto;
   padding-left: @resizerWidth;
   .drop-shadow(-1px, 0px, 4px, 0.4);
   background-color: @bgColor;
+
+  width: @initSidebarWidth;
+  //animates the width only when not DnD-ing
+  &.animated {
+    @duration: 0.2s;
+    @ease: ease-in;
+    -webkit-transition: width @duration @ease;
+    -moz-transition: width @duration @ease;
+    -o-transition: width @duration @ease;
+    transition: width @duration @ease;
+  }
 
   .@{PAGE_SIDEBAR_RESIZE_CLASS} {
     position: absolute;
@@ -281,12 +292,38 @@ ul.@{PAGE_MENU_CLASS} {
 }
 
 .@{BLOCKS_START_BUTTON} {
+  display: block;
   position: fixed;
   font-size: 20px;
-  top: 10px;
+  top: @sidebarTabHeight/5; //"5" is trial and error
   right: 20px;
   cursor: pointer;
   z-index: 10000;
+  color: #000000;
+
+  .opacity(0.7) !important;
+  &:hover {
+    color: #000000;
+    .opacity(0.8) !important;
+  }
+
+  &:before {
+    &:extend(.fa);
+    content: "\f013"; //fa-cog
+  }
+
+  &.open {
+    //mimicks .close btn
+    text-shadow: 0 1px 0 #fff;
+    .opacity(0.4) !important;
+    &:hover {
+      .opacity(0.6) !important;
+    }
+
+    &:before {
+      content: "\f00d"; //fa-times
+    }
+  }
 }
 
 #@{SIDEBAR_FILES_ID} {
@@ -341,12 +378,6 @@ ul.@{PAGE_MENU_CLASS} {
   .btn {
     margin-right: 10px;
   }
-}
-
-.@{CLOSE_FINDER_BUTTON} {
-  position: absolute;
-  right: 10px;
-  top: 10px;
 }
 
 // Set img as block so our block wraps around it

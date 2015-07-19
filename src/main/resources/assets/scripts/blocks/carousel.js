@@ -7,9 +7,7 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
 
     this.focus = function(propertyElement, blockEvent) {
         var element = blockEvent.block.current.element.find(".carousel");
-        var contentID = Sidebar.createWindow(Constants.CONTENT, blockEvent.block.current.element, "Carousel");
-        //var styleID = Sidebar.createWindow(Constants.STYLE, blockEvent.block.current.element, "Carousel");
-
+        var contentID = Sidebar.createWindow(Constants.CONTEXT, blockEvent.block.current.element, "Carousel");
 
         listGroup = $('<div class="list-group" />')
 
@@ -17,10 +15,6 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
 
         Sidebar.addUIForProperty(contentID, addImageButton(element));
         Sidebar.addUIForProperty(contentID, listGroup);
-
-        //Sidebar.addValueAttribute(styleID, element, "Slide interval in ms:", "data-interval", true, true, true);
-        //Sidebar.addUniqueAttributeValue(styleID, element, "Pause on hoover:", "data-pause", [{name: "Yes", value: "true"}, {name: "No", value: "false"}]);
-        //Sidebar.addUniqueAttributeValue(styleID, element, "Auto cycle:", "data-wrap", [{name: "Yes", value: "true"}, {name: "No", value: "false"}]);
 
     };
 
