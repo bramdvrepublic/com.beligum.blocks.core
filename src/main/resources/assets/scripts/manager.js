@@ -117,30 +117,30 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
     /*
      * HOVER EVENTS
      * */
-    $(document).on(Broadcaster.EVENTS.HOOVER_ENTER_PROPERTY, function (event)
+    $(document).on(Broadcaster.EVENTS.HOVER_ENTER_PROPERTY, function (event)
     {
         Highlighter.showPropertyOverlay(event.property.current);
 
     });
 
-    $(document).on(Broadcaster.EVENTS.HOOVER_LEAVE_PROPERTY, function (event)
+    $(document).on(Broadcaster.EVENTS.HOVER_LEAVE_PROPERTY, function (event)
     {
         Highlighter.removePropertyOverlay()
 
     });
 
-    $(document).on(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK, function (event)
+    $(document).on(Broadcaster.EVENTS.HOVER_ENTER_BLOCK, function (event)
     {
         Highlighter.showBlockOverlay(event.block.current);
     });
 
-    $(document).on(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK, function (event)
+    $(document).on(Broadcaster.EVENTS.HOVER_LEAVE_BLOCK, function (event)
     {
         Highlighter.removeBlockOverlay();
 
     });
 
-    $(document).on(Broadcaster.EVENTS.HOOVER_OVER_BLOCK, function (event)
+    $(document).on(Broadcaster.EVENTS.HOVER_OVER_BLOCK, function (event)
     {
     });
 

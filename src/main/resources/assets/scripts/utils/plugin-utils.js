@@ -232,6 +232,7 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
             };
 
             Finder.setOnSelect(function(file) {
+                Logger.debug(file);
                 close();
                 if (file != null) {
                     if (file.charAt(0) !== "/") {

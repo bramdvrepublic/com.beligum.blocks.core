@@ -6,7 +6,7 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     * Create the html for top bar
     * */
     //note: the icon of the <i> is set in blocks.less
-    this.menuStartButton = $('<a class="'+ Constants.BLOCKS_START_BUTTON +' '+ Constants.PREVENT_BLUR_CLASS +'"></a>');
+    this.menuStartButton = $('<a class="'+ Constants.BLOCKS_START_BUTTON +'"></a>');
 
     this.sideBar = $("<div class='" + Constants.PAGE_SIDEBAR_CLASS + " " + Constants.PREVENT_BLUR_CLASS +"'></div>");
     this.sideBar.load("/templates/sidebar");
@@ -59,7 +59,10 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             //one() = on() but only once
             MainMenu.sideBar.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function(event) {
                 MainMenu.sideBar.removeClass("animated");
-                startBtn.removeClass("open");
+                startBtn.hide().removeClass("open");
+                setTimeout(function(){
+                    startBtn.show();
+                }, 500);
 
                 var content = $("." + Constants.PAGE_CONTENT_CLASS).html();
                 $("body").empty();

@@ -1,5 +1,5 @@
 /*
- * defines a resizehandle. The surface of the resizeHandle is the are that triggers when you hoover over it
+ * defines a resizehandle. The surface of the resizeHandle is the are that triggers when you hover over it
  * the draw-surface is the surface that will be drawn in the dom (can be bigger or smaller).
  * left and rightcolumn are the columns that this handle will resize when dragged
  */

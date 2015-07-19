@@ -3,7 +3,7 @@
  */
 
 
-base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks.common", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.core.Plugin-Utils", "blocks.core.Edit", "blocks.finder",  function (Broadcaster, Constants, DOM, Layouter, Plugin, Edit, Finder)
+base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks.common", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.core.Plugin-Utils", "blocks.core.Edit", "blocks.finder", "blocks.core.Notification",  function (Broadcaster, Constants, DOM, Layouter, Plugin, Edit, Finder, Notification)
 {
     var SideBar = this;
     var configPanels = {};
@@ -13,7 +13,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     // This is called when we click the files tab
     // So onselect = null
     $(document).on('click', "#"+Constants.SIDEBAR_FILES_TAB_ID, function (e) {
-
         var filesContainer = $("#" + Constants.SIDEBAR_FILES_ID);
         filesContainer.empty().show().addClass(Constants.LOADING_CLASS);
 
@@ -21,8 +20,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         filesContainer.load("/media/finder-inline", function(response, status, xhr) {
             if (status == "error") {
                 var msg = "Error while loading the finder; ";
-                //TODO not implemented yet (also not in finder, if you fix this, fix that too)
-                showError(msg + xhr.status + " " + xhr.statusText);
+                Notification.error(msg + xhr.status + " " + xhr.statusText, xhr);
             }
             else {
                 Finder.init();
@@ -95,7 +93,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             }
             // We didn't change block but we did change property
             else if (block != null && newProperty != null && (property == null || newProperty[0] != property[0])) {
-
                 blurCurrentSelection(property, block);
                 update(newProperty, Broadcaster.createEvent(e));
             } else {
@@ -204,7 +201,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             //confirm.removeClass("hidden");
             //text.addClass("hidden");
 
-            reset(true);
+            reset();
             $("." + Constants.OPACITY_CLASS).removeClass(Constants.OPACITY_CLASS);
             Layouter.removeBlock(property);
         });
@@ -216,7 +213,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
      * Empties the sidebar to start adding UI with the functions below
      */
     this.clear = function() {
-        reset();
+        reset(true);
     };
 
     this.addUIForProperty = function(windowId, html) {
@@ -308,7 +305,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             var property = null;
             while (property == null && element[0].tagName.indexOf("-") == -1 && element[0].tagName != "BODY") {
                 if (element.hasAttribute("property") || element.hasAttribute("data-property")) {
-                    property=element;
+                    property = element;
                 } else {
                     element = element.parent();
                 }
@@ -334,7 +331,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         setTimeout(function(){
             element.removeClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
         }, 200);
-    }
+    };
 
     var unhighlight = function(element) {
         element.removeClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
@@ -342,6 +339,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         setTimeout(function(){
             element.removeClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
         }, 200);
-    }
+    };
 
 }]);

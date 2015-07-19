@@ -2,7 +2,7 @@
  * Resize handles are the handles to resize columns
  * A row contains all the possible resize handles
  *
- * this plugin shows the resizehandle when hoovering over it and allows for resizing columns
+ * this plugin shows the resizehandle when hovering over it and allows for resizing columns
  * by dragging the handles.
  *
  * initDrag: here we initialize the triggers to resize the columns while dragging a handle

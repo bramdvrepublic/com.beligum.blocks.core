@@ -54,7 +54,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
 //        Broadcaster.zoom();
         old_direction = BaseConstants.DIRECTION.NONE;
         if (blockEvent != null) {
-            currentDraggedBlock = Broadcaster.getHooveredBlockForPosition(blockEvent.custom.draggingStart.pageX, blockEvent.custom.draggingStart.pageY).current;
+            currentDraggedBlock = Broadcaster.getHoveredBlockForPosition(blockEvent.custom.draggingStart.pageX, blockEvent.custom.draggingStart.pageY).current;
         } else {
             currentDraggedBlock = null;
         }

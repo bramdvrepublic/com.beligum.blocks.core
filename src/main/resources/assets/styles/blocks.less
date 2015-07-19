@@ -201,7 +201,8 @@ ul.@{PAGE_MENU_CLASS} {
 
 }
 
-@sidebarTabHeight: 41px; //this is taken from a real world example, hope it won't change
+@sidebarTabHeight: 41px;
+//this is taken from a real world example, hope it won't change
 .@{PAGE_SIDEBAR_CLASS} {
   //Sync this with the bgColor of the finder
   @controlBgColor: #e8e8e8;
@@ -291,34 +292,34 @@ ul.@{PAGE_MENU_CLASS} {
   }
 }
 
+
 .@{BLOCKS_START_BUTTON} {
   display: block;
   position: fixed;
-  font-size: 20px;
+  font-size: 36px;
   top: @sidebarTabHeight/5; //"5" is trial and error
   right: 20px;
   cursor: pointer;
   z-index: 10000;
   color: #000000;
 
-  .opacity(0.7) !important;
+  &:extend(.@{PREVENT_BLUR_CLASS});
+
+  .opacity(0.4) !important;
   &:hover {
-    color: #000000;
-    .opacity(0.8) !important;
+    color: #222222;
+    .opacity(0.6) !important;
   }
 
   &:before {
     &:extend(.fa);
-    content: "\f013"; //fa-cog
+    content: "\f14b";
   }
 
   &.open {
     //mimicks .close btn
     text-shadow: 0 1px 0 #fff;
-    .opacity(0.4) !important;
-    &:hover {
-      .opacity(0.6) !important;
-    }
+    font-size: 20px;
 
     &:before {
       content: "\f00d"; //fa-times
@@ -331,7 +332,7 @@ ul.@{PAGE_MENU_CLASS} {
 
   @finderMargin: 10px;
   position: absolute; //absolute in relative parent pattern
-  top: @sidebarTabHeight - 1 + @finderMargin;//this this -1 comes from an extra border somewhere
+  top: @sidebarTabHeight - 1 + @finderMargin; //this this -1 comes from an extra border somewhere
   left: @finderMargin;
   bottom: @finderMargin;
   right: @finderMargin;
@@ -341,8 +342,6 @@ ul.@{PAGE_MENU_CLASS} {
   .@{WINDOW_CLASS} {
 
   }
-
-
 
   //position: fixed;
   //left: 0px;

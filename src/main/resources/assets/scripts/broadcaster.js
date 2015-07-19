@@ -53,7 +53,7 @@ base.plugin("blocks.core.Broadcaster", ["base.core.Constants", "blocks.core.DomM
         {
             var direction = calculateDirection(event);
             lastMoveEvent = event;
-            lastMoveEvent.block = Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
+            lastMoveEvent.block = Broadcaster.getHoveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
             lastMoveEvent.direction = direction;
         });
     };
@@ -170,8 +170,8 @@ base.plugin("blocks.core.Broadcaster", ["base.core.Constants", "blocks.core.DomM
     };
 
     /*
-     * Rests all parameters for the hoovering.
-     * This means that the next mousemove will trigger a HOOVER_ENTER_EVENT
+     * Rests all parameters for the hovering.
+     * This means that the next mousemove will trigger a HOVER_ENTER_EVENT
      * */
     this.resetHover = function ()
     {
@@ -186,7 +186,7 @@ base.plugin("blocks.core.Broadcaster", ["base.core.Constants", "blocks.core.DomM
     /*
      * sets the current hovered block based on teh mouse coordinates
      * */
-    this.getHooveredBlockForPosition = function (x, y)
+    this.getHoveredBlockForPosition = function (x, y)
     {
         var currentField = fields.current;
         fields.current = null;
@@ -346,7 +346,7 @@ base.plugin("blocks.core.Broadcaster", ["base.core.Constants", "blocks.core.DomM
         oldContainerParent = null;
         layoutTree = new blocks.elements.Page();
         Broadcaster.resetHover();
-        lastMoveEvent.block = Broadcaster.getHooveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
+        lastMoveEvent.block = Broadcaster.getHoveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
         Logger.debug(layoutTree);
     };
 
@@ -365,15 +365,15 @@ base.plugin("blocks.core.Broadcaster", ["base.core.Constants", "blocks.core.DomM
     this.EVENTS.DRAG_LEAVE_BLOCK = "DRAG_LEAVE_BLOCK";
     this.EVENTS.DRAG_ENTER_BLOCK = "DRAG_ENTER_BLOCK";
     this.EVENTS.DRAG_OVER_BLOCK = "DRAG_OVER_BLOCK";
-    this.EVENTS.HOOVER_LEAVE_BLOCK = "HOOVER_LEAVE_BLOCK";
-    this.EVENTS.HOOVER_ENTER_BLOCK = "HOOVER_ENTER_BLOCK";
-    this.EVENTS.HOOVER_OVER_BLOCK = "HOOVER_OVER_BLOCK";
+    this.EVENTS.HOVER_LEAVE_BLOCK = "HOVER_LEAVE_BLOCK";
+    this.EVENTS.HOVER_ENTER_BLOCK = "HOVER_ENTER_BLOCK";
+    this.EVENTS.HOVER_OVER_BLOCK = "HOVER_OVER_BLOCK";
 
-    this.EVENTS.HOOVER_LEAVE_PROPERTY = "HOOVER_LEAVE_PROPERTY";
-    this.EVENTS.HOOVER_ENTER_PROPERTY = "HOOVER_ENTER_PROPERTY";
-    this.EVENTS.HOOVER_OVER_PROPERTY = "HOOVER_OVER_PROPERTY";
+    this.EVENTS.HOVER_LEAVE_PROPERTY = "HOVER_LEAVE_PROPERTY";
+    this.EVENTS.HOVER_ENTER_PROPERTY = "HOVER_ENTER_PROPERTY";
+    this.EVENTS.HOVER_OVER_PROPERTY = "HOVER_OVER_PROPERTY";
 
-    this.EVENTS.END_HOOVER = "END_HOOVER";
+    this.EVENTS.END_HOVER = "END_HOVER";
     this.EVENTS.BLOCKS_CLICK = "BLOCKS_CLICK";
 
     // Send when clicked on a property

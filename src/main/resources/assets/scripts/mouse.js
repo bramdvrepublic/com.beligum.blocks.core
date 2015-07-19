@@ -27,9 +27,9 @@
  *
  *  the mouse plugin sends the following EVENTS. They all send blockEvents as parameter:
  *
- *  HOOVER_ENTER_BLOCK: Mouse hoovers over a block (not dragging)
- *  HOOVER_LEAVE_BLOCK: Mouse leaves a block (not dragging)
- *  HOOVER_OVER_BLOCK: Mouse hoovers ovr a block (not dragging)
+ *  HOVER_ENTER_BLOCK: Mouse hovers over a block (not dragging)
+ *  HOVER_LEAVE_BLOCK: Mouse leaves a block (not dragging)
+ *  HOVER_OVER_BLOCK: Mouse hovers ovr a block (not dragging)
  *
  *  START_DRAG: dragging started
  *  END_DRAG: dragging ended
@@ -109,7 +109,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
 
             // check for left mouse click
             if (event.which == 1) {
-                var block = Broadcaster.getHooveredBlockForPosition(event.pageX, event.pageY);
+                var block = Broadcaster.getHoveredBlockForPosition(event.pageX, event.pageY);
                 if (draggingStatus == BaseConstants.DRAGGING.NO && block.current != null && block.current.canDrag) {
                     draggingStatus = BaseConstants.DRAGGING.WAITING;
                     draggingStart = event;
@@ -123,7 +123,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                     Logger.debug("We can not start because dragging is already in place or not allowed. " + draggingStatus);
                     Mouse.resetMouse();
                     draggingStatus = BaseConstants.DRAGGING.TEXT_SELECTION;
-                    Broadcaster.send(Broadcaster.EVENTS.END_HOOVER);
+                    Broadcaster.send(Broadcaster.EVENTS.END_HOVER);
 
                 }
             } else {
@@ -210,35 +210,35 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 if (changedProperty) {
 
                     if (property.current == null) {
-                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_PROPERTY);
+                        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_PROPERTY);
                     } else if (property.previous == null) {
-                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_PROPERTY);
+                        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_PROPERTY);
                     } else {
-                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_PROPERTY);
-                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_PROPERTY);
+                        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_PROPERTY);
+                        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_PROPERTY);
                     }
                 } else if (property.current != null) {
-                    Broadcaster.send(Broadcaster.EVENTS.HOOVER_OVER_PROPERTY);
+                    Broadcaster.send(Broadcaster.EVENTS.HOVER_OVER_PROPERTY);
                 }
 
                 if (changedBlock) {
 
                     if (block.current == null) {
-                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK);
-                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_PROPERTY);
+                        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_BLOCK);
+                        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_PROPERTY);
                     } else if (block.previous == null) {
-                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK);
-                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_PROPERTY);
+                        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_BLOCK);
+                        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_PROPERTY);
                     } else {
-                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_BLOCK);
-                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_LEAVE_PROPERTY);
-                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_BLOCK);
-                        Broadcaster.send(Broadcaster.EVENTS.HOOVER_ENTER_PROPERTY);
+                        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_BLOCK);
+                        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_PROPERTY);
+                        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_BLOCK);
+                        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_PROPERTY);
 
                         //Logger.debug("changed templates");
                     }
                 } else if (block.current != null) {
-                    Broadcaster.send(Broadcaster.EVENTS.HOOVER_OVER_BLOCK);
+                    Broadcaster.send(Broadcaster.EVENTS.HOVER_OVER_BLOCK);
                 }
 
             } else if (draggingStatus == BaseConstants.DRAGGING.YES) {
