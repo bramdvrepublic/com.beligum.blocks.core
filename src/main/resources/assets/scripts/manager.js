@@ -42,6 +42,8 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
 
         Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
         Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE, null);
+        Sidebar.clear();
+
     });
 
     $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function ()
