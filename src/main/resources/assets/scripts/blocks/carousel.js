@@ -5,16 +5,15 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
 {
     var listGroup = null;
 
-    this.focus = function(propertyElement, blockEvent) {
+    this.focus = function(windowId, propertyElement, blockEvent) {
         var element = blockEvent.block.current.element.find(".carousel");
-        var contentID = Sidebar.createWindow(Constants.CONTEXT, blockEvent.block.current.element, "Carousel");
 
         listGroup = $('<div class="list-group" />')
 
         redraw(element);
 
-        Sidebar.addUIForProperty(contentID, addImageButton(element));
-        Sidebar.addUIForProperty(contentID, listGroup);
+        Sidebar.addUIForProperty(windowId, addImageButton(element));
+        Sidebar.addUIForProperty(windowId, listGroup);
 
     };
 

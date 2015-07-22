@@ -5,24 +5,23 @@ base.plugin("blocks.edit.Page", ["constants.blocks.common", "blocks.core.Edit", 
 {
     var Page = this;
 
-    this.focus = function(element, blockEvent) {
+    this.focus = function(windowID, element, blockEvent) {
         var title = $("title");
         if (title.length == 0) {
             title = $("<title />");
             $("head").append(title);
         }
-        var windowID = Sidebar.createWindow(Constants.CONTEXT, $("." + Constants.PAGE_CONTENT_CLASS), "Page");
 
-        var pageActions = $('<ul class="'+Constants.PAGE_MENU_CLASS+'">');
+        var pageActions = $('<ul class="'+Constants.BLOCK_ACTIONS_CLASS+'">');
 
         var savePage = $('<li class="'+Constants.SAVE_PAGE_BUTTON+'"><span>Save changes</span></li>').append($('<a class="btn btn-primary btn-sm pull-right"><i class="fa fa-floppy-o"></i></a>'));
         var deletePage = $('<li class="'+Constants.DELETE_PAGE_BUTTON+'"><span>Delete page</span></li>').append($('<a class="btn btn-danger btn-sm pull-right"><i class="fa fa-trash-o"></i></a>'));
         //activation is done in mouse.js
         var newBlock = $('<li class="'+Constants.CREATE_BLOCK_CLASS+'"><span>New block</span></li>').append($('<a class="btn btn-default btn-sm pull-right" data-toggle="popover" data-trigger="click" data-placement="bottom" data-content="Drag this button to your page to create a new block."><i class="fa fa-magic"></i></a>'));
         pageActions.append(savePage).append(deletePage).append(newBlock);
-        pageActions.append('<hr>');
-        Sidebar.addUIForProperty(windowID, pageActions);
 
+        Sidebar.addUIForProperty(windowID, pageActions);
+        pageActions.after('<hr>');
         //initialize the newBlock popover
         $(document).ready(function()
         {

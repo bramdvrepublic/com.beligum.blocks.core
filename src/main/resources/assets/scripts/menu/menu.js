@@ -7,15 +7,15 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     var SIDEBAR_STATE_HIDE = "hide";
 
     /*
-    * Create the html for top bar
-    * */
+     * Create the html for top bar
+     * */
     //note: the icon of the <i> is set in blocks.less
     this.menuStartButton = $('<a class="'+ Constants.BLOCKS_START_BUTTON +'"></a>');
 
     this.sideBar = $("<div class='" + Constants.PAGE_SIDEBAR_CLASS + " " + Constants.PREVENT_BLUR_CLASS +"'></div>");
     this.sideBar.load("/templates/sidebar");
 
-     /*
+    /*
      * Hide show bar on click of menu button
      * */
     var oldBodyMargin = parseInt($("body").css("padding-top"));
@@ -42,12 +42,16 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             $(document).on("click.prevent_click_editing", "a", function(e) {
                 e.preventDefault();
             });
-
-            var INIT_SIDEBAR_WIDTH = 0.2;
+            var cookieSidebarWidth = $.cookie(Constants.COOKIE_SIDEBAR_WIDTH);
             var windowWidth = $(window).width();
+            var INIT_SIDEBAR_WIDTH = windowWidth * 0.2; // default width of sidebar is 20% of window
+            if (cookieSidebarWidth != null) {
+                INIT_SIDEBAR_WIDTH = cookieSidebarWidth;
+            }
+
             MainMenu.sideBar.addClass(Constants.SIDEBAR_ANIMATED_CLASS);
             startBtn.addClass("open");
-            MainMenu.sideBar.css("width", (windowWidth*INIT_SIDEBAR_WIDTH) + "px");
+            MainMenu.sideBar.css("width", INIT_SIDEBAR_WIDTH + "px");
             //one() = on() but only once
             MainMenu.sideBar.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function(event) {
                 MainMenu.sideBar.removeClass(Constants.SIDEBAR_ANIMATED_CLASS);
@@ -56,8 +60,9 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 //Broadcaster.buildLayoutTree();
                 //Sidebar.clear();
 
-                $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth*(1.0-INIT_SIDEBAR_WIDTH)) + "px");
+                $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth -INIT_SIDEBAR_WIDTH) + "px");
                 $("body").append(MainMenu.menuStartButton);
+
                 updateContainerWidth();
                 enableSidebarDrag();
 
@@ -74,7 +79,11 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             //one() = on() but only once
             MainMenu.sideBar.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function(event) {
                 MainMenu.sideBar.removeClass(Constants.SIDEBAR_ANIMATED_CLASS);
+
+
                 startBtn.hide().removeClass("open");
+
+                // Ugly if it shows immediately
                 setTimeout(function(){
                     startBtn.show();
                 }, 500);
@@ -86,6 +95,7 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 Broadcaster.send(Broadcaster.EVENTS.STOP_BLOCKS);
                 $("body").append(MainMenu.menuStartButton);
                 disableSidebarDrag();
+                updateContainerWidth();
             });
         }
 
@@ -95,22 +105,13 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
     //check for a cookie and auto-open when the sidebar was active
     var sidebarState = $.cookie(Constants.COOKIE_SIDEBAR_STATE);
-    if (sidebarState===SIDEBAR_STATE_SHOW) {
-        $(document).ready(function() {
-            toggleSidebar($("." + Constants.BLOCKS_START_BUTTON), true);
 
-            var sidebarWidth = $.cookie(Constants.COOKIE_SIDEBAR_WIDTH);
-            //TODO doesn't work as expected, why?
-            //if (sidebarWidth) {
-            //    var windowWidth = $(window).width();
-            //    var pageContent = $("." + Constants.PAGE_CONTENT_CLASS);
-            //    MainMenu.sideBar.css("width", sidebarWidth+"px");
-            //    pageContent.css("width", (windowWidth - sidebarWidth) + "px");
-            //
-            //    updateContainerWidth();
-            //}
+    if (sidebarState===SIDEBAR_STATE_SHOW) {
+        $(document).ready(function () {
+            toggleSidebar($("." + Constants.BLOCKS_START_BUTTON), true);
         });
     }
+
 
     /*
      * Save button: saves the page
@@ -286,16 +287,16 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     };
 
     /*
-    * in bootstrap the containerwidth is fixed. to prevent the container from bleeding
-    * into our sidebar, we set the fixed with smaller than our page content wrapper
-    * */
+     * in bootstrap the containerwidth is fixed. to prevent the container from bleeding
+     * into our sidebar, we set the fixed with smaller than our page content wrapper
+     * */
     var updateContainerWidth = function() {
         var wrapper = $("." + Constants.PAGE_CONTENT_CLASS);
         var containers = $(".container");
         containers.removeAttr("style");
         if (wrapper.length > 0) {
             var wrapperWidth = wrapper.outerWidth();
-            var containerWidth = containers.width();
+            var containerWidth = containers.outerWidth();
             if (containerWidth > wrapperWidth) {
                 containers.css("width", (wrapperWidth - 50) + "px");
             }
