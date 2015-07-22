@@ -9,6 +9,7 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", function (
     this.ID_PREFIX = "medium-editor-";
 
     //-----CLASS DEFINITION-----
+    //used this as a reference: https://github.com/arcs-/MediumButton
     this.StylesPickerButton = Class.create({
 
         STATIC: {
