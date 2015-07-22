@@ -2,23 +2,153 @@
  * Created by wouter on 8/07/15.
  */
 
-base.plugin("blocks.core.MediumEditorExtensions", [ function() {
+base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", function (Class)
+{
+    var MediumEditorExtensions = this;
+
+    this.ID_PREFIX = "medium-editor-";
+
+    //-----CLASS DEFINITION-----
+    this.StylesPickerButton = Class.create({
+
+        STATIC: {
+            NAME: "styles-picker"
+        },
+
+        constructor: function (options)
+        {
+            this.options = this._extend(options, {
+
+            });
+            this.hasForm = false;
+            this.isFormVisible = false;
+            this.createButton();
+        },
+
+        createButton: function ()
+        {
+            this._createButtonElement();
+            this._bindButtonClick();
+        },
+
+        isDisplayed: function ()
+        {
+            return this.isFormVisible;
+        },
+
+        getButton: function ()
+        {
+            return this.button.get(0);
+        },
+
+        getForm: function ()
+        {
+        },
+
+        onHide: function ()
+        {
+        },
+
+        hideForm: function ()
+        {
+        },
+
+        show: function ()
+        {
+            //this.isFormVisible = true;
+            //this.builder.show(this.button.offsetLeft);
+            //this.button.classList.add('medium-editor-button-active');
+            //var elements = document.getElementsByClassName('medium-editor-table-builder-grid');
+            //for (var i = 0; i < elements.length; i++) {
+            //    // TODO: what is 16 and what is 2?
+            //    elements[i].style.height = (16 * this.options.rows + 2) + 'px';
+            //    elements[i].style.width = (16 * this.options.columns + 2) + 'px';
+            //}
+        },
+
+        checkState: function ()
+        {
+            //var html = getCurrentSelection();
+            //if (this.options.start != '' && html.indexOf(this.options.start) > -1 && html.indexOf(this.options.end) > -1) {
+            //    this.button.classList.add('medium-editor-button-active');
+            //}
+        },
+
+        _createButtonElement: function ()
+        {
+            //this.button = document.createElement('button');
+            //this.button.className = 'medium-editor-action';
+            //this.button.innerHTML = '<i class="fa fa-table"></i>';
+
+            //this.button = $('<button/>');
+            this.button = $('<div class="dropdown btn-group medium-editor-action"/>');
+            var toggle = $('<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Style <span class="caret"></span></button>');
+            var styles = $('<ul class="dropdown-menu"/>');
+            styles.append('<li><a href="#">Action</a></li>');
+            styles.append('<li><a href="#">Another action</a></li>');
+
+            this.button.append(toggle).append(styles);
+
+            //this.button.addClass('medium-editor-action');
+            //this.button.append('<i class="fa fa-table"></i>');
+        },
+
+        _bindButtonClick: function ()
+        {
+            //this.button.addEventListener('click', function (e)
+            //{
+            //    e.preventDefault();
+            //    this[this.isFormVisible === true ? 'hideForm' : 'show']();
+            //}.bind(this));
+        },
+
+        //-----UTILS-----
+        //extends the dest object with all the properties in source and returns dest
+        _extend: function (dest, source)
+        {
+            var prop;
+            dest = dest || {};
+            for (prop in source) {
+                if (source.hasOwnProperty(prop) && !dest.hasOwnProperty(prop)) {
+                    dest[prop] = source[prop];
+                }
+            }
+            return dest;
+        }
+    });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     var editorStyles = [];
 
     // Styles is an array with objects
-    // object is of type {value:"", text""}
+    // object is of type {value: "", text: ""}
     // value = "p:red" -> text before the colon is the tag, text after the colon are the classes that will be added
-    // nothing after colon will remove allm classes, nothing before colon will not touch the tag
+    // nothing after colon will remove all classes, nothing before colon will not touch the tag
     // text is the text in the dropdown
-    this.setStyles = function(newStyles) {
+    this.setStyles = function (newStyles)
+    {
         editorStyles = newStyles;
     };
 
-    this.getStyles = function() {
+    this.getStyles = function ()
+    {
         return editorStyles;
     };
-
 
     this.styleExtension = MediumEditor.FormExtension.extend({
 
@@ -28,13 +158,15 @@ base.plugin("blocks.core.MediumEditorExtensions", [ function() {
         contentDefault: '&#xB1;', // ±
         contentFA: '<i class="fa fa-magic"></i>',
 
-        init: function () {
+        init: function ()
+        {
             MediumEditor.FormExtension.prototype.init.apply(this, arguments);
         },
 
         // Called when the button the toolbar is clicked
         // Overrides ButtonExtension.handleClick
-        handleClick: function (event) {
+        handleClick: function (event)
+        {
             event.preventDefault();
             event.stopPropagation();
 
@@ -48,7 +180,8 @@ base.plugin("blocks.core.MediumEditorExtensions", [ function() {
         },
 
         // Called by medium-editor to append form to the toolbar
-        getForm: function () {
+        getForm: function ()
+        {
             if (!this.form) {
                 this.form = this.createForm();
             }
@@ -56,15 +189,18 @@ base.plugin("blocks.core.MediumEditorExtensions", [ function() {
         },
 
         // Used by medium-editor when the default toolbar is to be displayed
-        isDisplayed: function () {
+        isDisplayed: function ()
+        {
             return this.getForm().style.display === 'block';
         },
 
-        hideForm: function () {
+        hideForm: function ()
+        {
             this.getForm().style.display = 'none';
         },
 
-        showForm: function (fontSize) {
+        showForm: function (fontSize)
+        {
             var input = this.getInput();
 
             this.base.saveSelection();
@@ -80,7 +216,7 @@ base.plugin("blocks.core.MediumEditorExtensions", [ function() {
             // Filter all elements that we will change with our style
             var parents = [];
             var lastElement = null;
-            for (var i=0; i < elements.length; i++) {
+            for (var i = 0; i < elements.length; i++) {
                 var el = $(elements[i]);
                 // From all selected elements, we need only the root block elements
                 // so filter the children out
@@ -106,7 +242,8 @@ base.plugin("blocks.core.MediumEditorExtensions", [ function() {
         },
 
         // Called by core when tearing down medium-editor (destroy)
-        destroy: function () {
+        destroy: function ()
+        {
             if (this.isDisplayed()) {
                 this.doFormCancel();
             }
@@ -126,17 +263,19 @@ base.plugin("blocks.core.MediumEditorExtensions", [ function() {
 
         // core methods
 
-        doFormSave: function () {
+        doFormSave: function ()
+        {
             this.base.restoreSelection();
             this.base.checkSelection();
         },
 
-        doFormCancel: function () {
-            for (var i=0; i < this.blocks.length; i++) {
+        doFormCancel: function ()
+        {
+            for (var i = 0; i < this.blocks.length; i++) {
                 var block = this.blocks[i];
                 block.element.attr("class", block.classes);
                 if (block.element[0].nodeName != block.tagName) {
-                    var ne = $("<"+block.tagName + "/>");
+                    var ne = $("<" + block.tagName + "/>");
                     ne.html(block.element.html());
                     block.element.replaceWith(ne);
                 }
@@ -146,7 +285,8 @@ base.plugin("blocks.core.MediumEditorExtensions", [ function() {
         },
 
         // form creation and event handling
-        createForm: function () {
+        createForm: function ()
+        {
             var doc = this.document,
                 form = doc.createElement('div'),
                 select = doc.createElement('select'),
@@ -159,9 +299,9 @@ base.plugin("blocks.core.MediumEditorExtensions", [ function() {
 
             this.select = $(select);
 
-            for (var i=0; i < editorStyles.length; i++) {
+            for (var i = 0; i < editorStyles.length; i++) {
                 var val = editorStyles[i];
-                this.select.append("<option value='" + val.value + "'>"+ val.text +"</option>")
+                this.select.append("<option value='" + val.value + "'>" + val.text + "</option>")
             }
 
 
@@ -199,20 +339,23 @@ base.plugin("blocks.core.MediumEditorExtensions", [ function() {
             return form;
         },
 
-        getInput: function () {
+        getInput: function ()
+        {
             return this.getForm().querySelector('input.medium-editor-toolbar-input');
         },
 
-        clearFontSize: function () {
+        clearFontSize: function ()
+        {
 
         },
 
-        handleStyleChange: function () {
+        handleStyleChange: function ()
+        {
             var arguments = this.select.val().split(':');
             var tag = arguments[0].trim();
             var classes = arguments[1].trim();
 
-            for (var i=0; i < this.blocks.length; i++) {
+            for (var i = 0; i < this.blocks.length; i++) {
                 var el = this.blocks[i].element;
                 if (tag != "") {
                     var ne = $("<" + tag + "/>");
@@ -230,21 +373,23 @@ base.plugin("blocks.core.MediumEditorExtensions", [ function() {
 
             }
             this.base.restoreSelection();
-
         },
 
-        handleFormClick: function (event) {
+        handleFormClick: function (event)
+        {
             // make sure not to hide form when clicking inside the form
             event.stopPropagation();
         },
 
-        handleSaveClick: function (event) {
+        handleSaveClick: function (event)
+        {
             // Clicking Save -> create the font size
             event.preventDefault();
             this.doFormSave();
         },
 
-        handleCloseClick: function (event) {
+        handleCloseClick: function (event)
+        {
             // Click Close -> close the form
             event.preventDefault();
             this.doFormCancel();

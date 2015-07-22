@@ -477,6 +477,13 @@ blocks-image {
       .btn-default.active;
     }
   }
+
+  .dropdown-menu {
+    &:extend(.dropdown-menu);
+  }
+  .dropdown li {
+    float: none;
+  }
 }
 .medium-editor-toolbar-form {
   //background: @medium-editor-bgcolor;
@@ -519,20 +526,20 @@ blocks-image {
     //color: @medium-editor-link-color;
     //font-size: inherit;
   }
-
-  select {
-    .form-control();
-    &:extend(.form-control);
-    //border: 1px solid #ccc;
-    //background-color: white;
-    //color: #555;
-    //padding: 6px;
-    //line-height: 1.4px;
-    //border-radius: 4px;
-    //font-size: 14px;
-    //display: inline-block;
-    //min-width: 316px;
-  }
+  //
+  //select {
+  //  .form-control();
+  //  &:extend(.form-control);
+  //  //border: 1px solid #ccc;
+  //  //background-color: white;
+  //  //color: #555;
+  //  //padding: 6px;
+  //  //line-height: 1.4px;
+  //  //border-radius: 4px;
+  //  //font-size: 14px;
+  //  //display: inline-block;
+  //  //min-width: 316px;
+  //}
 
 }
 //
