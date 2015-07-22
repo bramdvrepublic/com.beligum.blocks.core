@@ -85,6 +85,7 @@ base.plugin("blocks.core.MediumEditorExtensions", [ function() {
                 // From all selected elements, we need only the root block elements
                 // so filter the children out
                 if (lastElement == null || lastElement.has(el).length == 0) {
+                    //TODO: something's wrong here
                     while (!el.attr("content-editable") && blockContainerElementNames.indexOf(el[0].nodeName.toLowerCase()) == -1) {
                         el = el.parent()
                     }

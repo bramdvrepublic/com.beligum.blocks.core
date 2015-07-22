@@ -2,6 +2,28 @@
 @import "/constants/blocks/common?type=less";
 @import "/constants/blocks/finder?type=less";
 
+//-----BASIC BOOTSTRAP MIXINS-----
+@import "/assets/webjars/bootstrap/3.3.4/less/variables.less";
+@import "/assets/webjars/bootstrap/3.3.4/less/mixins.less";
+// Reset and dependencies
+@import "/assets/webjars/bootstrap/3.3.4/less/normalize.less";
+// Core CSS
+@import "/assets/webjars/bootstrap/3.3.4/less/buttons.less";
+@import "/assets/webjars/bootstrap/3.3.4/less/forms.less";
+// Components
+@import "/assets/webjars/bootstrap/3.3.4/less/dropdowns.less";
+@import "/assets/webjars/bootstrap/3.3.4/less/button-groups.less";
+@import "/assets/webjars/bootstrap/3.3.4/less/input-groups.less";
+@import "/assets/webjars/bootstrap/3.3.4/less/panels.less";
+
+
+//@import "/assets/webjars/bootstrap/3.3.4/less/bootstrap.less";
+//@import "/assets/webjars/bootstrap/3.3.4/less/theme.less";
+//@import "/assets/webjars/bootstrap/3.3.4/less/mixins/tab-focus.less";
+//@import "/assets/webjars/bootstrap/3.3.4/less/mixins/border-radius.less";
+//@import "/assets/webjars/bootstrap/3.3.4/less/mixins/buttons.less";
+//@import "/assets/webjars/bootstrap/3.3.4/less/button-groups.less";
+
 @mainMenuHeight: 40px;
 @initSidebarWidth: 0%;
 
@@ -218,8 +240,8 @@ ul.@{PAGE_MENU_CLASS} {
   background-color: @bgColor;
 
   width: @initSidebarWidth;
-  //animates the width only when not DnD-ing
-  &.animated {
+  //animates the width only when not DnD-ing (see js code)
+  &.@{SIDEBAR_ANIMATED_CLASS} {
     @duration: 0.2s;
     @ease: ease-in;
     -webkit-transition: width @duration @ease;
@@ -285,7 +307,32 @@ ul.@{PAGE_MENU_CLASS} {
 
       .form-group {
         .input-group {
+          position: relative;//to make the clean button work
           width: 100%;
+          .btn-clear {
+
+            //.animated(0.3s);
+            //.fadeIn;
+
+            &.hidden {
+              display: none;
+            }
+            display: block;
+            position: absolute;
+            right: 10px;
+            top: 4px;
+            z-index: 3; //input has 2
+
+            //mimicks .close btn
+            text-shadow: 0 1px 0 #fff;
+            font-size: 20px;
+            color: #333;
+            .opacity(0.4) !important;
+
+            &:hover {
+              .opacity(0.6) !important;
+            }
+          }
         }
       }
     }
@@ -398,7 +445,7 @@ blocks-image {
 @medium-editor-button-active-text-color: #000;
 @medium-editor-hover-color: #ccc;
 @medium-editor-link-color: #555;
-@medium-editor-border-radius: 4px;
+@medium-editor-border-radius: 0px;
 @medium-editor-placeholder-color: #555;
 
 // theme rules
@@ -412,107 +459,90 @@ blocks-image {
 }
 
 .medium-editor-toolbar {
-  background-color: @medium-editor-bgcolor;
-  border: 1px solid @medium-editor-border-color;
-  border-radius: @medium-editor-border-radius;
+
+  .form-inline();
+  &:extend(.form-inline);
+
+  .btn-group();
+  &:extend(.btn-group all);
 
   li {
     button {
-      background-color: transparent;
-      border: none;
-      border-right: 1px solid @medium-editor-border-color;
-      box-sizing: border-box;
-      color: @medium-editor-link-color;
-      height: @medium-editor-button-size;
-      min-width: @medium-editor-button-size;
-      transition: background-color .2s ease-in, color .2s ease-in;
-      padding: 0px;
-      &:hover {
-        background-color: @medium-editor-hover-color;
-        color: @medium-editor-button-active-text-color;
-      }
+      .btn();
+      .btn-default();
+      &:extend(.btn, .btn.btn-default all);
     }
-
-    .medium-editor-button-first {
-      border-bottom-left-radius: @medium-editor-border-radius;
-      border-top-left-radius: @medium-editor-border-radius;
-    }
-
-    .medium-editor-button-last {
-      border-bottom-right-radius: @medium-editor-border-radius;
-      border-right: none;
-      border-top-right-radius: @medium-editor-border-radius;
-    }
-
     .medium-editor-button-active {
-      background-color: @medium-editor-hover-color;
-      color: @medium-editor-button-active-text-color;
+      .btn.active;
+      .btn-default.active;
     }
   }
 }
-
 .medium-editor-toolbar-form {
-  background: @medium-editor-bgcolor;
-  border-radius: @medium-editor-border-radius;
-  color: #fff;
-  padding: 6px;
+  //background: @medium-editor-bgcolor;
+  //border-radius: @medium-editor-border-radius;
+  //color: #fff;
+  //padding: 6px;
+
+  .form-group();
+  &:extend(.form-group);
+
+  display: none;
 
   .medium-editor-toolbar-input {
-    background: @medium-editor-bgcolor;
-    color: @medium-editor-link-color;
-    height: @medium-editor-button-size;
-
-    //    &::-webkit-input-placeholder {
-    //      color: @medium-editor-placeholder-color;
-    //      color: rgba(@medium-editor-placeholder-color, .8);
-    //    }
-    //    &:-moz-placeholder { /* Firefox 18- */
-    //      color: @medium-editor-placeholder-color;
-    //      color: rgba(@medium-editor-placeholder-color, .8);
-    //    }
-    //    &::-moz-placeholder {  /* Firefox 19+ */
-    //      color: @medium-editor-placeholder-color;
-    //      color: rgba(@medium-editor-placeholder-color, .8);
-    //    }
-    //    &:-ms-input-placeholder {
-    //      color: @medium-editor-placeholder-color;
-    //      color: rgba(@medium-editor-placeholder-color, .8);
-    //    }
+    //background: @medium-editor-bgcolor;
+    //color: @medium-editor-link-color;
+    //height: @medium-editor-button-size;
+    //
+    ////    &::-webkit-input-placeholder {
+    ////      color: @medium-editor-placeholder-color;
+    ////      color: rgba(@medium-editor-placeholder-color, .8);
+    ////    }
+    ////    &:-moz-placeholder { /* Firefox 18- */
+    ////      color: @medium-editor-placeholder-color;
+    ////      color: rgba(@medium-editor-placeholder-color, .8);
+    ////    }
+    ////    &::-moz-placeholder {  /* Firefox 19+ */
+    ////      color: @medium-editor-placeholder-color;
+    ////      color: rgba(@medium-editor-placeholder-color, .8);
+    ////    }
+    ////    &:-ms-input-placeholder {
+    ////      color: @medium-editor-placeholder-color;
+    ////      color: rgba(@medium-editor-placeholder-color, .8);
+    ////    }
   }
 
   a {
-    color: @medium-editor-link-color;
-    font-size: inherit;
+    .btn();
+    .btn-default();
+    &:extend(.btn, .btn.btn-default all);
+    //color: @medium-editor-link-color;
+    //font-size: inherit;
   }
 
   select {
-    border: 1px solid #ccc;
-    background-color: white;
-    color: #555;
-    padding: 6px;
-    line-height: 1.4px;
-    border-radius: 4px;
-    font-size: 14px;
-    display: inline-block;
-    min-width: 316px;
+    .form-control();
+    &:extend(.form-control);
+    //border: 1px solid #ccc;
+    //background-color: white;
+    //color: #555;
+    //padding: 6px;
+    //line-height: 1.4px;
+    //border-radius: 4px;
+    //font-size: 14px;
+    //display: inline-block;
+    //min-width: 316px;
   }
 
 }
-
-.medium-editor-toolbar-anchor-preview {
-  background: @medium-editor-bgcolor;
-  border-radius: @medium-editor-border-radius;
-  color: @medium-editor-link-color;
-}
-
-.medium-editor-placeholder:after {
-  color: @medium-editor-border-color;
-}
-
-
-
-
-
-
-
+//
+//.medium-editor-toolbar-anchor-preview {
+//  background: @medium-editor-bgcolor;
+//  border-radius: @medium-editor-border-radius;
+//  color: @medium-editor-link-color;
+//}
+//
+//.medium-editor-placeholder:after {
+//  color: @medium-editor-border-color;
+//}
 

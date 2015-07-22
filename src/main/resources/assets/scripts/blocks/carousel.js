@@ -1,7 +1,7 @@
 /**
  * Created by wouter on 18/06/15.
  */
-base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edit", "blocks.core.Sidebar", "blocks.core.Plugin-Utils",  function (Constants, Edit, Sidebar, Plugin)
+base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edit", "blocks.core.Sidebar", "blocks.core.SidebarUtils",  function (Constants, Edit, Sidebar, Plugin)
 {
     var listGroup = null;
 
@@ -129,7 +129,6 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
         carousel.find(".carousel-inner").children().first().addClass("active");
     };
 
-
     var redraw = function(carousel) {
         var items = carousel.find(".item");
         listGroup.empty();
@@ -140,6 +139,5 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
     }
 
     Edit.registerByTag("BOOTSTRAP-CAROUSEL", this);
-
 
 }]);

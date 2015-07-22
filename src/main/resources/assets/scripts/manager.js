@@ -22,8 +22,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
         );
     };
 
-
-
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function ()
     {
         Broadcaster.setContainer(null);
@@ -48,7 +46,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
 
     $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function ()
     {
-
         window.onbeforeunload = function() {};
         Broadcaster.unregisterMouseMove();
         Overlay.removeOverlays();
@@ -71,8 +68,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
         //DragCreate.activate();
         Highlighter.showBlockOverlay(Broadcaster.block().current);
         Highlighter.showPropertyOverlay(Broadcaster.property().current);
-
-
     });
 
     $(document).on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, function ()
@@ -82,7 +77,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
         DragDrop.setActive(false);
         Sidebar.disableEditing();
         DOM.enableSelection();
-
     });
 
 
@@ -151,7 +145,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
 
     $(document).on(Broadcaster.EVENTS.START_DRAG, function (event)
     {
-
         //Broadcaster.zoom();
         DOM.disableContextMenu();
         Highlighter.removeBlockOverlay();
@@ -224,8 +217,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
         Highlighter.removePropertyOverlay();
         Overlay.removeOverlays();
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
-
-
     });
 
     $(document).on(Broadcaster.EVENTS.END_EDIT_FIELD, function (event)

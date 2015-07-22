@@ -1,27 +1,29 @@
 /**
  * Created by wouter on 18/06/15.
  */
-base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.finder", function (Constants, Finder) {
+base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.finder", function (Constants, Finder)
+{
 
     var Plugin = this;
 
     /*
-    * element: element to change
-    * label: name to show as label
-    * values = array of objects {value: 'a value to change', name: 'name of the value}
-    * */
-    this.addUniqueClass = function(element, label, values) {
+     * element: element to change
+     * label: name to show as label
+     * values = array of objects {value: 'a value to change', name: 'name of the value}
+     * */
+    this.addUniqueClass = function (element, label, values)
+    {
         // Create selectbox to add to sidebar
         var id = Plugin.makeid();
         var content = $("<div class='form-group' />");
-        content.append($('<label for="'+ id +'">' + label + '</label>'));
-        var select = $("<select id='"+id+"' class='form-control'/>");
+        content.append($('<label for="' + id + '">' + label + '</label>'));
+        var select = $("<select id='" + id + "' class='form-control'/>");
         content.append(select);
 
         // Create values inside selectbox and see which one to select
         var classFound = false;
         var selected = null;
-        for (var i=0; i < values.length; i++) {
+        for (var i = 0; i < values.length; i++) {
             var c = values[i];
             var option = $("<option />").attr("value", c.value).html(c.name);
             if (element.hasClass(c.value) && !classFound) {
@@ -37,7 +39,8 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
 
         // Callback for when the select box changes
 
-        select.change(function(e) {
+        select.change(function (e)
+        {
             if (selected != null) {
                 element.removeClass(selected);
             }
@@ -53,15 +56,16 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
      * label: name to show as label
      * values = array of objects {value: 'a value to change', name: 'name of the value}
      * */
-    this.addOptionalClass = function(element, label, values) {
+    this.addOptionalClass = function (element, label, values)
+    {
 // Create selectbox to add to sidebar
         var id = Plugin.makeid();
         var content = $("<div class='form-group' />");
-        content.append("<label>"+label+"</label>");
+        content.append("<label>" + label + "</label>");
 
         // Create checkboxes for each value
         var classFound = null;
-        for (var i=0; i < values.length; i++) {
+        for (var i = 0; i < values.length; i++) {
             var c = values[i];
 
             var wrapper = $('<div class="checkbox" />');
@@ -73,7 +77,8 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
             }
             wrapper.append(label.append(input).append(c.name));
             content.append(wrapper);
-            input.change(function(e) {
+            input.change(function (e)
+            {
                 var box = $(this);
                 if (box[0].checked) {
                     element.addClass(box.val());
@@ -92,18 +97,19 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
      * label: name to show as label
      * values = array of objects {value: 'a value to change', name: 'name of the value}
      * */
-    this.addUniqueAttributeValue = function(element, label, name, values) {
+    this.addUniqueAttributeValue = function (element, label, name, values)
+    {
         // Create selectbox to add to sidebar
         var id = Plugin.makeid();
         var content = $("<div class='form-group' />");
-        content.append($('<label for="'+ id +'">' + label + '</label>'));
+        content.append($('<label for="' + id + '">' + label + '</label>'));
         var select = $("<select class='form-control'/>");
         content.append(select);
 
         // Create values inside selectbox and see which one to select
         var attrFound = null;
         var selected = null;
-        for (var i=0; i < values.length; i++) {
+        for (var i = 0; i < values.length; i++) {
             var c = values[i];
             var option = $("<option />").attr("value", c.value).html(c.name);
             if (element.attr(name) == c.value && !attrFound) {
@@ -116,7 +122,8 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
 
         // Callback for when the select box changes
 
-        select.change(function(e) {
+        select.change(function (e)
+        {
             selected = select.val();
             if (selected != "") {
                 element.attr(name, selected);
@@ -133,18 +140,19 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
      * label: name to show as label
      * values = array of objects {value: 'a value to change', name: 'name of the value}
      * */
-    this.addUniqueAttribute = function(element, label, values) {
+    this.addUniqueAttribute = function (element, label, values)
+    {
         // Create selectbox to add to sidebar
         var id = Plugin.makeid();
         var content = $("<div class='form-group' />");
-        content.append($('<label for="'+ id +'">' + label + '</label>'));
+        content.append($('<label for="' + id + '">' + label + '</label>'));
         var select = $("<select class='form-control'/>");
         content.append(select);
 
         // Create values inside selectbox and see which one to select
         var attrFound = null;
         var selected = null;
-        for (var i=0; i < values.length; i++) {
+        for (var i = 0; i < values.length; i++) {
             var c = values[i];
             var option = $("<option />").attr("value", c.value).html(c.name);
             if (element.hasAttribute(c.value)) {
@@ -161,7 +169,8 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
 
         // Callback for when the select box changes
 
-        select.change(function(e) {
+        select.change(function (e)
+        {
             element.removeAttr(selected);
             selected = select.val();
             if (selected != "") {
@@ -181,13 +190,14 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
      * serverSelect: user can only select file from server
      * url: user can select a local url from tree
      * */
-    this.addValueAttribute = function(element, label, name, confirm, textSelect, serverSelect, url) {
+    this.addValueAttribute = function (element, label, name, confirm, disabled, serverSelect, url)
+    {
         var id = Plugin.makeid();
-        var content = $("<div class='form-group' />");
-        content.append($('<label for="'+ id +'">' + label + '</label>'));
+        var content = $('<div class="form-group" />');
+        content.append($('<label for="' + id + '">' + label + '</label>'));
         var group = $('<div class="input-group" />');
-        var input = $('<input "'+id+'" type="text" class="form-control" />');
-        if (!textSelect) {
+        var input = $('<input "' + id + '" type="text" class="form-control" />');
+        if (!disabled) {
             input.attr("disabled", "");
         }
 
@@ -198,42 +208,51 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
 
         var oldvalue = input.val();
         if (confirm == true) {
-            var cancel = $('<div class="input-group-addon"><i class="fa fa-times" style="color:red"></i></div>');
-            var ok = $('<div class="input-group-addon"><i class="fa fa-check" style="color:green"></i></div>');
-            group.append(cancel).append(ok);
+            var cancel = $('<a class="btn-clear hidden"><i class="fa fa-times"></i></a>');
+            //var ok = $('<div class="input-group-addon"><i class="fa fa-check" style="color:green"></i></div>');
+            group.append(cancel)/*.append(ok)*/;
 
-            cancel.click(function(e) {
+            input.on("change keyup", function (e)
+            {
+                if (input.val()) {
+                    cancel.removeClass("hidden");
+                }
+                else {
+                    cancel.addClass("hidden");
+                }
+            });
+            cancel.click(function (e)
+            {
                 input.val(oldvalue);
             });
 
-            ok.click(function(e) {
-                oldvalue = input.val();
-                input.val(oldvalue);
-                element.attr(name, oldvalue);
-            });
+            //ok.click(function (e)
+            //{
+            //    oldvalue = input.val();
+            //    input.val(oldvalue);
+            //    element.attr(name, oldvalue);
+            //});
         }
 
         if (!confirm) {
-            input.keyup(function(e) {
+            input.keyup(function (e)
+            {
                 element.attr(name, input.val());
                 oldvalue = input.val();
-
             });
         }
 
         if (serverSelect) {
             var fileButton = $('<button class="btn btn-primary">File from server</button>');
 
-            //TODO bram refactor
-            var close = function() {
-                $("." + Constants.PAGE_CONTENT_CLASS).show();
-                $("." + Constants.BLOCKS_START_BUTTON).show();
-                $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_CONTEXT_ID +'"]').tab('show')
-            };
+            //var close = function() {
+            //    $("." + Constants.PAGE_CONTENT_CLASS).show();
+            //    $("." + Constants.BLOCKS_START_BUTTON).show();
+            //    $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_CONTEXT_ID +'"]').tab('show')
+            //};
 
-            Finder.setOnSelect(function(file) {
-                Logger.debug(file);
-                close();
+            Finder.setOnSelect(function (file)
+            {
                 if (file != null) {
                     if (file.charAt(0) !== "/") {
                         file = "/" + file;
@@ -244,8 +263,9 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
             });
 
 
-            fileButton.click(function() {
-                $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_FILES_ID +'"]').tab('show')
+            fileButton.click(function ()
+            {
+                $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_FILES_ID + '"]').tab('show')
                 $("." + Constants.PAGE_CONTENT_CLASS).hide();
                 $("." + Constants.BLOCKS_START_BUTTON).hide();
             });
@@ -262,12 +282,13 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
      * label: name to show as label
      * confirm: value only changes when user confirms
      * */
-    this.addValueHtml = function(element, label, confirm) {
+    this.addValueHtml = function (element, label, confirm)
+    {
         var id = Plugin.makeid();
         var content = $("<div class='form-group' />");
-        content.append($('<label for="'+ id +'">' + label + '</label>'));
+        content.append($('<label for="' + id + '">' + label + '</label>'));
         var group = $('<div class="input-group" />');
-        var input = $('<input id="'+id+'" type="text" class="form-control" />');
+        var input = $('<input id="' + id + '" type="text" class="form-control" />');
 
         input.val(element.html());
         content.append(group.append(input));
@@ -278,11 +299,13 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
             var ok = $('<div class="input-group-addon"><i class="fa fa-check" style="color:green"></i></div>');
             group.append(cancel).append(ok);
 
-            cancel.click(function(e) {
+            cancel.click(function (e)
+            {
                 input.val(oldvalue);
             });
 
-            ok.click(function(e) {
+            ok.click(function (e)
+            {
                 oldvalue = input.val();
                 input.val(oldvalue);
                 element.html(oldvalue);
@@ -290,7 +313,8 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
         }
 
         if (!confirm) {
-            input.keyup(function(e) {
+            input.keyup(function (e)
+            {
                 element.html(input.val());
                 oldvalue = input.val();
 
@@ -300,15 +324,15 @@ base.plugin("blocks.core.Plugin-Utils", ["constants.blocks.common", "blocks.find
         return content;
     };
 
-    this.makeid = function()
+    this.makeid = function ()
     {
         var text = "";
         var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-        for( var i=0; i < 5; i++ )
+        for (var i = 0; i < 5; i++)
             text += possible.charAt(Math.floor(Math.random() * possible.length));
 
         return text;
-    }
+    };
 
 }]);

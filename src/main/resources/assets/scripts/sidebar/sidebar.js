@@ -2,8 +2,7 @@
  * Created by wouter on 15/06/15.
  */
 
-
-base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks.common", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.core.Plugin-Utils", "blocks.core.Edit", "blocks.finder", "blocks.core.Notification",  function (Broadcaster, Constants, DOM, Layouter, Plugin, Edit, Finder, Notification)
+base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks.common", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.core.SidebarUtils", "blocks.core.Edit", "blocks.finder", "blocks.core.Notification", function (Broadcaster, Constants, DOM, Layouter, SidebarUtils, Edit, Finder, Notification)
 {
     var SideBar = this;
     var configPanels = {};
@@ -12,12 +11,14 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
     // This is called when we click the files tab
     // So onselect = null
-    $(document).on('click', "#"+Constants.SIDEBAR_FILES_TAB_ID, function (e) {
+    $(document).on('click', "#" + Constants.SIDEBAR_FILES_TAB_ID, function (e)
+    {
         var filesContainer = $("#" + Constants.SIDEBAR_FILES_ID);
         filesContainer.empty().show().addClass(Constants.LOADING_CLASS);
 
         //TODO maybe not necessary to reload this every time, but it allows us to always present a fresh uptodate view of the server content
-        filesContainer.load("/media/finder-inline", function(response, status, xhr) {
+        filesContainer.load("/media/finder-inline", function (response, status, xhr)
+        {
             if (status == "error") {
                 var msg = "Error while loading the finder; ";
                 Notification.error(msg + xhr.status + " " + xhr.statusText, xhr);
@@ -29,11 +30,11 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         });
     });
 
-
     /*
      * When clicking a property disable drag drop
      * */
-    var setBlockFocus = function(property, block) {
+    var setBlockFocus = function (property, block)
+    {
         // Defines the element outside which to click to blur
         // is block if block is available
         var borderingElement = null;
@@ -60,7 +61,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
         Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
 
-        $(document).on("mousedown.sidebar_edit_end", function(e) {
+        $(document).on("mousedown.sidebar_edit_end", function (e)
+        {
 
             var newProperty = null;
             var element = $(e.target);
@@ -72,7 +74,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
             while (newProperty == null && element[0] != borderingElement[0] && element.parent().length > 0) {
                 if (element.hasAttribute("property") || element.hasAttribute("data-property")) {
-                    newProperty=element;
+                    newProperty = element;
                 } else {
                     element = element.parent();
                 }
@@ -85,7 +87,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 blurCurrentSelection(property, block);
 
                 // Only send edit_end on mouse up. Otherwise the other clicked property will start editing immediately
-                $(document).on("mouseup.sidebar_edit_end", function() {
+                $(document).on("mouseup.sidebar_edit_end", function ()
+                {
                     $(document).off("mouseup.sidebar_edit_end");
                     Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
                 });
@@ -98,13 +101,11 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             } else {
                 // nothing changed
             }
-
-
         });
-
     };
 
-    var blurCurrentSelection = function(property, block) {
+    var blurCurrentSelection = function (property, block)
+    {
         // remove this trigger
         $(document).off("mousedown.sidebar_edit_end");
 
@@ -123,7 +124,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         block = null;
     }
 
-    var reset = function(skipFocus) {
+    var reset = function ()
+    {
         $("." + Constants.OPACITY_CLASS).removeClass(Constants.OPACITY_CLASS);
         $("." + Constants.PREVENT_BLUR_CLASS).removeClass(Constants.PREVENT_BLUR_CLASS);
         $("." + Constants.PROPERTY_EDIT_CLASS).removeClass(Constants.PROPERTY_EDIT_CLASS);
@@ -133,13 +135,12 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         currentBlockEvent = null;
         configPanels = {};
         $("#" + Constants.SIDEBAR_CONTEXT_ID).empty();
-        $("#inbetween").empty();
         var block = Broadcaster.getContainer();
         //this allows us to also use this function outside of a DnD context
-        if (block && !skipFocus) {
+        if (block) {
             var editFunction = Edit.makeEditable(block.element);
             if (editFunction != null && editFunction.focus != null) {
-                //editFunction.focus(block.element, null);
+                editFunction.focus(block.element, null);
             }
         }
     };
@@ -147,7 +148,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     /*
      * Drill down and add functionality for each block
      * */
-    var update = function(property, blockEvent) {
+    var update = function (property, blockEvent)
+    {
         // property: add div
         currentProperty = property;
         currentBlockEvent = blockEvent;
@@ -159,7 +161,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     /*
      * Drill down and add functionality for each block
      * */
-    this.refresh = function() {
+    this.refresh = function ()
+    {
         var block = currentBlockEvent.property.current;
 
         var editFunction = Edit.makeEditable(currentProperty);
@@ -188,15 +191,17 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         }
     };
 
-    this.addRemoveBlockButton = function(property) {
+    this.addRemoveBlockButton = function (property)
+    {
 
-        var windowID = this.createWindow(Constants.CONTEXT, $("<div class='panel panel-default "+ Constants.REMOVE_BLOCK_CLASS +"'/>"), "Block");
+        var windowID = this.createWindow(Constants.CONTEXT, $("<div class='panel panel-default " + Constants.REMOVE_BLOCK_CLASS + "'/>"), "Block");
 
         //var remove = $("<div class='panel panel-default "+ Constants.REMOVE_BLOCK_CLASS +"'/>");
         var text = $("<div class='text'><span>Remove block</span></div>");
         var button = $("<a class='btn btn-danger btn-sm pull-right'><i class='fa fa-trash-o'></i></a></div>");
 
-        button.click(function() {
+        button.click(function ()
+        {
             //TODO let's not ask for a confirmation but implement an undo-function later on...
             //confirm.removeClass("hidden");
             //text.addClass("hidden");
@@ -212,19 +217,21 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     /**
      * Empties the sidebar to start adding UI with the functions below
      */
-    this.clear = function() {
-        reset(true);
+    this.clear = function ()
+    {
+        reset();
     };
 
-    this.addUIForProperty = function(windowId, html) {
+    this.addUIForProperty = function (windowId, html)
+    {
         var config = SideBar.getWindowForId(windowId);
         var content = config.children(".panel-body");
         content.append(html);
     };
 
-    this.createWindow = function(type, element, title)
+    this.createWindow = function (type, element, title)
     {
-        var windowId = Plugin.makeid();
+        var windowId = SidebarUtils.makeid();
         if (configPanels[Constants.CONTEXT] == null) configPanels[Constants.CONTEXT] = {};
         var panels = configPanels[Constants.CONTEXT];
 
@@ -240,11 +247,13 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 $("#" + Constants.SIDEBAR_CONTEXT_ID).append(div);
             }
 
-            div.mouseenter(function() {
+            div.mouseenter(function ()
+            {
                 highlight(element);
             });
 
-            div.mouseleave(function() {
+            div.mouseleave(function ()
+            {
                 unhighlight(element);
             });
         }
@@ -252,7 +261,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         return windowId
     }
 
-    this.getWindowForId = function(id) {
+    this.getWindowForId = function (id)
+    {
         var retVal = null;
 
         var panels = configPanels[Constants.CONTEXT];
@@ -261,33 +271,41 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         return retVal;
     }
 
-    this.addUniqueClass = function(windowId, element, label, values) {
-        SideBar.addUIForProperty(windowId, Plugin.addUniqueClass(element, label, values));
+    this.addUniqueClass = function (windowId, element, label, values)
+    {
+        SideBar.addUIForProperty(windowId, SidebarUtils.addUniqueClass(element, label, values));
     };
 
-    this.addOptionalClass = function(windowId, element, label, values) {
-        SideBar.addUIForProperty(windowId, Plugin.addOptionalClass(element, label, values));
+    this.addOptionalClass = function (windowId, element, label, values)
+    {
+        SideBar.addUIForProperty(windowId, SidebarUtils.addOptionalClass(element, label, values));
     };
 
-    this.addUniqueAttributeValue = function(windowId, element, label, name, values) {
-        SideBar.addUIForProperty(windowId, Plugin.addUniqueAttributeValue(element, label, name, values));
+    this.addUniqueAttributeValue = function (windowId, element, label, name, values)
+    {
+        SideBar.addUIForProperty(windowId, SidebarUtils.addUniqueAttributeValue(element, label, name, values));
     };
 
-    this.addUniqueAttribute = function(windowId, element, label, values) {
-        SideBar.addUIForProperty(windowId, Plugin.addUniqueAttribute( element, label, values));
+    this.addUniqueAttribute = function (windowId, element, label, values)
+    {
+        SideBar.addUIForProperty(windowId, SidebarUtils.addUniqueAttribute(element, label, values));
     };
 
-    this.addValueAttribute = function(windowId, element, label, name, confirm, textSelect, serverSelect, urlSelect) {
-        SideBar.addUIForProperty(windowId, Plugin.addValueAttribute(element, label, name, confirm, textSelect, serverSelect, urlSelect));
+    this.addValueAttribute = function (windowId, element, label, name, confirm, textSelect, serverSelect, urlSelect)
+    {
+        SideBar.addUIForProperty(windowId, SidebarUtils.addValueAttribute(element, label, name, confirm, textSelect, serverSelect, urlSelect));
     };
 
-    this.addValueHtml = function(windowId, element, label, confirm) {
-        SideBar.addUIForProperty(windowId, Plugin.addValueHtml(element, label, confirm));
+    this.addValueHtml = function (windowId, element, label, confirm)
+    {
+        SideBar.addUIForProperty(windowId, SidebarUtils.addValueHtml(element, label, confirm));
     };
 
-    this.enableEditing = function() {
+    this.enableEditing = function ()
+    {
 
-        $(document).on("mouseup.sidebar_edit_start", "." + Constants.PAGE_CONTENT_CLASS, function(event) {
+        $(document).on("mouseup.sidebar_edit_start", "." + Constants.PAGE_CONTENT_CLASS, function (event)
+        {
             // find parents until parent is <body> or until parent has property attribute
             // first property enable editing
             var element = $(event.target);
@@ -300,7 +318,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             if (DOM.isColumn(element)) {
                 element = element.children().last();
             }
-
 
             var property = null;
             while (property == null && element[0].tagName.indexOf("-") == -1 && element[0].tagName != "BODY") {
@@ -319,24 +336,29 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         });
     };
 
-    this.disableEditing = function() {
+    this.disableEditing = function ()
+    {
         $(document).off("mouseup.sidebar_edit_start");
     };
 
     // PRIVATE
 
-    var highlight = function(element) {
+    var highlight = function (element)
+    {
         element.addClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
         element.addClass(Constants.HIGHLIGHT_CLASS);
-        setTimeout(function(){
+        setTimeout(function ()
+        {
             element.removeClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
         }, 200);
     };
 
-    var unhighlight = function(element) {
+    var unhighlight = function (element)
+    {
         element.removeClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
         element.removeClass(Constants.HIGHLIGHT_CLASS);
-        setTimeout(function(){
+        setTimeout(function ()
+        {
             element.removeClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
         }, 200);
     };

@@ -24,11 +24,18 @@ base.plugin("blocks.edit.Page", ["constants.blocks.common", "blocks.core.Edit", 
         Sidebar.addUIForProperty(windowID, pageActions);
 
         //initialize the newBlock popover
-        newBlock.find('[data-toggle="popover"]').popover().on('shown.bs.popover', function () {
-            var $pop = $(this);
-            setTimeout(function () {
-                $pop.popover('hide');
-            }, 2000);
+        $(document).ready(function()
+        {
+            newBlock.find('[data-toggle="popover"]').popover({
+                container: 'body'
+            }).on('shown.bs.popover', function ()
+            {
+                var $pop = $(this);
+                setTimeout(function ()
+                {
+                    $pop.popover('hide');
+                }, 2000);
+            });
         });
 
         Sidebar.addValueHtml(windowID, title, "Page title", false);
@@ -39,11 +46,5 @@ base.plugin("blocks.edit.Page", ["constants.blocks.common", "blocks.core.Edit", 
     };
 
     Edit.registerByTag(Constants.PAGE_CONTENT_CLASS, this);
-
-    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function ()
-    {
-        //simulate a page focus when we start editing
-        Page.focus();
-    });
 
 }]);
