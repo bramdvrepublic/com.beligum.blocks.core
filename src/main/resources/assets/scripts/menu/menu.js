@@ -295,7 +295,7 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         containers.removeAttr("style");
         if (wrapper.length > 0) {
             var wrapperWidth = wrapper.outerWidth();
-            var containerWidth = containers.width();
+            var containerWidth = containers.outerWidth();
             if (containerWidth > wrapperWidth) {
                 containers.css("width", (wrapperWidth - 50) + "px");
             }
