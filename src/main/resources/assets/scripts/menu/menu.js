@@ -246,7 +246,6 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     var enableSidebarDrag = function() {
         $(document).on("mousedown.sidebar_resize", "."+Constants.PAGE_SIDEBAR_RESIZE_CLASS, function() {
             // On mousedown start resizing
-            Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
             Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
             DOM.disableSelection();
             DOM.disableContextMenu();

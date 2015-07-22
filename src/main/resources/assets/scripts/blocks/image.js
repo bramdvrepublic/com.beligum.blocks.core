@@ -4,8 +4,8 @@
 base.plugin("blocks.edit.Image", ["constants.blocks.common", "blocks.core.Edit", "blocks.core.Sidebar",  function (Constants, Edit, Sidebar)
 {
 
-    this.focus = function(element, blockEvent) {
-        var windowID = Sidebar.createWindow(Constants.CONTEXT, blockEvent.block.current.element, "Afbeelding");
+    this.focus = function(windowID, element, blockEvent) {
+
         Sidebar.addValueAttribute(windowID, element, "image url", "src", true, true, true);
     };
 

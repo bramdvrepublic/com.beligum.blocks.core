@@ -45,7 +45,7 @@ base.plugin("blocks.core.edit.Text", ["constants.blocks.common", "blocks.core.Br
      * Start full text editing on a block (start Scribe)
      *
      * */
-     this.focus = function (element, blockEvent)
+     this.focus = function (windowID, element, blockEvent)
     {
         // Preparation
         element.attr("contenteditable", true);

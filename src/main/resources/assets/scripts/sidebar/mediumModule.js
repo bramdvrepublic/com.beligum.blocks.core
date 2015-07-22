@@ -7,7 +7,9 @@
  */
 
 base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", function(Extensions) {
-    var Editor = this;
+    var MediumModule = this;
+
+    var Editor = null;
     var defaultToolbarOptions = ['bold', 'italic', 'underline', 'strike-through', 'superscript', 'anchor', 'orderedlist', 'unorderedlist', 'justifyLeft', 'justifyCenter', 'justifyRight', 'styles-picker'];
 
     this.getToolbarElement = function() {
@@ -21,6 +23,10 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
 
 
     this.getEditor = function(element, inline) {
+        if (Editor != null) {
+            MediumModule.removeEditor();
+        }
+
         var options = {};
         var toolbarOptions = {};
 

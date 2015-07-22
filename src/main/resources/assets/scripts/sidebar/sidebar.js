@@ -140,7 +140,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         if (block) {
             var editFunction = Edit.makeEditable(block.element);
             if (editFunction != null && editFunction.focus != null) {
-                editFunction.focus(block.element, null);
+                var windowID = SideBar.createWindow(Constants.CONTEXT, block.element, "Page");
+                editFunction.focus(windowID, block.element, null);
             }
         }
     };
@@ -163,44 +164,61 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
      * */
     this.refresh = function ()
     {
-        var block = currentBlockEvent.property.current;
 
+        var block = currentBlockEvent.property.current;
         var editFunction = Edit.makeEditable(currentProperty);
 
-        // Add edit functionality for properties
-        // Do not check blocks
-        var property = currentProperty || block.element;
-        while (property != null && !property.hasClass(Constants.PAGE_CONTENT) && property[0].tagName.indexOf("-") < 0) {
-            var editFunction = Edit.makeEditable(property);
-            if (editFunction != null && editFunction.focus != null) {
-                editFunction.focus(currentProperty, currentBlockEvent);
-            }
-            property = property.parent();
-        }
+        var activeBlocks = [];
 
         // Add editfunctionality for blocks
         while (block != null) {
             if (block instanceof blocks.elements.Block) {
+                var windowID = SideBar.createWindow(Constants.CONTEXT, block.element, "Block");
+                if (block.canDrag) {
+                    SideBar.addRemoveBlockButton(windowID, block);
+                }
+
+                activeBlocks.push({element: block.element, id: windowID});
                 var editFunction = Edit.makeEditable(block.element);
                 if (editFunction != null && editFunction.focus != null) {
-                    editFunction.focus(block.element, currentBlockEvent);
+                    editFunction.focus(windowID, block.element, currentBlockEvent);
                 }
-                if (block.canDrag) SideBar.addRemoveBlockButton(block);
             }
             block = block.parent;
         }
+
+        // Add edit functionality for properties
+        // Do not check blocks
+        var property = currentProperty;
+        while (property != null && !property.hasClass(Constants.PAGE_CONTENT) && property[0].tagName.indexOf("-") < 0) {
+            var editFunction = Edit.makeEditable(property);
+            if (editFunction != null && editFunction.focus != null) {
+                var windowId = null;
+                for(var i=0; i < activeBlocks.length; i++) {
+                    if (activeBlocks[i].element.has(property)) {
+                        windowId = activeBlocks[i].id;
+                        break;
+                    }
+                }
+                editFunction.focus(windowId, currentProperty, currentBlockEvent);
+            }
+            property = property.parent();
+        }
+
+
     };
 
-    this.addRemoveBlockButton = function (property)
+    this.addRemoveBlockButton = function (windowID, property)
     {
 
-        var windowID = this.createWindow(Constants.CONTEXT, $("<div class='panel panel-default " + Constants.REMOVE_BLOCK_CLASS + "'/>"), "Block");
-
         //var remove = $("<div class='panel panel-default "+ Constants.REMOVE_BLOCK_CLASS +"'/>");
-        var text = $("<div class='text'><span>Remove block</span></div>");
-        var button = $("<a class='btn btn-danger btn-sm pull-right'><i class='fa fa-trash-o'></i></a></div>");
+        var blockActions = $("<ul/>").addClass(Constants.BLOCK_ACTIONS_CLASS);
+        var removeAction = $("<li><span>Remove block</span></li>");
+        var removeButton = $("<a class='btn btn-danger btn-sm pull-right'><i class='fa fa-trash-o'></i></a>");
+        blockActions.append(removeAction);
+        removeAction.append(removeButton);
 
-        button.click(function ()
+        removeButton.click(function ()
         {
             //TODO let's not ask for a confirmation but implement an undo-function later on...
             //confirm.removeClass("hidden");
@@ -211,7 +229,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             Layouter.removeBlock(property);
         });
 
-        this.addUIForProperty(windowID, text.append(button));
+        this.addUIForProperty(windowID, blockActions);
+        blockActions.after($("<hr/>"));
     };
 
     /**
@@ -320,9 +339,11 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             }
 
             var property = null;
+
             while (property == null && element[0].tagName.indexOf("-") == -1 && element[0].tagName != "BODY") {
                 if (element.hasAttribute("property") || element.hasAttribute("data-property")) {
                     property = element;
+                    break;
                 } else {
                     element = element.parent();
                 }
