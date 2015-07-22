@@ -173,13 +173,18 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         // Add editfunctionality for blocks
         while (block != null) {
             if (block instanceof blocks.elements.Block) {
-                var windowID = SideBar.createWindow(Constants.CONTEXT, block.element, "Block");
+                var blockTitle = 'Block';
+                var editFunction = Edit.makeEditable(block.element);
+                if (editFunction != null && editFunction.getWindowName != null) {
+                    blockTitle = editFunction.getWindowName();
+                }
+                var windowID = SideBar.createWindow(Constants.CONTEXT, block.element, blockTitle);
                 if (block.canDrag) {
                     SideBar.addRemoveBlockButton(windowID, block);
                 }
 
                 activeBlocks.push({element: block.element, id: windowID});
-                var editFunction = Edit.makeEditable(block.element);
+
                 if (editFunction != null && editFunction.focus != null) {
                     editFunction.focus(windowID, block.element, currentBlockEvent);
                 }

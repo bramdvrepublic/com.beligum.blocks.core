@@ -8,7 +8,7 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
     this.focus = function(windowId, propertyElement, blockEvent) {
         var element = blockEvent.block.current.element.find(".carousel");
 
-        listGroup = $('<div class="list-group" />')
+        listGroup = $('<div class="list-group" />');
 
         redraw(element);
 
@@ -19,6 +19,10 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
 
     this.blur = function() {
         listGroup = null;
+    };
+
+    this.getWindowName = function() {
+        return "Caroussel";
     };
 
 
@@ -135,7 +139,7 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
             var item = $(items[i]);
             listGroup.append(createImageEditBox(item, items, carousel));
         }
-    }
+    };
 
     Edit.registerByTag("BOOTSTRAP-CAROUSEL", this);
 

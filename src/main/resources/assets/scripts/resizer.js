@@ -70,14 +70,12 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
         DOM.disableContextMenu();
         $("body").addClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
 
-        $("." + Constants.BLOCK_OVERLAY_CLASS).hide();
-        $("." + Constants.PROPERTY_OVERLAY_CLASS).hide();
         // Hide all resizers except the ones in the current row
-        $("." + Constants.COLUMN_RESIZER_CLASS).hide();
         activeRowElement = handle.leftColumn.parent.element;
         var handles = handle.leftColumn.parent.resizeHandles || [];
         for (var i=0; i < handles.length; i ++) {
-            handles[i].overlay.show();
+            //handles[i].overlay.show();
+            handles[i].showOverlay();
         }
 
 
