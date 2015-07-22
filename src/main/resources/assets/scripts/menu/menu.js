@@ -53,8 +53,8 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 MainMenu.sideBar.removeClass(Constants.SIDEBAR_ANIMATED_CLASS);
 
                 //start with a fresh empty sidebar (the buildLayoutTree makes sure we always start with the page properties in the sidebar)
-                Broadcaster.buildLayoutTree();
-                Sidebar.clear();
+                //Broadcaster.buildLayoutTree();
+                //Sidebar.clear();
 
                 $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth*(1.0-INIT_SIDEBAR_WIDTH)) + "px");
                 $("body").append(MainMenu.menuStartButton);
