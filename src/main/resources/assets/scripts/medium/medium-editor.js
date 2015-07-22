@@ -1651,7 +1651,7 @@ var Extension;
          */
         queryCommandState: undefined,
 
-        /* isActive: [function ()]
+        /* ivctive: [function ()]
          *
          * If implemented, this function will be called when MediumEditor
          * has determined that this extension is 'active' for the current selection.

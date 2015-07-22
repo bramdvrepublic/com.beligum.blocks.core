@@ -29,7 +29,9 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
 
         options.buttonLabels = 'fontawesome';
         options.extensions = {};
-        options.extensions[Extensions.StylesPickerButton.NAME] = new Extensions.StylesPickerButton({});
+        options.extensions[Extensions.StylesPickerButton.NAME] = new Extensions.StylesPickerButton({
+            parentModule: MediumModule
+        });
 
         // Always show toolbar
         toolbarOptions.static = true;

@@ -12,20 +12,26 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", function (
     //used this as a reference: https://github.com/arcs-/MediumButton
     this.StylesPickerButton = Class.create({
 
+        //-----CONSTANTS-----
         STATIC: {
-            NAME: "styles-picker"
+            NAME: "styles-picker",
+            STYLES: []
         },
 
+        editorStyles: [],
+
+        //-----CONSTRUCTORS-----
         constructor: function (options)
         {
-            this.options = this._extend(options, {
-
-            });
+            this.options = this._extend(options, {});
+            this.parentModule = options.parentModule;
             this.hasForm = false;
             this.isFormVisible = false;
+            this.editorStyles = [];
             this.createButton();
         },
 
+        //-----OVERLOADED FUNCTIONS-----
         createButton: function ()
         {
             this._createButtonElement();
@@ -46,25 +52,8 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", function (
         {
         },
 
-        onHide: function ()
-        {
-        },
-
         hideForm: function ()
         {
-        },
-
-        show: function ()
-        {
-            //this.isFormVisible = true;
-            //this.builder.show(this.button.offsetLeft);
-            //this.button.classList.add('medium-editor-button-active');
-            //var elements = document.getElementsByClassName('medium-editor-table-builder-grid');
-            //for (var i = 0; i < elements.length; i++) {
-            //    // TODO: what is 16 and what is 2?
-            //    elements[i].style.height = (16 * this.options.rows + 2) + 'px';
-            //    elements[i].style.width = (16 * this.options.columns + 2) + 'px';
-            //}
         },
 
         checkState: function ()
@@ -75,25 +64,92 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", function (
             //}
         },
 
+        //-----OWN FUNCTIONS-----
+
+        /**
+         * Styles is an array with objects
+         * object is of type {value: "", text: ""}
+         * value = "p:red" -> text before the colon is the tag, text after the colon are the classes that will be added
+         * nothing after colon will remove all classes, nothing before colon will not touch the tag
+         * text is the text in the dropdown
+         *
+         * ----- example config -----
+         * var styles = [
+         * This will clear the existing classes, but leave the tag alone
+         * {value: ":", text: Messages.p},
+         *
+         * This is generally the default case: a p without classes (eg. when hitting enter in editor)
+         * {value: "p:", text: Messages.p},
+         *
+         * Will change the tag to <h1> and remove existing classes
+         * {value: "h1:", text: Messages.h1},
+         *
+         * Will change the tag to <h1> clear existing classes and add the classes after the colon
+         * {value: "h1:red", text: Messages.h1Red}
+         * ];
+         * ----------------------------
+         */
+        setStyles: function (newStyles)
+        {
+            editorStyles = newStyles;
+        },
+        getStyles: function ()
+        {
+            return editorStyles;
+        },
+
+        //-----PRIVATE FUNCTIONS-----
         _createButtonElement: function ()
         {
-            //this.button = document.createElement('button');
-            //this.button.className = 'medium-editor-action';
-            //this.button.innerHTML = '<i class="fa fa-table"></i>';
-
             //this.button = $('<button/>');
             this.button = $('<div class="dropdown btn-group medium-editor-action"/>');
             var toggle = $('<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Style <span class="caret"></span></button>');
+
             var styles = $('<ul class="dropdown-menu"/>');
-            styles.append('<li><a href="#">Action</a></li>');
-            styles.append('<li><a href="#">Another action</a></li>');
+
+            var valueAttr = "data-value";
+            for (var i = 0; i < MediumEditorExtensions.StylesPickerButton.STYLES.length; i++) {
+                var val = MediumEditorExtensions.StylesPickerButton.STYLES[i];
+
+                //note that we bind to this, but pass the data in the function()
+                var btn = $('<a href="javascript:void()" ' + valueAttr + '="' + val.value + '">' + val.text + '</a>');
+                btn.click(btn.attr(valueAttr), function (event)
+                {
+                    this._onSelect(event.data);
+                }.bind(this));
+
+                styles.append($('<li></li>').append(btn));
+            }
 
             this.button.append(toggle).append(styles);
-
-            //this.button.addClass('medium-editor-action');
-            //this.button.append('<i class="fa fa-table"></i>');
         },
+        _onSelect: function (configValue)
+        {
+            var arguments = configValue.split(':');
+            var tag = arguments[0].trim();
+            var classes = arguments[1].trim();
 
+            this._load();
+
+            for (var i = 0; i < this.blocks.length; i++) {
+                var el = this.blocks[i].element;
+                if (tag != "") {
+                    var ne = $("<" + tag + "/>");
+                    ne.html(el.html());
+                    el.replaceWith(ne);
+                    this.blocks[i].element = ne;
+                }
+
+                if (classes != "") {
+                    this.blocks[i].element.addClass(arguments[1].trim());
+                } else {
+                    this.blocks[i].element.attr("class", "");
+                }
+
+
+            }
+            this.base.restoreSelection();
+        },
         _bindButtonClick: function ()
         {
             //this.button.addEventListener('click', function (e)
@@ -101,6 +157,39 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", function (
             //    e.preventDefault();
             //    this[this.isFormVisible === true ? 'hideForm' : 'show']();
             //}.bind(this));
+        },
+        _load: function()
+        {
+            var blockContainerElementNames = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre'];
+            var elements = MediumEditor.selection.getSelectedElements(document);
+            if (elements.length == 0) {
+                elements.push(MediumEditor.selection.getSelectedParentElement(MediumEditor.selection.getSelectionRange(document)));
+            }
+            // Filter all elements that we will change with our style
+            var parents = [];
+            var lastElement = null;
+            for (var i = 0; i < elements.length; i++) {
+                var el = $(elements[i]);
+                // From all selected elements, we need only the root block elements
+                // so filter the children out
+                if (lastElement == null || lastElement.has(el).length == 0) {
+                    //TODO: something's wrong here
+                    while (!el.attr("content-editable") && blockContainerElementNames.indexOf(el[0].nodeName.toLowerCase()) == -1) {
+                        el = el.parent()
+                    }
+                    lastElement = el;
+                    // only block elements inside our container can be styled
+                    if (!el.attr("content-editable")) {
+                        // store original values so we can restore on cancel
+                        var block = {};
+                        block.element = el;
+                        block.classes = el.attr("class") ? el.attr("class") : "";
+                        block.tagName = el[0].tagName.toLowerCase();
+                        parents.push(block);
+                    }
+                }
+            }
+            this.blocks = parents;
         },
 
         //-----UTILS-----
@@ -118,38 +207,6 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", function (
         }
     });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    var editorStyles = [];
-
-    // Styles is an array with objects
-    // object is of type {value: "", text: ""}
-    // value = "p:red" -> text before the colon is the tag, text after the colon are the classes that will be added
-    // nothing after colon will remove all classes, nothing before colon will not touch the tag
-    // text is the text in the dropdown
-    this.setStyles = function (newStyles)
-    {
-        editorStyles = newStyles;
-    };
-
-    this.getStyles = function ()
-    {
-        return editorStyles;
-    };
 
     this.styleExtension = MediumEditor.FormExtension.extend({
 
