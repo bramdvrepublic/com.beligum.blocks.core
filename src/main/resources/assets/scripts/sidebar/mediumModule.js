@@ -17,9 +17,8 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
         return retVal;
     };
 
-
-
-    this.getEditor = function(element, inline) {
+    this.getEditor = function (element, inline)
+    {
         if (Editor != null) {
             MediumModule.removeEditor();
         }
@@ -29,7 +28,9 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
 
         options.buttonLabels = 'fontawesome';
         options.extensions = {};
-        options.extensions[Extensions.StylesPickerButton.NAME] = new Extensions.StylesPickerButton({});
+        options.extensions[Extensions.StylesPickerButton.NAME] = new Extensions.StylesPickerButton({
+            parentModule: MediumModule
+        });
 
         // Always show toolbar
         toolbarOptions.static = true;
