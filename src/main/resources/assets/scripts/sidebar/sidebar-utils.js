@@ -193,9 +193,13 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
     this.addValueAttribute = function (element, label, name, confirm, disabled, serverSelect, url, SideBar)
     {
         var id = Plugin.makeid();
+        var container = $("<div />");
+        var form = $("<div class='form-inline' />");
+        container.append(form);
         var content = $('<div class="form-group" />');
-        content.append($('<label for="' + id + '">' + label + '</label>'));
-        var group = $('<div class="input-group" />');
+
+        //var group = $('<div class="input-group" />');
+        content.append($('<label for="' + id + '">' + label + ' </label>'));
         var input = $('<input "' + id + '" type="text" class="form-control" />');
         if (!disabled) {
             input.attr("disabled", "");
@@ -204,13 +208,17 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
         if (element.hasAttribute(name) != null) {
             input.val(element.attr(name));
         }
-        content.append(group.append(input));
+        content.append(input);
 
         var oldvalue = input.val();
         if (confirm == true) {
             var cancel = $('<a class="btn-clear hidden"><i class="fa fa-times"></i></a>');
-            //var ok = $('<div class="input-group-addon"><i class="fa fa-check" style="color:green"></i></div>');
-            group.append(cancel)/*.append(ok)*/;
+            var ok = $('<button class="btn btn-primary"><i class="fa fa-check" style="color:green"></i></button>');
+            content.append(cancel)/*.append(ok)*/;
+
+            var form2 = $("<div />");
+            container.append(form2);
+            form2.append(ok);
 
             input.on("change keyup", function (e)
             {
@@ -226,12 +234,12 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
                 input.val(oldvalue);
             });
 
-            //ok.click(function (e)
-            //{
-            //    oldvalue = input.val();
-            //    input.val(oldvalue);
-            //    element.attr(name, oldvalue);
-            //});
+            ok.click(function (e)
+            {
+                oldvalue = input.val();
+                input.val(oldvalue);
+                element.attr(name, oldvalue);
+            });
         }
 
         if (!confirm) {
@@ -243,7 +251,8 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
         }
 
         if (serverSelect) {
-            var fileButton = $('<button class="btn btn-primary">File from server</button>');
+            var fileButton = $('<button class="btn btn-primary"><i class="fa fa-file-o"></i></button>');
+            form.append(fileButton);
 
             //var close = function() {
             //    $("." + Constants.PAGE_CONTENT_CLASS).show();
@@ -251,6 +260,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
             //    $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_CONTEXT_ID +'"]').tab('show')
             //};
 
+            var sidebarWidth = 0;
 
             var finderOptions = {};
             finderOptions.onSelect = function(files) {
@@ -275,12 +285,11 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
                 loadFinder(finderOptions);
             });
 
-            content = $("<div>").append(content).append(fileButton);
+            form.prepend(content);
 
-            //content.append(fileButton);
         }
 
-        return content;
+        return container;
     };
 
     /*
