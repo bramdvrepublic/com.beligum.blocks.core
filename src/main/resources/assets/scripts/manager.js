@@ -39,9 +39,8 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
         //        event.preventDefault();
         //    }
         //});
-
-        Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
         Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE, null);
+        Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
         Sidebar.clear();
 
     });
@@ -64,7 +63,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
         Mouse.activate();
         DOM.disableSelection();
         Broadcaster.resetHover();
-
+        Overlay.showOverlays();
         DragDrop.setActive(true);
         Sidebar.enableEditing();
         //DragCreate.activate();
@@ -76,6 +75,9 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
     {
         Mouse.deactivate();
         Broadcaster.resetHover();
+        Overlay.removeOverlays();
+        Highlighter.removeBlockOverlay();
+        Highlighter.removePropertyOverlay();
         DragDrop.setActive(false);
         Sidebar.disableEditing();
         DOM.enableSelection();
@@ -215,16 +217,12 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
 
     $(document).on(Broadcaster.EVENTS.START_EDIT_FIELD, function (event)
     {
-        Highlighter.removeBlockOverlay();
-        Highlighter.removePropertyOverlay();
-        Overlay.removeOverlays();
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
     });
 
     $(document).on(Broadcaster.EVENTS.END_EDIT_FIELD, function (event)
     {
         Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
-        Overlay.showOverlays();
         Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
     });
 

@@ -44,6 +44,10 @@ base.plugin("blocks.edit.Page", ["constants.blocks.common", "blocks.core.Edit", 
 
     };
 
+    this.getWindowName = function() {
+        return "Page";
+    }
+
     Edit.registerByTag(Constants.PAGE_CONTENT_CLASS, this);
 
 }]);

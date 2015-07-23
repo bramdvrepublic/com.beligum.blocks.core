@@ -19,6 +19,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     var lastDropLocation = null;
     var currentDraggedBlock = null;
     var old_direction = BaseConstants.DIRECTION.NONE;
+    var sidebar = null;
     /*
      * METHODS CALLED WHILE DRAGGING
      **/
@@ -51,6 +52,8 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     this.dragStarted = function (blockEvent)
     {
         Logger.debug("drag started");
+        sidebar = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS).offset().left;
+
 //        Broadcaster.zoom();
         old_direction = BaseConstants.DIRECTION.NONE;
         if (blockEvent != null) {
@@ -125,7 +128,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                     dropBlock.getTriggeredDropspot(direction, blockEvent.pageX, blockEvent.pageY);
                 }
 
-            } else {
+            } else if (sidebar == null || sidebar > blockEvent.pageX) {
                 var container = Broadcaster.getContainer().getLayoutContainer();
 
                 if (blockEvent.pageY > container.top && blockEvent.pageY < container.bottom) {
@@ -171,6 +174,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
 
     this.dragEnded = function (blockEvent)
     {
+        sidebar = null;
         if (dragging) {
 
             // check for null (e.g during abort_drag)
@@ -181,7 +185,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                 resetDragDrop();
                 Layouter.changeBlockLocation(currentDraggedBlock, lastDropLocation.anchor, lastDropLocation.side);
             } else if (currentDraggedBlock == null && lastDropLocation != null  && insideWindow(blockEvent.clientX, blockEvent.clientY)) {
-               // We added a new block
+                // We added a new block
                 Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
                 Overlay.removeOverlays();
                 // show select box with all blocks
@@ -194,29 +198,54 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                         description.html(select.find(":selected").attr("description"));
                     });
                     box.append(description);
+                    var cancelled = true;
                     BootstrapDialog.show({
                         message: function() {return box},
                         buttons: [{
                             label: 'Cancel',
                             action: function(dialogRef) {
-                                DragDrop.dragAborted();
                                 dialogRef.close();
-                                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+
                             }
                         }, {
                             label: 'OK',
                             cssClass: 'btn-primary',
                             action: function(dialogRef){
-                                dialogRef.close();
                                 var name = select.val();
+                                var waitingDialog = new BootstrapDialog({
+                                    message: "Please wait"
+                                });
+                                waitingDialog.open();
                                 $.getJSON("/blocks/admin/page/block/" + name, function(data) {
+                                    // TODO: add waiting dialog
+                                    waitingDialog.close();
                                     var block = $(data.html);
                                     Overlay.removeOverlays();
                                     resetDragDrop();
+                                    cancelled = false;
                                     Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side);
+                                    dialogRef.close();
+                                }, function() {
+                                    BootstrapDialog.show({
+                                        type: BootstrapDialog.TYPE_DANGER,
+                                        message: "An error Occured. Sorry.",
+                                        buttons: [{
+                                            label: 'Ok',
+                                            action: function(dialogRef) {
+                                                dialogRef.close();
+
+                                            }
+                                        }]
+                                    });
                                 });
                             }
-                        }]
+                        }],
+                        onhidden: function() {
+                            if (cancelled) {
+                                DragDrop.dragAborted();
+                                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+                            }
+                        }
                     });
                 });
 
@@ -246,7 +275,6 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     this.dragAborted = function ()
     {
         resetDragDrop();
-        Overlay.showResizehandles();
     };
 
     /*
