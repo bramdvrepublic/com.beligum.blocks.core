@@ -17,9 +17,8 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
         return retVal;
     };
 
-
-
-    this.getEditor = function(element, inline) {
+    this.getEditor = function (element, inline)
+    {
         if (Editor != null) {
             MediumModule.removeEditor();
         }

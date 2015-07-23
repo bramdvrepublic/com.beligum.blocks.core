@@ -125,30 +125,35 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", function (
         },
         _onSelect: function (configValue)
         {
+            this.base.saveSelection();
+
             var arguments = configValue.split(':');
             var tag = arguments[0].trim();
             var classes = arguments[1].trim();
 
-            this._load();
+            var selectedElements = this._findSelection();
 
-            for (var i = 0; i < this.blocks.length; i++) {
-                var el = this.blocks[i].element;
+            for (var i = 0; i < selectedElements.length; i++) {
+                var el = selectedElements[i].element;
                 if (tag != "") {
                     var ne = $("<" + tag + "/>");
                     ne.html(el.html());
                     el.replaceWith(ne);
-                    this.blocks[i].element = ne;
+                    selectedElements[i].element = ne;
                 }
 
                 if (classes != "") {
-                    this.blocks[i].element.addClass(arguments[1].trim());
+                    selectedElements[i].element.addClass(arguments[1].trim());
                 } else {
-                    this.blocks[i].element.attr("class", "");
+                    selectedElements[i].element.attr("class", "");
                 }
-
-
             }
+
+            //make sure the caret is at the same position as before
             this.base.restoreSelection();
+
+            //re-positions the toolbar
+            this.base.checkSelection();
         },
         _bindButtonClick: function ()
         {
@@ -158,12 +163,12 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", function (
             //    this[this.isFormVisible === true ? 'hideForm' : 'show']();
             //}.bind(this));
         },
-        _load: function()
+        _findSelection: function()
         {
             var blockContainerElementNames = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre'];
-            var elements = MediumEditor.selection.getSelectedElements(document);
+            var elements = this.base.getSelection().getSelectedElements(document);
             if (elements.length == 0) {
-                elements.push(MediumEditor.selection.getSelectedParentElement(MediumEditor.selection.getSelectionRange(document)));
+                elements.push(this.base.getSelection().getSelectedParentElement(this.base.getSelection().getSelectionRange(document)));
             }
             // Filter all elements that we will change with our style
             var parents = [];
@@ -174,22 +179,26 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", function (
                 // so filter the children out
                 if (lastElement == null || lastElement.has(el).length == 0) {
                     //TODO: something's wrong here
-                    while (!el.attr("content-editable") && blockContainerElementNames.indexOf(el[0].nodeName.toLowerCase()) == -1) {
+                    while (!el.attr("content-editable") && el[0].nodeName.toLowerCase() !== "body" && blockContainerElementNames.indexOf(el[0].nodeName.toLowerCase()) == -1) {
                         el = el.parent()
                     }
-                    lastElement = el;
-                    // only block elements inside our container can be styled
-                    if (!el.attr("content-editable")) {
-                        // store original values so we can restore on cancel
-                        var block = {};
-                        block.element = el;
-                        block.classes = el.attr("class") ? el.attr("class") : "";
-                        block.tagName = el[0].tagName.toLowerCase();
-                        parents.push(block);
+                    //if we searched all the way up till the body, we couldn't find the parent and something's wrong
+                    if (el[0].nodeName.toLowerCase() !== "body") {
+                        lastElement = el;
+                        // only block elements inside our container can be styled
+                        if (!el.attr("content-editable")) {
+                            // store original values so we can restore on cancel
+                            var block = {};
+                            block.element = el;
+                            block.classes = el.attr("class") ? el.attr("class") : "";
+                            block.tagName = el[0].tagName.toLowerCase();
+                            parents.push(block);
+                        }
                     }
                 }
             }
-            this.blocks = parents;
+
+            return parents;
         },
 
         //-----UTILS-----
