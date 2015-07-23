@@ -190,7 +190,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
      * serverSelect: user can only select file from server
      * url: user can select a local url from tree
      * */
-    this.addValueAttribute = function (element, label, name, confirm, disabled, serverSelect, url)
+    this.addValueAttribute = function (element, label, name, confirm, disabled, serverSelect, url, SideBar)
     {
         var id = Plugin.makeid();
         var content = $('<div class="form-group" />');
@@ -251,24 +251,30 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
             //    $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_CONTEXT_ID +'"]').tab('show')
             //};
 
-            Finder.setOnSelect(function (file)
-            {
-                if (file != null) {
+
+            var finderOptions = {};
+            finderOptions.onSelect = function(files) {
+                if (files.length > 0) {
+                    var file = files[0];
                     if (file.charAt(0) !== "/") {
                         file = "/" + file;
                     }
+                    file = Constants.ASSETS_FOLDER + file;
                     input.val(file);
                     element.attr(name, file);
                 }
-            });
+                SideBar.refresh();
+            };
 
+            finderOptions.onCancel = function() {
+                SideBar.refresh();
+            };
 
             fileButton.click(function ()
             {
-                $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_FILES_ID + '"]').tab('show')
-                $("." + Constants.PAGE_CONTENT_CLASS).hide();
-                $("." + Constants.BLOCKS_START_BUTTON).hide();
+                loadFinder(finderOptions);
             });
+
             content = $("<div>").append(content).append(fileButton);
 
             //content.append(fileButton);
@@ -333,6 +339,25 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
             text += possible.charAt(Math.floor(Math.random() * possible.length));
 
         return text;
+    };
+
+    var loadFinder = function(options) {
+        var filesContainer = $("#" + Constants.SIDEBAR_CONTEXT_ID);
+        filesContainer.empty().addClass(Constants.LOADING_CLASS);
+
+        //TODO maybe not necessary to reload this every time, but it allows us to always present a fresh uptodate view of the server content
+        filesContainer.load("/media/finder-inline", function (response, status, xhr)
+        {
+            if (status == "error") {
+                var msg = "Error while loading the finder; ";
+                filesContainer.removeClass(Constants.LOADING_CLASS);
+                Notification.error(msg + xhr.status + " " + xhr.statusText, xhr);
+            }
+            else {
+                Finder.init(options);
+                filesContainer.removeClass(Constants.LOADING_CLASS);
+            }
+        });
     };
 
 }]);

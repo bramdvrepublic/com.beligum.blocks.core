@@ -54,19 +54,20 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             MainMenu.sideBar.css("width", INIT_SIDEBAR_WIDTH + "px");
             //one() = on() but only once
             MainMenu.sideBar.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function(event) {
-                MainMenu.sideBar.removeClass(Constants.SIDEBAR_ANIMATED_CLASS);
+                if ($(event.target).hasClass(Constants.PAGE_SIDEBAR_CLASS)) {
+                    MainMenu.sideBar.removeClass(Constants.SIDEBAR_ANIMATED_CLASS);
+                    //start with a fresh empty sidebar (the buildLayoutTree makes sure we always start with the page properties in the sidebar)
+                    //Broadcaster.buildLayoutTree();
+                    //Sidebar.clear();
 
-                //start with a fresh empty sidebar (the buildLayoutTree makes sure we always start with the page properties in the sidebar)
-                //Broadcaster.buildLayoutTree();
-                //Sidebar.clear();
+                    $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth - INIT_SIDEBAR_WIDTH) + "px");
+                    $("body").append(MainMenu.menuStartButton);
 
-                $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth -INIT_SIDEBAR_WIDTH) + "px");
-                $("body").append(MainMenu.menuStartButton);
+                    updateContainerWidth();
+                    enableSidebarDrag();
 
-                updateContainerWidth();
-                enableSidebarDrag();
-
-                Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS);
+                    Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS);
+                }
             });
         } else {
             cookieState = SIDEBAR_STATE_HIDE;
