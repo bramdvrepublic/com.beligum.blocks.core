@@ -202,6 +202,9 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
             //input.attr(SidebarUtils.oldValAttr, input.val());
         });
 
+        //initialize the input with the value
+        input.val(element.attr(name));
+
         //var oldvalue = input.val();
         //if (confirm == true) {
         //    var cancel = $('<a class="input-btn-clear"><i class="fa fa-times"></i></a>');

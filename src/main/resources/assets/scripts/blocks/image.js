@@ -6,7 +6,7 @@ base.plugin("blocks.edit.Image", ["constants.blocks.common", "blocks.core.Edit",
 
     this.focus = function(windowID, element, blockEvent) {
 
-        Sidebar.addValueAttribute(windowID, element, "Image url", "Paste or type an image link", "src", true, true);
+        Sidebar.addValueAttribute(windowID, element, "Image url", "Paste or type an image link", "src", false, true);
     };
 
     this.blur = function() {

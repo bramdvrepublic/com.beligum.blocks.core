@@ -223,23 +223,25 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 success: function (url, textStatus, response)
                 {
                     dialog.close();
-                    dialog = new BootstrapDialog({
-                        type: BootstrapDialog.TYPE_SUCCESS,
-                        title: 'Page saved',
-                        message: '<p>The page was succesfully saved.</p>',
-                        buttons: [
-                            {
-                                id: 'btn-close',
-                                label: 'Ok',
-                                action: function (dialogRef)
-                                {
-                                    dialogRef.close();
-                                    Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-                                }
-                            }
-                        ]
-                    });
-                    dialog.open();
+
+                    //Annoying when saving a lot...
+                    //dialog = new BootstrapDialog({
+                    //    type: BootstrapDialog.TYPE_SUCCESS,
+                    //    title: 'Page saved',
+                    //    message: '<p>The page was succesfully saved.</p>',
+                    //    buttons: [
+                    //        {
+                    //            id: 'btn-close',
+                    //            label: 'Ok',
+                    //            action: function (dialogRef)
+                    //            {
+                    //                dialogRef.close();
+                    //                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+                    //            }
+                    //        }
+                    //    ]
+                    //});
+                    //dialog.open();
                 },
                 error: function (response, textStatus, errorThrown)
                 {
