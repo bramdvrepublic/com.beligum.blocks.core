@@ -212,8 +212,8 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
 
         var oldvalue = input.val();
         if (confirm == true) {
-            var cancel = $('<a class="btn-clear hidden"><i class="fa fa-times"></i></a>');
-            var ok = $('<button class="btn btn-primary"><i class="fa fa-check" style="color:green"></i></button>');
+            var cancel = $('<a class="input-btn-clear"><i class="fa fa-times"></i></a>');
+            var ok = $('<button class="btn btn-primary"><i class="fa fa-check"></i></button>');
             content.append(cancel)/*.append(ok)*/;
 
             var form2 = $("<div />");
@@ -222,16 +222,18 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
 
             input.on("change keyup", function (e)
             {
-                if (input.val()) {
-                    cancel.removeClass("hidden");
+                if (input.val()==null || input.val()=='') {
+                    cancel.removeClass("show");
                 }
                 else {
-                    cancel.addClass("hidden");
+                    cancel.addClass("show");
                 }
             });
             cancel.click(function (e)
             {
                 input.val(oldvalue);
+                input.change();
+                input.focus();
             });
 
             ok.click(function (e)

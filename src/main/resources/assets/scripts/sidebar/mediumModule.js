@@ -6,7 +6,7 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
     var MediumModule = this;
 
     var Editor = null;
-    var defaultToolbarOptions = [Extensions.StylesPickerButton.NAME, 'bold', 'italic', 'underline', 'strike-through', 'superscript', 'anchor', 'orderedlist', 'unorderedlist', 'justifyLeft', 'justifyCenter', 'justifyRight'];
+    var defaultToolbarOptions = [Extensions.StylesPicker.NAME, 'bold', 'italic', 'underline', 'strike-through', 'superscript', Extensions.LinkInput.NAME, 'orderedlist', 'unorderedlist', 'justifyLeft', 'justifyCenter', 'justifyRight'];
 
     this.getToolbarElement = function ()
     {
@@ -28,9 +28,8 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
 
         options.buttonLabels = 'fontawesome';
         options.extensions = {};
-        options.extensions[Extensions.StylesPickerButton.NAME] = new Extensions.StylesPickerButton({
-            parentModule: MediumModule
-        });
+        options.extensions[Extensions.StylesPicker.NAME] = new Extensions.StylesPicker({});
+        options.extensions[Extensions.LinkInput.NAME] = new Extensions.LinkInput({});
 
         // Always show toolbar
         toolbarOptions.static = true;
