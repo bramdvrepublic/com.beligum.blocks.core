@@ -192,6 +192,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
      * */
     this.addValueAttribute = function (element, label, placeholderText, name, confirm, serverSelect, url, SideBar)
     {
+        //TODO pass the default value (for reset)
         var content = this.addValueHtml(null, label, placeholderText, confirm);
 
         //TODO a little bit hacky, but does the job
