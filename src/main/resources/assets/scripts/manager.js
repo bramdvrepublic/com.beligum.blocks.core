@@ -68,13 +68,22 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
         Overlay.showOverlays();
         DragDrop.setActive(true);
         Sidebar.enableEditing();
-        //DragCreate.activate();
         Highlighter.showBlockOverlay(Broadcaster.block().current);
         Highlighter.showPropertyOverlay(Broadcaster.property().current);
+
+        var windowWidth = $(window).width();
+        if (windowWidth > 1030) {
+            Broadcaster.send(Broadcaster.EVENTS.DO_ALLOW_DRAG);
+            Mouse.allowDrag();
+        } else {
+            Broadcaster.send(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG);
+            Mouse.disallowDrag();
+        }
     });
 
     $(document).on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, function ()
     {
+
         Mouse.deactivate();
         Broadcaster.resetHover();
         Overlay.removeOverlays();
@@ -192,7 +201,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
     $(document).on(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG, function (event)
     {
         DragDrop.setActive(true);
-        Resizer.activate(true);
     });
 
     $(document).on(Broadcaster.EVENTS.DISABLE_BLOCK_DRAG, function (event)

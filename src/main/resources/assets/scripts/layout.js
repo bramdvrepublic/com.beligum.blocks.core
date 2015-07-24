@@ -185,16 +185,14 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "base.core.Const
         };
 
         droppedElement.toggle(200, function() {
-
             droppedElement.hide();
             DOM.appendElement(droppedElement, dropLocationElement, side, function () {
-            if (droppedContainer == null || droppedContainer == dropContainer) {
-                DOM.cleanup(dropContainer, finish);
-            } else {
-                DOM.cleanup(droppedContainer, function() {});
-                DOM.cleanup(dropContainer, finish);
-            }
-
+                if (droppedContainer == null || droppedContainer == dropContainer) {
+                    DOM.cleanup(dropContainer, finish);
+                } else {
+                    DOM.cleanup(droppedContainer, function() {});
+                    DOM.cleanup(dropContainer, finish);
+                }
             });
         });
 

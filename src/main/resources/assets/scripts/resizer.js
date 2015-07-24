@@ -18,7 +18,7 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
     var active = false;
     var draggingEnabled = false;
     var dragging = false;
-    var dragColumns;
+    var dragColumns = [];
     var currentDragColumn;
     var activeResizeHandle;
     var minColumn;
@@ -35,14 +35,6 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
         maxColumn = null;
 
     };
-
-
-    // update the position of the handle element in the dom
-    var moveHandleElement = function ()
-    {
-
-    };
-
 
     var activeRowElement = null;
 

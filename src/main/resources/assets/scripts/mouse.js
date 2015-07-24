@@ -83,15 +83,16 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
 
         currentBlock = null;
         currentProperty = null;
+        draggingStatus = BaseConstants.DRAGGING.NO;
         //var docWidth = $(document).width();
-        var docWidth = $("." + BlocksConstants.PAGE_CONTENT_CLASS).width();
-        //docWidth = 1000;
-        if (docWidth > 920) {
-            Broadcaster.send(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG);
-            draggingStatus = BaseConstants.DRAGGING.NO;
-        } else {
-            draggingStatus = BaseConstants.DRAGGING.NOT_ALLOWED;
-        }
+        //var docWidth = $("." + BlocksConstants.PAGE_CONTENT_CLASS).width();
+        ////docWidth = 1000;
+        //if (docWidth > 920) {
+        //    Broadcaster.send(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG);
+        //    draggingStatus = BaseConstants.DRAGGING.NO;
+        //} else {
+        //    draggingStatus = BaseConstants.DRAGGING.NOT_ALLOWED;
+        //}
 
         mouseMove(Broadcaster.getLastMove());
     };
