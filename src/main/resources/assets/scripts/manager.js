@@ -25,6 +25,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function ()
     {
         Broadcaster.setContainer(null);
+        Sidebar.clear();
         Broadcaster.registerMouseMove();
 
         //TODO annoying while debugging
@@ -48,6 +49,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
     $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function ()
     {
         window.onbeforeunload = function() {};
+        Sidebar.clear();
         Broadcaster.unregisterMouseMove();
         Overlay.removeOverlays();
         Broadcaster.setContainer(null);

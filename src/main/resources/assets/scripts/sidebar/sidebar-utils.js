@@ -1,7 +1,7 @@
 /**
  * Created by wouter on 18/06/15.
  */
-base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.finder", function (Constants, Finder)
+base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.finder", "blocks.core.Frame", function (Constants, Finder, Frame)
 {
 
     var Plugin = this;
@@ -190,12 +190,16 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
      * serverSelect: user can only select file from server
      * url: user can select a local url from tree
      * */
-    this.addValueAttribute = function (element, label, name, confirm, disabled, serverSelect, url)
+    this.addValueAttribute = function (element, label, name, confirm, disabled, serverSelect, url, SideBar)
     {
         var id = Plugin.makeid();
+        var container = $("<div />");
+        var form = $("<div class='form-inline' />");
+        container.append(form);
         var content = $('<div class="form-group" />');
-        content.append($('<label for="' + id + '">' + label + '</label>'));
-        var group = $('<div class="input-group" />');
+
+        //var group = $('<div class="input-group" />');
+        content.append($('<label for="' + id + '">' + label + ' </label>'));
         var input = $('<input "' + id + '" type="text" class="form-control" />');
         if (!disabled) {
             input.attr("disabled", "");
@@ -204,13 +208,17 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
         if (element.hasAttribute(name) != null) {
             input.val(element.attr(name));
         }
-        content.append(group.append(input));
+        content.append(input);
 
         var oldvalue = input.val();
         if (confirm == true) {
             var cancel = $('<a class="input-btn-clear"><i class="fa fa-times"></i></a>');
-            //var ok = $('<div class="input-group-addon"><i class="fa fa-check" style="color:green"></i></div>');
-            group.append(cancel)/*.append(ok)*/;
+            var ok = $('<button class="btn btn-primary"><i class="fa fa-check"></i></button>');
+            content.append(cancel)/*.append(ok)*/;
+
+            var form2 = $("<div />");
+            container.append(form2);
+            form2.append(ok);
 
             input.on("change keyup", function (e)
             {
@@ -228,12 +236,12 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
                 input.focus();
             });
 
-            //ok.click(function (e)
-            //{
-            //    oldvalue = input.val();
-            //    input.val(oldvalue);
-            //    element.attr(name, oldvalue);
-            //});
+            ok.click(function (e)
+            {
+                oldvalue = input.val();
+                input.val(oldvalue);
+                element.attr(name, oldvalue);
+            });
         }
 
         if (!confirm) {
@@ -245,7 +253,8 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
         }
 
         if (serverSelect) {
-            var fileButton = $('<button class="btn btn-primary">File from server</button>');
+            var fileButton = $('<button class="btn btn-primary"><i class="fa fa-file-o"></i></button>');
+            form.append(fileButton);
 
             //var close = function() {
             //    $("." + Constants.PAGE_CONTENT_CLASS).show();
@@ -253,30 +262,48 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
             //    $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_CONTEXT_ID +'"]').tab('show')
             //};
 
-            //TODO: this doesn't work yet? (file is undefined)
-            //Finder.setOnSelect(function (file)
-            //{
-            //    if (file != null) {
-            //        if (file.charAt(0) !== "/") {
-            //            file = "/" + file;
-            //        }
-            //        input.val(file);
-            //        element.attr(name, file);
-            //    }
-            //});
+            // Define variable so we can access it after of or cancel
+            var sidebarWidth = $("." + Constants.PAGE_SIDEBAR_CLASS).outerWidth();
+
+            var finderOptions = {};
+            finderOptions.onSelect = function(files) {
+                if (files.length > 0) {
+                    var file = files[0];
+                    if (file.charAt(0) !== "/") {
+                        file = "/" + file;
+                    }
+                    file = Constants.ASSETS_FOLDER + file;
+                    input.val(file);
+                    element.attr(name, file);
+                }
+                SideBar.refresh();
+                // restore sidebar width
+                Frame.setSidebarWidth(sidebarWidth);
+            };
+
+            finderOptions.onCancel = function() {
+                SideBar.refresh();
+                // restore sidebar width
+                Frame.setSidebarWidth(sidebarWidth);
+            };
 
             fileButton.click(function ()
             {
-                $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_FILES_ID + '"]').tab('show')
-                $("." + Constants.PAGE_CONTENT_CLASS).hide();
-                $("." + Constants.BLOCKS_START_BUTTON).hide();
-            });
-            content = $("<div>").append(content).append(fileButton);
+                loadFinder(finderOptions);
+                // save sidebar width
+                sidebarWidth = $("." + Constants.PAGE_SIDEBAR_CLASS).outerWidth();
+                var windowWidth = $(window).width();
 
-            //content.append(fileButton);
+                if(windowWidth / 2 > sidebarWidth) {
+                    Frame.setSidebarWidth(windowWidth / 2);
+                }
+            });
+
+            form.prepend(content);
+
         }
 
-        return content;
+        return container;
     };
 
     /*
@@ -335,6 +362,25 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
             text += possible.charAt(Math.floor(Math.random() * possible.length));
 
         return text;
+    };
+
+    var loadFinder = function(options) {
+        var filesContainer = $("#" + Constants.SIDEBAR_CONTEXT_ID);
+        filesContainer.empty().addClass(Constants.LOADING_CLASS);
+
+        //TODO maybe not necessary to reload this every time, but it allows us to always present a fresh uptodate view of the server content
+        filesContainer.load("/media/finder-inline", function (response, status, xhr)
+        {
+            if (status == "error") {
+                var msg = "Error while loading the finder; ";
+                filesContainer.removeClass(Constants.LOADING_CLASS);
+                Notification.error(msg + xhr.status + " " + xhr.statusText, xhr);
+            }
+            else {
+                Finder.init(options);
+                filesContainer.removeClass(Constants.LOADING_CLASS);
+            }
+        });
     };
 
 }]);

@@ -9,26 +9,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     var currentProperty = null;
     var currentBlockEvent = null;
 
-    // This is called when we click the files tab
-    // So onselect = null
-    $(document).on('click', "#" + Constants.SIDEBAR_FILES_TAB_ID, function (e)
-    {
-        var filesContainer = $("#" + Constants.SIDEBAR_FILES_ID);
-        filesContainer.empty().show().addClass(Constants.LOADING_CLASS);
 
-        //TODO maybe not necessary to reload this every time, but it allows us to always present a fresh uptodate view of the server content
-        filesContainer.load("/media/finder-inline", function (response, status, xhr)
-        {
-            if (status == "error") {
-                var msg = "Error while loading the finder; ";
-                Notification.error(msg + xhr.status + " " + xhr.statusText, xhr);
-            }
-            else {
-                Finder.init();
-                filesContainer.removeClass(Constants.LOADING_CLASS);
-            }
-        });
-    });
 
     /*
      * When clicking a property disable drag drop
@@ -134,16 +115,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         currentProperty = null;
         currentBlockEvent = null;
         configPanels = {};
-        $("#" + Constants.SIDEBAR_CONTEXT_ID).empty();
-        var block = Broadcaster.getContainer();
-        //this allows us to also use this function outside of a DnD context
-        if (block) {
-            var editFunction = Edit.makeEditable(block.element);
-            if (editFunction != null && editFunction.focus != null) {
-                var windowID = SideBar.createWindow(Constants.CONTEXT, block.element, "Page");
-                editFunction.focus(windowID, block.element, null);
-            }
-        }
+        SideBar.refresh();
     };
 
     /*
@@ -164,9 +136,23 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
      * */
     this.refresh = function ()
     {
+        var filesContainer = $("#" + Constants.SIDEBAR_CONTEXT_ID);
+        filesContainer.empty();
 
-        var block = currentBlockEvent.property.current;
-        var editFunction = Edit.makeEditable(currentProperty);
+        var block = Broadcaster.getContainer();
+        //this allows us to also use this function outside of a DnD context
+        if (block) {
+            var editFunction = Edit.makeEditable(block.element);
+            if (editFunction != null && editFunction.focus != null) {
+                var windowID = SideBar.createWindow(Constants.CONTEXT, block.element, "Page");
+                editFunction.focus(windowID, block.element, null);
+            }
+        }
+
+        if (currentBlockEvent != null) {
+            block = currentBlockEvent.property.current;
+        }
+        //var editFunction = Edit.makeEditable(currentProperty);
 
         var activeBlocks = [];
 
@@ -317,7 +303,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
     this.addValueAttribute = function (windowId, element, label, name, confirm, textSelect, serverSelect, urlSelect)
     {
-        SideBar.addUIForProperty(windowId, SidebarUtils.addValueAttribute(element, label, name, confirm, textSelect, serverSelect, urlSelect));
+        SideBar.addUIForProperty(windowId, SidebarUtils.addValueAttribute(element, label, name, confirm, textSelect, serverSelect, urlSelect, this));
     };
 
     this.addValueHtml = function (windowId, element, label, confirm)
@@ -325,9 +311,9 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         SideBar.addUIForProperty(windowId, SidebarUtils.addValueHtml(element, label, confirm));
     };
 
+    // Called when editing is enabled. Catch mouseup and check if a block is editable
     this.enableEditing = function ()
     {
-
         $(document).on("mouseup.sidebar_edit_start", "." + Constants.PAGE_CONTENT_CLASS, function (event)
         {
             // find parents until parent is <body> or until parent has property attribute
@@ -366,6 +352,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     {
         $(document).off("mouseup.sidebar_edit_start");
     };
+
 
     // PRIVATE
 

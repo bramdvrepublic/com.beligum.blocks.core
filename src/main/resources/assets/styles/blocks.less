@@ -1,6 +1,7 @@
 // Overlay when editing and for dialogs
 @import "/constants/blocks/common?type=less";
 @import "/constants/blocks/finder?type=less";
+
 //-----BASIC BOOTSTRAP MIXINS-----
 @import "/assets/webjars/bootstrap/3.3.4/less/variables.less";
 @import "/assets/webjars/bootstrap/3.3.4/less/mixins.less";
@@ -334,9 +335,41 @@ ul.@{BLOCK_ACTIONS_CLASS} {
         .input-group {
           .input-group-btn-clear();
           width: 100%;
+          .btn-clear {
+
+            //.animated(0.3s);
+            //.fadeIn;
+
+            &.hidden {
+              display: none;
+            }
+            display: block;
+            position: absolute;
+            right: 10px;
+            top: 4px;
+            z-index: 3; //input has 2
+
+            //mimicks .close btn
+            text-shadow: 0 1px 0 #fff;
+            font-size: 20px;
+            color: #333;
+            .opacity(0.4) !important;
+
+            &:hover {
+              .opacity(0.6) !important;
+            }
+          }
+          .btn-file {
+
+          }
         }
       }
     }
+  }
+
+  .finder-window {
+    height: 600px;
+
   }
 }
 
