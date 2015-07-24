@@ -91,10 +91,13 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         $(document).off("mousedown.sidebar_edit_end");
 
         // blur this block
-        var editFunction = Edit.makeEditable(block.element);
-        if (editFunction != null && editFunction.blur != null) {
-            editFunction.blur(property, block);
+        if (block != null) {
+            var editFunction = Edit.makeEditable(block.element);
+            if (editFunction != null && editFunction.blur != null) {
+                editFunction.blur(property, block);
+            }
         }
+
         if (property != null) {
             var editFunction = Edit.makeEditable(property);
             if (editFunction != null && editFunction.blur != null) {
@@ -107,6 +110,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
     var reset = function ()
     {
+        //blurCurrentSelection(currentProperty, currentBlockEvent);
         $("." + Constants.OPACITY_CLASS).removeClass(Constants.OPACITY_CLASS);
         $("." + Constants.PREVENT_BLUR_CLASS).removeClass(Constants.PREVENT_BLUR_CLASS);
         $("." + Constants.PROPERTY_EDIT_CLASS).removeClass(Constants.PROPERTY_EDIT_CLASS);
@@ -119,7 +123,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     };
 
     this.reset = function() {
-        reset();
+        blurCurrentSelection(currentProperty, currentBlockEvent);
     }
 
     /*

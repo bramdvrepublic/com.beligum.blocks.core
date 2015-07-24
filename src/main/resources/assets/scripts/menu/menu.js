@@ -210,6 +210,8 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     $(document).on("click", "."+Constants.SAVE_PAGE_BUTTON, function ()
     {
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+        Sidebar.reset();
+        // remove the widths from the containers
         $(".container").removeAttr("style");
         var page = $("html")[0].outerHTML;
         updateContainerWidth();
