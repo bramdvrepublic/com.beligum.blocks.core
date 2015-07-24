@@ -257,6 +257,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             } else {
                 Logger.debug("No drop for block");
                 this.dragAborted();
+                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
             }
 
         }
