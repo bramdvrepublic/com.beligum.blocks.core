@@ -20,6 +20,7 @@ import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.beligum.blocks.utils.RdfTools;
+import com.beligum.blocks.utils.comparators.MapComparator;
 import gen.com.beligum.blocks.core.fs.html.views.modals.newblock;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
@@ -173,6 +174,7 @@ public class PageEndpoint
                     // TODO make this a translation
                     title = "A template";
                 }
+
                 if (description == null) {
                     description = "No description available";
                 }
@@ -182,6 +184,8 @@ public class PageEndpoint
                 templates.add(pageTemplate);
             }
         }
+        Collections.sort(templates, new MapComparator("title"));
+
         Template template = newblock.get().getNewTemplate();
         template.set("templates", templates);
         return Response.ok(template.render()).build();
