@@ -301,14 +301,14 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         SideBar.addUIForProperty(windowId, SidebarUtils.addUniqueAttribute(element, label, values));
     };
 
-    this.addValueAttribute = function (windowId, element, label, name, confirm, textSelect, serverSelect, urlSelect)
+    this.addValueAttribute = function (windowId, element, label, placeholderText, name, confirm, serverSelect, urlSelect)
     {
-        SideBar.addUIForProperty(windowId, SidebarUtils.addValueAttribute(element, label, name, confirm, textSelect, serverSelect, urlSelect, this));
+        SideBar.addUIForProperty(windowId, SidebarUtils.addValueAttribute(element, label, placeholderText, name, confirm, serverSelect, urlSelect, this));
     };
 
-    this.addValueHtml = function (windowId, element, label, confirm)
+    this.addValueHtml = function (windowId, element, label, placeholderText, confirm)
     {
-        SideBar.addUIForProperty(windowId, SidebarUtils.addValueHtml(element, label, confirm));
+        SideBar.addUIForProperty(windowId, SidebarUtils.addValueHtml(element, label, placeholderText, confirm));
     };
 
     // Called when editing is enabled. Catch mouseup and check if a block is editable

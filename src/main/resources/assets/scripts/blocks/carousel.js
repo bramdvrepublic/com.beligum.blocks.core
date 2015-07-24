@@ -1,7 +1,7 @@
 /**
  * Created by wouter on 18/06/15.
  */
-base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edit", "blocks.core.Sidebar", "blocks.core.SidebarUtils",  function (Constants, Edit, Sidebar, Plugin)
+base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edit", "blocks.core.Sidebar", "blocks.core.SidebarUtils",  function (Constants, Edit, Sidebar, SidebarUtils)
 {
     var listGroup = null;
 
@@ -45,8 +45,8 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
         var editBox = $('<div class="hidden" />');
 
         editBox.append(labelEdit);
-        editBox.append(Plugin.addValueAttribute(image, "image url", "src", true, true, true));
-        editBox.append(Plugin.addValueHtml(caption, "image caption", false));
+        editBox.append(SidebarUtils.addValueAttribute(image, "Image url", "Paste or type a link", "src", true, true, true));
+        editBox.append(SidebarUtils.addValueHtml(caption, "Image caption", "Paste or type an image caption", false));
 
         closeButton.click(function() {
             editBox.addClass("hidden");
