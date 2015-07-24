@@ -201,8 +201,18 @@ public class PageEndpoint
     @Produces(MediaType.APPLICATION_JSON)
     public Response getBlock(@PathParam("name") String name) {
         HashMap<String, String> retVal = new HashMap<>();
+
+        HtmlTemplate htmlTemplate = null;
+        for (HtmlTemplate t: HtmlParser.getCachedTemplates().values()) {
+            if (t.getTemplateName().equals(name)) {
+                htmlTemplate = t;
+                break;
+            }
+        }
+
         Template block = R.templateEngine().getNewStringTemplate("<"+ name + "></"+name+">");
         retVal.put("html", block.render());
+//        retVal.put("links", htmlTemplate.getInlineStyleElements());
         return Response.ok(retVal).build();
     }
 
