@@ -1,7 +1,6 @@
 // Overlay when editing and for dialogs
 @import "/constants/blocks/common?type=less";
 @import "/constants/blocks/finder?type=less";
-
 //-----BASIC BOOTSTRAP MIXINS-----
 @import "/assets/webjars/bootstrap/3.3.4/less/variables.less";
 @import "/assets/webjars/bootstrap/3.3.4/less/mixins.less";
@@ -15,14 +14,41 @@
 @import "/assets/webjars/bootstrap/3.3.4/less/button-groups.less";
 @import "/assets/webjars/bootstrap/3.3.4/less/input-groups.less";
 @import "/assets/webjars/bootstrap/3.3.4/less/panels.less";
+@import "/assets/webjars/bootstrap/3.3.4/less/type.less";
 
+//-----MIXINS-----
+//note that this requires a relatively positioned parent
+.input-group-btn-clear() {
 
-//@import "/assets/webjars/bootstrap/3.3.4/less/bootstrap.less";
-//@import "/assets/webjars/bootstrap/3.3.4/less/theme.less";
-//@import "/assets/webjars/bootstrap/3.3.4/less/mixins/tab-focus.less";
-//@import "/assets/webjars/bootstrap/3.3.4/less/mixins/border-radius.less";
-//@import "/assets/webjars/bootstrap/3.3.4/less/mixins/buttons.less";
-//@import "/assets/webjars/bootstrap/3.3.4/less/button-groups.less";
+  position: relative; //to make the clean button work
+
+  input {
+    padding-right: 36px;
+  }
+  .input-btn-clear {
+    display: none;
+    &.show {
+      display: block;
+    }
+    position: absolute;
+    right: 10px;
+    top: 4px;
+    z-index: 3; //input has 2
+    cursor: pointer;
+
+    //mimicks .close btn
+    text-shadow: 0 1px 0 #fff;
+    font-size: 20px;
+    color: #333;
+    .opacity(0.4) !important;
+
+    &:hover {
+      .opacity(0.6) !important;
+    }
+  }
+}
+
+//-----MAIN-----
 
 @mainMenuHeight: 40px;
 @initSidebarWidth: 0%;
@@ -91,7 +117,6 @@
   &.@{PROPERTY_HOVER_CLASS} {
     border: 1px solid rgba(0, 0, 0, 1);
   }
-
 }
 
 .@{OPACITY_CLASS} {
@@ -307,38 +332,13 @@ ul.@{BLOCK_ACTIONS_CLASS} {
 
       .form-group {
         .input-group {
-          position: relative;//to make the clean button work
+          .input-group-btn-clear();
           width: 100%;
-          .btn-clear {
-
-            //.animated(0.3s);
-            //.fadeIn;
-
-            &.hidden {
-              display: none;
-            }
-            display: block;
-            position: absolute;
-            right: 10px;
-            top: 4px;
-            z-index: 3; //input has 2
-
-            //mimicks .close btn
-            text-shadow: 0 1px 0 #fff;
-            font-size: 20px;
-            color: #333;
-            .opacity(0.4) !important;
-
-            &:hover {
-              .opacity(0.6) !important;
-            }
-          }
         }
       }
     }
   }
 }
-
 
 .@{BLOCKS_START_BUTTON} {
   display: block;
@@ -433,123 +433,77 @@ blocks-image {
   }
 }
 
-.@{EDITOR_TOOLBAR_CLASS} {
-  li {
-    display: inline;
+//-----MEDIUM EDITOR-----
+.medium-editor-placeholder {
+  position: relative;
+
+  &:after {
+    content: attr(data-placeholder) !important;
+    font-style: italic;
+    left: 0;
+    position: absolute;
+    top: 0;
+    white-space: pre;
   }
 }
 
-@medium-editor-bgcolor: #fff;
-@medium-editor-border-color: #111;
-@medium-editor-button-size: 30px;
-@medium-editor-button-active-text-color: #000;
-@medium-editor-hover-color: #ccc;
-@medium-editor-link-color: #555;
-@medium-editor-border-radius: 0px;
-@medium-editor-placeholder-color: #555;
-
-// theme rules
-.medium-toolbar-arrow-under:after {
-  border-color: @medium-editor-bgcolor transparent transparent transparent;
-  top: @medium-editor-button-size;
-}
-
-.medium-toolbar-arrow-over:before {
-  border-color: transparent transparent @medium-editor-bgcolor transparent;
-}
-
 .medium-editor-toolbar {
+  left: 0;
+  position: absolute;
+  top: 0;
+  visibility: hidden;
+  z-index: 2000;
 
   .form-inline();
   &:extend(.form-inline);
 
-  .btn-group();
-  &:extend(.btn-group all);
+  ul.medium-editor-toolbar-actions {
+    .btn-group();
+    .list-unstyled();
+    .list-inline();
 
-  li {
-    button {
-      .btn();
-      .btn-default();
-      &:extend(.btn, .btn.btn-default all);
-    }
-    .medium-editor-button-active {
-      .btn.active;
-      .btn-default.active;
-    }
-  }
+    padding: 0;
+    margin: 0;
 
-  .dropdown-menu {
-    &:extend(.dropdown-menu);
-  }
-  .dropdown li {
-    float: none;
+    li {
+      margin: 0;
+      padding: 0;
+
+      button {
+        //last one removes double border
+        &:extend(.btn, .btn-default, .btn-group .btn + .btn);
+      }
+    }
   }
 }
+
+.medium-editor-toolbar-active {
+  visibility: visible;
+}
+
+.medium-editor-sticky-toolbar {
+  position: fixed;
+  top: 1px;
+}
+
+.medium-editor-hidden {
+  display: none;
+}
+
 .medium-editor-toolbar-form {
-  //background: @medium-editor-bgcolor;
-  //border-radius: @medium-editor-border-radius;
-  //color: #fff;
-  //padding: 6px;
-
-  .form-group();
-  &:extend(.form-group);
-
   display: none;
 
-  .medium-editor-toolbar-input {
-    //background: @medium-editor-bgcolor;
-    //color: @medium-editor-link-color;
-    //height: @medium-editor-button-size;
-    //
-    ////    &::-webkit-input-placeholder {
-    ////      color: @medium-editor-placeholder-color;
-    ////      color: rgba(@medium-editor-placeholder-color, .8);
-    ////    }
-    ////    &:-moz-placeholder { /* Firefox 18- */
-    ////      color: @medium-editor-placeholder-color;
-    ////      color: rgba(@medium-editor-placeholder-color, .8);
-    ////    }
-    ////    &::-moz-placeholder {  /* Firefox 19+ */
-    ////      color: @medium-editor-placeholder-color;
-    ////      color: rgba(@medium-editor-placeholder-color, .8);
-    ////    }
-    ////    &:-ms-input-placeholder {
-    ////      color: @medium-editor-placeholder-color;
-    ////      color: rgba(@medium-editor-placeholder-color, .8);
-    ////    }
+  input {
+    min-width: 250px;
   }
-
-  a {
-    .btn();
-    .btn-default();
-    &:extend(.btn, .btn.btn-default all);
-    //color: @medium-editor-link-color;
-    //font-size: inherit;
+  .input-group {
+    .input-group-btn-clear();
   }
-  //
-  //select {
-  //  .form-control();
-  //  &:extend(.form-control);
-  //  //border: 1px solid #ccc;
-  //  //background-color: white;
-  //  //color: #555;
-  //  //padding: 6px;
-  //  //line-height: 1.4px;
-  //  //border-radius: 4px;
-  //  //font-size: 14px;
-  //  //display: inline-block;
-  //  //min-width: 316px;
-  //}
-
+  .btn-primary {
+    margin-left: 5px;
+  }
 }
-//
-//.medium-editor-toolbar-anchor-preview {
-//  background: @medium-editor-bgcolor;
-//  border-radius: @medium-editor-border-radius;
-//  color: @medium-editor-link-color;
-//}
-//
-//.medium-editor-placeholder:after {
-//  color: @medium-editor-border-color;
-//}
+
+
+
 

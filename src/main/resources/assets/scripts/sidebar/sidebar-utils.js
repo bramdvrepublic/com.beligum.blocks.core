@@ -208,22 +208,24 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
 
         var oldvalue = input.val();
         if (confirm == true) {
-            var cancel = $('<a class="btn-clear hidden"><i class="fa fa-times"></i></a>');
+            var cancel = $('<a class="input-btn-clear"><i class="fa fa-times"></i></a>');
             //var ok = $('<div class="input-group-addon"><i class="fa fa-check" style="color:green"></i></div>');
             group.append(cancel)/*.append(ok)*/;
 
             input.on("change keyup", function (e)
             {
-                if (input.val()) {
-                    cancel.removeClass("hidden");
+                if (input.val()==null || input.val()=='') {
+                    cancel.removeClass("show");
                 }
                 else {
-                    cancel.addClass("hidden");
+                    cancel.addClass("show");
                 }
             });
             cancel.click(function (e)
             {
                 input.val(oldvalue);
+                input.change();
+                input.focus();
             });
 
             //ok.click(function (e)
@@ -251,17 +253,17 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
             //    $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_CONTEXT_ID +'"]').tab('show')
             //};
 
-            Finder.setOnSelect(function (file)
-            {
-                if (file != null) {
-                    if (file.charAt(0) !== "/") {
-                        file = "/" + file;
-                    }
-                    input.val(file);
-                    element.attr(name, file);
-                }
-            });
-
+            //TODO: this doesn't work yet? (file is undefined)
+            //Finder.setOnSelect(function (file)
+            //{
+            //    if (file != null) {
+            //        if (file.charAt(0) !== "/") {
+            //            file = "/" + file;
+            //        }
+            //        input.val(file);
+            //        element.attr(name, file);
+            //    }
+            //});
 
             fileButton.click(function ()
             {
