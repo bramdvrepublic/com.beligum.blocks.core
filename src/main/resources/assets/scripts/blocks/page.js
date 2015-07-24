@@ -42,7 +42,7 @@ base.plugin("blocks.edit.Page", ["constants.blocks.common", "blocks.core.Edit", 
             });
         });
 
-        Sidebar.addValueHtml(windowID, title, "Page title", false);
+        Sidebar.addValueHtml(windowID, title, "Page title", "Enter a title for this page", false);
     };
 
     this.blur = function() {

@@ -26,25 +26,35 @@
   input {
     padding-right: 36px;
   }
-  .input-btn-clear {
-    display: none;
-    &.show {
-      display: block;
-    }
-    position: absolute;
-    right: 10px;
-    top: 4px;
+  .input-actions {
+    float: right;
+    position: relative;
     z-index: 3; //input has 2
-    cursor: pointer;
+    margin-right: 5px;
+    margin-top: -30px;
 
-    //mimicks .close btn
-    text-shadow: 0 1px 0 #fff;
-    font-size: 20px;
-    color: #333;
-    .opacity(0.4) !important;
+    .input-btn-clear,
+    .input-btn-reset {
+      display: none;
+      &.show {
+        display: block;
+      }
 
-    &:hover {
-      .opacity(0.6) !important;
+      float: right;
+      cursor: pointer;
+      text-shadow: 0 1px 0 #fff;
+      font-size: 20px;
+      color: #333;
+      margin-right: 5px;
+      .opacity(0.4) !important;
+
+      &:hover {
+        .opacity(0.6) !important;
+      }
+    }
+    .input-btn-reset {
+      font-size: 16px;
+      margin-top: 3px;
     }
   }
 }
@@ -335,41 +345,18 @@ ul.@{BLOCK_ACTIONS_CLASS} {
         .input-group {
           .input-group-btn-clear();
           width: 100%;
-          .btn-clear {
-
-            //.animated(0.3s);
-            //.fadeIn;
-
-            &.hidden {
-              display: none;
-            }
-            display: block;
-            position: absolute;
-            right: 10px;
-            top: 4px;
-            z-index: 3; //input has 2
-
-            //mimicks .close btn
-            text-shadow: 0 1px 0 #fff;
-            font-size: 20px;
-            color: #333;
-            .opacity(0.4) !important;
-
-            &:hover {
-              .opacity(0.6) !important;
-            }
-          }
-          .btn-file {
-
-          }
         }
+      }
+
+      //general class used for the container of a panel actions buttons
+      .actions {
+        margin-top: 5px;
       }
     }
   }
 
   .finder-window {
     height: 600px;
-
   }
 }
 
@@ -505,6 +492,11 @@ blocks-image {
       button {
         //last one removes double border
         &:extend(.btn, .btn-default, .btn-group .btn + .btn);
+
+        &.medium-editor-button-active {
+          .btn.active;
+          .btn-default.active;
+        }
       }
     }
   }
