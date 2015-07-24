@@ -188,6 +188,8 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                 // We added a new block
                 Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
                 Overlay.removeOverlays();
+                // show normal cursor during dialog
+                $("body").removeClass(BlocksConstants.FORCE_DRAG_CURSOR_CLASS);
                 // show select box with all blocks
                 var box = $("<div />");
 
