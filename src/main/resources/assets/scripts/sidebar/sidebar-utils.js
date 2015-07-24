@@ -1,7 +1,7 @@
 /**
  * Created by wouter on 18/06/15.
  */
-base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.finder", function (Constants, Finder)
+base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.finder", "blocks.core.Frame", function (Constants, Finder, Frame)
 {
 
     var Plugin = this;
@@ -260,7 +260,8 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
             //    $('.' + Constants.PAGE_SIDEBAR_CLASS + ' a[href="#' + Constants.SIDEBAR_CONTEXT_ID +'"]').tab('show')
             //};
 
-            var sidebarWidth = 0;
+            // Define variable so we can access it after of or cancel
+            var sidebarWidth = $("." + Constants.PAGE_SIDEBAR_CLASS).outerWidth();
 
             var finderOptions = {};
             finderOptions.onSelect = function(files) {
@@ -274,15 +275,26 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
                     element.attr(name, file);
                 }
                 SideBar.refresh();
+                // restore sidebar width
+                Frame.setSidebarWidth(sidebarWidth);
             };
 
             finderOptions.onCancel = function() {
                 SideBar.refresh();
+                // restore sidebar width
+                Frame.setSidebarWidth(sidebarWidth);
             };
 
             fileButton.click(function ()
             {
                 loadFinder(finderOptions);
+                // save sidebar width
+                sidebarWidth = $("." + Constants.PAGE_SIDEBAR_CLASS).outerWidth();
+                var windowWidth = $(window).width();
+
+                if(windowWidth / 2 > sidebarWidth) {
+                    Frame.setSidebarWidth(windowWidth / 2);
+                }
             });
 
             form.prepend(content);

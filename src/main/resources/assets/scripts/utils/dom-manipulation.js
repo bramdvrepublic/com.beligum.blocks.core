@@ -548,10 +548,14 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
     }
 
     // smartresize
-    jQuery.fn["smartresize"] = function(fn){  return fn ? this.bind('resize', debounce(fn)) : this.trigger("smartresize"); };
+    $.fn["smartresize"] = function(fn){
+        return fn ?
+            this.bind('resize', debounce(fn)) :
+            this.trigger("smartresize");
+    };
 
     // smartresize
-    jQuery.fn["smartmousemove"] = function(fn){  return fn ? this.bind('resize', debounce(fn)) : this.trigger("smartmousemove"); };
+    $.fn["smartmousemove"] = function(fn){  return fn ? this.bind('resize', debounce(fn)) : this.trigger("smartmousemove"); };
 
     var DOM = this;
 

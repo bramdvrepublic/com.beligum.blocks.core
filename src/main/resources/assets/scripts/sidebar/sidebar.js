@@ -311,9 +311,9 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         SideBar.addUIForProperty(windowId, SidebarUtils.addValueHtml(element, label, confirm));
     };
 
+    // Called when editing is enabled. Catch mouseup and check if a block is editable
     this.enableEditing = function ()
     {
-
         $(document).on("mouseup.sidebar_edit_start", "." + Constants.PAGE_CONTENT_CLASS, function (event)
         {
             // find parents until parent is <body> or until parent has property attribute
@@ -352,6 +352,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     {
         $(document).off("mouseup.sidebar_edit_start");
     };
+
 
     // PRIVATE
 

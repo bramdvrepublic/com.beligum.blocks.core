@@ -1,47 +1,48 @@
-base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Overlay", "blocks.core.DomManipulation", "constants.blocks.common", "blocks.core.Sidebar", function (Broadcaster, Notification, Overlay, DOM, Constants, Sidebar)
+base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Overlay", "blocks.core.DomManipulation", "constants.blocks.common", function (Broadcaster, Notification, Overlay, DOM, Constants)
 {
-    var MainMenu = this;
+    var Frame = this;
 
     var SIDEBAR_STATE_NULL = "";
     var SIDEBAR_STATE_SHOW = "show";
     var SIDEBAR_STATE_HIDE = "hide";
 
-    /*
-     * Create the html for top bar
-     * */
     //note: the icon of the <i> is set in blocks.less
-    this.menuStartButton = $('<a class="'+ Constants.BLOCKS_START_BUTTON +'"></a>');
+    var menuStartButton = $('<a class="'+ Constants.BLOCKS_START_BUTTON +'"></a>');
 
-    this.sideBar = $("<div class='" + Constants.PAGE_SIDEBAR_CLASS + " " + Constants.PREVENT_BLUR_CLASS +"'></div>");
-    this.sideBar.load("/templates/sidebar");
+    var sidebarElement = $("<div class='" + Constants.PAGE_SIDEBAR_CLASS + " " + Constants.PREVENT_BLUR_CLASS +"'></div>");
+    sidebarElement.load("/templates/sidebar");
 
     /*
      * Hide show bar on click of menu button
      * */
-    var oldBodyMargin = parseInt($("body").css("padding-top"));
-    var menuAnimationSpeed = 300;
 
     $(document).on("click", "."+ Constants.BLOCKS_START_BUTTON, function (event)
     {
-        toggleSidebar($(this), $("body").children("." + Constants.PAGE_CONTENT_CLASS).length == 0);
+        toggleSidebar($("body").children("." + Constants.PAGE_CONTENT_CLASS).length == 0);
     });
 
-    var toggleSidebar = function(startBtn, show) {
+    var toggleSidebar = function(show) {
 
         var cookieState = SIDEBAR_STATE_NULL;
 
         if (show) {
             cookieState = SIDEBAR_STATE_SHOW;
 
-            MainMenu.menuStartButton.remove();
+            // Remove the menu button while animating sidebar
+            menuStartButton.remove();
+
+            // put body content in wrapper
             var body = $("body").html();
             $("body").empty();
             $("body").append($("<div class='" + Constants.PAGE_CONTENT_CLASS + "' />").append(body));
-            $("body").append(MainMenu.sideBar);
+            $("body").append(sidebarElement);
 
+            // Prevent clicking on links while in editing mode
             $(document).on("click.prevent_click_editing", "a", function(e) {
                 e.preventDefault();
             });
+
+            // Get old sidebar width from cookie
             var cookieSidebarWidth = $.cookie(Constants.COOKIE_SIDEBAR_WIDTH);
             var windowWidth = $(window).width();
             var INIT_SIDEBAR_WIDTH = windowWidth * 0.2; // default width of sidebar is 20% of window
@@ -49,54 +50,29 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 INIT_SIDEBAR_WIDTH = cookieSidebarWidth;
             }
 
-            MainMenu.sideBar.addClass(Constants.SIDEBAR_ANIMATED_CLASS);
-            startBtn.addClass("open");
-            MainMenu.sideBar.css("width", INIT_SIDEBAR_WIDTH + "px");
-            //one() = on() but only once
-            MainMenu.sideBar.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function(event) {
-                if ($(event.target).hasClass(Constants.PAGE_SIDEBAR_CLASS)) {
-                    MainMenu.sideBar.removeClass(Constants.SIDEBAR_ANIMATED_CLASS);
-                    //start with a fresh empty sidebar (the buildLayoutTree makes sure we always start with the page properties in the sidebar)
-                    //Broadcaster.buildLayoutTree();
-                    //Sidebar.clear();
+            menuStartButton.addClass("open");
 
-                    $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth - INIT_SIDEBAR_WIDTH) + "px");
-                    $("body").append(MainMenu.menuStartButton);
-
-                    updateContainerWidth();
-                    enableSidebarDrag();
-
-                    Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS);
-                }
+            setSidebarWidth(INIT_SIDEBAR_WIDTH, function() {
+                $("body").append(menuStartButton);
+                enableSidebarDrag();
+                Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS);
             });
+
         } else {
             cookieState = SIDEBAR_STATE_HIDE;
-
             var CLOSE_SIDEBAR_WIDTH = 0.0;
-            var windowWidth = $(window).width();
-            Sidebar.clear();
-            MainMenu.sideBar.addClass(Constants.SIDEBAR_ANIMATED_CLASS);
-            MainMenu.sideBar.css("width", (windowWidth*CLOSE_SIDEBAR_WIDTH) + "px");
-            //one() = on() but only once
-            MainMenu.sideBar.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function(event) {
-                MainMenu.sideBar.removeClass(Constants.SIDEBAR_ANIMATED_CLASS);
-
-
-                startBtn.hide().removeClass("open");
-
-                // Ugly if it shows immediately
-                setTimeout(function(){
-                    startBtn.show();
-                }, 500);
+            menuStartButton.hide().removeClass("open");
+            setSidebarWidth(CLOSE_SIDEBAR_WIDTH, function() {
+                disableSidebarDrag();
+                menuStartButton.show();
 
                 var content = $("." + Constants.PAGE_CONTENT_CLASS).html();
                 $("body").empty();
                 $("body").append(content);
                 $(document).off("click.prevent_click_editing");
                 Broadcaster.send(Broadcaster.EVENTS.STOP_BLOCKS);
-                $("body").append(MainMenu.menuStartButton);
-                disableSidebarDrag();
-                updateContainerWidth();
+                $("body").append(menuStartButton);
+
             });
         }
 
@@ -109,9 +85,118 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
     if (sidebarState===SIDEBAR_STATE_SHOW) {
         $(document).ready(function () {
-            toggleSidebar($("." + Constants.BLOCKS_START_BUTTON), true);
+            toggleSidebar(true);
         });
     }
+
+
+    var setSidebarWidth = function(width, callback) {
+        var windowWidth = $(window).width();
+        sidebarElement.addClass(Constants.SIDEBAR_ANIMATED_CLASS);
+        sidebarElement.css("width", (width) + "px");
+        //one() = on() but only once
+        sidebarElement.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function(event) {
+            if ($(event.target).hasClass(Constants.PAGE_SIDEBAR_CLASS)) {
+                sidebarElement.removeClass(Constants.SIDEBAR_ANIMATED_CLASS);
+                $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth - width) + "px");
+                updateContainerWidth();
+
+                if (callback) callback();
+
+            }
+        });
+    };
+
+    this.setSidebarWidth = function(width, callback) {
+        setSidebarWidth(width, callback);
+    };
+
+
+
+    var enableSidebarDrag = function() {
+        $(document).on("mousedown.sidebar_resize", "."+Constants.PAGE_SIDEBAR_RESIZE_CLASS, function() {
+            // On mousedown start resizing
+            Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
+            DOM.disableSelection();
+            DOM.disableContextMenu();
+            $("body").addClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
+
+            var windowWidth = $(window).width();
+            var pageContent = $("." + Constants.PAGE_CONTENT_CLASS);
+            $(document).on("mousemove.sidebar_resize", function(event) {
+                var X = event.pageX;
+                var ratioSide = windowWidth - X;
+                var ratioPage = windowWidth - ratioSide;
+                sidebarElement.css("width", ratioSide + "px");
+                pageContent.css("width", ratioPage + "px");
+            });
+
+            $(document).on("mouseup.sidebar_resize", function() {
+
+                // check size page content
+                // find containers and get width
+                // if container width is greater then page content width
+                // set container width to pagecontent width - 20
+                updateContainerWidth();
+
+                $(document).off("mousemove.sidebar_resize");
+                $(document).off("mouseup.sidebar_resize");
+                DOM.enableSelection();
+                DOM.enableContextMenu();
+                $("body").removeClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
+                Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
+
+                //Note: by default, the cookie is deleted when the browser is closed:
+                $.cookie(Constants.COOKIE_SIDEBAR_WIDTH, sidebarElement.width());
+            });
+        });
+    };
+
+    var disableSidebarDrag = function() {
+        $(document).off("mousedown.sidebar_resize");
+    };
+
+    /*
+     * in bootstrap the containerwidth is fixed. to prevent the container from bleeding
+     * into our sidebar, we set the width fixed with a new width, smaller than our page content wrapper
+     * */
+    var updateContainerWidth = function() {
+        var wrapper = $("." + Constants.PAGE_CONTENT_CLASS);
+        var containers = $(".container");
+        containers.removeAttr("style");
+        if (wrapper.length > 0) {
+            var wrapperWidth = wrapper.outerWidth();
+            var containerWidth = containers.outerWidth();
+            if (containerWidth > wrapperWidth) {
+                containers.css("width", (wrapperWidth - 50) + "px");
+            }
+        }
+    };
+
+    var sidebarWidth = sidebarElement.outerWidth();
+    // On Window resize
+    var resizing = false;
+    $(window).smartresize(function() {
+        if (resizing) {
+            var windowWidth = $(window).width();
+            $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth - sidebarWidth) + "px");
+            updateContainerWidth();
+            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);
+            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+            resizing = false;
+        }
+    });
+
+    $(window).on("resize.blocks_broadcaster", function ()
+    {
+        if (resizing == false) {
+            sidebarWidth = sidebarElement.outerWidth();
+            Overlay.removeOverlays();
+            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+            resizing = true;
+        }
+    });
+
 
 
     /*
@@ -244,88 +329,8 @@ base.plugin("blocks.core.frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
     });
 
-    var enableSidebarDrag = function() {
-        $(document).on("mousedown.sidebar_resize", "."+Constants.PAGE_SIDEBAR_RESIZE_CLASS, function() {
-            // On mousedown start resizing
-            Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
-            DOM.disableSelection();
-            DOM.disableContextMenu();
-            $("body").addClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
-
-            var windowWidth = $(window).width();
-            var pageContent = $("." + Constants.PAGE_CONTENT_CLASS);
-            $(document).on("mousemove.sidebar_resize", function(event) {
-                var X = event.pageX;
-                var ratioSide = windowWidth - X;
-                var ratioPage = windowWidth - ratioSide;
-                MainMenu.sideBar.css("width", ratioSide + "px");
-                pageContent.css("width", ratioPage + "px");
-            });
-
-            $(document).on("mouseup.sidebar_resize", function() {
-
-                // check size page content
-                // find containers and get width
-                // if container width is greater then page content width
-                // set container width to pagecontent width - 20
-                updateContainerWidth();
-
-                $(document).off("mousemove.sidebar_resize");
-                $(document).off("mouseup.sidebar_resize");
-                DOM.enableSelection();
-                DOM.enableContextMenu();
-                $("body").removeClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
-                Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
-
-                //Note: by default, the cookie is deleted when the browser is closed:
-                $.cookie(Constants.COOKIE_SIDEBAR_WIDTH, MainMenu.sideBar.width());
-            });
-        });
-    };
-
-    var disableSidebarDrag = function() {
-        $(document).off("mousedown.sidebar_resize");
-    };
-
-    /*
-     * in bootstrap the containerwidth is fixed. to prevent the container from bleeding
-     * into our sidebar, we set the fixed with smaller than our page content wrapper
-     * */
-    var updateContainerWidth = function() {
-        var wrapper = $("." + Constants.PAGE_CONTENT_CLASS);
-        var containers = $(".container");
-        containers.removeAttr("style");
-        if (wrapper.length > 0) {
-            var wrapperWidth = wrapper.outerWidth();
-            var containerWidth = containers.outerWidth();
-            if (containerWidth > wrapperWidth) {
-                containers.css("width", (wrapperWidth - 50) + "px");
-            }
-        }
-    };
-
-    // On Window resize
-    var resizing = false;
-    $(window).on("smartresize", function() {
-        if (resizing) {
-            updateContainerWidth();
-            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, layoutContainer);
-            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-            resizing = true;
-        }
-    });
-
-    $(window).on("resize.blocks_broadcaster", function ()
-    {
-        if (resizing == false) {
-            Overlay.removeOverlays();
-            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
-            resizing = true;
-        }
-    });
-
 
     // Add the start button as only notice of our presence
-    $("body").append(MainMenu.menuStartButton);
+    $("body").append(menuStartButton);
 
 }]);
