@@ -7,8 +7,8 @@ base.plugin("blocks.edit.Page", ["constants.blocks.common", "blocks.core.Edit", 
     var draggingAllowed = false;
 
 
-    var newBlockButton = $('<a class="btn btn-default btn-sm pull-right" data-toggle="popover" data-trigger="click" data-placement="bottom" data-content="Drag this button to your page to create a new block."><i class="fa fa-magic"></i></a>');
-    var newBlock = $('<li class="'+Constants.CREATE_BLOCK_CLASS+'"><span>New block</span></li>');
+    var newBlockButton = $('<a class="btn btn-default btn-sm pull-right '+Constants.CREATE_BLOCK_CLASS+'" data-toggle="popover" data-trigger="click" data-placement="bottom" data-content="Drag this button to your page to create a new block."><i class="fa fa-magic"></i></a>');
+    var newBlock = $('<li class=""><span>New block</span></li>');
     newBlock.append(newBlockButton);
 
     this.focus = function(windowID, element, blockEvent) {
@@ -19,9 +19,14 @@ base.plugin("blocks.edit.Page", ["constants.blocks.common", "blocks.core.Edit", 
         }
         var pageActions = $('<ul class="'+Constants.BLOCK_ACTIONS_CLASS+'">');
 
+        var savePage = $('<li><span>Save changes</span></li>');
+        var savePageBtn = $('<a class="btn btn-primary btn-sm pull-right '+Constants.SAVE_PAGE_BUTTON+'"><i class="fa fa-floppy-o"></i></a>');
+        savePage.append(savePageBtn);
 
-        var savePage = $('<li class="'+Constants.SAVE_PAGE_BUTTON+'"><span>Save changes</span></li>').append($('<a class="btn btn-primary btn-sm pull-right"><i class="fa fa-floppy-o"></i></a>'));
-        var deletePage = $('<li class="'+Constants.DELETE_PAGE_BUTTON+'"><span>Delete page</span></li>').append($('<a class="btn btn-danger btn-sm pull-right"><i class="fa fa-trash-o"></i></a>'));
+        var deletePage = $('<li><span>Delete page</span></li>');
+        var deletePageBtn = $('<a class="btn btn-danger btn-sm pull-right '+Constants.DELETE_PAGE_BUTTON+'"><i class="fa fa-trash-o"></i></a>');
+        deletePage.append(deletePageBtn);
+
         //activation is done in mouse.js
         pageActions.append(savePage).append(deletePage).append(newBlock);
 
@@ -59,7 +64,7 @@ base.plugin("blocks.edit.Page", ["constants.blocks.common", "blocks.core.Edit", 
         newBlockButton.removeAttr("disabled");
         newBlock.removeAttr("data-toggle");
         newBlock.removeAttr("title");
-        newBlock.tooltip('destroy');
+    ;   newBlock.tooltip('destroy');
     });
 
     $(document).on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, function ()
