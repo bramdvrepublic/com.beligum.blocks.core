@@ -6,6 +6,7 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
+import com.beligum.blocks.caching.PageCache;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
@@ -131,6 +132,10 @@ public class PageEndpoint
             PersistenceControllerImpl.instance().saveWebPage(localizedWebpage, doVersion);
         }
 
+        if (PageCache.isEnabled()) {
+            PageCache.instance().flush();
+        }
+
 
         return Response.ok().build();
     }
@@ -214,6 +219,9 @@ public class PageEndpoint
         Route route = new Route(uri, PersistenceControllerImpl.instance());
         URI masterPage = route.getWebPath().getMasterPage();
         PersistenceControllerImpl.instance().deleteWebPage(masterPage);
+        if (PageCache.isEnabled()) {
+            PageCache.instance().flush();
+        }
         return Response.ok().build();
     }
 

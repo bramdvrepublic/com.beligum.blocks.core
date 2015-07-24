@@ -2,6 +2,7 @@ package com.beligum.blocks.routing;
 
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
+import com.beligum.blocks.caching.PageCache;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
@@ -143,17 +144,25 @@ public class HtmlRouter extends AbstractRouter
     {
         StringBuilder rb = new StringBuilder();
         WebPath path = this.route.getWebPath();
-        URI master = path.getMasterPage();
 
-        WebPage page = null;
-        page = route.getBlocksDatabase().getWebPage(master, route.getLocale());
-        String template = page.getPageTemplate();
-        if (template==null || StringUtils.isEmpty(template)) {
-            template = "main-content";
+        String html;
+        String url = this.route.getURI().toString();
+        if (PageCache.isEnabled() && PageCache.instance().hasUrl(url)) {
+            html = PageCache.instance().get(url);
+        } else  {
+            URI master = path.getMasterPage();
+            WebPage page = null;
+            page = route.getBlocksDatabase().getWebPage(master, route.getLocale());
+            String template = page.getPageTemplate();
+            if (template == null || StringUtils.isEmpty(template)) {
+                template = "main-content";
+            }
+            rb.append("<" + template + ">").append(page.getParsedHtml()).append("</" + template + ">");
+            html = R.templateEngine().getNewStringTemplate(rb.toString()).render();
+
         }
 
-        rb.append("<" + template + ">").append(page.getParsedHtml()).append("</" + template + ">");
-        return Response.ok(R.templateEngine().getNewStringTemplate(rb.toString())).build();
+        return Response.ok(html).build();
 
     }
 
