@@ -20,5 +20,6 @@ public enum CacheKeys implements CacheKey
     //an list of Jericho tag types for all tag templates
     TAG_TEMPLATE_TYPES,
     //the hashmap that contains mappings for the parsed html files on disk (parsed to Velocity intermediates)
-    BLOCKS_TEMPLATES
+    BLOCKS_TEMPLATES,
+    PAGES
 }
