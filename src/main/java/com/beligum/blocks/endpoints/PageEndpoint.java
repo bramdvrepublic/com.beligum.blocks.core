@@ -132,7 +132,9 @@ public class PageEndpoint
             PersistenceControllerImpl.instance().saveWebPage(localizedWebpage, doVersion);
         }
 
-        PageCache.instance().flush();
+        if (PageCache.isEnabled()) {
+            PageCache.instance().flush();
+        }
 
 
         return Response.ok().build();
@@ -217,6 +219,9 @@ public class PageEndpoint
         Route route = new Route(uri, PersistenceControllerImpl.instance());
         URI masterPage = route.getWebPath().getMasterPage();
         PersistenceControllerImpl.instance().deleteWebPage(masterPage);
+        if (PageCache.isEnabled()) {
+            PageCache.instance().flush();
+        }
         return Response.ok().build();
     }
 
