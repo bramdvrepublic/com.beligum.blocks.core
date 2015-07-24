@@ -1,4 +1,4 @@
-base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Overlay", "blocks.core.DomManipulation", "constants.blocks.common", function (Broadcaster, Notification, Overlay, DOM, Constants)
+base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Overlay", "blocks.core.DomManipulation", "constants.blocks.common", "blocks.core.Sidebar", function (Broadcaster, Notification, Overlay, DOM, Constants, Sidebar)
 {
     var Frame = this;
 
@@ -116,6 +116,9 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     var enableSidebarDrag = function() {
         $(document).on("mousedown.sidebar_resize", "."+Constants.PAGE_SIDEBAR_RESIZE_CLASS, function() {
             // On mousedown start resizing
+            // Make sure we are no longer in edit mode
+            Sidebar.reset();
+
             Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
             DOM.disableSelection();
             DOM.disableContextMenu();
@@ -190,6 +193,8 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     $(window).on("resize.blocks_broadcaster", function ()
     {
         if (resizing == false) {
+            // Leave edit mode
+            Sidebar.reset();
             sidebarWidth = sidebarElement.outerWidth();
             Overlay.removeOverlays();
             Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
@@ -205,7 +210,10 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     $(document).on("click", "."+Constants.SAVE_PAGE_BUTTON, function ()
     {
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+        $(".container").removeAttr("style");
         var page = $("html")[0].outerHTML;
+        updateContainerWidth();
+
         var dialog = new BootstrapDialog({
             type: BootstrapDialog.TYPE_WARNING,
             title: 'Saving ...',
@@ -274,6 +282,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
      * */
     $(document).on("click", "."+Constants.DELETE_PAGE_BUTTON, function ()
     {
+        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         var onConfirm = function ()
         {
             $.ajax({

@@ -118,6 +118,10 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         SideBar.refresh();
     };
 
+    this.reset = function() {
+        reset();
+    }
+
     /*
      * Drill down and add functionality for each block
      * */

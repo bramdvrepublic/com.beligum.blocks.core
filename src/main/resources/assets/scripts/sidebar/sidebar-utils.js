@@ -1,7 +1,7 @@
 /**
  * Created by wouter on 18/06/15.
  */
-base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.finder", "blocks.core.Frame", function (Constants, Finder, Frame)
+base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.finder", function (Constants, Finder)
 {
     var SidebarUtils = this;
 
