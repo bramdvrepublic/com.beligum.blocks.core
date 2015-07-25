@@ -5,7 +5,7 @@ base.plugin("blocks.edit.Link", ["constants.blocks.common", "blocks.core.Edit", 
 {
     this.focus = function (windowID, element, blockEvent)
     {
-        Sidebar.addValueAttribute(windowID, element, "Link", "Paste or type a link", "href", false, true);
+        Sidebar.addValueAttribute(windowID, element, "Link", "Paste or type a link", "href", false, true, true);
     };
 
     this.blur = function ()

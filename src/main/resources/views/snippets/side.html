@@ -3,14 +3,15 @@
 <div class="$PAGE_SIDEBAR_RESIZE_CLASS"></div>
 
 <ul class="nav nav-tabs" role="tablist">
-    <li role="presentation" class="active"><a href="#$SIDEBAR_CONTEXT_ID" aria-controls="content" role="tab" data-toggle="tab">Context</a></li>
+    <li role="presentation" class="active"><a id="$SIDEBAR_CONTEXT_TAB_ID" href="#$SIDEBAR_CONTEXT_ID" aria-controls="content" role="tab" data-toggle="tab">Context</a></li>
+    ## we don't really want to show it, just activate it automatically
+    <li role="presentation" class="invisible"><a id="$SIDEBAR_FILES_TAB_ID" href="#$SIDEBAR_FILES_ID" aria-controls="files" role="tab" data-toggle="tab">Files</a></li>
 ##    <li role="presentation"><a href="#blocks-sidebar-pages" aria-controls="pages" role="tab" data-toggle="tab">Pages</a></li>
-##    <li role="presentation"><a id="$SIDEBAR_FILES_TAB_ID" href="#$SIDEBAR_FILES_ID" aria-controls="files" role="tab" data-toggle="tab">Files</a></li>
 </ul>
 <div class="$SIDEBAR_CONTAINER_ID tab-content">
     <div role="tabpanel" class="tab-pane active" id="$SIDEBAR_CONTEXT_ID"></div>
+    <div role="tabpanel" class="tab-pane" id="$SIDEBAR_FILES_ID"></div>
 ##    <div role="tabpanel" class="tab-pane" id="blocks-sidebar-pages"></div>
-##    <div role="tabpanel" class="tab-pane panel panel-default" id="$SIDEBAR_FILES_ID"></div>
 </div>
 #end
 

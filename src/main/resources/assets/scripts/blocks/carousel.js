@@ -14,7 +14,6 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
 
         Sidebar.addUIForProperty(windowId, addImageButton(element));
         Sidebar.addUIForProperty(windowId, listGroup);
-
     };
 
     this.blur = function() {
@@ -24,7 +23,6 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
     this.getWindowName = function() {
         return "Caroussel";
     };
-
 
     var createImageEditBox = function(item, items, carousel) {
 
@@ -37,16 +35,14 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
         var deleteButton = $('<span class="label btn btn-danger pull-right"><i class="fa fa-trash-o"></i></span>');
         label.append(editButton)
 
-
-
         var labelEdit = $("<div></div>");
         var closeButton = $('<span class="label btn pull-right"><i class="fa fa-times"></i></span>');
         labelEdit.append(closeButton);
         var editBox = $('<div class="hidden" />');
 
         editBox.append(labelEdit);
-        editBox.append(SidebarUtils.addValueAttribute(image, "Image url", "Paste or type a link", "src", true, true, true));
-        editBox.append(SidebarUtils.addValueHtml(caption, "Image caption", "Paste or type an image caption", false));
+        editBox.append(SidebarUtils.addValueAttribute(Sidebar, image, "Image url", "Paste or type a link", "src", false, true, false));
+        editBox.append(SidebarUtils.addValueHtml(Sidebar, caption, "Image caption", "Paste or type an image caption", false));
 
         closeButton.click(function() {
             editBox.addClass("hidden");

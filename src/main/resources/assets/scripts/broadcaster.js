@@ -296,7 +296,6 @@ base.plugin("blocks.core.Broadcaster", ["base.core.Constants", "blocks.core.DomM
     this.sendToElement = function (element, eventName, custom)
     {
         if (Broadcaster.active) {
-//        Logger.debug(eventName);
             var e = $.Event(eventName);
             e.pageX = lastMoveEvent.pageX;
             e.pageY = lastMoveEvent.pageY;
@@ -311,9 +310,8 @@ base.plugin("blocks.core.Broadcaster", ["base.core.Constants", "blocks.core.DomM
 
     /*
      * Container is the block IN which we are dragging.
-     * If we set this to null then then the top level block(s) are  the container
+     * If we set this to null then then the top level block(s) are the container
      * */
-
     this.setContainer = function (value)
     {
         layoutTree = value
@@ -323,8 +321,6 @@ base.plugin("blocks.core.Broadcaster", ["base.core.Constants", "blocks.core.DomM
     {
         return layoutTree;
     };
-
-
 
     /*
      We create some sort of a heat map. We define boxes for all draggable templates
@@ -347,7 +343,6 @@ base.plugin("blocks.core.Broadcaster", ["base.core.Constants", "blocks.core.DomM
         layoutTree = new blocks.elements.Page();
         Broadcaster.resetHover();
         lastMoveEvent.block = Broadcaster.getHoveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
-        Logger.debug(layoutTree);
     };
 
     this.EVENTS = {};

@@ -9,8 +9,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     var currentProperty = null;
     var currentBlockEvent = null;
 
-
-
     /*
      * When clicking a property disable drag drop
      * */
@@ -122,9 +120,10 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         SideBar.refresh();
     };
 
-    this.reset = function() {
+    this.reset = function ()
+    {
         blurCurrentSelection(currentProperty, currentBlockEvent);
-    }
+    };
 
     /*
      * Drill down and add functionality for each block
@@ -160,7 +159,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         if (currentBlockEvent != null) {
             block = currentBlockEvent.property.current;
         }
-        //var editFunction = Edit.makeEditable(currentProperty);
 
         var activeBlocks = [];
 
@@ -193,7 +191,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             var editFunction = Edit.makeEditable(property);
             if (editFunction != null && editFunction.focus != null) {
                 var windowId = null;
-                for(var i=0; i < activeBlocks.length; i++) {
+                for (var i = 0; i < activeBlocks.length; i++) {
                     if (activeBlocks[i].element.has(property)) {
                         windowId = activeBlocks[i].id;
                         break;
@@ -203,13 +201,34 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             }
             property = property.parent();
         }
+    };
 
+    this.setSidebarWidth = function (width, callback)
+    {
+        var windowWidth = $(window).width();
 
+        var sidebarElement = $("." + Constants.PAGE_SIDEBAR_CLASS);
+        sidebarElement.addClass(Constants.SIDEBAR_ANIMATED_CLASS);
+        sidebarElement.css("width", (width) + "px");
+        //one() = on() but only once
+        sidebarElement.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function (event)
+        {
+            if ($(event.target).hasClass(Constants.PAGE_SIDEBAR_CLASS)) {
+                sidebarElement.removeClass(Constants.SIDEBAR_ANIMATED_CLASS);
+                $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth - width) + "px");
+
+                //instead of updateContainerWidth(), see menu.js
+                Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);
+
+                if (callback) {
+                    callback();
+                }
+            }
+        });
     };
 
     this.addRemoveBlockButton = function (windowID, property)
     {
-
         //var remove = $("<div class='panel panel-default "+ Constants.REMOVE_BLOCK_CLASS +"'/>");
         var blockActions = $("<ul/>").addClass(Constants.BLOCK_ACTIONS_CLASS);
         var removeAction = $("<li><span>Remove block</span></li>");
@@ -250,30 +269,36 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     this.createWindow = function (type, element, title)
     {
         var windowId = SidebarUtils.makeid();
-        if (configPanels[Constants.CONTEXT] == null) configPanels[Constants.CONTEXT] = {};
-        var panels = configPanels[Constants.CONTEXT];
+        if (configPanels == null) {
+            configPanels = {};
+        }
 
-        if (panels[windowId] == null) {
+        if (configPanels[windowId] == null) {
 
             var div = $("<div class='panel panel-default'/>");
             var header = $("<div class='panel-heading'>" + title + "</div>");
             var content = $("<div class='panel-body'/>");
             div.append(header).append(content);
 
-            panels[windowId] = div;
+            configPanels[windowId] = div;
             if (type == Constants.CONTEXT) {
                 $("#" + Constants.SIDEBAR_CONTEXT_ID).append(div);
             }
+            else if (type == Constants.FINDER) {
+                $("#" + Constants.SIDEBAR_FILES_ID).append(div);
+            }
 
-            div.mouseenter(function ()
-            {
-                highlight(element);
-            });
+            if (element) {
+                div.mouseenter(function ()
+                {
+                    highlight(element);
+                });
 
-            div.mouseleave(function ()
-            {
-                unhighlight(element);
-            });
+                div.mouseleave(function ()
+                {
+                    unhighlight(element);
+                });
+            }
         }
 
         return windowId
@@ -281,42 +306,37 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
     this.getWindowForId = function (id)
     {
-        var retVal = null;
-
-        var panels = configPanels[Constants.CONTEXT];
-        retVal = panels[id];
-
-        return retVal;
+        return configPanels[id];
     }
 
     this.addUniqueClass = function (windowId, element, label, values)
     {
-        SideBar.addUIForProperty(windowId, SidebarUtils.addUniqueClass(element, label, values));
+        SideBar.addUIForProperty(windowId, SidebarUtils.addUniqueClass(this, element, label, values));
     };
 
     this.addOptionalClass = function (windowId, element, label, values)
     {
-        SideBar.addUIForProperty(windowId, SidebarUtils.addOptionalClass(element, label, values));
+        SideBar.addUIForProperty(windowId, SidebarUtils.addOptionalClass(this, element, label, values));
     };
 
     this.addUniqueAttributeValue = function (windowId, element, label, name, values)
     {
-        SideBar.addUIForProperty(windowId, SidebarUtils.addUniqueAttributeValue(element, label, name, values));
+        SideBar.addUIForProperty(windowId, SidebarUtils.addUniqueAttributeValue(this, element, label, name, values));
     };
 
     this.addUniqueAttribute = function (windowId, element, label, values)
     {
-        SideBar.addUIForProperty(windowId, SidebarUtils.addUniqueAttribute(element, label, values));
+        SideBar.addUIForProperty(windowId, SidebarUtils.addUniqueAttribute(this, element, label, values));
     };
 
-    this.addValueAttribute = function (windowId, element, label, placeholderText, name, confirm, serverSelect, urlSelect)
+    this.addValueAttribute = function (windowId, element, label, placeholderText, name, confirm, serverSelect, pageSelect)
     {
-        SideBar.addUIForProperty(windowId, SidebarUtils.addValueAttribute(element, label, placeholderText, name, confirm, serverSelect, urlSelect, this));
+        SideBar.addUIForProperty(windowId, SidebarUtils.addValueAttribute(this, element, label, placeholderText, name, confirm, serverSelect, pageSelect));
     };
 
     this.addValueHtml = function (windowId, element, label, placeholderText, confirm)
     {
-        SideBar.addUIForProperty(windowId, SidebarUtils.addValueHtml(element, label, placeholderText, confirm));
+        SideBar.addUIForProperty(windowId, SidebarUtils.addValueHtml(this, element, label, placeholderText, confirm));
     };
 
     // Called when editing is enabled. Catch mouseup and check if a block is editable
@@ -361,27 +381,62 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         $(document).off("mouseup.sidebar_edit_start");
     };
 
-
-    // PRIVATE
-
-    var highlight = function (element)
+    this.loadFinder = function (options)
     {
-        element.addClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
-        element.addClass(Constants.HIGHLIGHT_CLASS);
-        setTimeout(function ()
+        var contextTab = $("#" + Constants.SIDEBAR_CONTEXT_ID);
+        var finderTab = $("#" + Constants.SIDEBAR_FILES_ID);
+        contextTab.addClass(Constants.LOADING_CLASS);
+        finderTab.removeClass(Constants.LOADING_CLASS);
+        //we'll start off with an empty container and let createWindow() fill it
+        finderTab.empty();
+
+        //'switch' to the finder tab
+        $("#" + Constants.SIDEBAR_FILES_TAB_ID).tab('show');
+
+        //now create and add a new frame
+        var windowID = SideBar.createWindow(Constants.FINDER, null, "Files on server");
+        //let's us do perform some css tweaks
+        var frame = SideBar.getWindowForId(windowID);
+        frame.addClass(Constants.SIDEBAR_FINDER_PANEL_CLASS);
+
+        //TODO maybe not necessary to reload this every time, but it allows us to always present a fresh uptodate view of the server content
+        var finder = frame.children(".panel-body");
+        finder.load("/media/finder-inline", function (response, status, xhr)
         {
-            element.removeClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
-        }, 200);
+            if (status == "error") {
+                var msg = "Error while loading the finder; ";
+                Notification.error(msg + xhr.status + " " + xhr.statusText, xhr);
+                finder.removeClass(Constants.LOADING_CLASS);
+            }
+            else {
+                Finder.init(options);
+                finder.removeClass(Constants.LOADING_CLASS);
+            }
+        });
+    };
+    this.unloadFinder = function ()
+    {
+        //'switch' back to the context tab
+        $("#" + Constants.SIDEBAR_CONTEXT_TAB_ID).tab('show');
+
+        var contextTab = $("#" + Constants.SIDEBAR_CONTEXT_ID);
+        var finderTab = $("#" + Constants.SIDEBAR_FILES_ID);
+        contextTab.removeClass(Constants.LOADING_CLASS);
+        finderTab.addClass(Constants.LOADING_CLASS);
+        finderTab.empty();
     };
 
+    // -----PRIVATE-----
+    var highlight = function (element)
+    {
+        //don't highlight the entire page
+        if (!element.hasClass(Constants.PAGE_CONTENT_CLASS)) {
+            element.addClass(Constants.HIGHLIGHT_CLASS);
+        }
+    };
     var unhighlight = function (element)
     {
-        element.removeClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
         element.removeClass(Constants.HIGHLIGHT_CLASS);
-        setTimeout(function ()
-        {
-            element.removeClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
-        }, 200);
     };
 
 }]);

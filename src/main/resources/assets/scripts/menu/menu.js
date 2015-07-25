@@ -15,7 +15,6 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     /*
      * Hide show bar on click of menu button
      * */
-
     $(document).on("click", "."+ Constants.BLOCKS_START_BUTTON, function (event)
     {
         toggleSidebar($("body").children("." + Constants.PAGE_CONTENT_CLASS).length == 0);
@@ -52,7 +51,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
             menuStartButton.addClass("open");
 
-            setSidebarWidth(INIT_SIDEBAR_WIDTH, function() {
+            Sidebar.setSidebarWidth(INIT_SIDEBAR_WIDTH, function() {
                 $("body").append(menuStartButton);
                 enableSidebarDrag();
                 Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS);
@@ -62,7 +61,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             cookieState = SIDEBAR_STATE_HIDE;
             var CLOSE_SIDEBAR_WIDTH = 0.0;
             menuStartButton.hide().removeClass("open");
-            setSidebarWidth(CLOSE_SIDEBAR_WIDTH, function() {
+            Sidebar.setSidebarWidth(CLOSE_SIDEBAR_WIDTH, function() {
                 disableSidebarDrag();
                 menuStartButton.show();
 
@@ -88,30 +87,6 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             toggleSidebar(true);
         });
     }
-
-
-    var setSidebarWidth = function(width, callback) {
-        var windowWidth = $(window).width();
-        sidebarElement.addClass(Constants.SIDEBAR_ANIMATED_CLASS);
-        sidebarElement.css("width", (width) + "px");
-        //one() = on() but only once
-        sidebarElement.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function(event) {
-            if ($(event.target).hasClass(Constants.PAGE_SIDEBAR_CLASS)) {
-                sidebarElement.removeClass(Constants.SIDEBAR_ANIMATED_CLASS);
-                $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth - width) + "px");
-                updateContainerWidth();
-
-                if (callback) callback();
-
-            }
-        });
-    };
-
-    this.setSidebarWidth = function(width, callback) {
-        setSidebarWidth(width, callback);
-    };
-
-
 
     var enableSidebarDrag = function() {
         $(document).on("mousedown.sidebar_resize", "."+Constants.PAGE_SIDEBAR_RESIZE_CLASS, function() {
@@ -183,7 +158,6 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         if (resizing) {
             var windowWidth = $(window).width();
             $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth - sidebarWidth) + "px");
-            updateContainerWidth();
             Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
             resizing = false;
@@ -202,7 +176,10 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         }
     });
 
-
+    $(document).on(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, function (event)
+    {
+        updateContainerWidth();
+    });
 
     /*
      * Save button: saves the page

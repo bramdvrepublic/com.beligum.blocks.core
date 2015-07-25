@@ -1,10 +1,18 @@
+//-----FINDER-----
+@import "/assets/styles/finder.less";
+@finderBgColor: #ffffff;
+
 // Overlay when editing and for dialogs
 @import "/constants/blocks/common?type=less";
 @import "/constants/blocks/finder?type=less";
 
+//-----LIBRARIES-----
+@import "/assets/webjars/less-animate/1.0.0/source/pulse.less";
+
 //-----BASIC BOOTSTRAP MIXINS-----
 @import "/assets/webjars/bootstrap/3.3.4/less/variables.less";
 @import "/assets/webjars/bootstrap/3.3.4/less/mixins.less";
+@import "/assets/webjars/bootstrap/3.3.4/less/utilities.less";
 // Reset and dependencies
 @import "/assets/webjars/bootstrap/3.3.4/less/normalize.less";
 // Core CSS
@@ -19,41 +27,40 @@
 
 //-----MIXINS-----
 //note that this requires a relatively positioned parent
-.input-group-btn-clear() {
+.inline-input-buttons() {
 
-  position: relative; //to make the clean button work
-
+  @inputZIndex: 2;
   .input-actions {
     float: right;
-    position: relative;
-    z-index: 3; //input has 2
-    padding-left: 5px;
-    margin-right: 5px;
+    //position: relative; //to make the z-index work
+    //z-index: @inputZIndex+1;
     margin-top: -30px;
-    background-color: #FFFFFF;
+    margin-right: 5px;
+    .clearfix();
 
-    .input-btn-clear,
-    .input-btn-reset {
+    .input-btn {
       display: none;
       &.show {
         display: block;
       }
 
-      float: right;
+      float: left;
       cursor: pointer;
       text-shadow: 0 1px 0 #fff;
-      font-size: 20px;
+      font-size: 16px;
+      margin-top: 3px;
       color: #333;
-      margin-right: 5px;
-      .opacity(0.4) !important;
+      padding-left: 3px;
+      padding-right: 3px;
 
+      position: relative;
+      z-index: @inputZIndex+2;
+      background-color: #FFFFFF;
+
+      .opacity(0.4) !important;
       &:hover {
         .opacity(0.6) !important;
       }
-    }
-    .input-btn-reset {
-      font-size: 16px;
-      margin-top: 3px;
     }
   }
 }
@@ -309,6 +316,15 @@ ul.@{BLOCK_ACTIONS_CLASS} {
     position: relative;
     z-index: 1000;
 
+    //something special: only active tabs or explicitly 'show'-ing tabs are shown (this way, we have control over the 'hidden' tabs)
+    & > li {
+      display: none;
+      &.show,
+      &.active {
+        display: block;
+      }
+    }
+
     & > li:first-child > a {
       border-left-width: 0;
     }
@@ -336,14 +352,36 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   }
 
   .tab-pane {
+    @sidebarPanelMargin: 10px;
     .panel {
-      border-width: 1px solid lighten(@controlBgColor, 50%);
-      margin: 10px 10px;
+      margin: @sidebarPanelMargin;
 
       .form-group {
         .input-group {
-          .input-group-btn-clear();
+          .inline-input-buttons();
           width: 100%;
+        }
+        //make all dropdowns behave more like <select>s
+        .dropdown {
+          @textAlign: left;
+          @formAlign: left;
+          @caretAlign: right;
+          text-align: @formAlign;
+          .dropdown-toggle {
+            min-width: 100px;
+            text-align: @textAlign;
+
+            .caret {
+              &:extend(.pull-@{caretAlign});
+              margin-top: 0.7em;//floating the caret seems to change it's height...
+            }
+          }
+          .dropdown-menu {
+            &:extend(.dropdown-menu-@{formAlign});
+            & > li > a {
+              cursor: pointer;
+            }
+          }
         }
       }
 
@@ -352,10 +390,32 @@ ul.@{BLOCK_ACTIONS_CLASS} {
         margin-top: 5px;
       }
     }
-  }
+    .panel.@{SIDEBAR_FINDER_PANEL_CLASS} {
+      //stretches open the entire finder
+      position: absolute;
+      right: 0;
+      left: 0;
+      bottom: 0;
+      top: @sidebarTabHeight;
 
-  .finder-window {
-    height: 600px;
+      .panel-body {
+        padding: 0px;
+        height: 100%;
+        margin-top: -@sidebarTabHeight;
+        padding-top: @sidebarTabHeight;
+
+        .@{SELECT_BTN_CLASS},
+        .@{CANCEL_BTN_CLASS} {
+          .btn-sm();
+        }
+        .@{SELECT_BTN_CLASS} {
+          .btn-primary();
+        }
+        .@{CANCEL_BTN_CLASS} {
+          .btn-default();
+        }
+      }
+    }
   }
 }
 
@@ -393,37 +453,17 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   }
 }
 
+#@{SIDEBAR_CONTEXT_ID} {
+  .setupLoader();
+}
 #@{SIDEBAR_FILES_ID} {
   .setupLoader();
-
-  @finderMargin: 10px;
-  position: absolute; //absolute in relative parent pattern
-  top: @sidebarTabHeight - 1 + @finderMargin; //this this -1 comes from an extra border somewhere
-  left: @finderMargin;
-  bottom: @finderMargin;
-  right: @finderMargin;
-
-  margin-bottom: 0; //override the panel settings
-
-  .@{WINDOW_CLASS} {
-
-  }
-
-  //position: fixed;
-  //left: 0px;
-  //top: @mainMenuHeight;
-  //bottom: 0px;
-  //right: 0px;
 }
 
-.@{HIGHLIGHT_ANIMATION_CLASS} {
-  -webkit-transition: 0.4s;
-  -moz-transition: 0.4s;
-  transition: 0.4s;
-}
-
-.@{HIGHLIGHT_CLASS}, .@{HIGHLIGHT_CLASS}:focus {
-  outline: #7ec4ff dotted 2px;
+.@{HIGHLIGHT_CLASS},
+.@{HIGHLIGHT_CLASS}:focus {
+  .animated(0.3s);
+  .pulse;
 }
 
 .@{REMOVE_BLOCK_CLASS} {
@@ -521,7 +561,7 @@ blocks-image {
     min-width: 250px;
   }
   .input-group {
-    .input-group-btn-clear();
+    .inline-input-buttons();
   }
   .btn-primary {
     margin-left: 5px;

@@ -235,7 +235,7 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", function (
             var formGroup = $('<div class="form-group"></div>').appendTo(form);
             var inputGroup = $('<div class="input-group"></div>').appendTo(formGroup);
             var input = $('<input type="text" class="form-control ' + this.inputClass + '" placeholder="' + this.placeholderText + '">').appendTo(inputGroup);
-            var clearBtn = $('<span class="input-btn-clear"><i class="fa fa-times"></span>').appendTo(inputGroup);
+            var clearBtn = $('<span class="input-btn input-btn-clear"><i class="fa fa-times"></span>').appendTo(inputGroup);
             input.on("change keyup", function (e)
             {
                 if (input.val() == null || input.val() == '') {

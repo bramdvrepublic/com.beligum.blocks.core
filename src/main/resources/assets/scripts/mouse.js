@@ -263,13 +263,11 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
 
     this.disallowDrag = function ()
     {
-        Logger.debug("Dragging not allowed");
         draggingStatus = BaseConstants.DRAGGING.NOT_ALLOWED;
     };
 
     this.allowDrag = function ()
     {
-        Logger.debug("Dragging allowed");
         Mouse.resetMouse(true);
     };
 
