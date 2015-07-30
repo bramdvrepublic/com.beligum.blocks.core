@@ -19,7 +19,7 @@ base.plugin("blocks.edit.Page", ["constants.blocks.common", "blocks.core.Edit", 
         var pageActions = $('<ul class="'+Constants.BLOCK_ACTIONS_CLASS+'">');
 
         var savePage = $('<li><span>Save changes</span></li>').append($('<a class="'+Constants.SAVE_PAGE_BUTTON+' btn btn-primary btn-sm pull-right"><i class="fa fa-floppy-o"></i></a>'));
-        var deletePage = $('<li><span>Delete page</span></li>').append($('<a class="'+Constants.DELETE_PAGE_BUTTON+' btn btn-danger btn-sm pull-right"><i class="fa fa-trash-o"></i></a>'));
+        var deletePage = $('<li><span>Delete page</span></li>').append($('<a class="'+Constants.DELETE_PAGE_BUTTON+'btn btn-danger btn-sm pull-right"><i class="fa fa-trash-o"></i></a>'));
         //activation is done in mouse.js
         pageActions.append(savePage).append(deletePage).append(newBlock);
 

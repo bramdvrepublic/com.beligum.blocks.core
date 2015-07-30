@@ -1,7 +1,7 @@
 /**
  * Created by wouter on 18/06/15.
  */
-base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.finder", function (Constants, Finder)
+base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.finder", "base.core.Commons", function (Constants, Finder, Commons)
 {
     var SidebarUtils = this;
 
@@ -55,7 +55,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
     this.addOptionalClass = function (Sidebar, element, label, values)
     {
         // Create selectbox to add to sidebar
-        var id = SidebarUtils.makeid();
+        var id = Commons.generateId();
         var content = $("<div class='form-group' />");
         content.append("<label>" + label + "</label>");
 
@@ -266,7 +266,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
      **/
     this.createTextInput = function (Sidebar, element, getterFunction, setterFunction, labelText, placeholderText, confirm, dropdownActions)
     {
-        var id = SidebarUtils.makeid();
+        var id = Commons.generateId();
 
         var resetBtn = null;
         var selectBtn = null;
@@ -287,7 +287,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
         input.val(oldVal);
         input.change();
 
-        var inputActions = $('<div class="input-actions"/>').appendTo(inputGroup);
+        var inputActions = $('<div class="input-actions right"/>').appendTo(inputGroup);
 
         //check if we need to show the reset button
         if (input.attr(SidebarUtils.OLD_VAL_ATTR) !== '') {
@@ -411,7 +411,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
     this.createCombobox = function (Sidebar, element, labelText, values, initCallback, changeCallback)
     {
         // Create selectbox to add to sidebar
-        var id = SidebarUtils.makeid();
+        var id = Commons.generateId();
         var content = $('<div class="form-group" />');
         content.append($('<label for="' + id + '">' + labelText + '</label>'));
         var dropdown = $('<div class="dropdown"/>').appendTo(content);
@@ -453,17 +453,6 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.common", "blocks.find
         }
 
         return content;
-    };
-
-    this.makeid = function ()
-    {
-        var text = "";
-        var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-        for (var i = 0; i < 5; i++)
-            text += possible.charAt(Math.floor(Math.random() * possible.length));
-
-        return text;
     };
 
 }]);
