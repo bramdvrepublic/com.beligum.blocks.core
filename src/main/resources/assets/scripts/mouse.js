@@ -190,7 +190,6 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             var block = Broadcaster.block();
             // check if block changed since last mouse move
             if (block.current !== currentBlock) {
-                Logger.debug("New block");
                 changedBlock = true;
                 currentBlock = block.current;
 

@@ -68,11 +68,13 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
             this.overlay.css("width", width);
             this.overlay.css("z-index", base.utils.maxIndex + 2);
 
-            var wrapper = $('.'+BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS);
-            if (wrapper.length==0) {
-                wrapper = $("<div class='" + BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS + "' />").appendTo($('.'+BlocksConstants.PAGE_CONTENT_CLASS));
-            }
-            wrapper.append(this.overlay);
+            //TODO
+            //var wrapper = $('.'+BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS);
+            //if (wrapper.length==0) {
+            //    wrapper = $("<div class='" + BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS + "' />").appendTo($('.'+BlocksConstants.PAGE_CONTENT_CLASS));
+            //}
+            //wrapper.append(this.overlay);
+            body.append(this.overlay);
         },
 
         updateHeight: function() {
@@ -85,7 +87,5 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
             this.overlay.off("mousedown.resizehandle");
             this.overlay.remove();
         }
-
-
     });
 }]);

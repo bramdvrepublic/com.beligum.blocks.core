@@ -5,6 +5,7 @@ import com.beligum.base.endpoints.AssetsEndpoint;
 import com.beligum.base.resources.ResourceDescriptor;
 import com.beligum.base.server.R;
 import com.beligum.blocks.templating.blocks.HtmlParser;
+import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import gen.com.beligum.blocks.core.fs.html.views.snippets.side;
 import org.apache.commons.io.FilenameUtils;
@@ -28,12 +29,28 @@ public class TemplatesEndpoint extends AssetsEndpoint
     }
 
     @GET
-    @Path("/resources/{type: .*}")
-    public Response getResources(@PathParam("type") String type)
+    //note: the .less is needed to use @include in other less files
+    @Path("/styles/imports/common.less")
+    public Response getResources()
     {
         TemplateCache templateCache = HtmlParser.getCachedTemplates();
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for (HtmlTemplate template : templateCache.values()) {
+            if (!first) {
+                sb.append(", ");
+            }
+            sb.append(template.getTemplateName());
 
-        return null;
+            first = false;
+        }
+        sb.append(" {").append("\n");
+        sb.append("\t").append("display: block;").append("\n");
+        sb.append("\t").append("margin: 0;").append("\n");
+        sb.append("\t").append("padding: 0;").append("\n");
+        sb.append("}");
+
+        return Response.ok(sb.toString(), "text/css").build();
     }
 
     @GET

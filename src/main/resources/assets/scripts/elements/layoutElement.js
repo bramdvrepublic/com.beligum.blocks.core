@@ -454,11 +454,13 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core
                 this.overlay.css("left", this.left + "px");
                 this.overlay.css("top", this.top + "px");
 
-                var wrapper = $('.'+BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS);
-                if (wrapper.length==0) {
-                    wrapper = $("<div class='" + BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS + "' />").appendTo($('.'+BlocksConstants.PAGE_CONTENT_CLASS));
-                }
-                wrapper.append(this.overlay);
+                //TODO
+                //var wrapper = $('.'+BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS);
+                //if (wrapper.length==0) {
+                //    wrapper = $("<div class='" + BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS + "' />").appendTo($('.'+BlocksConstants.PAGE_CONTENT_CLASS));
+                //}
+                //wrapper.append(this.overlay);
+                body.append(this.overlay);
             }
         },
 
