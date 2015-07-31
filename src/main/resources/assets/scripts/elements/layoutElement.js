@@ -8,7 +8,7 @@
  * */
 
 
-base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core.Constants", "blocks.core.DomManipulation", function (Class, Constants, DOM)
+base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core.Constants", "blocks.core.DomManipulation", "constants.blocks.common", function (Class, Constants, DOM, BlocksConstants)
 {
     var body = $("body");
 
@@ -453,7 +453,12 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core
                 if (this.overlay.parent().length > 0) this.overlay.remove();
                 this.overlay.css("left", this.left + "px");
                 this.overlay.css("top", this.top + "px");
-                body.append(this.overlay);
+
+                var wrapper = $('.'+BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS);
+                if (wrapper.length==0) {
+                    wrapper = $("<div class='" + BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS + "' />").appendTo($('.'+BlocksConstants.PAGE_CONTENT_CLASS));
+                }
+                wrapper.append(this.overlay);
             }
         },
 

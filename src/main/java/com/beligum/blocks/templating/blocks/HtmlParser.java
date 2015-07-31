@@ -163,7 +163,7 @@ public class HtmlParser extends AbstractAssetParser
                 }
                 //a little bit verbose, but I didn't find a shorter way...
                 Attributes templateAttr = html.getAttributes();
-                Map<String,String> attrs = new HashMap<>();
+                Map<String,String> attrs = new LinkedHashMap<>();
                 templateAttr.populateMap(attrs, true);
                 attrs.put("template", tagTemplate.getTemplateName());
                 output.replace(templateAttr, Attributes.generateHTML(attrs));
@@ -201,7 +201,7 @@ public class HtmlParser extends AbstractAssetParser
             for (net.htmlparser.jericho.Element templateInstance : templateInstances) {
 
                 //build the attributes map
-                Map<String, String> attributes = new HashMap<>();
+                Map<String, String> attributes = new LinkedHashMap<>();
                 templateInstance.getAttributes().populateMap(attributes, false);
 
                 //copy in all the attributes of the template to the attributes map, except the ones that were already set in the instance
@@ -215,7 +215,7 @@ public class HtmlParser extends AbstractAssetParser
                 }
 
                 //build the properties map
-                Map<String, List<String>> properties = new HashMap<>();
+                Map<String, List<String>> properties = new LinkedHashMap<>();
                 // note: this is a tricky one. It doesn't have to be the immediate children, but we can't cross the "boundary"
                 // of another template instance either (otherwise the grandchild-properties would get assigned to the grandparent)
                 // In practice, restricting this to the immediate children works pretty well (and neatly conforms to the WebComponents standard)

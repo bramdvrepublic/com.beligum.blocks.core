@@ -3,7 +3,7 @@
  * the draw-surface is the surface that will be drawn in the dom (can be bigger or smaller).
  * left and rightcolumn are the columns that this handle will resize when dragged
  */
-base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.blocks.common", "blocks.core.Resizer", function (Class, Constants, Resizer)
+base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.blocks.common", "blocks.core.Resizer", function (Class, BlocksConstants, Resizer)
 {
     var body = $("body");
     blocks = window['blocks'] || {};
@@ -19,7 +19,7 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
             this.leftColumn = leftColumn;
             this.rightColumn = rightColumn;
 
-            this.overlay = $("<div />").addClass(Constants.COLUMN_RESIZER_CLASS);
+            this.overlay = $("<div />").addClass(BlocksConstants.COLUMN_RESIZER_CLASS);
 
         },
 
@@ -67,7 +67,12 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
             this.overlay.css("left", left);
             this.overlay.css("width", width);
             this.overlay.css("z-index", base.utils.maxIndex + 2);
-            body.append(this.overlay);
+
+            var wrapper = $('.'+BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS);
+            if (wrapper.length==0) {
+                wrapper = $("<div class='" + BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS + "' />").appendTo($('.'+BlocksConstants.PAGE_CONTENT_CLASS));
+            }
+            wrapper.append(this.overlay);
         },
 
         updateHeight: function() {

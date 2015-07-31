@@ -31,8 +31,8 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edi
 
         var listGroupItem = $('<div class="list-group-item" />');
         var label = $("<div>Carousel image</div>");
-        var editButton = $('<span class="label btn btn-primary pull-right"><i class="fa fa-pencil"></i></span>');
-        var deleteButton = $('<span class="label btn btn-danger pull-right"><i class="fa fa-trash-o"></i></span>');
+        var editButton = $('<span class="label btn btn-primary pull-right"><i class="fa fa-fw fa-pencil"></i></span>');
+        var deleteButton = $('<span class="label btn btn-danger pull-right"><i class="fa fa-fw fa-trash-o"></i></span>');
         label.append(editButton)
 
         var labelEdit = $("<div></div>");

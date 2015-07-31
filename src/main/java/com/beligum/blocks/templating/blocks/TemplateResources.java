@@ -116,6 +116,11 @@ public class TemplateResources
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+    /**
+     * @param print Controls wether we print out the value to the output stream, or just eat it up for future use
+     * @param res
+     * @param set
+     */
     private void addResource(boolean print, Resource res, Set<Resource> set)
     {
         if (print) {

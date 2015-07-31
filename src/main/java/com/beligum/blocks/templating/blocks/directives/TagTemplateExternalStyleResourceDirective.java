@@ -1,7 +1,6 @@
 package com.beligum.blocks.templating.blocks.directives;
 
 import com.beligum.base.templating.velocity.directives.VelocityDirective;
-import com.beligum.blocks.templating.blocks.TemplateResourcesDirective;
 import org.apache.velocity.context.InternalContextAdapter;
 import org.apache.velocity.exception.MethodInvocationException;
 import org.apache.velocity.exception.ParseErrorException;

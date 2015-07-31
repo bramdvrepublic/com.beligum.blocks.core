@@ -4,6 +4,8 @@ import com.beligum.base.annotations.JavascriptPackage;
 import com.beligum.base.endpoints.AssetsEndpoint;
 import com.beligum.base.resources.ResourceDescriptor;
 import com.beligum.base.server.R;
+import com.beligum.blocks.templating.blocks.HtmlParser;
+import com.beligum.blocks.templating.blocks.TemplateCache;
 import gen.com.beligum.blocks.core.fs.html.views.snippets.side;
 import org.apache.commons.io.FilenameUtils;
 
@@ -23,6 +25,15 @@ public class TemplatesEndpoint extends AssetsEndpoint
     @Path("/sidebar")
     public Response getSidebar() {
         return Response.ok(side.get().getNewTemplate().render()).build();
+    }
+
+    @GET
+    @Path("/resources/{type: .*}")
+    public Response getResources(@PathParam("type") String type)
+    {
+        TemplateCache templateCache = HtmlParser.getCachedTemplates();
+
+        return null;
     }
 
     @GET

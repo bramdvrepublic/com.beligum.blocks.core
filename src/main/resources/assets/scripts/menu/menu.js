@@ -33,8 +33,10 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             // put body content in wrapper
             var body = $("body").html();
             $("body").empty();
+            //wrap the content of the body in the class and add that again to the body
             $("body").append($("<div class='" + Constants.PAGE_CONTENT_CLASS + "' />").append(body));
             $("body").append(sidebarElement);
+            $("body").addClass(Constants.BODY_EDIT_MODE_CLASS);
 
             // Prevent clicking on links while in editing mode
             $(document).on("click.prevent_click_editing", "a", function(e) {
@@ -72,6 +74,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 Broadcaster.send(Broadcaster.EVENTS.STOP_BLOCKS);
                 $("body").append(menuStartButton);
 
+                $("body").removeClass(Constants.BODY_EDIT_MODE_CLASS);
             });
         }
 

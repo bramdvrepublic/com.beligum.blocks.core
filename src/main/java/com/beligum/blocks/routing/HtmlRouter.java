@@ -27,29 +27,30 @@ import java.util.*;
 
 /**
  * Created by wouter on 1/06/15.
- *
+ * <p/>
  * Returns a response based on a RouteObject
- *
  */
 public class HtmlRouter extends AbstractRouter
 {
     private static final String NAME = "name";
     private static final String TITLE = "title";
     private static final String DESCRIPTION = "description";
+    private static final String MAIN_PAGE_TAG_NAME = "main-page";
 
     private PersistenceController database;
 
-    public HtmlRouter(Route route) {
+    public HtmlRouter(Route route)
+    {
         super(route);
     }
-
 
     /*
     * Show all pagetemplates so the user can choose.
     *
     * We try to find the title and description for all pagetemplates in the best getLanguage possible
     * */
-    public Response newPage() {
+    public Response newPage()
+    {
         Response retVal = null;
 
         String newTemplate = null;
@@ -108,20 +109,21 @@ public class HtmlRouter extends AbstractRouter
                 newPageTemplate.set("templates", pageTemplates);
                 retVal = Response.ok(newPageTemplate).build();
             }
-        } else {
+        }
+        else {
             retVal = showCreatedPage(newTemplate);
         }
 
         return retVal;
     }
 
-
     /*
     * Shows a new pagetemplate for a url
     * This is the template the user can build a page from. Only when the user presses save,
     * the template is also save to the DB
     * */
-    public Response showCreatedPage(final String pageTemplateName) {
+    public Response showCreatedPage(final String pageTemplateName)
+    {
 
         Iterable<HtmlTemplate> allTemplates = HtmlParser.getCachedTemplates().values();
         HtmlTemplate pageTemplate = Iterables.find(allTemplates, new Predicate<HtmlTemplate>()
@@ -147,24 +149,26 @@ public class HtmlRouter extends AbstractRouter
         String url = this.route.getURI().toString();
         if (PageCache.isEnabled() && PageCache.instance().hasUrl(url)) {
             html = PageCache.instance().get(url);
-        } else  {
+        }
+        else {
             URI master = path.getMasterPage();
             WebPage page = null;
             page = route.getBlocksDatabase().getWebPage(master, route.getLocale());
             String template = page.getPageTemplate();
+            //TODO this should search for a page template instead
             if (template == null || StringUtils.isEmpty(template)) {
-                template = "main-content";
+                template = MAIN_PAGE_TAG_NAME;
             }
             rb.append("<" + template + ">").append(page.getParsedHtml()).append("</" + template + ">");
             html = R.templateEngine().getNewStringTemplate(rb.toString()).render();
-
         }
 
         return Response.ok(html).build();
 
     }
 
-    public Response redirect() {
+    public Response redirect()
+    {
         return null;
     }
 }

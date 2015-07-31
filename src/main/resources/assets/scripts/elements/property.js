@@ -36,8 +36,8 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Cons
             var block = this.parent.parent;
             if (this.isTemplate) {
                 this.overlay.addClass(BlocksConstants.BLOCK_OVERLAY_CLASS);
-            } else
-            {
+            }
+            else {
                 this.overlay.addClass(BlocksConstants.PROPERTY_OVERLAY_CLASS);
             }
 
@@ -130,21 +130,20 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Cons
             }
         },
 
-
-
-        generateProperties: function(parent, index) {
+        generateProperties: function (parent, index)
+        {
             var children = parent.children();
             var childcount = children.length;
-            for (var i=0; i < childcount; i++) {
+            for (var i = 0; i < childcount; i++) {
                 var child = $(children[i]);
                 if (child[0].tagName == "BOOTSTRAP-LAYOUT") {
                     var b = new blocks.elements.Container($(child.children(".container")[0]), this, index);
                     this.children.push(b);
                     index++;
-                //} else if (child.hasAttribute("property")) {
-                //    var b = new blocks.elements.Property(child, this, index);
-                //    this.children.push(b);
-                //    index++;
+                    //} else if (child.hasAttribute("property")) {
+                    //    var b = new blocks.elements.Property(child, this, index);
+                    //    this.children.push(b);
+                    //    index++;
                 } else if (child[0].tagName.indexOf("-") > 0) {
                     var b = new blocks.elements.Block(child, this, index, false);
                     this.children.push(b);

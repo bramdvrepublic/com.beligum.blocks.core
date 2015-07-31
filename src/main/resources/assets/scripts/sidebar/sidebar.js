@@ -232,7 +232,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         //var remove = $("<div class='panel panel-default "+ Constants.REMOVE_BLOCK_CLASS +"'/>");
         var blockActions = $("<ul/>").addClass(Constants.BLOCK_ACTIONS_CLASS);
         var removeAction = $("<li><span>Remove block</span></li>");
-        var removeButton = $("<a class='btn btn-danger btn-sm pull-right'><i class='fa fa-trash-o'></i></a>");
+        var removeButton = $("<a class='btn btn-danger btn-sm pull-right'><i class='fa fa-fw fa-trash-o'></i></a>");
         blockActions.append(removeAction);
         removeAction.append(removeButton);
 

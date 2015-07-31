@@ -1,6 +1,8 @@
-package com.beligum.blocks.templating.blocks;
+package com.beligum.blocks.templating.blocks.directives;
 
+import com.beligum.base.server.R;
 import com.beligum.base.templating.velocity.directives.VelocityDirective;
+import com.beligum.blocks.templating.blocks.TemplateResources;
 import org.apache.velocity.context.InternalContextAdapter;
 import org.apache.velocity.exception.MethodInvocationException;
 import org.apache.velocity.exception.ParseErrorException;
@@ -19,7 +21,11 @@ public class TemplateResourcesDirective extends Directive
 {
     //-----CONSTANTS-----
     public static final String NAME = "blocksTagResources";
-    private static final String BLOCKS_TEMPLATE_RESOURCES = "BLOCKS_TEMPLATE_RES";
+
+    //private static final String BLOCKS_TEMPLATE_RESOURCES = "BLOCKS_TEMPLATE_RES";
+    enum CacheKey implements com.beligum.base.cache.CacheKey {
+        BLOCKS_TEMPLATE_RES
+    }
 
     public enum Argument
     {
@@ -38,12 +44,22 @@ public class TemplateResourcesDirective extends Directive
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
+    //Note: storing this in the context meant trouble (multiple factory calls during one request?)
     public static TemplateResources getContextResources(InternalContextAdapter context)
     {
-        TemplateResources retVal = (TemplateResources) context.get(TemplateResourcesDirective.BLOCKS_TEMPLATE_RESOURCES);
+        TemplateResources retVal = (TemplateResources) R.cacheManager().getRequestCache().get(CacheKey.BLOCKS_TEMPLATE_RES);
         if (retVal==null) {
-            context.localPut(TemplateResourcesDirective.BLOCKS_TEMPLATE_RESOURCES, retVal = new TemplateResources());
+            R.cacheManager().getRequestCache().put(CacheKey.BLOCKS_TEMPLATE_RES, retVal = new TemplateResources());
         }
+
+//        InternalContextAdapter baseContext = context.getBaseContext();
+//        synchronized (baseContext) {
+//            retVal = (TemplateResources) baseContext.get(TemplateResourcesDirective.BLOCKS_TEMPLATE_RESOURCES);
+//            if (retVal == null) {
+//                retVal = new TemplateResources();
+//                baseContext.put(TemplateResourcesDirective.BLOCKS_TEMPLATE_RESOURCES, retVal);
+//            }
+//        }
 
         return retVal;
     }
@@ -76,7 +92,7 @@ public class TemplateResourcesDirective extends Directive
 //            }
 //        }
 
-        TemplateResources resources = (TemplateResources) context.get(BLOCKS_TEMPLATE_RESOURCES);
+        TemplateResources resources = getContextResources(context);
         //if we have nothing to check, let's move on
         if (resources!=null) {
             Argument arg = Argument.all;

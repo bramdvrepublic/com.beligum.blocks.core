@@ -85,6 +85,19 @@
 
 //-----MAIN-----
 
+body.@{BODY_EDIT_MODE_CLASS} {
+  //this will allow the sidebar and the page wrapper scroll independently from the body
+  //overflow: hidden;
+}
+
+.@{BLOCK_OVERLAYS_WRAPPER_CLASS} {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
 @mainMenuHeight: 40px;
 @initSidebarWidth: 0%;
 .@{BLOCK_OVERLAY_CLASS} {
@@ -172,9 +185,13 @@
 }
 
 .@{COLUMN_RESIZER_CLASS} {
+  @controlBgColor: #e8e8e8;
+
   position: absolute;
-  background-color: #d3d3d3;
   cursor: col-resize;
+  background: darken(@controlBgColor, 10%) url('/assets/images/blocks/splitter_ver_padded.png') center center repeat-y;
+  border-left: 1px solid darken(@controlBgColor, 15%);
+  border-right: 1px solid darken(@controlBgColor, 15%);
 }
 
 // Classes for the body that force the cursor in a certain style
@@ -274,12 +291,14 @@ ul.@{BLOCK_ACTIONS_CLASS} {
 //}
 
 .@{PAGE_CONTENT_CLASS} {
-  position: absolute;
+  position: relative; //we can only make sticky footers work when this is relative
   z-index: 0;
   //  margin-top: @mainMenuHeight;
   width: 100% - @initSidebarWidth;
-  min-height: 100%;
 
+  //this will make the left panel scroll independently from the sidebar
+  height: 100%;
+  overflow-y: auto;
 }
 
 @sidebarTabHeight: 41px;
