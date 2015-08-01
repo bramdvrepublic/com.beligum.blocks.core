@@ -44,9 +44,6 @@ public class WebPageParser
     private Set<String> templates = new HashSet<String>();
     private HashMap<String, Resource> resources = new HashMap<String, Resource>();
 
-
-
-
     // All elements in this html
     private List<Element> elements;
     // current search position

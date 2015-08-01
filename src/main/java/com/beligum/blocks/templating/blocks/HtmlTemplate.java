@@ -1,12 +1,10 @@
 package com.beligum.blocks.templating.blocks;
 
 import com.google.common.base.CaseFormat;
-import net.htmlparser.jericho.Attributes;
-import net.htmlparser.jericho.Element;
-import net.htmlparser.jericho.Segment;
-import net.htmlparser.jericho.Source;
+import net.htmlparser.jericho.*;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.*;
@@ -18,6 +16,8 @@ import java.util.regex.Pattern;
 public abstract class HtmlTemplate
 {
     //-----CONSTANTS-----
+    //this is the prefix to use in the <meta property="prefix:your-name" value="value comes here" > so that it doesn't get sent to the client
+    public static final String BLOCKS_META_TAG_PREFIX = "blocks:";
     /**
      * These are the names of first folders that won't be taken into account when building the name of the element
      * Eg. /imports/blocks/test/tag.html will have the name "blocks-test-tag"
@@ -46,7 +46,6 @@ public abstract class HtmlTemplate
     protected List<Element> inlineStyleElements;
     protected List<Element> externalStyleElements;
     protected MetaDisplayType displayType;
-    protected Map<String, HtmlTemplate> subTemplates;
 
     //-----CONSTRUCTORS-----
 
@@ -188,13 +187,9 @@ public abstract class HtmlTemplate
     }
 
     //-----PROTECTED METHODS-----
-    protected void initAll(Source document, Segment html, Attributes attributes, Path absolutePath, Path relativePath) throws Exception
+    protected void init(Source document, Path absolutePath, Path relativePath) throws Exception
     {
-        this.initTemplate(absolutePath, relativePath);
-        this.initHtml(document, html, attributes);
-    }
-    protected void initTemplate(Path absolutePath, Path relativePath) throws Exception
-    {
+        //INIT THE PATHS
         this.absolutePath = absolutePath;
         this.relativePath = relativePath;
 
@@ -228,16 +223,17 @@ public abstract class HtmlTemplate
             this.templateName = null;
             this.velocityName = null;
         }
-    }
-    protected void initHtml(Source document, Segment html, Attributes attributes) throws Exception
-    {
-        this.document = document;
-        this.html = html;
-        this.attributes = attributes;
 
-        this.fillMetaValues(this.document, this.titles = new HashMap<>(), "title");
-        this.fillMetaValues(this.document, this.descriptions = new HashMap<>(), "description");
-        String controllerClassStr = this.getMetaValue(this.document, "controller");
+        //INIT THE HTML
+        this.document = document;
+        OutputDocument html = new OutputDocument(document);
+        this.doInitHtmlPreparsing(document, html);
+        //TODO this.attributes = html.
+
+        //Note that we need to eat these values for PageTemplates because we don't want them to end up at the client side (no problem for TagTemplates)
+        this.fillMetaValues(this.document, html, this.titles = new HashMap<>(), BLOCKS_META_TAG_PREFIX+"title", true);
+        this.fillMetaValues(this.document, html, this.descriptions = new HashMap<>(), BLOCKS_META_TAG_PREFIX+"description", true);
+        String controllerClassStr = this.getMetaValue(this.document, html, BLOCKS_META_TAG_PREFIX+"controller", true);
         if (!StringUtils.isEmpty(controllerClassStr)) {
             Class<?> clazz = Class.forName(controllerClassStr);
             if (TemplateController.class.isAssignableFrom(clazz)) {
@@ -249,7 +245,7 @@ public abstract class HtmlTemplate
         }
 
         this.displayType = MetaDisplayType.DEFAULT;
-        String displayType = this.getMetaValue(this.document, "display");
+        String displayType = this.getMetaValue(this.document, html, "display", true);
         if (!StringUtils.isEmpty(displayType)) {
             this.displayType = MetaDisplayType.valueOf(displayType.toUpperCase());
         }
@@ -260,21 +256,19 @@ public abstract class HtmlTemplate
         this.inlineScriptElements = getInlineScripts(this.document);
         this.externalScriptElements = getExternalScripts(this.document);
 
-        // these are all other templates occurring in the body of this template and is used to extract
-        // the tree of style and script elements needed to render this tag.
-        // we tried to implement it in Velocity before, but it's hard because the entire document isn't read at once and in the right order...
-        // the entries are calulated in the TemplateCache and added later on (when all templates have been processed); see addSubTemplate() method
-        // NOTE that this might be difficult to detect because of possible dynamic html, but let's give it a shot...
-        this.subTemplates = new HashMap<>();
+        //now save the (possibly altered) html source
+        this.html = new Source(html.toString());
     }
-    //sort of admin-only setter; don't use directly yourself
-    protected void addSubTemplate(HtmlTemplate subTemplate)
+
+    //-----PROTECTED METHODS-----
+    protected abstract void doInitHtmlPreparsing(Source document, OutputDocument html) throws IOException;
+    protected void setAttributes(Attributes attributes)
     {
-        this.subTemplates.put(subTemplate.getTemplateName(), subTemplate);
+        this.attributes = attributes;
     }
 
     //-----PRIVATE METHODS-----
-    private void fillMetaValues(Source source, Map<Locale, String> target, String property)
+    private void fillMetaValues(Source source, OutputDocument output, Map<Locale, String> target, String property, boolean eatItUp)
     {
         List<Element> metas = source.getAllElements("meta");
         Iterator<Element> iter = metas.iterator();
@@ -289,10 +283,14 @@ public abstract class HtmlTemplate
                 }
                 String value = element.getAttributeValue("content");
                 target.put(locale, value);
+
+                if (eatItUp) {
+                    output.remove(element);
+                }
             }
         }
     }
-    private String getMetaValue(Source source, String property)
+    private String getMetaValue(Source source, OutputDocument output, String property, boolean eatItUp)
     {
         String retVal = null;
 
@@ -303,6 +301,10 @@ public abstract class HtmlTemplate
             String propertyVal = element.getAttributeValue("property");
             if (propertyVal!=null && propertyVal.equalsIgnoreCase(property)) {
                 retVal = element.getAttributeValue("content");
+                
+                if (eatItUp) {
+                    output.remove(element);
+                }
             }
         }
 
