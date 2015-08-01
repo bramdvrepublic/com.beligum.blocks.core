@@ -303,8 +303,41 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
     });
 
-
     // Add the start button as only notice of our presence
     $("body").append(menuStartButton);
+
+    //SETUP THE KEYBOARD SHORTCUTS
+    $(document).keydown(function (e)
+    {
+        var retVal = true;
+
+        //$.ui.keyCode.S
+        var action;
+        if (e) {
+            if (e.ctrlKey) {
+                switch (e.which) {
+                    //Ctrl+S
+                    case 83:
+                        action = $("." + BlocksConstants.SAVE_PAGE_BUTTON).click();
+                        break;
+                }
+            }
+            else {
+                switch (e.which) {
+                    //DELETE
+                    case 46:
+                        action = $("." + BlocksConstants.DELETE_PAGE_BUTTON).click();
+                        break;
+                }
+            }
+        }
+
+        if (action) {
+            event.preventDefault();
+            retVal = false;
+        }
+
+        return retVal;
+    });
 
 }]);
