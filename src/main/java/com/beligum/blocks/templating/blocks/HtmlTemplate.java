@@ -17,13 +17,21 @@ public abstract class HtmlTemplate
 {
     //-----CONSTANTS-----
     //this is the prefix to use in the <meta property="prefix:your-name" value="value comes here" > so that it doesn't get sent to the client
-    public static final String BLOCKS_META_TAG_PREFIX = "blocks:";
+    public static final String BLOCKS_META_TAG_PROPERTY_PREFIX = "blocks:";
     /**
      * These are the names of first folders that won't be taken into account when building the name of the element
      * Eg. /imports/blocks/test/tag.html will have the name "blocks-test-tag"
      */
     protected String[] INVISIBLE_START_FOLDERS = { "import", "imports" };
     protected static final Pattern styleLinkRelAttrValue = Pattern.compile("stylesheet");
+
+    public enum MetaProperty
+    {
+        title,
+        description,
+        controller,
+        display
+    }
 
     public enum MetaDisplayType {
         DEFAULT,
@@ -231,9 +239,9 @@ public abstract class HtmlTemplate
         //TODO this.attributes = html.
 
         //Note that we need to eat these values for PageTemplates because we don't want them to end up at the client side (no problem for TagTemplates)
-        this.fillMetaValues(this.document, html, this.titles = new HashMap<>(), BLOCKS_META_TAG_PREFIX+"title", true);
-        this.fillMetaValues(this.document, html, this.descriptions = new HashMap<>(), BLOCKS_META_TAG_PREFIX+"description", true);
-        String controllerClassStr = this.getMetaValue(this.document, html, BLOCKS_META_TAG_PREFIX+"controller", true);
+        this.fillMetaValues(this.document, html, this.titles = new HashMap<>(), MetaProperty.title, true);
+        this.fillMetaValues(this.document, html, this.descriptions = new HashMap<>(), MetaProperty.description, true);
+        String controllerClassStr = this.getMetaValue(this.document, html, MetaProperty.controller, true);
         if (!StringUtils.isEmpty(controllerClassStr)) {
             Class<?> clazz = Class.forName(controllerClassStr);
             if (TemplateController.class.isAssignableFrom(clazz)) {
@@ -245,7 +253,7 @@ public abstract class HtmlTemplate
         }
 
         this.displayType = MetaDisplayType.DEFAULT;
-        String displayType = this.getMetaValue(this.document, html, "display", true);
+        String displayType = this.getMetaValue(this.document, html, MetaProperty.display, true);
         if (!StringUtils.isEmpty(displayType)) {
             this.displayType = MetaDisplayType.valueOf(displayType.toUpperCase());
         }
@@ -268,14 +276,14 @@ public abstract class HtmlTemplate
     }
 
     //-----PRIVATE METHODS-----
-    private void fillMetaValues(Source source, OutputDocument output, Map<Locale, String> target, String property, boolean eatItUp)
+    private void fillMetaValues(Source source, OutputDocument output, Map<Locale, String> target, MetaProperty property, boolean eatItUp)
     {
         List<Element> metas = source.getAllElements("meta");
         Iterator<Element> iter = metas.iterator();
         while (iter.hasNext()) {
             Element element = iter.next();
             String propertyVal = element.getAttributeValue("property");
-            if (propertyVal!=null && propertyVal.equalsIgnoreCase(property)) {
+            if (propertyVal!=null && propertyVal.equalsIgnoreCase(BLOCKS_META_TAG_PROPERTY_PREFIX +property.toString())) {
                 Locale locale = Locale.ROOT;
                 String localeStr = element.getAttributeValue("lang");
                 if (localeStr!=null) {
@@ -290,7 +298,7 @@ public abstract class HtmlTemplate
             }
         }
     }
-    private String getMetaValue(Source source, OutputDocument output, String property, boolean eatItUp)
+    private String getMetaValue(Source source, OutputDocument output, MetaProperty property, boolean eatItUp)
     {
         String retVal = null;
 
@@ -299,9 +307,9 @@ public abstract class HtmlTemplate
         while (retVal==null && iter.hasNext()) {
             Element element = iter.next();
             String propertyVal = element.getAttributeValue("property");
-            if (propertyVal!=null && propertyVal.equalsIgnoreCase(property)) {
+            if (propertyVal!=null && propertyVal.equalsIgnoreCase(BLOCKS_META_TAG_PROPERTY_PREFIX +property.toString())) {
                 retVal = element.getAttributeValue("content");
-                
+
                 if (eatItUp) {
                     output.remove(element);
                 }

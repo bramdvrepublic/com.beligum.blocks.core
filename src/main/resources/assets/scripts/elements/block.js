@@ -117,7 +117,7 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "base.core.Constan
                 } catch (e) {
                     Logger.error(this);
                 }
-                Logger.debug("Calculate at border");
+                Logger.debug("Calculate at border - direction="+direction);
                 if (newDropspot != null) {
                     newDropspot.makeTriggers(x, y, direction);
                 }

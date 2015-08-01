@@ -144,7 +144,9 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                         dropSpot = new blocks.elements.Dropspot(BaseConstants.SIDE.BOTTOM, container, 0);
                     }
                 }
-                if (dropSpot != null) dropSpot.block = container;
+                if (dropSpot != null) {
+                    dropSpot.block = container;
+                }
 
             }
 
@@ -314,6 +316,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         if (dropPointerElements == null) {
             dropPointerElements = $("<div class='"+BlocksConstants.BLOCKS_DROPSPOT_CLASS+"' />");
             dropPointerElements.css("z-index", zindex);
+            dropPointerElements.css("position", "absolute");
             // TODO position close to blue lin
             // TODO make drop line thicker
             //dropPointerElements.append(
@@ -321,7 +324,6 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             //        .append($("<div class='droppointer-arrow' style='position:relative;'></div>"))
             //); // element for arrow
             $("body").append(dropPointerElements);
-            dropPointerElements.css("position", "absolute");
         }
         hideDropPointerElement();
     };
