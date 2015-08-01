@@ -42,10 +42,16 @@ public class HtmlParser extends AbstractAssetParser
     }
 
     //-----PUBLIC METHODS-----
-    public String parse(String rawSource) throws Exception
-    {
-        return this.doParse(null, rawSource);
-    }
+    /**
+     * This method is executed for all *.html files requested by the client. It should be optimized for speed but the result
+     * is cached by the ResourceManager, so in production mode, the speed-importance of this method is relative.
+     * However; there is currently a MAJOR issue with StringTemplates (see the other parse() method) where every request
+     * is parsed through this method; BAD and a very big TODO
+     * @param src
+     * @param args
+     * @return
+     * @throws IOException
+     */
     @Override
     public ParseResult parse(ResourceDescriptor src, Map<String, String> args) throws IOException
     {
@@ -53,11 +59,23 @@ public class HtmlParser extends AbstractAssetParser
             Path sourcePath = src.getResolvedPath();
             String rawSource = new String(Files.readAllBytes(sourcePath));
 
+            //allows for the ResourceManager to cache the result of doParse()
             return new StringParseResult(sourcePath, this.doParse(sourcePath, rawSource), this.getCacheFile(sourcePath), Asset.MimeType.HTML);
         }
         catch (Exception e) {
             throw new IOException("Caught exception while parsing html file", e);
         }
+    }
+    /**
+     * This is a temporary workaround function to (also) make StringTemplates work; see com.beligum.base.templating.velocity.VelocityStringTemplate
+     * It basically parses every request through the doParse() method, regardless of any caching.
+     * @param rawSource
+     * @return
+     * @throws Exception
+     */
+    public String parse(String rawSource) throws Exception
+    {
+        return this.doParse(null, rawSource);
     }
     /**
      * Strips all lines beginning with "##" (starting from that position) and returns all the rest.
@@ -85,7 +103,7 @@ public class HtmlParser extends AbstractAssetParser
 
         return retVal.toString();
     }
-    public static TemplateCache getCachedTemplates()
+    public static TemplateCache getTemplateCache()
     {
         TemplateCache retVal = (TemplateCache) R.cacheManager().getApplicationCache().get(CacheKeys.TAG_TEMPLATES);
         if (retVal == null) {
@@ -110,9 +128,11 @@ public class HtmlParser extends AbstractAssetParser
         String sourceStr = eatVelocityComments(rawSource);
         Source source = new Source(sourceStr);
 
+        boolean htmlPage = source.getFirstElement("html")!=null;
+
         // if we're dealing with a template (eg. the file is a template, not an instance of a template), replace the source with the html in the template
         boolean isTagTemplate = false;
-        TemplateCache templateCache = this.getCachedTemplates();
+        TemplateCache templateCache = this.getTemplateCache();
         if (sourcePath!=null && templateCache.containsKey(sourcePath)) {
             //first of all, since this method is only called when something changed, update the cache value
             HtmlTemplate oldTemplate = templateCache.get(sourcePath);//fetch the old value for the paths
@@ -154,19 +174,8 @@ public class HtmlParser extends AbstractAssetParser
                 builder.append(" #set($").append(resourceTestVar).append("=true)").append("\n");
                 builder.append("#end").append("\n");
             }
-            // the only preprocessing we do with a page template is fill in the template attribute with the name of the template
-            // so we know what template was used when the code comes back from the client
             else if (tagTemplate instanceof PageTemplate) {
-                Element html = templateHtml.getFirstElement("template", null);
-                if (!html.getName().equalsIgnoreCase("html")) {
-                    throw new IOException("Found a template attribute on a non-html element, this shouldn't happen since it's been checked before; "+sourcePath);
-                }
-                //a little bit verbose, but I didn't find a shorter way...
-                Attributes templateAttr = html.getAttributes();
-                Map<String,String> attrs = new LinkedHashMap<>();
-                templateAttr.populateMap(attrs, true);
-                attrs.put("template", tagTemplate.getTemplateName());
-                output.replace(templateAttr, Attributes.generateHTML(attrs));
+                //NOOP
             }
 
             //from here, it's the same for a Tag or Page template; preprocess the replaceable properties
@@ -336,7 +345,17 @@ public class HtmlParser extends AbstractAssetParser
             }
         }
 
-        return output.toString();
+        StringBuilder retVal = new StringBuilder();
+        if (htmlPage) {
+            retVal.append("#").append(PageTemplateWrapperDirective.NAME).append("()").append("\n");
+            retVal.append(output.toString());
+            retVal.append("#end");
+        }
+        else {
+            retVal.append(output.toString());
+        }
+
+        return retVal.toString();
     }
     private void replaceTemplateProperty(String attribute, Element property, OutputDocument output)
     {
@@ -357,11 +376,7 @@ public class HtmlParser extends AbstractAssetParser
         //start with a clean slate
         templateCache.clear();
 
-        //TODO clean this up
         List<ResourceSearchResult> htmlFiles = new ArrayList<>();
-//        htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/templates/**.{html,htm}"));
-//        htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/views/**.{html,htm}"));
-        htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/assets/imports/**.{html,htm}"));
         htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/imports/**.{html,htm}"));
 
         for (ResourceSearchResult htmlFile : htmlFiles) {

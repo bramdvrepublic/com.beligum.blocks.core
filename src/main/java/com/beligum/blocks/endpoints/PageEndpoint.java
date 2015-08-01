@@ -55,7 +55,7 @@ public class PageEndpoint
                     throws Exception
 
     {
-        PageTemplate pageTemplate = (PageTemplate) HtmlParser.getCachedTemplates().get(pageTemplateName);
+        PageTemplate pageTemplate = (PageTemplate) HtmlParser.getTemplateCache().get(pageTemplateName);
         R.cacheManager().getFlashCache().put(PAGE_TEMPLATE_NAME, pageTemplateName);
         return Response.seeOther(new URI(pageUrl)).build();
     }
@@ -67,7 +67,6 @@ public class PageEndpoint
                     throws Exception
 
     {
-
         URI uri = new URI(url);
         // Analyze the url to find the correct Route
         Route route = new Route(uri, PersistenceControllerImpl.instance());
@@ -141,9 +140,9 @@ public class PageEndpoint
     }
 
     @GET
-    @Path("blocks")
+    @Path("/blocks")
     public Response getBlocks() {
-        TemplateCache cache = HtmlParser.getCachedTemplates();
+        TemplateCache cache = HtmlParser.getTemplateCache();
         List<Map<String, String>> templates = new ArrayList<>();
         Locale lang = BlocksConfig.instance().getRequestDefaultLanguage();
         for (HtmlTemplate template : cache.values()) {
@@ -197,13 +196,13 @@ public class PageEndpoint
     }
 
     @GET
-    @Path("block/{name:.*}")
+    @Path("/block/{name:.*}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getBlock(@PathParam("name") String name) {
         HashMap<String, String> retVal = new HashMap<>();
 
         HtmlTemplate htmlTemplate = null;
-        for (HtmlTemplate t: HtmlParser.getCachedTemplates().values()) {
+        for (HtmlTemplate t: HtmlParser.getTemplateCache().values()) {
             if (t.getTemplateName().equals(name)) {
                 htmlTemplate = t;
                 break;

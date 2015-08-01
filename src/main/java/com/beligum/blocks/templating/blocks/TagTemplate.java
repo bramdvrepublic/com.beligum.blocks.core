@@ -19,7 +19,7 @@ public class TagTemplate extends HtmlTemplate
         List<Element> templateElements = document.getAllElements("template");
         if (templateElements != null && !templateElements.isEmpty() && templateElements.size() == 1) {
             Element templateTag = templateElements.get(0);
-            this.init(document, templateTag.getContent(), templateTag.getAttributes(), absolutePath, relativePath);
+            this.initAll(document, templateTag.getContent(), templateTag.getAttributes(), absolutePath, relativePath);
         }
         else {
             throw new Exception("Encountered tag template with an invalid <template> tag config (found " + (templateElements == null ? null : templateElements.size()) + " tags); " + absolutePath);

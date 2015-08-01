@@ -12,7 +12,7 @@
  *
  * */
 
-base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks.common", "blocks.core.DomManipulation",  function (Broadcaster, Constants, DOM)
+base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.DomManipulation",  function (Broadcaster, Constants, DOM)
 {
     var Resizer = this;
     var active = false;

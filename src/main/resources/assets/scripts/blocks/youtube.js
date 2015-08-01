@@ -1,7 +1,7 @@
 /*
  * Allows editiong of an embedded youtube video when you click on it
  * */
-base.plugin("blocks.edit.Youtube", ["constants.blocks.common", "blocks.core.Edit", "blocks.core.Sidebar",  function (Constants, Edit, Sidebar)
+base.plugin("blocks.edit.Youtube", ["constants.blocks.core", "blocks.core.Edit", "blocks.core.Sidebar",  function (Constants, Edit, Sidebar)
 {
     this.focus = function(windowID, property, blockEvent) {
         var embedded = blockEvent.block.current.element.children(".embed-responsive");

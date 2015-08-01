@@ -2,7 +2,6 @@ package com.beligum.blocks.pages;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
-import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import com.beligum.blocks.exceptions.RdfException;
 import com.beligum.blocks.models.factories.ResourceFactoryImpl;
@@ -77,7 +76,7 @@ public class WebPageParser
         pageResource = ResourceFactoryImpl.instance().createResource(RdfTools.createLocalResourceId("webpage"), RdfTools.createLocalType("Webpage"), locale);
         this.resources.put(pageResource.getBlockId().toString(), pageResource);
         this.elements  = this.source.getAllElements();
-        for (HtmlTemplate template: HtmlParser.getCachedTemplates().values()) {
+        for (HtmlTemplate template: HtmlParser.getTemplateCache().values()) {
             this.siteTags.add(template.getTemplateName());
         }
 
@@ -308,9 +307,7 @@ public class WebPageParser
                         this.prefixes.put(p, prefix.get(p));
                     }
                 }
-
             }
-
         }
         return retVal;
     }

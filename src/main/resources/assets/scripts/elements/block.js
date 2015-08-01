@@ -1,6 +1,6 @@
 // Special kind of row that can contains a template
 // Draggable templates are the elements inside a column
-base.plugin("blocks.core.Elements.Block", ["base.core.Class", "base.core.Constants", "constants.blocks.common", function (Class, Constants, BlocksConstants)
+base.plugin("blocks.core.Elements.Block", ["base.core.Class", "base.core.Constants", "constants.blocks.core", function (Class, Constants, BlocksConstants)
 {
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};

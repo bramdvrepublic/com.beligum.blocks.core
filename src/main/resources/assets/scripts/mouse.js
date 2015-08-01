@@ -60,7 +60,7 @@
  *
  */
 
-base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "constants.blocks.common", "blocks.core.Sidebar", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, SideBar)
+base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "constants.blocks.core", "blocks.core.Sidebar", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, SideBar)
 {
     // flag if this module is active
     var Mouse = this;

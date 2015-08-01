@@ -8,10 +8,14 @@ import org.apache.velocity.exception.MethodInvocationException;
 import org.apache.velocity.exception.ParseErrorException;
 import org.apache.velocity.exception.ResourceNotFoundException;
 import org.apache.velocity.runtime.directive.Directive;
+import org.apache.velocity.runtime.log.Log;
 import org.apache.velocity.runtime.parser.node.Node;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by bram on 4/25/15.
@@ -22,8 +26,11 @@ public class TemplateResourcesDirective extends Directive
     //-----CONSTANTS-----
     public static final String NAME = "blocksTagResources";
 
+    public static final String RESOURCES_INSERTS = "RESOURCES_INSERTS";
+
     //private static final String BLOCKS_TEMPLATE_RESOURCES = "BLOCKS_TEMPLATE_RES";
-    enum CacheKey implements com.beligum.base.cache.CacheKey {
+    enum CacheKey implements com.beligum.base.cache.CacheKey
+    {
         BLOCKS_TEMPLATE_RES
     }
 
@@ -35,8 +42,7 @@ public class TemplateResourcesDirective extends Directive
         inlineScripts,
         externalScripts,
         scripts,
-        all,
-        ;
+        all,;
     }
 
     //-----VARIABLES-----
@@ -48,18 +54,18 @@ public class TemplateResourcesDirective extends Directive
     public static TemplateResources getContextResources(InternalContextAdapter context)
     {
         TemplateResources retVal = (TemplateResources) R.cacheManager().getRequestCache().get(CacheKey.BLOCKS_TEMPLATE_RES);
-        if (retVal==null) {
+        if (retVal == null) {
             R.cacheManager().getRequestCache().put(CacheKey.BLOCKS_TEMPLATE_RES, retVal = new TemplateResources());
         }
 
-//        InternalContextAdapter baseContext = context.getBaseContext();
-//        synchronized (baseContext) {
-//            retVal = (TemplateResources) baseContext.get(TemplateResourcesDirective.BLOCKS_TEMPLATE_RESOURCES);
-//            if (retVal == null) {
-//                retVal = new TemplateResources();
-//                baseContext.put(TemplateResourcesDirective.BLOCKS_TEMPLATE_RESOURCES, retVal);
-//            }
-//        }
+        //        InternalContextAdapter baseContext = context.getBaseContext();
+        //        synchronized (baseContext) {
+        //            retVal = (TemplateResources) baseContext.get(TemplateResourcesDirective.BLOCKS_TEMPLATE_RESOURCES);
+        //            if (retVal == null) {
+        //                retVal = new TemplateResources();
+        //                baseContext.put(TemplateResourcesDirective.BLOCKS_TEMPLATE_RESOURCES, retVal);
+        //            }
+        //        }
 
         return retVal;
     }
@@ -78,53 +84,45 @@ public class TemplateResourcesDirective extends Directive
     {
         // Note: we stopped doing this. Instead, the #define directive is overloaded by OverloadedDefineDirective and adapted so it renders out it's content
         // to a dummy writer, to achieve the same thing as in the comment block below, but a lot faster when using template tags in loops
-//        Object[] contextKeys = context.getKeys();
-//        for (Object key : contextKeys) {
-//            Object value = context.get((String) key);
-//            if (value instanceof Block.Reference) {
-//                // this is a bit of a hack: it forces the references (actually the values of the #define, that are stored in the context)
-//                // to be rendered here instead of later on, when it's being used for the first time, making sure the right render-order is simulated.
-//                // (see comments of the Block and Block.Reference classes for details)
-//                // Note that by rendering this node out, the styles and scripts of the tagTemplates will
-//                // be put into the context, so they can be used below
-//                Block.Reference ref = (Block.Reference)value;
-//                ref.render(context, this.dummyWriter);
-//            }
-//        }
+        //        Object[] contextKeys = context.getKeys();
+        //        for (Object key : contextKeys) {
+        //            Object value = context.get((String) key);
+        //            if (value instanceof Block.Reference) {
+        //                // this is a bit of a hack: it forces the references (actually the values of the #define, that are stored in the context)
+        //                // to be rendered here instead of later on, when it's being used for the first time, making sure the right render-order is simulated.
+        //                // (see comments of the Block and Block.Reference classes for details)
+        //                // Note that by rendering this node out, the styles and scripts of the tagTemplates will
+        //                // be put into the context, so they can be used below
+        //                Block.Reference ref = (Block.Reference)value;
+        //                ref.render(context, this.dummyWriter);
+        //            }
+        //        }
 
         TemplateResources resources = getContextResources(context);
         //if we have nothing to check, let's move on
-        if (resources!=null) {
+        if (resources != null) {
             Argument arg = Argument.all;
-            Node argNode = node.jjtGetNumChildren()>0 ? node.jjtGetChild(0) : null;
-            if (argNode!=null) {
+            Node argNode = node.jjtGetNumChildren() > 0 ? node.jjtGetChild(0) : null;
+            if (argNode != null) {
+                //this validates the value; real switch() is in PageTemplateWrapperDirective.class
                 arg = Argument.valueOf((String) argNode.value(context));
             }
 
-            switch (arg) {
-                case inlineStyles:
-                    this.writeResources(resources.getInlineStyles(), writer);
-                    break;
-                case externalStyles:
-                    this.writeResources(resources.getExternalStyles(), writer);
-                    break;
-                case styles:
-                    this.writeResources(resources.getStyles(), writer);
-                    break;
-                case inlineScripts:
-                    this.writeResources(resources.getInlineScripts(), writer);
-                    break;
-                case externalScripts:
-                    this.writeResources(resources.getExternalScripts(), writer);
-                    break;
-                case scripts:
-                    this.writeResources(resources.getScripts(), writer);
-                    break;
-                default:
-                    // default is to write everything out
-                    this.writeResources(resources.getStyles(), writer);
-                    this.writeResources(resources.getScripts(), writer);
-                    break;
+            /**
+             * Instead of writing the resource tags to the writer, we save the position of th buffer to insert them at this position later on.
+             * This is because I couldn't find a way to run through the entire Velocity file, saving all resource references and then building the uniques list
+             * any other way.
+             */
+            List<WriterBufferReference> inserts = (List<WriterBufferReference>) context.get(RESOURCES_INSERTS);
+            if (inserts == null) {
+                context.put(RESOURCES_INSERTS, inserts = new ArrayList<WriterBufferReference>());
+            }
+            if (writer instanceof StringWriter) {
+                inserts.add(new WriterBufferReference(arg, (StringWriter) writer));
+            }
+            else {
+                throw new IOException("Encountered a writer while processing #"+NAME+" directive that's not a StringWriter; this shouldn't happen and should be fixed in "+PageTemplateWrapperDirective.class.getCanonicalName()+"; template file was "+
+                                      Log.formatFileString(this));
             }
         }
 
@@ -134,11 +132,27 @@ public class TemplateResourcesDirective extends Directive
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private void writeResources(Iterable<TemplateResources.Resource> resources, Writer writer) throws IOException
+
+    //-----PRIVATE CLASSES-----
+    public static class WriterBufferReference
     {
-        for (TemplateResources.Resource res : resources) {
-            writer.write(res.getValue());
-            writer.write("\n");
+        private Argument type;
+        private int writerBufferPosition = -1;
+
+        public WriterBufferReference(Argument type, StringWriter writer)
+        {
+            //we save the position so we can insert right here later on (when everything is rendered)
+            this.writerBufferPosition = writer.getBuffer().length();
+            this.type = type;
+        }
+
+        public Argument getType()
+        {
+            return type;
+        }
+        public int getWriterBufferPosition()
+        {
+            return writerBufferPosition;
         }
     }
 }

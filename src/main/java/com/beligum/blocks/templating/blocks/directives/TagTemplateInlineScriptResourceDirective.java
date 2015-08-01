@@ -5,7 +5,6 @@ import org.apache.velocity.context.InternalContextAdapter;
 import org.apache.velocity.exception.MethodInvocationException;
 import org.apache.velocity.exception.ParseErrorException;
 import org.apache.velocity.exception.ResourceNotFoundException;
-import org.apache.velocity.runtime.directive.Directive;
 import org.apache.velocity.runtime.parser.node.Node;
 
 import java.io.IOException;
@@ -15,7 +14,7 @@ import java.io.Writer;
  * Created by bram on 4/25/15.
  */
 @VelocityDirective(TagTemplateInlineScriptResourceDirective.NAME)
-public class TagTemplateInlineScriptResourceDirective extends Directive
+public class TagTemplateInlineScriptResourceDirective extends TagTemplateAbstractResourceDirective
 {
     //-----CONSTANTS-----
     //blocksTemplateInlineScript

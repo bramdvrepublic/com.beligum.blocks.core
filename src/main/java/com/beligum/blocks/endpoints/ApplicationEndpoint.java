@@ -84,7 +84,7 @@ public class ApplicationEndpoint
     //
     //        String resourceName = path.getName(0).toString();
     //        String templateName = null;
-    //        for (HtmlTemplate template: HtmlParser.getCachedTemplates().values()) {
+    //        for (HtmlTemplate template: HtmlParser.getTemplateCache().values()) {
     //            if (template.getTemplateName().equals("mot-"+resourceName+"-basic")) {
     //                templateName = template.getTemplateName();
     //                break;

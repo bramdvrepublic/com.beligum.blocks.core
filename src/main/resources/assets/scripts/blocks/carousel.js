@@ -1,7 +1,7 @@
 /**
  * Created by wouter on 18/06/15.
  */
-base.plugin("blocks.edit.Carousel", ["constants.blocks.common", "blocks.core.Edit", "blocks.core.Sidebar", "blocks.core.SidebarUtils",  function (Constants, Edit, Sidebar, SidebarUtils)
+base.plugin("blocks.edit.Carousel", ["constants.blocks.core", "blocks.core.Edit", "blocks.core.Sidebar", "blocks.core.SidebarUtils",  function (Constants, Edit, Sidebar, SidebarUtils)
 {
     var listGroup = null;
 

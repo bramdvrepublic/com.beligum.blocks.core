@@ -8,7 +8,7 @@
  * */
 
 
-base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core.Constants", "blocks.core.DomManipulation", "constants.blocks.common", function (Class, Constants, DOM, BlocksConstants)
+base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core.Constants", "blocks.core.DomManipulation", "constants.blocks.core", function (Class, Constants, DOM, BlocksConstants)
 {
     var body = $("body");
 

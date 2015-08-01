@@ -2,7 +2,7 @@
  * Created by wouter on 8/07/15.
  */
 
-base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", function (Class)
+base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Sidebar, SidebarUtils)
 {
     var MediumEditorExtensions = this;
 
@@ -232,6 +232,17 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", function (
         createForm: function ()
         {
             var form = $('<div id="'+('medium-editor-toolbar-form-anchor-' + this.getEditorId())+'" class="form-inline medium-editor-toolbar-form"></div>');
+
+            //SidebarUtils.createTextInput(Sidebar, null, function ()
+            //    {
+            //        return element.attr(attribute);
+            //    }, function (val)
+            //    {
+            //        return element.attr(attribute, val);
+            //    },
+            //    labelText, placeholderText, confirm, inputActions
+            //);
+
             var formGroup = $('<div class="form-group"></div>').appendTo(form);
             var inputGroup = $('<div class="input-group"></div>').appendTo(formGroup);
             var input = $('<input type="text" class="form-control ' + this.inputClass + '" placeholder="' + this.placeholderText + '">').appendTo(inputGroup);

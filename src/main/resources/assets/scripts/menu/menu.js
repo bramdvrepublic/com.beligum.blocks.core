@@ -1,4 +1,4 @@
-base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Overlay", "blocks.core.DomManipulation", "constants.blocks.common", "blocks.core.Sidebar", function (Broadcaster, Notification, Overlay, DOM, Constants, Sidebar)
+base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Overlay", "blocks.core.DomManipulation", "constants.blocks.core", "blocks.core.Sidebar", "messages.blocks.core", function (Broadcaster, Notification, Overlay, DOM, BlocksConstants, Sidebar, BlocksMessages)
 {
     var Frame = this;
 
@@ -7,20 +7,21 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     var SIDEBAR_STATE_HIDE = "hide";
 
     //note: the icon of the <i> is set in blocks.less
-    var menuStartButton = $('<a class="'+ Constants.BLOCKS_START_BUTTON +'"></a>');
+    var menuStartButton = $('<a class="' + BlocksConstants.BLOCKS_START_BUTTON + '"></a>');
 
-    var sidebarElement = $("<div class='" + Constants.PAGE_SIDEBAR_CLASS + " " + Constants.PREVENT_BLUR_CLASS +"'></div>");
+    var sidebarElement = $("<div class='" + BlocksConstants.PAGE_SIDEBAR_CLASS + " " + BlocksConstants.PREVENT_BLUR_CLASS + "'></div>");
     sidebarElement.load("/templates/sidebar");
 
     /*
      * Hide show bar on click of menu button
      * */
-    $(document).on("click", "."+ Constants.BLOCKS_START_BUTTON, function (event)
+    $(document).on("click", "." + BlocksConstants.BLOCKS_START_BUTTON, function (event)
     {
-        toggleSidebar($("body").children("." + Constants.PAGE_CONTENT_CLASS).length == 0);
+        toggleSidebar($("body").children("." + BlocksConstants.PAGE_CONTENT_CLASS).length == 0);
     });
 
-    var toggleSidebar = function(show) {
+    var toggleSidebar = function (show)
+    {
 
         var cookieState = SIDEBAR_STATE_NULL;
 
@@ -34,17 +35,18 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             var body = $("body").html();
             $("body").empty();
             //wrap the content of the body in the class and add that again to the body
-            $("body").append($("<div class='" + Constants.PAGE_CONTENT_CLASS + "' />").append(body));
+            $("body").append($("<div class='" + BlocksConstants.PAGE_CONTENT_CLASS + "' />").append(body));
             $("body").append(sidebarElement);
-            $("body").addClass(Constants.BODY_EDIT_MODE_CLASS);
+            $("body").addClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
 
             // Prevent clicking on links while in editing mode
-            $(document).on("click.prevent_click_editing", "a", function(e) {
+            $(document).on("click.prevent_click_editing", "a", function (e)
+            {
                 e.preventDefault();
             });
 
             // Get old sidebar width from cookie
-            var cookieSidebarWidth = $.cookie(Constants.COOKIE_SIDEBAR_WIDTH);
+            var cookieSidebarWidth = $.cookie(BlocksConstants.COOKIE_SIDEBAR_WIDTH);
             var windowWidth = $(window).width();
             var INIT_SIDEBAR_WIDTH = windowWidth * 0.2; // default width of sidebar is 20% of window
             if (cookieSidebarWidth != null) {
@@ -53,7 +55,8 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
             menuStartButton.addClass("open");
 
-            Sidebar.setSidebarWidth(INIT_SIDEBAR_WIDTH, function() {
+            Sidebar.setSidebarWidth(INIT_SIDEBAR_WIDTH, function ()
+            {
                 $("body").append(menuStartButton);
                 enableSidebarDrag();
                 Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS);
@@ -63,36 +66,40 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             cookieState = SIDEBAR_STATE_HIDE;
             var CLOSE_SIDEBAR_WIDTH = 0.0;
             menuStartButton.hide().removeClass("open");
-            Sidebar.setSidebarWidth(CLOSE_SIDEBAR_WIDTH, function() {
+            Sidebar.setSidebarWidth(CLOSE_SIDEBAR_WIDTH, function ()
+            {
                 disableSidebarDrag();
                 menuStartButton.show();
 
-                var content = $("." + Constants.PAGE_CONTENT_CLASS).html();
+                var content = $("." + BlocksConstants.PAGE_CONTENT_CLASS).html();
                 $("body").empty();
                 $("body").append(content);
                 $(document).off("click.prevent_click_editing");
                 Broadcaster.send(Broadcaster.EVENTS.STOP_BLOCKS);
                 $("body").append(menuStartButton);
 
-                $("body").removeClass(Constants.BODY_EDIT_MODE_CLASS);
+                $("body").removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
             });
         }
 
         //Note: by default, the cookie is deleted when the browser is closed:
-        $.cookie(Constants.COOKIE_SIDEBAR_STATE, cookieState);
+        $.cookie(BlocksConstants.COOKIE_SIDEBAR_STATE, cookieState);
     };
 
     //check for a cookie and auto-open when the sidebar was active
-    var sidebarState = $.cookie(Constants.COOKIE_SIDEBAR_STATE);
+    var sidebarState = $.cookie(BlocksConstants.COOKIE_SIDEBAR_STATE);
 
-    if (sidebarState===SIDEBAR_STATE_SHOW) {
-        $(document).ready(function () {
+    if (sidebarState === SIDEBAR_STATE_SHOW) {
+        $(document).ready(function ()
+        {
             toggleSidebar(true);
         });
     }
 
-    var enableSidebarDrag = function() {
-        $(document).on("mousedown.sidebar_resize", "."+Constants.PAGE_SIDEBAR_RESIZE_CLASS, function() {
+    var enableSidebarDrag = function ()
+    {
+        $(document).on("mousedown.sidebar_resize", "." + BlocksConstants.PAGE_SIDEBAR_RESIZE_CLASS, function ()
+        {
             // On mousedown start resizing
             // Make sure we are no longer in edit mode
             Sidebar.reset();
@@ -100,19 +107,23 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
             DOM.disableSelection();
             DOM.disableContextMenu();
-            $("body").addClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
+            $("body").addClass(BlocksConstants.FORCE_RESIZE_CURSOR_CLASS);
 
             var windowWidth = $(window).width();
-            var pageContent = $("." + Constants.PAGE_CONTENT_CLASS);
-            $(document).on("mousemove.sidebar_resize", function(event) {
+            var pageContent = $("." + BlocksConstants.PAGE_CONTENT_CLASS);
+            $(document).on("mousemove.sidebar_resize", function (event)
+            {
                 var X = event.pageX;
-                var ratioSide = windowWidth - X;
-                var ratioPage = windowWidth - ratioSide;
-                sidebarElement.css("width", ratioSide + "px");
-                pageContent.css("width", ratioPage + "px");
+                var sideWidth = windowWidth - X;
+                var pageWidth = windowWidth - sideWidth;
+                if (sideWidth > 200 && pageWidth > 200) {
+                    sidebarElement.css("width", sideWidth + "px");
+                    pageContent.css("width", pageWidth + "px");
+                }
             });
 
-            $(document).on("mouseup.sidebar_resize", function() {
+            $(document).on("mouseup.sidebar_resize", function ()
+            {
 
                 // check size page content
                 // find containers and get width
@@ -124,16 +135,17 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 $(document).off("mouseup.sidebar_resize");
                 DOM.enableSelection();
                 DOM.enableContextMenu();
-                $("body").removeClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
+                $("body").removeClass(BlocksConstants.FORCE_RESIZE_CURSOR_CLASS);
                 Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
 
                 //Note: by default, the cookie is deleted when the browser is closed:
-                $.cookie(Constants.COOKIE_SIDEBAR_WIDTH, sidebarElement.width());
+                $.cookie(BlocksConstants.COOKIE_SIDEBAR_WIDTH, sidebarElement.width());
             });
         });
     };
 
-    var disableSidebarDrag = function() {
+    var disableSidebarDrag = function ()
+    {
         $(document).off("mousedown.sidebar_resize");
     };
 
@@ -141,8 +153,9 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
      * in bootstrap the containerwidth is fixed. to prevent the container from bleeding
      * into our sidebar, we set the width fixed with a new width, smaller than our page content wrapper
      * */
-    var updateContainerWidth = function() {
-        var wrapper = $("." + Constants.PAGE_CONTENT_CLASS);
+    var updateContainerWidth = function ()
+    {
+        var wrapper = $("." + BlocksConstants.PAGE_CONTENT_CLASS);
         var containers = $(".container");
         containers.removeAttr("style");
         if (wrapper.length > 0) {
@@ -157,10 +170,11 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     var sidebarWidth = sidebarElement.outerWidth();
     // On Window resize
     var resizing = false;
-    $(window).smartresize(function() {
+    $(window).smartresize(function ()
+    {
         if (resizing) {
             var windowWidth = $(window).width();
-            $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth - sidebarWidth) + "px");
+            $("." + BlocksConstants.PAGE_CONTENT_CLASS).css("width", (windowWidth - sidebarWidth) + "px");
             Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
             resizing = false;
@@ -187,17 +201,18 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     /*
      * Save button: saves the page
      * */
-    $(document).on("click", "."+Constants.SAVE_PAGE_BUTTON, function ()
+    $(document).on("click", "." + BlocksConstants.SAVE_PAGE_BUTTON, function ()
     {
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         Sidebar.reset();
         // remove the widths from the containers
         $(".container").removeAttr("style");
         var page = $("html")[0].outerHTML;
+        //var page = $("body").html();
         updateContainerWidth();
 
         var dialog = new BootstrapDialog({
-            type: BootstrapDialog.TYPE_WARNING,
+            type: BootstrapDialog.TYPE_PRIMARY,
             title: 'Saving ...',
             message: 'Please wait while we save the page. This can take a few seconds',
             buttons: []
@@ -206,63 +221,29 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         dialog.open();
 
         $.ajax({
-                type: 'POST',
-                url: "/blocks/admin/page/save/" + window.location.href,
-                data: page,
-                contentType: 'application/json; charset=UTF-8',
-                success: function (url, textStatus, response)
-                {
-                    dialog.close();
-
-                    //Annoying when saving a lot...
-                    //dialog = new BootstrapDialog({
-                    //    type: BootstrapDialog.TYPE_SUCCESS,
-                    //    title: 'Page saved',
-                    //    message: '<p>The page was succesfully saved.</p>',
-                    //    buttons: [
-                    //        {
-                    //            id: 'btn-close',
-                    //            label: 'Ok',
-                    //            action: function (dialogRef)
-                    //            {
-                    //                dialogRef.close();
-                    //                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-                    //            }
-                    //        }
-                    //    ]
-                    //});
-                    //dialog.open();
-                },
-                error: function (response, textStatus, errorThrown)
-                {
-                    var message = response.status == 400 ? response.responseText : "An error occurred while saving the page";
-                    dialog.close();
-                    dialog = new BootstrapDialog({
-                        type: BootstrapDialog.TYPE_SUCCESS,
-                        title: 'Page saved',
-                        message: "<p>An error occurred while saving the page:</p><p>" + message + "</p>",
-                        buttons: [
-                            {
-                                id: 'btn-close',
-                                label: 'Ok',
-                                action: function (dialogRef)
-                                {
-                                    dialogRef.close();
-                                    Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-                                }
-                            }
-                        ]
-                    });
-                    dialog.open();
-                }
-            }
-        )
+            type: 'POST',
+            url: "/blocks/admin/page/save/" + window.location.href,
+            data: page,
+            contentType: 'application/json; charset=UTF-8',
+        })
+            .done(function (url, textStatus, response)
+            {
+            })
+            .fail(function (xhr, textStatus, exception)
+            {
+                Notification.error(BlocksMessages.savePageError + (exception ? "; " + exception : ""), xhr);
+            })
+            .always(function ()
+            {
+                dialog.close();
+                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+            });
     });
 
     /*
      * Delete button: deletes the page
      * */
-    $(document).on("click", "."+Constants.DELETE_PAGE_BUTTON, function ()
+    $(document).on("click", "." + BlocksConstants.DELETE_PAGE_BUTTON, function ()
     {
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
         var onConfirm = function ()

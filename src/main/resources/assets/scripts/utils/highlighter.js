@@ -6,7 +6,7 @@
  *
  * */
 
-base.plugin("blocks.core.Highlighter", ["blocks.core.Layouter", "blocks.core.Broadcaster", "constants.blocks.common", function (Layouter, Broadcaster, Constants)
+base.plugin("blocks.core.Highlighter", ["blocks.core.Layouter", "blocks.core.Broadcaster", "constants.blocks.core", function (Layouter, Broadcaster, Constants)
 {
     var Highlighter = this;
     this.removePropertyOverlay = function ()

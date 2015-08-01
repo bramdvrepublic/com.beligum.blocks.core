@@ -9,7 +9,7 @@
  *
  */
 
-base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "constants.blocks.common", "blocks.core.Overlay", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, Overlay)
+base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "constants.blocks.core", "blocks.core.Overlay", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, Overlay)
 {
     var DragDrop = this;
     var draggingEnabled = false;
@@ -176,7 +176,6 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     {
         sidebar = null;
         if (dragging) {
-
             // check for null (e.g during abort_drag)
             // If we did not drop on ourself, change location
             if (currentDraggedBlock != null && lastDropLocation != null && !dropSpotIsDraggedBlock(lastDropLocation) && insideWindow(blockEvent.clientX, blockEvent.clientY)) {
@@ -313,14 +312,14 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         Logger.debug("create droppointer ");
         var zindex = base.utils.maxIndex + 3;
         if (dropPointerElements == null) {
-            dropPointerElements = $("<div class='blocks-dropspot' />");
+            dropPointerElements = $("<div class='"+BlocksConstants.BLOCKS_DROPSPOT_CLASS+"' />");
             dropPointerElements.css("z-index", zindex);
             // TODO position close to blue lin
             // TODO make drop line thicker
-            dropPointerElements.append(
-                $("<div class='droppointer-arrow-container' style='position:absolute;'/>")
-                    .append($("<div class='droppointer-arrow' style='position:relative;'></div>"))
-            ); // element for arrow
+            //dropPointerElements.append(
+            //    $("<div class='droppointer-arrow-container' style='position:absolute;'/>")
+            //        .append($("<div class='droppointer-arrow' style='position:relative;'></div>"))
+            //); // element for arrow
             $("body").append(dropPointerElements);
             dropPointerElements.css("position", "absolute");
         }
@@ -341,16 +340,35 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     var drawDropPointerElement = function (surface, side)
     {
         if (surface != null) {
-            Logger.debug("draw droppointer element")
-            dropPointerElements.css("top", surface.top + "px");
-            dropPointerElements.css("left", surface.left + "px");
-            dropPointerElements.css("width", surface.right - surface.left + "px");
-            dropPointerElements.css("height", surface.bottom - surface.top + "px");
-            dropPointerElements.css("border", "");
-            dropPointerElements.show();
-            if (side != null) {
-                dropPointerElements.css(cssSide[side], "5px solid rgba(0, 0, 119, 1)");
+            var top = surface.top;
+            var left = surface.left;
+            var width = surface.right - surface.left;
+            var height = surface.bottom - surface.top;
+
+            var offset = BlocksConstants.BLOCKS_DROPSPOT_BORDER_WIDTH / 2.0;
+            if (side==BaseConstants.SIDE.TOP) {
+                top = top-offset;
             }
+            else if (side==BaseConstants.SIDE.RIGHT) {
+                width = width+offset;
+            }
+            else if (side==BaseConstants.SIDE.BOTTOM) {
+                height = height+offset;
+            }
+            else if (side==BaseConstants.SIDE.LEFT) {
+                left = left-offset;
+            }
+
+            dropPointerElements.css("top", top + "px");
+            dropPointerElements.css("left", left + "px");
+            dropPointerElements.css("width", width + "px");
+            dropPointerElements.css("height", height + "px");
+            for (var i=1;i<5;i++) {
+                dropPointerElements.removeClass(BlocksConstants.BLOCKS_DROPSPOT_CLASS+"-"+cssSide[i]);
+            }
+            dropPointerElements.addClass(BlocksConstants.BLOCKS_DROPSPOT_CLASS+"-"+cssSide[side]);
+
+            dropPointerElements.show();
 
         } else {
             hideDropPointerElement();
@@ -401,10 +419,16 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
 
     // Simple object to translate SIDE in css border side
     var cssSide = {};
-    cssSide[BaseConstants.SIDE.TOP] = "border-top";
-    cssSide[BaseConstants.SIDE.BOTTOM] = "border-bottom";
-    cssSide[BaseConstants.SIDE.LEFT] = "border-left";
-    cssSide[BaseConstants.SIDE.RIGHT] = "border-right";
+    cssSide[BaseConstants.SIDE.TOP] = "top";
+    cssSide[BaseConstants.SIDE.BOTTOM] = "bottom";
+    cssSide[BaseConstants.SIDE.LEFT] = "left";
+    cssSide[BaseConstants.SIDE.RIGHT] = "right";
+
+    var cssBorderSide = {};
+    cssBorderSide[BaseConstants.SIDE.TOP] = "border-"+cssSide[BaseConstants.SIDE.TOP];
+    cssBorderSide[BaseConstants.SIDE.BOTTOM] = "border-"+cssSide[BaseConstants.SIDE.BOTTOM];
+    cssBorderSide[BaseConstants.SIDE.LEFT] = "border-"+cssSide[BaseConstants.SIDE.LEFT];
+    cssBorderSide[BaseConstants.SIDE.RIGHT] = "border-"+cssSide[BaseConstants.SIDE.RIGHT];
 
     // Simple object to translate SIDE in correct glyphicon class for arrow
     // TODO put this in config? but how?
@@ -413,8 +437,6 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     cssArrowClass[BaseConstants.SIDE.BOTTOM] = "glyphicon-arrow-down";
     cssArrowClass[BaseConstants.SIDE.LEFT] = "glyphicon-arrow-left";
     cssArrowClass[BaseConstants.SIDE.RIGHT] = "glyphicon-arrow-right";
-
-
 }]);
 
 

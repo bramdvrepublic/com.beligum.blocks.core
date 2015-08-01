@@ -1,7 +1,7 @@
 /**
  * Created by wouter on 17/06/15.
  */
-base.plugin("blocks.edit.Page", ["constants.blocks.common", "blocks.core.Edit", "blocks.core.Sidebar", "blocks.core.Broadcaster",  function (Constants, Edit, Sidebar, Broadcaster)
+base.plugin("blocks.edit.Page", ["constants.blocks.core", "blocks.core.Edit", "blocks.core.Sidebar", "blocks.core.Broadcaster",  function (Constants, Edit, Sidebar, Broadcaster)
 {
     var Page = this;
     var draggingAllowed = false;

@@ -2,7 +2,7 @@
  * Created by wouter on 5/03/15.
  */
 
-base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Constants", "constants.blocks.common", "blocks.core.DomManipulation", "blocks.core.Edit", function (Class, BaseConstants, BlocksConstants, DOM, Edit)
+base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Constants", "constants.blocks.core", "blocks.core.DomManipulation", "blocks.core.Edit", function (Class, BaseConstants, BlocksConstants, DOM, Edit)
 {
 
     var body = $("body");

@@ -46,6 +46,7 @@ public abstract class HtmlTemplate
     protected List<Element> inlineStyleElements;
     protected List<Element> externalStyleElements;
     protected MetaDisplayType displayType;
+    protected Map<String, HtmlTemplate> subTemplates;
 
     //-----CONSTRUCTORS-----
 
@@ -187,11 +188,13 @@ public abstract class HtmlTemplate
     }
 
     //-----PROTECTED METHODS-----
-    protected void init(Source document, Segment html, Attributes attributes, Path absolutePath, Path relativePath) throws Exception
+    protected void initAll(Source document, Segment html, Attributes attributes, Path absolutePath, Path relativePath) throws Exception
     {
-        this.document = document;
-        this.html = html;
-        this.attributes = attributes;
+        this.initTemplate(absolutePath, relativePath);
+        this.initHtml(document, html, attributes);
+    }
+    protected void initTemplate(Path absolutePath, Path relativePath) throws Exception
+    {
         this.absolutePath = absolutePath;
         this.relativePath = relativePath;
 
@@ -225,6 +228,12 @@ public abstract class HtmlTemplate
             this.templateName = null;
             this.velocityName = null;
         }
+    }
+    protected void initHtml(Source document, Segment html, Attributes attributes) throws Exception
+    {
+        this.document = document;
+        this.html = html;
+        this.attributes = attributes;
 
         this.fillMetaValues(this.document, this.titles = new HashMap<>(), "title");
         this.fillMetaValues(this.document, this.descriptions = new HashMap<>(), "description");
@@ -250,6 +259,18 @@ public abstract class HtmlTemplate
 
         this.inlineScriptElements = getInlineScripts(this.document);
         this.externalScriptElements = getExternalScripts(this.document);
+
+        // these are all other templates occurring in the body of this template and is used to extract
+        // the tree of style and script elements needed to render this tag.
+        // we tried to implement it in Velocity before, but it's hard because the entire document isn't read at once and in the right order...
+        // the entries are calulated in the TemplateCache and added later on (when all templates have been processed); see addSubTemplate() method
+        // NOTE that this might be difficult to detect because of possible dynamic html, but let's give it a shot...
+        this.subTemplates = new HashMap<>();
+    }
+    //sort of admin-only setter; don't use directly yourself
+    protected void addSubTemplate(HtmlTemplate subTemplate)
+    {
+        this.subTemplates.put(subTemplate.getTemplateName(), subTemplate);
     }
 
     //-----PRIVATE METHODS-----

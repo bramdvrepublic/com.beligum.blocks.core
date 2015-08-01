@@ -13,8 +13,6 @@ import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
 import gen.com.beligum.blocks.core.fs.html.views.new_page;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
@@ -65,7 +63,7 @@ public class HtmlRouter extends AbstractRouter
             else {
                 List<Map<String, String>> pageTemplates = new ArrayList<>();
                 Template newPageTemplate = new_page.get().getNewTemplate();
-                TemplateCache cache = HtmlParser.getCachedTemplates();
+                TemplateCache cache = HtmlParser.getTemplateCache();
                 for (HtmlTemplate template : cache.values()) {
                     if (template instanceof PageTemplate) {
                         HashMap<String, String> pageTemplate = new HashMap();
@@ -124,17 +122,8 @@ public class HtmlRouter extends AbstractRouter
     * */
     public Response showCreatedPage(final String pageTemplateName)
     {
-
-        Iterable<HtmlTemplate> allTemplates = HtmlParser.getCachedTemplates().values();
-        HtmlTemplate pageTemplate = Iterables.find(allTemplates, new Predicate<HtmlTemplate>()
-        {
-            public boolean apply(HtmlTemplate arg)
-            {
-                return arg.getTemplateName() != null && arg.getTemplateName().equals(pageTemplateName);
-            }
-        });
-
-        return Response.ok(R.templateEngine().getNewStringTemplate(pageTemplate.getHtml().toString())).build();
+        //by returning an empty tag (eg. <main-page></main-page>) the template engine will render a default page
+        return Response.ok(this.buildTemplateInstance(pageTemplateName, "")).build();
     }
 
     /*
@@ -142,13 +131,12 @@ public class HtmlRouter extends AbstractRouter
     * */
     public Response showPage() throws IOException
     {
-        StringBuilder rb = new StringBuilder();
         WebPath path = this.route.getWebPath();
 
-        String html;
+        Object entity;
         String url = this.route.getURI().toString();
         if (PageCache.isEnabled() && PageCache.instance().hasUrl(url)) {
-            html = PageCache.instance().get(url);
+            entity = PageCache.instance().get(url);
         }
         else {
             URI master = path.getMasterPage();
@@ -159,16 +147,24 @@ public class HtmlRouter extends AbstractRouter
             if (template == null || StringUtils.isEmpty(template)) {
                 template = MAIN_PAGE_TAG_NAME;
             }
-            rb.append("<" + template + ">").append(page.getParsedHtml()).append("</" + template + ">");
-            html = R.templateEngine().getNewStringTemplate(rb.toString()).render();
+
+            entity = this.buildTemplateInstance(template, page.getParsedHtml());
         }
 
-        return Response.ok(html).build();
+        return Response.ok(entity).build();
 
     }
 
     public Response redirect()
     {
         return null;
+    }
+
+    /**
+     * A default tag instance with specified html inside
+     */
+    private Template buildTemplateInstance(String templateName, String propertiesHtml)
+    {
+        return R.templateEngine().getNewStringTemplate(new StringBuilder().append("<" + templateName + ">").append(propertiesHtml).append("</" + templateName + ">").toString());
     }
 }

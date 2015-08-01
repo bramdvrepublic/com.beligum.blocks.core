@@ -1,7 +1,7 @@
 /**
  * Created by wouter on 17/07/15.
  */
-base.plugin("blocks.edit.Link", ["constants.blocks.common", "blocks.core.Edit", "blocks.core.Sidebar", function (Constants, Edit, Sidebar)
+base.plugin("blocks.edit.Link", ["constants.blocks.core", "blocks.core.Edit", "blocks.core.Sidebar", function (Constants, Edit, Sidebar)
 {
     this.focus = function (windowID, element, blockEvent)
     {

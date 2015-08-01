@@ -15,7 +15,7 @@
 
 
 
-base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.blocks.common", function (Constants, BlocksConstants)
+base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.blocks.core", function (Constants, BlocksConstants)
 {
     // LOCAL CONSTANTS
 

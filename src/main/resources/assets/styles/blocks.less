@@ -1,11 +1,15 @@
 // Overlay when editing and for dialogs
-@import "/constants/blocks/common?type=less";
-@import "/constants/blocks/finder?type=less";
-
+@import "/constants/blocks/core?type=less";
+@import "/constants/blocks/media?type=less";
 //-----LIBRARIES-----
 @import "/assets/webjars/less-animate/1.0.0/source/pulse.less";
+@import "/assets/webjars/font-awesome/4.3.0/less/variables.less";
+@import "/assets/webjars/font-awesome/4.3.0/less/core.less";
+@import "/assets/webjars/font-awesome/4.3.0/less/icons.less";
+@import "/assets/webjars/font-awesome/4.3.0/less/animated.less";
 @import "/assets/styles/loader.less";
 @import "/assets/styles/finder.less";
+
 @finderBgColor: #ffffff;
 
 //-----BASIC BOOTSTRAP MIXINS-----
@@ -35,7 +39,7 @@
     //position: relative; //to make the z-index work
     //z-index: @inputZIndex+1;
     margin-top: -30px;
-    margin-right: 7px;
+    margin-right: 10px;
     .clearfix();
 
     @btnPaddingLeft: 6px;
@@ -49,7 +53,7 @@
       cursor: pointer;
       text-shadow: 0 1px 0 #fff;
       font-size: 16px;
-      margin-top: 3px;
+      margin-top: 2px;
       color: #333;
       padding-left: @btnPaddingLeft;
       padding-right: 1px;
@@ -88,6 +92,7 @@ html {
   min-height: 100%;
   height: 100%;
 }
+
 body.@{BODY_EDIT_MODE_CLASS} {
   //this will allow the sidebar and the page wrapper scroll independently from the body
   //overflow: hidden;
@@ -99,6 +104,34 @@ body.@{BODY_EDIT_MODE_CLASS} {
   left: 0;
   right: 0;
   bottom: 0;
+}
+
+//setup feedback for save/delete/... buttons
+.btn {
+  &.@{BTN_BUSY_CLASS},
+  &.@{BTN_SUCCESS_CLASS} {
+
+    //hide all elements inside it
+    & > * {
+      display: none;
+    }
+    //change the contents of the icon
+    & > .fa {
+      display: inline-block;
+    }
+  }
+  &.@{BTN_BUSY_CLASS} {
+    //change the contents of the icon
+    & > .fa {
+      &:extend(.fa-circle-o-notch all);
+    }
+  }
+  //needs to come after the BUSY class because it overwrites it
+  &.@{BTN_SUCCESS_CLASS} {
+    & > .fa {
+      &:extend(.fa-check-circle all);
+    }
+  }
 }
 
 @mainMenuHeight: 40px;
@@ -136,6 +169,33 @@ body.@{BODY_EDIT_MODE_CLASS} {
   //    cursor: -moz-grab;
   //    cursor: -webkit-grab;
   //  }
+}
+
+.@{BLOCKS_DROPSPOT_CLASS}  {
+  @color: @brand-primary;
+  @width: ~"@{BLOCKS_DROPSPOT_BORDER_WIDTH}px";
+  @style: solid;
+
+  &.@{BLOCKS_DROPSPOT_CLASS}-top {
+    border-top: @width @style @color;
+  }
+  &.@{BLOCKS_DROPSPOT_CLASS}-right {
+    border-right: @width @style @color;
+  }
+  &.@{BLOCKS_DROPSPOT_CLASS}-bottom {
+    border-bottom: @width @style @color;
+  }
+  &.@{BLOCKS_DROPSPOT_CLASS}-left {
+    border-left: @width @style @color;
+  }
+
+  //@color: rgba(255, 0, 0, 1);
+  //@start: fadeout(@color, 100%);
+  //@mid: fadeout(@color, 100%);
+  //@stop: fadeout(@color, 0%);
+  //&.@{BLOCKS_DROPSPOT_CLASS}-left {
+  //  background: linear-gradient(to left, @start 0%, @mid 98%, @stop 100%); /* W3C */
+  //}
 }
 
 .@{DRAGGED_BLOCK_OVERLAY_CLASS} {
@@ -415,11 +475,11 @@ ul.@{BLOCK_ACTIONS_CLASS} {
 
             .caret {
               &:extend(.pull-@{caretAlign});
-              margin-top: 0.7em;//floating the caret seems to change it's height...
+              margin-top: 0.7em; //floating the caret seems to change it's height...
             }
           }
           .dropdown-menu {
-            min-width: 0;//reset
+            min-width: 0; //reset
             &:extend(.dropdown-menu-@{formAlign});
             & > li > a {
               cursor: pointer;
@@ -499,6 +559,7 @@ ul.@{BLOCK_ACTIONS_CLASS} {
 #@{SIDEBAR_CONTEXT_ID} {
   .setupLoader();
 }
+
 #@{SIDEBAR_FILES_ID} {
   .setupLoader();
 }
@@ -610,6 +671,7 @@ blocks-image {
     margin-left: 5px;
   }
 }
+
 
 
 
