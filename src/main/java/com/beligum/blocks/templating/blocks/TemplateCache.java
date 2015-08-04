@@ -3,9 +3,7 @@ package com.beligum.blocks.templating.blocks;
 import com.google.common.base.Joiner;
 
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by bram on 5/10/15.
@@ -17,6 +15,7 @@ public class TemplateCache
     //-----VARIABLES-----
     private Map<String, HtmlTemplate> nameMapping;
     private Map<Path, HtmlTemplate> pathMapping;
+    private List<HtmlTemplate> pageTemplates;
 
     //NOTE see resetCache() if you add variables here
     private String cachedSpacedTagNames;
@@ -27,8 +26,9 @@ public class TemplateCache
     //-----CONSTRUCTORS-----
     public TemplateCache()
     {
-        this.nameMapping = new HashMap<String, HtmlTemplate>();
-        this.pathMapping = new HashMap<Path, HtmlTemplate>();
+        this.nameMapping = new HashMap<>();
+        this.pathMapping = new HashMap<>();
+        this.pageTemplates = new ArrayList<>();
 
         this.resetCache();
     }
@@ -42,11 +42,19 @@ public class TemplateCache
     {
         return this.pathMapping.get(templateAbsolutePath);
     }
+    public List<HtmlTemplate> getPageTemplates()
+    {
+        return this.pageTemplates;
+    }
     public HtmlTemplate put(Path templateAbsolutePath, HtmlTemplate template)
     {
         //both should be synched, so one retval = other retval
         HtmlTemplate retVal = this.pathMapping.put(templateAbsolutePath, template);
         this.nameMapping.put(template.getTemplateName(), template);
+
+        if (template instanceof PageTemplate) {
+            this.pageTemplates.add(template);
+        }
 
         this.resetCache();
 
@@ -68,6 +76,7 @@ public class TemplateCache
     {
         this.nameMapping.clear();
         this.pathMapping.clear();
+        this.pageTemplates.clear();
     }
 
     public String getAllTagNamesBySpace()

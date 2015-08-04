@@ -33,7 +33,6 @@ public class HtmlRouter extends AbstractRouter
     private static final String NAME = "name";
     private static final String TITLE = "title";
     private static final String DESCRIPTION = "description";
-    private static final String MAIN_PAGE_TAG_NAME = "main-page";
 
     private PersistenceController database;
 
@@ -143,9 +142,14 @@ public class HtmlRouter extends AbstractRouter
             WebPage page = null;
             page = route.getBlocksDatabase().getWebPage(master, route.getLocale());
             String template = page.getPageTemplate();
-            //TODO this should search for a page template instead
-            if (template == null || StringUtils.isEmpty(template)) {
-                template = MAIN_PAGE_TAG_NAME;
+            if (StringUtils.isEmpty(template)) {
+                List<HtmlTemplate> allPageTemplates = HtmlParser.getTemplateCache().getPageTemplates();
+                //TODO we'll get the first, this should probably be configured somewhere
+                template = allPageTemplates.isEmpty() ? null : allPageTemplates.get(0).getTemplateName();
+            }
+
+            if (StringUtils.isEmpty(template)) {
+                throw new IOException("Unable to fetch or find a default page template, can't continue");
             }
 
             entity = this.buildTemplateInstance(template, page.getParsedHtml());

@@ -9,7 +9,7 @@
  *
  */
 
-base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "constants.blocks.core", "blocks.core.Overlay", "messages.blocks.core", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, Overlay, BlocksMessages)
+base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "constants.blocks.core", "blocks.core.Overlay", "messages.blocks.core", "blocks.core.Notification", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, Overlay, BlocksMessages, Notification)
 {
     var DragDrop = this;
     var draggingEnabled = false;
@@ -217,6 +217,11 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                         $.getJSON("/blocks/admin/page/block/" + name)
                             .done(function (data)
                             {
+                                addHeadResource(data.inlineStyles, name+"-in-style");
+                                addHeadResource(data.externalStyles, name+"-ex-style");
+                                addHeadResource(data.inlineScripts, name+"-in-script", true);
+                                addHeadResource(data.externalScripts, name+"-ex-script", true);
+
                                 var block = $(data.html);
                                 Overlay.removeOverlays();
                                 resetDragDrop();
@@ -259,6 +264,32 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                 Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
             }
 
+        }
+    };
+
+    var addHeadResource = function(resourceArray, className, isScript)
+    {
+        if (resourceArray != null && resourceArray.length>0) {
+            //remove existing ones
+            $("head ."+className).remove();
+            for (var i=0;i<resourceArray.length;i++) {
+                var newEl = $(resourceArray[i]);
+                newEl.addClass(className);
+
+                var srcAttr = newEl.attr("src");
+                $("head").append(newEl);
+
+                if (isScript && srcAttr) {
+                    $.getScript(srcAttr)
+                        .done(function(script, textStatus) {
+                            //this is needed to auto-wire the plugins (was a quick fix, hope it's ok)
+                            base.run();
+                        })
+                        .fail(function (xhr, textStatus, exception) {
+                            Notification.error(BlocksMessages.savePageError + (exception ? "; " + exception : ""), xhr);
+                        });
+                }
+            }
         }
     };
 

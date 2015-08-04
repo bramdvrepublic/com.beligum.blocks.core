@@ -11,9 +11,9 @@ import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import com.beligum.blocks.models.factories.ResourceFactoryImpl;
-import com.beligum.blocks.pages.WebPageParser;
-import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.models.interfaces.Resource;
+import com.beligum.blocks.models.interfaces.WebPage;
+import com.beligum.blocks.pages.WebPageParser;
 import com.beligum.blocks.routing.Route;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlParser;
@@ -22,6 +22,8 @@ import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.beligum.blocks.utils.RdfTools;
 import com.beligum.blocks.utils.comparators.MapComparator;
+import com.google.common.base.Functions;
+import com.google.common.collect.Lists;
 import gen.com.beligum.blocks.core.fs.html.views.modals.newblock;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
@@ -176,7 +178,7 @@ public class PageEndpoint
     @Path("/block/{name:.*}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getBlock(@PathParam("name") String name) {
-        HashMap<String, String> retVal = new HashMap<>();
+        HashMap<String, Object> retVal = new HashMap<>();
 
         HtmlTemplate htmlTemplate = null;
         for (HtmlTemplate t: HtmlParser.getTemplateCache().values()) {
@@ -186,8 +188,14 @@ public class PageEndpoint
             }
         }
 
+        //TODO change these to constants
         Template block = R.templateEngine().getNewStringTemplate("<" + name + "></" + name + ">");
         retVal.put("html", block.render());
+        retVal.put("inlineStyles", Lists.transform(htmlTemplate.getInlineStyleElements(), Functions.toStringFunction()));
+        retVal.put("externalStyles", Lists.transform(htmlTemplate.getExternalStyleElements(), Functions.toStringFunction()));
+        retVal.put("inlineScripts", Lists.transform(htmlTemplate.getInlineScriptElements(), Functions.toStringFunction()));
+        retVal.put("externalScripts", Lists.transform(htmlTemplate.getExternalScriptElements(), Functions.toStringFunction()));
+
         return Response.ok(retVal).build();
     }
 

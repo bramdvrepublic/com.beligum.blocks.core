@@ -137,6 +137,6 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.core", "blocks.core.Edit"
         }
     };
 
-    Edit.registerByTag("BOOTSTRAP-CAROUSEL", this);
+    Edit.registerByTag("BLOCKS-CAROUSEL", this);
 
 }]);

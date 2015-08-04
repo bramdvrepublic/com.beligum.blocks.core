@@ -22,7 +22,7 @@ base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.c
             var childcount = children.length;
             for (var i=0; i < childcount; i++) {
                 var child = $(children[i]);
-                if (child[0].tagName == "BOOTSTRAP-LAYOUT") {
+                if (child[0].tagName == "BLOCKS-LAYOUT") {
                     var b = new blocks.elements.Container($(child.children(".container")[0]), this, index);
                     this.children.push(b);
                     index++;

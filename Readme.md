@@ -40,7 +40,7 @@ Is done in 5 visiting-lines:
 
 ## Html- and CSS-'rules'
  - Only page-templates can hold bootstrap-containers (entities should never be containers, and no containers should ever be used in entities)
- - No bootstrap-layout should be added to a blueprint- or property-tag (= entity-tag)
+ - No blocks-layout should be added to a blueprint- or property-tag (= entity-tag)
  - If a entity-tag has can-layout, then the first element inside the entity must be a row
  - CSS-id's should only be used in page-templates, never inside entities. All css-styling should be achieved without use of id's
  - The css-rules for a certain entity will probably be grouped inside a class with the same name as the entity-class. These rules should be able to properly render the entity independently of any other css-rules. This also means no bootstrap-classes can be used to render good design.

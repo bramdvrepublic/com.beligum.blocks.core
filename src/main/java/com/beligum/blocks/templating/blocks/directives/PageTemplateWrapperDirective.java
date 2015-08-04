@@ -77,31 +77,33 @@ public class PageTemplateWrapperDirective extends Directive
             StringBuffer buffer = ((StringWriter) writer).getBuffer();
             TemplateResources resources = TemplateResourcesDirective.getContextResources(context);
 
+            //note: we need to move along with the previously inserted char count
+            int insertedChars = 0;
             for (TemplateResourcesDirective.WriterBufferReference ref : inserts) {
 
                 switch (ref.getType()) {
                     case inlineStyles:
-                        this.writeResources(resources.getInlineStyles(), buffer, ref.getWriterBufferPosition());
+                        insertedChars += this.writeResources(resources.getInlineStyles(), buffer, ref.getWriterBufferPosition() + insertedChars);
                         break;
                     case externalStyles:
-                        this.writeResources(resources.getExternalStyles(), buffer, ref.getWriterBufferPosition());
+                        insertedChars += this.writeResources(resources.getExternalStyles(), buffer, ref.getWriterBufferPosition() + insertedChars);
                         break;
                     case styles:
-                        this.writeResources(resources.getStyles(), buffer, ref.getWriterBufferPosition());
+                        insertedChars += this.writeResources(resources.getStyles(), buffer, ref.getWriterBufferPosition() + insertedChars);
                         break;
                     case inlineScripts:
-                        this.writeResources(resources.getInlineScripts(), buffer, ref.getWriterBufferPosition());
+                        insertedChars += this.writeResources(resources.getInlineScripts(), buffer, ref.getWriterBufferPosition() + insertedChars);
                         break;
                     case externalScripts:
-                        this.writeResources(resources.getExternalScripts(), buffer, ref.getWriterBufferPosition());
+                        insertedChars += this.writeResources(resources.getExternalScripts(), buffer, ref.getWriterBufferPosition() + insertedChars);
                         break;
                     case scripts:
-                        this.writeResources(resources.getScripts(), buffer, ref.getWriterBufferPosition());
+                        insertedChars += this.writeResources(resources.getScripts(), buffer, ref.getWriterBufferPosition() + insertedChars);
                         break;
                     default:
                         // default is to write everything out
-                        this.writeResources(resources.getStyles(), buffer, ref.getWriterBufferPosition());
-                        this.writeResources(resources.getScripts(), buffer, ref.getWriterBufferPosition());
+                        insertedChars += this.writeResources(resources.getStyles(), buffer, ref.getWriterBufferPosition() + insertedChars);
+                        insertedChars += this.writeResources(resources.getScripts(), buffer, ref.getWriterBufferPosition() + insertedChars);
                         break;
                 }
             }
@@ -114,7 +116,7 @@ public class PageTemplateWrapperDirective extends Directive
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private void writeResources(Iterable<TemplateResources.Resource> resources, StringBuffer buffer, int position)
+    private int writeResources(Iterable<TemplateResources.Resource> resources, StringBuffer buffer, int position)
     {
         //this is what will be inserted
         StringBuilder sb = new StringBuilder();
@@ -124,5 +126,7 @@ public class PageTemplateWrapperDirective extends Directive
         }
 
         buffer.insert(position, sb);
+
+        return sb.length();
     }
 }
