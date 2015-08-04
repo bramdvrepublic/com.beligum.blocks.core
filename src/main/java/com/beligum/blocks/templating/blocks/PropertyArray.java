@@ -1,5 +1,6 @@
 package com.beligum.blocks.templating.blocks;
 
+import com.beligum.base.utils.Logger;
 import com.google.common.base.Joiner;
 
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ public class PropertyArray<E> extends ArrayList<E>
 
     //-----VARIABLES-----
     private String cachedJoin = null;
+    private int writeCounter = 0;
 
     //-----CONSTRUCTORS-----
     public PropertyArray()
@@ -27,6 +29,23 @@ public class PropertyArray<E> extends ArrayList<E>
     }
 
     //-----PUBLIC METHODS-----
+    //NOTE sync these two
+    // @see com.beligum.blocks.templating.blocks.HtmlParser for details about this
+    public static final String WRITE_ONCE_METHOD_NAME = "writeOnce";
+    public String writeOnce()
+    {
+        String retVal = "";
+
+        if (this.writeCounter < this.size()) {
+            E obj = this.get(this.writeCounter++);
+            retVal = obj == null ? null : obj.toString();
+        }
+        else {
+            Logger.warn("Trying to write out a PropertyArray at index " + this.writeCounter + " of " + this.size() + ", so overrun. This shouldn't happen.");
+        }
+
+        return retVal;
+    }
 
     //-----PROTECTED METHODS-----
 
@@ -40,7 +59,7 @@ public class PropertyArray<E> extends ArrayList<E>
     public String toString()
     {
         //this is safe because this array is constructed from the VTL while parsing and only rendered out when done
-        if (this.cachedJoin==null) {
+        if (this.cachedJoin == null) {
             this.cachedJoin = Joiner.on("").join(this);
         }
 

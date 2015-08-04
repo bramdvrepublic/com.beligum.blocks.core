@@ -366,7 +366,15 @@ public class HtmlParser extends AbstractAssetParser
         sb.append("#if(!$").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("'])");
         sb.append(property.toString());
         sb.append("#{else}");
-        sb.append("$").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("']");
+        // This is something special:
+        // If we have multiple properties, eg. like this:
+        //     <meta property="description" content="Double tag test Nederlands" lang="nl">
+        //     <meta property="description" content="Double tag test English" lang="en">
+        // These will get serialized into an array object (actually a special PropertyArray that spits out the joined string), in the correct order
+        // (see above, specifically in TemplateInstanceStackDirective). But when we would spit out that array for every occurrence of this array variable,
+        // the output would get doubled (or more). By ensuring we only write one entry per one, with a special method, we keep the order and don't get doubles.
+        //
+        sb.append("$").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("']."+PropertyArray.WRITE_ONCE_METHOD_NAME+"()");
         sb.append("#end");
 
         output.replace(property, sb);
