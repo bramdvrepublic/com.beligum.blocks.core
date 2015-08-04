@@ -81,6 +81,8 @@ public class WebPageParser
         while (next != null) {
             next = parse(next, next.getBegin(), this.pageResource, false);
         }
+
+        Logger.debug("Page parsed; "+uri);
     }
 
     public String getParsedHtml() {

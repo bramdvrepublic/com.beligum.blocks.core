@@ -150,48 +150,25 @@ public class PageEndpoint
                 HashMap<String, String> pageTemplate = new HashMap();
                 String title = null;
                 String description = null;
+                String icon = null;
 
-                // current getLanguage of the request
-                if (template.getTitles().containsKey(lang)) {
-                    title = template.getTitles().get(lang);
-                    description = template.getDescriptions().get(lang);
-                }
-                // default getLanguage of the site
-                else if (template.getTitles().containsKey(BlocksConfig.instance().getDefaultLanguage())) {
-                    title = template.getTitles().get(BlocksConfig.instance().getDefaultLanguage());
-                    description = template.getDescriptions().get(BlocksConfig.instance().getDefaultLanguage());
-                }
-                // No getLanguage if available
-                else if (template.getTitles().containsKey(Locale.ROOT)) {
-                    title = template.getTitles().get(Locale.ROOT);
-                    description = template.getDescriptions().get(Locale.ROOT);
-                }
-                // Random title and description
-                else if (template.getTitles().values().size() > 0) {
-                    title = (String) template.getTitles().values().toArray()[0];
-                    if (template.getDescriptions().size() > 0) {
-                        description = (String) template.getDescriptions().values().toArray()[0];
-                    }
-                }
-                // No title available
-                else {
-                    // TODO make this a translation
-                    title = "A template";
-                }
+                final Locale[] LANGS = {lang, BlocksConfig.instance().getDefaultLanguage(), Locale.ROOT};
 
-                if (description == null) {
-                    description = "No description available";
-                }
+                // TODO make defaults a translation
                 pageTemplate.put("name", template.getTemplateName());
-                pageTemplate.put("title", title);
-                pageTemplate.put("description", description);
+                pageTemplate.put("title", this.findI18NValue(LANGS, template.getTitles(), "A template"));
+                pageTemplate.put("description", this.findI18NValue(LANGS, template.getDescriptions(), "No description available"));
+                pageTemplate.put("icon", this.findI18NValue(LANGS, template.getIcons(), null));
                 templates.add(pageTemplate);
             }
         }
+
+        //sort the blocks by title
         Collections.sort(templates, new MapComparator("title"));
 
         Template template = newblock.get().getNewTemplate();
         template.set("templates", templates);
+
         return Response.ok(template.render()).build();
     }
 
@@ -209,13 +186,10 @@ public class PageEndpoint
             }
         }
 
-        Template block = R.templateEngine().getNewStringTemplate("<"+ name + "></"+name+">");
+        Template block = R.templateEngine().getNewStringTemplate("<" + name + "></" + name + ">");
         retVal.put("html", block.render());
-//        retVal.put("links", htmlTemplate.getInlineStyleElements());
         return Response.ok(retVal).build();
     }
-
-
 
     @DELETE
     @Path("/delete")
@@ -234,4 +208,29 @@ public class PageEndpoint
         return Response.ok().build();
     }
 
+
+    private String findI18NValue(Locale[] langs, Map<Locale, String> values, String defaultValue)
+    {
+        String retVal = null;
+
+        if (!values.isEmpty()) {
+            for (Locale l : langs) {
+                retVal = values.get(l);
+
+                if (retVal != null) {
+                    break;
+                }
+            }
+
+            if (retVal==null) {
+                retVal = values.values().iterator().next();
+            }
+        }
+
+        if (retVal==null) {
+            retVal = defaultValue;
+        }
+
+        return retVal;
+    }
 }

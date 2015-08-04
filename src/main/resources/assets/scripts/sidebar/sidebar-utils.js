@@ -18,7 +18,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
     {
         var classFound = false;
 
-        var retVal = this.createCombobox(Sidebar, element, labelText, values,
+        var retVal = this.createCombobox(Sidebar, labelText, values,
             function initCallback(testValue)
             {
                 var retVal = false;
@@ -97,7 +97,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
     {
         var attrFound = false;
 
-        var retVal = this.createCombobox(Sidebar, element, labelText, values,
+        var retVal = this.createCombobox(Sidebar, labelText, values,
             function initCallback(testValue)
             {
                 var retVal = false;
@@ -130,7 +130,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
     {
         var attrFound = false;
 
-        var retVal = this.createCombobox(Sidebar, element, labelText, values,
+        var retVal = this.createCombobox(Sidebar, labelText, values,
             function initCallback(testValue)
             {
                 var retVal = false;
@@ -220,13 +220,13 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
             pageSelectOptions[SidebarUtils.TEXT_INPUT_ACTION_OPTION_DISABLE] = true;
             pageSelectOptions[SidebarUtils.TEXT_INPUT_ACTION_OPTION_ONSELECT] = function (event, input)
             {
-                alert("onSelect");
+                alert("Coming soon!");
             };
 
             inputActions["Lookup page address (coming soon)"] = pageSelectOptions;
         }
 
-        var content = this.createTextInput(Sidebar, element, function ()
+        var content = this.createTextInput(Sidebar, function ()
             {
                 return element.attr(attribute);
             }, function (val)
@@ -247,7 +247,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
      **/
     this.addValueHtml = function (Sidebar, element, labelText, placeholderText, confirm)
     {
-        return this.createTextInput(Sidebar, element, function ()
+        return this.createTextInput(Sidebar, function ()
         {
             return element.html();
         }, function (val)
@@ -257,14 +257,13 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
     };
 
     /**
-     * element: element to change
      * getterFunction: the function to use to get the value we're changing
      * setterFunction: the function to use to set the value we're changing
      * labelText: name to show as label
      * placeholderText: string to show as placeholder
      * confirm: value only changes when user clicks apply button
      **/
-    this.createTextInput = function (Sidebar, element, getterFunction, setterFunction, labelText, placeholderText, confirm, dropdownActions)
+    this.createTextInput = function (Sidebar, getterFunction, setterFunction, labelText, placeholderText, confirm, dropdownActions)
     {
         var id = Commons.generateId();
 
@@ -272,7 +271,9 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
         var selectBtn = null;
 
         var formGroup = $('<div class="form-group"></div>');
-        var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
+        if (labelText) {
+            var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
+        }
         var inputGroup = $('<div class="input-group"></div>').appendTo(formGroup);
         var input = $('<input ' + id + ' type="text" class="form-control" placeholder="' + placeholderText + '">').appendTo(inputGroup);
 
@@ -361,6 +362,8 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
         //check if there are extra actions (next to reset and clear)
         if (dropdownActions) {
             var dropdownOptions = $('<ul class="dropdown-menu dropdown-menu-right"/>');
+            var firstLink = null;
+            var firstLinkCaption = null;
             $.each(dropdownActions, function (key, value)
             {
                 var option = $('<li />').appendTo(dropdownOptions);
@@ -376,19 +379,33 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
                             //let's pass the input field so the function knows where to put the result
                             value[SidebarUtils.TEXT_INPUT_ACTION_OPTION_ONSELECT](event, input);
                         });
+                        if (!firstLink) {
+                            firstLink = link;
+                            firstLinkCaption = key;
+                        }
                     }
                 }
             });
 
             if (dropdownOptions.children().length) {
-                selectBtn = $('<a title="More actions" class="input-btn input-btn-actions" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="fa fa-search"></a>').appendTo(inputActions);
-                //don't let input lose focus when the button is clicked
-                selectBtn.mousedown(function (e)
-                {
-                    return false;
-                });
+                //if we only have one link, let the users click it immediately
+                if (dropdownOptions.children().length==1) {
+                    selectBtn = $('<a title="'+firstLinkCaption+'" class="input-btn input-btn-actions"><i class="fa fa-search"></a>').appendTo(inputActions);
+                    selectBtn.mousedown(function (e)
+                    {
+                        firstLink.click();
+                    });
+                }
+                else {
+                    selectBtn = $('<a title="More actions" class="input-btn input-btn-actions" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="fa fa-search"></a>').appendTo(inputActions);
+                    //don't let input lose focus when the button is clicked
+                    selectBtn.mousedown(function (e)
+                    {
+                        return false;
+                    });
 
-                inputActions.append(dropdownOptions);
+                    inputActions.append(dropdownOptions);
+                }
             }
         }
 
@@ -408,7 +425,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
 
         return formGroup;
     };
-    this.createCombobox = function (Sidebar, element, labelText, values, initCallback, changeCallback)
+    this.createCombobox = function (Sidebar, labelText, values, initCallback, changeCallback)
     {
         // Create selectbox to add to sidebar
         var id = Commons.generateId();

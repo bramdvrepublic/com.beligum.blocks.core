@@ -29,6 +29,7 @@ public abstract class HtmlTemplate
     {
         title,
         description,
+        icon,
         controller,
         display
     }
@@ -48,6 +49,7 @@ public abstract class HtmlTemplate
     protected String velocityName;
     protected Map<Locale, String> titles;
     protected Map<Locale, String> descriptions;
+    protected Map<Locale, String> icons;
     protected Class<TemplateController> controllerClass;
     protected List<Element> inlineScriptElements;
     protected List<Element> externalScriptElements;
@@ -189,6 +191,10 @@ public abstract class HtmlTemplate
     {
         return descriptions;
     }
+    public Map<Locale, String> getIcons()
+    {
+        return icons;
+    }
     public Class<?> getControllerClass()
     {
         return controllerClass;
@@ -241,6 +247,7 @@ public abstract class HtmlTemplate
         //Note that we need to eat these values for PageTemplates because we don't want them to end up at the client side (no problem for TagTemplates)
         this.fillMetaValues(this.document, html, this.titles = new HashMap<>(), MetaProperty.title, true);
         this.fillMetaValues(this.document, html, this.descriptions = new HashMap<>(), MetaProperty.description, true);
+        this.fillMetaValues(this.document, html, this.icons = new HashMap<>(), MetaProperty.icon, true);
         String controllerClassStr = this.getMetaValue(this.document, html, MetaProperty.controller, true);
         if (!StringUtils.isEmpty(controllerClassStr)) {
             Class<?> clazz = Class.forName(controllerClassStr);

@@ -1,7 +1,5 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.base.templating.ifaces.Template;
-import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.security.Permissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
@@ -10,8 +8,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Arrays;
 
 /**
  * Created by bas on 18.02.15.
@@ -19,8 +15,6 @@ import java.util.Arrays;
 @Path("/modals")
 public class ModalsEndpoint
 {
-    public static final String CHANGE_URL_MODAL = "change-url-modal.vm";
-
     @GET
     @Path("/changeurl")
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)

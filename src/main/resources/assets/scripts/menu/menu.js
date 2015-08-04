@@ -119,6 +119,9 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 if (sideWidth > 200 && pageWidth > 200) {
                     sidebarElement.css("width", sideWidth + "px");
                     pageContent.css("width", pageWidth + "px");
+
+                    //to be caught by eg. the finder layouter
+                    Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);
                 }
             });
 
@@ -312,13 +315,13 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         var retVal = true;
 
         //$.ui.keyCode.S
-        var action;
+        var btn;
         if (e) {
             if (e.ctrlKey) {
                 switch (e.which) {
                     //Ctrl+S
                     case 83:
-                        action = $("." + BlocksConstants.SAVE_PAGE_BUTTON).click();
+                        btn = $("." + BlocksConstants.SAVE_PAGE_BUTTON);
                         break;
                 }
             }
@@ -326,15 +329,18 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 switch (e.which) {
                     //DELETE
                     case 46:
-                        action = $("." + BlocksConstants.DELETE_PAGE_BUTTON).click();
+                        btn = $("." + BlocksConstants.DELETE_PAGE_BUTTON);
                         break;
                 }
             }
         }
 
-        if (action) {
-            event.preventDefault();
-            retVal = false;
+        if (btn) {
+            if (btn.is(":visible")) {
+                btn.click();
+                event.preventDefault();
+                retVal = false;
+            }
         }
 
         return retVal;

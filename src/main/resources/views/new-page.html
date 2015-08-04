@@ -5,19 +5,14 @@
 
             <h1>Do you want to create a new page?</h1>
 
-            <form role="form" method="GET" action="/blocks/admin/page/template" class="form-inline">
-                <input type="hidden" name="page_url" value="$url"/>
-
-                <div class="form-group">
-                    <select name="page_class_name" id="class-selection" class="form-control">
-                        #foreach($template in $templates)
-                            <option value="$template.get("name")">$template.get("title")</option>
-                        #end
-                    </select>
-
-                    <button type="submit" class="btn btn-primary">New page</button>
+            <div class="form-group sub-container">
+                <label>$I18N.blocks.core.selectFromTheListBelow</label>
+                <div class="list-group">
+                    #foreach($template in $templates)
+                        <a href="/blocks/admin/page/template?page_url=$TOOLKIT.esc.url($url)&page_class_name=$TOOLKIT.esc.url($template.get("name"))" class="list-group-item">$template.get("title")</a>
+                    #end
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>

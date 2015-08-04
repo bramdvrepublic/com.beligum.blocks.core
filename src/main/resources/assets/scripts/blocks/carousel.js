@@ -41,7 +41,7 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.core", "blocks.core.Edit"
         var editBox = $('<div class="hidden" />');
 
         editBox.append(labelEdit);
-        editBox.append(SidebarUtils.addValueAttribute(Sidebar, image, "Image url", "Paste or type a link", "src", false, true, false));
+        editBox.append(SidebarUtils.createInputbox(Sidebar, image, "Image url", "Paste or type a link", "src", false, true, false));
         editBox.append(SidebarUtils.addValueHtml(Sidebar, caption, "Image caption", "Paste or type an image caption", false));
 
         closeButton.click(function() {

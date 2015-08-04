@@ -27,6 +27,7 @@
 @import "/assets/webjars/bootstrap/3.3.4/less/input-groups.less";
 @import "/assets/webjars/bootstrap/3.3.4/less/panels.less";
 @import "/assets/webjars/bootstrap/3.3.4/less/type.less";
+@import "/assets/webjars/bootstrap/3.3.4/less/thumbnails.less";
 
 //-----MIXINS-----
 //note that this requires a relatively positioned parent
@@ -39,7 +40,7 @@
     //position: relative; //to make the z-index work
     //z-index: @inputZIndex+1;
     margin-top: -30px;
-    margin-right: 10px;
+    padding-right: 10px;
     .clearfix();
 
     @btnPaddingLeft: 6px;
@@ -134,6 +135,16 @@ body.@{BODY_EDIT_MODE_CLASS} {
   }
 }
 
+.list-group {
+  //add some nice striping
+  & > .list-group-item:nth-child(odd) {
+    background-color: lighten(@btn-primary-bg, 50%);
+    &:hover {
+      background-color: lighten(@btn-primary-bg, 45%);
+    }
+  }
+}
+
 @mainMenuHeight: 40px;
 @initSidebarWidth: 0%;
 .@{BLOCK_OVERLAY_CLASS} {
@@ -155,47 +166,41 @@ body.@{BODY_EDIT_MODE_CLASS} {
   }
 
   &.block-hover {
-    //    border-bottom: 3px solid rgba(66, 66, 66, 0.8);
-    //    border-right: 3px solid rgba(66, 66, 66, 0.8);
-    //    border: 1px solid rgba(0, 0, 0, 0.8);
-    //    background-color: rgba(210, 219, 242, 0.3);
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.8);
+    box-shadow: 0px 0px 10px rgba(1, 0, 0, 0.8);
     border: none;
   }
-  //
-  //  &.draggable {
-  //    cursor: move; /* fallback if grab cursor is unsupported */
-  //    cursor: grab;
-  //    cursor: -moz-grab;
-  //    cursor: -webkit-grab;
-  //  }
 }
 
-.@{BLOCKS_DROPSPOT_CLASS}  {
-  @color: @brand-primary;
+.@{BLOCKS_DROPSPOT_CLASS} {
+  @startColor: @brand-primary;
+  @startColorHex: argb(@startColor);
+  @stopColor: fadeout(@startColor, 100%);
+  @stopColorHex: argb(@stopColor);
   @width: ~"@{BLOCKS_DROPSPOT_BORDER_WIDTH}px";
   @style: solid;
+  @offsetPct: 5%;
+  @startPct: @offsetPct;
+  @stopPct: 100% - @offsetPct;
 
-  &.@{BLOCKS_DROPSPOT_CLASS}-top {
-    border-top: @width @style @color;
-  }
-  &.@{BLOCKS_DROPSPOT_CLASS}-right {
-    border-right: @width @style @color;
-  }
+  border: none;
+  &.@{BLOCKS_DROPSPOT_CLASS}-top,
   &.@{BLOCKS_DROPSPOT_CLASS}-bottom {
-    border-bottom: @width @style @color;
+    background: -moz-linear-gradient(left,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* FF3.6+ */
+    background: -webkit-gradient(linear, left top, right top, color-stop(0%,@stopColor), color-stop(@startPct,@startColor), color-stop(50%,@startColor), color-stop(@stopPct,@startColor), color-stop(100%,@stopColor)); /* Chrome,Safari4+ */
+    background: -webkit-linear-gradient(left,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Chrome10+,Safari5.1+ */
+    background: -o-linear-gradient(left,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Opera 11.10+ */
+    background: -ms-linear-gradient(left,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* IE10+ */
+    background: linear-gradient(to right,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* W3C */
   }
+  &.@{BLOCKS_DROPSPOT_CLASS}-right,
   &.@{BLOCKS_DROPSPOT_CLASS}-left {
-    border-left: @width @style @color;
+    background: -moz-linear-gradient(top,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* FF3.6+ */
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,@stopColor), color-stop(@startPct,@startColor), color-stop(50%,@startColor), color-stop(@stopPct,@startColor), color-stop(100%,@stopColor)); /* Chrome,Safari4+ */
+    background: -webkit-linear-gradient(top,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Chrome10+,Safari5.1+ */
+    background: -o-linear-gradient(top,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Opera 11.10+ */
+    background: -ms-linear-gradient(top,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* IE10+ */
+    background: linear-gradient(to bottom,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* W3C */
   }
-
-  //@color: rgba(255, 0, 0, 1);
-  //@start: fadeout(@color, 100%);
-  //@mid: fadeout(@color, 100%);
-  //@stop: fadeout(@color, 0%);
-  //&.@{BLOCKS_DROPSPOT_CLASS}-left {
-  //  background: linear-gradient(to left, @start 0%, @mid 98%, @stop 100%); /* W3C */
-  //}
 }
 
 .@{DRAGGED_BLOCK_OVERLAY_CLASS} {
@@ -314,44 +319,19 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   }
 }
 
-//.@{PAGE_MENU_CLASS} {
-//  height: @mainMenuHeight;
-//  background-color: white;
-//  border-bottom: 1px solid black;
-//  width: 100%;
-//  z-index: 1;
-//  padding-top: 10px;
-//  padding-bottom: 10px;
-//  overflow: hidden;
-//
-//  a {
-//    margin-right: 6px !important;
-//  }
-//
-//  ul {
-//    display: inline;
-//  }
-//
-//  ul > li {
-//    display: inline;
-//    margin-left: 7px;
-//    padding: 4px;
-//    border: 1px solid black;
-//    border-radius: 5px;
-//  }
-//
-//  ul > li:hover {
-//    background-color: #d3d3d3;
-//    cursor: pointer;
-//  }
-//
-//  .main-menu-items {
-//  }
-//
-//  &.open {
-//    display: block;
-//  }
-//}
+//use this as a wrapper for the text under a header (or something else) to space it up a bit
+.sub-container {
+  margin-top: 20px;
+  margin-left: 20px;
+}
+
+.container.new-page {
+  .list-group {
+    overflow-y: auto;
+    max-height: 400px;
+    max-width: 300px;
+  }
+}
 
 .@{PAGE_CONTENT_CLASS} {
   position: relative; //we can only make sticky footers work when this is relative
@@ -596,6 +576,46 @@ blocks-image {
   }
 }
 
+.@{NEW_BLOCK_MODAL_CLASS} {
+  .list-group {
+    max-height: 400px;
+    overflow-y: auto;
+    .list-group-item {
+      .clearfix;
+      margin: 10px;//reset bootstrap
+
+      .preview,
+      .caption {
+        .pull-left;
+      }
+
+      .preview {
+        .thumbnail;
+        .fa {
+          display: block;
+          background-color: @btn-default-border;
+          color: #FFFFFF;
+
+          @size: 50px;
+          @fontSize: @size * 0.8;
+          font-size: @fontSize;
+          width: @size;
+          height: @size;
+          line-height: @size + ((@size - @fontSize)/2);//more or less does the trick
+          .opacity(0.5);
+        }
+
+        margin: 0 20px 0 0;//reset bootstrap thumbnail
+      }
+      .caption {
+        p {
+          margin-bottom: 0; //reset
+        }
+      }
+    }
+  }
+}
+
 //-----MEDIUM EDITOR-----
 .medium-editor-placeholder {
   position: relative;
@@ -661,11 +681,17 @@ blocks-image {
 .medium-editor-toolbar-form {
   display: none;
 
+  border: 1px solid @btn-default-border;
+  padding: 3px 3px;
+  background-color: #FFFFFF;
+
+  @inputWidth: 250px; //makes sure the form doesn't grow when the inline buttons are shown (little css bug to fix)
   input {
-    min-width: 250px;
+    width: @inputWidth;
   }
   .input-group {
     .inline-input-buttons();
+    width: @inputWidth;
   }
   .btn-primary {
     margin-left: 5px;

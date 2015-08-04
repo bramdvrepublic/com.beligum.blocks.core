@@ -9,7 +9,7 @@
  *
  */
 
-base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "constants.blocks.core", "blocks.core.Overlay", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, Overlay)
+base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "constants.blocks.core", "blocks.core.Overlay", "messages.blocks.core", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, Overlay, BlocksMessages)
 {
     var DragDrop = this;
     var draggingEnabled = false;
@@ -185,7 +185,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                 Overlay.removeOverlays();
                 resetDragDrop();
                 Layouter.changeBlockLocation(currentDraggedBlock, lastDropLocation.anchor, lastDropLocation.side);
-            } else if (currentDraggedBlock == null && lastDropLocation != null  && insideWindow(blockEvent.clientX, blockEvent.clientY)) {
+            } else if (currentDraggedBlock == null && lastDropLocation != null && insideWindow(blockEvent.clientX, blockEvent.clientY)) {
                 // We added a new block
                 Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
                 Overlay.removeOverlays();
@@ -197,62 +197,60 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                 // show select box with all blocks
                 var box = $("<div />");
 
-                box.load("/blocks/admin/page/blocks", function() {
-                    var select = box.find("select");
-                    var description = $("<div />");
-                    select.change(function() {
-                        description.html(select.find(":selected").attr("description"));
-                    });
-                    box.append(description);
-                    var cancelled = true;
-                    BootstrapDialog.show({
-                        message: function() {return box},
-                        buttons: [{
-                            label: 'Cancel',
-                            action: function(dialogRef) {
-                                dialogRef.close();
+                var boxDialog;
+                box.load("/blocks/admin/page/blocks", function ()
+                {
+                    box.find("a").click(function (event)
+                    {
+                        var name = $(this).attr("data-value");
 
-                            }
-                        }, {
-                            label: 'OK',
-                            cssClass: 'btn-primary',
-                            action: function(dialogRef){
-                                var name = select.val();
-                                var waitingDialog = new BootstrapDialog({
-                                    message: "Please wait"
-                                });
-                                waitingDialog.open();
-                                $.getJSON("/blocks/admin/page/block/" + name, function(data) {
-                                    // TODO: add waiting dialog
-                                    waitingDialog.close();
-                                    var block = $(data.html);
-                                    Overlay.removeOverlays();
-                                    resetDragDrop();
-                                    cancelled = false;
-                                    Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side);
-                                    dialogRef.close();
-                                }, function() {
-                                    BootstrapDialog.show({
-                                        type: BootstrapDialog.TYPE_DANGER,
-                                        message: "An error Occured. Sorry.",
-                                        buttons: [{
-                                            label: 'Ok',
-                                            action: function(dialogRef) {
-                                                dialogRef.close();
+                        //seems fast enough...
+                        var waitingDialog;
+                        //var waitingDialog = new BootstrapDialog({
+                        //    message: "Please wait"
+                        //});
 
-                                            }
-                                        }]
-                                    });
-                                });
-                            }
-                        }],
-                        onhidden: function() {
-                            if (cancelled) {
-                                DragDrop.dragAborted();
-                                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
-                            }
+                        boxDialog.close();
+                        if (waitingDialog) {
+                            waitingDialog.open();
                         }
+                        $.getJSON("/blocks/admin/page/block/" + name)
+                            .done(function (data)
+                            {
+                                var block = $(data.html);
+                                Overlay.removeOverlays();
+                                resetDragDrop();
+                                cancelled = false;
+                                Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side);
+                            })
+                            .fail(function (xhr, textStatus, exception)
+                            {
+                                Notification.error(BlocksMessages.savePageError + (exception ? "; " + exception : ""), xhr);
+                            })
+                            .always(function ()
+                            {
+                                if (waitingDialog) {
+                                    waitingDialog.close();
+                                }
+                            });
                     });
+                });
+
+                var cancelled = true;
+                boxDialog = BootstrapDialog.show({
+                    cssClass: BlocksConstants.NEW_BLOCK_MODAL_CLASS,
+                    message: function ()
+                    {
+                        return box
+                    },
+                    buttons: [],
+                    onhidden: function ()
+                    {
+                        if (cancelled) {
+                            DragDrop.dragAborted();
+                            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+                        }
+                    }
                 });
 
             } else {
@@ -314,7 +312,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         Logger.debug("create droppointer ");
         var zindex = base.utils.maxIndex + 3;
         if (dropPointerElements == null) {
-            dropPointerElements = $("<div class='"+BlocksConstants.BLOCKS_DROPSPOT_CLASS+"' />");
+            dropPointerElements = $("<div class='" + BlocksConstants.BLOCKS_DROPSPOT_CLASS + "' />");
             dropPointerElements.css("z-index", zindex);
             dropPointerElements.css("position", "absolute");
             // TODO position close to blue lin
@@ -347,28 +345,34 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             var width = surface.right - surface.left;
             var height = surface.bottom - surface.top;
 
+            // Instead of showing the drop surface with the border of a bounding box, we'll just draw the border
+            // as a box itself, so we can use the background css to style it
             var offset = BlocksConstants.BLOCKS_DROPSPOT_BORDER_WIDTH / 2.0;
-            if (side==BaseConstants.SIDE.TOP) {
-                top = top-offset;
+            if (side == BaseConstants.SIDE.TOP) {
+                top = surface.top - offset;
+                height = BlocksConstants.BLOCKS_DROPSPOT_BORDER_WIDTH;
             }
-            else if (side==BaseConstants.SIDE.RIGHT) {
-                width = width+offset;
+            else if (side == BaseConstants.SIDE.RIGHT) {
+                left = surface.right - offset;
+                width = BlocksConstants.BLOCKS_DROPSPOT_BORDER_WIDTH;
             }
-            else if (side==BaseConstants.SIDE.BOTTOM) {
-                height = height+offset;
+            else if (side == BaseConstants.SIDE.BOTTOM) {
+                top = surface.bottom - offset;
+                height = BlocksConstants.BLOCKS_DROPSPOT_BORDER_WIDTH;
             }
-            else if (side==BaseConstants.SIDE.LEFT) {
-                left = left-offset;
+            else if (side == BaseConstants.SIDE.LEFT) {
+                left = surface.left - offset;
+                width = BlocksConstants.BLOCKS_DROPSPOT_BORDER_WIDTH;
             }
 
             dropPointerElements.css("top", top + "px");
             dropPointerElements.css("left", left + "px");
             dropPointerElements.css("width", width + "px");
             dropPointerElements.css("height", height + "px");
-            for (var i=1;i<5;i++) {
-                dropPointerElements.removeClass(BlocksConstants.BLOCKS_DROPSPOT_CLASS+"-"+cssSide[i]);
+            for (var i = 1; i < 5; i++) {
+                dropPointerElements.removeClass(BlocksConstants.BLOCKS_DROPSPOT_CLASS + "-" + cssSide[i]);
             }
-            dropPointerElements.addClass(BlocksConstants.BLOCKS_DROPSPOT_CLASS+"-"+cssSide[side]);
+            dropPointerElements.addClass(BlocksConstants.BLOCKS_DROPSPOT_CLASS + "-" + cssSide[side]);
 
             dropPointerElements.show();
 
@@ -388,10 +392,10 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         var rect = el.getBoundingClientRect();
 
         return (
-        rect.top >= 0 &&
-        rect.left >= 0 &&
-        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) && /*or $(window).height() */
-        rect.right <= (window.innerWidth || document.documentElement.clientWidth) /*or $(window).width() */
+            rect.top >= 0 &&
+            rect.left >= 0 &&
+            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) && /*or $(window).height() */
+            rect.right <= (window.innerWidth || document.documentElement.clientWidth) /*or $(window).width() */
         );
     }
 
@@ -427,10 +431,10 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     cssSide[BaseConstants.SIDE.RIGHT] = "right";
 
     var cssBorderSide = {};
-    cssBorderSide[BaseConstants.SIDE.TOP] = "border-"+cssSide[BaseConstants.SIDE.TOP];
-    cssBorderSide[BaseConstants.SIDE.BOTTOM] = "border-"+cssSide[BaseConstants.SIDE.BOTTOM];
-    cssBorderSide[BaseConstants.SIDE.LEFT] = "border-"+cssSide[BaseConstants.SIDE.LEFT];
-    cssBorderSide[BaseConstants.SIDE.RIGHT] = "border-"+cssSide[BaseConstants.SIDE.RIGHT];
+    cssBorderSide[BaseConstants.SIDE.TOP] = "border-" + cssSide[BaseConstants.SIDE.TOP];
+    cssBorderSide[BaseConstants.SIDE.BOTTOM] = "border-" + cssSide[BaseConstants.SIDE.BOTTOM];
+    cssBorderSide[BaseConstants.SIDE.LEFT] = "border-" + cssSide[BaseConstants.SIDE.LEFT];
+    cssBorderSide[BaseConstants.SIDE.RIGHT] = "border-" + cssSide[BaseConstants.SIDE.RIGHT];
 
     // Simple object to translate SIDE in correct glyphicon class for arrow
     // TODO put this in config? but how?
