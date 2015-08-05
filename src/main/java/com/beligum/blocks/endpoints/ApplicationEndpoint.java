@@ -66,6 +66,7 @@ public class ApplicationEndpoint
             URI url = UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path(BlocksConfig.instance().getDefaultLanguage().getLanguage()).path(route.getLanguagedPath().toString()).build();
             retVal = Response.seeOther(url).build();
         }
+
         return retVal;
     }
 
