@@ -155,12 +155,12 @@ public class BlocksConfig
     }
 
     public String getElasticSearchClusterName() {
-        String retVal = R.configuration().getString("elastic-search.cluster");
+        String retVal = R.configuration().getString("blocks.core.elastic-search.cluster");
         return retVal;
     }
 
     public String getElasticSearchHostName() {
-        String retVal = R.configuration().getString("elastic-search.host");
+        String retVal = R.configuration().getString("blocks.core.elastic-search.host");
         if (retVal == null) {
             retVal = "localhost";
         }
@@ -168,7 +168,7 @@ public class BlocksConfig
     }
 
     public Integer getElasticSearchPort() {
-        Integer retVal = R.configuration().getInt("elastic-search.port");
+        Integer retVal = R.configuration().getInt("blocks.core.elastic-search.port");
         if (retVal == null) {
             retVal = 9300;
         }
