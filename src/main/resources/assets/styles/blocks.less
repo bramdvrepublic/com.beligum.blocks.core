@@ -325,14 +325,6 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   margin-left: 20px;
 }
 
-.container.new-page {
-  .list-group {
-    overflow-y: auto;
-    max-height: 400px;
-    max-width: 300px;
-  }
-}
-
 .@{PAGE_CONTENT_CLASS} {
   position: relative; //we can only make sticky footers work when this is relative
   z-index: 0;
@@ -441,13 +433,18 @@ ul.@{BLOCK_ACTIONS_CLASS} {
           width: 100%;
         }
         //make all dropdowns behave more like <select>s
-        .dropdown {
+        .dropdown,
+        .checkbox {
           @textAlign: left;
           @formAlign: right;
           @caretAlign: right;
           text-align: @formAlign;
 
           .pull-right();
+
+          &.checkbox {
+            top: -0.7em; //align it with the label
+          }
 
           .dropdown-toggle {
             //min-width: 100px;
@@ -465,6 +462,9 @@ ul.@{BLOCK_ACTIONS_CLASS} {
               cursor: pointer;
             }
           }
+        }
+        .slider.slider-horizontal {
+          width: 100%;
         }
       }
 
@@ -576,8 +576,10 @@ blocks-image {
   }
 }
 
-.@{NEW_BLOCK_MODAL_CLASS} {
+.@{NEW_BLOCK_MODAL_CLASS},
+.@{NEW_PAGE_CLASS} {
   .list-group {
+    max-width: 600px;
     max-height: 400px;
     overflow-y: auto;
     .list-group-item {
@@ -593,8 +595,8 @@ blocks-image {
         .thumbnail;
         .fa {
           display: block;
-          background-color: @btn-default-border;
-          color: #FFFFFF;
+          background-color: #FFFFFF;
+          color: @btn-default-border;
 
           @size: 50px;
           @fontSize: @size * 0.8;

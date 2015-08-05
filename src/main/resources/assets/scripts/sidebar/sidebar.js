@@ -319,6 +319,11 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         SideBar.addUIForProperty(windowId, SidebarUtils.addOptionalClass(this, element, label, values));
     };
 
+    this.addSliderClass = function (windowId, element, label, values)
+    {
+        SideBar.addUIForProperty(windowId, SidebarUtils.addSliderClass(this, element, label, values));
+    };
+
     this.addUniqueAttributeValue = function (windowId, element, label, name, values)
     {
         SideBar.addUIForProperty(windowId, SidebarUtils.addUniqueAttributeValue(this, element, label, name, values));

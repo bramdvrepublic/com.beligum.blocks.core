@@ -36,12 +36,11 @@ public class ApplicationEndpoint
     *
     * */
 
+    //TODO ????
     @Path(ParserConstants.RESOURCE_ENDPOINT + "{block_id:.*}")
     @GET
     public Response getPageWithId(@PathParam("block_id") String blockId, @QueryParam("resource") String resource_block_id, @QueryParam("language") String lang)
     {
-
-
         return Response.ok().build();
     }
 

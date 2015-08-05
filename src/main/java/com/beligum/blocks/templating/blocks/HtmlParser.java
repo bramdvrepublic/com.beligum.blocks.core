@@ -118,6 +118,10 @@ public class HtmlParser extends AbstractAssetParser
 
         return retVal;
     }
+    public static void resetTemplateCache()
+    {
+        R.cacheManager().getApplicationCache().put(CacheKeys.TAG_TEMPLATES, null);
+    }
 
     //-----PROTECTED METHODS-----
 

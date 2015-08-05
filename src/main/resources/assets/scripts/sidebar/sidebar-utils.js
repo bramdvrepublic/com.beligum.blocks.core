@@ -23,7 +23,8 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
             {
                 var retVal = false;
 
-                if (element.hasClass(testValue)) {
+                //second uses lazy testing: element doens't have the class, but the value is the empty string, so it should match
+                if (element.hasClass(testValue) || (testValue == null || testValue == "")) {
                     if (!classFound) {
                         classFound = true;
                         retVal = true;
@@ -49,43 +50,93 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
 
     /*
      * element: element to change
-     * label: name to show as label
-     * values = array of objects {value: 'a value to change', name: 'name of the value}
+     * labelText: name to show as label
+     * value = the class you want to enable/disable
      * */
-    this.addOptionalClass = function (Sidebar, element, label, values)
+    this.addOptionalClass = function (Sidebar, element, labelText, value)
     {
         // Create selectbox to add to sidebar
-        var id = Commons.generateId();
-        var content = $("<div class='form-group' />");
-        content.append("<label>" + label + "</label>");
+        var formGroup = $("<div class='form-group' />");
 
         // Create checkboxes for each value
-        var classFound = null;
+        var id = Commons.generateId();
+        var label = $('<label for="'+id+'">' + labelText + '</label>').appendTo(formGroup);
+        var wrapper = $('<div class="checkbox" />').appendTo(formGroup);
+        var input = $('<input id="'+id+'" type="checkbox" >').appendTo(wrapper);
+        input.attr("value", value);
+        if (element.hasClass(value)) {
+            input.attr("checked", "checked");
+        }
+        input.change(function (e)
+        {
+            var box = $(this);
+            if (box.is(':checked')) {
+                element.addClass(box.val());
+            } else {
+                element.removeClass(box.val());
+            }
+        });
+
+        return formGroup;
+    };
+
+    /*
+     * element: element to change
+     * labelText: name to show as label
+     * values = array of objects {value: 'a value to change', name: 'name of the value}
+     * */
+    this.addSliderClass = function (Sidebar, element, labelText, values, showTooltip)
+    {
+        var id = Commons.generateId();
+
+        var formGroup = $('<div class="form-group"></div>');
+        if (labelText) {
+            var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
+        }
+
+        var initValue = 0;
         for (var i = 0; i < values.length; i++) {
             var c = values[i];
 
-            var wrapper = $('<div class="checkbox" />');
-            var label = $('<label />');
-            var input = $('<input type="checkbox" >');
-            input.attr("value", c.value);
             if (element.hasClass(c.value)) {
-                input.attr("checked", "checked");
+                initValue = i;
+                //if we have a match, we use the first match
+                break;
             }
-            wrapper.append(label.append(input).append(c.name));
-            content.append(wrapper);
-            input.change(function (e)
-            {
-                var box = $(this);
-                if (box[0].checked) {
-                    element.addClass(box.val());
-                } else {
-                    element.removeClass(box.val());
-                }
-            })
         }
 
+        var inputGroup = $('<div class="input-group"></div>').appendTo(formGroup);
+        var input = $('<input ' + id + ' type="range" class="form-control" min="0" max="'+(values.length - 1)+'" step="1" value="'+initValue+'">').appendTo(inputGroup);
 
-        return content;
+        //init the bootstrap-slider (see https://github.com/seiyria/bootstrap-slider)
+        input.slider({
+            id: id,
+            min: 0,
+            max: (values.length - 1),
+            value: initValue,
+            step: 1,
+            tooltip: showTooltip ? 'show' : 'hide',
+            formatter: function(value) {
+                return values[value].name;
+            }
+        });
+
+        input.on("change", function (e)
+        {
+            var value = $(this).slider('getValue');
+
+            for (var i = 0; i < values.length; i++) {
+                var className = values[i].value;
+                if (i==value) {
+                    element.addClass(className);
+                }
+                else {
+                    element.removeClass(className);
+                }
+            }
+        });
+
+        return formGroup;
     };
 
     /*
@@ -389,8 +440,8 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
 
             if (dropdownOptions.children().length) {
                 //if we only have one link, let the users click it immediately
-                if (dropdownOptions.children().length==1) {
-                    selectBtn = $('<a title="'+firstLinkCaption+'" class="input-btn input-btn-actions"><i class="fa fa-search"></a>').appendTo(inputActions);
+                if (dropdownOptions.children().length == 1) {
+                    selectBtn = $('<a title="' + firstLinkCaption + '" class="input-btn input-btn-actions"><i class="fa fa-search"></a>').appendTo(inputActions);
                     selectBtn.mousedown(function (e)
                     {
                         firstLink.click();

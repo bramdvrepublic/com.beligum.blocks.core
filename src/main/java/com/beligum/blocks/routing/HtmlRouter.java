@@ -1,5 +1,6 @@
 package com.beligum.blocks.routing;
 
+import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.PageCache;
@@ -13,6 +14,7 @@ import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
+import com.beligum.blocks.utils.comparators.MapComparator;
 import gen.com.beligum.blocks.core.fs.html.views.new_page;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
@@ -90,11 +92,10 @@ public class HtmlRouter extends AbstractRouter
                         }
                         // No title available
                         else {
-                            // TODO make this a translation
-                            title = "A template";
+                            title = I18nFactory.get("blocks.core.emptyTemplateTitle");
                         }
                         if (description == null) {
-                            description = "No description available";
+                            description = I18nFactory.get("blocks.core.emptyTemplateDescription");
                         }
                         pageTemplate.put(NAME, template.getTemplateName());
                         pageTemplate.put(TITLE, title);
@@ -102,6 +103,9 @@ public class HtmlRouter extends AbstractRouter
                         pageTemplates.add(pageTemplate);
                     }
                 }
+
+                Collections.sort(pageTemplates, new MapComparator("title"));
+
                 newPageTemplate.set("url", this.route.getURI().toString());
                 newPageTemplate.set("templates", pageTemplates);
                 retVal = Response.ok(newPageTemplate).build();

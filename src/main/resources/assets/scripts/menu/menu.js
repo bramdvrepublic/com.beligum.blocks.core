@@ -43,6 +43,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             $(document).on("click.prevent_click_editing", "a", function (e)
             {
                 e.preventDefault();
+                //Notification.warn(BlocksMessages.clicksDisabledWhileEditing);
             });
 
             // Get old sidebar width from cookie
@@ -309,41 +310,41 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     // Add the start button as only notice of our presence
     $("body").append(menuStartButton);
 
-    //SETUP THE KEYBOARD SHORTCUTS
-    $(document).keydown(function (e)
-    {
-        var retVal = true;
-
-        //$.ui.keyCode.S
-        var btn;
-        if (e) {
-            if (e.ctrlKey) {
-                switch (e.which) {
-                    //Ctrl+S
-                    case 83:
-                        btn = $("." + BlocksConstants.SAVE_PAGE_BUTTON);
-                        break;
-                }
-            }
-            else {
-                switch (e.which) {
-                    //DELETE
-                    case 46:
-                        btn = $("." + BlocksConstants.DELETE_PAGE_BUTTON);
-                        break;
-                }
-            }
-        }
-
-        if (btn) {
-            if (btn.is(":visible")) {
-                btn.click();
-                event.preventDefault();
-                retVal = false;
-            }
-        }
-
-        return retVal;
-    });
+    //TODO SETUP THE KEYBOARD SHORTCUTS (messed up the editor)
+    //$(document).keydown(function (e)
+    //{
+    //    var retVal = true;
+    //
+    //    //$.ui.keyCode.S
+    //    var btn;
+    //    if (e) {
+    //        if (e.ctrlKey) {
+    //            switch (e.which) {
+    //                //Ctrl+S
+    //                case 83:
+    //                    btn = $("." + BlocksConstants.SAVE_PAGE_BUTTON);
+    //                    break;
+    //            }
+    //        }
+    //        else {
+    //            switch (e.which) {
+    //                //DELETE
+    //                case 46:
+    //                    btn = $("." + BlocksConstants.DELETE_PAGE_BUTTON);
+    //                    break;
+    //            }
+    //        }
+    //    }
+    //
+    //    if (btn) {
+    //        if (btn.is(":visible")) {
+    //            btn.click();
+    //            event.preventDefault();
+    //            retVal = false;
+    //        }
+    //    }
+    //
+    //    return retVal;
+    //});
 
 }]);
