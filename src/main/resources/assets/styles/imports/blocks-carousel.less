@@ -1,0 +1,75 @@
+//-----IMPORTS-----
+@import "/assets/webjars/less-elements/1.0.0/elements.less";
+@import "/assets/webjars/bootstrap/3.3.4/less/variables.less";
+@import "/assets/webjars/bootstrap/3.3.4/less/mixins/responsive-visibility.less";
+@import "/assets/webjars/bootstrap/3.3.4/less/responsive-utilities.less";
+
+//-----STYLES-----
+blocks-carousel {
+
+  @carouselTitleColor: #ffffff;
+  @carouselDescriptionColor: fadeout(#ffffff, 5%);
+
+  .carousel {
+    .carousel-indicators {
+      .hidden-xs();
+    }
+    .item {
+      //stretch the image to it's full with, but chop it vertically to a standard
+      img {
+        object-fit: cover;
+        width: 100%;
+        height: 100px;
+      }
+
+      .carousel-caption {
+        right: 15%;
+        left: 15%;
+        text-align: center; //mobile first
+        bottom: 5%;
+        padding-bottom: 0; //reset for mobile
+
+        .title,
+        .description {
+          .drop-shadow();
+
+          &.title {
+            color: @carouselTitleColor;
+            font-size: 1em; //mobile first
+            font-weight: 600;
+          }
+          &.description {
+            .hidden-xs;
+            color: @carouselDescriptionColor;
+            font-size: 1.2em;
+          }
+
+          p {
+            margin: 0; //reset
+          }
+        }
+      }
+    }
+  }
+
+  @media (min-width: @screen-sm-min) {
+    .carousel {
+      .item {
+        img {
+          height: 400px;
+        }
+        .carousel-caption {
+          text-align: left;
+          bottom: 20%;
+
+          .title,
+          .description {
+            &.title {
+              font-size: 3em;
+            }
+          }
+        }
+      }
+    }
+  }
+}

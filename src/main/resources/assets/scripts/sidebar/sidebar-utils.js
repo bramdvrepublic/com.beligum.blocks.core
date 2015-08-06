@@ -300,10 +300,10 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
     {
         return this.createTextInput(Sidebar, function ()
         {
-            return element.html();
+            return $.trim(element.html());
         }, function (val)
         {
-            return element.html(val);
+            return element.html($.trim(val));
         }, labelText, placeholderText, confirm);
     };
 

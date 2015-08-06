@@ -1,11 +1,13 @@
 <meta property="blocks:title" content="A Carousel for images" lang="en">
-<meta property="blocks:description" content="A Carousel for images"  lang="en">
-
+<meta property="blocks:description" content="A Carousel for images" lang="en">
 <meta property="blocks:icon" content="fa-file-image-o">
-<meta property="blocks:display" content="hidden">
+
+<link href="/assets/styles/imports/blocks-carousel.less" rel="stylesheet"/>
+<script src="/assets/scripts/imports/blocks-carousel.js" type="application/javascript"></script>
 
 <template>
-    <div id="carousel-123" class="carousel slide" >
+    ## note: the data-interval false needs to be there to fix an editing bug (where a paused carousel starts cycling again after clicking an arrow))
+    <div id="carousel-123" class="carousel slide" data-interval="false">
         <!-- Indicators -->
         <ol class="carousel-indicators">
             #if ($property['image'])
@@ -21,16 +23,24 @@
         <div class="carousel-inner" role="listbox">
             #if ($property['image'])
                 #foreach($img in $property['image'])
-                    <div class="item #if ($foreach.index == 0) active #end">
+                    <div class="item #if ($foreach.index == 0)active#end">
                         $img
+                        <div class="carousel-caption">
+                            $property['title'][$foreach.index]
+                            $property['description'][$foreach.index]
+                        </div>
                     </div>
                 #end
-
             #else
                 <div class="item active">
-                    <img property="image" width="100%" src="http://cdn.banquenationale.ca/cdnbnc/2013/06/ruisseau.jpg" >
-                    <div property="image-caption" class="carousel-caption">
-                        An image
+                    <img property="image" src="http://cdn.banquenationale.ca/cdnbnc/2013/06/ruisseau.jpg" >
+                    <div class="carousel-caption">
+                        <div property="title" class="title">
+                            <p>Enter a title</p>
+                        </div>
+                        <div property="description" class="description">
+                            <p>Enter a description</p>
+                        </div>
                     </div>
                 </div>
             #end
