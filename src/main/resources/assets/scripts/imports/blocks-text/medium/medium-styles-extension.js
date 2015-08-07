@@ -27,8 +27,7 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.co
 
         //-----CONSTANTS-----
         STATIC: {
-            NAME: "styles-picker",
-            STYLES: []
+            NAME: "styles-picker"
         },
 
         editorStyles: [],
@@ -120,8 +119,8 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.co
             var styles = $('<ul class="dropdown-menu"/>');
 
             var valueAttr = "data-value";
-            for (var i = 0; i < MediumEditorExtensions.StylesPicker.STYLES.length; i++) {
-                var val = MediumEditorExtensions.StylesPicker.STYLES[i];
+            for (var i = 0; i < this.editorStyles.length; i++) {
+                var val = this.editorStyles[i];
 
                 //note that we bind to this, but pass the data in the function()
                 var btn = $('<a href="javascript:void(0)" ' + valueAttr + '="' + val.value + '">' + val.text + '</a>');

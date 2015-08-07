@@ -158,17 +158,17 @@ public class HtmlParser extends AbstractAssetParser
 
                 // note that this "false" means it must be eaten (and spit out somewhere else)
                 boolean renderResources = false;
-                for (Element style : tagTemplate.getInlineStyleElements()) {
+                for (Element style : tagTemplate.getInlineStyleElementsForCurrentUser()) {
                     builder.append("#").append(TagTemplateInlineStyleResourceDirective.NAME).append("(").append(renderResources).append(")").append(style.toString()).append("#end").append("\n");
                 }
-                for (Element style : tagTemplate.getExternalStyleElements()) {
+                for (Element style : tagTemplate.getExternalStyleElementsForCurrentUser()) {
                     builder.append("#").append(TagTemplateExternalStyleResourceDirective.NAME).append("(").append(renderResources).append(",'").append(style.getAttributeValue("href")).append("')").append(style.toString())
                            .append("#end").append("\n");
                 }
-                for (Element script : tagTemplate.getInlineScriptElements()) {
+                for (Element script : tagTemplate.getInlineScriptElementsForCurrentUser()) {
                     builder.append("#").append(TagTemplateInlineScriptResourceDirective.NAME).append("(").append(renderResources).append(")").append(script.toString()).append("#end").append("\n");
                 }
-                for (Element script : tagTemplate.getExternalScriptElements()) {
+                for (Element script : tagTemplate.getExternalScriptElementsForCurrentUser()) {
                     builder.append("#").append(TagTemplateExternalScriptResourceDirective.NAME).append("(").append(renderResources).append(",'").append(script.getAttributeValue("src")).append("')")
                            .append(script.toString())
                            .append("#end").append("\n");

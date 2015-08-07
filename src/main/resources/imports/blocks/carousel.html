@@ -2,8 +2,11 @@
 <meta property="blocks:description" content="A Carousel for images" lang="en">
 <meta property="blocks:icon" content="fa-file-image-o">
 
+<link href="/assets/webjars/bootstrap-slider/4.8.3/css/bootstrap-slider.css" rel="stylesheet"/>
 <link href="/assets/styles/imports/blocks-carousel.less" rel="stylesheet"/>
-<script src="/assets/scripts/imports/blocks-carousel.js" type="application/javascript"></script>
+
+<script src="/assets/webjars/bootstrap-slider/4.8.3/bootstrap-slider.js" type="application/javascript"></script>
+<script src="/assets/scripts/imports/blocks-carousel.js" type="application/javascript" data-scope-role="ADMIN"></script>
 
 <template>
     ## note: the data-interval false needs to be there to fix an editing bug (where a paused carousel starts cycling again after clicking an arrow))

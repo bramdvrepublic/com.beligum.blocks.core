@@ -23,7 +23,7 @@ import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.beligum.blocks.utils.RdfTools;
 import com.beligum.blocks.utils.comparators.MapComparator;
 import com.google.common.base.Functions;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Iterables;
 import gen.com.beligum.blocks.core.fs.html.views.modals.newblock;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
@@ -191,10 +191,10 @@ public class PageEndpoint
         //TODO change these to constants
         Template block = R.templateEngine().getNewStringTemplate("<" + name + "></" + name + ">");
         retVal.put("html", block.render());
-        retVal.put("inlineStyles", Lists.transform(htmlTemplate.getInlineStyleElements(), Functions.toStringFunction()));
-        retVal.put("externalStyles", Lists.transform(htmlTemplate.getExternalStyleElements(), Functions.toStringFunction()));
-        retVal.put("inlineScripts", Lists.transform(htmlTemplate.getInlineScriptElements(), Functions.toStringFunction()));
-        retVal.put("externalScripts", Lists.transform(htmlTemplate.getExternalScriptElements(), Functions.toStringFunction()));
+        retVal.put("inlineStyles", Iterables.transform(htmlTemplate.getInlineStyleElementsForCurrentUser(), Functions.toStringFunction()));
+        retVal.put("externalStyles", Iterables.transform(htmlTemplate.getExternalStyleElementsForCurrentUser(), Functions.toStringFunction()));
+        retVal.put("inlineScripts", Iterables.transform(htmlTemplate.getInlineScriptElementsForCurrentUser(), Functions.toStringFunction()));
+        retVal.put("externalScripts", Iterables.transform(htmlTemplate.getExternalScriptElementsForCurrentUser(), Functions.toStringFunction()));
 
         return Response.ok(retVal).build();
     }

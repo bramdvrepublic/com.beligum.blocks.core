@@ -121,6 +121,12 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                     sidebarElement.css("width", sideWidth + "px");
                     pageContent.css("width", pageWidth + "px");
 
+                    ////var viewportSuffix = ', initial-scale=1.0, maximum-scale=1.0, user-scalable=0';
+                    //var viewportSuffix = '';
+                    ////$('head meta[name=viewport]').attr('content', 'width='+pageWidth+viewportSuffix);
+                    //$('head meta[name=viewport]').attr('content', 'width='+pageWidth+', initial-scale=0, maximum-scale=1.0, minimum-scale=0.25, user-scalable=yes');
+                    ////Logger.debug($('meta[name=viewport]').attr('content'));
+
                     //to be caught by eg. the finder layouter
                     Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);
                 }
