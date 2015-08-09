@@ -24,7 +24,6 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
     var minColumn;
     var maxColumn;
 
-
     this.activate = function (value)
     {
         active = value;
@@ -70,7 +69,6 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
             handles[i].showOverlay();
         }
 
-
         draggingEnabled = true;
         setCursor(false);
 
@@ -88,7 +86,7 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
     /*
      * unbind from jQuery event
      * remove handle
-     * send DOM_DID_CHANGE EVENT
+     * send DOM_CHANGED EVENT
      * */
     this.endDrag = function (handle)
     {
@@ -96,7 +94,7 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
             dragging = false;
             $("body").removeClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
             DOM.enableContextMenu();
-            Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
+            Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED);
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
         }
     };

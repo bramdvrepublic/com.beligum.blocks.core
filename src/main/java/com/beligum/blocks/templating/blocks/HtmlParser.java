@@ -157,19 +157,22 @@ public class HtmlParser extends AbstractAssetParser
                 builder.append("#if(!$").append(resourceTestVar).append(")").append("\n");
 
                 // note that this "false" means it must be eaten (and spit out somewhere else)
+                // note that we can't use the "ElementsForCurrentUser()" methods here, cause they're cached for all users
                 boolean renderResources = false;
-                for (Element style : tagTemplate.getInlineStyleElementsForCurrentUser()) {
-                    builder.append("#").append(TagTemplateInlineStyleResourceDirective.NAME).append("(").append(renderResources).append(")").append(style.toString()).append("#end").append("\n");
+                for (Element style : tagTemplate.getAllInlineStyleElements()) {
+                    builder.append("#").append(TagTemplateInlineStyleResourceDirective.NAME).append("(").append(renderResources).append(",'").append(HtmlTemplate.getResourceRoleScope(style)).append("')").append(style.toString()).append("#end").append("\n");
                 }
-                for (Element style : tagTemplate.getExternalStyleElementsForCurrentUser()) {
-                    builder.append("#").append(TagTemplateExternalStyleResourceDirective.NAME).append("(").append(renderResources).append(",'").append(style.getAttributeValue("href")).append("')").append(style.toString())
+                for (Element style : tagTemplate.getAllExternalStyleElements()) {
+                    builder.append("#").append(TagTemplateExternalStyleResourceDirective.NAME).append("(").append(renderResources).append(",'").append(style.getAttributeValue("href")).append(
+                                    "','").append(HtmlTemplate.getResourceRoleScope(style)).append("')").append(style.toString())
                            .append("#end").append("\n");
                 }
-                for (Element script : tagTemplate.getInlineScriptElementsForCurrentUser()) {
-                    builder.append("#").append(TagTemplateInlineScriptResourceDirective.NAME).append("(").append(renderResources).append(")").append(script.toString()).append("#end").append("\n");
+                for (Element script : tagTemplate.getAllInlineScriptElements()) {
+                    builder.append("#").append(TagTemplateInlineScriptResourceDirective.NAME).append("(").append(renderResources).append(",'").append(HtmlTemplate.getResourceRoleScope(script)).append("')").append(script.toString()).append("#end").append("\n");
                 }
-                for (Element script : tagTemplate.getExternalScriptElementsForCurrentUser()) {
-                    builder.append("#").append(TagTemplateExternalScriptResourceDirective.NAME).append("(").append(renderResources).append(",'").append(script.getAttributeValue("src")).append("')")
+                for (Element script : tagTemplate.getAllExternalScriptElements()) {
+                    builder.append("#").append(TagTemplateExternalScriptResourceDirective.NAME).append("(").append(renderResources).append(",'").append(script.getAttributeValue("src")).append("','")
+                           .append(HtmlTemplate.getResourceRoleScope(script)).append("')")
                            .append(script.toString())
                            .append("#end").append("\n");
                 }
@@ -323,28 +326,32 @@ public class HtmlParser extends AbstractAssetParser
             List<Element> elements = TagTemplate.getInlineStyles(source);
             for (Element element : elements) {
                 StringBuilder builder = new StringBuilder();
-                builder.append("#").append(TagTemplateInlineStyleResourceDirective.NAME).append("(true)").append(element.toString()).append("#end");
+                builder.append("#").append(TagTemplateInlineStyleResourceDirective.NAME).append("(true").append(",'")
+                       .append(HtmlTemplate.getResourceRoleScope(element)).append("')").append(element.toString()).append("#end");
                 output.replace(element, builder.toString());
             }
 
             elements = TagTemplate.getExternalStyles(source);
             for (Element element : elements) {
                 StringBuilder builder = new StringBuilder();
-                builder.append("#").append(TagTemplateExternalStyleResourceDirective.NAME).append("(true,'").append(element.getAttributeValue("href")).append("')").append(element.toString()).append("#end");
+                builder.append("#").append(TagTemplateExternalStyleResourceDirective.NAME).append("(true,'").append(element.getAttributeValue("href")).append("','")
+                       .append(HtmlTemplate.getResourceRoleScope(element)).append("')").append(element.toString()).append("#end");
                 output.replace(element, builder.toString());
             }
 
             elements = TagTemplate.getInlineScripts(source);
             for (Element element : elements) {
                 StringBuilder builder = new StringBuilder();
-                builder.append("#").append(TagTemplateInlineScriptResourceDirective.NAME).append("(true)").append(element.toString()).append("#end");
+                builder.append("#").append(TagTemplateInlineScriptResourceDirective.NAME).append("(true").append(",'")
+                       .append(HtmlTemplate.getResourceRoleScope(element)).append("')").append(element.toString()).append("#end");
                 output.replace(element, builder.toString());
             }
 
             elements = TagTemplate.getExternalScripts(source);
             for (Element element : elements) {
                 StringBuilder builder = new StringBuilder();
-                builder.append("#").append(TagTemplateExternalScriptResourceDirective.NAME).append("(true,'").append(element.getAttributeValue("src")).append("')").append(element.toString()).append("#end");
+                builder.append("#").append(TagTemplateExternalScriptResourceDirective.NAME).append("(true,'").append(element.getAttributeValue("src")).append("','")
+                       .append(HtmlTemplate.getResourceRoleScope(element)).append("')").append(element.toString()).append("#end");
                 output.replace(element, builder.toString());
             }
         }

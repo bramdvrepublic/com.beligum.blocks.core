@@ -243,14 +243,14 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
                     }
                     Sidebar.unloadFinder();
                     // restore sidebar width
-                    Sidebar.setSidebarWidth(sidebarWidth);
+                    Sidebar.animateSidebarWidth(sidebarWidth);
                 };
 
                 finderOptions.onCancel = function ()
                 {
                     Sidebar.unloadFinder();
                     // restore sidebar width
-                    Sidebar.setSidebarWidth(sidebarWidth);
+                    Sidebar.animateSidebarWidth(sidebarWidth);
                 };
 
                 Sidebar.loadFinder(finderOptions);
@@ -259,7 +259,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
                 var windowWidth = $(window).width();
 
                 if (windowWidth / 2 > sidebarWidth) {
-                    Sidebar.setSidebarWidth(windowWidth / 2);
+                    Sidebar.animateSidebarWidth(windowWidth / 2);
                 }
             };
 

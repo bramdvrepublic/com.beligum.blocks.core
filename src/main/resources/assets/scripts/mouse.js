@@ -55,13 +55,17 @@
  *  ACTIVATE_MOUSE: activate this module
  *  DEACTIVATE_MOUSE: deactivate this module, no events will be send
  *  ALLOW_DRAG: allow dragging
- *  DO_NOT_ALLOW_DRAG: do not allow dragging, even if a surface is selected
+ *  DISABLE_DND: do not allow dragging, even if a surface is selected
  *
  *
  */
 
 base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "constants.blocks.core", "blocks.core.Sidebar", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, SideBar)
 {
+    // watch out with this value: it should be smaller than the smallest possible object in the layout system (width or height)
+    // but when clicking near the edge of such an object, even smaller; so maybe TODO: activate the DnD when entering a new block?
+    var DRAGGING_THRESHOLD = 3;
+
     // flag if this module is active
     var Mouse = this;
     var active = false;
@@ -71,9 +75,23 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     var dblClickFound = false;
     var currentBlock = null;
     var currentProperty = null;
-    // array of coordinates {x, y} from the last mouseEvents, used to calculate the direction
-    var config = this.config;
     var windowFrame = {width: 0, height: 0};
+    var lastMoveEvent = $.Event("mousemove", {pageX: 0, pageY: 0});
+
+    //for direction calculations
+    var directionVector = {x1: 0, y1: 0, x2: 0, y2: 0};
+    var sins = [];
+    var coss = [];
+    var prevX = -1;
+    var prevY = -1;
+    var distance = 0;
+    var direction = 0;
+    var lengths = [];
+    var times = [];
+    var index = 0;
+    var limit = 20;
+    var variance = 0;
+    var prevTime = new Date().getTime();
 
     this.resetMouse = function ()
     {
@@ -84,180 +102,11 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         currentBlock = null;
         currentProperty = null;
         draggingStatus = BaseConstants.DRAGGING.NO;
-        //var docWidth = $(document).width();
-        //var docWidth = $("." + BlocksConstants.PAGE_CONTENT_CLASS).width();
-        ////docWidth = 1000;
-        //if (docWidth > 920) {
-        //    Broadcaster.send(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG);
-        //    draggingStatus = BaseConstants.DRAGGING.NO;
-        //} else {
-        //    draggingStatus = BaseConstants.DRAGGING.NOT_ALLOWED;
-        //}
 
-        mouseMove(Broadcaster.getLastMove());
-    };
+        mouseMove(lastMoveEvent);
 
-
-    /*
-     * on mousedown and dragging allowed and surface to drag selected:
-     *   - wait for drag
-     *   - disable selection
-     *   - keep current jQuery event as startevent
-     * */
-    var mouseDown = function (event)
-    {
-        if (active) {
-
-            // check for left mouse click
-            if (event.which == 1) {
-                var block = Broadcaster.getHoveredBlockForPosition(event.pageX, event.pageY);
-                if (draggingStatus == BaseConstants.DRAGGING.NO && block.current != null && block.current.canDrag) {
-                    draggingStatus = BaseConstants.DRAGGING.WAITING;
-                    draggingStart = event;
-                } else if (draggingStatus == BaseConstants.DRAGGING.NO && event.target != null && ($(event.target).hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || $(event.target).parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0)) {
-                    draggingStatus = BaseConstants.DRAGGING.WAITING;
-                    draggingStart = event;
-                    Logger.debug("Start new drag");
-                } else if ($(event.target).hasClass(BlocksConstants.BLOCKS_START_BUTTON) || $(event.target).parents("." + BlocksConstants.BLOCKS_START_BUTTON).length > 0) {
-                    //FIXME right that nothing is in here?
-                } else {
-                    Logger.debug("We can not start because dragging is already in place or not allowed. " + draggingStatus);
-                    Mouse.resetMouse();
-                    draggingStatus = BaseConstants.DRAGGING.TEXT_SELECTION;
-                    Broadcaster.send(Broadcaster.EVENTS.END_HOVER);
-
-                }
-            } else {
-                // middle or right mouse button presses
-                //TODO ??
-                if (draggingStatus == BaseConstants.DRAGGING.YES) {
-                    Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG);
-                }
-                Mouse.resetMouse();
-            }
-        }
-    };
-
-    /*
-     * If dragging send END_OF_DRAG and reset draggingOptions
-     * */
-    var mouseUp = function (event)
-    {
-        if (active && event.which == 1) {
-            Logger.debug("MOUSE UP");
-            if (draggingStatus != BaseConstants.DRAGGING.NOT_ALLOWED) {
-                var oldDragStatus = draggingStatus;
-                if (oldDragStatus == BaseConstants.DRAGGING.YES) {
-                    Broadcaster.send(Broadcaster.EVENTS.END_DRAG);
-                    //} else if (Broadcaster.property().current != null && Broadcaster.property().current.editType != BlocksConstants.EDIT_NONE) {
-                    //    Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
-
-                } else if (oldDragStatus == BaseConstants.DRAGGING.WAITING) {
-                    if ($(event.target).hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || $(event.target).parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0) {
-                        //implemented with a popover in page.js instead
-                    }
-                }
-                else {
-                    // do nothing
-                }
-
-            }
-        }
-        Mouse.resetMouse();
-    };
-
-    /*
-     * While waiting for drag, check if threshold is activated to really start drag
-     * */
-    var enableDragAfterTreshold = function (event)
-    {
-        Logger.debug("Calculate wait for drag");
-        if (Math.abs(draggingStart.pageX - event.pageX) > config.DRAGGING_THRESHOLD ||
-            Math.abs(draggingStart.pageY - event.pageY) > config.DRAGGING_THRESHOLD) {
-            draggingStatus = BaseConstants.DRAGGING.YES;
-            Logger.debug("Start drag");
-            Broadcaster.send(Broadcaster.EVENTS.START_DRAG, {draggingStart: draggingStart});
-        }
-    };
-
-    /*
-     *
-     * */
-    var mouseMove = function (event)
-    {
-        if (active) {
-            var changedBlock = false;
-            var block = Broadcaster.block();
-            // check if block changed since last mouse move
-            if (block.current !== currentBlock) {
-                changedBlock = true;
-                currentBlock = block.current;
-
-            }
-
-            var changedProperty = false;
-            var property = Broadcaster.property();
-            // check if property changed since last mouse move
-            if (property.current !== currentProperty) {
-
-                changedProperty = true;
-                currentProperty = property.current;
-            }
-
-            if (draggingStatus == BaseConstants.DRAGGING.WAITING) {
-                enableDragAfterTreshold(event);
-            } else if (draggingStatus != BaseConstants.DRAGGING.YES) {
-                if (changedProperty) {
-
-                    if (property.current == null) {
-                        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_PROPERTY);
-                    } else if (property.previous == null) {
-                        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_PROPERTY);
-                    } else {
-                        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_PROPERTY);
-                        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_PROPERTY);
-                    }
-                } else if (property.current != null) {
-                    Broadcaster.send(Broadcaster.EVENTS.HOVER_OVER_PROPERTY);
-                }
-
-                if (changedBlock) {
-
-                    if (block.current == null) {
-                        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_BLOCK);
-                        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_PROPERTY);
-                    } else if (block.previous == null) {
-                        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_BLOCK);
-                        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_PROPERTY);
-                    } else {
-                        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_BLOCK);
-                        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_PROPERTY);
-                        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_BLOCK);
-                        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_PROPERTY);
-
-                        //Logger.debug("changed templates");
-                    }
-                } else if (block.current != null) {
-                    Broadcaster.send(Broadcaster.EVENTS.HOVER_OVER_BLOCK);
-                }
-
-            } else if (draggingStatus == BaseConstants.DRAGGING.YES) {
-                if (changedBlock) {
-                    if (block.current == null) {
-                        Broadcaster.send(Broadcaster.EVENTS.DRAG_LEAVE_BLOCK);
-                    } else if (block.previous == null) {
-                        Broadcaster.send(Broadcaster.EVENTS.DRAG_ENTER_BLOCK);
-                    } else {
-                        Broadcaster.send(Broadcaster.EVENTS.DRAG_ENTER_BLOCK);
-                        Broadcaster.send(Broadcaster.EVENTS.DRAG_LEAVE_BLOCK);
-                    }
-                } else // if (block.current != null)
-                {
-                    Broadcaster.send(Broadcaster.EVENTS.DRAG_OVER_BLOCK);
-                }
-
-            }
-        }
+        //since we're only listening for move events after clicking now, deregister this by default
+        $(document).off("mousemove.blocks_core");
     };
 
     this.disallowDrag = function ()
@@ -269,7 +118,6 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     {
         Mouse.resetMouse(true);
     };
-
 
     this.activate = function ()
     {
@@ -287,17 +135,16 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 mouseUp(event);
             }
         });
-        $(document).on("mousemove.blocks_core", function (event)
-        {
-            mouseMove(event);
-        });
+        //$(document).on("mousemove.blocks_core", function (event)
+        //{
+        //    mouseMove(event);
+        //});
 
-
-        $(document).on("mouseleave.blocks_core", function ()
+        $(document).on("mouseleave.blocks_core", function (event)
         {
 //                mouseUp(event);
             if (draggingStatus == BaseConstants.DRAGGING.YES) {
-                Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG);
+                Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG, event);
             }
             Mouse.resetMouse();
 
@@ -305,10 +152,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         });
 
         Mouse.resetMouse();
-
-
     };
-
 
     this.deactivate = function ()
     {
@@ -317,12 +161,286 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         $(document).off("mouseup.blocks_core");
         $(document).off("mousemove.blocks_core");
         $(document).off("mouseleave.blocks_core");
-
     };
-}])
-    .config("blocks.core.Mouse", {
-        DRAGGING_THRESHOLD: 10,
-        CLICK_TIMEOUT: 500,
-        ACTIVATE_AT_BOOT: true
-    });
+
+    /**
+     * Calculates the direction of the current mouse vector for the supplied block.
+     * Eg. the side of thet that block should be 'highlighted' based on the current mouse movements
+     * @param block The block for which you want to calulate it
+     * @returns BaseConstants.DIRECTION
+     */
+    this.directionForBlock = function (block)
+    {
+        if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.left, block.top, block.right, block.top)) {
+            return BaseConstants.DIRECTION.UP;
+        } else if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.left, block.bottom, block.right, block.bottom)) {
+            return BaseConstants.DIRECTION.DOWN;
+        } else if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.left, block.top, block.left, block.bottom)) {
+            return BaseConstants.DIRECTION.LEFT;
+        } else if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.right, block.top, block.right, block.bottom)) {
+            return BaseConstants.DIRECTION.RIGHT;
+        } else {
+            return BaseConstants.DIRECTION.NONE;
+        }
+    };
+
+    this.getLastMoveEvent = function()
+    {
+        return lastMoveEvent;
+    };
+
+    /*
+     * on mousedown and dragging allowed and surface to drag selected:
+     *   - wait for drag
+     *   - disable selection
+     *   - keep current jQuery event as startevent
+     * */
+    var mouseDown = function (event)
+    {
+        if (active) {
+            // check for left mouse click
+            if (event.which == 1) {
+                //var block = Broadcaster.getHoveredBlockForPosition(event.pageX, event.pageY);
+                var block = Broadcaster.getHoveredBlock();
+                if (draggingStatus == BaseConstants.DRAGGING.NO && block.current != null && block.current.canDrag) {
+                    draggingStatus = BaseConstants.DRAGGING.WAITING;
+                    draggingStart = event;
+
+                    $(document).on("mousemove.blocks_core", function (event)
+                    {
+                        mouseMove(event);
+                    });
+                }
+                else if (draggingStatus == BaseConstants.DRAGGING.NO && event.target != null && ($(event.target).hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || $(event.target).parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0)) {
+                    draggingStatus = BaseConstants.DRAGGING.WAITING;
+                    draggingStart = event;
+                    Logger.debug("Start new drag");
+                }
+                else if ($(event.target).hasClass(BlocksConstants.BLOCKS_START_BUTTON) || $(event.target).parents("." + BlocksConstants.BLOCKS_START_BUTTON).length > 0) {
+                    //FIXME right that nothing is in here?
+                }
+                else {
+                    Logger.debug("We can not start because dragging is already in place or not allowed. " + draggingStatus);
+                    Mouse.resetMouse();
+                    draggingStatus = BaseConstants.DRAGGING.TEXT_SELECTION;
+
+                    //TODO doens't exist anymore, safely omit?
+                    //Broadcaster.send(Broadcaster.EVENTS.END_HOVER);
+                }
+            }
+            else {
+                // middle or right mouse button presses
+                //TODO ??
+                if (draggingStatus == BaseConstants.DRAGGING.YES) {
+                    Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG, event);
+                }
+                Mouse.resetMouse();
+            }
+        }
+    };
+
+    /*
+     * If dragging send END_OF_DRAG and reset draggingOptions
+     * */
+    var mouseUp = function (event)
+    {
+        if (active && event.which == 1) {
+            Logger.debug("MOUSE UP");
+            if (draggingStatus != BaseConstants.DRAGGING.NOT_ALLOWED) {
+                var oldDragStatus = draggingStatus;
+                if (oldDragStatus == BaseConstants.DRAGGING.YES) {
+                    Broadcaster.send(Broadcaster.EVENTS.END_DRAG, event);
+                    //} else if (Broadcaster.property().current != null && Broadcaster.property().current.editType != BlocksConstants.EDIT_NONE) {
+                    //    Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
+
+                } else if (oldDragStatus == BaseConstants.DRAGGING.WAITING) {
+                    if ($(event.target).hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || $(event.target).parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0) {
+                        //implemented with a popover in page.js instead
+                    }
+                }
+                else {
+                    // do nothing
+                }
+            }
+        }
+
+        Mouse.resetMouse();
+    };
+
+    /*
+     * While waiting for drag, check if threshold is activated to really start drag
+     * */
+    var enableDragAfterTreshold = function (event)
+    {
+        Logger.debug("Calculate wait for drag");
+        if (Math.abs(draggingStart.pageX - event.pageX) > DRAGGING_THRESHOLD ||
+            Math.abs(draggingStart.pageY - event.pageY) > DRAGGING_THRESHOLD) {
+            draggingStatus = BaseConstants.DRAGGING.YES;
+            Logger.debug("Start drag");
+
+            //pass this along with the custom event data object
+            Broadcaster.send(Broadcaster.EVENTS.START_DRAG, event, {
+                draggingStart: draggingStart
+            });
+        }
+    };
+
+    var mouseMove = function (event)
+    {
+        if (active) {
+            calculateDirection(event);
+
+            var changedBlock = false;
+            var block = Broadcaster.block();
+
+            // check if block changed since last mouse move
+            if (block.current !== currentBlock) {
+                changedBlock = true;
+                currentBlock = block.current;
+            }
+
+            var changedProperty = false;
+            var property = Broadcaster.property();
+            // check if property changed since last mouse move
+            if (property.current !== currentProperty) {
+                changedProperty = true;
+                currentProperty = property.current;
+            }
+
+            if (draggingStatus == BaseConstants.DRAGGING.WAITING) {
+                enableDragAfterTreshold(event);
+            }
+            //we're not dragging, just moving the mouse
+            else if (draggingStatus != BaseConstants.DRAGGING.YES) {
+                //if (changedProperty) {
+                //    if (property.current == null) {
+                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_PROPERTY);
+                //    } else if (property.previous == null) {
+                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_PROPERTY);
+                //    } else {
+                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_PROPERTY);
+                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_PROPERTY);
+                //    }
+                //} else if (property.current != null) {
+                //    Broadcaster.send(Broadcaster.EVENTS.HOVER_OVER_PROPERTY);
+                //}
+                //
+                //if (changedBlock) {
+                //    if (block.current == null) {
+                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_BLOCK);
+                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_PROPERTY);
+                //    } else if (block.previous == null) {
+                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_BLOCK);
+                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_PROPERTY);
+                //    } else {
+                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_BLOCK);
+                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_PROPERTY);
+                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_BLOCK);
+                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_PROPERTY);
+                //
+                //        //Logger.debug("changed templates");
+                //    }
+                //} else if (block.current != null) {
+                //    Broadcaster.send(Broadcaster.EVENTS.HOVER_OVER_BLOCK);
+                //}
+            }
+            //we're dragging a block around
+            else if (draggingStatus == BaseConstants.DRAGGING.YES) {
+                //if (changedBlock) {
+                //    if (block.current == null) {
+                //        Broadcaster.send(Broadcaster.EVENTS.DRAG_LEAVE_BLOCK);
+                //    } else if (block.previous == null) {
+                //        Broadcaster.send(Broadcaster.EVENTS.DRAG_ENTER_BLOCK);
+                //    } else {
+                //        Broadcaster.send(Broadcaster.EVENTS.DRAG_ENTER_BLOCK);
+                //        Broadcaster.send(Broadcaster.EVENTS.DRAG_LEAVE_BLOCK);
+                //    }
+                //}
+                //else {// if (block.current != null)
+                    Broadcaster.send(Broadcaster.EVENTS.DRAG_OVER_BLOCK, event);
+                //}
+            }
+
+            lastMoveEvent = event;
+
+            //Legacy code, needed?
+            //lastMoveEvent.block = Broadcaster.getHoveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
+            //lastMoveEvent.direction = direction;
+        }
+    };
+
+    //-----METHODS THAT CALCULATE THE SPEED AND DIRECTION VECTORS-----
+
+    // https://gist.github.com/Joncom/e8e8d18ebe7fe55c3894
+    var intersects = function (p0_x, p0_y, p1_x, p1_y, p2_x, p2_y, p3_x, p3_y)
+    {
+        var s1_x, s1_y, s2_x, s2_y;
+        s1_x = p1_x - p0_x;
+        s1_y = p1_y - p0_y;
+        s2_x = p3_x - p2_x;
+        s2_y = p3_y - p2_y;
+
+        var s, t;
+        s = (-s1_y * (p0_x - p2_x) + s1_x * (p0_y - p2_y)) / (-s2_x * s1_y + s1_x * s2_y);
+        t = ( s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / (-s2_x * s1_y + s1_x * s2_y);
+
+        if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
+            // Collision detected
+            return 1;
+        }
+
+        return 0; // No collision
+    };
+
+    /*
+     * Gives the current direction of the mouse in degrees
+     * */
+    var calculateDirection = function (event)
+    {
+        updateDistanceAndDirection(event.pageX, event.pageY);
+
+        directionVector.x1 = event.pageX;
+        directionVector.y1 = event.pageY;
+        if (variance < 0.2) {
+            var cos = (Math.cos(direction) * 10000);
+            var sin = (Math.sin(direction) * 10000);
+            directionVector.x2 = directionVector.x1 - cos;
+            directionVector.y2 = directionVector.y1 - sin;
+        }
+        //Logger.debug(directionVector.x1 + ", "+directionVector.y1+ " - " +directionVector.x2 +", "+ directionVector.y2);
+        //var angle = direction * (180 / Math.PI);
+        //Logger.debug("Hoek: " + angle + " - variance: " + variance);
+
+        return direction;
+    };
+
+    var updateDistanceAndDirection = function (curX, curY)
+    {
+        var angle = Math.atan2(prevY - curY, prevX - curX);
+        sins[index] = Math.sin(angle);
+        coss[index] = Math.cos(angle);
+        lengths[index] = Math.sqrt((curX - prevX) * (curX - prevX) + (curY - prevY) * (curY - prevY));
+        var time = new Date().getTime();
+        times[index] = time - prevTime;
+
+        variance = 1.0 - Math.sqrt(sum(coss) * sum(coss) + sum(sins) * sum(sins)) / sins.length;
+
+        direction = Math.atan2(1 / sins.length * sum(sins), 1 / coss.length * sum(coss));
+        var speed = sum(lengths) / (sum(times) / 200);
+        distance = Math.min(Math.max(40, speed), 100);
+        prevTime = time;
+        index = (index + 1) % limit;
+        prevX = curX;
+        prevY = curY;
+    };
+
+    var sum = function (array)
+    {
+        var s = 0.0;
+        for (var i = 0; i < array.length; i++) {
+            s += array[i];
+        }
+        return s;
+    };
+}]);
 

@@ -154,7 +154,14 @@ body.@{BODY_EDIT_MODE_CLASS} {
   right: 0px;
   bottom: 0px;
   border: 1px dotted rgba(100, 100, 100, 0.8);
-  pointer-events: none;
+
+  // This disables pointer events for the element itself,
+  // but 'bubbles up' lower cursors like the mouse would eg. hover over them
+  // Note that this sits in the way of using the hover-related events on these objects,
+  // so don't use them
+  //pointer-events: auto;
+
+  //this is probably a good general choice
   cursor: pointer;
 
   &.left {
@@ -165,8 +172,8 @@ body.@{BODY_EDIT_MODE_CLASS} {
     border-top: none;
   }
 
-  &.block-hover {
-    box-shadow: 0px 0px 10px rgba(1, 0, 0, 0.8);
+  &.@{OVERLAY_HOVER_CLASS} {
+    box-shadow: 0px 0px 10px rgba(1, 0, 0, 0.5);
     border: none;
   }
 }
@@ -229,7 +236,7 @@ body.@{BODY_EDIT_MODE_CLASS} {
     border-bottom: none;
   }
 
-  &.@{PROPERTY_HOVER_CLASS} {
+  &.@{OVERLAY_HOVER_CLASS} {
     border: 1px solid rgba(0, 0, 0, 1);
   }
 }

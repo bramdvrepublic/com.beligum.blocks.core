@@ -10,7 +10,6 @@ base.plugin("blocks.core.Elements.Row", ["base.core.Class", "base.core.Constants
         {
             blocks.elements.Row.Super.call(this, element, parent, index);
 
-
             this.canDrag = true;
             this.generateChildrenForRow();
 

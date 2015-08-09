@@ -51,7 +51,7 @@ base.plugin("blocks.edit.Page", ["constants.blocks.core", "blocks.core.Edit", "b
         return "Page";
     }
 
-    $(document).on(Broadcaster.EVENTS.DO_ALLOW_DRAG, function ()
+    $(document).on(Broadcaster.EVENTS.ENABLE_DND, function ()
     {
         draggingAllowed = true;
         newBlockButton.removeAttr("disabled");
@@ -60,7 +60,7 @@ base.plugin("blocks.edit.Page", ["constants.blocks.core", "blocks.core.Edit", "b
         newBlock.tooltip('destroy');
     });
 
-    $(document).on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, function ()
+    $(document).on(Broadcaster.EVENTS.DISABLE_DND, function ()
     {
         draggingAllowed = false;
         newBlockButton.attr("disabled", "");

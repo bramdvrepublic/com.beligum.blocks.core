@@ -14,11 +14,9 @@
  * */
 
 
-
 base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.blocks.core", function (Constants, BlocksConstants)
 {
     // LOCAL CONSTANTS
-
     this.COLUMN_WIDTH_CLASS = [
         {name: "col-xs-", min: 0, max: 767},
         {name: "col-sm-", min: 768, max: 991},
@@ -27,7 +25,8 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
     ];
     this.MAX_COLUMNS = 12;
 
-    $.fn.hasAttribute = function(name) {
+    $.fn.hasAttribute = function (name)
+    {
         return this.attr(name) !== undefined;
     };
 
@@ -123,7 +122,8 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
             }
         }
         return colClass;
-    }
+    };
+
     // Sets the column width in grid-units, not pixels
     this.setColumnWidth = function (element, newWidth, animationTime, callback)
     {
@@ -147,7 +147,6 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
                 callback();
             }
         }
-
     };
 
     // distributes the width of the columns in a row so they take the max nr of grid-units
@@ -206,14 +205,12 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
             }
         }
         doSetColumnWidth();
-
     };
 
     /*
      * METHODS TO CLEAN THE DOM (REMOVE COLUMNS WITHOUT BLOCKS, ROWS WITHOUT COLUMNS, ...)
      * usefull after manipulating the layout
      * */
-
 
     // if Column or row is empty then delete
     // when not deleting, try simplifying
@@ -288,9 +285,11 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
     //
     //};
 
-    this.cleanDown = function(element, callback) {
+    this.cleanDown = function (element, callback)
+    {
         // clean
-        var findNext = function(element, callback) {
+        var findNext = function (element, callback)
+        {
             if (element.next().length > 0) {
                 DOM.cleanup(element.next(), callback);
             } else if (!DOM.isContainer(element)) {
@@ -301,7 +300,8 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
         };
 
         if (element.children().length == 0) {
-            element.toggle(150, function() {
+            element.toggle(150, function ()
+            {
                 var parent = element.parent();
                 element.remove();
                 DOM.cleanup(parent, callback);
@@ -320,7 +320,8 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
                 element.parent().replaceWith(childColumns);
                 DOM.cleanup(childColumns.first(), callback);
             } else {
-                DOM.distributeColumnsInRow(element, function() {
+                DOM.distributeColumnsInRow(element, function ()
+                {
                     findNext(element, callback);
                 });
             }
@@ -328,23 +329,23 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
             findNext(element, callback);
         }
 
-    },
+    };
 
-        this.cleanup = function(element, callback) {
-            var children;
-            if (DOM.isColumn(element) || DOM.isContainer(element)) {
-                children = element.children(".row");
-            } else if (DOM.isRow(element)) {
-                children = element.children();
-            }
+    this.cleanup = function (element, callback)
+    {
+        var children;
+        if (DOM.isColumn(element) || DOM.isContainer(element)) {
+            children = element.children(".row");
+        } else if (DOM.isRow(element)) {
+            children = element.children();
+        }
 
-            if (children.first().length > 0) {
-                DOM.cleanup(children.first(), callback);
-            } else {
-                DOM.cleanDown(element, callback);
-            }
-
-        };
+        if (children.first().length > 0) {
+            DOM.cleanup(children.first(), callback);
+        } else {
+            DOM.cleanDown(element, callback);
+        }
+    };
 
 
     // function to insert a block and clean up
@@ -355,8 +356,7 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
         } else if (side == Constants.SIDE.TOP || side == Constants.SIDE.LEFT) {
             dropLocationElement.before(blockElement)
         }
-            callback();
-
+        callback();
     };
 
     // Function to remove a block and clean up
@@ -495,7 +495,6 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
         {
             return false;
         };
-
     };
 
     this.enableSelection = function ()
@@ -507,9 +506,7 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
         {
             return true;
         };
-
     };
-
 
     this.disableContextMenu = function ()
     {
@@ -527,12 +524,16 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
     // debouncing function from John Hann
     // http://unscriptable.com/index.php/2009/03/20/debouncing-javascript-methods/
 
-    var debounce = function (func, threshold, execAsap) {
+    var debounce = function (func, threshold, execAsap)
+    {
         var timeout;
 
-        return function debounced () {
+        return function debounced()
+        {
             var obj = this, args = arguments;
-            function delayed () {
+
+            function delayed()
+            {
                 if (!execAsap)
                     func.apply(obj, args);
                 timeout = null;
@@ -545,19 +546,19 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
 
             timeout = setTimeout(delayed, threshold || 100);
         };
-    }
+    };
 
     // smartresize
-    $.fn["smartresize"] = function(fn){
+    $.fn["smartresize"] = function (fn)
+    {
         return fn ?
             this.bind('resize', debounce(fn)) :
             this.trigger("smartresize");
     };
 
     // smartresize
-    $.fn["smartmousemove"] = function(fn){  return fn ? this.bind('resize', debounce(fn)) : this.trigger("smartmousemove"); };
-
-    var DOM = this;
-
-
+    $.fn["smartmousemove"] = function (fn)
+    {
+        return fn ? this.bind('resize', debounce(fn)) : this.trigger("smartmousemove");
+    };
 }]);

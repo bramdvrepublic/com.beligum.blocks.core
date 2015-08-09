@@ -126,7 +126,7 @@ public class TemplateResources
         if (print) {
             this.printedResources.add(res);
             // remove it from the set if it's there
-            // this means the printed version came after the tempalte version
+            // this means the printed version came after the template version
             set.remove(res);
         }
         else if (!this.printedResources.contains(res)) {

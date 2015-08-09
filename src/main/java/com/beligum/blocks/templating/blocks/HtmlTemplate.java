@@ -1,5 +1,8 @@
 package com.beligum.blocks.templating.blocks;
 
+import com.beligum.base.security.PermissionRole;
+import com.beligum.base.security.PermissionsConfigurator;
+import com.beligum.base.server.R;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
@@ -44,7 +47,7 @@ public abstract class HtmlTemplate
     }
 
     // controls if the <script> or <style> tag needs to be included in the rendering
-    // use it like this: <script data-scope-role="ADMIN"> to eg. only include the script when and ADMIN-role is logged in
+    // use it like this: <script data-scope-role="admin"> to eg. only include the script when and ADMIN-role is logged in
     // Role names are the same ones we use for Shiro
     public static final String RESOURCE_ROLE_SCOPE_ATTRIBUTE = "data-scope-role";
 
@@ -193,7 +196,7 @@ public abstract class HtmlTemplate
     {
         return externalStyleElements;
     }
-    //TODO we should probably optimize this...
+    //TODO we should probably optimize this a bit, but beware, it still needs to be user-dynamic...
     public Iterable<Element> getInlineScriptElementsForCurrentUser()
     {
         return this.buildRoleScopeResourceIterator(this.getAllInlineScriptElements());
@@ -356,6 +359,38 @@ public abstract class HtmlTemplate
     {
         return displayType;
     }
+    public static PermissionRole getResourceRoleScope(Element resource)
+    {
+        PermissionRole retVal = PermissionsConfigurator.ROLE_GUEST;
+
+        Attribute scope = resource.getAttributes().get(RESOURCE_ROLE_SCOPE_ATTRIBUTE);
+        if (scope!=null && !StringUtils.isEmpty(scope.getValue())) {
+            retVal = R.configuration().getSecurityConfig().lookupPermissionRole(scope.getValue());
+        }
+
+        //possible that the above function re-fills it with null
+        if (retVal==null) {
+            retVal = PermissionsConfigurator.ROLE_GUEST;
+        }
+
+        return retVal;
+    }
+    /**
+     * Supply a scope attached to a html resource (with data-scope-role attribute)
+     * and return if that resource should be included or not.
+     */
+    public static boolean testResourceRoleScope(PermissionRole role)
+    {
+        // guest role is not always added by default to the current principal by the security system,
+        // so if the resource is annotated GUEST (or nothing at all), assume this is a public resource
+        // so the check below would fail, while it's actually ok
+        if (role==null || role==PermissionsConfigurator.ROLE_GUEST) {
+            return true;
+        }
+        else {
+            return SecurityUtils.getSubject().hasRole(role.getRoleName());
+        }
+    }
     private Iterable<Element> buildRoleScopeResourceIterator(List<Element> elements)
     {
         final Iterator iter = Iterators.filter(elements.iterator(), new Predicate<Element>()
@@ -363,15 +398,7 @@ public abstract class HtmlTemplate
             @Override
             public boolean apply(Element element)
             {
-                Attribute scope = element.getAttributes().get(RESOURCE_ROLE_SCOPE_ATTRIBUTE);
-
-                //if the attribute is not there or empty, we always render it out
-                if (scope==null || StringUtils.isEmpty(scope.getValue())) {
-                    return true;
-                }
-                else {
-                    return SecurityUtils.getSubject().hasRole(scope.getValue());
-                }
+                return testResourceRoleScope(getResourceRoleScope(element));
             }
         });
 

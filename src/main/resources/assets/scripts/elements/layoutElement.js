@@ -8,7 +8,7 @@
  * */
 
 
-base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core.Constants", "blocks.core.DomManipulation", "constants.blocks.core", function (Class, Constants, DOM, BlocksConstants)
+base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core.Constants", "blocks.core.DomManipulation", "constants.blocks.core", "blocks.core.Broadcaster", function (Class, Constants, DOM, BlocksConstants, Broadcaster)
 {
     var body = $("body");
 
@@ -16,6 +16,7 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core
     blocks.elements = blocks.elements || {};
 
     blocks.elements.LayoutElement = Class.create(blocks.elements.Surface, {
+
         top: 0,
         bottom: 0,
         left: 0,
@@ -28,18 +29,10 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core
 
         constructor: function (element, parent, index)
         {
-            this.parent = parent;
+            //super(this, top, bottom, left, right)
             blocks.elements.LayoutElement.Super.call(this, this.calculateTop(element, true), this.calculateBottom(element, true), this.calculateLeft(element, true), this.calculateRight(element, true));
 
-            this.el = {top: 0, bottom: 0, left: 0, right: 0};
-            if (element != null) {
-                this.el = {
-                    top: element.offset().top,
-                    bottom: element.offset().top + element.height(),
-                    left: element.offset().left,
-                    right: element.offset().left + element.width()
-                };
-            }
+            this.parent = parent;
 
             //// If we are the only child in the parent then our dimensions are the same as the dimensions of the parent
             //if (parent != null && !(this instanceof templates.elements.Container)) {
@@ -104,7 +97,6 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core
                     retVal.push(props[j]);
                 }
             }
-
 
             return retVal;
         },
@@ -247,7 +239,6 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core
 
             var innerZone = new blocks.elements.Surface(this.top, this.bottom, this.left, this.right);
 
-
             if (rows.length > 0) {
                 var rowCount = rows.length;
                 for (var i = 0; i < rowCount; i++) {
@@ -269,10 +260,7 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core
                     } else if (childType == BLOCK_TYPE) {
                         this.children.push(new blocks.elements.Block(currentRow, this, i, true));
                     }
-
                 }
-
-
             }
         },
 
@@ -354,12 +342,9 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core
 
                     }
 
-
                     this.children.push(newColumn);
                     oldColumn = newColumn;
                 }
-
-
             }
         },
 
@@ -454,13 +439,28 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core
                 this.overlay.css("left", this.left + "px");
                 this.overlay.css("top", this.top + "px");
 
-                //TODO
+                //TODO if we want to put them all in a wrapper element
                 //var wrapper = $('.'+BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS);
                 //if (wrapper.length==0) {
                 //    wrapper = $("<div class='" + BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS + "' />").appendTo($('.'+BlocksConstants.PAGE_CONTENT_CLASS));
                 //}
                 //wrapper.append(this.overlay);
                 body.append(this.overlay);
+
+                //this only seems to work after the overlay has been added to the body
+                //Note: difference between mouseenter and mouseover:
+                // see http://jsfiddle.net/ZCWvJ/7/ (from http://stackoverflow.com/questions/7286532/jquery-mouseenter-vs-mouseover)
+                // each time your mouse enters or leaves a child element, mouseover is triggered, but not mouseenter.
+                var _this = this;
+                this.overlay.mouseenter(function(event) {
+                    $(this).addClass(BlocksConstants.OVERLAY_HOVER_CLASS);
+                    Broadcaster.setHoveredBlock(_this);
+                    Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_OVERLAY, event, _this);
+                }).mouseleave(function(event) {
+                    $(this).removeClass(BlocksConstants.OVERLAY_HOVER_CLASS);
+                    Broadcaster.setHoveredBlock(null);
+                    Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_OVERLAY, event, _this);
+                });
             }
         },
 
@@ -469,12 +469,13 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core
             if (this.overlay != null) this.overlay.remove();
         },
 
-        calculateDropspots: function(side, dropspots) {
+        calculateDropspots: function (side, dropspots)
+        {
             return [];
         },
 
-        generateDropspots: function() {
-
+        generateDropspots: function ()
+        {
         }
     });
 

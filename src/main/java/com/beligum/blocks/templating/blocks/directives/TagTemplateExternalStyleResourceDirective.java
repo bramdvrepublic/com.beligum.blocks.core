@@ -1,6 +1,9 @@
 package com.beligum.blocks.templating.blocks.directives;
 
+import com.beligum.base.security.PermissionRole;
+import com.beligum.base.server.R;
 import com.beligum.base.templating.velocity.directives.VelocityDirective;
+import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import org.apache.velocity.context.InternalContextAdapter;
 import org.apache.velocity.exception.MethodInvocationException;
 import org.apache.velocity.exception.ParseErrorException;
@@ -40,11 +43,14 @@ public class TagTemplateExternalStyleResourceDirective extends TagTemplateAbstra
     {
         boolean print = (boolean) TagTemplateDirectiveUtils.readArg(context, node, 0);
         String href = (String) TagTemplateDirectiveUtils.readArg(context, node, 1);
+        PermissionRole roleScope = R.configuration().getSecurityConfig().lookupPermissionRole((String)TagTemplateDirectiveUtils.readArg(context, node, 2));
         String element = TagTemplateDirectiveUtils.readValue(context, node);
-        TemplateResourcesDirective.getContextResources(context).addExternalStyle(print, href, element);
 
-        if (print) {
-            writer.write(element);
+        if (HtmlTemplate.testResourceRoleScope(roleScope)) {
+            TemplateResourcesDirective.getContextResources(context).addExternalStyle(print, href, element);
+            if (print) {
+                writer.write(element);
+            }
         }
 
         return true;

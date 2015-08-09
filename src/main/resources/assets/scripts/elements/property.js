@@ -31,9 +31,7 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Cons
             this.editFunction = Edit.makeEditable(this.element);
             this.canEdit = this.editFunction != null;
 
-            this.overlay = $("<div />").css("z-index", base.utils.maxIndex);
-
-            var block = this.parent.parent;
+            this.overlay = $("<div />").css("z-index", base.utils.maxZIndex).addClass(BlocksConstants.SURFACE_ELEMENT_CLASS);
             if (this.isTemplate) {
                 this.overlay.addClass(BlocksConstants.BLOCK_OVERLAY_CLASS);
             }
@@ -42,6 +40,7 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Cons
             }
 
             // Remove sides of layout lines to prevent overlap
+            var block = this.parent.parent;
             if (!(this instanceof blocks.elements.Block) && block != null && block.overlay != null) {
                 if (this.isNear(block.left, this.left)) this.overlay.addClass("left");
                 if (this.isNear(block.top, this.top)) this.overlay.addClass("top");

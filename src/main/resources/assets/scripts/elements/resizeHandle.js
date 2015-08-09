@@ -19,7 +19,7 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
             this.leftColumn = leftColumn;
             this.rightColumn = rightColumn;
 
-            this.overlay = $("<div />").addClass(BlocksConstants.COLUMN_RESIZER_CLASS);
+            this.overlay = $("<div />").addClass(BlocksConstants.SURFACE_ELEMENT_CLASS+" "+BlocksConstants.COLUMN_RESIZER_CLASS);
 
         },
 
@@ -51,12 +51,7 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
                 }
             });
 
-            var left = 0;
-            var width = blocks.elements.ResizeHandle.TRIGGER_WIDTH;
-            var top = 0;
-            var height = 0;
             var half_width = Math.floor(blocks.elements.ResizeHandle.TRIGGER_WIDTH / 2);
-
             var left = this.leftColumn.right - half_width;
             var top = this.leftColumn.top;
             var width = blocks.elements.ResizeHandle.TRIGGER_WIDTH;
@@ -66,7 +61,7 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
             this.overlay.css("height", height);
             this.overlay.css("left", left);
             this.overlay.css("width", width);
-            this.overlay.css("z-index", base.utils.maxIndex + 2);
+            this.overlay.css("z-index", base.utils.maxZIndex + 2);
 
             //TODO
             //var wrapper = $('.'+BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS);

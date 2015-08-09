@@ -66,10 +66,10 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 blurCurrentSelection(property, block);
 
                 // Only send edit_end on mouse up. Otherwise the other clicked property will start editing immediately
-                $(document).on("mouseup.sidebar_edit_end", function ()
+                $(document).on("mouseup.sidebar_edit_end", function (event)
                 {
                     $(document).off("mouseup.sidebar_edit_end");
-                    Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
+                    Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD, event);
                 });
 
             }
@@ -203,7 +203,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         }
     };
 
-    this.setSidebarWidth = function (width, callback)
+    this.animateSidebarWidth = function (width, callback)
     {
         var windowWidth = $(window).width();
 
@@ -217,11 +217,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 sidebarElement.removeClass(Constants.SIDEBAR_ANIMATED_CLASS);
                 $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth - width) + "px");
 
-                //instead of updateContainerWidth(), see menu.js
-                Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT);
-
                 if (callback) {
-                    callback();
+                    callback(event);
                 }
             }
         });
@@ -262,8 +259,13 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     this.addUIForProperty = function (windowId, html)
     {
         var config = SideBar.getWindowForId(windowId);
-        var content = config.children(".panel-body");
-        content.append(html);
+        if (config) {
+            var content = config.children(".panel-body");
+            content.append(html);
+        }
+        else {
+            Logger.error("Couldn't find window with ID " + windowId);
+        }
     };
 
     this.createWindow = function (type, element, title)
@@ -349,34 +351,40 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     {
         $(document).on("mouseup.sidebar_edit_start", "." + Constants.PAGE_CONTENT_CLASS, function (event)
         {
+            var element = $(event.target);
+
             // find parents until parent is <body> or until parent has property attribute
             // first property enable editing
-            var element = $(event.target);
-            if (DOM.isContainer(element)) {
+            if (element.length>0 && DOM.isContainer(element)) {
                 element = element.children().last();
             }
-            if (DOM.isRow(element)) {
+            if (element.length>0 && DOM.isRow(element)) {
                 element = element.children().last();
             }
-            if (DOM.isColumn(element)) {
+            if (element.length>0 && DOM.isColumn(element)) {
                 element = element.children().last();
             }
 
-            var property = null;
+            if (element.length>0) {
+                var property = null;
 
-            while (property == null && element[0].tagName.indexOf("-") == -1 && element[0].tagName != "BODY") {
-                if (element.hasAttribute("property") || element.hasAttribute("data-property")) {
-                    property = element;
-                    break;
-                } else {
-                    element = element.parent();
+                while (property == null && element[0].tagName.indexOf("-") == -1 && element[0].tagName != "BODY") {
+                    if (element.hasAttribute("property") || element.hasAttribute("data-property")) {
+                        property = element;
+                        break;
+                    } else {
+                        element = element.parent();
+                    }
+                }
+                var blockEvent = Broadcaster.createEvent(event);
+
+                if (blockEvent.block.current != null || property != null) {
+                    Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD, event);
+                    update(property, blockEvent);
                 }
             }
-            var blockEvent = Broadcaster.createEvent(event);
-
-            if (blockEvent.block.current != null || property != null) {
-                Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
-                update(property, blockEvent);
+            else {
+                Logger.warn("Empty element found (possibly after drilling down), is this ok?");
             }
         });
     };

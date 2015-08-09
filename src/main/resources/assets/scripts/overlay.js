@@ -4,14 +4,15 @@ base.plugin("blocks.core.Overlay", ["blocks.core.Broadcaster", function (Broadca
 
     Overlay.showOverlays = function ()
     {
-        var elements = Broadcaster.getContainer().findElements(0, 9);
-        for (var i = 0; i < elements.length; i++) {
-            if (elements[i].canDrag) {
-                elements[i].showOverlay();
+        if (Broadcaster.getContainer() != null) {
+            var elements = Broadcaster.getContainer().findElements(0, 9);
+            for (var i = 0; i < elements.length; i++) {
+                if (elements[i].canDrag) {
+                    elements[i].showOverlay();
+                }
             }
         }
     };
-
 
     Overlay.removeOverlays = function ()
     {
@@ -23,32 +24,29 @@ base.plugin("blocks.core.Overlay", ["blocks.core.Broadcaster", function (Broadca
         }
     };
 
-
     Overlay.removeResizehandles = function ()
     {
-        var elements = Broadcaster.getContainer().findElements(0, 9);
-        for (var i = 0; i < elements.length; i++) {
-            if (elements[i] instanceof blocks.elements.Row) {
-                elements[i].removeOverlay();
-
+        if (Broadcaster.getContainer() != null) {
+            var elements = Broadcaster.getContainer().findElements(0, 9);
+            for (var i = 0; i < elements.length; i++) {
+                if (elements[i] instanceof blocks.elements.Row) {
+                    elements[i].removeOverlay();
+                }
             }
         }
     };
 
     Overlay.showResizehandles = function ()
     {
-        var elements = Broadcaster.getContainer().findElements(0, 9);
-        for (var i = 0; i < elements.length; i++) {
-            if (elements[i] instanceof blocks.elements.Row) {
-                elements[i].showOverlay();
+        if (Broadcaster.getContainer() != null) {
+            var elements = Broadcaster.getContainer().findElements(0, 9);
+            for (var i = 0; i < elements.length; i++) {
+                if (elements[i] instanceof blocks.elements.Row) {
+                    elements[i].showOverlay();
 
+                }
             }
         }
     };
-
-
-
-
-
 
 }]);
