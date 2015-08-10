@@ -2,7 +2,7 @@
  * Created by wouter on 15/06/15.
  */
 
-base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.core.SidebarUtils", "blocks.core.Edit", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", function (Broadcaster, Constants, DOM, Layouter, SidebarUtils, Edit, Finder, Notification, Commons)
+base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.core.SidebarUtils", "blocks.core.Edit", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", "blocks.core.Overlay", function (Broadcaster, Constants, DOM, Layouter, SidebarUtils, Edit, Finder, Notification, Commons, Overlay)
 {
     var SideBar = this;
     var configPanels = {};
@@ -133,7 +133,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         // property: add div
         currentProperty = property;
         currentBlockEvent = blockEvent;
-        var block = currentBlockEvent.property.current;
+        var block = currentBlockEvent.property;
         setBlockFocus(property, block);
         SideBar.refresh();
     };
@@ -146,7 +146,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         var filesContainer = $("#" + Constants.SIDEBAR_CONTEXT_ID);
         filesContainer.empty();
 
-        var block = Broadcaster.getContainer();
+        var block = Overlay.getContainer();
         //this allows us to also use this function outside of a DnD context
         if (block) {
             var editFunction = Edit.makeEditable(block.element);
@@ -157,7 +157,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         }
 
         if (currentBlockEvent != null) {
-            block = currentBlockEvent.property.current;
+            block = currentBlockEvent.property;
         }
 
         var activeBlocks = [];
@@ -376,9 +376,11 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                         element = element.parent();
                     }
                 }
+
+                //TODO work on this
                 var blockEvent = Broadcaster.createEvent(event);
 
-                if (blockEvent.block.current != null || property != null) {
+                if (blockEvent.block != null || property != null) {
                     Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD, event);
                     update(property, blockEvent);
                 }

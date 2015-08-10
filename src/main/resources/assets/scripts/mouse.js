@@ -3,8 +3,7 @@
  *
  * A block Event has the following parameters
  *      event: jQuery event
- *      block.current: the current BLOCK (See Elements) where the event happenend
- *      block.previous: the last previous BLOCK where an event happened
+ *      block: the current BLOCK (See Elements) where the event happenend
  *      direction: the direction the mouse pointer is moving (based on the last 10 mouseevents).
  *          Options are:
  *          - Constants.DIRECTION.UP
@@ -60,7 +59,7 @@
  *
  */
 
-base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "constants.blocks.core", "blocks.core.Sidebar", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, SideBar)
+base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "constants.blocks.core", "blocks.core.Sidebar", "blocks.core.Overlay", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, SideBar, Overlay)
 {
     // watch out with this value: it should be smaller than the smallest possible object in the layout system (width or height)
     // but when clicking near the edge of such an object, even smaller; so maybe TODO: activate the DnD when entering a new block?
@@ -71,12 +70,10 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     var active = false;
     // dragging options, kept here for parsedContent while waiting for drag
     var draggingStatus = BaseConstants.DRAGGING.NO;
-    var draggingStart = null;
+    var draggingStartEvent = null;
     var dblClickFound = false;
-    var currentBlock = null;
-    var currentProperty = null;
+    var startBlock = null;
     var windowFrame = {width: 0, height: 0};
-    var lastMoveEvent = $.Event("mousemove", {pageX: 0, pageY: 0});
 
     //for direction calculations
     var directionVector = {x1: 0, y1: 0, x2: 0, y2: 0};
@@ -97,13 +94,10 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     {
         windowFrame = {width: document.innerWidth, height: document.innerHeight};
         dblClickFound = false;
-        draggingStart = null;
+        draggingStartEvent = null;
 
-        currentBlock = null;
-        currentProperty = null;
+        startBlock = null;
         draggingStatus = BaseConstants.DRAGGING.NO;
-
-        mouseMove(lastMoveEvent);
 
         //since we're only listening for move events after clicking now, deregister this by default
         $(document).off("mousemove.blocks_core");
@@ -135,14 +129,9 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 mouseUp(event);
             }
         });
-        //$(document).on("mousemove.blocks_core", function (event)
-        //{
-        //    mouseMove(event);
-        //});
 
         $(document).on("mouseleave.blocks_core", function (event)
         {
-//                mouseUp(event);
             if (draggingStatus == BaseConstants.DRAGGING.YES) {
                 Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG, event);
             }
@@ -184,11 +173,6 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         }
     };
 
-    this.getLastMoveEvent = function()
-    {
-        return lastMoveEvent;
-    };
-
     /*
      * on mousedown and dragging allowed and surface to drag selected:
      *   - wait for drag
@@ -200,11 +184,11 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         if (active) {
             // check for left mouse click
             if (event.which == 1) {
-                //var block = Broadcaster.getHoveredBlockForPosition(event.pageX, event.pageY);
-                var block = Broadcaster.getHoveredBlock();
-                if (draggingStatus == BaseConstants.DRAGGING.NO && block.current != null && block.current.canDrag) {
+                var block = Overlay.getHoveredBlock();
+                if (draggingStatus == BaseConstants.DRAGGING.NO && block != null && block.canDrag) {
                     draggingStatus = BaseConstants.DRAGGING.WAITING;
-                    draggingStart = event;
+                    draggingStartEvent = event;
+                    startBlock = block;
 
                     $(document).on("mousemove.blocks_core", function (event)
                     {
@@ -213,8 +197,8 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 }
                 else if (draggingStatus == BaseConstants.DRAGGING.NO && event.target != null && ($(event.target).hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || $(event.target).parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0)) {
                     draggingStatus = BaseConstants.DRAGGING.WAITING;
-                    draggingStart = event;
-                    Logger.debug("Start new drag");
+                    draggingStartEvent = event;
+                    //Logger.debug("Start new drag");
                 }
                 else if ($(event.target).hasClass(BlocksConstants.BLOCKS_START_BUTTON) || $(event.target).parents("." + BlocksConstants.BLOCKS_START_BUTTON).length > 0) {
                     //FIXME right that nothing is in here?
@@ -245,12 +229,11 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     var mouseUp = function (event)
     {
         if (active && event.which == 1) {
-            Logger.debug("MOUSE UP");
             if (draggingStatus != BaseConstants.DRAGGING.NOT_ALLOWED) {
                 var oldDragStatus = draggingStatus;
                 if (oldDragStatus == BaseConstants.DRAGGING.YES) {
                     Broadcaster.send(Broadcaster.EVENTS.END_DRAG, event);
-                    //} else if (Broadcaster.property().current != null && Broadcaster.property().current.editType != BlocksConstants.EDIT_NONE) {
+                    //} else if (Overlay.getHoveredProperty() != null && Broadcaster.getHoveredProperty().editType != BlocksConstants.EDIT_NONE) {
                     //    Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
 
                 } else if (oldDragStatus == BaseConstants.DRAGGING.WAITING) {
@@ -272,15 +255,16 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
      * */
     var enableDragAfterTreshold = function (event)
     {
-        Logger.debug("Calculate wait for drag");
-        if (Math.abs(draggingStart.pageX - event.pageX) > DRAGGING_THRESHOLD ||
-            Math.abs(draggingStart.pageY - event.pageY) > DRAGGING_THRESHOLD) {
+        //Logger.debug("Calculate wait for drag");
+        if (Math.abs(draggingStartEvent.pageX - event.pageX) > DRAGGING_THRESHOLD ||
+            Math.abs(draggingStartEvent.pageY - event.pageY) > DRAGGING_THRESHOLD) {
             draggingStatus = BaseConstants.DRAGGING.YES;
-            Logger.debug("Start drag");
+            //Logger.debug("Start drag");
 
             //pass this along with the custom event data object
             Broadcaster.send(Broadcaster.EVENTS.START_DRAG, event, {
-                draggingStart: draggingStart
+                //we'll pass the block we initially had our cursor over (even before the wait threshold)
+                draggingBlock: startBlock
             });
         }
     };
@@ -288,84 +272,22 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     var mouseMove = function (event)
     {
         if (active) {
+            //first, update the direction and speed vectors
             calculateDirection(event);
 
-            var changedBlock = false;
-            var block = Broadcaster.block();
+            var block = Overlay.getHoveredBlock();
+            var property = Overlay.getHoveredProperty();
 
-            // check if block changed since last mouse move
-            if (block.current !== currentBlock) {
-                changedBlock = true;
-                currentBlock = block.current;
-            }
-
-            var changedProperty = false;
-            var property = Broadcaster.property();
-            // check if property changed since last mouse move
-            if (property.current !== currentProperty) {
-                changedProperty = true;
-                currentProperty = property.current;
-            }
-
+            //we're waiting for the threshold to be exceeded
             if (draggingStatus == BaseConstants.DRAGGING.WAITING) {
                 enableDragAfterTreshold(event);
             }
-            //we're not dragging, just moving the mouse
-            else if (draggingStatus != BaseConstants.DRAGGING.YES) {
-                //if (changedProperty) {
-                //    if (property.current == null) {
-                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_PROPERTY);
-                //    } else if (property.previous == null) {
-                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_PROPERTY);
-                //    } else {
-                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_PROPERTY);
-                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_PROPERTY);
-                //    }
-                //} else if (property.current != null) {
-                //    Broadcaster.send(Broadcaster.EVENTS.HOVER_OVER_PROPERTY);
-                //}
-                //
-                //if (changedBlock) {
-                //    if (block.current == null) {
-                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_BLOCK);
-                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_PROPERTY);
-                //    } else if (block.previous == null) {
-                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_BLOCK);
-                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_PROPERTY);
-                //    } else {
-                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_BLOCK);
-                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_PROPERTY);
-                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_BLOCK);
-                //        Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_PROPERTY);
-                //
-                //        //Logger.debug("changed templates");
-                //    }
-                //} else if (block.current != null) {
-                //    Broadcaster.send(Broadcaster.EVENTS.HOVER_OVER_BLOCK);
-                //}
-            }
             //we're dragging a block around
             else if (draggingStatus == BaseConstants.DRAGGING.YES) {
-                //if (changedBlock) {
-                //    if (block.current == null) {
-                //        Broadcaster.send(Broadcaster.EVENTS.DRAG_LEAVE_BLOCK);
-                //    } else if (block.previous == null) {
-                //        Broadcaster.send(Broadcaster.EVENTS.DRAG_ENTER_BLOCK);
-                //    } else {
-                //        Broadcaster.send(Broadcaster.EVENTS.DRAG_ENTER_BLOCK);
-                //        Broadcaster.send(Broadcaster.EVENTS.DRAG_LEAVE_BLOCK);
-                //    }
-                //}
-                //else {// if (block.current != null)
-                    Broadcaster.send(Broadcaster.EVENTS.DRAG_OVER_BLOCK, event);
-                //}
+                Broadcaster.send(Broadcaster.EVENTS.DRAG_OVER_BLOCK, event, {
+                    dragoverBlock: block
+                });
             }
-
-            lastMoveEvent = event;
-
-            //Legacy code, needed?
-            //lastMoveEvent.block = Broadcaster.getHoveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
-            //lastMoveEvent.direction = direction;
         }
     };
 
@@ -408,8 +330,8 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             directionVector.y2 = directionVector.y1 - sin;
         }
         //Logger.debug(directionVector.x1 + ", "+directionVector.y1+ " - " +directionVector.x2 +", "+ directionVector.y2);
-        //var angle = direction * (180 / Math.PI);
-        //Logger.debug("Hoek: " + angle + " - variance: " + variance);
+        var angle = direction * (180 / Math.PI);
+        //Logger.debug("Angle: " + (angle).toFixed(0) + "° - variance: " + (variance).toFixed(0));
 
         return direction;
     };

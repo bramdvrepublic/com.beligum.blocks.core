@@ -229,7 +229,6 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "base.core.Const
                     Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED);
                     Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
                 });
-
             })
         }
     };

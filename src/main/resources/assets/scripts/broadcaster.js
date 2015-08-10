@@ -28,120 +28,12 @@
  *
  * */
 
-base.plugin("blocks.core.Broadcaster", ["base.core.Constants", "blocks.core.DomManipulation", function (Constants, DOM)
+base.plugin("blocks.core.Broadcaster", ["base.core.Constants", "blocks.core.DomManipulation", "blocks.core.Overlay", function (Constants, DOM, Overlay)
 {
     var Broadcaster = this;
 
     this.active = false;
-    var fields = {current: null, previous: null};
-    var hoveredBlocks = {current: null, previous: null};
-    var properties = {current: null, previous: null};
-
     var layoutTree = null;
-
-    this.block = function ()
-    {
-        return hoveredBlocks;
-    };
-
-    this.property = function ()
-    {
-        return properties;
-    };
-
-    /*
-     * Resets all parameters for the hovering.
-     * This means that the next mousemove will trigger a HOVER_ENTER_EVENT
-     * */
-    this.resetHover = function ()
-    {
-        fields = {current: null, previous: null};
-        hoveredBlocks = {current: null, previous: null};
-        properties = {current: null, previous: null};
-
-        //now moved to mouse.js, needed there?
-        //lastMoveEvent.block = hoveredBlocks;
-        //lastMoveEvent.property = properties;
-    };
-
-    this.setHoveredBlock = function (layoutElement)
-    {
-        hoveredBlocks.previous = hoveredBlocks.current;
-        hoveredBlocks.current = layoutElement;
-    };
-    this.getHoveredBlock = function ()
-    {
-        return hoveredBlocks;
-    };
-
-    /*
-     * sets the current hovered block based on the mouse coordinates
-     * */
-    this.getHoveredBlockForPosition = function (x, y)
-    {
-        var currentField = fields.current;
-        fields.current = null;
-
-        var currentBlock = hoveredBlocks.current;
-        hoveredBlocks.current = null;
-
-        var currentProperty = properties.current;
-        properties.current = null;
-
-        // First search for active element
-        // If an element is active, we have a big chance the next event is in the same element, so we start our search here
-        if (currentField != null) {
-            var bb = currentField.findActiveElement(x, y);
-            if (bb instanceof blocks.elements.Block || bb instanceof blocks.elements.Property) {
-                //Logger.debug("staying in same block");
-                fields.current = bb;
-            }
-        }
-
-        // Our shortcut failed so search the full page
-        // we loop the trees of elements to find the smallest active element
-        if (fields.current == null) {
-            if (Broadcaster.getContainer() != null) {
-                var bb = Broadcaster.getContainer().findActiveElement(x, y);
-                if (bb != null && (bb instanceof blocks.elements.Block || bb instanceof blocks.elements.Property)) {
-                    fields.current = bb;
-                } else if (bb != null) {
-                    // loop back until we find null, block or field
-                    while (bb != null && !(bb instanceof blocks.elements.Block || bb instanceof blocks.elements.Property)) {
-                        bb = bb.parent;
-                    }
-                    fields.current = bb;
-                }
-            }
-        }
-
-        if (fields.current != currentField) {
-            fields.previous = currentField;
-        }
-
-        if (fields.current != null) {
-            if (fields.current instanceof blocks.elements.Property) {
-                properties.current = fields.current;
-                hoveredBlocks.current = fields.current;
-                while (hoveredBlocks.current != null && !(hoveredBlocks.current instanceof blocks.elements.Block)) {
-                    hoveredBlocks.current = hoveredBlocks.current.parent;
-                }
-            } else {
-                hoveredBlocks.current = fields.current;
-                properties.current = null;
-            }
-        }
-
-        if (hoveredBlocks.current != currentBlock) {
-            hoveredBlocks.previous = currentBlock;
-        }
-
-        if (properties.current != currentProperty) {
-            properties.previous = currentProperty;
-        }
-
-        return hoveredBlocks;
-    };
 
     /*
      * This function sends an event and automatically creates a blockevent with all current parameters
@@ -160,73 +52,21 @@ base.plugin("blocks.core.Broadcaster", ["base.core.Constants", "blocks.core.DomM
             // we allow the user to reUse the original even that triggered this event (eg. to re-use the mouse coordinates)
             // but we'll manually re-set the type so it's a new event
             if (originalEvent) {
-                e = $.Event(originalEvent);
-                e.type = eventName;
+                e = $.Event(originalEvent, {
+                    type: eventName
+                });
             }
             else {
                 e = $.Event(eventName);
             }
 
-            //all of this is moved to mouse.js, needed?
-            //e.target = lastMoveEvent.target;
-            //e.pageX = lastMoveEvent.pageX;
-            //e.pageY = lastMoveEvent.pageY;
-            //e.clientX = lastMoveEvent.clientX;
-            //e.clientY = lastMoveEvent.clientY;
-            //e.direction = lastMoveEvent.direction;
-
-            if (data) {
-                e.data = data;
-            }
-
-            //still needed?
-            e.block = hoveredBlocks;
-            e.property = properties;
-
             // send the event with jquery
-            $(document).triggerHandler(e);
+            $(document).triggerHandler(e, data);
         }
 
         if (eventName == Broadcaster.EVENTS.STOP_BLOCKS) {
             Broadcaster.active = false;
         }
-    };
-
-    /*
-     * Container is the block IN which we are dragging.
-     * If we set this to null then then the top level block(s) are the container
-     * */
-    this.setContainer = function (value)
-    {
-        layoutTree = value
-    };
-    this.getContainer = function ()
-    {
-        return layoutTree;
-    };
-
-    /*
-     We create some sort of a heat map. We define boxes for all draggable templates
-     we can add left and right from each column
-     and left and right from container if container has more than 1 row
-     select each row and add bottom
-     if row has +1 colunms, we can add also to bottom of columns
-     except if column has +1 rows
-     */
-
-    var oldLayoutTree = null;
-    var oldContainerParent = null;
-
-    this.buildLayoutTree = function ()
-    {
-        oldLayoutTree = null;
-        oldContainerParent = null;
-        layoutTree = new blocks.elements.Page();
-        Broadcaster.resetHover();
-
-        //this is moved to mouse.js
-        //lastMoveEvent.block = Broadcaster.getHoveredBlockForPosition(lastMoveEvent.pageX, lastMoveEvent.pageY);
-        //lastMoveEvent.block = Broadcaster.getHoveredBlock();
     };
 
     this.EVENTS = {};
@@ -251,7 +91,7 @@ base.plugin("blocks.core.Broadcaster", ["base.core.Constants", "blocks.core.DomM
     // is like focus/blur on a text input
     // Allows plugins to hook on
     this.EVENTS.START_EDIT_FIELD = "START_EDIT_FIELD";
-    this.EVENTS.END_EDIT_FIELD = "END_EDIT_FIELDS";
+    this.EVENTS.END_EDIT_FIELD = "END_EDIT_FIELD";
 
     this.EVENTS.DISABLE_SELECTION = "DISABLE_SELECTION";
 

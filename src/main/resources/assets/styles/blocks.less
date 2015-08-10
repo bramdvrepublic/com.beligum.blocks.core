@@ -159,7 +159,7 @@ body.@{BODY_EDIT_MODE_CLASS} {
   // but 'bubbles up' lower cursors like the mouse would eg. hover over them
   // Note that this sits in the way of using the hover-related events on these objects,
   // so don't use them
-  //pointer-events: auto;
+  //pointer-events: none;
 
   //this is probably a good general choice
   cursor: pointer;
@@ -175,6 +175,9 @@ body.@{BODY_EDIT_MODE_CLASS} {
   &.@{OVERLAY_HOVER_CLASS} {
     box-shadow: 0px 0px 10px rgba(1, 0, 0, 0.5);
     border: none;
+  }
+  &.@{OVERLAY_DRAGGING_CLASS} {
+    background-color: rgba(00, 102, 204, 0.5);
   }
 }
 
@@ -208,11 +211,6 @@ body.@{BODY_EDIT_MODE_CLASS} {
     background: -ms-linear-gradient(top,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* IE10+ */
     background: linear-gradient(to bottom,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* W3C */
   }
-}
-
-.@{DRAGGED_BLOCK_OVERLAY_CLASS} {
-  position: absolute;
-  background-color: rgba(00, 102, 204, 0.5);
 }
 
 .@{PROPERTY_OVERLAY_CLASS} {

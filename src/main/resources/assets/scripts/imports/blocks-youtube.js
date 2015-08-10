@@ -4,7 +4,7 @@
 base.plugin("blocks.edit.Youtube", ["constants.blocks.core", "blocks.core.Edit", "blocks.core.Sidebar",  function (Constants, Edit, Sidebar)
 {
     this.focus = function(windowID, property, blockEvent) {
-        var embedded = blockEvent.block.current.element.children(".embed-responsive");
+        var embedded = blockEvent.block.element.children(".embed-responsive");
         var iframe = embedded.children("iframe");
         iframe.addClass("edit");
         Sidebar.addValueAttribute(windowID, iframe, "video url", "Paste or type a Youtube link", "src", false, true, false);

@@ -26,11 +26,12 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         );
     };
 
+    //-----EVENTS-----
     //main entry point for blocks after all the GUI events are handled
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function (event)
     {
         //we're currently not dragging inside anything
-        Broadcaster.setContainer(null);
+        Overlay.setContainer(null);
 
         //start off with a clean and empty sidebar
         Sidebar.clear();
@@ -50,7 +51,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         Sidebar.clear();
         //Broadcaster.unregisterMouseMove();
         Overlay.removeOverlays();
-        Broadcaster.setContainer(null);
+        Overlay.setContainer(null);
 
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
     });
@@ -59,7 +60,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
     {
         Mouse.activate();
         DOM.disableSelection();
-        Broadcaster.resetHover();
         Overlay.showOverlays();
         DragDrop.setActive(true);
         Sidebar.enableEditing();
@@ -80,7 +80,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
     $(document).on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, function (event)
     {
         Mouse.deactivate();
-        Broadcaster.resetHover();
         Overlay.removeOverlays();
         DragDrop.setActive(false);
         Sidebar.disableEditing();
@@ -89,8 +88,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
 
     $(document).on(Broadcaster.EVENTS.DOM_CHANGED, function (event)
     {
-        Broadcaster.resetHover();
-
         //update the max z-index of positioned elements
         base.utils.calculateMaxIndex();
 
@@ -105,7 +102,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         //hide the overlays while redrawing
         Overlay.removeOverlays();
 
-        Broadcaster.buildLayoutTree();
+        Overlay.buildLayoutTree();
 
         //redrawing done
         Overlay.showOverlays();
@@ -130,6 +127,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         DragDrop.setActive(true);
         Resizer.activate(true);
     });
+
     /**
      * Called when we want to disable the whole drag-and-drop system
      */
@@ -139,16 +137,18 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         DragDrop.setActive(false);
         Resizer.activate(false);
     });
+
     /**
      * Called when a user starts dragging a block
      */
-    $(document).on(Broadcaster.EVENTS.START_DRAG, function (event, data)
+    $(document).on(Broadcaster.EVENTS.START_DRAG, function (event, eventData)
     {
         //Broadcaster.zoom();
         DOM.disableContextMenu();
-        DragDrop.dragStarted(event, data);
+        DragDrop.dragStarted(event, eventData);
         Sidebar.disableEditing();
     });
+
     /**
      * Called when a user aborted dragging a block
      */
@@ -158,6 +158,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         DOM.enableContextMenu();
         DragDrop.dragAborted(event);
     });
+
     /**
      * Called when a user ended dragging a block
      */
@@ -168,31 +169,14 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         DOM.enableContextMenu();
         DragDrop.dragEnded(event);
     });
-    /**
-     * Called when a user is dragging a block and just entered a block
-     */
-    $(document).on(Broadcaster.EVENTS.HOVER_ENTER_OVERLAY, function (event)
-    {
-        if (DragDrop.isDragging()) {
-            DragDrop.dragEnterBlock(event);
-        }
-    });
+
     /**
      * Called all the time when a user is dragging one block over another block
      */
-    $(document).on(Broadcaster.EVENTS.DRAG_OVER_BLOCK, function (event)
+    $(document).on(Broadcaster.EVENTS.DRAG_OVER_BLOCK, function (event, eventData)
     {
         if (DragDrop.isDragging()) {
-            DragDrop.dragOverBlock(event);
-        }
-    });
-    /**
-     * Called when a user is dragging a block and just left a block
-     */
-    $(document).on(Broadcaster.EVENTS.HOVER_LEAVE_OVERLAY, function (event)
-    {
-        if (DragDrop.isDragging()) {
-            DragDrop.dragLeaveBlock(event);
+            DragDrop.dragOverBlock(event, eventData);
         }
     });
 

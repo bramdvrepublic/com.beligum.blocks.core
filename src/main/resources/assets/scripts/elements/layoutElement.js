@@ -8,7 +8,7 @@
  * */
 
 
-base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core.Constants", "blocks.core.DomManipulation", "constants.blocks.core", "blocks.core.Broadcaster", function (Class, Constants, DOM, BlocksConstants, Broadcaster)
+base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core.Constants", "blocks.core.DomManipulation", "constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Overlay", function (Class, Constants, DOM, BlocksConstants, Broadcaster, Overlay)
 {
     var body = $("body");
 
@@ -454,11 +454,12 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core
                 var _this = this;
                 this.overlay.mouseenter(function(event) {
                     $(this).addClass(BlocksConstants.OVERLAY_HOVER_CLASS);
-                    Broadcaster.setHoveredBlock(_this);
+                    Overlay.setHoveredBlock(_this);
                     Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_OVERLAY, event, _this);
                 }).mouseleave(function(event) {
                     $(this).removeClass(BlocksConstants.OVERLAY_HOVER_CLASS);
-                    Broadcaster.setHoveredBlock(null);
+                    //this might be troublesome: what if the event is processed after the mouseenter of the next block?
+                    Overlay.setHoveredBlock(null);
                     Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_OVERLAY, event, _this);
                 });
             }

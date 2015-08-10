@@ -79,15 +79,13 @@ base.plugin("blocks.core.Elements.Row", ["base.core.Class", "base.core.Constants
 
         removeOverlay: function ()
         {
-
             for (var j = 0; j < this.resizeHandles.length; j++) {
                 this.resizeHandles[j].removeOverlay();
             }
-
         },
 
-        generateProperties: function() {
-
+        generateProperties: function()
+        {
         }
 
     });

@@ -12,12 +12,14 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     var DragDrop = this;
     var draggingEnabled = false;
     var dragging = false;
-    var draggedOverlay = null;
     var dropPointerElements = null;
     var lastDropLocation = null;
     var currentDraggedBlock = null;
-    var sidebar = null;
-    var oldDirection = BaseConstants.DIRECTION.NONE;
+    var sidebarLeft = null;
+    var oldDirection = {
+        dir: BaseConstants.DIRECTION.NONE,
+        stamp: $.now()
+    };
 
     // Simple object to translate SIDE in css border side
     var cssSide = {};
@@ -31,14 +33,6 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     cssBorderSide[BaseConstants.SIDE.BOTTOM] = "border-" + cssSide[BaseConstants.SIDE.BOTTOM];
     cssBorderSide[BaseConstants.SIDE.LEFT] = "border-" + cssSide[BaseConstants.SIDE.LEFT];
     cssBorderSide[BaseConstants.SIDE.RIGHT] = "border-" + cssSide[BaseConstants.SIDE.RIGHT];
-
-    // Simple object to translate SIDE in correct glyphicon class for arrow
-    // TODO put this in config? but how?
-    var cssArrowClass = {};
-    cssArrowClass[BaseConstants.SIDE.TOP] = "glyphicon-arrow-up";
-    cssArrowClass[BaseConstants.SIDE.BOTTOM] = "glyphicon-arrow-down";
-    cssArrowClass[BaseConstants.SIDE.LEFT] = "glyphicon-arrow-left";
-    cssArrowClass[BaseConstants.SIDE.RIGHT] = "glyphicon-arrow-right";
 
     /*
      * METHODS CALLED WHILE DRAGGING
@@ -68,33 +62,27 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         $(".not-visible").removeClass("not-visible");
     };
 
-    var insideWindow = function (x, y)
+    this.dragStarted = function (blockEvent, eventData)
     {
-        if (x < 0 || x > window.innerWidth || y < 0 || y > window.innerHeight) {
-            return false;
-        } else {
-            return true;
-        }
-    };
-
-    this.dragStarted = function (blockEvent, data)
-    {
-        sidebar = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS).offset().left;
+        sidebarLeft = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS).offset().left;
 
 //        Broadcaster.zoom();
-        oldDirection = BaseConstants.DIRECTION.NONE;
-        if (blockEvent != null) {
-            //currentDraggedBlock = Broadcaster.getHoveredBlockForPosition(data.draggingStart.pageX, data.draggingStart.pageY).current;
-            currentDraggedBlock = Broadcaster.getHoveredBlock().current;
-        } else {
-            currentDraggedBlock = null;
-        }
+        oldDirection = {
+            dir: BaseConstants.DIRECTION.NONE,
+            stamp: $.now()
+        };
 
-        createDraggedOverlay(currentDraggedBlock);
+        //passed in from mouse.js (the original block we were over when starting to drag)
+        currentDraggedBlock = eventData.draggingBlock;
+
+        //mark the current overlay as being dragged
+        currentDraggedBlock.overlay.addClass(BlocksConstants.OVERLAY_DRAGGING_CLASS);
+
+        //we're dragging an existing block
         if (draggingEnabled && currentDraggedBlock != null && currentDraggedBlock.canDrag && currentDraggedBlock.getTotalBlocks() > 1) {
-            hideAll(Broadcaster.getContainer().element);
+            hideAll(Overlay.getContainer().element);
             //currentDraggedBlock.getContainer().createAllDropspots();
-            Broadcaster.getContainer().createAllDropspots();
+            Overlay.getContainer().createAllDropspots();
             createDropPointerElement();
             dragging = true;
             Overlay.removeResizehandles();
@@ -102,37 +90,27 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             // html for undefined area and baody to override default cursor of body.
 
             $("body").addClass(BlocksConstants.FORCE_DRAG_CURSOR_CLASS);
-        } else if (currentDraggedBlock == null) {
+        }
+        //we're dragging a new block
+        else if (currentDraggedBlock == null) {
             dragging = true
-            Broadcaster.getContainer().createAllDropspots();
+            Overlay.getContainer().createAllDropspots();
             Overlay.removeResizehandles();
             createDropPointerElement();
             $("body").addClass(BlocksConstants.FORCE_DRAG_CURSOR_CLASS);
         }
     };
 
-    this.dragEnterBlock = function (blockEvent)
-    {
-        if (blockEvent.block.current != null) {
-            Logger.debug("Recalculate triggers on enter");
-            blockEvent.block.current.recalculateTriggers(oldDirection, blockEvent.originalEvent.pageX, blockEvent.originalEvent.pageY, null);
-        }
-    };
-
-    // TODO check necessity canLayout
-    this.dragLeaveBlock = function (blockEvent)
-    {
-        if (blockEvent.block.current == null || !blockEvent.block.current.canDrag) {
-            hideDropPointerElement();
-            lastDropLocation = null;
-        }
-    };
-
-    this.dragOverBlock = function (blockEvent)
+    this.dragOverBlock = function (blockEvent, eventData)
     {
         var pageX = blockEvent.originalEvent.pageX;
         var pageY = blockEvent.originalEvent.pageY;
-        var dropBlock = blockEvent.block.current;
+
+        //Logger.debug("Dragging block at "+pageX+","+pageY);
+
+        var dropBlock = eventData.dragoverBlock;
+
+        //Logger.debug("Dropblock: "+dropBlock);
 
         if (dragging) {
 
@@ -141,14 +119,21 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             var dropSpot = null;
 
             if (dropBlock != null && dropBlock.canDrag) {
-                var direction = Mouse.directionForBlock(blockEvent.block.current);
+                var direction = Mouse.directionForBlock(dropBlock);
 
                 // when outside container block of last droplocation is null
-                if (direction != oldDirection && !(lastDropLocation != null && lastDropLocation.block == null)) {
-                    Logger.debug("Direction changed " + direction + " from " + oldDirection);
-                    dropBlock.recalculateTriggers(direction, pageX, pageY, lastDropLocation);
+                var now = $.now();
+                //will prevent the dropspots from flickering when changing fast
+                if (now-oldDirection.stamp > 100) {
+                    if (direction != oldDirection.dir && !(lastDropLocation != null && lastDropLocation.block == null)) {
+                        //Logger.debug("Direction changed " + direction + " from " + oldDirection.dir);
+                        dropBlock.recalculateTriggers(direction, pageX, pageY, lastDropLocation);
+                    }
+                    oldDirection = {
+                        dir: direction,
+                        stamp: now
+                    };
                 }
-                oldDirection = direction;
 
                 dropSpot = dropBlock.getTriggeredDropspot(direction, pageX, pageY);
                 if (dropSpot == null && dropBlock != null) {
@@ -156,19 +141,20 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                     dropSpot = dropBlock.getTriggeredDropspot(direction, pageX, pageY);
                 }
             }
-            else if (sidebar == null || sidebar > pageX) {
-                var container = Broadcaster.getContainer().getLayoutContainer();
+            //check if we're dragging the create block from the sidebar
+            else if (sidebarLeft == null || sidebarLeft > pageX) {
+                var container = Overlay.getContainer().getLayoutContainer();
 
-                if (blockEvent.pageY > container.top && blockEvent.pageY < container.bottom) {
+                if (pageY > container.top && pageY < container.bottom) {
                     if (pageX < container.left) {
                         dropSpot = new blocks.elements.Dropspot(BaseConstants.SIDE.LEFT, container, 0);
                     } else if (pageX > container.right) {
                         dropSpot = new blocks.elements.Dropspot(BaseConstants.SIDE.RIGHT, container, 0);
                     }
                 } else if (pageX > container.left && pageX < container.right) {
-                    if (blockEvent.pageY < container.top) {
+                    if (pageY < container.top) {
                         dropSpot = new blocks.elements.Dropspot(BaseConstants.SIDE.TOP, container, 0);
-                    } else if (blockEvent.pageY > container.bottom) {
+                    } else if (pageY > container.bottom) {
                         dropSpot = new blocks.elements.Dropspot(BaseConstants.SIDE.BOTTOM, container, 0);
                     }
                 }
@@ -176,24 +162,44 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                     dropSpot.block = container;
                 }
             }
-            else {
-                Logger.debug("Nope, block is not draggable");
-            }
 
+            // check if something changed
             if (lastDropLocation != dropSpot) {
-                lastDropLocation = dropSpot;
-                // We can not drop on ourselves so skip
-                if (lastDropLocation != null) {
-                    if (!dropSpotIsDraggedBlock(lastDropLocation) && insideWindow(blockEvent.clientX, blockEvent.clientY)) {
-                        Logger.debug("Dropspot changed with min: " + lastDropLocation.min + " - " + lastDropLocation.max);
-                        // show overlays for our droplocation(s)
-                        drawDropPointerElement(lastDropLocation.anchor, lastDropLocation.side);
+                //check if we're in between dropspots
+                if (dropSpot != null) {
+                    if (insideWindow(blockEvent.clientX, blockEvent.clientY)) {
+                        // We can not drop on ourselves so skip
+                        if (!dropSpotInDraggedBlock(dropSpot)) {
+                            // only update the last location when all is well;
+                            // this will enable us to drop outside a block (see later)
+                            // and make the UI more stable
+                            lastDropLocation = dropSpot;
+
+                            //Logger.debug("Dropspot changed with min: " + lastDropLocation.min + " - " + lastDropLocation.max);
+                            // show overlays for our droplocation(s)
+                            drawDropPointerElement(lastDropLocation.anchor, lastDropLocation.side);
+                        }
+                        else {
+                            // this will make sure we can abort the DnD by releasing
+                            // the mouse in the dragged block
+                            lastDropLocation = null;
+                            hideDropPointerElements();
+                        }
                     }
                     else {
-                        hideDropPointerElement();
+                        // this will make sure we can abort the DnD by releasing
+                        // the mouse outside of the window
+                        lastDropLocation = null;
+                        hideDropPointerElements();
                     }
                 } else {
-                    hideDropPointerElement();
+                    // don't hide the dropspot or update the lastDropLocation when we're not above a block
+                    // this will show the last shown dropspot when dragging away,
+                    // but will make the UI a lot more stable
+                    //lastDropLocation = dropSpot;
+                    //hideDropPointerElements();
+
+                    //Logger.debug("Dropspot is null");
                 }
             } else {
                 // Do nothing because nothing changed
@@ -205,24 +211,28 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
 
     this.dragEnded = function (blockEvent)
     {
-        sidebar = null;
         if (dragging) {
+            var dropX = blockEvent.originalEvent.clientX;
+            var dropY = blockEvent.originalEvent.clientY;
+
             // check for null (e.g during abort_drag)
             // If we did not drop on ourself, change location
-            if (currentDraggedBlock != null && lastDropLocation != null && !dropSpotIsDraggedBlock(lastDropLocation) && insideWindow(blockEvent.clientX, blockEvent.clientY)) {
-                Logger.debug("Drop block");
+            if (currentDraggedBlock != null && lastDropLocation != null && !dropSpotInDraggedBlock(lastDropLocation) && insideWindow(dropX, dropY)) {
+                //Logger.debug("Drop block");
                 Overlay.removeOverlays();
                 resetDragDrop();
                 Layouter.changeBlockLocation(currentDraggedBlock, lastDropLocation.anchor, lastDropLocation.side);
-            } else if (currentDraggedBlock == null && lastDropLocation != null && insideWindow(blockEvent.clientX, blockEvent.clientY)) {
+            }
+            //we added a new block
+            else if (currentDraggedBlock == null && lastDropLocation != null && insideWindow(dropX, dropY)) {
                 // We added a new block
                 Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, blockEvent);
                 Overlay.removeOverlays();
                 // show normal cursor during dialog
                 $("body").removeClass(BlocksConstants.FORCE_DRAG_CURSOR_CLASS);
                 // Remove all pointer elements
-                removeDropPointerElement();
-                removeDraggedOverlay();
+                removeDropPointerElements();
+                //removeDraggedOverlay();
                 // show select box with all blocks
                 var box = $("<div />");
 
@@ -288,12 +298,13 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                 });
 
             } else {
-                Logger.debug("No drop for block");
+                //Logger.debug("No drop for block");
                 this.dragAborted();
                 Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, blockEvent);
             }
-
         }
+
+        sidebarLeft = null;
     };
 
     var addHeadResource = function(resourceArray, className, isScript)
@@ -325,8 +336,9 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     var resetDragDrop = function ()
     {
         $("body").removeClass(BlocksConstants.FORCE_DRAG_CURSOR_CLASS);
-        removeDropPointerElement();
-        removeDraggedOverlay();
+        removeDropPointerElements();
+        $('.'+BlocksConstants.BLOCK_OVERLAY_CLASS+'.'+BlocksConstants.OVERLAY_DRAGGING_CLASS).removeClass(BlocksConstants.OVERLAY_DRAGGING_CLASS);
+        //removeDraggedOverlay();
         draggingEnabled = false;
         dragging = false;
         showAll();
@@ -337,51 +349,77 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         resetDragDrop();
     };
 
-    /*
-     * checks if the droplocation (or dropspot) equals the block we are dragging
-     *
-     * */
-    var dropSpotIsDraggedBlock = function (dropSpot)
+    var isInsideDraggedBlock = function (x, y)
     {
         var retVal = false;
-        // This is an error. Return true to prevent drop
-        // TODO: How can this happen
-        if (dropSpot == null) return true;
-        if (currentDraggedBlock == null) return false;
-        // dragged block equals anchor or other
-        if ((currentDraggedBlock === dropSpot.anchor || currentDraggedBlock === dropSpot.other)) {
-            retVal = true;
-        } else if (dropSpot.anchor != null && dropSpot.anchor.children.length == 1 && dropSpot.anchor.children[0] === currentDraggedBlock) {
-            // We drop a
-            retVal = true;
-        } else if (dropSpot.other != null && dropSpot.other.children.length == 1 && dropSpot.other.children[0] === currentDraggedBlock) {
+
+        if (currentDraggedBlock != null) {
+            retVal = currentDraggedBlock.isTriggered(x, y);
+        }
+
+        //Logger.debug("Inside dragged block? "+retVal);
+
+        return retVal;
+    };
+
+    /*
+     * checks if the droplocation (or dropspot) equals the block we are dragging
+     */
+    var dropSpotInDraggedBlock = function (dropSpot)
+    {
+        var retVal = false;
+
+        if (dropSpot == null) {
             retVal = true;
         }
+        else if (currentDraggedBlock == null) {
+            retVal = false;
+        }
+        else {
+            // dragged block equals anchor or other
+            if ((currentDraggedBlock === dropSpot.anchor || currentDraggedBlock === dropSpot.other)) {
+                retVal = true;
+            }
+            else if (dropSpot.anchor != null && dropSpot.anchor.children.length == 1 && dropSpot.anchor.children[0] === currentDraggedBlock) {
+                retVal = true;
+            }
+            else if (dropSpot.other != null && dropSpot.other.children.length == 1 && dropSpot.other.children[0] === currentDraggedBlock) {
+                retVal = true;
+            }
+        }
+
+        //Logger.debug("Dropspot is dragged block? "+retVal);
+
         return retVal;
+    };
+
+    var insideWindow = function (x, y)
+    {
+        //Logger.debug("Checking bounds for "+x+","+y+" inside "+sidebarLeft+" and "+window.innerWidth+"x"+window.innerHeight);
+
+        if (x < 0 || x > window.innerWidth || x > sidebarLeft || y < 0 || y > window.innerHeight) {
+            return false;
+        } else {
+            return true;
+        }
     };
 
     // create drop pointer as element in DOM
     var createDropPointerElement = function ()
     {
-        Logger.debug("create droppointer ");
+        //Logger.debug("create droppointer ");
         var zindex = base.utils.maxZIndex + 3;
         if (dropPointerElements == null) {
             dropPointerElements = $("<div class='" + BlocksConstants.BLOCKS_DROPSPOT_CLASS + "' />");
             dropPointerElements.css("z-index", zindex);
             dropPointerElements.css("position", "absolute");
-            // TODO position close to blue lin
-            // TODO make drop line thicker
-            //dropPointerElements.append(
-            //    $("<div class='droppointer-arrow-container' style='position:absolute;'/>")
-            //        .append($("<div class='droppointer-arrow' style='position:relative;'></div>"))
-            //); // element for arrow
             $("body").append(dropPointerElements);
         }
-        hideDropPointerElement();
+        hideDropPointerElements();
     };
 
     // remove droppointer as element in dom
-    var removeDropPointerElement = function ()
+    var removeDropPointerElements = function ()
     {
         if (dropPointerElements != null) {
             dropPointerElements.remove();
@@ -431,7 +469,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             dropPointerElements.show();
 
         } else {
-            hideDropPointerElement();
+            hideDropPointerElements();
         }
     };
 
@@ -452,28 +490,11 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         );
     }
 
-    var hideDropPointerElement = function ()
+    var hideDropPointerElements = function ()
     {
-        Logger.debug("hide droppointer elemnent")
+        //Logger.debug("hide droppointer element");
         if (dropPointerElements != null) {
             dropPointerElements.hide();
-        }
-    };
-
-    // Creates an overlay for the block we are dragging to show that we can not drop there
-    var createDraggedOverlay = function (surface)
-    {
-        if (draggedOverlay == null && surface != null) {
-            draggedOverlay = $("<div class='" + BlocksConstants.DRAGGED_BLOCK_OVERLAY_CLASS + "' style=\"position: absolute; left:" + surface.left + "px; top:" + surface.top + "px; height: " + (surface.bottom - surface.top) + "px; width:" + (surface.right - surface.left) + "px; \" />");
-            $("body").append(draggedOverlay);
-        }
-    };
-
-    var removeDraggedOverlay = function ()
-    {
-        if (draggedOverlay != null) {
-            draggedOverlay.remove();
-            draggedOverlay = null;
         }
     };
 

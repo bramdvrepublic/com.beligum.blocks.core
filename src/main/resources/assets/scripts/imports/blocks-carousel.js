@@ -7,7 +7,7 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.core", "blocks.core.Edit"
 
     this.focus = function (windowId, propertyElement, blockEvent)
     {
-        var element = blockEvent.block.current.element.find(".carousel");
+        var element = blockEvent.block.element.find(".carousel");
 
         listGroup = $('<div class="list-group" />');
 
