@@ -138,7 +138,6 @@ base.plugin("blocks.core.Elements.Dropspot", ["base.core.Class", "base.core.Cons
             }
             return retVal;
         }
-
     });
 
 }]);

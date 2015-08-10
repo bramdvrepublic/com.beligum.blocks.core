@@ -11,7 +11,7 @@
  *  functions are called with the current blockevent (START_EDIT_FIELD EVENT) as parameter
  *
  * */
-base.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "constants.blocks.common", function (Broadcaster, Constants)
+base.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "constants.blocks.core", function (Broadcaster, Constants)
 {
     var Edit = this;
 
@@ -49,6 +49,4 @@ base.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "constants.blocks.co
 
         return retVal;
     };
-
-
 }]);

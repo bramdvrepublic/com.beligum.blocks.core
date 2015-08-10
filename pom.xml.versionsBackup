@@ -1,0 +1,169 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+
+    <groupId>com.beligum.blocks</groupId>
+    <artifactId>blocks-core</artifactId>
+    <version>0.1.3-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <url>http://www.beligum.com</url>
+
+    <parent>
+        <groupId>com.beligum</groupId>
+        <artifactId>parent-web</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <properties>
+        <git.url.repo.name>${git.url.repo.prefix}templates.core</git.url.repo.name>
+    </properties>
+
+    <scm>
+        <connection>${git.scm.url}</connection>
+    </scm>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.beligum.base</groupId>
+            <artifactId>base-core</artifactId>
+            <version>0.3.1</version>
+        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>com.beligum.templates</groupId>-->
+            <!--<artifactId>templates-media</artifactId>-->
+            <!--<version>0.1.0-SNAPSHOT</version>-->
+        <!--</dependency>-->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.7.3</version>
+        </dependency>
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>2.5.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.3.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>jquery</artifactId>
+            <version>1.11.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>jquery-cookie</artifactId>
+            <version>1.4.1-1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>bootstrap</artifactId>
+            <version>3.3.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>font-awesome</artifactId>
+            <version>4.3.0-1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.beligum.webjars</groupId>
+            <artifactId>less-elements</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.beligum.webjars</groupId>
+            <artifactId>less-animate</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.beligum.webjars</groupId>
+            <artifactId>bootstrap-dialog</artifactId>
+            <version>1.34.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>jquery-file-upload</artifactId>
+            <version>9.8.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>jquery-ui-src</artifactId>
+            <version>1.11.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-smile</artifactId>
+            <version>2.5.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>18.0</version>
+        </dependency>
+
+        <!--<dependency>-->
+            <!--<groupId>org.apache.jena</groupId>-->
+            <!--<artifactId>apache-jena-libs</artifactId>-->
+            <!--<version>2.13.0</version>-->
+            <!--<type>pom</type>-->
+            <!--<exclusions>-->
+                <!--<exclusion>  &lt;!&ndash; declare the exclusion here &ndash;&gt;-->
+                    <!--<groupId>org.slf4j</groupId>-->
+                    <!--<artifactId>slf4j-log4j12</artifactId>-->
+                <!--</exclusion>-->
+            <!--</exclusions>-->
+        <!--</dependency>-->
+
+        <!---->
+
+        <!--<dependency>-->
+            <!--<groupId>com.orientechnologies</groupId>-->
+            <!--<artifactId>orientdb-core</artifactId>-->
+            <!--<version>2.0.8</version>-->
+        <!--</dependency>-->
+
+        <!--<dependency>-->
+            <!--<groupId>com.tinkerpop.blueprints</groupId>-->
+            <!--<artifactId>blueprints-core</artifactId>-->
+            <!--<version>2.6.0</version>-->
+        <!--</dependency>-->
+
+
+        <!--<dependency>-->
+            <!--<groupId>com.orientechnologies</groupId>-->
+            <!--<artifactId>orientdb-graphdb</artifactId>-->
+            <!--<version>2.0.8</version>-->
+        <!--</dependency>-->
+
+        <dependency>
+            <groupId>org.elasticsearch</groupId>
+            <artifactId>elasticsearch</artifactId>
+            <version>1.5.2</version>
+        </dependency>
+
+
+
+
+
+
+    </dependencies>
+
+    <build>
+        <!-- This will parse all properties files in the resources folder and fill them with the appropriate maven values from pom.xml -->
+        <!-- See http://maven.apache.org/plugins/maven-resources-plugin/examples/filter.html -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+    </build>
+
+</project>

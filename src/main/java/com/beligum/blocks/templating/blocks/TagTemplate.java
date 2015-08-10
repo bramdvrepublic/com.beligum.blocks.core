@@ -1,8 +1,10 @@
 package com.beligum.blocks.templating.blocks;
 
 import net.htmlparser.jericho.Element;
+import net.htmlparser.jericho.OutputDocument;
 import net.htmlparser.jericho.Source;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -16,14 +18,7 @@ public class TagTemplate extends HtmlTemplate
     //-----CONSTRUCTORS-----
     protected TagTemplate(Source document, Path absolutePath, Path relativePath) throws Exception
     {
-        List<Element> templateElements = document.getAllElements("template");
-        if (templateElements != null && !templateElements.isEmpty() && templateElements.size() == 1) {
-            Element templateTag = templateElements.get(0);
-            this.init(document, templateTag.getContent(), templateTag.getAttributes(), absolutePath, relativePath);
-        }
-        else {
-            throw new Exception("Encountered tag template with an invalid <template> tag config (found " + (templateElements == null ? null : templateElements.size()) + " tags); " + absolutePath);
-        }
+        this.init(document, absolutePath, relativePath);
     }
 
     //-----PUBLIC METHODS-----
@@ -34,6 +29,21 @@ public class TagTemplate extends HtmlTemplate
     }
 
     //-----PROTECTED METHODS-----
+    @Override
+    protected void doInitHtmlPreparsing(Source document, OutputDocument output) throws IOException
+    {
+        List<Element> templateElements = document.getAllElements("template");
+        if (templateElements != null && !templateElements.isEmpty() && templateElements.size() == 1) {
+            Element templateTag = templateElements.get(0);
+            this.setAttributes(templateTag.getAttributes());
+
+            //we'll 'ignore' the code around the <template> tag
+            output.replace(document, templateTag.getContent());
+        }
+        else {
+            throw new IOException("Encountered tag template with an invalid <template> tag config (found " + (templateElements == null ? null : templateElements.size()) + " tags); " + absolutePath);
+        }
+    }
 
     //-----PRIVATE METHODS-----
 }

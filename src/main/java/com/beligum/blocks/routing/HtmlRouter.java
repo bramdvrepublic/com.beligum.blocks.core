@@ -1,5 +1,6 @@
 package com.beligum.blocks.routing;
 
+import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.PageCache;
@@ -13,8 +14,7 @@ import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
+import com.beligum.blocks.utils.comparators.MapComparator;
 import gen.com.beligum.blocks.core.fs.html.views.new_page;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
@@ -27,9 +27,8 @@ import java.util.*;
 
 /**
  * Created by wouter on 1/06/15.
- *
+ * <p/>
  * Returns a response based on a RouteObject
- *
  */
 public class HtmlRouter extends AbstractRouter
 {
@@ -39,17 +38,18 @@ public class HtmlRouter extends AbstractRouter
 
     private PersistenceController database;
 
-    public HtmlRouter(Route route) {
+    public HtmlRouter(Route route)
+    {
         super(route);
     }
-
 
     /*
     * Show all pagetemplates so the user can choose.
     *
     * We try to find the title and description for all pagetemplates in the best getLanguage possible
     * */
-    public Response newPage() {
+    public Response newPage()
+    {
         Response retVal = null;
 
         String newTemplate = null;
@@ -64,7 +64,7 @@ public class HtmlRouter extends AbstractRouter
             else {
                 List<Map<String, String>> pageTemplates = new ArrayList<>();
                 Template newPageTemplate = new_page.get().getNewTemplate();
-                TemplateCache cache = HtmlParser.getCachedTemplates();
+                TemplateCache cache = HtmlParser.getTemplateCache();
                 for (HtmlTemplate template : cache.values()) {
                     if (template instanceof PageTemplate) {
                         HashMap<String, String> pageTemplate = new HashMap();
@@ -92,11 +92,10 @@ public class HtmlRouter extends AbstractRouter
                         }
                         // No title available
                         else {
-                            // TODO make this a translation
-                            title = "A template";
+                            title = I18nFactory.get("blocks.core.emptyTemplateTitle");
                         }
                         if (description == null) {
-                            description = "No description available";
+                            description = I18nFactory.get("blocks.core.emptyTemplateDescription");
                         }
                         pageTemplate.put(NAME, template.getTemplateName());
                         pageTemplate.put(TITLE, title);
@@ -104,35 +103,30 @@ public class HtmlRouter extends AbstractRouter
                         pageTemplates.add(pageTemplate);
                     }
                 }
+
+                Collections.sort(pageTemplates, new MapComparator("title"));
+
                 newPageTemplate.set("url", this.route.getURI().toString());
                 newPageTemplate.set("templates", pageTemplates);
                 retVal = Response.ok(newPageTemplate).build();
             }
-        } else {
+        }
+        else {
             retVal = showCreatedPage(newTemplate);
         }
 
         return retVal;
     }
 
-
     /*
     * Shows a new pagetemplate for a url
     * This is the template the user can build a page from. Only when the user presses save,
     * the template is also save to the DB
     * */
-    public Response showCreatedPage(final String pageTemplateName) {
-
-        Iterable<HtmlTemplate> allTemplates = HtmlParser.getCachedTemplates().values();
-        HtmlTemplate pageTemplate = Iterables.find(allTemplates, new Predicate<HtmlTemplate>()
-        {
-            public boolean apply(HtmlTemplate arg)
-            {
-                return arg.getTemplateName() != null && arg.getTemplateName().equals(pageTemplateName);
-            }
-        });
-
-        return Response.ok(R.templateEngine().getNewStringTemplate(pageTemplate.getHtml().toString())).build();
+    public Response showCreatedPage(final String pageTemplateName)
+    {
+        //by returning an empty tag (eg. <main-page></main-page>) the template engine will render a default page
+        return Response.ok(this.buildTemplateInstance(pageTemplateName, "")).build();
     }
 
     /*
@@ -140,31 +134,45 @@ public class HtmlRouter extends AbstractRouter
     * */
     public Response showPage() throws IOException
     {
-        StringBuilder rb = new StringBuilder();
         WebPath path = this.route.getWebPath();
 
-        String html;
+        Object entity;
         String url = this.route.getURI().toString();
         if (PageCache.isEnabled() && PageCache.instance().hasUrl(url)) {
-            html = PageCache.instance().get(url);
-        } else  {
+            entity = PageCache.instance().get(url);
+        }
+        else {
             URI master = path.getMasterPage();
             WebPage page = null;
             page = route.getBlocksDatabase().getWebPage(master, route.getLocale());
             String template = page.getPageTemplate();
-            if (template == null || StringUtils.isEmpty(template)) {
-                template = "main-content";
+            if (StringUtils.isEmpty(template)) {
+                List<HtmlTemplate> allPageTemplates = HtmlParser.getTemplateCache().getPageTemplates();
+                //TODO we'll get the first, this should probably be configured somewhere
+                template = allPageTemplates.isEmpty() ? null : allPageTemplates.get(0).getTemplateName();
             }
-            rb.append("<" + template + ">").append(page.getParsedHtml()).append("</" + template + ">");
-            html = R.templateEngine().getNewStringTemplate(rb.toString()).render();
 
+            if (StringUtils.isEmpty(template)) {
+                throw new IOException("Unable to fetch or find a default page template, can't continue");
+            }
+
+            entity = this.buildTemplateInstance(template, page.getParsedHtml());
         }
 
-        return Response.ok(html).build();
+        return Response.ok(entity).build();
 
     }
 
-    public Response redirect() {
+    public Response redirect()
+    {
         return null;
+    }
+
+    /**
+     * A default tag instance with specified html inside
+     */
+    private Template buildTemplateInstance(String templateName, String propertiesHtml)
+    {
+        return R.templateEngine().getNewStringTemplate(new StringBuilder().append("<" + templateName + ">").append(propertiesHtml).append("</" + templateName + ">").toString());
     }
 }

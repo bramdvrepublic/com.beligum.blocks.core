@@ -2,36 +2,28 @@
  * Created by wouter on 15/06/15.
  */
 
-base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks.common", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.core.SidebarUtils", "blocks.core.Edit", "blocks.finder", "blocks.core.Notification", function (Broadcaster, Constants, DOM, Layouter, SidebarUtils, Edit, Finder, Notification)
+base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.core.SidebarUtils", "blocks.core.Edit", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", "blocks.core.Overlay", function (Broadcaster, Constants, DOM, Layouter, SidebarUtils, Edit, Finder, Notification, Commons, Overlay)
 {
     var SideBar = this;
     var configPanels = {};
     var currentProperty = null;
-    var currentBlockEvent = null;
-
-
 
     /*
      * When clicking a property disable drag drop
      * */
-    var setBlockFocus = function (property, block)
+    var setBlockFocus = function (property)
     {
+        currentProperty = property;
+
         // Defines the element outside which to click to blur
         // is block if block is available
         var borderingElement = null;
 
         // Blur everything visually
-        if (block != null) {
-            block.element.parents().siblings().addClass(Constants.OPACITY_CLASS);
-            block.element.siblings().addClass(Constants.OPACITY_CLASS);
-            block.element.addClass(Constants.PROPERTY_EDIT_CLASS);
-            borderingElement = block.element;
-        } else {
-            property.parents().siblings().addClass(Constants.OPACITY_CLASS);
-            property.siblings().addClass(Constants.OPACITY_CLASS);
-            property.addClass(Constants.PROPERTY_EDIT_CLASS);
-            borderingElement = property;
-        }
+        property.element.parents().siblings().addClass(Constants.OPACITY_CLASS);
+        property.element.siblings().addClass(Constants.OPACITY_CLASS);
+        property.element.addClass(Constants.PROPERTY_EDIT_CLASS);
+        borderingElement = property.element;
 
         var sidebarElement = $("." + Constants.PAGE_SIDEBAR_CLASS);
         sidebarElement.removeClass(Constants.OPACITY_CLASS);
@@ -44,7 +36,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
         $(document).on("mousedown.sidebar_edit_end", function (e)
         {
-
             var newProperty = null;
             var element = $(e.target);
 
@@ -68,36 +59,29 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 blurCurrentSelection(property, block);
 
                 // Only send edit_end on mouse up. Otherwise the other clicked property will start editing immediately
-                $(document).on("mouseup.sidebar_edit_end", function ()
+                $(document).on("mouseup.sidebar_edit_end", function (event)
                 {
                     $(document).off("mouseup.sidebar_edit_end");
-                    Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD);
+                    Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD, event);
                 });
 
             }
             // We didn't change block but we did change property
             else if (block != null && newProperty != null && (property == null || newProperty[0] != property[0])) {
                 blurCurrentSelection(property, block);
-                update(newProperty, Broadcaster.createEvent(e));
+                update(newProperty);
             } else {
                 // nothing changed
             }
         });
     };
 
-    var blurCurrentSelection = function (property, block)
+    var blurCurrentSelection = function (property)
     {
         // remove this trigger
         $(document).off("mousedown.sidebar_edit_end");
 
         // blur this block
-        if (block != null) {
-            var editFunction = Edit.makeEditable(block.element);
-            if (editFunction != null && editFunction.blur != null) {
-                editFunction.blur(property, block);
-            }
-        }
-
         if (property != null) {
             var editFunction = Edit.makeEditable(property);
             if (editFunction != null && editFunction.blur != null) {
@@ -110,32 +94,30 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
     var reset = function ()
     {
-        //blurCurrentSelection(currentProperty, currentBlockEvent);
+        //blurCurrentSelection(currentProperty);
         $("." + Constants.OPACITY_CLASS).removeClass(Constants.OPACITY_CLASS);
         $("." + Constants.PREVENT_BLUR_CLASS).removeClass(Constants.PREVENT_BLUR_CLASS);
         $("." + Constants.PROPERTY_EDIT_CLASS).removeClass(Constants.PROPERTY_EDIT_CLASS);
         $("." + Constants.BLOCK_EDIT_CLASS).removeClass(Constants.BLOCK_EDIT_CLASS);
 
         currentProperty = null;
-        currentBlockEvent = null;
         configPanels = {};
         SideBar.refresh();
     };
 
-    this.reset = function() {
-        blurCurrentSelection(currentProperty, currentBlockEvent);
-    }
+    this.reset = function ()
+    {
+        blurCurrentSelection(currentProperty);
+    };
 
     /*
      * Drill down and add functionality for each block
      * */
-    var update = function (property, blockEvent)
+    var update = function (property)
     {
         // property: add div
         currentProperty = property;
-        currentBlockEvent = blockEvent;
-        var block = currentBlockEvent.property.current;
-        setBlockFocus(property, block);
+        setBlockFocus(property);
         SideBar.refresh();
     };
 
@@ -144,10 +126,11 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
      * */
     this.refresh = function ()
     {
-        var filesContainer = $("#" + Constants.SIDEBAR_CONTEXT_ID);
-        filesContainer.empty();
+        //start with an empty sidebar and add frames where needed
+        var sidebar = $("#" + Constants.SIDEBAR_CONTEXT_ID);
+        sidebar.empty();
 
-        var block = Broadcaster.getContainer();
+        var block = currentProperty;
         //this allows us to also use this function outside of a DnD context
         if (block) {
             var editFunction = Edit.makeEditable(block.element);
@@ -156,11 +139,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 editFunction.focus(windowID, block.element, null);
             }
         }
-
-        if (currentBlockEvent != null) {
-            block = currentBlockEvent.property.current;
-        }
-        //var editFunction = Edit.makeEditable(currentProperty);
 
         var activeBlocks = [];
 
@@ -180,7 +158,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 activeBlocks.push({element: block.element, id: windowID});
 
                 if (editFunction != null && editFunction.focus != null) {
-                    editFunction.focus(windowID, block.element, currentBlockEvent);
+                    editFunction.focus(windowID, block);
                 }
             }
             block = block.parent;
@@ -189,31 +167,49 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         // Add edit functionality for properties
         // Do not check blocks
         var property = currentProperty;
-        while (property != null && !property.hasClass(Constants.PAGE_CONTENT) && property[0].tagName.indexOf("-") < 0) {
+        while (property != null && property.element != null && !property.element.hasClass(Constants.PAGE_CONTENT) && property.element[0].tagName.indexOf("-") < 0) {
             var editFunction = Edit.makeEditable(property);
             if (editFunction != null && editFunction.focus != null) {
                 var windowId = null;
-                for(var i=0; i < activeBlocks.length; i++) {
+                for (var i = 0; i < activeBlocks.length; i++) {
                     if (activeBlocks[i].element.has(property)) {
                         windowId = activeBlocks[i].id;
                         break;
                     }
                 }
-                editFunction.focus(windowId, currentProperty, currentBlockEvent);
+                editFunction.focus(windowId, currentProperty);
             }
             property = property.parent();
         }
+    };
 
+    this.animateSidebarWidth = function (width, callback)
+    {
+        var windowWidth = $(window).width();
 
+        var sidebarElement = $("." + Constants.PAGE_SIDEBAR_CLASS);
+        sidebarElement.addClass(Constants.SIDEBAR_ANIMATED_CLASS);
+        sidebarElement.css("width", (width) + "px");
+        //one() = on() but only once
+        sidebarElement.one('webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend', function (event)
+        {
+            if ($(event.target).hasClass(Constants.PAGE_SIDEBAR_CLASS)) {
+                sidebarElement.removeClass(Constants.SIDEBAR_ANIMATED_CLASS);
+                $("." + Constants.PAGE_CONTENT_CLASS).css("width", (windowWidth - width) + "px");
+
+                if (callback) {
+                    callback(event);
+                }
+            }
+        });
     };
 
     this.addRemoveBlockButton = function (windowID, property)
     {
-
         //var remove = $("<div class='panel panel-default "+ Constants.REMOVE_BLOCK_CLASS +"'/>");
         var blockActions = $("<ul/>").addClass(Constants.BLOCK_ACTIONS_CLASS);
         var removeAction = $("<li><span>Remove block</span></li>");
-        var removeButton = $("<a class='btn btn-danger btn-sm pull-right'><i class='fa fa-trash-o'></i></a>");
+        var removeButton = $("<a class='btn btn-danger btn-sm pull-right'><i class='fa fa-fw fa-trash-o'></i></a>");
         blockActions.append(removeAction);
         removeAction.append(removeButton);
 
@@ -243,37 +239,48 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     this.addUIForProperty = function (windowId, html)
     {
         var config = SideBar.getWindowForId(windowId);
-        var content = config.children(".panel-body");
-        content.append(html);
+        if (config) {
+            var content = config.children(".panel-body");
+            content.append(html);
+        }
+        else {
+            Logger.error("Couldn't find window with ID " + windowId);
+        }
     };
 
     this.createWindow = function (type, element, title)
     {
-        var windowId = SidebarUtils.makeid();
-        if (configPanels[Constants.CONTEXT] == null) configPanels[Constants.CONTEXT] = {};
-        var panels = configPanels[Constants.CONTEXT];
+        var windowId = Commons.generateId();
+        if (configPanels == null) {
+            configPanels = {};
+        }
 
-        if (panels[windowId] == null) {
+        if (configPanels[windowId] == null) {
 
             var div = $("<div class='panel panel-default'/>");
             var header = $("<div class='panel-heading'>" + title + "</div>");
             var content = $("<div class='panel-body'/>");
             div.append(header).append(content);
 
-            panels[windowId] = div;
+            configPanels[windowId] = div;
             if (type == Constants.CONTEXT) {
                 $("#" + Constants.SIDEBAR_CONTEXT_ID).append(div);
             }
+            else if (type == Constants.FINDER) {
+                $("#" + Constants.SIDEBAR_FILES_ID).append(div);
+            }
 
-            div.mouseenter(function ()
-            {
-                highlight(element);
-            });
+            if (element) {
+                div.mouseenter(function ()
+                {
+                    highlight(element);
+                });
 
-            div.mouseleave(function ()
-            {
-                unhighlight(element);
-            });
+                div.mouseleave(function ()
+                {
+                    unhighlight(element);
+                });
+            }
         }
 
         return windowId
@@ -281,78 +288,130 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
     this.getWindowForId = function (id)
     {
-        var retVal = null;
-
-        var panels = configPanels[Constants.CONTEXT];
-        retVal = panels[id];
-
-        return retVal;
+        return configPanels[id];
     }
 
     this.addUniqueClass = function (windowId, element, label, values)
     {
-        SideBar.addUIForProperty(windowId, SidebarUtils.addUniqueClass(element, label, values));
+        SideBar.addUIForProperty(windowId, SidebarUtils.addUniqueClass(this, element, label, values));
     };
 
     this.addOptionalClass = function (windowId, element, label, values)
     {
-        SideBar.addUIForProperty(windowId, SidebarUtils.addOptionalClass(element, label, values));
+        SideBar.addUIForProperty(windowId, SidebarUtils.addOptionalClass(this, element, label, values));
+    };
+
+    this.addSliderClass = function (windowId, element, label, values)
+    {
+        SideBar.addUIForProperty(windowId, SidebarUtils.addSliderClass(this, element, label, values));
     };
 
     this.addUniqueAttributeValue = function (windowId, element, label, name, values)
     {
-        SideBar.addUIForProperty(windowId, SidebarUtils.addUniqueAttributeValue(element, label, name, values));
+        SideBar.addUIForProperty(windowId, SidebarUtils.addUniqueAttributeValue(this, element, label, name, values));
     };
 
     this.addUniqueAttribute = function (windowId, element, label, values)
     {
-        SideBar.addUIForProperty(windowId, SidebarUtils.addUniqueAttribute(element, label, values));
+        SideBar.addUIForProperty(windowId, SidebarUtils.addUniqueAttribute(this, element, label, values));
     };
 
-    this.addValueAttribute = function (windowId, element, label, placeholderText, name, confirm, serverSelect, urlSelect)
+    this.addValueAttribute = function (windowId, element, label, placeholderText, name, confirm, serverSelect, pageSelect)
     {
-        SideBar.addUIForProperty(windowId, SidebarUtils.addValueAttribute(element, label, placeholderText, name, confirm, serverSelect, urlSelect, this));
+        SideBar.addUIForProperty(windowId, SidebarUtils.addValueAttribute(this, element, label, placeholderText, name, confirm, serverSelect, pageSelect));
     };
 
     this.addValueHtml = function (windowId, element, label, placeholderText, confirm)
     {
-        SideBar.addUIForProperty(windowId, SidebarUtils.addValueHtml(element, label, placeholderText, confirm));
+        SideBar.addUIForProperty(windowId, SidebarUtils.addValueHtml(this, element, label, placeholderText, confirm));
     };
 
     // Called when editing is enabled. Catch mouseup and check if a block is editable
     this.enableEditing = function ()
     {
-        $(document).on("mouseup.sidebar_edit_start", "." + Constants.PAGE_CONTENT_CLASS, function (event)
+        $(document).on("mouseup.sidebar_edit_start", '.'+Constants.BLOCK_OVERLAY_CLASS, function (event)
         {
-            // find parents until parent is <body> or until parent has property attribute
-            // first property enable editing
             var element = $(event.target);
-            if (DOM.isContainer(element)) {
-                element = element.children().last();
-            }
-            if (DOM.isRow(element)) {
-                element = element.children().last();
-            }
-            if (DOM.isColumn(element)) {
-                element = element.children().last();
+
+            //look up the property of this overlay with the reverse map
+            var property = blocks.elements.Property.INDEX[element.attr(blocks.elements.Property.OVERLAY_INDEX_ATTR)];
+
+            //THIS IS WHERE I LEFT OFF: how do we do this? Find the first property insdie, or on tag name, or just pass this tag?
+            //last one is my favorite
+            var editFunction = Edit.makeEditable(property.element);
+            if (editFunction != null && editFunction.focus != null) {
+                var windowID = SideBar.createWindow(Constants.CONTEXT, property.element, "BLAH");
+                editFunction.focus(windowID, property.element, null);
             }
 
-            var property = null;
+            //DEBUGGIGN
+            return;
 
-            while (property == null && element[0].tagName.indexOf("-") == -1 && element[0].tagName != "BODY") {
-                if (element.hasAttribute("property") || element.hasAttribute("data-property")) {
-                    property = element;
-                    break;
-                } else {
-                    element = element.parent();
+
+
+
+
+
+
+            if (property.element.length>0) {
+                var firstPropEl = null;
+                var el = property.element;
+
+                while (firstPropEl == null && el[0].tagName.indexOf("-") == -1 && el[0].tagName != "BODY") {
+                    if (el.hasAttribute("property") || el.hasAttribute("data-property")) {
+                        firstPropEl = el;
+                        break;
+                    } else {
+                        el = el.parent();
+                    }
+                }
+                if (firstPropEl != null) {
+                    Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD, event);
+                    update(firstPropEl);
                 }
             }
-            var blockEvent = Broadcaster.createEvent(event);
-
-            if (blockEvent.block.current != null || property != null) {
-                Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
-                update(property, blockEvent);
+            else {
+                Logger.error("Encountered overlay without proper element attached, this shouldn't happen");
             }
+
+            //DEBUGGING
+            return;
+            //
+            //// find parents until parent is <body> or until parent has property attribute
+            //// first property enable editing
+            //if (element.length>0 && DOM.isContainer(element)) {
+            //    element = element.children().last();
+            //}
+            //if (element.length>0 && DOM.isRow(element)) {
+            //    element = element.children().last();
+            //}
+            //if (element.length>0 && DOM.isColumn(element)) {
+            //    element = element.children().last();
+            //}
+            //
+            //if (element.length>0) {
+            //    var property = null;
+            //
+            //    while (property == null && element[0].tagName.indexOf("-") == -1 && element[0].tagName != "BODY") {
+            //        if (element.hasAttribute("property") || element.hasAttribute("data-property")) {
+            //            property = element;
+            //            break;
+            //        } else {
+            //            element = element.parent();
+            //        }
+            //    }
+            //
+            //    //TODO work on this
+            //    var blockEvent = Broadcaster.createEvent(event);
+            //
+            //    if (blockEvent.block != null || property != null) {
+            //        Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD, event);
+            //        update(property, blockEvent);
+            //    }
+            //}
+            //else {
+            //    Logger.warn("Empty element found (possibly after drilling down), is this ok?");
+            //}
         });
     };
 
@@ -361,27 +420,63 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         $(document).off("mouseup.sidebar_edit_start");
     };
 
-
-    // PRIVATE
-
-    var highlight = function (element)
+    //TODO factor this away because the finder is no dependency of this project
+    this.loadFinder = function (options)
     {
-        element.addClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
-        element.addClass(Constants.HIGHLIGHT_CLASS);
-        setTimeout(function ()
+        var contextTab = $("#" + Constants.SIDEBAR_CONTEXT_ID);
+        var finderTab = $("#" + Constants.SIDEBAR_FILES_ID);
+        contextTab.addClass(Constants.LOADING_CLASS);
+        finderTab.removeClass(Constants.LOADING_CLASS);
+        //we'll start off with an empty container and let createWindow() fill it
+        finderTab.empty();
+
+        //'switch' to the finder tab
+        $("#" + Constants.SIDEBAR_FILES_TAB_ID).tab('show');
+
+        //now create and add a new frame
+        var windowID = SideBar.createWindow(Constants.FINDER, null, "Files on server");
+        //let's us do perform some css tweaks
+        var frame = SideBar.getWindowForId(windowID);
+        frame.addClass(Constants.SIDEBAR_FINDER_PANEL_CLASS);
+
+        //TODO maybe not necessary to reload this every time, but it allows us to always present a fresh uptodate view of the server content
+        var finder = frame.children(".panel-body");
+        finder.load("/media/finder-inline", function (response, status, xhr)
         {
-            element.removeClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
-        }, 200);
+            if (status == "error") {
+                var msg = "Error while loading the finder; ";
+                Notification.error(msg + xhr.status + " " + xhr.statusText, xhr);
+                finder.removeClass(Constants.LOADING_CLASS);
+            }
+            else {
+                Finder.init(options);
+                finder.removeClass(Constants.LOADING_CLASS);
+            }
+        });
+    };
+    this.unloadFinder = function ()
+    {
+        //'switch' back to the context tab
+        $("#" + Constants.SIDEBAR_CONTEXT_TAB_ID).tab('show');
+
+        var contextTab = $("#" + Constants.SIDEBAR_CONTEXT_ID);
+        var finderTab = $("#" + Constants.SIDEBAR_FILES_ID);
+        contextTab.removeClass(Constants.LOADING_CLASS);
+        finderTab.addClass(Constants.LOADING_CLASS);
+        finderTab.empty();
     };
 
+    // -----PRIVATE-----
+    var highlight = function (element)
+    {
+        //don't highlight the entire page
+        if (!element.hasClass(Constants.PAGE_CONTENT_CLASS)) {
+            element.addClass(Constants.HIGHLIGHT_CLASS);
+        }
+    };
     var unhighlight = function (element)
     {
-        element.removeClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
         element.removeClass(Constants.HIGHLIGHT_CLASS);
-        setTimeout(function ()
-        {
-            element.removeClass(Constants.HIGHLIGHT_ANIMATION_CLASS);
-        }, 200);
     };
 
 }]);

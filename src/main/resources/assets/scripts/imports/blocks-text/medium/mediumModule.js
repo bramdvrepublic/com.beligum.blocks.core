@@ -6,7 +6,9 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
     var MediumModule = this;
 
     var Editor = null;
-    var defaultToolbarOptions = [Extensions.StylesPicker.NAME, 'bold', 'italic', 'underline', 'strike-through', 'superscript', Extensions.LinkInput.NAME, 'orderedlist', 'unorderedlist', 'justifyLeft', 'justifyCenter', 'justifyRight'];
+    //default values, overridable
+    var toolbarOptions = [Extensions.StylesPicker.NAME, 'bold', 'italic', 'underline', 'strike-through', 'superscript', Extensions.LinkInput.NAME, 'orderedlist', 'unorderedlist', 'justifyLeft', 'justifyCenter', 'justifyRight'];
+    var stylePickerStyles = [];
 
     this.getToolbarElement = function ()
     {
@@ -27,14 +29,17 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
         var toolbarOptions = {};
 
         options.buttonLabels = 'fontawesome';
+        var stylePicker = new Extensions.StylesPicker({});
+        stylePicker.setStyles(stylePickerStyles);
+
         options.extensions = {};
-        options.extensions[Extensions.StylesPicker.NAME] = new Extensions.StylesPicker({});
+        options.extensions[Extensions.StylesPicker.NAME] = stylePicker;
         options.extensions[Extensions.LinkInput.NAME] = new Extensions.LinkInput({});
 
         // Always show toolbar
         toolbarOptions.static = true;
         toolbarOptions.updateOnEmptySelection = true;
-        toolbarOptions.buttons = defaultToolbarOptions;
+        toolbarOptions.buttons = toolbarOptions;
         toolbarOptions.align = 'left';
 
         options.disableReturn = inline;
@@ -54,7 +59,12 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
 
     this.setToolbarButtons = function (buttonArray)
     {
-        defaultToolbarOptions = buttonArray;
+        toolbarOptions = buttonArray;
+    };
+
+    this.setStylePickerStyles = function (newStyles)
+    {
+        stylePickerStyles = newStyles;
     };
 
 }]);

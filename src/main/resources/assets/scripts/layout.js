@@ -10,17 +10,13 @@
  * Layouter functions take instances from Elements classes as parameters and not jQuery objects
  * except when the parameter has Element in it's name
  *
- * this plugin listens to DO_REFRESH_LAYOUT event and DOM_DID_CHANGE event
+ * this plugin listens to DO_REFRESH_LAYOUT event and DOM_CHANGED event
  * DO_REFRESH_LAYOUT is for when the we have to rebuild the layout tree, but the dom did not change (e.g. window resize)
  * DOM_DID CHANGE is for ... well, ...
- *
- *
  */
-
 base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "base.core.Constants", "blocks.core.Overlay", "blocks.core.DomManipulation", function (Broadcaster, Constants, Overlay, DOM)
 {
     var Layouter = this;
-
 
     // When dropped on a container we have to find the right element to drop on
     var findDropLocationElement = function (dropLocation, side)
@@ -154,7 +150,6 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "base.core.Const
      * */
     var drop = function (droppedElement, dropLocationElement, droppedContainer, dropContainer, side)
     {
-
         // If we drop on the edge of the container, wrap the container so we drop inside
         // (because we drop always outside the droplocation)
         var subj = "block";
@@ -177,10 +172,10 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "base.core.Const
         droppedElement = droppedFunctions[droppedString](droppedElement, dropLocationElement);
 
         var finish = function() {
-            droppedElement.toggle(200, function() {
+            droppedElement.toggle(200, function(event) {
                 droppedElement.css("display", "");
-                Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
-                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+                Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, event);
+                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
             });
         };
 
@@ -195,9 +190,7 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "base.core.Const
                 }
             });
         });
-
     };
-
 
     /*
      * This is the external interface to drop a block.
@@ -210,8 +203,6 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "base.core.Const
         droppedElement = block.element;
         dropLocationElement = findDropLocationElement(dropLocation, side);
         drop(droppedElement, dropLocationElement, block.getContainer().element, dropLocation.getContainer().element, side);
-
-
     };
 
     // Add new jquery Object at bottom of dropLocation
@@ -235,14 +226,11 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "base.core.Const
             DOM.removeBlock(block.element, 300, function ()
             {
                 DOM.cleanup(container.element, function() {
-                    Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
+                    Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED);
                     Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
                 });
-
             })
         }
     };
-
-
 }]);
 

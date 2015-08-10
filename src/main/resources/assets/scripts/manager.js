@@ -3,171 +3,165 @@
  *
  * The manager is the central point. here we catch all the events to keep an overview
  */
-base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Highlighter", "blocks.core.Overlay", "blocks.core.Edit", "blocks.core.DomManipulation", "blocks.core.Sidebar", function (Constants, Broadcaster, Mouse, DragDrop, Resizer, Highlighter, Overlay, Edit, DOM, Sidebar)
+base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Overlay", "blocks.core.Edit", "blocks.core.DomManipulation", "blocks.core.Sidebar", function (Constants, Broadcaster, Mouse, DragDrop, Resizer, Overlay, Edit, DOM, Sidebar)
 {
-
     /*
      * Because there is no good place to put this we hang this here to the base inside a utils package
      * This is referenced from different lot of locations
      * */
     base.utils = base.functions || {};
-    base.utils.maxIndex = 0;
+    base.utils.maxZIndex = 0;
+    /**
+     * Finds the maximum z-index in the DOM tree of elements that are relative or absolutely positioned.
+     * Returns 1 when no such elements were found.
+     */
     base.utils.calculateMaxIndex = function ()
     {
         this.maxIndex = Math.max.apply(null, $.map($('body  *'), function (e, n)
             {
-                if ($(e).css('position') == 'absolute' || $(e).css('position') == 'relative')
+                if ($(e).css('position') == 'absolute' || $(e).css('position') == 'relative') {
                     return parseInt($(e).css('z-index')) || 1;
+                }
             })
         );
     };
 
-    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function ()
+    //-----EVENTS-----
+    //main entry point for blocks after all the GUI events are handled
+    $(document).on(Broadcaster.EVENTS.START_BLOCKS, function (event)
     {
-        Broadcaster.setContainer(null);
-        Sidebar.clear();
-        Broadcaster.registerMouseMove();
+        //we're currently not dragging inside anything
+        Overlay.setContainer(null);
 
-        //TODO annoying while debugging
-        //window.onbeforeunload = function() {
-        //    return 'Ben je zeker dat je deze pagina wil verlaten?';
-        //};
-
-        // prevent all clicks to links
-        //$(document).on("click.blocks_manager", function (event)
-        //{
-        //    if (event.which == 1) {
-        //        event.preventDefault();
-        //    }
-        //});
-        Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE, null);
-        Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+        //start off with a clean and empty sidebar
         Sidebar.clear();
 
+        //start registering the movements of the mouse (TODO: already needed here?)
+        //Broadcaster.registerMouseMove();
+
+        //note that this encapsulates DO_REFRESH_LAYOUT, but initializes a few other things first
+        Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, event);
+
+        //start off by showing the layouter
+        Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
     });
 
-    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function ()
+    $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function (event)
     {
-        window.onbeforeunload = function() {};
         Sidebar.clear();
-        Broadcaster.unregisterMouseMove();
+        //Broadcaster.unregisterMouseMove();
         Overlay.removeOverlays();
-        Broadcaster.setContainer(null);
+        Overlay.setContainer(null);
 
-        $(document).off("click.blocks_manager");
-
-        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
     });
-
 
     $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function (event)
     {
         Mouse.activate();
         DOM.disableSelection();
-        Broadcaster.resetHover();
         Overlay.showOverlays();
         DragDrop.setActive(true);
         Sidebar.enableEditing();
-        Highlighter.showBlockOverlay(Broadcaster.block().current);
-        Highlighter.showPropertyOverlay(Broadcaster.property().current);
 
         var windowWidth = $(window).width();
-        if (windowWidth > 1030) {
-            Broadcaster.send(Broadcaster.EVENTS.DO_ALLOW_DRAG);
+        var MIN_SCREEN_DND_THRESHOLD = 1030;
+        if (windowWidth >= MIN_SCREEN_DND_THRESHOLD) {
+            Broadcaster.send(Broadcaster.EVENTS.ENABLE_DND, event);
             Mouse.allowDrag();
-        } else {
-            Broadcaster.send(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG);
+        }
+        else {
+            Logger.debug("Available page screen size is less than " + MIN_SCREEN_DND_THRESHOLD + " ("+windowWidth+"), disabling drag-and-drop.");
+            Broadcaster.send(Broadcaster.EVENTS.DISABLE_DND, event);
             Mouse.disallowDrag();
         }
     });
 
-    $(document).on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, function ()
+    $(document).on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, function (event)
     {
-
         Mouse.deactivate();
-        Broadcaster.resetHover();
         Overlay.removeOverlays();
-        Highlighter.removeBlockOverlay();
-        Highlighter.removePropertyOverlay();
         DragDrop.setActive(false);
         Sidebar.disableEditing();
         DOM.enableSelection();
     });
 
-
-    $(document).on(Broadcaster.EVENTS.DOM_DID_CHANGE, function ()
+    $(document).on(Broadcaster.EVENTS.DOM_CHANGED, function (event)
     {
-        Broadcaster.resetHover();
+        //update the max z-index of positioned elements
         base.utils.calculateMaxIndex();
-        Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, null);
+
+        Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, event);
     });
 
     $(document).on(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, function (event)
     {
-        Broadcaster.send(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT);
-        Overlay.removeOverlays();
-        Broadcaster.buildLayoutTree();
-        Highlighter.showBlockOverlay(Broadcaster.block().current);
-        Highlighter.showPropertyOverlay(Broadcaster.property().current);
-        //Logger.debug("Calculate overlay: ");
-        //Logger.debug(Broadcaster.getContainer().findElements(0, 9));
-        //
+        //this will end up in menu.js triggering updateContainerWidth()
+        Broadcaster.send(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT, event);
 
+        //hide the overlays while redrawing
+        Overlay.removeOverlays();
+
+        Overlay.buildLayoutTree();
+
+        //redrawing done
         Overlay.showOverlays();
-        Broadcaster.send(Broadcaster.EVENTS.DID_REFRESH_LAYOUT);
+
+        Broadcaster.send(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, event);
     });
 
-    $(document).on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, function ()
+    $(document).on(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, function (event)
     {
         Mouse.resetMouse();
     });
 
-
-    /*
-     * HOVER EVENTS
-     * */
-    $(document).on(Broadcaster.EVENTS.HOVER_ENTER_PROPERTY, function (event)
-    {
-        Highlighter.showPropertyOverlay(event.property.current);
-
-    });
-
-    $(document).on(Broadcaster.EVENTS.HOVER_LEAVE_PROPERTY, function (event)
-    {
-        Highlighter.removePropertyOverlay()
-
-    });
-
-    $(document).on(Broadcaster.EVENTS.HOVER_ENTER_BLOCK, function (event)
-    {
-        Highlighter.showBlockOverlay(event.block.current);
-    });
-
-    $(document).on(Broadcaster.EVENTS.HOVER_LEAVE_BLOCK, function (event)
-    {
-        Highlighter.removeBlockOverlay();
-
-    });
-
-    $(document).on(Broadcaster.EVENTS.HOVER_OVER_BLOCK, function (event)
-    {
-    });
-
-
     /*
      * EVENTS FOR DRAGGING
-     * */
+     */
+    /**
+     * Called when we want to enable the whole drag-and-drop system
+     */
+    $(document).on(Broadcaster.EVENTS.ENABLE_DND, function (event)
+    {
+        Mouse.allowDrag();
+        DragDrop.setActive(true);
+        Resizer.activate(true);
+    });
 
-    $(document).on(Broadcaster.EVENTS.START_DRAG, function (event)
+    /**
+     * Called when we want to disable the whole drag-and-drop system
+     */
+    $(document).on(Broadcaster.EVENTS.DISABLE_DND, function (event)
+    {
+        Mouse.disallowDrag();
+        DragDrop.setActive(false);
+        Resizer.activate(false);
+    });
+
+    /**
+     * Called when a user starts dragging a block
+     */
+    $(document).on(Broadcaster.EVENTS.START_DRAG, function (event, eventData)
     {
         //Broadcaster.zoom();
         DOM.disableContextMenu();
-        Highlighter.removeBlockOverlay();
-        Highlighter.removePropertyOverlay();
-        DragDrop.dragStarted(event);
+        DragDrop.dragStarted(event, eventData);
         Sidebar.disableEditing();
     });
 
+    /**
+     * Called when a user aborted dragging a block
+     */
+    $(document).on(Broadcaster.EVENTS.ABORT_DRAG, function (event)
+    {
+        //Broadcaster.unzoom();
+        DOM.enableContextMenu();
+        DragDrop.dragAborted(event);
+    });
+
+    /**
+     * Called when a user ended dragging a block
+     */
     $(document).on(Broadcaster.EVENTS.END_DRAG, function (event)
     {
         //Broadcaster.unzoom();
@@ -176,65 +170,27 @@ base.plugin("blocks.core.Manager", ["constants.blocks.common", "blocks.core.Broa
         DragDrop.dragEnded(event);
     });
 
-    $(document).on(Broadcaster.EVENTS.ABORT_DRAG, function (event)
+    /**
+     * Called all the time when a user is dragging one block over another block
+     */
+    $(document).on(Broadcaster.EVENTS.DRAG_OVER_BLOCK, function (event, eventData)
     {
-        //Broadcaster.unzoom();
-        DOM.enableContextMenu();
-        DragDrop.dragAborted(event);
-        Highlighter.showBlockOverlay(Broadcaster.block().current);
-        Highlighter.showPropertyOverlay(Broadcaster.property().current);
-    });
-
-    $(document).on(Broadcaster.EVENTS.DO_NOT_ALLOW_DRAG, function (event)
-    {
-        Mouse.disallowDrag();
-        DragDrop.setActive(false);
-        Resizer.activate(false);
-    });
-
-    $(document).on(Broadcaster.EVENTS.DO_ALLOW_DRAG, function (event)
-    {
-        Mouse.allowDrag();
-        DragDrop.setActive(true);
-        Resizer.activate(true);
-    });
-    $(document).on(Broadcaster.EVENTS.ENABLE_BLOCK_DRAG, function (event)
-    {
-        DragDrop.setActive(true);
-    });
-
-    $(document).on(Broadcaster.EVENTS.DISABLE_BLOCK_DRAG, function (event)
-    {
-        DragDrop.setActive(false);
-    });
-
-    $(document).on(Broadcaster.EVENTS.DRAG_LEAVE_BLOCK, function (event)
-    {
-        DragDrop.dragLeaveBlock(event)
-    });
-    $(document).on(Broadcaster.EVENTS.DRAG_OVER_BLOCK, function (event)
-    {
-        DragDrop.dragOverBlock(event)
-    });
-    $(document).on(Broadcaster.EVENTS.DRAG_ENTER_BLOCK, function (event)
-    {
-        DragDrop.dragEnterBlock(event)
+        if (DragDrop.isDragging()) {
+            DragDrop.dragOverBlock(event, eventData);
+        }
     });
 
     /*
      * Edit properties
      * */
-
     $(document).on(Broadcaster.EVENTS.START_EDIT_FIELD, function (event)
     {
-        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
     });
 
     $(document).on(Broadcaster.EVENTS.END_EDIT_FIELD, function (event)
     {
-        Broadcaster.send(Broadcaster.EVENTS.DOM_DID_CHANGE);
-        Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+        Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, event);
+        Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
     });
-
-
 }]);

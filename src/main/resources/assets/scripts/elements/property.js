@@ -2,7 +2,7 @@
  * Created by wouter on 5/03/15.
  */
 
-base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Constants", "constants.blocks.common", "blocks.core.DomManipulation", "blocks.core.Edit", function (Class, BaseConstants, BlocksConstants, DOM, Edit)
+base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Constants", "constants.blocks.core", "blocks.core.DomManipulation", "blocks.core.Edit", "base.core.Commons", function (Class, BaseConstants, BlocksConstants, DOM, Edit, Commons)
 {
 
     var body = $("body");
@@ -11,6 +11,13 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Cons
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};
     blocks.elements.Property = Class.create(blocks.elements.LayoutElement, {
+
+        STATIC: {
+            //will keep an index of all registerd properties (to back-reference from their overlays)
+            INDEX: {},
+            OVERLAY_INDEX_ATTR: "data-property-index"
+        },
+
         constructor: function (element, parent, index)
         {
             blocks.elements.Property.Super.call(this, element, parent, index);
@@ -31,17 +38,21 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Cons
             this.editFunction = Edit.makeEditable(this.element);
             this.canEdit = this.editFunction != null;
 
-            this.overlay = $("<div />").css("z-index", base.utils.maxIndex);
-
-            var block = this.parent.parent;
+            this.overlay = $("<div />").css("z-index", base.utils.maxZIndex).addClass(BlocksConstants.SURFACE_ELEMENT_CLASS);
             if (this.isTemplate) {
                 this.overlay.addClass(BlocksConstants.BLOCK_OVERLAY_CLASS);
-            } else
-            {
+            }
+            else {
                 this.overlay.addClass(BlocksConstants.PROPERTY_OVERLAY_CLASS);
             }
 
+            //will be used to back-reference from the overlay to this object
+            this.id = Commons.generateId();
+            blocks.elements.Property.INDEX[this.id] = this;
+            this.overlay.attr(blocks.elements.Property.OVERLAY_INDEX_ATTR, this.id);
+
             // Remove sides of layout lines to prevent overlap
+            var block = this.parent.parent;
             if (!(this instanceof blocks.elements.Block) && block != null && block.overlay != null) {
                 if (this.isNear(block.left, this.left)) this.overlay.addClass("left");
                 if (this.isNear(block.top, this.top)) this.overlay.addClass("top");
@@ -130,21 +141,20 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Cons
             }
         },
 
-
-
-        generateProperties: function(parent, index) {
+        generateProperties: function (parent, index)
+        {
             var children = parent.children();
             var childcount = children.length;
-            for (var i=0; i < childcount; i++) {
+            for (var i = 0; i < childcount; i++) {
                 var child = $(children[i]);
-                if (child[0].tagName == "BOOTSTRAP-LAYOUT") {
+                if (child[0].tagName == "BLOCKS-LAYOUT") {
                     var b = new blocks.elements.Container($(child.children(".container")[0]), this, index);
                     this.children.push(b);
                     index++;
-                //} else if (child.hasAttribute("property")) {
-                //    var b = new blocks.elements.Property(child, this, index);
-                //    this.children.push(b);
-                //    index++;
+                    //} else if (child.hasAttribute("property")) {
+                    //    var b = new blocks.elements.Property(child, this, index);
+                    //    this.children.push(b);
+                    //    index++;
                 } else if (child[0].tagName.indexOf("-") > 0) {
                     var b = new blocks.elements.Block(child, this, index, false);
                     this.children.push(b);

@@ -1,12 +1,22 @@
-<meta property="title" content="Tekst blok" lang="en">
-<meta property="title" content="Text block" lang="nl">
+<meta property="blocks:title" content="Tekst blok" lang="nl">
+<meta property="blocks:title" content="Text block" lang="en">
+<meta property="blocks:description" content="A blok dat tekst kan bevatten" lang="nl">
+<meta property="blocks:description" content="A block that will contain text" lang="en">
 
-<meta property="description" content="A blok dat tekst kan bevatten" lang="nl">
-<meta property="description" content="A block that will contain text" lang="en">
+<meta property="blocks:icon" content="fa-bold">
+
+<link href="/assets/styles/imports/blocks-text.less" rel="stylesheet"/>
+
+<script src="/assets/scripts/imports/blocks-text/medium/medium-editor.js" type="application/javascript" data-scope-role="admin"></script>
+<script src="/assets/scripts/imports/blocks-text/medium/medium-styles-extension.js" type="application/javascript" data-scope-role="admin"></script>
+<script src="/assets/scripts/imports/blocks-text/medium/mediumModule.js" type="application/javascript" data-scope-role="admin"></script>
+
+<script type="application/javascript" src="/assets/scripts/imports/blocks-text/div.js" data-scope-role="admin"></script>
+<script type="application/javascript" src="/assets/scripts/imports/blocks-text/span.js" data-scope-role="admin"></script>
 
 <template>
     <div property="text">
-        <h3>A simple text block</h3>
+        <h1>A title</h1>
         <p>Here you can type some text</p>
     </div>
 </template>

@@ -2,14 +2,16 @@
  * Created by wouter on 10/06/15.
  */
 
-base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.common", "blocks.core.Edit",   function (Class, Constants, Edit)
+base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.core", "blocks.core.Edit", function (Class, Constants, Edit)
 {
     blocks = window['blocks'] || {};
     // Region where templates can be dragged
     blocks.elements = blocks.elements || {};
     blocks.elements.Page = Class.create(blocks.elements.LayoutElement, {
-        constructor: function () {
-            blocks.elements.Container.Super.call(this, $("." + Constants.PAGE_CONTENT_CLASS), null, 0);
+        constructor: function ()
+        {
+            //super(this, element, parent, index)
+            blocks.elements.Page.Super.call(this, $("." + Constants.PAGE_CONTENT_CLASS), null, 0);
             this.blocks = [];
 
             // find everything that is a container or a template or a property
@@ -17,12 +19,13 @@ base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.c
             this.editFunction = Edit.makeEditable(this.element);
         },
 
-        generateProperties: function(parent, index) {
+        generateProperties: function (parent, index)
+        {
             var children = parent.children();
             var childcount = children.length;
-            for (var i=0; i < childcount; i++) {
+            for (var i = 0; i < childcount; i++) {
                 var child = $(children[i]);
-                if (child[0].tagName == "BOOTSTRAP-LAYOUT") {
+                if (child[0].tagName == "BLOCKS-LAYOUT") {
                     var b = new blocks.elements.Container($(child.children(".container")[0]), this, index);
                     this.children.push(b);
                     index++;
@@ -40,9 +43,10 @@ base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.c
             }
         },
 
-        getLayoutContainer: function() {
+        getLayoutContainer: function ()
+        {
             var retVal = null;
-            for (var i=0; i < this.children.length; i++) {
+            for (var i = 0; i < this.children.length; i++) {
                 var child = this.children[i];
                 if (child instanceof blocks.elements.Container) {
                     retVal = child;

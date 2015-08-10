@@ -1,10 +1,21 @@
 // Overlay when editing and for dialogs
-@import "/constants/blocks/common?type=less";
-@import "/constants/blocks/finder?type=less";
+@import "/constants/blocks/core?type=less";
+@import "/constants/blocks/media?type=less";
+//-----LIBRARIES-----
+@import "/assets/webjars/less-animate/1.0.0/source/pulse.less";
+@import "/assets/webjars/font-awesome/4.3.0/less/variables.less";
+@import "/assets/webjars/font-awesome/4.3.0/less/core.less";
+@import "/assets/webjars/font-awesome/4.3.0/less/icons.less";
+@import "/assets/webjars/font-awesome/4.3.0/less/animated.less";
+@import "/assets/styles/loader.less";
+@import "/assets/styles/finder.less";
+
+@finderBgColor: #ffffff;
 
 //-----BASIC BOOTSTRAP MIXINS-----
 @import "/assets/webjars/bootstrap/3.3.4/less/variables.less";
 @import "/assets/webjars/bootstrap/3.3.4/less/mixins.less";
+@import "/assets/webjars/bootstrap/3.3.4/less/utilities.less";
 // Reset and dependencies
 @import "/assets/webjars/bootstrap/3.3.4/less/normalize.less";
 // Core CSS
@@ -16,61 +27,141 @@
 @import "/assets/webjars/bootstrap/3.3.4/less/input-groups.less";
 @import "/assets/webjars/bootstrap/3.3.4/less/panels.less";
 @import "/assets/webjars/bootstrap/3.3.4/less/type.less";
+@import "/assets/webjars/bootstrap/3.3.4/less/thumbnails.less";
 
 //-----MIXINS-----
 //note that this requires a relatively positioned parent
-.input-group-btn-clear() {
+.inline-input-buttons() {
 
-  position: relative; //to make the clean button work
-
+  @inputZIndex: 2;
   .input-actions {
     float: right;
-    position: relative;
-    z-index: 3; //input has 2
-    padding-left: 5px;
-    margin-right: 5px;
-    margin-top: -30px;
-    background-color: #FFFFFF;
 
-    .input-btn-clear,
-    .input-btn-reset {
+    //position: relative; //to make the z-index work
+    //z-index: @inputZIndex+1;
+    margin-top: -30px;
+    padding-right: 10px;
+    .clearfix();
+
+    @btnPaddingLeft: 6px;
+    .input-btn {
       display: none;
       &.show {
         display: block;
       }
 
-      float: right;
+      float: left;
       cursor: pointer;
       text-shadow: 0 1px 0 #fff;
-      font-size: 20px;
+      font-size: 16px;
+      margin-top: 2px;
       color: #333;
-      margin-right: 5px;
-      .opacity(0.4) !important;
+      padding-left: @btnPaddingLeft;
+      padding-right: 1px;
 
+      position: relative;
+      z-index: @inputZIndex+2;
+      background-color: #FFFFFF;
+
+      .fa {
+        .opacity(0.4) !important;
+      }
       &:hover {
-        .opacity(0.6) !important;
+        .fa {
+          .opacity(0.6) !important;
+        }
       }
     }
-    .input-btn-reset {
-      font-size: 16px;
-      margin-top: 3px;
+
+    //From http://stackoverflow.com/questions/2717480/css-selector-for-first-element-with-class/8539107#8539107
+    // Select all .shown buttons that are children of .input-actions, including the first one
+    & > .input-btn.show {
+      border-left: 1px solid rgba(0, 0, 0, 0.2);
+      padding-left: 8px;
+    }
+    //Then "undo" the styles for elements with the class that come after the first one
+    & > .input-btn.show ~ .input-btn.show {
+      border-left: none;
+      padding-left: @btnPaddingLeft;
     }
   }
 }
 
 //-----MAIN-----
+html {
+  position: relative;
+  min-height: 100%;
+  height: 100%;
+}
+
+body.@{BODY_EDIT_MODE_CLASS} {
+  //this will allow the sidebar and the page wrapper scroll independently from the body
+  //overflow: hidden;
+}
+
+.@{BLOCK_OVERLAYS_WRAPPER_CLASS} {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+//setup feedback for save/delete/... buttons
+.btn {
+  &.@{BTN_BUSY_CLASS},
+  &.@{BTN_SUCCESS_CLASS} {
+
+    //hide all elements inside it
+    & > * {
+      display: none;
+    }
+    //change the contents of the icon
+    & > .fa {
+      display: inline-block;
+    }
+  }
+  &.@{BTN_BUSY_CLASS} {
+    //change the contents of the icon
+    & > .fa {
+      &:extend(.fa-circle-o-notch all);
+    }
+  }
+  //needs to come after the BUSY class because it overwrites it
+  &.@{BTN_SUCCESS_CLASS} {
+    & > .fa {
+      &:extend(.fa-check-circle all);
+    }
+  }
+}
+
+.list-group {
+  //add some nice striping
+  & > .list-group-item:nth-child(odd) {
+    background-color: lighten(@btn-primary-bg, 50%);
+    &:hover {
+      background-color: lighten(@btn-primary-bg, 45%);
+    }
+  }
+}
 
 @mainMenuHeight: 40px;
 @initSidebarWidth: 0%;
-
 .@{BLOCK_OVERLAY_CLASS} {
+  position: absolute;
   top: 0px;
   left: 0px;
   right: 0px;
   bottom: 0px;
-  position: absolute;
   border: 1px dotted rgba(100, 100, 100, 0.8);
-  pointer-events: none;
+
+  // This disables pointer events for the element itself,
+  // but 'bubbles up' lower cursors like the mouse would eg. hover over them
+  // Note that this sits in the way of using the hover-related events on these objects,
+  // so don't use them
+  //pointer-events: none;
+
+  //this is probably a good general choice
   cursor: pointer;
 
   &.left {
@@ -81,26 +172,45 @@
     border-top: none;
   }
 
-  &.block-hover {
-    //    border-bottom: 3px solid rgba(66, 66, 66, 0.8);
-    //    border-right: 3px solid rgba(66, 66, 66, 0.8);
-    //    border: 1px solid rgba(0, 0, 0, 0.8);
-    //    background-color: rgba(210, 219, 242, 0.3);
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.8);
+  &.@{OVERLAY_HOVER_CLASS} {
+    box-shadow: 0px 0px 10px rgba(1, 0, 0, 0.5);
     border: none;
   }
-  //
-  //  &.draggable {
-  //    cursor: move; /* fallback if grab cursor is unsupported */
-  //    cursor: grab;
-  //    cursor: -moz-grab;
-  //    cursor: -webkit-grab;
-  //  }
+  &.@{OVERLAY_DRAGGING_CLASS} {
+    background-color: rgba(00, 102, 204, 0.5);
+  }
 }
 
-.@{DRAGGED_BLOCK_OVERLAY_CLASS} {
-  position: absolute;
-  background-color: rgba(00, 102, 204, 0.5);
+.@{BLOCKS_DROPSPOT_CLASS} {
+  @startColor: @brand-primary;
+  @startColorHex: argb(@startColor);
+  @stopColor: fadeout(@startColor, 100%);
+  @stopColorHex: argb(@stopColor);
+  @width: ~"@{BLOCKS_DROPSPOT_BORDER_WIDTH}px";
+  @style: solid;
+  @offsetPct: 5%;
+  @startPct: @offsetPct;
+  @stopPct: 100% - @offsetPct;
+
+  border: none;
+  &.@{BLOCKS_DROPSPOT_CLASS}-top,
+  &.@{BLOCKS_DROPSPOT_CLASS}-bottom {
+    background: -moz-linear-gradient(left,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* FF3.6+ */
+    background: -webkit-gradient(linear, left top, right top, color-stop(0%,@stopColor), color-stop(@startPct,@startColor), color-stop(50%,@startColor), color-stop(@stopPct,@startColor), color-stop(100%,@stopColor)); /* Chrome,Safari4+ */
+    background: -webkit-linear-gradient(left,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Chrome10+,Safari5.1+ */
+    background: -o-linear-gradient(left,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Opera 11.10+ */
+    background: -ms-linear-gradient(left,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* IE10+ */
+    background: linear-gradient(to right,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* W3C */
+  }
+  &.@{BLOCKS_DROPSPOT_CLASS}-right,
+  &.@{BLOCKS_DROPSPOT_CLASS}-left {
+    background: -moz-linear-gradient(top,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* FF3.6+ */
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,@stopColor), color-stop(@startPct,@startColor), color-stop(50%,@startColor), color-stop(@stopPct,@startColor), color-stop(100%,@stopColor)); /* Chrome,Safari4+ */
+    background: -webkit-linear-gradient(top,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Chrome10+,Safari5.1+ */
+    background: -o-linear-gradient(top,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Opera 11.10+ */
+    background: -ms-linear-gradient(top,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* IE10+ */
+    background: linear-gradient(to bottom,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* W3C */
+  }
 }
 
 .@{PROPERTY_OVERLAY_CLASS} {
@@ -124,7 +234,7 @@
     border-bottom: none;
   }
 
-  &.@{PROPERTY_HOVER_CLASS} {
+  &.@{OVERLAY_HOVER_CLASS} {
     border: 1px solid rgba(0, 0, 0, 1);
   }
 }
@@ -148,9 +258,13 @@
 }
 
 .@{COLUMN_RESIZER_CLASS} {
+  @controlBgColor: #e8e8e8;
+
   position: absolute;
-  background-color: #d3d3d3;
   cursor: col-resize;
+  background: darken(@controlBgColor, 10%) url('/assets/images/blocks/splitter_ver_padded.png') center center repeat-y;
+  border-left: 1px solid darken(@controlBgColor, 15%);
+  border-right: 1px solid darken(@controlBgColor, 15%);
 }
 
 // Classes for the body that force the cursor in a certain style
@@ -210,52 +324,21 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   }
 }
 
-//.@{PAGE_MENU_CLASS} {
-//  height: @mainMenuHeight;
-//  background-color: white;
-//  border-bottom: 1px solid black;
-//  width: 100%;
-//  z-index: 1;
-//  padding-top: 10px;
-//  padding-bottom: 10px;
-//  overflow: hidden;
-//
-//  a {
-//    margin-right: 6px !important;
-//  }
-//
-//  ul {
-//    display: inline;
-//  }
-//
-//  ul > li {
-//    display: inline;
-//    margin-left: 7px;
-//    padding: 4px;
-//    border: 1px solid black;
-//    border-radius: 5px;
-//  }
-//
-//  ul > li:hover {
-//    background-color: #d3d3d3;
-//    cursor: pointer;
-//  }
-//
-//  .main-menu-items {
-//  }
-//
-//  &.open {
-//    display: block;
-//  }
-//}
+//use this as a wrapper for the text under a header (or something else) to space it up a bit
+.sub-container {
+  margin-top: 20px;
+  margin-left: 20px;
+}
 
 .@{PAGE_CONTENT_CLASS} {
-  position: absolute;
+  position: relative; //we can only make sticky footers work when this is relative
   z-index: 0;
   //  margin-top: @mainMenuHeight;
   width: 100% - @initSidebarWidth;
-  min-height: 100%;
 
+  //this will make the left panel scroll independently from the sidebar
+  //height: 100%;
+  //overflow-y: auto;
 }
 
 @sidebarTabHeight: 41px;
@@ -309,6 +392,15 @@ ul.@{BLOCK_ACTIONS_CLASS} {
     position: relative;
     z-index: 1000;
 
+    //something special: only active tabs or explicitly 'show'-ing tabs are shown (this way, we have control over the 'hidden' tabs)
+    & > li {
+      display: none;
+      &.show,
+      &.active {
+        display: block;
+      }
+    }
+
     & > li:first-child > a {
       border-left-width: 0;
     }
@@ -336,13 +428,47 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   }
 
   .tab-pane {
+    @sidebarPanelMargin: 10px;
     .panel {
-      border-width: 1px solid lighten(@controlBgColor, 50%);
-      margin: 10px 10px;
+      margin: @sidebarPanelMargin;
 
       .form-group {
         .input-group {
-          .input-group-btn-clear();
+          .inline-input-buttons();
+          width: 100%;
+        }
+        //make all dropdowns behave more like <select>s
+        .dropdown,
+        .checkbox {
+          @textAlign: left;
+          @formAlign: right;
+          @caretAlign: right;
+          text-align: @formAlign;
+
+          .pull-right();
+
+          &.checkbox {
+            top: -0.7em; //align it with the label
+          }
+
+          .dropdown-toggle {
+            //min-width: 100px;
+            text-align: @textAlign;
+
+            .caret {
+              &:extend(.pull-@{caretAlign});
+              margin-top: 0.7em; //floating the caret seems to change it's height...
+            }
+          }
+          .dropdown-menu {
+            min-width: 0; //reset
+            &:extend(.dropdown-menu-@{formAlign});
+            & > li > a {
+              cursor: pointer;
+            }
+          }
+        }
+        .slider.slider-horizontal {
           width: 100%;
         }
       }
@@ -352,10 +478,32 @@ ul.@{BLOCK_ACTIONS_CLASS} {
         margin-top: 5px;
       }
     }
-  }
+    .panel.@{SIDEBAR_FINDER_PANEL_CLASS} {
+      //stretches open the entire finder
+      position: absolute;
+      right: 0;
+      left: 0;
+      bottom: 0;
+      top: @sidebarTabHeight;
 
-  .finder-window {
-    height: 600px;
+      .panel-body {
+        padding: 0px;
+        height: 100%;
+        margin-top: -@sidebarTabHeight;
+        padding-top: @sidebarTabHeight;
+
+        .@{SELECT_BTN_CLASS},
+        .@{CANCEL_BTN_CLASS} {
+          .btn-sm();
+        }
+        .@{SELECT_BTN_CLASS} {
+          .btn-primary();
+        }
+        .@{CANCEL_BTN_CLASS} {
+          .btn-default();
+        }
+      }
+    }
   }
 }
 
@@ -393,37 +541,18 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   }
 }
 
+#@{SIDEBAR_CONTEXT_ID} {
+  .setupLoader();
+}
+
 #@{SIDEBAR_FILES_ID} {
   .setupLoader();
-
-  @finderMargin: 10px;
-  position: absolute; //absolute in relative parent pattern
-  top: @sidebarTabHeight - 1 + @finderMargin; //this this -1 comes from an extra border somewhere
-  left: @finderMargin;
-  bottom: @finderMargin;
-  right: @finderMargin;
-
-  margin-bottom: 0; //override the panel settings
-
-  .@{WINDOW_CLASS} {
-
-  }
-
-  //position: fixed;
-  //left: 0px;
-  //top: @mainMenuHeight;
-  //bottom: 0px;
-  //right: 0px;
 }
 
-.@{HIGHLIGHT_ANIMATION_CLASS} {
-  -webkit-transition: 0.4s;
-  -moz-transition: 0.4s;
-  transition: 0.4s;
-}
-
-.@{HIGHLIGHT_CLASS}, .@{HIGHLIGHT_CLASS}:focus {
-  outline: #7ec4ff dotted 2px;
+.@{HIGHLIGHT_CLASS},
+.@{HIGHLIGHT_CLASS}:focus {
+  .animated(0.3s);
+  //.pulse;
 }
 
 .@{REMOVE_BLOCK_CLASS} {
@@ -449,6 +578,48 @@ ul.@{BLOCK_ACTIONS_CLASS} {
 blocks-image {
   img {
     display: block;
+  }
+}
+
+.@{NEW_BLOCK_MODAL_CLASS},
+.@{NEW_PAGE_CLASS} {
+  .list-group {
+    max-width: 600px;
+    max-height: 400px;
+    overflow-y: auto;
+    .list-group-item {
+      .clearfix;
+      margin: 10px;//reset bootstrap
+
+      .preview,
+      .caption {
+        .pull-left;
+      }
+
+      .preview {
+        .thumbnail;
+        .fa {
+          display: block;
+          background-color: #FFFFFF;
+          color: @btn-default-border;
+
+          @size: 50px;
+          @fontSize: @size * 0.8;
+          font-size: @fontSize;
+          width: @size;
+          height: @size;
+          line-height: @size + ((@size - @fontSize)/2);//more or less does the trick
+          .opacity(0.5);
+        }
+
+        margin: 0 20px 0 0;//reset bootstrap thumbnail
+      }
+      .caption {
+        p {
+          margin-bottom: 0; //reset
+        }
+      }
+    }
   }
 }
 
@@ -517,16 +688,23 @@ blocks-image {
 .medium-editor-toolbar-form {
   display: none;
 
+  border: 1px solid @btn-default-border;
+  padding: 3px 3px;
+  background-color: #FFFFFF;
+
+  @inputWidth: 250px; //makes sure the form doesn't grow when the inline buttons are shown (little css bug to fix)
   input {
-    min-width: 250px;
+    width: @inputWidth;
   }
   .input-group {
-    .input-group-btn-clear();
+    .inline-input-buttons();
+    width: @inputWidth;
   }
   .btn-primary {
     margin-left: 5px;
   }
 }
+
 
 
 

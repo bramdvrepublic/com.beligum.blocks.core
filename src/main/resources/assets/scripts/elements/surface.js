@@ -6,6 +6,28 @@ base.plugin("blocks.core.Elements.Surface", ["base.core.Class", "base.core.Const
     blocks.elements = blocks.elements || {};
 
     blocks.elements.Surface = Class.create({
+
+        constructor: function (top, bottom, left, right)
+        {
+            if (top <= bottom) {
+                this.top = top;
+                this.bottom = bottom;
+            }
+            else {
+                this.top = bottom;
+                this.bottom = top;
+            }
+
+            if (left <= right) {
+                this.left = left;
+                this.right = right;
+            }
+            else {
+                this.left = right;
+                this.right = left;
+            }
+        },
+
         calculateTop: function (element, relative)
         {
             //if (relative)
@@ -112,7 +134,6 @@ base.plugin("blocks.core.Elements.Surface", ["base.core.Class", "base.core.Const
                 }
             }
 
-
             return retVal;
         },
 
@@ -135,31 +156,14 @@ base.plugin("blocks.core.Elements.Surface", ["base.core.Class", "base.core.Const
             return retVal;
         },
 
-
-        constructor: function (top, bottom, left, right)
-        {
-            if (top <= bottom) {
-                this.top = top;
-                this.bottom = bottom;
-            } else {
-                this.top = bottom;
-                this.bottom = top;
-            }
-            if (left <= right) {
-                this.left = left;
-                this.right = right;
-            } else {
-                this.left = right;
-                this.right = left;
-            }
-        },
-
         isTriggered: function (x, y)
         {
             var retVal = false;
+
             if (this.top <= y && y <= this.bottom && this.left <= x && x <= this.right) {
                 retVal = true;
             }
+
             return retVal;
         }
     });

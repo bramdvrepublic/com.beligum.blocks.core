@@ -1,6 +1,6 @@
 // Special kind of row that can contains a template
 // Draggable templates are the elements inside a column
-base.plugin("blocks.core.Elements.Block", ["base.core.Class", "base.core.Constants", "constants.blocks.common", function (Class, Constants, BlocksConstants)
+base.plugin("blocks.core.Elements.Block", ["base.core.Class", "base.core.Constants", "constants.blocks.core", function (Class, Constants, BlocksConstants)
 {
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};
@@ -100,10 +100,10 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "base.core.Constan
 
         recalculateTriggers: function (direction, x, y, currentDropspot)
         {
-            Logger.debug("Recalculate triggers");
+            //Logger.debug("Recalculate triggers");
             if (currentDropspot == null || !currentDropspot.makeTriggers(x, y, direction)) {
                 var newDropspot = currentDropspot;
-                Logger.debug("Create new trigger triggers");
+                //Logger.debug("Create new trigger triggers");
                 try {
                     if (direction == Constants.DIRECTION.UP) {
                         newDropspot = this.verticalDropspots[this.verticalDropspots.length - 1];
@@ -117,7 +117,7 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "base.core.Constan
                 } catch (e) {
                     Logger.error(this);
                 }
-                Logger.debug("Calculate at border");
+                //Logger.debug("Calculate at border - direction=" + direction);
                 if (newDropspot != null) {
                     newDropspot.makeTriggers(x, y, direction);
                 }
@@ -135,7 +135,6 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "base.core.Constan
             if (this.isOuter(side) && this.parent != null) dropspots = this.parent.calculateDropspots(side, dropspots);
             return dropspots;
         },
-
 
         getTotalBlocks: function ()
         {

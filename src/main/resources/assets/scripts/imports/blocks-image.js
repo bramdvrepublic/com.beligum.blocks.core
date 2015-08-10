@@ -1,7 +1,7 @@
 /*
  * Allows editiong of an image when youy click on it
  * */
-base.plugin("blocks.edit.Image", ["constants.blocks.common", "blocks.core.Edit", "blocks.core.Sidebar",  function (Constants, Edit, Sidebar)
+base.plugin("blocks.edit.Image", ["constants.blocks.core", "blocks.core.Edit", "blocks.core.Sidebar",  function (Constants, Edit, Sidebar)
 {
 
     this.focus = function(windowID, element, blockEvent) {
@@ -12,14 +12,13 @@ base.plugin("blocks.edit.Image", ["constants.blocks.common", "blocks.core.Edit",
         ];
 
         Sidebar.addUniqueClass(windowID, element, "Rand", values);
-        Sidebar.addValueAttribute(windowID, element, "Image url", "Paste or type an image link", "src", false, true);
+        Sidebar.addValueAttribute(windowID, element, "Image url", "Paste or type an image link", "src", false, true, false);
     };
 
     this.blur = function() {
 
     };
 
-    Edit.registerByTag("IMG", this);
-
+    Edit.registerByTag("BLOCKS-IMAGE", this);
 
 }]);

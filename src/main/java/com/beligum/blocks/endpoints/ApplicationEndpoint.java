@@ -36,12 +36,11 @@ public class ApplicationEndpoint
     *
     * */
 
+    //TODO ????
     @Path(ParserConstants.RESOURCE_ENDPOINT + "{block_id:.*}")
     @GET
     public Response getPageWithId(@PathParam("block_id") String blockId, @QueryParam("resource") String resource_block_id, @QueryParam("language") String lang)
     {
-
-
         return Response.ok().build();
     }
 
@@ -67,6 +66,7 @@ public class ApplicationEndpoint
             URI url = UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path(BlocksConfig.instance().getDefaultLanguage().getLanguage()).path(route.getLanguagedPath().toString()).build();
             retVal = Response.seeOther(url).build();
         }
+
         return retVal;
     }
 
@@ -84,7 +84,7 @@ public class ApplicationEndpoint
     //
     //        String resourceName = path.getName(0).toString();
     //        String templateName = null;
-    //        for (HtmlTemplate template: HtmlParser.getCachedTemplates().values()) {
+    //        for (HtmlTemplate template: HtmlParser.getTemplateCache().values()) {
     //            if (template.getTemplateName().equals("mot-"+resourceName+"-basic")) {
     //                templateName = template.getTemplateName();
     //                break;

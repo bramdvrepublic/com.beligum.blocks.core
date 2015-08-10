@@ -42,10 +42,16 @@ public class HtmlParser extends AbstractAssetParser
     }
 
     //-----PUBLIC METHODS-----
-    public String parse(String rawSource) throws Exception
-    {
-        return this.doParse(null, rawSource);
-    }
+    /**
+     * This method is executed for all *.html files requested by the client. It should be optimized for speed but the result
+     * is cached by the ResourceManager, so in production mode, the speed-importance of this method is relative.
+     * However; there is currently a MAJOR issue with StringTemplates (see the other parse() method) where every request
+     * is parsed through this method; BAD and a very big TODO
+     * @param src
+     * @param args
+     * @return
+     * @throws IOException
+     */
     @Override
     public ParseResult parse(ResourceDescriptor src, Map<String, String> args) throws IOException
     {
@@ -53,11 +59,23 @@ public class HtmlParser extends AbstractAssetParser
             Path sourcePath = src.getResolvedPath();
             String rawSource = new String(Files.readAllBytes(sourcePath));
 
+            //allows for the ResourceManager to cache the result of doParse()
             return new StringParseResult(sourcePath, this.doParse(sourcePath, rawSource), this.getCacheFile(sourcePath), Asset.MimeType.HTML);
         }
         catch (Exception e) {
             throw new IOException("Caught exception while parsing html file", e);
         }
+    }
+    /**
+     * This is a temporary workaround function to (also) make StringTemplates work; see com.beligum.base.templating.velocity.VelocityStringTemplate
+     * It basically parses every request through the doParse() method, regardless of any caching.
+     * @param rawSource
+     * @return
+     * @throws Exception
+     */
+    public String parse(String rawSource) throws Exception
+    {
+        return this.doParse(null, rawSource);
     }
     /**
      * Strips all lines beginning with "##" (starting from that position) and returns all the rest.
@@ -85,7 +103,7 @@ public class HtmlParser extends AbstractAssetParser
 
         return retVal.toString();
     }
-    public static TemplateCache getCachedTemplates()
+    public static TemplateCache getTemplateCache()
     {
         TemplateCache retVal = (TemplateCache) R.cacheManager().getApplicationCache().get(CacheKeys.TAG_TEMPLATES);
         if (retVal == null) {
@@ -100,6 +118,10 @@ public class HtmlParser extends AbstractAssetParser
 
         return retVal;
     }
+    public static void resetTemplateCache()
+    {
+        R.cacheManager().getApplicationCache().put(CacheKeys.TAG_TEMPLATES, null);
+    }
 
     //-----PROTECTED METHODS-----
 
@@ -110,9 +132,11 @@ public class HtmlParser extends AbstractAssetParser
         String sourceStr = eatVelocityComments(rawSource);
         Source source = new Source(sourceStr);
 
+        boolean htmlPage = source.getFirstElement("html")!=null;
+
         // if we're dealing with a template (eg. the file is a template, not an instance of a template), replace the source with the html in the template
         boolean isTagTemplate = false;
-        TemplateCache templateCache = this.getCachedTemplates();
+        TemplateCache templateCache = this.getTemplateCache();
         if (sourcePath!=null && templateCache.containsKey(sourcePath)) {
             //first of all, since this method is only called when something changed, update the cache value
             HtmlTemplate oldTemplate = templateCache.get(sourcePath);//fetch the old value for the paths
@@ -133,19 +157,22 @@ public class HtmlParser extends AbstractAssetParser
                 builder.append("#if(!$").append(resourceTestVar).append(")").append("\n");
 
                 // note that this "false" means it must be eaten (and spit out somewhere else)
+                // note that we can't use the "ElementsForCurrentUser()" methods here, cause they're cached for all users
                 boolean renderResources = false;
-                for (Element style : tagTemplate.getInlineStyleElements()) {
-                    builder.append("#").append(TagTemplateInlineStyleResourceDirective.NAME).append("(").append(renderResources).append(")").append(style.toString()).append("#end").append("\n");
+                for (Element style : tagTemplate.getAllInlineStyleElements()) {
+                    builder.append("#").append(TagTemplateInlineStyleResourceDirective.NAME).append("(").append(renderResources).append(",'").append(HtmlTemplate.getResourceRoleScope(style)).append("')").append(style.toString()).append("#end").append("\n");
                 }
-                for (Element style : tagTemplate.getExternalStyleElements()) {
-                    builder.append("#").append(TagTemplateExternalStyleResourceDirective.NAME).append("(").append(renderResources).append(",'").append(style.getAttributeValue("href")).append("')").append(style.toString())
+                for (Element style : tagTemplate.getAllExternalStyleElements()) {
+                    builder.append("#").append(TagTemplateExternalStyleResourceDirective.NAME).append("(").append(renderResources).append(",'").append(style.getAttributeValue("href")).append(
+                                    "','").append(HtmlTemplate.getResourceRoleScope(style)).append("')").append(style.toString())
                            .append("#end").append("\n");
                 }
-                for (Element script : tagTemplate.getInlineScriptElements()) {
-                    builder.append("#").append(TagTemplateInlineScriptResourceDirective.NAME).append("(").append(renderResources).append(")").append(script.toString()).append("#end").append("\n");
+                for (Element script : tagTemplate.getAllInlineScriptElements()) {
+                    builder.append("#").append(TagTemplateInlineScriptResourceDirective.NAME).append("(").append(renderResources).append(",'").append(HtmlTemplate.getResourceRoleScope(script)).append("')").append(script.toString()).append("#end").append("\n");
                 }
-                for (Element script : tagTemplate.getExternalScriptElements()) {
-                    builder.append("#").append(TagTemplateExternalScriptResourceDirective.NAME).append("(").append(renderResources).append(",'").append(script.getAttributeValue("src")).append("')")
+                for (Element script : tagTemplate.getAllExternalScriptElements()) {
+                    builder.append("#").append(TagTemplateExternalScriptResourceDirective.NAME).append("(").append(renderResources).append(",'").append(script.getAttributeValue("src")).append("','")
+                           .append(HtmlTemplate.getResourceRoleScope(script)).append("')")
                            .append(script.toString())
                            .append("#end").append("\n");
                 }
@@ -154,19 +181,8 @@ public class HtmlParser extends AbstractAssetParser
                 builder.append(" #set($").append(resourceTestVar).append("=true)").append("\n");
                 builder.append("#end").append("\n");
             }
-            // the only preprocessing we do with a page template is fill in the template attribute with the name of the template
-            // so we know what template was used when the code comes back from the client
             else if (tagTemplate instanceof PageTemplate) {
-                Element html = templateHtml.getFirstElement("template", null);
-                if (!html.getName().equalsIgnoreCase("html")) {
-                    throw new IOException("Found a template attribute on a non-html element, this shouldn't happen since it's been checked before; "+sourcePath);
-                }
-                //a little bit verbose, but I didn't find a shorter way...
-                Attributes templateAttr = html.getAttributes();
-                Map<String,String> attrs = new HashMap<>();
-                templateAttr.populateMap(attrs, true);
-                attrs.put("template", tagTemplate.getTemplateName());
-                output.replace(templateAttr, Attributes.generateHTML(attrs));
+                //NOOP
             }
 
             //from here, it's the same for a Tag or Page template; preprocess the replaceable properties
@@ -201,7 +217,7 @@ public class HtmlParser extends AbstractAssetParser
             for (net.htmlparser.jericho.Element templateInstance : templateInstances) {
 
                 //build the attributes map
-                Map<String, String> attributes = new HashMap<>();
+                Map<String, String> attributes = new LinkedHashMap<>();
                 templateInstance.getAttributes().populateMap(attributes, false);
 
                 //copy in all the attributes of the template to the attributes map, except the ones that were already set in the instance
@@ -215,7 +231,7 @@ public class HtmlParser extends AbstractAssetParser
                 }
 
                 //build the properties map
-                Map<String, List<String>> properties = new HashMap<>();
+                Map<String, List<String>> properties = new LinkedHashMap<>();
                 // note: this is a tricky one. It doesn't have to be the immediate children, but we can't cross the "boundary"
                 // of another template instance either (otherwise the grandchild-properties would get assigned to the grandparent)
                 // In practice, restricting this to the immediate children works pretty well (and neatly conforms to the WebComponents standard)
@@ -310,33 +326,47 @@ public class HtmlParser extends AbstractAssetParser
             List<Element> elements = TagTemplate.getInlineStyles(source);
             for (Element element : elements) {
                 StringBuilder builder = new StringBuilder();
-                builder.append("#").append(TagTemplateInlineStyleResourceDirective.NAME).append("(true)").append(element.toString()).append("#end");
+                builder.append("#").append(TagTemplateInlineStyleResourceDirective.NAME).append("(true").append(",'")
+                       .append(HtmlTemplate.getResourceRoleScope(element)).append("')").append(element.toString()).append("#end");
                 output.replace(element, builder.toString());
             }
 
             elements = TagTemplate.getExternalStyles(source);
             for (Element element : elements) {
                 StringBuilder builder = new StringBuilder();
-                builder.append("#").append(TagTemplateExternalStyleResourceDirective.NAME).append("(true,'").append(element.getAttributeValue("href")).append("')").append(element.toString()).append("#end");
+                builder.append("#").append(TagTemplateExternalStyleResourceDirective.NAME).append("(true,'").append(element.getAttributeValue("href")).append("','")
+                       .append(HtmlTemplate.getResourceRoleScope(element)).append("')").append(element.toString()).append("#end");
                 output.replace(element, builder.toString());
             }
 
             elements = TagTemplate.getInlineScripts(source);
             for (Element element : elements) {
                 StringBuilder builder = new StringBuilder();
-                builder.append("#").append(TagTemplateInlineScriptResourceDirective.NAME).append("(true)").append(element.toString()).append("#end");
+                builder.append("#").append(TagTemplateInlineScriptResourceDirective.NAME).append("(true").append(",'")
+                       .append(HtmlTemplate.getResourceRoleScope(element)).append("')").append(element.toString()).append("#end");
                 output.replace(element, builder.toString());
             }
 
             elements = TagTemplate.getExternalScripts(source);
             for (Element element : elements) {
                 StringBuilder builder = new StringBuilder();
-                builder.append("#").append(TagTemplateExternalScriptResourceDirective.NAME).append("(true,'").append(element.getAttributeValue("src")).append("')").append(element.toString()).append("#end");
+                builder.append("#").append(TagTemplateExternalScriptResourceDirective.NAME).append("(true,'").append(element.getAttributeValue("src")).append("','")
+                       .append(HtmlTemplate.getResourceRoleScope(element)).append("')").append(element.toString()).append("#end");
                 output.replace(element, builder.toString());
             }
         }
 
-        return output.toString();
+        StringBuilder retVal = new StringBuilder();
+        if (htmlPage) {
+            retVal.append("#").append(PageTemplateWrapperDirective.NAME).append("()").append("\n");
+            retVal.append(output.toString());
+            retVal.append("#end");
+        }
+        else {
+            retVal.append(output.toString());
+        }
+
+        return retVal.toString();
     }
     private void replaceTemplateProperty(String attribute, Element property, OutputDocument output)
     {
@@ -347,7 +377,15 @@ public class HtmlParser extends AbstractAssetParser
         sb.append("#if(!$").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("'])");
         sb.append(property.toString());
         sb.append("#{else}");
-        sb.append("$").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("']");
+        // This is something special:
+        // If we have multiple properties, eg. like this:
+        //     <meta property="description" content="Double tag test Nederlands" lang="nl">
+        //     <meta property="description" content="Double tag test English" lang="en">
+        // These will get serialized into an array object (actually a special PropertyArray that spits out the joined string), in the correct order
+        // (see above, specifically in TemplateInstanceStackDirective). But when we would spit out that array for every occurrence of this array variable,
+        // the output would get doubled (or more). By ensuring we only write one entry per one, with a special method, we keep the order and don't get doubles.
+        //
+        sb.append("$").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("']."+PropertyArray.WRITE_ONCE_METHOD_NAME+"()");
         sb.append("#end");
 
         output.replace(property, sb);
@@ -357,11 +395,7 @@ public class HtmlParser extends AbstractAssetParser
         //start with a clean slate
         templateCache.clear();
 
-        //TODO clean this up
         List<ResourceSearchResult> htmlFiles = new ArrayList<>();
-//        htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/templates/**.{html,htm}"));
-//        htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/views/**.{html,htm}"));
-        htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/assets/imports/**.{html,htm}"));
         htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/imports/**.{html,htm}"));
 
         for (ResourceSearchResult htmlFile : htmlFiles) {

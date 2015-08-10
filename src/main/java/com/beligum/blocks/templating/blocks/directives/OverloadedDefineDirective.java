@@ -1,8 +1,7 @@
-package com.beligum.blocks.templating.blocks;
+package com.beligum.blocks.templating.blocks.directives;
 
 import com.beligum.base.templating.velocity.directives.VelocityDirective;
 import com.beligum.base.utils.Logger;
-import org.apache.commons.io.output.NullWriter;
 import org.apache.velocity.context.InternalContextAdapter;
 import org.apache.velocity.runtime.directive.Block;
 import org.apache.velocity.runtime.directive.Define;
@@ -22,7 +21,6 @@ public class OverloadedDefineDirective extends Define
     public static final String NAME = "define";
 
     //-----VARIABLES-----
-    private Writer dummyWriter = new NullWriter();
 
     //-----CONSTRUCTORS-----
 
@@ -35,14 +33,22 @@ public class OverloadedDefineDirective extends Define
     @Override
     public boolean render(InternalContextAdapter context, Writer writer, Node node)
     {
+        boolean retVal = false;
+
         // contrary to the superclass implementation, this renders (and caches) the result immediately,
         // because we need to analyze the children of the #define right here, right now;
         // On top of putting the content block of the #define directive in the context,
         // it renders all content now to make sure the styles and scripts down below are in the context,
         // so they can be found by TemplateResourcesDirective.render(), even if they occur after that tag.
-        context.put(key, new ImmediateReference(context, this));
+        try {
+            context.put(key, new ImmediateReference(context, this));
+            retVal = true;
+        }
+        catch (IOException e) {
+            Logger.error("Error while rendering the overloaded #define directive", e);
+        }
 
-        return true;
+        return retVal;
     }
 
     //-----PROTECTED METHODS-----
@@ -54,20 +60,21 @@ public class OverloadedDefineDirective extends Define
     {
         private String cachedRender = null;
 
-        public ImmediateReference(InternalContextAdapter context, Block parent)
+        public ImmediateReference(InternalContextAdapter context, Block parent) throws IOException
         {
             super(context, parent);
 
             this.cachedRender = this.doRender(context);
         }
 
-        public String doRender(InternalContextAdapter context)
+        public String doRender(InternalContextAdapter context) throws IOException
         {
             String retVal = "";
 
-            Writer writer = new StringWriter();
-            if (super.render(context, writer)) {
-                retVal = writer.toString();
+            try (Writer writer = new StringWriter()) {
+                if (super.render(context, writer)) {
+                    retVal = writer.toString();
+                }
             }
 
             return retVal;

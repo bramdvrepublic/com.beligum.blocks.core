@@ -6,7 +6,6 @@ import com.beligum.base.templating.ifaces.TemplateContext;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,9 +42,8 @@ public class TemplateContextMap implements com.beligum.base.templating.ifaces.Te
         Map<String, TemplateController> retVal = (Map<String, TemplateController>) R.cacheManager().getApplicationCache().get(CacheKeys.TAG_TEMPLATE_CONTROLLERS);
         if (retVal == null) {
             Map<String, Class<?>> mapping = new HashMap<>();
-            TemplateCache cachedTemplates = HtmlParser.getCachedTemplates();
-            for (Map.Entry<Path, HtmlTemplate> e : cachedTemplates.entrySet()) {
-                HtmlTemplate tagTemplate = e.getValue();
+            TemplateCache cachedTemplates = HtmlParser.getTemplateCache();
+            for (HtmlTemplate tagTemplate : cachedTemplates.values()) {
                 mapping.put(tagTemplate.getTemplateName(), tagTemplate.getControllerClass());
             }
 

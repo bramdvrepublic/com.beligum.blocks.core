@@ -4,6 +4,7 @@ import com.beligum.base.annotations.JavascriptPackage;
 import com.beligum.base.endpoints.AssetsEndpoint;
 import com.beligum.base.resources.ResourceDescriptor;
 import com.beligum.base.server.R;
+import com.beligum.blocks.templating.blocks.HtmlParser;
 import gen.com.beligum.blocks.core.fs.html.views.snippets.side;
 import org.apache.commons.io.FilenameUtils;
 
@@ -23,6 +24,14 @@ public class TemplatesEndpoint extends AssetsEndpoint
     @Path("/sidebar")
     public Response getSidebar() {
         return Response.ok(side.get().getNewTemplate().render()).build();
+    }
+
+    @GET
+    //note: the .less is needed to use @include in other less files
+    @Path("/styles/imports/reset.css")
+    public Response getResources()
+    {
+        return Response.ok(HtmlParser.getTemplateCache().getCssReset(), "text/css").build();
     }
 
     @GET

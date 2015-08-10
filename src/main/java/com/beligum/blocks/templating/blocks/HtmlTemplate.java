@@ -1,12 +1,16 @@
 package com.beligum.blocks.templating.blocks;
 
+import com.beligum.base.security.PermissionRole;
+import com.beligum.base.security.PermissionsConfigurator;
+import com.beligum.base.server.R;
 import com.google.common.base.CaseFormat;
-import net.htmlparser.jericho.Attributes;
-import net.htmlparser.jericho.Element;
-import net.htmlparser.jericho.Segment;
-import net.htmlparser.jericho.Source;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterators;
+import net.htmlparser.jericho.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.shiro.SecurityUtils;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.*;
@@ -18,6 +22,8 @@ import java.util.regex.Pattern;
 public abstract class HtmlTemplate
 {
     //-----CONSTANTS-----
+    //this is the prefix to use in the <meta property="prefix:your-name" value="value comes here" > so that it doesn't get sent to the client
+    public static final String BLOCKS_META_TAG_PROPERTY_PREFIX = "blocks:";
     /**
      * These are the names of first folders that won't be taken into account when building the name of the element
      * Eg. /imports/blocks/test/tag.html will have the name "blocks-test-tag"
@@ -25,10 +31,25 @@ public abstract class HtmlTemplate
     protected String[] INVISIBLE_START_FOLDERS = { "import", "imports" };
     protected static final Pattern styleLinkRelAttrValue = Pattern.compile("stylesheet");
 
-    public enum MetaDisplayType {
+    public enum MetaProperty
+    {
+        title,
+        description,
+        icon,
+        controller,
+        display
+    }
+
+    public enum MetaDisplayType
+    {
         DEFAULT,
         HIDDEN
     }
+
+    // controls if the <script> or <style> tag needs to be included in the rendering
+    // use it like this: <script data-scope-role="admin"> to eg. only include the script when and ADMIN-role is logged in
+    // Role names are the same ones we use for Shiro
+    public static final String RESOURCE_ROLE_SCOPE_ATTRIBUTE = "data-scope-role";
 
     //-----VARIABLES-----
     protected Source document;
@@ -40,6 +61,7 @@ public abstract class HtmlTemplate
     protected String velocityName;
     protected Map<Locale, String> titles;
     protected Map<Locale, String> descriptions;
+    protected Map<Locale, String> icons;
     protected Class<TemplateController> controllerClass;
     protected List<Element> inlineScriptElements;
     protected List<Element> externalScriptElements;
@@ -72,9 +94,9 @@ public abstract class HtmlTemplate
         boolean retVal = false;
 
         List<Element> html = source.getAllElements("html");
-        if (html!=null && html.size()==1) {
+        if (html != null && html.size() == 1) {
             Attributes htmlAttr = html.get(0).getAttributes();
-            if (htmlAttr.get("template")!=null) {
+            if (htmlAttr.get("template") != null) {
                 retVal = true;
             }
         }
@@ -84,6 +106,7 @@ public abstract class HtmlTemplate
 
     /**
      * Controls if we need to wrap the instance with the <template-name></template-name> tag or not (eg. for page templates, we don't want this)
+     *
      * @return
      */
     public abstract boolean renderTemplateTag();
@@ -109,7 +132,7 @@ public abstract class HtmlTemplate
         List<Element> retVal = source.getAllElements("script");
         Iterator<Element> iter = retVal.iterator();
         while (iter.hasNext()) {
-            if (iter.next().getAttributeValue("src")!=null) {
+            if (iter.next().getAttributeValue("src") != null) {
                 iter.remove();
             }
         }
@@ -121,7 +144,7 @@ public abstract class HtmlTemplate
         List<Element> retVal = source.getAllElements("script");
         Iterator<Element> iter = retVal.iterator();
         while (iter.hasNext()) {
-            if (iter.next().getAttributeValue("src")==null) {
+            if (iter.next().getAttributeValue("src") == null) {
                 iter.remove();
             }
         }
@@ -157,21 +180,38 @@ public abstract class HtmlTemplate
     {
         return relativePath;
     }
-    public List<Element> getInlineScriptElements()
+    public List<Element> getAllInlineScriptElements()
     {
         return inlineScriptElements;
     }
-    public List<Element> getExternalScriptElements()
+    public List<Element> getAllExternalScriptElements()
     {
         return externalScriptElements;
     }
-    public List<Element> getInlineStyleElements()
+    public List<Element> getAllInlineStyleElements()
     {
         return inlineStyleElements;
     }
-    public List<Element> getExternalStyleElements()
+    public List<Element> getAllExternalStyleElements()
     {
         return externalStyleElements;
+    }
+    //TODO we should probably optimize this a bit, but beware, it still needs to be user-dynamic...
+    public Iterable<Element> getInlineScriptElementsForCurrentUser()
+    {
+        return this.buildRoleScopeResourceIterator(this.getAllInlineScriptElements());
+    }
+    public Iterable<Element> getExternalScriptElementsForCurrentUser()
+    {
+        return this.buildRoleScopeResourceIterator(this.getAllExternalScriptElements());
+    }
+    public Iterable<Element> getInlineStyleElementsForCurrentUser()
+    {
+        return this.buildRoleScopeResourceIterator(this.getAllInlineStyleElements());
+    }
+    public Iterable<Element> getExternalStyleElementsForCurrentUser()
+    {
+        return this.buildRoleScopeResourceIterator(this.getAllExternalStyleElements());
     }
     public Map<Locale, String> getTitles()
     {
@@ -181,17 +221,19 @@ public abstract class HtmlTemplate
     {
         return descriptions;
     }
+    public Map<Locale, String> getIcons()
+    {
+        return icons;
+    }
     public Class<?> getControllerClass()
     {
         return controllerClass;
     }
 
     //-----PROTECTED METHODS-----
-    protected void init(Source document, Segment html, Attributes attributes, Path absolutePath, Path relativePath) throws Exception
+    protected void init(Source document, Path absolutePath, Path relativePath) throws Exception
     {
-        this.document = document;
-        this.html = html;
-        this.attributes = attributes;
+        //INIT THE PATHS
         this.absolutePath = absolutePath;
         this.relativePath = relativePath;
 
@@ -226,21 +268,29 @@ public abstract class HtmlTemplate
             this.velocityName = null;
         }
 
-        this.fillMetaValues(this.document, this.titles = new HashMap<>(), "title");
-        this.fillMetaValues(this.document, this.descriptions = new HashMap<>(), "description");
-        String controllerClassStr = this.getMetaValue(this.document, "controller");
+        //INIT THE HTML
+        this.document = document;
+        OutputDocument html = new OutputDocument(document);
+        this.doInitHtmlPreparsing(document, html);
+        //TODO this.attributes = html.
+
+        //Note that we need to eat these values for PageTemplates because we don't want them to end up at the client side (no problem for TagTemplates)
+        this.fillMetaValues(this.document, html, this.titles = new HashMap<>(), MetaProperty.title, true);
+        this.fillMetaValues(this.document, html, this.descriptions = new HashMap<>(), MetaProperty.description, true);
+        this.fillMetaValues(this.document, html, this.icons = new HashMap<>(), MetaProperty.icon, true);
+        String controllerClassStr = this.getMetaValue(this.document, html, MetaProperty.controller, true);
         if (!StringUtils.isEmpty(controllerClassStr)) {
             Class<?> clazz = Class.forName(controllerClassStr);
             if (TemplateController.class.isAssignableFrom(clazz)) {
                 this.controllerClass = (Class<TemplateController>) clazz;
             }
             else {
-                throw new ParseException("Encountered template with a controller that doesn't implement "+TemplateController.class.getSimpleName()+"; "+relativePath, 0);
+                throw new ParseException("Encountered template with a controller that doesn't implement " + TemplateController.class.getSimpleName() + "; " + relativePath, 0);
             }
         }
 
         this.displayType = MetaDisplayType.DEFAULT;
-        String displayType = this.getMetaValue(this.document, "display");
+        String displayType = this.getMetaValue(this.document, html, MetaProperty.display, true);
         if (!StringUtils.isEmpty(displayType)) {
             this.displayType = MetaDisplayType.valueOf(displayType.toUpperCase());
         }
@@ -250,38 +300,56 @@ public abstract class HtmlTemplate
 
         this.inlineScriptElements = getInlineScripts(this.document);
         this.externalScriptElements = getExternalScripts(this.document);
+
+        //now save the (possibly altered) html source
+        this.html = new Source(html.toString());
+    }
+
+    //-----PROTECTED METHODS-----
+    protected abstract void doInitHtmlPreparsing(Source document, OutputDocument html) throws IOException;
+    protected void setAttributes(Attributes attributes)
+    {
+        this.attributes = attributes;
     }
 
     //-----PRIVATE METHODS-----
-    private void fillMetaValues(Source source, Map<Locale, String> target, String property)
+    private void fillMetaValues(Source source, OutputDocument output, Map<Locale, String> target, MetaProperty property, boolean eatItUp)
     {
         List<Element> metas = source.getAllElements("meta");
         Iterator<Element> iter = metas.iterator();
         while (iter.hasNext()) {
             Element element = iter.next();
             String propertyVal = element.getAttributeValue("property");
-            if (propertyVal!=null && propertyVal.equalsIgnoreCase(property)) {
+            if (propertyVal != null && propertyVal.equalsIgnoreCase(BLOCKS_META_TAG_PROPERTY_PREFIX + property.toString())) {
                 Locale locale = Locale.ROOT;
                 String localeStr = element.getAttributeValue("lang");
-                if (localeStr!=null) {
+                if (localeStr != null) {
                     locale = Locale.forLanguageTag(localeStr);
                 }
                 String value = element.getAttributeValue("content");
                 target.put(locale, value);
+
+                if (eatItUp) {
+                    output.remove(element);
+                }
             }
         }
     }
-    private String getMetaValue(Source source, String property)
+    private String getMetaValue(Source source, OutputDocument output, MetaProperty property, boolean eatItUp)
     {
         String retVal = null;
 
         List<Element> metas = source.getAllElements("meta");
         Iterator<Element> iter = metas.iterator();
-        while (retVal==null && iter.hasNext()) {
+        while (retVal == null && iter.hasNext()) {
             Element element = iter.next();
             String propertyVal = element.getAttributeValue("property");
-            if (propertyVal!=null && propertyVal.equalsIgnoreCase(property)) {
+            if (propertyVal != null && propertyVal.equalsIgnoreCase(BLOCKS_META_TAG_PROPERTY_PREFIX + property.toString())) {
                 retVal = element.getAttributeValue("content");
+
+                if (eatItUp) {
+                    output.remove(element);
+                }
             }
         }
 
@@ -290,6 +358,58 @@ public abstract class HtmlTemplate
     public MetaDisplayType getDisplayType()
     {
         return displayType;
+    }
+    public static PermissionRole getResourceRoleScope(Element resource)
+    {
+        PermissionRole retVal = PermissionsConfigurator.ROLE_GUEST;
+
+        Attribute scope = resource.getAttributes().get(RESOURCE_ROLE_SCOPE_ATTRIBUTE);
+        if (scope!=null && !StringUtils.isEmpty(scope.getValue())) {
+            retVal = R.configuration().getSecurityConfig().lookupPermissionRole(scope.getValue());
+        }
+
+        //possible that the above function re-fills it with null
+        if (retVal==null) {
+            retVal = PermissionsConfigurator.ROLE_GUEST;
+        }
+
+        return retVal;
+    }
+    /**
+     * Supply a scope attached to a html resource (with data-scope-role attribute)
+     * and return if that resource should be included or not.
+     */
+    public static boolean testResourceRoleScope(PermissionRole role)
+    {
+        // guest role is not always added by default to the current principal by the security system,
+        // so if the resource is annotated GUEST (or nothing at all), assume this is a public resource
+        // so the check below would fail, while it's actually ok
+        if (role==null || role==PermissionsConfigurator.ROLE_GUEST) {
+            return true;
+        }
+        else {
+            return SecurityUtils.getSubject().hasRole(role.getRoleName());
+        }
+    }
+    private Iterable<Element> buildRoleScopeResourceIterator(List<Element> elements)
+    {
+        final Iterator iter = Iterators.filter(elements.iterator(), new Predicate<Element>()
+        {
+            @Override
+            public boolean apply(Element element)
+            {
+                return testResourceRoleScope(getResourceRoleScope(element));
+            }
+        });
+
+        return new Iterable<Element>()
+        {
+            @Override
+            public Iterator iterator()
+            {
+                return iter;
+            }
+        };
     }
 
     //-----MANAGEMENT METHODS-----

@@ -1,6 +1,5 @@
-base.plugin("blocks.core.edit.Text", ["constants.blocks.common", "blocks.core.Broadcaster", "blocks.core.Edit", "blocks.core.MediumEditor", "blocks.core.Sidebar",  function (Constants, Broadcaster, Edit, Editor, Sidebar)
+base.plugin("blocks.core.edit.Text", ["constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Edit", "blocks.core.MediumEditor", "blocks.core.Sidebar",  function (Constants, Broadcaster, Edit, Editor, Sidebar)
 {
-
     var getRangeFromPosition = function (x, y)
     {
         var range = null;

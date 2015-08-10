@@ -2,7 +2,7 @@
  * Created by wouter on 8/07/15.
  */
 
-base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", function (Class)
+base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Sidebar, SidebarUtils)
 {
     var MediumEditorExtensions = this;
 
@@ -27,8 +27,7 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", function (
 
         //-----CONSTANTS-----
         STATIC: {
-            NAME: "styles-picker",
-            STYLES: []
+            NAME: "styles-picker"
         },
 
         editorStyles: [],
@@ -120,8 +119,8 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", function (
             var styles = $('<ul class="dropdown-menu"/>');
 
             var valueAttr = "data-value";
-            for (var i = 0; i < MediumEditorExtensions.StylesPicker.STYLES.length; i++) {
-                var val = MediumEditorExtensions.StylesPicker.STYLES[i];
+            for (var i = 0; i < this.editorStyles.length; i++) {
+                var val = this.editorStyles[i];
 
                 //note that we bind to this, but pass the data in the function()
                 var btn = $('<a href="javascript:void(0)" ' + valueAttr + '="' + val.value + '">' + val.text + '</a>');
@@ -223,7 +222,6 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", function (
             this.name = MediumEditorExtensions.LinkInput.NAME;
             this.options = extendOptions(options, {});
             this.cssPrefix = this.name + '-';
-            this.inputClass = this.cssPrefix + 'input';
             this.confirmBtnClass = this.cssPrefix + 'confirm';
             this.cancelBtnClass = this.cssPrefix + 'cancel';
         },
@@ -232,25 +230,16 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", function (
         createForm: function ()
         {
             var form = $('<div id="'+('medium-editor-toolbar-form-anchor-' + this.getEditorId())+'" class="form-inline medium-editor-toolbar-form"></div>');
-            var formGroup = $('<div class="form-group"></div>').appendTo(form);
-            var inputGroup = $('<div class="input-group"></div>').appendTo(formGroup);
-            var input = $('<input type="text" class="form-control ' + this.inputClass + '" placeholder="' + this.placeholderText + '">').appendTo(inputGroup);
-            var clearBtn = $('<span class="input-btn-clear"><i class="fa fa-times"></span>').appendTo(inputGroup);
-            input.on("change keyup", function (e)
-            {
-                if (input.val() == null || input.val() == '') {
-                    clearBtn.removeClass("show");
-                }
-                else {
-                    clearBtn.addClass("show");
-                }
-            });
-            clearBtn.click(function (e)
-            {
-                input.val('');
-                input.change();
-                input.focus();
-            });
+
+            var formGroup = SidebarUtils.createTextInput(Sidebar, function getterFunction()
+                {
+                    //return element.attr(attribute);
+                }, function setterFunction(val)
+                {
+                    //return element.attr(attribute, val);
+                },
+                null, this.placeholderText, false, null
+            ).appendTo(form);
 
             var okBtn = $('<a class="btn btn-primary ' + this.confirmBtnClass + '"><i class="fa fa-check"></i></a>').appendTo(form);
             var cancelBtn = $('<a class="btn btn-link" class="' + this.cancelBtnClass + '">cancel</a>').appendTo(form);
@@ -262,7 +251,7 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", function (
         },
         getInput: function ()
         {
-            return this.getForm().querySelector('.' + this.inputClass);
+            return this.getForm().querySelector('input');
         },
 
         //-----OWN FUNCTIONS-----

@@ -1,6 +1,20 @@
 
-<select>
-    #foreach($block in $templates)
-        <option value="$block.get("name")" description="$block.get("description")">$block.get("title")</option>
-    #end
-</select>
+<div class="form-group sub-container">
+    <label>$I18N.blocks.core.selectFromTheListBelow</label>
+    <div class="list-group">
+        #foreach($block in $templates)
+            <a href="javascript:void(0)" class="list-group-item" data-value="$block.name">
+                <div class="preview">
+                    <i class="fa fa-fw #if($block.icon)$block.icon#{else}fa-square-o#end"></i>
+                </div>
+                <div class="caption">
+                    <h4>$block.title</h4>
+                    <p>
+                        $block.description
+                    </p>
+                </div>
+            </a>
+        #end
+    </div>
+</div>
+

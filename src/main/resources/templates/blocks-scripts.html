@@ -1,28 +1,25 @@
 #if($PRINCIPAL)
 
-#join()
+##-----STYLES----
 
 <link href="/assets/webjars/bootstrap/3.3.4/css/bootstrap.css" rel="stylesheet"/>
 <link href="/assets/webjars/font-awesome/4.3.0/css/font-awesome.css" rel="stylesheet"/>
 <link href="/assets/webjars/bootstrap-dialog/1.34.3/css/bootstrap-dialog.css" rel="stylesheet"/>
 
-<link href="/assets/styles/finder.less" rel="stylesheet" />
-
 ##-----SCRIPTS----
 
 <script src="/assets/webjars/jquery/1.11.1/jquery.js" type="application/javascript"></script>
 <script src="/assets/webjars/jquery-cookie/1.4.1-1/jquery.cookie.js" type="application/javascript"></script>
-<script src="/assets/webjars/bootstrap/3.3.4/js/bootstrap.js" type="application/javascript"></script>
-<script src="/assets/webjars/bootstrap/3.3.4/js/dropdown.js" type="application/javascript"></script>
-<script src="/assets/webjars/bootstrap-dialog/1.34.3/js/bootstrap-dialog.js" type="application/javascript"></script>
 <script src="/assets/webjars/jquery-ui-src/1.11.4/ui/widget.js"></script>
 <script src="/assets/webjars/jquery-file-upload/9.8.1/js/jquery.iframe-transport.js"></script>
 <script src="/assets/webjars/jquery-file-upload/9.8.1/js/jquery.fileupload.js"></script>
-<script src="/assets/scripts/medium/medium-editor.js"></script>
 
+<script src="/assets/webjars/bootstrap/3.3.4/js/bootstrap.js" type="application/javascript"></script>
+<script src="/assets/webjars/bootstrap/3.3.4/js/dropdown.js" type="application/javascript"></script>
+<script src="/assets/webjars/bootstrap-dialog/1.34.3/js/bootstrap-dialog.js" type="application/javascript"></script>
 
 <script src="/assets/scripts/core.js" type="application/javascript"></script>
-<script src="/assets/scripts/sidebar/mediumModule.js" type="application/javascript"></script>
+<script src="/assets/scripts/commons.js" type="application/javascript"></script>
 
 <script src="/assets/scripts/elements/surface.js" type="application/javascript"></script>
 <script src="/assets/scripts/elements/layoutElement.js" type="application/javascript"></script>
@@ -35,42 +32,31 @@
 <script src="/assets/scripts/elements/block.js" type="application/javascript"></script>
 <script src="/assets/scripts/elements/page.js" type="application/javascript"></script>
 
-<script src="/assets/scripts/core.js" type="application/javascript"></script>
 <script src="/assets/scripts/broadcaster.js" type="application/javascript"></script>
 <script src="/assets/scripts/layout.js" type="application/javascript"></script>
-<script src="/assets/scripts/utils/dom-manipulation.js" type="application/javascript"></script>
-
 <script src="/assets/scripts/mouse.js" type="application/javascript"></script>
 <script src="/assets/scripts/resizer.js" type="application/javascript"></script>
 <script src="/assets/scripts/dragdrop.js" type="application/javascript"></script>
-<script src="/assets/scripts/utils/highlighter.js" type="application/javascript"></script>
-<script src="/assets/scripts/utils/notification.js" type="application/javascript"></script>
-<script src="/assets/scripts/utils/sitemap.js" type="application/javascript"></script>
-<script src="/assets/scripts/sidebar/edit.js" type="application/javascript"></script>
-
-<script src="/assets/scripts/sidebar/sidebar.js" type="application/javascript"></script>
-<script src="/assets/scripts/sidebar/sidebar-utils.js" type="application/javascript"></script>
 <script src="/assets/scripts/overlay.js" type="application/javascript"></script>
-
-<script src="/assets/scripts/blocks/textedit.js" type="application/javascript"></script>
-<script src="/assets/scripts/medium/medium-styles-extension.js"></script>
-<script src="/assets/scripts/blocks/inline-textedit.js" type="application/javascript"></script>
-<script src="/assets/scripts/blocks/page.js" type="application/javascript"></script>
-<script src="/assets/scripts/blocks/image.js" type="application/javascript"></script>
-<script src="/assets/scripts/blocks/link.js" type="application/javascript"></script>
-<script src="/assets/scripts/blocks/youtube.js" type="application/javascript"></script>
-<script src="/assets/scripts/blocks/carousel.js" type="application/javascript"></script>
-
-<script src="/assets/scripts/menu/menu.js" type="application/javascript"></script>
 <script src="/assets/scripts/manager.js" type="application/javascript"></script>
 
-#end
+<script src="/assets/scripts/utils/dom-manipulation.js" type="application/javascript"></script>
+<script src="/assets/scripts/utils/notification.js" type="application/javascript"></script>
+<script src="/assets/scripts/utils/sitemap.js" type="application/javascript"></script>
 
-<script src="/constants/blocks/common?type=js" type="application/javascript"></script>
+<script src="/assets/scripts/sidebar/edit.js" type="application/javascript"></script>
+<script src="/assets/scripts/sidebar/sidebar.js" type="application/javascript"></script>
+<script src="/assets/scripts/sidebar/sidebar-utils.js" type="application/javascript"></script>
+<script src="/assets/scripts/sidebar/menu.js" type="application/javascript"></script>
 
-<script src="/constants/blocks/finder?type=js" type="application/javascript"></script>
-<script src="/messages/blocks/finder?type=js" type="application/javascript"></script>
+<script src="/assets/scripts/finder/finder-jobs.js" type="application/javascript"></script>
 <script src="/assets/scripts/finder/finder.js" type="application/javascript"></script>
 <script src="/assets/scripts/finder/finder-ui.js" type="application/javascript"></script>
 
 #end
+
+## -----PUBLIC IMPORTS-----
+<script src="/constants/blocks/core?type=js" type="application/javascript"></script>
+<script src="/constants/blocks/media?type=js" type="application/javascript"></script>
+<script src="/messages/blocks/core?type=js" type="application/javascript"></script>
+<script src="/messages/blocks/media?type=js" type="application/javascript"></script>

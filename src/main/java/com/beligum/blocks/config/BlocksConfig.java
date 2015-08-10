@@ -2,17 +2,15 @@ package com.beligum.blocks.config;
 
 import com.beligum.base.security.Authentication;
 import com.beligum.base.security.Principal;
-import com.beligum.base.server.RequestContext;
 import com.beligum.base.server.R;
+import com.beligum.base.server.RequestContext;
 import com.beligum.base.utils.Logger;
 import com.google.common.base.Charsets;
 import org.apache.shiro.UnavailableSecurityManagerException;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -45,13 +43,11 @@ public class BlocksConfig
         return BlocksConfig.instance;
     }
 
-
-
     public URI getSiteDomain()
     {
         if (this.siteDomain == null) {
             try {
-                this.siteDomain = new URI(getConfiguration("blocks.site.domain"));
+                this.siteDomain = new URI(getConfiguration("blocks.core.site.domain"));
             } catch (Exception e) {
                 Logger.error("Site domain in blocks config is not valid. We return null");
             }
@@ -59,20 +55,11 @@ public class BlocksConfig
         return this.siteDomain;
     }
 
-    public String getBlocksDBHost()
-    {
-        return getConfiguration("blocks.db.host");
-    }
-    public int getBlocksDBPort()
-    {
-        return Integer.parseInt(getConfiguration("blocks.db.port"));
-    }
-
     public URI getDefaultRdfSchema()
     {
         if (this.defaultRdfSchema == null) {
             try {
-                this.defaultRdfSchema = new URI(getConfiguration("blocks.rdf.schema.url"));
+                this.defaultRdfSchema = new URI(getConfiguration("blocks.core.rdf.schema.url"));
             } catch (Exception e) {
                 Logger.error("Default RDF Schema is not valid");
             }
@@ -82,12 +69,7 @@ public class BlocksConfig
 
     public String getDefaultRdfPrefix()
     {
-        return getConfiguration("blocks.rdf.schema.prefix");
-    }
-
-    public String getFrontEndScripts()
-    {
-        return getConfiguration("blocks.scripts.frontend");
+        return getConfiguration("blocks.core.rdf.schema.prefix");
     }
 
     public String getProjectVersion()
@@ -118,7 +100,7 @@ public class BlocksConfig
     public LinkedHashMap<String, Locale> getLanguages(){
         if(cachedLanguages==null){
             cachedLanguages = new LinkedHashMap<>();
-            ArrayList<String> cachedLanguagesTemp = new ArrayList<String>(Arrays.asList(R.configuration().getStringArray("blocks.site.languages")));
+            ArrayList<String> cachedLanguagesTemp = new ArrayList<String>(Arrays.asList(R.configuration().getStringArray("blocks.core.site.languages")));
 
             for (String l : cachedLanguagesTemp) {
 
@@ -173,12 +155,12 @@ public class BlocksConfig
     }
 
     public String getElasticSearchClusterName() {
-        String retVal = R.configuration().getString("elastic-search.cluster");
+        String retVal = R.configuration().getString("blocks.core.elastic-search.cluster");
         return retVal;
     }
 
     public String getElasticSearchHostName() {
-        String retVal = R.configuration().getString("elastic-search.host");
+        String retVal = R.configuration().getString("blocks.core.elastic-search.host");
         if (retVal == null) {
             retVal = "localhost";
         }
@@ -186,7 +168,7 @@ public class BlocksConfig
     }
 
     public Integer getElasticSearchPort() {
-        Integer retVal = R.configuration().getInt("elastic-search.port");
+        Integer retVal = R.configuration().getInt("blocks.core.elastic-search.port");
         if (retVal == null) {
             retVal = 9300;
         }

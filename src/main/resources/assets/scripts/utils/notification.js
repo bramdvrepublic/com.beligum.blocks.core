@@ -59,5 +59,5 @@ base.plugin("blocks.core.Notification", ["blocks.core.Broadcaster", function (Br
                 }
             ]
         })
-    }
+    };
 }]);

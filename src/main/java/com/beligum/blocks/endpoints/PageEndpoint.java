@@ -11,9 +11,9 @@ import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import com.beligum.blocks.models.factories.ResourceFactoryImpl;
-import com.beligum.blocks.pages.WebPageParser;
-import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.models.interfaces.Resource;
+import com.beligum.blocks.models.interfaces.WebPage;
+import com.beligum.blocks.pages.WebPageParser;
 import com.beligum.blocks.routing.Route;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlParser;
@@ -22,6 +22,8 @@ import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.beligum.blocks.utils.RdfTools;
 import com.beligum.blocks.utils.comparators.MapComparator;
+import com.google.common.base.Functions;
+import com.google.common.collect.Iterables;
 import gen.com.beligum.blocks.core.fs.html.views.modals.newblock;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
@@ -55,7 +57,7 @@ public class PageEndpoint
                     throws Exception
 
     {
-        PageTemplate pageTemplate = (PageTemplate) HtmlParser.getCachedTemplates().get(pageTemplateName);
+        PageTemplate pageTemplate = (PageTemplate) HtmlParser.getTemplateCache().get(pageTemplateName);
         R.cacheManager().getFlashCache().put(PAGE_TEMPLATE_NAME, pageTemplateName);
         return Response.seeOther(new URI(pageUrl)).build();
     }
@@ -67,7 +69,6 @@ public class PageEndpoint
                     throws Exception
 
     {
-
         URI uri = new URI(url);
         // Analyze the url to find the correct Route
         Route route = new Route(uri, PersistenceControllerImpl.instance());
@@ -141,9 +142,9 @@ public class PageEndpoint
     }
 
     @GET
-    @Path("blocks")
+    @Path("/blocks")
     public Response getBlocks() {
-        TemplateCache cache = HtmlParser.getCachedTemplates();
+        TemplateCache cache = HtmlParser.getTemplateCache();
         List<Map<String, String>> templates = new ArrayList<>();
         Locale lang = BlocksConfig.instance().getRequestDefaultLanguage();
         for (HtmlTemplate template : cache.values()) {
@@ -151,72 +152,52 @@ public class PageEndpoint
                 HashMap<String, String> pageTemplate = new HashMap();
                 String title = null;
                 String description = null;
+                String icon = null;
 
-                // current getLanguage of the request
-                if (template.getTitles().containsKey(lang)) {
-                    title = template.getTitles().get(lang);
-                    description = template.getDescriptions().get(lang);
-                }
-                // default getLanguage of the site
-                else if (template.getTitles().containsKey(BlocksConfig.instance().getDefaultLanguage())) {
-                    title = template.getTitles().get(BlocksConfig.instance().getDefaultLanguage());
-                    description = template.getDescriptions().get(BlocksConfig.instance().getDefaultLanguage());
-                }
-                // No getLanguage if available
-                else if (template.getTitles().containsKey(Locale.ROOT)) {
-                    title = template.getTitles().get(Locale.ROOT);
-                    description = template.getDescriptions().get(Locale.ROOT);
-                }
-                // Random title and description
-                else if (template.getTitles().values().size() > 0) {
-                    title = (String) template.getTitles().values().toArray()[0];
-                    if (template.getDescriptions().size() > 0) {
-                        description = (String) template.getDescriptions().values().toArray()[0];
-                    }
-                }
-                // No title available
-                else {
-                    // TODO make this a translation
-                    title = "A template";
-                }
+                final Locale[] LANGS = {lang, BlocksConfig.instance().getDefaultLanguage(), Locale.ROOT};
 
-                if (description == null) {
-                    description = "No description available";
-                }
+                // TODO make defaults a translation
                 pageTemplate.put("name", template.getTemplateName());
-                pageTemplate.put("title", title);
-                pageTemplate.put("description", description);
+                pageTemplate.put("title", this.findI18NValue(LANGS, template.getTitles(), "A template"));
+                pageTemplate.put("description", this.findI18NValue(LANGS, template.getDescriptions(), "No description available"));
+                pageTemplate.put("icon", this.findI18NValue(LANGS, template.getIcons(), null));
                 templates.add(pageTemplate);
             }
         }
+
+        //sort the blocks by title
         Collections.sort(templates, new MapComparator("title"));
 
         Template template = newblock.get().getNewTemplate();
         template.set("templates", templates);
+
         return Response.ok(template.render()).build();
     }
 
     @GET
-    @Path("block/{name:.*}")
+    @Path("/block/{name:.*}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getBlock(@PathParam("name") String name) {
-        HashMap<String, String> retVal = new HashMap<>();
+        HashMap<String, Object> retVal = new HashMap<>();
 
         HtmlTemplate htmlTemplate = null;
-        for (HtmlTemplate t: HtmlParser.getCachedTemplates().values()) {
+        for (HtmlTemplate t: HtmlParser.getTemplateCache().values()) {
             if (t.getTemplateName().equals(name)) {
                 htmlTemplate = t;
                 break;
             }
         }
 
-        Template block = R.templateEngine().getNewStringTemplate("<"+ name + "></"+name+">");
+        //TODO change these to constants
+        Template block = R.templateEngine().getNewStringTemplate("<" + name + "></" + name + ">");
         retVal.put("html", block.render());
-//        retVal.put("links", htmlTemplate.getInlineStyleElements());
+        retVal.put("inlineStyles", Iterables.transform(htmlTemplate.getInlineStyleElementsForCurrentUser(), Functions.toStringFunction()));
+        retVal.put("externalStyles", Iterables.transform(htmlTemplate.getExternalStyleElementsForCurrentUser(), Functions.toStringFunction()));
+        retVal.put("inlineScripts", Iterables.transform(htmlTemplate.getInlineScriptElementsForCurrentUser(), Functions.toStringFunction()));
+        retVal.put("externalScripts", Iterables.transform(htmlTemplate.getExternalScriptElementsForCurrentUser(), Functions.toStringFunction()));
+
         return Response.ok(retVal).build();
     }
-
-
 
     @DELETE
     @Path("/delete")
@@ -235,4 +216,29 @@ public class PageEndpoint
         return Response.ok().build();
     }
 
+
+    private String findI18NValue(Locale[] langs, Map<Locale, String> values, String defaultValue)
+    {
+        String retVal = null;
+
+        if (!values.isEmpty()) {
+            for (Locale l : langs) {
+                retVal = values.get(l);
+
+                if (retVal != null) {
+                    break;
+                }
+            }
+
+            if (retVal==null) {
+                retVal = values.values().iterator().next();
+            }
+        }
+
+        if (retVal==null) {
+            retVal = defaultValue;
+        }
+
+        return retVal;
+    }
 }
