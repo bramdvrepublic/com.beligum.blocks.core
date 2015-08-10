@@ -13,19 +13,13 @@ base.plugin("blocks.core.Overlay", ["constants.blocks.core", function (CoreConst
     {
         hoveredBlock = layoutElement;
     };
+
     this.getHoveredBlock = function ()
     {
         return hoveredBlock;
     };
 
-    this.setHoveredProperty = function (layoutElement)
-    {
-        hoveredProperty = layoutElement;
-    };
-    this.getHoveredProperty = function ()
-    {
-        return hoveredProperty;
-    };
+
     /*
      * Container is the block IN which we are dragging.
      * If we set this to null then then the top level block(s) are the container

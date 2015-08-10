@@ -7,7 +7,7 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
 
     var Editor = null;
     //default values, overridable
-    var toolbarOptions = [Extensions.StylesPicker.NAME, 'bold', 'italic', 'underline', 'strike-through', 'superscript', Extensions.LinkInput.NAME, 'orderedlist', 'unorderedlist', 'justifyLeft', 'justifyCenter', 'justifyRight'];
+    var toolbarButtons = [Extensions.StylesPicker.NAME, 'bold', 'italic', 'underline', 'strike-through', 'superscript', Extensions.LinkInput.NAME, 'orderedlist', 'unorderedlist', 'justifyLeft', 'justifyCenter', 'justifyRight'];
     var stylePickerStyles = [];
 
     this.getToolbarElement = function ()
@@ -39,7 +39,7 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
         // Always show toolbar
         toolbarOptions.static = true;
         toolbarOptions.updateOnEmptySelection = true;
-        toolbarOptions.buttons = toolbarOptions;
+        toolbarOptions.buttons = toolbarButtons;
         toolbarOptions.align = 'left';
 
         options.disableReturn = inline;

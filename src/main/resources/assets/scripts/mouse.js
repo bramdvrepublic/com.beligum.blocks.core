@@ -293,7 +293,6 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             //we're dragging a block around
             else if (draggingStatus == BaseConstants.DRAGGING.YES) {
                 var block = Overlay.getHoveredBlock();
-                var property = Overlay.getHoveredProperty();
 
                 Broadcaster.send(Broadcaster.EVENTS.DRAG_OVER_BLOCK, event, {
                     dragoverBlock: block

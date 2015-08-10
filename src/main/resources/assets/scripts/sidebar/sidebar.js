@@ -6,6 +6,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 {
     var SideBar = this;
     var configPanels = {};
+
     var currentProperty = null;
 
     /*
@@ -56,7 +57,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             // check if we clicked outside this block
             if (!preventBlurElements.is(e.target) && preventBlurElements.has(e.target).length === 0 && preventBlurElements != newProperty && preventBlurElements.has(newProperty).length === 0) {
                 // we clicked outside the property
-                blurCurrentSelection(property, block);
+                blurCurrentSelection(property, currentBlock);
 
                 // Only send edit_end on mouse up. Otherwise the other clicked property will start editing immediately
                 $(document).on("mouseup.sidebar_edit_end", function (event)
@@ -67,8 +68,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
             }
             // We didn't change block but we did change property
-            else if (block != null && newProperty != null && (property == null || newProperty[0] != property[0])) {
-                blurCurrentSelection(property, block);
+            else if (currentBlock != null && newProperty != null && (property == null || newProperty[0] != property[0])) {
+                blurCurrentSelection(property, currentBlock);
                 update(newProperty);
             } else {
                 // nothing changed
@@ -85,11 +86,11 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         if (property != null) {
             var editFunction = Edit.makeEditable(property);
             if (editFunction != null && editFunction.blur != null) {
-                editFunction.blur(property, block);
+                editFunction.blur(property, currentBlock);
             }
         }
         reset();
-        block = null;
+        currentBlock = null;
     }
 
     var reset = function ()
@@ -330,26 +331,52 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     this.enableEditing = function ()
     {
         //don't filter on overlay classes here, because we deactivated events on the overlay during mousedown (see  pointer-events: none;)
-        $(document).on("mouseup.sidebar_edit_start", "[property], [data-property]", function (event)
+        $(document).on("mouseup.sidebar_edit_start", function (event)
         {
-            var element = $(event.currentTarget);
+            var block = Overlay.getHoveredBlock();
+            var propertyElement = $(event.currentTarget);
+
+            while (!(propertyElement.hasAttribute("property") || propertyElement.hasAttribute("data-property")) && el[0].tagName.indexOf("-") == -1 && el[0].tagName != "BODY") {
+                propertyElement = propertyElement.parent();
+            }
+
+            update(firstPropEl);
+
 
             //TODO look up the property of this overlay with the reverse map
-            //var property = blocks.elements.Property.INDEX[element.attr(blocks.elements.Property.OVERLAY_INDEX_ATTR)];
+            //var block = null;
+            //if (propertyElement.length>0) {
+            //    var firstPropEl = null;
+            //    var el = property.element;
+            //
+            //    while (firstPropEl == null && el[0].tagName.indexOf("-") == -1 && el[0].tagName != "BODY") {
+            //        if (el.hasAttribute("property") || el.hasAttribute("data-property")) {
+            //            firstPropEl = el;
+            //            break;
+            //        } else {
+            //            el = el.parent();
+            //        }
+            //    }
+            //
+            //    if (firstPropEl != null) {
+            //        Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD, event);
+            //        update(firstPropEl);
+            //    }
+            //
+            //}
+            //else {
+            //    Logger.error("Encountered overlay without proper element attached, this shouldn't happen");
+            //}
 
-            Logger.debug("################# Triggering element for "+$('<div/>').append(element.clone()).html());
+            //
+            //var block = blocks.elements.Property.INDEX[element.attr(blocks.elements.Property.OVERLAY_INDEX_ATTR)];
 
-
-
-
-
-
-            //THIS IS WHERE I LEFT OFF: how do we do this? Find the first property insdie, or on tag name, or just pass this tag?
+            //THIS IS WHERE I LEFT OFF: how do we do this? Find the first property inside, or on tag name, or just pass this tag?
             //last one is my favorite
-            var editFunction = Edit.makeEditable(element);
+            var editFunction = Edit.makeEditable(propertyElement);
             if (editFunction != null && editFunction.focus != null) {
-                var windowID = SideBar.createWindow(Constants.CONTEXT, element, "BLAH");
-                editFunction.focus(windowID, element, null);
+                var windowID = SideBar.createWindow(Constants.CONTEXT, propertyElement, "BLAH");
+                editFunction.focus(windowID, propertyElement, null);
             }
 
             //DEBUGGIGN
