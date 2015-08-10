@@ -336,6 +336,13 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             //look up the property of this overlay with the reverse map
             var property = blocks.elements.Property.INDEX[element.attr(blocks.elements.Property.OVERLAY_INDEX_ATTR)];
 
+
+
+
+
+
+
+
             //THIS IS WHERE I LEFT OFF: how do we do this? Find the first property insdie, or on tag name, or just pass this tag?
             //last one is my favorite
             var editFunction = Edit.makeEditable(property.element);

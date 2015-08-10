@@ -185,6 +185,9 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             // check for left mouse click
             if (event.which == 1) {
                 var block = Overlay.getHoveredBlock();
+
+                $('.'+BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS).css("display", "none");
+
                 if (draggingStatus == BaseConstants.DRAGGING.NO && block != null && block.canDrag) {
                     draggingStatus = BaseConstants.DRAGGING.WAITING;
                     draggingStartEvent = event;
