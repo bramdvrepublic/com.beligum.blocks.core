@@ -49,6 +49,4 @@ base.plugin("blocks.core.Edit", ["blocks.core.Broadcaster", "constants.blocks.co
 
         return retVal;
     };
-
-
 }]);

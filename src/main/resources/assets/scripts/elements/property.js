@@ -2,7 +2,7 @@
  * Created by wouter on 5/03/15.
  */
 
-base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Constants", "constants.blocks.core", "blocks.core.DomManipulation", "blocks.core.Edit", function (Class, BaseConstants, BlocksConstants, DOM, Edit)
+base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Constants", "constants.blocks.core", "blocks.core.DomManipulation", "blocks.core.Edit", "base.core.Commons", function (Class, BaseConstants, BlocksConstants, DOM, Edit, Commons)
 {
 
     var body = $("body");
@@ -11,6 +11,13 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Cons
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};
     blocks.elements.Property = Class.create(blocks.elements.LayoutElement, {
+
+        STATIC: {
+            //will keep an index of all registerd properties (to back-reference from their overlays)
+            INDEX: {},
+            OVERLAY_INDEX_ATTR: "data-property-index"
+        },
+
         constructor: function (element, parent, index)
         {
             blocks.elements.Property.Super.call(this, element, parent, index);
@@ -38,6 +45,11 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Cons
             else {
                 this.overlay.addClass(BlocksConstants.PROPERTY_OVERLAY_CLASS);
             }
+
+            //will be used to back-reference from the overlay to this object
+            this.id = Commons.generateId();
+            blocks.elements.Property.INDEX[this.id] = this;
+            this.overlay.attr(blocks.elements.Property.OVERLAY_INDEX_ATTR, this.id);
 
             // Remove sides of layout lines to prevent overlap
             var block = this.parent.parent;

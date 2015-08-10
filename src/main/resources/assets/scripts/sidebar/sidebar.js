@@ -7,29 +7,23 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     var SideBar = this;
     var configPanels = {};
     var currentProperty = null;
-    var currentBlockEvent = null;
 
     /*
      * When clicking a property disable drag drop
      * */
-    var setBlockFocus = function (property, block)
+    var setBlockFocus = function (property)
     {
+        currentProperty = property;
+
         // Defines the element outside which to click to blur
         // is block if block is available
         var borderingElement = null;
 
         // Blur everything visually
-        if (block != null) {
-            block.element.parents().siblings().addClass(Constants.OPACITY_CLASS);
-            block.element.siblings().addClass(Constants.OPACITY_CLASS);
-            block.element.addClass(Constants.PROPERTY_EDIT_CLASS);
-            borderingElement = block.element;
-        } else {
-            property.parents().siblings().addClass(Constants.OPACITY_CLASS);
-            property.siblings().addClass(Constants.OPACITY_CLASS);
-            property.addClass(Constants.PROPERTY_EDIT_CLASS);
-            borderingElement = property;
-        }
+        property.element.parents().siblings().addClass(Constants.OPACITY_CLASS);
+        property.element.siblings().addClass(Constants.OPACITY_CLASS);
+        property.element.addClass(Constants.PROPERTY_EDIT_CLASS);
+        borderingElement = property.element;
 
         var sidebarElement = $("." + Constants.PAGE_SIDEBAR_CLASS);
         sidebarElement.removeClass(Constants.OPACITY_CLASS);
@@ -42,7 +36,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
         $(document).on("mousedown.sidebar_edit_end", function (e)
         {
-
             var newProperty = null;
             var element = $(e.target);
 
@@ -76,26 +69,19 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             // We didn't change block but we did change property
             else if (block != null && newProperty != null && (property == null || newProperty[0] != property[0])) {
                 blurCurrentSelection(property, block);
-                update(newProperty, Broadcaster.createEvent(e));
+                update(newProperty);
             } else {
                 // nothing changed
             }
         });
     };
 
-    var blurCurrentSelection = function (property, block)
+    var blurCurrentSelection = function (property)
     {
         // remove this trigger
         $(document).off("mousedown.sidebar_edit_end");
 
         // blur this block
-        if (block != null) {
-            var editFunction = Edit.makeEditable(block.element);
-            if (editFunction != null && editFunction.blur != null) {
-                editFunction.blur(property, block);
-            }
-        }
-
         if (property != null) {
             var editFunction = Edit.makeEditable(property);
             if (editFunction != null && editFunction.blur != null) {
@@ -108,33 +94,30 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
     var reset = function ()
     {
-        //blurCurrentSelection(currentProperty, currentBlockEvent);
+        //blurCurrentSelection(currentProperty);
         $("." + Constants.OPACITY_CLASS).removeClass(Constants.OPACITY_CLASS);
         $("." + Constants.PREVENT_BLUR_CLASS).removeClass(Constants.PREVENT_BLUR_CLASS);
         $("." + Constants.PROPERTY_EDIT_CLASS).removeClass(Constants.PROPERTY_EDIT_CLASS);
         $("." + Constants.BLOCK_EDIT_CLASS).removeClass(Constants.BLOCK_EDIT_CLASS);
 
         currentProperty = null;
-        currentBlockEvent = null;
         configPanels = {};
         SideBar.refresh();
     };
 
     this.reset = function ()
     {
-        blurCurrentSelection(currentProperty, currentBlockEvent);
+        blurCurrentSelection(currentProperty);
     };
 
     /*
      * Drill down and add functionality for each block
      * */
-    var update = function (property, blockEvent)
+    var update = function (property)
     {
         // property: add div
         currentProperty = property;
-        currentBlockEvent = blockEvent;
-        var block = currentBlockEvent.property;
-        setBlockFocus(property, block);
+        setBlockFocus(property);
         SideBar.refresh();
     };
 
@@ -143,10 +126,11 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
      * */
     this.refresh = function ()
     {
-        var filesContainer = $("#" + Constants.SIDEBAR_CONTEXT_ID);
-        filesContainer.empty();
+        //start with an empty sidebar and add frames where needed
+        var sidebar = $("#" + Constants.SIDEBAR_CONTEXT_ID);
+        sidebar.empty();
 
-        var block = Overlay.getContainer();
+        var block = currentProperty;
         //this allows us to also use this function outside of a DnD context
         if (block) {
             var editFunction = Edit.makeEditable(block.element);
@@ -154,10 +138,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 var windowID = SideBar.createWindow(Constants.CONTEXT, block.element, "Page");
                 editFunction.focus(windowID, block.element, null);
             }
-        }
-
-        if (currentBlockEvent != null) {
-            block = currentBlockEvent.property;
         }
 
         var activeBlocks = [];
@@ -178,7 +158,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 activeBlocks.push({element: block.element, id: windowID});
 
                 if (editFunction != null && editFunction.focus != null) {
-                    editFunction.focus(windowID, block.element, currentBlockEvent);
+                    editFunction.focus(windowID, block);
                 }
             }
             block = block.parent;
@@ -187,7 +167,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         // Add edit functionality for properties
         // Do not check blocks
         var property = currentProperty;
-        while (property != null && !property.hasClass(Constants.PAGE_CONTENT) && property[0].tagName.indexOf("-") < 0) {
+        while (property != null && property.element != null && !property.element.hasClass(Constants.PAGE_CONTENT) && property.element[0].tagName.indexOf("-") < 0) {
             var editFunction = Edit.makeEditable(property);
             if (editFunction != null && editFunction.focus != null) {
                 var windowId = null;
@@ -197,7 +177,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                         break;
                     }
                 }
-                editFunction.focus(windowId, currentProperty, currentBlockEvent);
+                editFunction.focus(windowId, currentProperty);
             }
             property = property.parent();
         }
@@ -349,45 +329,89 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     // Called when editing is enabled. Catch mouseup and check if a block is editable
     this.enableEditing = function ()
     {
-        $(document).on("mouseup.sidebar_edit_start", "." + Constants.PAGE_CONTENT_CLASS, function (event)
+        $(document).on("mouseup.sidebar_edit_start", '.'+Constants.BLOCK_OVERLAY_CLASS, function (event)
         {
             var element = $(event.target);
 
-            // find parents until parent is <body> or until parent has property attribute
-            // first property enable editing
-            if (element.length>0 && DOM.isContainer(element)) {
-                element = element.children().last();
-            }
-            if (element.length>0 && DOM.isRow(element)) {
-                element = element.children().last();
-            }
-            if (element.length>0 && DOM.isColumn(element)) {
-                element = element.children().last();
+            //look up the property of this overlay with the reverse map
+            var property = blocks.elements.Property.INDEX[element.attr(blocks.elements.Property.OVERLAY_INDEX_ATTR)];
+
+            //THIS IS WHERE I LEFT OFF: how do we do this? Find the first property insdie, or on tag name, or just pass this tag?
+            //last one is my favorite
+            var editFunction = Edit.makeEditable(property.element);
+            if (editFunction != null && editFunction.focus != null) {
+                var windowID = SideBar.createWindow(Constants.CONTEXT, property.element, "BLAH");
+                editFunction.focus(windowID, property.element, null);
             }
 
-            if (element.length>0) {
-                var property = null;
+            //DEBUGGIGN
+            return;
 
-                while (property == null && element[0].tagName.indexOf("-") == -1 && element[0].tagName != "BODY") {
-                    if (element.hasAttribute("property") || element.hasAttribute("data-property")) {
-                        property = element;
+
+
+
+
+
+
+            if (property.element.length>0) {
+                var firstPropEl = null;
+                var el = property.element;
+
+                while (firstPropEl == null && el[0].tagName.indexOf("-") == -1 && el[0].tagName != "BODY") {
+                    if (el.hasAttribute("property") || el.hasAttribute("data-property")) {
+                        firstPropEl = el;
                         break;
                     } else {
-                        element = element.parent();
+                        el = el.parent();
                     }
                 }
-
-                //TODO work on this
-                var blockEvent = Broadcaster.createEvent(event);
-
-                if (blockEvent.block != null || property != null) {
+                if (firstPropEl != null) {
                     Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD, event);
-                    update(property, blockEvent);
+                    update(firstPropEl);
                 }
             }
             else {
-                Logger.warn("Empty element found (possibly after drilling down), is this ok?");
+                Logger.error("Encountered overlay without proper element attached, this shouldn't happen");
             }
+
+            //DEBUGGING
+            return;
+            //
+            //// find parents until parent is <body> or until parent has property attribute
+            //// first property enable editing
+            //if (element.length>0 && DOM.isContainer(element)) {
+            //    element = element.children().last();
+            //}
+            //if (element.length>0 && DOM.isRow(element)) {
+            //    element = element.children().last();
+            //}
+            //if (element.length>0 && DOM.isColumn(element)) {
+            //    element = element.children().last();
+            //}
+            //
+            //if (element.length>0) {
+            //    var property = null;
+            //
+            //    while (property == null && element[0].tagName.indexOf("-") == -1 && element[0].tagName != "BODY") {
+            //        if (element.hasAttribute("property") || element.hasAttribute("data-property")) {
+            //            property = element;
+            //            break;
+            //        } else {
+            //            element = element.parent();
+            //        }
+            //    }
+            //
+            //    //TODO work on this
+            //    var blockEvent = Broadcaster.createEvent(event);
+            //
+            //    if (blockEvent.block != null || property != null) {
+            //        Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD, event);
+            //        update(property, blockEvent);
+            //    }
+            //}
+            //else {
+            //    Logger.warn("Empty element found (possibly after drilling down), is this ok?");
+            //}
         });
     };
 
@@ -396,6 +420,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         $(document).off("mouseup.sidebar_edit_start");
     };
 
+    //TODO factor this away because the finder is no dependency of this project
     this.loadFinder = function (options)
     {
         var contextTab = $("#" + Constants.SIDEBAR_CONTEXT_ID);

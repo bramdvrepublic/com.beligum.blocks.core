@@ -19,7 +19,6 @@ base.plugin("blocks.edit.Image", ["constants.blocks.core", "blocks.core.Edit", "
 
     };
 
-    Edit.registerByTag("IMG", this);
-
+    Edit.registerByTag("BLOCKS-IMAGE", this);
 
 }]);
