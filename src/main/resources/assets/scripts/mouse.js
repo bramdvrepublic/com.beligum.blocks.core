@@ -99,6 +99,9 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         startBlock = null;
         draggingStatus = BaseConstants.DRAGGING.NO;
 
+        //re-enable (or reset) the events of the overlays to work
+        $('.'+BlocksConstants.BLOCK_OVERLAY_CLASS).removeClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
+
         //since we're only listening for move events after clicking now, deregister this by default
         $(document).off("mousemove.blocks_core");
     };
@@ -186,13 +189,15 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             if (event.which == 1) {
                 var block = Overlay.getHoveredBlock();
 
-                $('.'+BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS).css("display", "none");
+                //we need this to enable sidebar.js to know on which element we really clicked (instead of click-events on the overlay)
+                $('.'+BlocksConstants.BLOCK_OVERLAY_CLASS).addClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
 
                 if (draggingStatus == BaseConstants.DRAGGING.NO && block != null && block.canDrag) {
                     draggingStatus = BaseConstants.DRAGGING.WAITING;
                     draggingStartEvent = event;
                     startBlock = block;
 
+                    //put the mousemove on the document instead of the overlay so we get the events even though BLOCK_OVERLAY_NO_EVENTS_CLASS
                     $(document).on("mousemove.blocks_core", function (event)
                     {
                         mouseMove(event);
@@ -264,6 +269,9 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             draggingStatus = BaseConstants.DRAGGING.YES;
             //Logger.debug("Start drag");
 
+            //we need this to enable sidebar.js to know on which element we really clicked (instead of click-events on the overlay)
+            $('.'+BlocksConstants.BLOCK_OVERLAY_CLASS).removeClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
+
             //pass this along with the custom event data object
             Broadcaster.send(Broadcaster.EVENTS.START_DRAG, event, {
                 //we'll pass the block we initially had our cursor over (even before the wait threshold)
@@ -278,15 +286,15 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             //first, update the direction and speed vectors
             calculateDirection(event);
 
-            var block = Overlay.getHoveredBlock();
-            var property = Overlay.getHoveredProperty();
-
             //we're waiting for the threshold to be exceeded
             if (draggingStatus == BaseConstants.DRAGGING.WAITING) {
                 enableDragAfterTreshold(event);
             }
             //we're dragging a block around
             else if (draggingStatus == BaseConstants.DRAGGING.YES) {
+                var block = Overlay.getHoveredBlock();
+                var property = Overlay.getHoveredProperty();
+
                 Broadcaster.send(Broadcaster.EVENTS.DRAG_OVER_BLOCK, event, {
                     dragoverBlock: block
                 });

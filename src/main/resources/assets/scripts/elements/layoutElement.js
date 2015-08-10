@@ -439,12 +439,13 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core
                 this.overlay.css("left", this.left + "px");
                 this.overlay.css("top", this.top + "px");
 
-                //put all overlays in a wrapper element for easy mgmt
-                var wrapper = $('.'+BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS);
-                if (wrapper.length==0) {
-                    wrapper = $("<div class='" + BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS + "' />").appendTo($('.'+BlocksConstants.PAGE_CONTENT_CLASS));
-                }
-                wrapper.append(this.overlay);
+                //TODO if we want to put them all in a wrapper element
+                //var wrapper = $('.'+BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS);
+                //if (wrapper.length==0) {
+                //    wrapper = $("<div class='" + BlocksConstants.BLOCK_OVERLAYS_WRAPPER_CLASS + "' />").appendTo($('.'+BlocksConstants.PAGE_CONTENT_CLASS));
+                //}
+                //wrapper.append(this.overlay);
+                body.append(this.overlay);
 
                 //this only seems to work after the overlay has been added to the body
                 //Note: difference between mouseenter and mouseover:

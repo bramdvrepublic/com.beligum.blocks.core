@@ -329,14 +329,15 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     // Called when editing is enabled. Catch mouseup and check if a block is editable
     this.enableEditing = function ()
     {
-        $(document).on("mouseup.sidebar_edit_start", '.'+Constants.BLOCK_OVERLAY_CLASS, function (event)
+        //don't filter on overlay classes here, because we deactivated events on the overlay during mousedown (see  pointer-events: none;)
+        $(document).on("mouseup.sidebar_edit_start", "[property], [data-property]", function (event)
         {
-            var element = $(event.target);
+            var element = $(event.currentTarget);
 
-            //look up the property of this overlay with the reverse map
-            var property = blocks.elements.Property.INDEX[element.attr(blocks.elements.Property.OVERLAY_INDEX_ATTR)];
+            //TODO look up the property of this overlay with the reverse map
+            //var property = blocks.elements.Property.INDEX[element.attr(blocks.elements.Property.OVERLAY_INDEX_ATTR)];
 
-
+            Logger.debug("################# Triggering element for "+$('<div/>').append(element.clone()).html());
 
 
 
@@ -345,10 +346,10 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
             //THIS IS WHERE I LEFT OFF: how do we do this? Find the first property insdie, or on tag name, or just pass this tag?
             //last one is my favorite
-            var editFunction = Edit.makeEditable(property.element);
+            var editFunction = Edit.makeEditable(element);
             if (editFunction != null && editFunction.focus != null) {
-                var windowID = SideBar.createWindow(Constants.CONTEXT, property.element, "BLAH");
-                editFunction.focus(windowID, property.element, null);
+                var windowID = SideBar.createWindow(Constants.CONTEXT, element, "BLAH");
+                editFunction.focus(windowID, element, null);
             }
 
             //DEBUGGIGN
