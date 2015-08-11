@@ -211,7 +211,15 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 else if (draggingStatus == BaseConstants.DRAGGING.NO && event.target != null && ($(event.target).hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || $(event.target).parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0)) {
                     draggingStatus = BaseConstants.DRAGGING.WAITING;
                     draggingStartEvent = event;
-                    //Logger.debug("Start new drag");
+
+                    // signal we're dragging a new block
+                    startBlock = null;
+
+                    //put the mousemove on the document instead of the overlay so we get the events even though BLOCK_OVERLAY_NO_EVENTS_CLASS
+                    $(document).on("mousemove.blocks_core", function (event)
+                    {
+                        mouseMove(event);
+                    });
                 }
                 else if ($(event.target).hasClass(BlocksConstants.BLOCKS_START_BUTTON) || $(event.target).parents("." + BlocksConstants.BLOCKS_START_BUTTON).length > 0) {
                     //FIXME right that nothing is in here?
@@ -257,20 +265,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 else if (draggingStatus == BaseConstants.DRAGGING.WAITING) {
 
                     //we go hunting for the first property up the chain, starting from the specific element we did the mouseup on
-                    var propertyOrTagElement = element;
-                    while (!(propertyOrTagElement.hasAttribute("property") || propertyOrTagElement.hasAttribute("data-property")) && propertyOrTagElement.prop("tagName").indexOf("-") == -1 && propertyOrTagElement.prop("tagName") != "BODY") {
-                        propertyOrTagElement = propertyOrTagElement.parent();
-                    }
-                    //if we hit the body boundary, we actually didn't find anything
-                    if (propertyOrTagElement.prop("tagName") == "BODY") {
-                        propertyOrTagElement = null;
-                    }
-                    //if we hit a template boundary and it's not the same as the startBlock, we didn't find anything (weird situation though...)
-                    else if (propertyOrTagElement.prop("tagName").indexOf("-") != -1) {
-                        if (propertyOrTagElement!=startBlock) {
-                            propertyOrTagElement = null;
-                        }
-                    }
+                    var propertyOrTagElement = Hover.findFirstParentPropertyOrTemplate(startBlock, element);
 
                     //TODO should we only fire this when propertyElement != null?
                     //this will mainly end up in sidebar.js

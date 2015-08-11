@@ -53,6 +53,7 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", function (BlocksConst
         if (Hover.getPageBlock() != null) {
             var elements = Hover.getPageBlock().findElements(0, 9);
             for (var i = 0; i < elements.length; i++) {
+                //only valid bootstrapped-layouted blocks can be dragged (eg. the first element in a column in a row)
                 if (elements[i].canDrag) {
                     elements[i].showOverlay();
                 }
@@ -117,4 +118,24 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", function (BlocksConst
         $("." + BlocksConstants.BLOCK_EDIT_CLASS).removeClass(BlocksConstants.BLOCK_EDIT_CLASS);
     };
 
+    this.findFirstParentPropertyOrTemplate = function(block, element)
+    {
+        //we go hunting for the first property up the chain, starting from the specific element we did the mouseup on
+        var propertyOrTagElement = element;
+        while (!(propertyOrTagElement.hasAttribute("property") || propertyOrTagElement.hasAttribute("data-property")) && propertyOrTagElement.prop("tagName").indexOf("-") == -1 && propertyOrTagElement.prop("tagName") != "BODY") {
+            propertyOrTagElement = propertyOrTagElement.parent();
+        }
+        //if we hit the body boundary, we actually didn't find anything
+        if (propertyOrTagElement.prop("tagName") == "BODY") {
+            propertyOrTagElement = null;
+        }
+        //if we hit a template boundary and it's not the same as the startBlock, we didn't find anything (weird situation though...)
+        else if (propertyOrTagElement.prop("tagName").indexOf("-") != -1) {
+            if (propertyOrTagElement!=block) {
+                propertyOrTagElement = null;
+            }
+        }
+
+        return propertyOrTagElement;
+    };
 }]);

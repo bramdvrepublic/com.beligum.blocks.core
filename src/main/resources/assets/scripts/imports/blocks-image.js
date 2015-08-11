@@ -1,24 +1,29 @@
 /*
  * Allows editiong of an image when youy click on it
  * */
-base.plugin("blocks.edit.Image", ["constants.blocks.core", "blocks.core.Edit", "blocks.core.Sidebar",  function (Constants, Edit, Sidebar)
+base.plugin("blocks.edit.Image", ["constants.blocks.core", "blocks.core.Edit", "blocks.core.Sidebar", "blocks.core.SidebarUtils",  function (Constants, Edit, Sidebar, SidebarUtils)
 {
 
-    this.focus = function(windowID, element, blockEvent)
+    this.focus = function(block, element, event)
     {
-        if (windowID) {
-            var values = [
-                {value: "bordered", name: "Met rand"},
-                {value: "", name: "Zonder rand"}
-            ];
+        var retVal = [];
 
-            Sidebar.addUniqueClass(windowID, element, "Rand", values);
-            Sidebar.addValueAttribute(windowID, element, "Image url", "Paste or type an image link", "src", false, true, false);
-        }
+        retVal.push(SidebarUtils.addUniqueClass(Sidebar, element, "Rand", [
+            {value: "bordered", name: "Met rand"},
+            {value: "", name: "Zonder rand"}
+        ]));
+        retVal.push(SidebarUtils.addValueAttribute(Sidebar, element, "Image url", "Paste or type an image link", "src", false, true, false));
+
+        return retVal;
     };
 
-    this.blur = function() {
+    this.blur = function(block, element)
+    {
+    };
 
+    this.getWindowName = function ()
+    {
+        return "Image";
     };
 
     Edit.registerByTag("IMG", this);

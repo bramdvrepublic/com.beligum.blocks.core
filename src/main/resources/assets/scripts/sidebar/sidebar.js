@@ -22,31 +22,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     {
         this.reset();
 
-        //while (currBlock != null) {
-        //    if (currBlock instanceof blocks.elements.Property) {
-        //        var editFunction = Edit.makeEditable(element);
-        //        if (editFunction != null && editFunction.focus != null) {
-        //            var title = 'Block';
-        //            if (editFunction.getWindowName != null) {
-        //                title = editFunction.getWindowName();
-        //            }
-        //            var windowID = this.createWindow(Constants.CONTEXT, element, title);
-        //
-        //            if (currBlock.canDrag) {
-        //                SideBar.addRemoveBlockButton(windowID, currBlock);
-        //            }
-        //
-        //            activeBlocks.push({element: block.element, id: windowID});
-        //
-        //            if (editFunction != null && editFunction.focus != null) {
-        //                editFunction.focus(windowID, block);
-        //            }
-        //
-        //            editFunction.focus(windowID, element, null);
-        //        }
-        //    }
-        //}
-
         var currBlock = block;
         var currElement = element;
         activeBlocks = [];
@@ -68,11 +43,12 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 }
             }
             currBlock = currBlock.parent;
+            // if the element is not the same as block.element, the first loop will be different, but
+            // after one time, it will ease out
             currElement = currBlock==null?null:currBlock.element;
         }
 
         var title = null;
-        var stop = false;
         for (var i=activeBlocks.length-1;i>=0;i--) {
             var e = activeBlocks[i];
 
@@ -94,37 +70,38 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
             // if a parent stopped the creation of sub-windows, keep executing the focus() method,
             // but without a window ID (allowing for logic without UI consequences)
-            var windowID = stop ? null : SideBar.createWindow(Constants.CONTEXT, e.element, title);
-            if (windowID) {
+            var windowID = SideBar.createWindow(e.element, title);
+            var addedWidgets = false;
+
+            // don't render the remove button for properties: only blocks can be deleted
+            if (!isRealProperty && windowID) {
                 if (e.block.canDrag) {
-                    SideBar.addRemoveBlockButton(windowID, e.block);
+                    this.addRemoveBlockButton(windowID, e.block);
+                    addedWidgets = true;
                 }
             }
 
             if (editFunction != null && editFunction.focus != null) {
-                //if the focus method returns false, don't propagate further
-                //note the end "&& !stop": once we stopped, we stop for good
-                stop = editFunction.focus(windowID, e.element, event)===false && !stop;
+                // the focus method can return a list of UI widgets it needs to add to the window
+                // this way, we have control over that (where we have all the information to decide; eg. what property in which block, etc)
+                var widgetsToAdd = editFunction.focus(e.block, e.element, event);
+                if (widgetsToAdd) {
+                    if (addedWidgets && widgetsToAdd.length>0) {
+                        this.addUIForProperty(windowID, '<hr>');
+                        addedWidgets = true;
+                    }
+                    for (var w=0;w<widgetsToAdd.length;w++) {
+                        this.addUIForProperty(windowID, widgetsToAdd[w]);
+                        addedWidgets = true;
+                    }
+                }
+            }
+
+            //don't add an empty panel
+            if (addedWidgets) {
+                this.appendWindowToSidebar(Constants.CONTEXT, windowID);
             }
         }
-
-        //// Add edit functionality for properties
-        //// Do not check blocks
-        //var property = currentProperty;
-        //while (property != null && property.element != null && !property.element.hasClass(Constants.PAGE_CONTENT) && property.element[0].tagName.indexOf("-") < 0) {
-        //    var editFunction = Edit.makeEditable(property);
-        //    if (editFunction != null && editFunction.focus != null) {
-        //        var windowId = null;
-        //        for (var i = 0; i < activeBlocks.length; i++) {
-        //            if (activeBlocks[i].element.has(property)) {
-        //                windowId = activeBlocks[i].id;
-        //                break;
-        //            }
-        //        }
-        //        editFunction.focus(windowId, currentProperty);
-        //    }
-        //    property = property.parent();
-        //}
     };
 
     this.reset = function()
@@ -133,7 +110,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             var e = activeBlocks[i];
             var editFunction = Edit.makeEditable(e.element);
             if (editFunction != null && editFunction.blur != null) {
-                editFunction.blur(e.element);
+                editFunction.blur(e.block, e.element);
             }
         }
         configPanels = {};
@@ -275,7 +252,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         if (block) {
             var editFunction = Edit.makeEditable(block.element);
             if (editFunction != null && editFunction.focus != null) {
-                var windowID = SideBar.createWindow(Constants.CONTEXT, block.element, "Page");
+                var windowID = SideBar.createWindow(block.element, "Page");
+                SideBar.appendWindowToSidebar(Constants.CONTEXT, windowID);
                 editFunction.focus(windowID, block.element, null);
             }
         }
@@ -290,7 +268,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 if (editFunction != null && editFunction.getWindowName != null) {
                     blockTitle = editFunction.getWindowName();
                 }
-                var windowID = SideBar.createWindow(Constants.CONTEXT, block.element, blockTitle);
+                var windowID = SideBar.createWindow(block.element, blockTitle);
+                SideBar.appendWindowToSidebar(Constants.CONTEXT, windowID);
                 if (block.canDrag) {
                     SideBar.addRemoveBlockButton(windowID, block);
                 }
@@ -365,7 +344,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         });
 
         this.addUIForProperty(windowID, blockActions);
-        blockActions.after($("<hr/>"));
     };
 
     /**
@@ -388,7 +366,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         }
     };
 
-    this.createWindow = function (type, element, title)
+    this.createWindow = function (element, title)
     {
         var windowId = Commons.generateId();
         if (configPanels == null) {
@@ -403,12 +381,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             div.append(header).append(content);
 
             configPanels[windowId] = div;
-            if (type == Constants.CONTEXT) {
-                $("#" + Constants.SIDEBAR_CONTEXT_ID).append(div);
-            }
-            else if (type == Constants.FINDER) {
-                $("#" + Constants.SIDEBAR_FILES_ID).append(div);
-            }
 
             if (element) {
                 div.mouseenter(function ()
@@ -421,15 +393,31 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                     unhighlight(element);
                 });
             }
+
+            //note: real adding is done manually in appendWindowToSidebar()
         }
 
         return windowId
-    }
+    };
 
     this.getWindowForId = function (id)
     {
         return configPanels[id];
-    }
+    };
+
+    this.appendWindowToSidebar = function (type, id)
+    {
+        var div = this.getWindowForId(id);
+
+        if (type == Constants.CONTEXT) {
+            $("#" + Constants.SIDEBAR_CONTEXT_ID).append(div);
+        }
+        else if (type == Constants.FINDER) {
+            $("#" + Constants.SIDEBAR_FILES_ID).append(div);
+        }
+
+        return div;
+    };
 
     this.addUniqueClass = function (windowId, element, label, values)
     {
@@ -517,7 +505,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             //last one is my favorite
             var editFunction = Edit.makeEditable(propertyElement);
             if (editFunction != null && editFunction.focus != null) {
-                var windowID = SideBar.createWindow(Constants.CONTEXT, propertyElement, "BLAH");
+                var windowID = SideBar.createWindow(propertyElement, "BLAH");
+                SideBar.appendWindowToSidebar(Constants.CONTEXT, windowID);
                 editFunction.focus(windowID, propertyElement, null);
             }
 
@@ -606,7 +595,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         $("#" + Constants.SIDEBAR_FILES_TAB_ID).tab('show');
 
         //now create and add a new frame
-        var windowID = SideBar.createWindow(Constants.FINDER, null, "Files on server");
+        var windowID = SideBar.createWindow(null, "Files on server");
+        SideBar.appendWindowToSidebar(Constants.FINDER, windowID);
         //let's us do perform some css tweaks
         var frame = SideBar.getWindowForId(windowID);
         frame.addClass(Constants.SIDEBAR_FINDER_PANEL_CLASS);

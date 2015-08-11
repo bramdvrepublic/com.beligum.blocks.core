@@ -24,7 +24,8 @@
         </ol>
 
         <!-- Wrapper for slides -->
-        <div class="carousel-inner" role="listbox">
+        <!-- WARNING: don't add role="listbox", cause it blocks the editor events -->
+        <div class="carousel-inner">
             #if ($property['image'])
                 #foreach($img in $property['image'])
                     <div class="item #if ($foreach.index == 0)active#end">
