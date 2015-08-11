@@ -1,6 +1,5 @@
 package com.beligum.blocks.templating.blocks;
 
-import com.beligum.base.utils.Logger;
 import com.google.common.base.Joiner;
 
 import java.util.ArrayList;
@@ -36,12 +35,9 @@ public class PropertyArray<E> extends ArrayList<E>
     {
         String retVal = "";
 
-        if (this.writeCounter < this.size()) {
-            E obj = this.get(this.writeCounter++);
-            retVal = obj == null ? null : obj.toString();
-        }
-        else {
-            Logger.warn("Trying to write out a PropertyArray at index " + this.writeCounter + " of " + this.size() + ", so overrun. This shouldn't happen.");
+        if (this.writeCounter < 1) {
+            retVal = this.toString();
+            this.writeCounter++;
         }
 
         return retVal;

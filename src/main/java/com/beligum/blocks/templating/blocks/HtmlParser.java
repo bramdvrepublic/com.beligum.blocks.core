@@ -14,7 +14,10 @@ import net.htmlparser.jericho.*;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,6 +55,7 @@ public class HtmlParser extends AbstractAssetParser
      * is cached by the ResourceManager, so in production mode, the speed-importance of this method is relative.
      * However; there is currently a MAJOR issue with StringTemplates (see the other parse() method) where every request
      * is parsed through this method; BAD and a very big TODO
+     *
      * @param src
      * @param args
      * @return
@@ -74,6 +78,7 @@ public class HtmlParser extends AbstractAssetParser
     /**
      * This is a temporary workaround function to (also) make StringTemplates work; see com.beligum.base.templating.velocity.VelocityStringTemplate
      * It basically parses every request through the doParse() method, regardless of any caching.
+     *
      * @param rawSource
      * @return
      * @throws Exception
@@ -84,6 +89,7 @@ public class HtmlParser extends AbstractAssetParser
     }
     /**
      * Strips all lines beginning with "##" (starting from that position) and returns all the rest.
+     *
      * @param html
      * @return
      * @throws IOException
@@ -137,12 +143,12 @@ public class HtmlParser extends AbstractAssetParser
         String sourceStr = eatVelocityComments(rawSource);
         Source source = new Source(sourceStr);
 
-        boolean htmlPage = source.getFirstElement("html")!=null;
+        boolean htmlPage = source.getFirstElement("html") != null;
 
         // if we're dealing with a template (eg. the file is a template, not an instance of a template), replace the source with the html in the template
         boolean isTagTemplate = false;
         TemplateCache templateCache = this.getTemplateCache();
-        if (sourcePath!=null && templateCache.containsKey(sourcePath)) {
+        if (sourcePath != null && templateCache.containsKey(sourcePath)) {
             //first of all, since this method is only called when something changed, update the cache value
             HtmlTemplate oldTemplate = templateCache.get(sourcePath);//fetch the old value for the paths
             HtmlTemplate tagTemplate = HtmlTemplate.create(source, oldTemplate.getAbsolutePath(), oldTemplate.getRelativePath());
@@ -158,14 +164,15 @@ public class HtmlParser extends AbstractAssetParser
                 isTagTemplate = true;
 
                 //this blocks the resources include from being evaluated repeatedly in loops; we only need to evaluate it once per call
-                String resourceTestVar = "R_"+tagTemplate.getVelocityTemplateName();
+                String resourceTestVar = "R_" + tagTemplate.getVelocityTemplateName();
                 builder.append("#if(!$").append(resourceTestVar).append(")").append("\n");
 
                 // note that this "false" means it must be eaten (and spit out somewhere else)
                 // note that we can't use the "ElementsForCurrentUser()" methods here, cause they're cached for all users
                 boolean renderResources = false;
                 for (Element style : tagTemplate.getAllInlineStyleElements()) {
-                    builder.append("#").append(TagTemplateInlineStyleResourceDirective.NAME).append("(").append(renderResources).append(",'").append(HtmlTemplate.getResourceRoleScope(style)).append("')").append(style.toString()).append("#end").append("\n");
+                    builder.append("#").append(TagTemplateInlineStyleResourceDirective.NAME).append("(").append(renderResources).append(",'").append(HtmlTemplate.getResourceRoleScope(style))
+                           .append("')").append(style.toString()).append("#end").append("\n");
                 }
                 for (Element style : tagTemplate.getAllExternalStyleElements()) {
                     builder.append("#").append(TagTemplateExternalStyleResourceDirective.NAME).append("(").append(renderResources).append(",'").append(style.getAttributeValue("href")).append(
@@ -173,7 +180,8 @@ public class HtmlParser extends AbstractAssetParser
                            .append("#end").append("\n");
                 }
                 for (Element script : tagTemplate.getAllInlineScriptElements()) {
-                    builder.append("#").append(TagTemplateInlineScriptResourceDirective.NAME).append("(").append(renderResources).append(",'").append(HtmlTemplate.getResourceRoleScope(script)).append("')").append(script.toString()).append("#end").append("\n");
+                    builder.append("#").append(TagTemplateInlineScriptResourceDirective.NAME).append("(").append(renderResources).append(",'").append(HtmlTemplate.getResourceRoleScope(script))
+                           .append("')").append(script.toString()).append("#end").append("\n");
                 }
                 for (Element script : tagTemplate.getAllExternalScriptElements()) {
                     builder.append("#").append(TagTemplateExternalScriptResourceDirective.NAME).append("(").append(renderResources).append(",'").append(script.getAttributeValue("src")).append("','")
@@ -236,27 +244,49 @@ public class HtmlParser extends AbstractAssetParser
                 }
 
                 //build the properties map
+                //note: we want to save the Velocity codes, used inside a template instance, eg:
+                //     <tag-template-name>
+                // -->     #foreach ($val in $values)
+                //             <div property="value">$val</div>
+                // -->     #end
+                //     </tag-template-name>
+                // so instead of iterating over the child-elements, we iterate over all nodes, saving "other" text for future use
                 Map<String, List<String>> properties = new LinkedHashMap<>();
                 // note: this is a tricky one. It doesn't have to be the immediate children, but we can't cross the "boundary"
                 // of another template instance either (otherwise the grandchild-properties would get assigned to the grandparent)
                 // In practice, restricting this to the immediate children works pretty well (and neatly conforms to the WebComponents standard)
-                List<Element> allImmediatePropertyElements = templateInstance.getChildElements();
-                for (Element immediateChild : allImmediatePropertyElements) {
-                    //since (for our template system) the RDF and non-RDF attributes are equal, we can treat them the same way
-                    String name = immediateChild.getAttributeValue(RDF_PROPERTY_ATTR);
-                    //note that this will be skipped when a valid RDF-attr is found (so if both are present, the RDF one has priority)
-                    if (name==null) {
-                        name = immediateChild.getAttributeValue(NON_RDF_PROPERTY_ATTR);
-                    }
-                    if (name!=null) {
-                        String value = immediateChild.toString();
+                Iterator<Segment> iter = templateInstance.getContent().getNodeIterator();
+                while (iter.hasNext()) {
+                    Segment seg = iter.next();
+                    //if the segment is a tag, parse the element
+                    if (seg instanceof StartTag) {
+                        Element immediateChild = ((StartTag) seg).getElement();
 
-                        // this list allows us to specify multiple properties with the same name in the instance
-                        List<String> values = properties.get(name);
-                        if (values==null) {
-                            properties.put(name, values = new ArrayList<String>());
+                        //skip the entire tree of the element, we'll handle it now
+                        while (iter.hasNext() && !iter.next().equals(immediateChild.getEndTag()))
+                            ;
+
+                        //since (for our template system) the RDF and non-RDF attributes are equal, we can treat them the same way
+                        String name = immediateChild.getAttributeValue(RDF_PROPERTY_ATTR);
+                        //note that this will be skipped when a valid RDF-attr is found (so if both are present, the RDF one has priority)
+                        if (name == null) {
+                            name = immediateChild.getAttributeValue(NON_RDF_PROPERTY_ATTR);
                         }
-                        values.add(value);
+                        if (name != null) {
+                            String value = immediateChild.toString();
+
+                            // this list allows us to specify multiple properties with the same name in the instance
+                            List<String> values = properties.get(name);
+                            if (values == null) {
+                                properties.put(name, values = new ArrayList<String>());
+                            }
+                            values.add(value);
+                        }
+                    }
+                    //if the segment is something else, save it in the right order for later use
+                    else {
+                        //just use the key, ignore the value
+                        properties.put(seg.toString(), null);
                     }
                 }
 
@@ -278,20 +308,27 @@ public class HtmlParser extends AbstractAssetParser
                 //the 'body' starts here
 
                 //push the controller with the tag-attributes as arguments
-                builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.STACK.ordinal()).append(",\"").append(tagTemplate.getTemplateName()).append("\"");
+                builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.STACK.ordinal()).append(",\"")
+                       .append(tagTemplate.getTemplateName()).append("\"");
                 for (Map.Entry<String, String> attribute : attributes.entrySet()) {
                     String value = attribute.getValue();
-                    builder.append(",\"").append(attribute.getKey()).append("\",\"").append(value == null? "" : value).append("\"");
+                    builder.append(",\"").append(attribute.getKey()).append("\",\"").append(value == null ? "" : value).append("\"");
                 }
                 builder.append(")").append("\n");
 
                 //define the properties in the context
                 for (Map.Entry<String, List<String>> property : properties.entrySet()) {
-                    //this allows us to assign multiple tags to a single property key
-                    List<String> values = property.getValue();
-                    for (String value : values) {
-                        builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.DEFINE.ordinal()).append(",\"")
-                               .append(property.getKey()).append("\")").append(value).append("#end").append("\n");
+                    //see above: if we have a value, it's a proper property
+                    if (property.getValue() != null) {
+                        //this allows us to assign multiple tags to a single property key
+                        for (String value : property.getValue()) {
+                            builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.DEFINE.ordinal()).append(",\"")
+                                   .append(property.getKey()).append("\")").append(value).append("#end").append("\n");
+                        }
+                    }
+                    //otherwise it's something else, stored in the key
+                    else {
+                        builder.append(property.getKey());
                     }
                 }
 
@@ -390,7 +427,7 @@ public class HtmlParser extends AbstractAssetParser
         // (see above, specifically in TemplateInstanceStackDirective). But when we would spit out that array for every occurrence of this array variable,
         // the output would get doubled (or more). By ensuring we only write one entry per one, with a special method, we keep the order and don't get doubles.
         //
-        sb.append("$").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("']."+PropertyArray.WRITE_ONCE_METHOD_NAME+"()");
+        sb.append("$").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("']." + PropertyArray.WRITE_ONCE_METHOD_NAME + "()");
         sb.append("#end");
 
         output.replace(property, sb);
@@ -410,12 +447,12 @@ public class HtmlParser extends AbstractAssetParser
                 Path relativePath = Paths.get("/").resolve(htmlFile.getResourceFolder().relativize(htmlFile.getResource()).toString());
                 Source source = new Source(reader);
                 HtmlTemplate template = HtmlTemplate.create(source, absolutePath, relativePath);
-                if (template!=null) {
+                if (template != null) {
                     templateCache.put(absolutePath, template);
                 }
             }
             catch (Exception e) {
-                Logger.error("Exception caught while parsing a possible tag template file; "+htmlFile, e);
+                Logger.error("Exception caught while parsing a possible tag template file; " + htmlFile, e);
             }
         }
     }
