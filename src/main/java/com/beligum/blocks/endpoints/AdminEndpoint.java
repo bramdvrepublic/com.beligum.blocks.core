@@ -12,7 +12,6 @@ import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
-import java.net.URI;
 
 @Path("/admin")
 @RequiresRoles(PermissionsConfigurator.ADMIN_ROLE_NAME)
@@ -27,12 +26,14 @@ public class AdminEndpoint
         switch (type) {
             case RESET_TEMPLATES:
                 HtmlParser.resetTemplateCache();
+                //we might as well load it immediately; easier for debugging
+                HtmlParser.getTemplateCache();
                 R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "Template cache reset successfully"));
                 break;
             default:
                 throw new NotFoundException("Supplied action '"+type+"' not found");
         }
 
-        return Response.seeOther(URI.create("/")).build();
+        return Response.ok("All done.").build();
     }
 }

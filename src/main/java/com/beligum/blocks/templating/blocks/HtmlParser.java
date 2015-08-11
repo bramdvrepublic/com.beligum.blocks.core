@@ -231,29 +231,69 @@ public class HtmlParser extends AbstractAssetParser
                 }
 
                 //build the properties map
-                Map<String, List<String>> properties = new LinkedHashMap<>();
+                //Map<String, List<String>> properties = new LinkedHashMap<>();
+                Map<String, List<String>> propertyNames = new LinkedHashMap<>();
+                List<Object> properties = new ArrayList<>();
                 // note: this is a tricky one. It doesn't have to be the immediate children, but we can't cross the "boundary"
                 // of another template instance either (otherwise the grandchild-properties would get assigned to the grandparent)
                 // In practice, restricting this to the immediate children works pretty well (and neatly conforms to the WebComponents standard)
-                List<Element> allImmediatePropertyElements = templateInstance.getChildElements();
-                for (Element immediateChild : allImmediatePropertyElements) {
-                    //since (for our template system) the RDF and non-RDF attributes are equal, we can treat them the same way
-                    String name = immediateChild.getAttributeValue(RDF_PROPERTY_ATTR);
-                    //note that this will be skipped when a valid RDF-attr is found (so if both are present, the RDF one has priority)
-                    if (name==null) {
-                        name = immediateChild.getAttributeValue(NON_RDF_PROPERTY_ATTR);
-                    }
-                    if (name!=null) {
-                        String value = immediateChild.toString();
+                Iterator<Segment> iter = templateInstance.getContent().getNodeIterator();
+                while (iter.hasNext()) {
+                    Segment seg = iter.next();
+                    if (seg instanceof StartTag) {
+                        Element immediateChild = ((StartTag)seg).getElement();
 
-                        // this list allows us to specify multiple properties with the same name in the instance
-                        List<String> values = properties.get(name);
-                        if (values==null) {
-                            properties.put(name, values = new ArrayList<String>());
+                        //skip the entire tree of the element, we'll handle it now
+                        while (iter.hasNext() && !iter.next().equals(immediateChild.getEndTag()));
+
+                        //since (for our template system) the RDF and non-RDF attributes are equal, we can treat them the same way
+                        String name = immediateChild.getAttributeValue(RDF_PROPERTY_ATTR);
+                        //note that this will be skipped when a valid RDF-attr is found (so if both are present, the RDF one has priority)
+                        if (name==null) {
+                            name = immediateChild.getAttributeValue(NON_RDF_PROPERTY_ATTR);
                         }
-                        values.add(value);
+                        if (name!=null) {
+                            String value = immediateChild.toString();
+
+                            // this list allows us to specify multiple properties with the same name in the instance
+                            List<String> values = propertyNames.get(name);
+                            if (values==null) {
+                                propertyNames.put(name, values = new ArrayList<String>());
+                                properties.add(new Object[]{name, values});
+                            }
+                            values.add(value);
+                        }
+                        else {
+                            Logger.info("Found a null name property element: " + immediateChild);
+                        }
+                    }
+                    else {
+                        properties.add(seg.toString());
                     }
                 }
+
+//                List<Element> allImmediateElements = templateInstance.getChildElements();
+//                for (Element immediateChild : allImmediateElements) {
+//                    //since (for our template system) the RDF and non-RDF attributes are equal, we can treat them the same way
+//                    String name = immediateChild.getAttributeValue(RDF_PROPERTY_ATTR);
+//                    //note that this will be skipped when a valid RDF-attr is found (so if both are present, the RDF one has priority)
+//                    if (name==null) {
+//                        name = immediateChild.getAttributeValue(NON_RDF_PROPERTY_ATTR);
+//                    }
+//                    if (name!=null) {
+//                        String value = immediateChild.toString();
+//
+//                        // this list allows us to specify multiple properties with the same name in the instance
+//                        List<String> values = properties.get(name);
+//                        if (values==null) {
+//                            properties.put(name, values = new ArrayList<String>());
+//                        }
+//                        values.add(value);
+//                    }
+//                    else {
+//                        Logger.info("Found a null name property element: " + immediateChild);
+//                    }
+//                }
 
                 //now start building the new tag
                 StringBuilder builder = new StringBuilder();
@@ -281,12 +321,18 @@ public class HtmlParser extends AbstractAssetParser
                 builder.append(")").append("\n");
 
                 //define the properties in the context
-                for (Map.Entry<String, List<String>> property : properties.entrySet()) {
-                    //this allows us to assign multiple tags to a single property key
-                    List<String> values = property.getValue();
-                    for (String value : values) {
-                        builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.DEFINE.ordinal()).append(",\"")
-                               .append(property.getKey()).append("\")").append(value).append("#end").append("\n");
+                for (Object property : properties) {
+                    if (property instanceof Object[]) {
+                        Object[] propertyMap = (Object[])property;
+                        //this allows us to assign multiple tags to a single property key
+                        List<String> values = (List<String>) propertyMap[1];
+                        for (String value : values) {
+                            builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.DEFINE.ordinal()).append(",\"")
+                                   .append(propertyMap[0]).append("\")").append(value).append("#end").append("\n");
+                        }
+                    }
+                    else {
+                        builder.append(property.toString());
                     }
                 }
 
