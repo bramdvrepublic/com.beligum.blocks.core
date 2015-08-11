@@ -55,6 +55,7 @@ base.plugin("blocks.core.edit.Text", ["constants.blocks.core", "blocks.core.Broa
         var toolbar = $(Editor.getToolbarElement());
         toolbar.addClass(Constants.PREVENT_BLUR_CLASS);
 
+        return false;
     };
 
     this.blur = function(element) {

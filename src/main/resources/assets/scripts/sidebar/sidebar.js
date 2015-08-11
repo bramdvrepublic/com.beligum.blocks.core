@@ -104,6 +104,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             if (editFunction != null && editFunction.focus != null) {
                 //if the focus method returns false, don't propagate further
                 //note the end "&& !stop": once we stopped, we stop for good
+                // TODO: shouldn't this be stop || ...
                 stop = editFunction.focus(windowID, e.element, event)===false && !stop;
             }
         }
@@ -129,6 +130,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
     this.reset = function()
     {
+
         for (var i=0;i<activeBlocks.length;i++) {
             var e = activeBlocks[i];
             var editFunction = Edit.makeEditable(e.element);

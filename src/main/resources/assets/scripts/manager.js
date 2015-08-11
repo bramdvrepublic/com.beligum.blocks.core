@@ -206,6 +206,8 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         }
     };
 
+
+
     var enableFocusBlurDetection = function(focusedElement)
     {
         focusedElement.on("mousedown.manager_focus_end", function (e)
@@ -214,6 +216,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
             e.preventDefault();
             e.stopPropagation();
         });
+
         var page = $('.'+Constants.PAGE_CONTENT_CLASS);
         page.on("mousedown.manager_focus_end", function (e)
         {

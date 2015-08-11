@@ -113,8 +113,6 @@ public class PersistenceControllerImpl  implements PersistenceController
 
     public WebPath getPath(Path path, Locale locale) {
         // find the path for this language
-        // if this path has statuscode 404, search if this path for another language has code 200
-        // use this masterpageid
         DBPath webpath = null;
         try {
             webpath = RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.url = :path and p.language = :language", DBPath.class).setParameter("language", locale.getLanguage()).setParameter(

@@ -1,5 +1,6 @@
 package com.beligum.blocks.pages;
 
+import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
@@ -40,6 +41,7 @@ public class WebPageParser
     private PersistenceController database;
     private StringBuilder parsedHtml = new StringBuilder();
     private String pageTemplate;
+    private String pageTitle;
     private String text = "";
     private Set<HashMap<String, String>> links = new HashSet<HashMap<String, String>>();
     private Set<String> templates = new HashSet<String>();
@@ -70,6 +72,7 @@ public class WebPageParser
         this.source.fullSequentialParse();
         this.database = database;
         this.vocab = BlocksConfig.instance().getDefaultRdfSchema();
+        this.pageTitle = I18nFactory.instance().getResourceBundle(locale).get("blocks.core.defaultPageTitle");
         Element base = this.source.getFirstElement("base");
         this.setBase(base, uri);
         pageResource = ResourceFactoryImpl.instance().createResource(RdfTools.createLocalResourceId("webpage"), RdfTools.createLocalType("Webpage"), locale);
@@ -108,6 +111,10 @@ public class WebPageParser
     public String getPageTemplate()
     {
         return this.pageTemplate;
+    }
+
+    public String getPageTitle() {
+        return this.pageTitle;
     }
 
     public Resource getPageResource()
@@ -288,6 +295,11 @@ public class WebPageParser
                 if (this.pageTemplate == null) {
                     this.pageTemplate = "blocks-page-template";
                 }
+            }
+
+            if (retVal.getName().equals("title")) {
+                // full text
+                this.pageTitle = retVal.getContent().toString();
             }
 
             if (retVal.getName().equals("body")) {

@@ -14,6 +14,9 @@ public interface WebPage extends Resource
 
     public URI getMasterpageId();
 
+    public String getPageTitle();
+    public void setPageTitle(String title);
+
     public String getParsedHtml();
     public void setParsedHtml(String parsedHtml);
 
