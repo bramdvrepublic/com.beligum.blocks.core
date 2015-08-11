@@ -118,6 +118,53 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManip
         $("." + BlocksConstants.BLOCK_EDIT_CLASS).removeClass(BlocksConstants.BLOCK_EDIT_CLASS);
     };
 
+    this.createHoverClickObject = function(block, element, event)
+    {
+        var retVal = null;
+
+        //we go hunting for the first property up the chain, starting from the specific element we did the mouseup on
+        var propertyOrTagElement = Hover.findFirstParentPropertyOrTemplate(block, element);
+
+        if (propertyOrTagElement) {
+            //note: use the original event because the event system wraps the events and the coordinates get lost
+            var hotspot = {
+                left: event.originalEvent.clientX,
+                top: event.originalEvent.clientY
+            };
+
+            //this means we tinkered with the element, so adapts the hotspot
+            if (propertyOrTagElement != element) {
+                var elemWidth = $(propertyOrTagElement).width();
+                var elemHeight = $(propertyOrTagElement).height();
+                var elemPos = $(propertyOrTagElement).offset();
+                var elemBottom = elemPos.top + elemHeight;
+                var elemRight = elemPos.left + elemWidth;
+
+                var mouseIsOnProperty = (hotspot.left >= elemPos.left && hotspot.left <= elemRight) && (hotspot.top >= elemPos.top && hotspot.top <= elemBottom);
+                if (!mouseIsOnProperty) {
+                    hotspot.left = elemPos.left + 1;
+                    hotspot.top = elemPos.top + 1;
+                }
+            }
+
+            retVal = {
+                //this is the layoutElement block all events started on (holds a reference to both the overlay and the template block)
+                block: block,
+                //this is the specific 'deep' html element at this mouse position that was clicked (possible because we disabled the events of the overlays during mousedown)
+                element: element,
+                //this is the html element 'on the way up'
+                propertyElement: propertyOrTagElement,
+                //the (possibly changed) hotspot to be used in eg. the focus system (like for editor)
+                hotspot: hotspot
+            };
+        }
+        else {
+            Logger.error("Hover.findFirstParentPropertyOrTemplate() resulted in a null property object");
+        }
+
+        return retVal;
+    };
+
     this.findFirstParentPropertyOrTemplate = function(block, element)
     {
         //this will help solving the "I clicked below a block, but it seemed like that block extended all the way down, because it has a large block next to it"
@@ -126,7 +173,7 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManip
         if (clickedElement!=null) {
             //if we didn't click on a tag inside the block we hovered on, just select the block element (to start with, see below)
             if (block.element!=clickedElement) {
-                if (!$.contains(block.element, clickedElement)) {
+                if (block.element.find(clickedElement).length==0) {
                     clickedElement = block.element;
                 }
             }
@@ -155,7 +202,7 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManip
         }
         //if we hit a template boundary and it's not the same as the startBlock, we didn't find anything (weird situation though...)
         else if (propertyOrTagElement.prop("tagName").indexOf("-") != -1) {
-            if (propertyOrTagElement!=block) {
+            if (!propertyOrTagElement.is(block.element)) {
                 propertyOrTagElement = null;
             }
         }

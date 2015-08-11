@@ -259,47 +259,14 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 // so, instead of starting to drag a block, we clicked one
                 else if (draggingStatus == BaseConstants.DRAGGING.WAITING) {
 
-                    //we go hunting for the first property up the chain, starting from the specific element we did the mouseup on
-                    var propertyOrTagElement = Hover.findFirstParentPropertyOrTemplate(startBlock, element);
-
-                    //note: use the original event because the event system wraps the events and the coordinates get lost
-                    var hotspot = {
-                        left: event.originalEvent.clientX,
-                        top: event.originalEvent.clientY
-                    };
-
-                    //this means we tinkered with the element, so adapts the hotspot
-                    if (propertyOrTagElement!=element) {
-                        var elemWidth = $(propertyOrTagElement).width();
-                        var elemHeight = $(propertyOrTagElement).height();
-                        var elemPos = $(propertyOrTagElement).offset();
-                        var elemBottom = elemPos.top + elemHeight;
-                        var elemRight = elemPos.left + elemWidth;
-
-                        var mouseIsOnProperty = (hotspot.left >= elemPos.left && hotspot.left <= elemRight) && (hotspot.top >= elemPos.top && hotspot.top <= elemBottom);
-                        if (!mouseIsOnProperty) {
-                            hotspot.left = elemPos.left+1;
-                            hotspot.top = elemPos.top+1;
-                        }
+                    var hoverObj = Hover.createHoverClickObject(startBlock, element, event);
+                    if (hoverObj) {
+                        //this will mainly end up in sidebar.js
+                        Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, hoverObj);
                     }
-
-                    //this will mainly end up in sidebar.js
-                    Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, {
-                        //this is the layoutElement block all events started on (holds a reference to both the overlay and the template block)
-                        block: startBlock,
-                        //this is the specific 'deep' html element at this mouse position that was clicked (possible because we disabled the events of the overlays during mousedown)
-                        element: element,
-                        //this is the html element 'on the way up'
-                        propertyElement: propertyOrTagElement,
-                        //the (possibly changed) hotspot to be used in eg. the focus system (like for editor)
-                        hotspot: hotspot
-                    });
-
-
-                    //for future reference
-                    //if ($(event.target).hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || $(event.target).parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0) {
-                    //    //implemented with a popover in page.js instead
-                    //}
+                    else {
+                        Logger.error("Got null object while creating a hover object; this shouldn't happen");
+                    }
                 }
                 // this means the mousedown happened outside of any block or other kind of hotspot
                 // eg. on the page itself, so we're focusing the page (and it should blur any active focus down the line)

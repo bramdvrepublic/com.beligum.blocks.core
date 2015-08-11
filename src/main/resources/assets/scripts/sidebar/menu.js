@@ -294,6 +294,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
         BootstrapDialog.show({
             title: "Delete page",
+            type: BootstrapDialog.TYPE_DANGER,
             message: "<div>Do you want to delete this page and all it's translations?</div>",
             buttons: [
                 {

@@ -92,7 +92,7 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.core", "blocks.core.Edit"
     {
         var items = carousel.find(".carousel-inner");
         var indicators = carousel.find(".carousel-indicators");
-        var button = $('<button class="btn btn-primary btn-sm">Add image</button>');
+        var button = $('<button class="btn btn-primary btn-sm">Add slide</button>');
 
         button.click(function ()
         {

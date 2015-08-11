@@ -263,8 +263,11 @@ public class HtmlParser extends AbstractAssetParser
                         Element immediateChild = ((StartTag) seg).getElement();
 
                         //skip the entire tree of the element, we'll handle it now
-                        while (iter.hasNext() && !iter.next().equals(immediateChild.getEndTag()))
-                            ;
+                        // but watch out: an <img> element doens't have and end tag, so check for null
+                        if (immediateChild.getEndTag()!=null) {
+                            while (iter.hasNext() && !iter.next().equals(immediateChild.getEndTag()))
+                                ;
+                        }
 
                         //since (for our template system) the RDF and non-RDF attributes are equal, we can treat them the same way
                         String name = immediateChild.getAttributeValue(RDF_PROPERTY_ATTR);

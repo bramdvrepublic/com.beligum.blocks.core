@@ -185,8 +185,10 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
     var focusSwitch = function (block, element, propertyElement, hotspot, event)
     {
         //this will make sure we always 'go back' to the page first, instead of directly focussing the next clicked block
+        // except when we click on an element that's inside the currently focused block
         var previousFocusedBlock = Hover.getFocusedBlock();
-        if (previousFocusedBlock != Hover.getPageBlock()) {
+
+        if (previousFocusedBlock==null || (previousFocusedBlock != Hover.getPageBlock() && previousFocusedBlock.element.find(propertyElement).length == 0)) {
             Sidebar.focusBlock(Hover.getPageBlock(), Hover.getPageBlock().element, Hover.getPageBlock().element.offset(), event);
             Hover.removeFocusOverlays();
             Hover.setFocusedBlock(Hover.getPageBlock());
@@ -207,39 +209,37 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
 
     var enableFocusBlurDetection = function(block, focusedElement)
     {
-        focusedElement.on("mousedown.manager_focus_end", function (e)
+        // this basically comes down to this:
+        // we'll make the entire block a hotspot, not just the focusedElement
+        // and all clicks inside that block will get a new focus (if it's not again the same element we clicked on)
+        // as soon as we click outside of the block, it is blurred and focus goes to the page (always first the page)
+        block.element.on("mousedown.manager_focus_end", function (event)
         {
-            //TODO allow if we click on a child inside the currently focused block
-            //var element = $(event.target);
-            //if (element.length>0) {
-            //    var propertyOrTagElement = Hover.findFirstParentPropertyOrTemplate(block, element);
-            //
-            //    if (propertyOrTagElement && propertyOrTagElement!=focusedElement) {
-            //        Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, {
-            //            //this is the layoutElement block all events started on (holds a reference to both the overlay and the template block)
-            //            block: block,
-            //            //this is the specific 'deep' html element at this mouse position that was clicked (possible because we disabled the events of the overlays during mousedown)
-            //            element: element,
-            //            //this is the html element 'on the way up'
-            //            propertyElement: propertyOrTagElement
-            //        });
-            //    }
-            //}
+            var element = $(event.target);
+            if (element.length) {
+                var hoverObj = Hover.createHoverClickObject(block, element, event);
+                if (hoverObj && !hoverObj.propertyElement.is(focusedElement)) {
+                    //unregister first, because the next run will add it again
+                    block.element.off("mousedown.manager_focus_end");
+                    //this will mainly end up in sidebar.js
+                    Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, hoverObj);
+                }
+            }
 
             //don't prevent default or the text editor won't function
             //e.preventDefault();
-            e.stopPropagation();
+            event.stopPropagation();
         });
         var page = $('.'+Constants.PAGE_CONTENT_CLASS);
-        page.on("mousedown.manager_focus_end", function (e)
+        page.on("mousedown.manager_focus_end", function (event)
         {
-            e.preventDefault();
-            e.stopPropagation();
+            event.preventDefault();
+            event.stopPropagation();
 
-            focusedElement.off("mousedown.manager_focus_end");
+            block.element.off("mousedown.manager_focus_end");
             page.off("mousedown.manager_focus_end");
 
-            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, e);
+            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, event);
         });
     };
 }]);

@@ -194,7 +194,7 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
                     diff -= 1;
                     columnsWidth[index] += 1;
                 }
-                _thisService.setColumnWidth($(columns[index]), columnsWidth[index], 200, function ()
+                _thisService.setColumnWidth($(columns[index]), columnsWidth[index], 50, function ()
                 {
                     index += 1;
                     doSetColumnWidth();
@@ -203,7 +203,7 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
             } else {
                 callback();
             }
-        }
+        };
         doSetColumnWidth();
     };
 
