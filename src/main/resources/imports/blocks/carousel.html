@@ -10,7 +10,8 @@
 
 <template>
     ## note: the data-interval false needs to be there to fix an editing bug (where a paused carousel starts cycling again after clicking an arrow))
-    <div id="carousel-123" class="carousel slide" data-interval="false">
+    ## keyboard was disabled because it messed with the editor
+    <div id="carousel-123" class="carousel slide" data-interval="false" data-keyboard="false">
         <!-- Indicators -->
         <ol class="carousel-indicators">
             #if ($property['image'])

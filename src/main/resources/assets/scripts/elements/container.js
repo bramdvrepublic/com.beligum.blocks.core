@@ -47,7 +47,6 @@ base.plugin("blocks.core.Elements.Container", ["base.core.Class", "base.core.Con
 
         getContainer: function ()
         {
-
             return this;
         }
 

@@ -5,9 +5,9 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.core", "blocks.core.Edit"
 {
     var listGroup = null;
 
-    this.focus = function (windowId, propertyElement, blockEvent)
+    this.focus = function (windowId, element, blockEvent)
     {
-        var element = blockEvent.block.element.find(".carousel");
+        var element = element.find(".carousel");
 
         listGroup = $('<div class="list-group" />');
 
@@ -21,11 +21,14 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.core", "blocks.core.Edit"
             //this only works when data-interval="false" (otherwise the default timeout is activated when you click an arrow button)
             $(this).carousel('pause');
         });
+
+        //this means we don't want children properties to create windows (but execute their logic, yes)
+        return false;
     };
 
-    this.blur = function (propertyElement, blockEvent)
+    this.blur = function (element)
     {
-        var element = blockEvent.element.find(".carousel");
+        var element = element.find(".carousel");
 
         //restart the cycling
         element.carousel('cycle');

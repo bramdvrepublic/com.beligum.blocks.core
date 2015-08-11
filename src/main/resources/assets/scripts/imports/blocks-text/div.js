@@ -51,7 +51,7 @@ base.plugin("blocks.core.edit.Text", ["constants.blocks.core", "blocks.core.Broa
         var editor = Editor.getEditor(element, false);
 
         // Add toolbar to sidebar
-        setCursor(blockEvent.clientX, blockEvent.clientY);
+        setCursor(blockEvent.originalEvent.clientX, blockEvent.originalEvent.clientY);
         var toolbar = $(Editor.getToolbarElement());
         toolbar.addClass(Constants.PREVENT_BLUR_CLASS);
 

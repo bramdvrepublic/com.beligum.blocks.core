@@ -15,6 +15,7 @@
 base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.DomManipulation",  function (Broadcaster, Constants, DOM)
 {
     var Resizer = this;
+
     var active = false;
     var draggingEnabled = false;
     var dragging = false;
@@ -23,6 +24,8 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
     var activeResizeHandle;
     var minColumn;
     var maxColumn;
+    var blockResizing = false;
+    var activeRowElement = null;
 
     this.activate = function (value)
     {
@@ -32,19 +35,15 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
         activeResizeHandle = null;
         minColumn = null;
         maxColumn = null;
-
     };
 
-    var activeRowElement = null;
-
-    var setCursor = function (value)
+    this.allowResize = function()
     {
-        if (value && activeRowElement != null) {
-            activeRowElement.addClass(Constants.RESIZING_CLASS);
-        } else if (!value && activeRowElement != null) {
-            activeRowElement.removeClass(Constants.RESIZING_CLASS);
-            activeRowElement = null;
-        }
+        blockResizing = false;
+    };
+    this.disallowResize = function()
+    {
+        blockResizing = true;
     };
 
 
@@ -55,32 +54,33 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
      * */
     this.startDrag = function (handle)
     {
-        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
-        activeResizeHandle = handle;
-        DOM.disableSelection();
-        DOM.disableContextMenu();
-        $("body").addClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
+        if (!blockResizing) {
+            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
+            activeResizeHandle = handle;
+            DOM.disableTextSelection();
+            DOM.disableContextMenu();
+            $("body").addClass(Constants.FORCE_RESIZE_CURSOR_CLASS);
 
-        // Hide all resizers except the ones in the current row
-        activeRowElement = handle.leftColumn.parent.element;
-        var handles = handle.leftColumn.parent.resizeHandles || [];
-        for (var i=0; i < handles.length; i ++) {
-            //handles[i].overlay.show();
-            handles[i].showOverlay();
+            // Hide all resizers except the ones in the current row
+            activeRowElement = handle.leftColumn.parent.element;
+            var handles = handle.leftColumn.parent.resizeHandles || [];
+            for (var i = 0; i < handles.length; i++) {
+                //handles[i].overlay.show();
+                handles[i].showOverlay();
+            }
+
+            draggingEnabled = true;
+            setCursor(false);
+
+            setCursor(true);
+            $(document).on("mousemove.resizehandledrag", function (event)
+            {
+                doDrag(event)
+            });
+
+            initDrag(activeResizeHandle);
+            dragging = true;
         }
-
-        draggingEnabled = true;
-        setCursor(false);
-
-        setCursor(true);
-        $(document).on("mousemove.resizehandledrag", function (event)
-        {
-            doDrag(event)
-        });
-
-        initDrag(activeResizeHandle);
-        dragging = true;
-
     };
 
     /*
@@ -103,6 +103,16 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
     {
         if (dragging) {
             checkDrag(event);
+        }
+    };
+
+    var setCursor = function (value)
+    {
+        if (value && activeRowElement != null) {
+            activeRowElement.addClass(Constants.RESIZING_CLASS);
+        } else if (!value && activeRowElement != null) {
+            activeRowElement.removeClass(Constants.RESIZING_CLASS);
+            activeRowElement = null;
         }
     };
 

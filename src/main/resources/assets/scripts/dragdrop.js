@@ -7,7 +7,7 @@
  * drop between 2 blocks, we also overlay the other block (other)
  * We show arrows in the overlay to indicate the direction the block will move.
  */
-base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "constants.blocks.core", "blocks.core.Overlay", "messages.blocks.core", "blocks.core.Notification", "blocks.core.Mouse", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, Overlay, BlocksMessages, Notification, Mouse)
+base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "constants.blocks.core", "blocks.core.Hover", "messages.blocks.core", "blocks.core.Notification", "blocks.core.Mouse", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, Hover, BlocksMessages, Notification, Mouse)
 {
     var DragDrop = this;
     var draggingEnabled = false;
@@ -49,19 +49,6 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         return draggingEnabled && dragging;
     };
 
-    var hideAll = function (element)
-    {
-        if (element.prop("tagName") != "BODY") {
-            //var siblings = element.siblings().addClass("not-visible");
-            //hideAll(element.parent());
-        }
-    };
-
-    var showAll = function ()
-    {
-        $(".not-visible").removeClass("not-visible");
-    };
-
     this.dragStarted = function (blockEvent, eventData)
     {
         sidebarLeft = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS).offset().left;
@@ -73,19 +60,18 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         };
 
         //passed in from mouse.js (the original block we were over when starting to drag)
-        currentDraggedBlock = eventData.draggingBlock;
+        currentDraggedBlock = eventData.block;
 
         //mark the current overlay as being dragged
         currentDraggedBlock.overlay.addClass(BlocksConstants.OVERLAY_DRAGGING_CLASS);
 
         //we're dragging an existing block
         if (draggingEnabled && currentDraggedBlock != null && currentDraggedBlock.canDrag && currentDraggedBlock.getTotalBlocks() > 1) {
-            hideAll(Overlay.getContainer().element);
             //currentDraggedBlock.getContainer().createAllDropspots();
-            Overlay.getContainer().createAllDropspots();
+            Hover.getFocusedBlock().createAllDropspots();
             createDropPointerElement();
             dragging = true;
-            Overlay.removeResizehandles();
+            Hover.removeResizeHandles();
             // we have to set both
             // html for undefined area and baody to override default cursor of body.
 
@@ -94,8 +80,8 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         //we're dragging a new block
         else if (currentDraggedBlock == null) {
             dragging = true
-            Overlay.getContainer().createAllDropspots();
-            Overlay.removeResizehandles();
+            Hover.getFocusedBlock().createAllDropspots();
+            Hover.removeResizeHandles();
             createDropPointerElement();
             $("body").addClass(BlocksConstants.FORCE_DRAG_CURSOR_CLASS);
         }
@@ -108,7 +94,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
 
         //Logger.debug("Dragging block at "+pageX+","+pageY);
 
-        var dropBlock = eventData.dragoverBlock;
+        var dropBlock = eventData.block;
 
         //Logger.debug("Dropblock: "+dropBlock);
 
@@ -143,7 +129,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             }
             //check if we're dragging the create block from the sidebar
             else if (sidebarLeft == null || sidebarLeft > pageX) {
-                var container = Overlay.getContainer().getLayoutContainer();
+                var container = Hover.getFocusedBlock().getLayoutContainer();
 
                 if (pageY > container.top && pageY < container.bottom) {
                     if (pageX < container.left) {
@@ -219,7 +205,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             // If we did not drop on ourself, change location
             if (currentDraggedBlock != null && lastDropLocation != null && !dropSpotInDraggedBlock(lastDropLocation) && insideWindow(dropX, dropY)) {
                 //Logger.debug("Drop block");
-                Overlay.removeOverlays();
+                Hover.removeHoverOverlays();
                 resetDragDrop();
                 Layouter.changeBlockLocation(currentDraggedBlock, lastDropLocation.anchor, lastDropLocation.side);
             }
@@ -227,7 +213,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             else if (currentDraggedBlock == null && lastDropLocation != null && insideWindow(dropX, dropY)) {
                 // We added a new block
                 Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, blockEvent);
-                Overlay.removeOverlays();
+                Hover.removeHoverOverlays();
                 // show normal cursor during dialog
                 $("body").removeClass(BlocksConstants.FORCE_DRAG_CURSOR_CLASS);
                 // Remove all pointer elements
@@ -262,7 +248,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                                 addHeadResource(data.externalScripts, name+"-ex-script", true);
 
                                 var block = $(data.html);
-                                Overlay.removeOverlays();
+                                Hover.removeHoverOverlays();
                                 resetDragDrop();
                                 cancelled = false;
                                 Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side);
@@ -341,7 +327,6 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         //removeDraggedOverlay();
         draggingEnabled = false;
         dragging = false;
-        showAll();
     };
 
     this.dragAborted = function ()

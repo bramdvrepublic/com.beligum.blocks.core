@@ -4,15 +4,17 @@
 base.plugin("blocks.edit.Image", ["constants.blocks.core", "blocks.core.Edit", "blocks.core.Sidebar",  function (Constants, Edit, Sidebar)
 {
 
-    this.focus = function(windowID, element, blockEvent) {
+    this.focus = function(windowID, element, blockEvent)
+    {
+        if (windowID) {
+            var values = [
+                {value: "bordered", name: "Met rand"},
+                {value: "", name: "Zonder rand"}
+            ];
 
-        var values = [
-            {value: "bordered", name: "Met rand"},
-            {value: "", name: "Zonder rand"}
-        ];
-
-        Sidebar.addUniqueClass(windowID, element, "Rand", values);
-        Sidebar.addValueAttribute(windowID, element, "Image url", "Paste or type an image link", "src", false, true, false);
+            Sidebar.addUniqueClass(windowID, element, "Rand", values);
+            Sidebar.addValueAttribute(windowID, element, "Image url", "Paste or type an image link", "src", false, true, false);
+        }
     };
 
     this.blur = function() {

@@ -1,4 +1,4 @@
-base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Overlay", "blocks.core.DomManipulation", "constants.blocks.core", "blocks.core.Sidebar", "messages.blocks.core", function (Broadcaster, Notification, Overlay, DOM, BlocksConstants, Sidebar, BlocksMessages)
+base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Hover", "blocks.core.DomManipulation", "constants.blocks.core", "blocks.core.Sidebar", "messages.blocks.core", function (Broadcaster, Notification, Hover, DOM, BlocksConstants, Sidebar, BlocksMessages)
 {
     var Frame = this;
 
@@ -107,13 +107,15 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     {
         $(document).on("mousedown.sidebar_resize", "." + BlocksConstants.PAGE_SIDEBAR_RESIZE_CLASS, function (event)
         {
-            // On mousedown start resizing
-            // Make sure we are no longer in edit mode
-            Sidebar.reset();
+            //TODO IS THIS NECESSARY?
+            //// On mousedown start resizing
+            //// Make sure we are no longer in edit mode
+            //Sidebar.reset();
+            //
+            //DOM.disableTextSelection();
+            //DOM.disableContextMenu();
 
-            Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD, event);
-            DOM.disableSelection();
-            DOM.disableContextMenu();
+            //needed because sometimes we hover out of the dragger while moving the sidebar (because of some lag)
             $("body").addClass(BlocksConstants.FORCE_RESIZE_CURSOR_CLASS);
 
             var windowWidth = $(window).width();
@@ -141,10 +143,13 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             {
                 $(document).off("mousemove.sidebar_resize");
                 $(document).off("mouseup.sidebar_resize");
-                DOM.enableSelection();
-                DOM.enableContextMenu();
+
                 $("body").removeClass(BlocksConstants.FORCE_RESIZE_CURSOR_CLASS);
-                Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD, event);
+
+                //TODO IS THIS NECESSARY?
+                //DOM.enableTextSelection();
+                //DOM.enableContextMenu();
+                //Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD, event);
 
                 //Note: by default, the cookie is deleted when the browser is closed:
                 $.cookie(BlocksConstants.COOKIE_SIDEBAR_WIDTH, sidebarElement.width());
@@ -195,9 +200,9 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     {
         if (resizing == false) {
             // Leave edit mode
-            Sidebar.reset();
+            Sidebar.resetOld();
             sidebarWidth = sidebarElement.outerWidth();
-            Overlay.removeOverlays();
+            Hover.removeHoverOverlays();
             Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
             resizing = true;
         }
@@ -219,7 +224,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     $(document).on("click", "." + BlocksConstants.SAVE_PAGE_BUTTON, function (event)
     {
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
-        Sidebar.reset();
+        Sidebar.resetOld();
         // remove the widths from the containers
         $(".container").removeAttr("style");
         var page = $("html")[0].outerHTML;

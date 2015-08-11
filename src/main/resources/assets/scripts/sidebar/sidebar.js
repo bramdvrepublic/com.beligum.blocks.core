@@ -2,12 +2,151 @@
  * Created by wouter on 15/06/15.
  */
 
-base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.core.SidebarUtils", "blocks.core.Edit", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", "blocks.core.Overlay", function (Broadcaster, Constants, DOM, Layouter, SidebarUtils, Edit, Finder, Notification, Commons, Overlay)
+base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.core.SidebarUtils", "blocks.core.Edit", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", "blocks.core.Hover", function (Broadcaster, Constants, DOM, Layouter, SidebarUtils, Edit, Finder, Notification, Commons, Hover)
 {
     var SideBar = this;
     var configPanels = {};
-
     var currentProperty = null;
+
+    var activeBlocks = [];
+
+    /**
+     * @param block the block that should get focus (not null)
+     * @param element one of these:
+     *                - the first property element on the way up of the element that got clicked (inside the block)
+     *                - the template element (then element==block.element) that got clicked
+     *                - the page element
+     * @param event the original event that triggered this all
+     */
+    this.focusBlock = function (block, element, event)
+    {
+        this.reset();
+
+        //while (currBlock != null) {
+        //    if (currBlock instanceof blocks.elements.Property) {
+        //        var editFunction = Edit.makeEditable(element);
+        //        if (editFunction != null && editFunction.focus != null) {
+        //            var title = 'Block';
+        //            if (editFunction.getWindowName != null) {
+        //                title = editFunction.getWindowName();
+        //            }
+        //            var windowID = this.createWindow(Constants.CONTEXT, element, title);
+        //
+        //            if (currBlock.canDrag) {
+        //                SideBar.addRemoveBlockButton(windowID, currBlock);
+        //            }
+        //
+        //            activeBlocks.push({element: block.element, id: windowID});
+        //
+        //            if (editFunction != null && editFunction.focus != null) {
+        //                editFunction.focus(windowID, block);
+        //            }
+        //
+        //            editFunction.focus(windowID, element, null);
+        //        }
+        //    }
+        //}
+
+        var currBlock = block;
+        var currElement = element;
+        activeBlocks = [];
+
+        //we'll cycle through the parents until we hit the page, then reversing the order and creating windows, starting with the page
+        while (currBlock != null) {
+            if (currBlock instanceof blocks.elements.Property || currBlock instanceof blocks.elements.Block || currBlock instanceof blocks.elements.Page) {
+
+                activeBlocks.push({
+                    block: currBlock,
+                    element: currElement
+                });
+
+                if (currElement!=currBlock.element) {
+                    activeBlocks.push({
+                        block: currBlock,
+                        element: currBlock.element
+                    });
+                }
+            }
+            currBlock = currBlock.parent;
+            currElement = currBlock==null?null:currBlock.element;
+        }
+
+        var title = null;
+        var stop = false;
+        for (var i=activeBlocks.length-1;i>=0;i--) {
+            var e = activeBlocks[i];
+
+            var editFunction = Edit.makeEditable(e.element);
+
+            //don't make windows for (real) properties, only blocks and pages
+            var isRealProperty = e.block.element != e.element;
+            var blockTitle = isRealProperty ? 'Property' : 'Block';
+            if (editFunction != null && editFunction.getWindowName != null) {
+                blockTitle = editFunction.getWindowName();
+            }
+
+            if (title == null) {
+                title = blockTitle;
+            }
+            else {
+                title = title + '<i class="fa fa-fw fa-angle-right"/>' + blockTitle;
+            }
+
+            // if a parent stopped the creation of sub-windows, keep executing the focus() method,
+            // but without a window ID (allowing for logic without UI consequences)
+            var windowID = stop ? null : SideBar.createWindow(Constants.CONTEXT, e.element, title);
+            if (windowID) {
+                if (e.block.canDrag) {
+                    SideBar.addRemoveBlockButton(windowID, e.block);
+                }
+            }
+
+            if (editFunction != null && editFunction.focus != null) {
+                //if the focus method returns false, don't propagate further
+                //note the end "&& !stop": once we stopped, we stop for good
+                stop = editFunction.focus(windowID, e.element, event)===false && !stop;
+            }
+        }
+
+        //// Add edit functionality for properties
+        //// Do not check blocks
+        //var property = currentProperty;
+        //while (property != null && property.element != null && !property.element.hasClass(Constants.PAGE_CONTENT) && property.element[0].tagName.indexOf("-") < 0) {
+        //    var editFunction = Edit.makeEditable(property);
+        //    if (editFunction != null && editFunction.focus != null) {
+        //        var windowId = null;
+        //        for (var i = 0; i < activeBlocks.length; i++) {
+        //            if (activeBlocks[i].element.has(property)) {
+        //                windowId = activeBlocks[i].id;
+        //                break;
+        //            }
+        //        }
+        //        editFunction.focus(windowId, currentProperty);
+        //    }
+        //    property = property.parent();
+        //}
+    };
+
+    this.reset = function()
+    {
+        for (var i=0;i<activeBlocks.length;i++) {
+            var e = activeBlocks[i];
+            var editFunction = Edit.makeEditable(e.element);
+            if (editFunction != null && editFunction.blur != null) {
+                editFunction.blur(e.element);
+            }
+        }
+        configPanels = {};
+        activeBlocks = [];
+
+        //reset the sidebar and prepare for adding
+        var sidebar = $("." + Constants.PAGE_SIDEBAR_CLASS);
+        sidebar.removeClass(Constants.OPACITY_CLASS);
+        sidebar.addClass(Constants.PREVENT_BLUR_CLASS);
+
+        var sidebarContext = $("#" + Constants.SIDEBAR_CONTEXT_ID);
+        sidebarContext.empty();
+    };
 
     /*
      * When clicking a property disable drag drop
@@ -89,11 +228,11 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 editFunction.blur(property, currentBlock);
             }
         }
-        reset();
+        resetOld();
         currentBlock = null;
     }
 
-    var reset = function ()
+    var resetOld = function ()
     {
         //blurCurrentSelection(currentProperty);
         $("." + Constants.OPACITY_CLASS).removeClass(Constants.OPACITY_CLASS);
@@ -106,7 +245,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         SideBar.refresh();
     };
 
-    this.reset = function ()
+    this.resetOld = function ()
     {
         blurCurrentSelection(currentProperty);
     };
@@ -220,7 +359,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             //confirm.removeClass("hidden");
             //text.addClass("hidden");
 
-            reset();
+            resetOld();
             $("." + Constants.OPACITY_CLASS).removeClass(Constants.OPACITY_CLASS);
             Layouter.removeBlock(property);
         });
@@ -234,7 +373,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
      */
     this.clear = function ()
     {
-        reset();
+        resetOld();
     };
 
     this.addUIForProperty = function (windowId, html)
@@ -330,10 +469,11 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     // Called when editing is enabled. Catch mouseup and check if a block is editable
     this.enableEditing = function ()
     {
-        //don't filter on overlay classes here, because we deactivated events on the overlay during mousedown (see  pointer-events: none;)
+        // don't filter on overlay classes here, because we deactivated events on the overlay during mousedown
+        // (see mouse.js and it's BLOCK_OVERLAY_NO_EVENTS_CLASS class with pointer-events: none;)
         $(document).on("mouseup.sidebar_edit_start", function (event)
         {
-            var block = Overlay.getHoveredBlock();
+            var block = Hover.getHoveredBlock();
             var propertyElement = $(event.currentTarget);
 
             while (!(propertyElement.hasAttribute("property") || propertyElement.hasAttribute("data-property")) && el[0].tagName.indexOf("-") == -1 && el[0].tagName != "BODY") {
@@ -341,6 +481,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             }
 
             update(firstPropEl);
+
+            return;
 
 
             //TODO look up the property of this overlay with the reverse map
@@ -383,12 +525,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             return;
 
 
-
-
-
-
-
-            if (property.element.length>0) {
+            if (property.element.length > 0) {
                 var firstPropEl = null;
                 var el = property.element;
 

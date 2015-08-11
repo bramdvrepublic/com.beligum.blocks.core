@@ -8,7 +8,7 @@
  * */
 
 
-base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core.Constants", "blocks.core.DomManipulation", "constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Overlay", function (Class, Constants, DOM, BlocksConstants, Broadcaster, Overlay)
+base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core.Constants", "blocks.core.DomManipulation", "constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Hover", function (Class, Constants, DOM, BlocksConstants, Broadcaster, Hover)
 {
     var body = $("body");
 
@@ -210,7 +210,6 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core
                         this.children[i].createAllDropspots();
                     }
                 }
-
             }
             if (this.container != null) {
                 this.container.createAllDropspots();
@@ -454,12 +453,12 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core
                 var _this = this;
                 this.overlay.mouseenter(function(event) {
                     $(this).addClass(BlocksConstants.OVERLAY_HOVER_CLASS);
-                    Overlay.setHoveredBlock(_this);
+                    Hover.setHoveredBlock(_this);
                     Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_OVERLAY, event, _this);
                 }).mouseleave(function(event) {
                     $(this).removeClass(BlocksConstants.OVERLAY_HOVER_CLASS);
                     //this might be troublesome: what if the event is processed after the mouseenter of the next block?
-                    Overlay.setHoveredBlock(null);
+                    Hover.setHoveredBlock(null);
                     Broadcaster.send(Broadcaster.EVENTS.HOVER_LEAVE_OVERLAY, event, _this);
                 });
             }

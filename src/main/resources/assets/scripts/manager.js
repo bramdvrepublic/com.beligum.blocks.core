@@ -3,8 +3,10 @@
  *
  * The manager is the central point. here we catch all the events to keep an overview
  */
-base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Overlay", "blocks.core.Edit", "blocks.core.DomManipulation", "blocks.core.Sidebar", function (Constants, Broadcaster, Mouse, DragDrop, Resizer, Overlay, Edit, DOM, Sidebar)
+base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Hover", "blocks.core.Edit", "blocks.core.DomManipulation", "blocks.core.Sidebar", function (Constants, Broadcaster, Mouse, DragDrop, Resizer, Hover, Edit, DOM, Sidebar)
 {
+    var Manager = this;
+
     /*
      * Because there is no good place to put this we hang this here to the base inside a utils package
      * This is referenced from different lot of locations
@@ -30,15 +32,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
     //main entry point for blocks after all the GUI events are handled
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function (event)
     {
-        //we're currently not dragging inside anything
-        Overlay.setContainer(null);
-
-        //start off with a clean and empty sidebar
-        Sidebar.clear();
-
-        //start registering the movements of the mouse (TODO: already needed here?)
-        //Broadcaster.registerMouseMove();
-
         //note that this encapsulates DO_REFRESH_LAYOUT, but initializes a few other things first
         Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, event);
 
@@ -48,10 +41,9 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
 
     $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function (event)
     {
-        Sidebar.clear();
-        //Broadcaster.unregisterMouseMove();
-        Overlay.removeOverlays();
-        Overlay.setContainer(null);
+        //don't know if this is necessary anymore; reenable when problems occur
+        //some cleanup
+        //focusSwitch(null);
 
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
     });
@@ -59,10 +51,10 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
     $(document).on(Broadcaster.EVENTS.ACTIVATE_MOUSE, function (event)
     {
         Mouse.activate();
-        DOM.disableSelection();
-        Overlay.showOverlays();
+        DOM.disableTextSelection();
+        Hover.showHoverOverlays();
         DragDrop.setActive(true);
-        Sidebar.enableEditing();
+        //Sidebar.enableEditing();
 
         var windowWidth = $(window).width();
         var MIN_SCREEN_DND_THRESHOLD = 1030;
@@ -71,7 +63,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
             Mouse.allowDrag();
         }
         else {
-            Logger.debug("Available page screen size is less than " + MIN_SCREEN_DND_THRESHOLD + " ("+windowWidth+"), disabling drag-and-drop.");
+            Logger.debug("Available page screen size is less than " + MIN_SCREEN_DND_THRESHOLD + " (" + windowWidth + "), disabling drag-and-drop.");
             Broadcaster.send(Broadcaster.EVENTS.DISABLE_DND, event);
             Mouse.disallowDrag();
         }
@@ -80,10 +72,10 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
     $(document).on(Broadcaster.EVENTS.DEACTIVATE_MOUSE, function (event)
     {
         Mouse.deactivate();
-        Overlay.removeOverlays();
+        Hover.removeHoverOverlays();
         DragDrop.setActive(false);
         Sidebar.disableEditing();
-        DOM.enableSelection();
+        DOM.enableTextSelection();
     });
 
     $(document).on(Broadcaster.EVENTS.DOM_CHANGED, function (event)
@@ -100,12 +92,15 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         Broadcaster.send(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT, event);
 
         //hide the overlays while redrawing
-        Overlay.removeOverlays();
+        Hover.removeHoverOverlays();
 
-        Overlay.buildLayoutTree();
+        //we always start off with a focused page
+        var pageBlock = Hover.createPageBlock();
+        //note: we can't fill in the last argument because it's not a property or a template tag
+        focusSwitch(pageBlock, pageBlock.element, null);
 
         //redrawing done
-        Overlay.showOverlays();
+        Hover.showHoverOverlays();
 
         Broadcaster.send(Broadcaster.EVENTS.DID_REFRESH_LAYOUT, event);
     });
@@ -115,9 +110,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         Mouse.resetMouse();
     });
 
-    /*
-     * EVENTS FOR DRAGGING
-     */
+    //-----EVENTS FOR DRAGGING-----
     /**
      * Called when we want to enable the whole drag-and-drop system
      */
@@ -180,17 +173,57 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         }
     });
 
-    /*
-     * Edit properties
-     * */
-    $(document).on(Broadcaster.EVENTS.START_EDIT_FIELD, function (event)
+    //-----EVENTS FOR DRAGGING-----
+    $(document).on(Broadcaster.EVENTS.FOCUS_BLOCK, function (event, eventData)
     {
-        Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
+        focusSwitch(eventData.block, eventData.element, eventData.propertyElement, event);
     });
 
-    $(document).on(Broadcaster.EVENTS.END_EDIT_FIELD, function (event)
+    /**
+     * @param block the block that should get focus (not null)
+     * @param element the low-level element that we clicked on (may be null, if we didn't click on anything)
+     * @param propertyElement the first property element or template element on the way up from element (may be null)
+     */
+    var focusSwitch = function (block, element, propertyElement, event)
     {
-        Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, event);
-        Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
-    });
+        //this will make sure we always 'go back' to the page first, instead of directly focussing the next clicked block
+        var previousFocusedBlock = Hover.getFocusedBlock();
+        if (previousFocusedBlock != Hover.getPageBlock()) {
+            Sidebar.focusBlock(Hover.getPageBlock(), Hover.getPageBlock().element, event);
+            Hover.removeFocusOverlays();
+            Hover.setFocusedBlock(Hover.getPageBlock());
+            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
+        }
+        else {
+            //if we got a property, use it, otherwise focus the entire block
+            var selectedElement = propertyElement == null ? block.element : propertyElement;
+
+            Sidebar.focusBlock(block, selectedElement, event);
+            Hover.showFocusOverlays(selectedElement);
+            Hover.setFocusedBlock(block);
+            Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
+            enableFocusBlurDetection(selectedElement);
+        }
+    };
+
+    var enableFocusBlurDetection = function(focusedElement)
+    {
+        focusedElement.on("mousedown.manager_focus_end", function (e)
+        {
+            //TODO allow if we click on a child inside the currently focused block
+            e.preventDefault();
+            e.stopPropagation();
+        });
+        var page = $('.'+Constants.PAGE_CONTENT_CLASS);
+        page.on("mousedown.manager_focus_end", function (e)
+        {
+            e.preventDefault();
+            e.stopPropagation();
+
+            focusedElement.off("mousedown.manager_focus_end");
+            page.off("mousedown.manager_focus_end");
+
+            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, e);
+        });
+    };
 }]);

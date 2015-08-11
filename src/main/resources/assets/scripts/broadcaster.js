@@ -28,7 +28,7 @@
  *
  * */
 
-base.plugin("blocks.core.Broadcaster", ["base.core.Constants", "blocks.core.DomManipulation", "blocks.core.Overlay", function (Constants, DOM, Overlay)
+base.plugin("blocks.core.Broadcaster", ["base.core.Constants", "blocks.core.DomManipulation", "blocks.core.Hover", function (Constants, DOM, Hover)
 {
     var Broadcaster = this;
 
@@ -85,13 +85,7 @@ base.plugin("blocks.core.Broadcaster", ["base.core.Constants", "blocks.core.DomM
     this.EVENTS.DRAG_ENTER_BLOCK = "DRAG_ENTER_BLOCK";
     this.EVENTS.DRAG_OVER_BLOCK = "DRAG_OVER_BLOCK";
 
-    this.EVENTS.BLOCKS_CLICK = "BLOCKS_CLICK";
-
-    // Send when clicked on a property
-    // is like focus/blur on a text input
-    // Allows plugins to hook on
-    this.EVENTS.START_EDIT_FIELD = "START_EDIT_FIELD";
-    this.EVENTS.END_EDIT_FIELD = "END_EDIT_FIELD";
+    this.EVENTS.FOCUS_BLOCK = "FOCUS_BLOCK";
 
     this.EVENTS.DISABLE_SELECTION = "DISABLE_SELECTION";
 

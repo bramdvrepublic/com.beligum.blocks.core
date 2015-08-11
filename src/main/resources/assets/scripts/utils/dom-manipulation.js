@@ -485,7 +485,7 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
     };
 
     // http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
-    this.disableSelection = function ()
+    this.disableTextSelection = function ()
     {
         var sel = window.getSelection();
         sel.removeAllRanges();
@@ -497,7 +497,7 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
         };
     };
 
-    this.enableSelection = function ()
+    this.enableTextSelection = function ()
     {
         //http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting#4407335
         var html = $("html");

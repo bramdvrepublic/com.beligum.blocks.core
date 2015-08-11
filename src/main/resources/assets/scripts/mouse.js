@@ -59,7 +59,7 @@
  *
  */
 
-base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "constants.blocks.core", "blocks.core.Sidebar", "blocks.core.Overlay", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, SideBar, Overlay)
+base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "constants.blocks.core", "blocks.core.Sidebar", "blocks.core.Hover", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, SideBar, Hover)
 {
     // watch out with this value: it should be smaller than the smallest possible object in the layout system (width or height)
     // but when clicking near the edge of such an object, even smaller; so maybe TODO: activate the DnD when entering a new block?
@@ -113,7 +113,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
 
     this.allowDrag = function ()
     {
-        Mouse.resetMouse(true);
+        Mouse.resetMouse();
     };
 
     this.activate = function ()
@@ -187,14 +187,18 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         if (active) {
             // check for left mouse click
             if (event.which == 1) {
-                var block = Overlay.getHoveredBlock();
+                var block = Hover.getHoveredBlock();
 
                 //we need this to enable sidebar.js to know on which element we really clicked (instead of click-events on the overlay)
                 $('.'+BlocksConstants.BLOCK_OVERLAY_CLASS).addClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
 
+                //we're attempting to dnd an existing block
                 if (draggingStatus == BaseConstants.DRAGGING.NO && block != null && block.canDrag) {
                     draggingStatus = BaseConstants.DRAGGING.WAITING;
                     draggingStartEvent = event;
+
+                    // save the block we started on for future reference
+                    // (because we're removing the events from the overlay classes for now)
                     startBlock = block;
 
                     //put the mousemove on the document instead of the overlay so we get the events even though BLOCK_OVERLAY_NO_EVENTS_CLASS
@@ -203,6 +207,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                         mouseMove(event);
                     });
                 }
+                //we're attempting to dnd a new block
                 else if (draggingStatus == BaseConstants.DRAGGING.NO && event.target != null && ($(event.target).hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || $(event.target).parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0)) {
                     draggingStatus = BaseConstants.DRAGGING.WAITING;
                     draggingStartEvent = event;
@@ -211,13 +216,15 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 else if ($(event.target).hasClass(BlocksConstants.BLOCKS_START_BUTTON) || $(event.target).parents("." + BlocksConstants.BLOCKS_START_BUTTON).length > 0) {
                     //FIXME right that nothing is in here?
                 }
+                //this will happen when we eg. click on the page (or nothing at all, like outside the page)
                 else {
-                    Logger.debug("We can not start because dragging is already in place or not allowed. " + draggingStatus);
+                    //Logger.debug("We can not start because dragging is already in place or not allowed. " + draggingStatus);
                     Mouse.resetMouse();
-                    draggingStatus = BaseConstants.DRAGGING.TEXT_SELECTION;
 
-                    //TODO doens't exist anymore, safely omit?
-                    //Broadcaster.send(Broadcaster.EVENTS.END_HOVER);
+                    // this overload the resetMouse above and actually makes sense:
+                    // it means we clicked down outside of any block hotspot (eg. just on the page) and if we start dragging now,
+                    // (if that really does that, that's another question)
+                    draggingStatus = BaseConstants.DRAGGING.TEXT_SELECTION;
                 }
             }
             else {
@@ -238,15 +245,63 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     {
         if (active && event.which == 1) {
             if (draggingStatus != BaseConstants.DRAGGING.NOT_ALLOWED) {
-                var oldDragStatus = draggingStatus;
-                if (oldDragStatus == BaseConstants.DRAGGING.YES) {
-                    Broadcaster.send(Broadcaster.EVENTS.END_DRAG, event);
-                    //} else if (Overlay.getHoveredProperty() != null && Broadcaster.getHoveredProperty().editType != BlocksConstants.EDIT_NONE) {
-                    //    Broadcaster.send(Broadcaster.EVENTS.START_EDIT_FIELD);
 
-                } else if (oldDragStatus == BaseConstants.DRAGGING.WAITING) {
-                    if ($(event.target).hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || $(event.target).parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0) {
-                        //implemented with a popover in page.js instead
+                //the low level html element we clicked on
+                var element = $(event.target);
+
+                if (draggingStatus == BaseConstants.DRAGGING.YES) {
+                    Broadcaster.send(Broadcaster.EVENTS.END_DRAG, event);
+                }
+                // this means we were dragging, but haven't exceeded the threshold yet
+                // so, instead of starting to drag a block, we clicked one
+                else if (draggingStatus == BaseConstants.DRAGGING.WAITING) {
+
+                    //we go hunting for the first property up the chain, starting from the specific element we did the mouseup on
+                    var propertyOrTagElement = element;
+                    while (!(propertyOrTagElement.hasAttribute("property") || propertyOrTagElement.hasAttribute("data-property")) && propertyOrTagElement.prop("tagName").indexOf("-") == -1 && propertyOrTagElement.prop("tagName") != "BODY") {
+                        propertyOrTagElement = propertyOrTagElement.parent();
+                    }
+                    //if we hit the body boundary, we actually didn't find anything
+                    if (propertyOrTagElement.prop("tagName") == "BODY") {
+                        propertyOrTagElement = null;
+                    }
+                    //if we hit a template boundary and it's not the same as the startBlock, we didn't find anything (weird situation though...)
+                    else if (propertyOrTagElement.prop("tagName").indexOf("-") != -1) {
+                        if (propertyOrTagElement!=startBlock) {
+                            propertyOrTagElement = null;
+                        }
+                    }
+
+                    //TODO should we only fire this when propertyElement != null?
+                    //this will mainly end up in sidebar.js
+                    Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, {
+                        //this is the layoutElement block all events started on (holds a reference to both the overlay and the template block)
+                        block: startBlock,
+                        //this is the specific 'deep' html element at this mouse position that was clicked (possible because we disabled the events of the overlays during mousedown)
+                        element: element,
+                        //this is the html element 'on the way up'
+                        propertyElement: propertyOrTagElement
+                    });
+
+
+                    //for future reference
+                    //if ($(event.target).hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || $(event.target).parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0) {
+                    //    //implemented with a popover in page.js instead
+                    //}
+                }
+                // this means the mousedown happened outside of any block or other kind of hotspot
+                // eg. on the page itself, so we're focusing the page (and it should blur any active focus down the line)
+                else if (draggingStatus == BaseConstants.DRAGGING.TEXT_SELECTION) {
+                    if (Hover.getFocusedBlock()!=null) {
+                        //this will mainly end up in sidebar.js
+                        Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, {
+                            //this is an alternative for launching a blur
+                            block: Hover.getPageBlock(),
+                            //this is the specific 'deep' html element at this mouse position that was clicked (possible because we disabled the events of the overlays during mousedown)
+                            element: element,
+                            //there is no property element for the pageBlock
+                            propertyElement: null
+                        });
                     }
                 }
                 else {
@@ -270,12 +325,12 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             //Logger.debug("Start drag");
 
             //we need this to enable sidebar.js to know on which element we really clicked (instead of click-events on the overlay)
-            $('.'+BlocksConstants.BLOCK_OVERLAY_CLASS).removeClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
+            $('.' + BlocksConstants.BLOCK_OVERLAY_CLASS).removeClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
 
             //pass this along with the custom event data object
             Broadcaster.send(Broadcaster.EVENTS.START_DRAG, event, {
                 //we'll pass the block we initially had our cursor over (even before the wait threshold)
-                draggingBlock: startBlock
+                block: startBlock
             });
         }
     };
@@ -292,10 +347,10 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             }
             //we're dragging a block around
             else if (draggingStatus == BaseConstants.DRAGGING.YES) {
-                var block = Overlay.getHoveredBlock();
+                var block = Hover.getHoveredBlock();
 
                 Broadcaster.send(Broadcaster.EVENTS.DRAG_OVER_BLOCK, event, {
-                    dragoverBlock: block
+                    block: block
                 });
             }
         }
