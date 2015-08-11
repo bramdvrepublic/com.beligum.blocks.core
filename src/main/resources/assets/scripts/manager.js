@@ -199,24 +199,39 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
             var selectedElement = propertyElement == null ? block.element : propertyElement;
 
             Sidebar.focusBlock(block, selectedElement, event);
-            Hover.showFocusOverlays(selectedElement);
+            Hover.showFocusOverlays(block.element);
             Hover.setFocusedBlock(block);
             Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
-            enableFocusBlurDetection(selectedElement);
+
+            enableFocusBlurDetection(block, selectedElement);
         }
     };
 
-
-
-    var enableFocusBlurDetection = function(focusedElement)
+    var enableFocusBlurDetection = function(block, focusedElement)
     {
         focusedElement.on("mousedown.manager_focus_end", function (e)
         {
             //TODO allow if we click on a child inside the currently focused block
-            e.preventDefault();
+            //var element = $(event.target);
+            //if (element.length>0) {
+            //    var propertyOrTagElement = Hover.findFirstParentPropertyOrTemplate(block, element);
+            //
+            //    if (propertyOrTagElement && propertyOrTagElement!=focusedElement) {
+            //        Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, {
+            //            //this is the layoutElement block all events started on (holds a reference to both the overlay and the template block)
+            //            block: block,
+            //            //this is the specific 'deep' html element at this mouse position that was clicked (possible because we disabled the events of the overlays during mousedown)
+            //            element: element,
+            //            //this is the html element 'on the way up'
+            //            propertyElement: propertyOrTagElement
+            //        });
+            //    }
+            //}
+
+            //don't prevent default or the text editor won't function
+            //e.preventDefault();
             e.stopPropagation();
         });
-
         var page = $('.'+Constants.PAGE_CONTENT_CLASS);
         page.on("mousedown.manager_focus_end", function (e)
         {

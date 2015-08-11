@@ -5,16 +5,18 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.core", "blocks.core.Edit"
 {
     var listGroup = null;
 
-    this.focus = function (windowId, element, blockEvent)
+    this.focus = function (block, element, event)
     {
+        var retVal = [];
+
         var element = element.find(".carousel");
 
         listGroup = $('<div class="list-group" />');
 
         redraw(element);
 
-        Sidebar.addUIForProperty(windowId, listGroup);
-        Sidebar.addUIForProperty(windowId, addImageButton(element));
+        retVal.push(listGroup);
+        retVal.push(addImageButton(element));
 
         //pauses all carousels while editing
         $('.carousel').each(function(){
@@ -22,11 +24,10 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.core", "blocks.core.Edit"
             $(this).carousel('pause');
         });
 
-        //this means we don't want children properties to create windows (but execute their logic, yes)
-        return false;
+        return retVal;
     };
 
-    this.blur = function (element)
+    this.blur = function (block, element)
     {
         var element = element.find(".carousel");
 
@@ -38,7 +39,7 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.core", "blocks.core.Edit"
 
     this.getWindowName = function ()
     {
-        return "Caroussel";
+        return "Carousel";
     };
 
     var createImageEditBox = function (index, item, items, carousel)
@@ -47,28 +48,9 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.core", "blocks.core.Edit"
         var caption = item.children(".carousel-caption");
 
         var listGroupItem = $('<div class="list-group-item clearfix" />');
-        //don't start from zero
         var wrapper = $('<div></div>').appendTo(listGroupItem);
         var label = $('<div class="pull-left">'+(item.find('.title p').html())+'</div>').appendTo(wrapper);
         var buttons = $('<div class="btn-group pull-right" role="group"></div>').appendTo(wrapper);
-        var editButton = $('<span class="btn btn-primary btn-xs"><i class="fa fa-fw fa-pencil"></i></span>').appendTo(buttons);
-
-        var editBox = $('<div class="hidden" />').appendTo(listGroupItem);
-        var labelEdit = $("<div></div>").appendTo(editBox);
-        var closeButton = $('<span class="close pull-right"><i class="fa fa-times"></i></span>').appendTo(labelEdit);
-
-        editBox.append(SidebarUtils.addValueAttribute(Sidebar, image, "Image", "Paste or type a link", "src", false, true, false));
-
-        closeButton.click(function ()
-        {
-            editBox.addClass("hidden");
-            wrapper.removeClass("hidden");
-        });
-        editButton.click(function ()
-        {
-            wrapper.addClass("hidden");
-            editBox.removeClass("hidden");
-        });
 
         // Do not add remove when there is only one image
         if (items.length > 1) {

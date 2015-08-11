@@ -31,7 +31,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
                     }
                     else {
                         // If more then 1 value is selected, only keep the first value
-                        element.removeClass(c.value);
+                        element.removeClass(testValue);
                     }
                 }
 
