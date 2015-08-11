@@ -100,7 +100,10 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         draggingStatus = BaseConstants.DRAGGING.NO;
 
         //re-enable (or reset) the events of the overlays to work
-        $('.'+BlocksConstants.BLOCK_OVERLAY_CLASS).removeClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
+        var overlays = $('.'+BlocksConstants.BLOCK_OVERLAY_CLASS);
+        overlays.removeClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
+
+        overlays.removeClass("invisible");
 
         //since we're only listening for move events after clicking now, deregister this by default
         $(document).off("mousemove.blocks_core");
@@ -259,7 +262,27 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                     //we go hunting for the first property up the chain, starting from the specific element we did the mouseup on
                     var propertyOrTagElement = Hover.findFirstParentPropertyOrTemplate(startBlock, element);
 
-                    //TODO should we only fire this when propertyElement != null?
+                    //note: use the original event because the event system wraps the events and the coordinates get lost
+                    var hotspot = {
+                        left: event.originalEvent.clientX,
+                        top: event.originalEvent.clientY
+                    };
+
+                    //this means we tinkered with the element, so adapts the hotspot
+                    if (propertyOrTagElement!=element) {
+                        var elemWidth = $(propertyOrTagElement).width();
+                        var elemHeight = $(propertyOrTagElement).height();
+                        var elemPos = $(propertyOrTagElement).offset();
+                        var elemBottom = elemPos.top + elemHeight;
+                        var elemRight = elemPos.left + elemWidth;
+
+                        var mouseIsOnProperty = (hotspot.left >= elemPos.left && hotspot.left <= elemRight) && (hotspot.top >= elemPos.top && hotspot.top <= elemBottom);
+                        if (!mouseIsOnProperty) {
+                            hotspot.left = elemPos.left+1;
+                            hotspot.top = elemPos.top+1;
+                        }
+                    }
+
                     //this will mainly end up in sidebar.js
                     Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, {
                         //this is the layoutElement block all events started on (holds a reference to both the overlay and the template block)
@@ -267,7 +290,9 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                         //this is the specific 'deep' html element at this mouse position that was clicked (possible because we disabled the events of the overlays during mousedown)
                         element: element,
                         //this is the html element 'on the way up'
-                        propertyElement: propertyOrTagElement
+                        propertyElement: propertyOrTagElement,
+                        //the (possibly changed) hotspot to be used in eg. the focus system (like for editor)
+                        hotspot: hotspot
                     });
 
 
@@ -311,8 +336,12 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             draggingStatus = BaseConstants.DRAGGING.YES;
             //Logger.debug("Start drag");
 
+            var overlays = $('.'+BlocksConstants.BLOCK_OVERLAY_CLASS);
             //we need this to enable sidebar.js to know on which element we really clicked (instead of click-events on the overlay)
-            $('.' + BlocksConstants.BLOCK_OVERLAY_CLASS).removeClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
+            overlays.removeClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
+
+            //don't show the hover effects while dragging; it blocks the visibility of the lines in between
+            overlays.addClass(BlocksConstants.BLOCK_OVERLAY_BLOCK_HOVER);
 
             //pass this along with the custom event data object
             Broadcaster.send(Broadcaster.EVENTS.START_DRAG, event, {

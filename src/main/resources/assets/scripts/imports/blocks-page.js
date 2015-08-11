@@ -30,7 +30,7 @@ base.plugin("blocks.edit.Page", ["constants.blocks.core", "messages.blocks.core"
         newBlock.tooltip();
     });
 
-    this.focus = function (block, element, event)
+    this.focus = function (block, element, hotspot, event)
     {
         var retVal = [];
 

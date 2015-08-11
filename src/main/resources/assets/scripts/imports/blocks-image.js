@@ -4,7 +4,7 @@
 base.plugin("blocks.edit.Image", ["constants.blocks.core", "blocks.core.Edit", "blocks.core.Sidebar", "blocks.core.SidebarUtils",  function (Constants, Edit, Sidebar, SidebarUtils)
 {
 
-    this.focus = function(block, element, event)
+    this.focus = function(block, element, hotspot, event)
     {
         var retVal = [];
 

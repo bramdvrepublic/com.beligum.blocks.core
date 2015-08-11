@@ -1,4 +1,4 @@
-base.plugin("blocks.core.Hover", ["constants.blocks.core", function (BlocksConstants)
+base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManipulation", function (BlocksConstants, DOM)
 {
     var Hover = this;
 
@@ -120,11 +120,32 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", function (BlocksConst
 
     this.findFirstParentPropertyOrTemplate = function(block, element)
     {
+        //this will help solving the "I clicked below a block, but it seemed like that block extended all the way down, because it has a large block next to it"
+        //note that if element is null, this is overridden by that
+        var clickedElement = element;
+        if (clickedElement!=null) {
+            //if we didn't click on a tag inside the block we hovered on, just select the block element (to start with, see below)
+            if (block.element!=clickedElement) {
+                if (!$.contains(block.element, clickedElement)) {
+                    clickedElement = block.element;
+                }
+            }
+        }
+
+        // if we clicked on the block (or made it look like that) and that block has exactly one property
+        // it makes sense to fall through and select the element holding that property
+        if (clickedElement==block.element) {
+            var directProperties = clickedElement.find('> [property], [data-property]');
+            if (directProperties.length == 1) {
+                clickedElement = directProperties;
+            }
+        }
+
         //we go hunting for the first property up the chain, starting from the specific element we did the mouseup on
-        var propertyOrTagElement = element;
+        var propertyOrTagElement = clickedElement;
 
-        //TOD if container, if column, if row code should come here (debug when clicking on high column)
-
+        // find parents until parent is <body> or until parent has property attribute
+        // first property enable editing
         while (!(propertyOrTagElement.hasAttribute("property") || propertyOrTagElement.hasAttribute("data-property")) && propertyOrTagElement.prop("tagName").indexOf("-") == -1 && propertyOrTagElement.prop("tagName") != "BODY") {
             propertyOrTagElement = propertyOrTagElement.parent();
         }

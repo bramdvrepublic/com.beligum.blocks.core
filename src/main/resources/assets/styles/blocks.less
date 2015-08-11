@@ -153,7 +153,20 @@ body.@{BODY_EDIT_MODE_CLASS} {
   left: 0px;
   right: 0px;
   bottom: 0px;
-  border: 1px dotted rgba(100, 100, 100, 0.8);
+
+  .defaultBorder() {
+
+    border: 1px dotted rgba(100, 100, 100, 0.8);
+
+    &.left {
+      border-left: none;
+    }
+    &.top {
+      border-top: none;
+    }
+  };
+
+  .defaultBorder();
 
   // This disables pointer events for the element itself,
   // but 'bubbles up' lower cursors like the mouse would eg. hover over them
@@ -167,17 +180,15 @@ body.@{BODY_EDIT_MODE_CLASS} {
   //this is probably a good general choice
   cursor: pointer;
 
-  &.left {
-    border-left: none;
-  }
-
-  &.top {
-    border-top: none;
-  }
-
   &.@{OVERLAY_HOVER_CLASS} {
     box-shadow: 0px 0px 10px rgba(1, 0, 0, 0.5);
     border: none;
+
+    //undo the hover effects: we're dragging and it clutters the visibility of the drop lines
+    &.@{BLOCK_OVERLAY_BLOCK_HOVER} {
+      box-shadow: none;
+      .defaultBorder();
+    }
   }
   &.@{OVERLAY_DRAGGING_CLASS} {
     background-color: rgba(00, 102, 204, 0.5);

@@ -3,7 +3,7 @@ base.plugin("blocks.core.edit.Text", ["constants.blocks.core", "blocks.core.Broa
     /*
      * Start full text editing on a block (start Scribe)
      */
-    this.focus = function (block, element, event)
+    this.focus = function (block, element, hotspot, event)
     {
         var retVal = [];
 
@@ -13,7 +13,7 @@ base.plugin("blocks.core.edit.Text", ["constants.blocks.core", "blocks.core.Broa
         var editor = Editor.getEditor(element, element.prop('tagName')!='SPAN');
 
         // Add toolbar to sidebar
-        setCursor(event.originalEvent.clientX, event.originalEvent.clientY);
+        setCursor(hotspot.left, hotspot.top);
         var toolbar = $(Editor.getToolbarElement());
         toolbar.addClass(Constants.PREVENT_BLUR_CLASS);
 

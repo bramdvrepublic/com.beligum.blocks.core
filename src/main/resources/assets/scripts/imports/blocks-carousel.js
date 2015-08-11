@@ -5,7 +5,7 @@ base.plugin("blocks.edit.Carousel", ["constants.blocks.core", "blocks.core.Edit"
 {
     var listGroup = null;
 
-    this.focus = function (block, element, event)
+    this.focus = function (block, element, hotspot, event)
     {
         var retVal = [];
 

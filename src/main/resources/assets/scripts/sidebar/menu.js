@@ -200,7 +200,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     {
         if (resizing == false) {
             // Leave edit mode
-            Sidebar.resetOld();
+            //Sidebar.resetOld();
             sidebarWidth = sidebarElement.outerWidth();
             Hover.removeHoverOverlays();
             Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
@@ -224,7 +224,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     $(document).on("click", "." + BlocksConstants.SAVE_PAGE_BUTTON, function (event)
     {
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
-        Sidebar.resetOld();
+        //Sidebar.resetOld();
         // remove the widths from the containers
         $(".container").removeAttr("style");
         var page = $("html")[0].outerHTML;
@@ -302,7 +302,6 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                     action: function (dialogRef)
                     {
                         dialogRef.close();
-                        Broadcaster.send(Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE));
                     }
                 },
                 {
@@ -314,11 +313,14 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                     {
                         onConfirm();
                         dialogRef.close();
-                        Broadcaster.send(Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE));
                     }
 
                 }
-            ]
+            ],
+            onhide: function()
+            {
+                Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
+            }
         });
 
     });

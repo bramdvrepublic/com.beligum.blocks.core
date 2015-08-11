@@ -54,7 +54,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         DOM.disableTextSelection();
         Hover.showHoverOverlays();
         DragDrop.setActive(true);
-        //Sidebar.enableEditing();
 
         var windowWidth = $(window).width();
         var MIN_SCREEN_DND_THRESHOLD = 1030;
@@ -74,7 +73,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         Mouse.deactivate();
         Hover.removeHoverOverlays();
         DragDrop.setActive(false);
-        Sidebar.disableEditing();
         DOM.enableTextSelection();
     });
 
@@ -139,7 +137,6 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         //Broadcaster.zoom();
         DOM.disableContextMenu();
         DragDrop.dragStarted(event, eventData);
-        Sidebar.disableEditing();
     });
 
     /**
@@ -176,20 +173,21 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
     //-----EVENTS FOR DRAGGING-----
     $(document).on(Broadcaster.EVENTS.FOCUS_BLOCK, function (event, eventData)
     {
-        focusSwitch(eventData.block, eventData.element, eventData.propertyElement, event);
+        focusSwitch(eventData.block, eventData.element, eventData.propertyElement, eventData.hotspot, event);
     });
 
     /**
      * @param block the block that should get focus (not null)
      * @param element the low-level element that we clicked on (may be null, if we didn't click on anything)
      * @param propertyElement the first property element or template element on the way up from element (may be null)
+     * @param hotspot the (possibly changed) mouse coordinates that function as the 'hotspot' for this event (object with top and left like offset())
      */
-    var focusSwitch = function (block, element, propertyElement, event)
+    var focusSwitch = function (block, element, propertyElement, hotspot, event)
     {
         //this will make sure we always 'go back' to the page first, instead of directly focussing the next clicked block
         var previousFocusedBlock = Hover.getFocusedBlock();
         if (previousFocusedBlock != Hover.getPageBlock()) {
-            Sidebar.focusBlock(Hover.getPageBlock(), Hover.getPageBlock().element, event);
+            Sidebar.focusBlock(Hover.getPageBlock(), Hover.getPageBlock().element, Hover.getPageBlock().element.offset(), event);
             Hover.removeFocusOverlays();
             Hover.setFocusedBlock(Hover.getPageBlock());
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
@@ -198,7 +196,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
             //if we got a property, use it, otherwise focus the entire block
             var selectedElement = propertyElement == null ? block.element : propertyElement;
 
-            Sidebar.focusBlock(block, selectedElement, event);
+            Sidebar.focusBlock(block, selectedElement, hotspot, event);
             Hover.showFocusOverlays(block.element);
             Hover.setFocusedBlock(block);
             Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
