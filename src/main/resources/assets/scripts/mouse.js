@@ -193,36 +193,29 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 $('.'+BlocksConstants.BLOCK_OVERLAY_CLASS).addClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
 
                 //we're attempting to dnd an existing block
-                if (draggingStatus == BaseConstants.DRAGGING.NO && block != null && block.canDrag) {
-                    draggingStatus = BaseConstants.DRAGGING.WAITING;
-                    draggingStartEvent = event;
+                if (draggingStatus == BaseConstants.DRAGGING.NO) {
+                    if (block != null && block.canDrag) {
+                        startBlock = block;
+                    }
+                    else {
+                        startBlock = null;
+                    }
 
-                    // save the block we started on for future reference
-                    // (because we're removing the events from the overlay classes for now)
-                    startBlock = block;
+                    //if we don't have a startblock, we must be dragging from the new-block button
+                    if (startBlock!=null || event.target != null && ($(event.target).hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || $(event.target).parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0)) {
+                        draggingStatus = BaseConstants.DRAGGING.WAITING;
+                        draggingStartEvent = event;
 
-                    //put the mousemove on the document instead of the overlay so we get the events even though BLOCK_OVERLAY_NO_EVENTS_CLASS
-                    $(document).on("mousemove.blocks_core", function (event)
-                    {
-                        mouseMove(event);
-                    });
-                }
-                //we're attempting to dnd a new block
-                else if (draggingStatus == BaseConstants.DRAGGING.NO && event.target != null && ($(event.target).hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || $(event.target).parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0)) {
-                    draggingStatus = BaseConstants.DRAGGING.WAITING;
-                    draggingStartEvent = event;
+                        // save the block we started on for future reference
+                        // (because we're removing the events from the overlay classes for now)
+                        startBlock = block;
 
-                    // signal we're dragging a new block
-                    startBlock = null;
-
-                    //put the mousemove on the document instead of the overlay so we get the events even though BLOCK_OVERLAY_NO_EVENTS_CLASS
-                    $(document).on("mousemove.blocks_core", function (event)
-                    {
-                        mouseMove(event);
-                    });
-                }
-                else if ($(event.target).hasClass(BlocksConstants.BLOCKS_START_BUTTON) || $(event.target).parents("." + BlocksConstants.BLOCKS_START_BUTTON).length > 0) {
-                    //FIXME right that nothing is in here?
+                        //put the mousemove on the document instead of the overlay so we get the events even though BLOCK_OVERLAY_NO_EVENTS_CLASS
+                        $(document).on("mousemove.blocks_core", function (event)
+                        {
+                            mouseMove(event);
+                        });
+                    }
                 }
                 //this will happen when we eg. click on the page (or nothing at all, like outside the page)
                 else {
