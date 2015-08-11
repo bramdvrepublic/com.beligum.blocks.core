@@ -35,8 +35,9 @@ public class BreadcrumbController extends DefaultTemplateController
         URI originalUri = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
         Route originalRoute = new Route(originalUri, PersistenceControllerImpl.instance());
 
-        for (int i = 0; i < originalRoute.getPath().getNameCount(); i++) {
-            URI uri = UriBuilder.fromUri(originalUri).replacePath(originalRoute.getPath().subpath(0,i).toString()).build();
+        for (int i = 0; i <= originalRoute.getPath().getNameCount(); i++) {
+            String path = i > 0 ? originalRoute.getPath().subpath(0,i).toString() : "/";
+            URI uri = UriBuilder.fromUri(originalUri).replacePath(path).build();
             Route route = new Route(uri, PersistenceControllerImpl.instance());
 
             // Find another path in the most relevant language
@@ -54,6 +55,7 @@ public class BreadcrumbController extends DefaultTemplateController
                 HashMap<String, String> map = new HashMap<String, String>();
                 map.put("url", url);
                 map.put("title", title);
+                retVal.add(map);
             }
 
         }

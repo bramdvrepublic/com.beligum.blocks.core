@@ -46,6 +46,8 @@ public class PageSerializer<T extends WebPage> extends ResourceSerializer
         jgen.writeString(webPage.getText());
         jgen.writeFieldName("page_template");
         jgen.writeString(webPage.getPageTemplate());
+        jgen.writeFieldName("page_title");
+        jgen.writeString(webPage.getPageTitle());
 
         if (webPage.getUpdatedAt() != null) {
             jgen.writeFieldName("updated_by");

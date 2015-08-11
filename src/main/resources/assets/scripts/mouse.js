@@ -195,9 +195,12 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 //we're attempting to dnd an existing block
                 if (draggingStatus == BaseConstants.DRAGGING.NO) {
                     if (block != null && block.canDrag) {
+                        // save the block we started on for future reference
+                        // (because we're removing the events from the overlay classes for now)
                         startBlock = block;
                     }
                     else {
+                        // Signalfor dragging new block
                         startBlock = null;
                     }
 
@@ -205,10 +208,6 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                     if (startBlock!=null || event.target != null && ($(event.target).hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || $(event.target).parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0)) {
                         draggingStatus = BaseConstants.DRAGGING.WAITING;
                         draggingStartEvent = event;
-
-                        // save the block we started on for future reference
-                        // (because we're removing the events from the overlay classes for now)
-                        startBlock = block;
 
                         //put the mousemove on the document instead of the overlay so we get the events even though BLOCK_OVERLAY_NO_EVENTS_CLASS
                         $(document).on("mousemove.blocks_core", function (event)

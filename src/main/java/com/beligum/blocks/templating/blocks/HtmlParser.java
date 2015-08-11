@@ -24,6 +24,11 @@ import java.util.regex.Pattern;
 
 /**
  * Created by bram on 5/16/15.
+ *
+ * TODO: replace property values not only on the string name of the property, but also
+ * keep a refernece to prefixes or the default vocab. (e.g. property="pagetitle" and
+ * property="http://www.mot.be/ontology/pagetitle" and property="mot:pagetitle" could all reference the same
+ * property.
  */
 public class HtmlParser extends AbstractAssetParser
 {

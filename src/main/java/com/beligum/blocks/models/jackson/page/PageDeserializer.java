@@ -50,6 +50,12 @@ public class PageDeserializer<T extends WebPage> extends ResourceJsonDeserialize
                 retVal.setParsedHtml(html);
                 String pageTemplate = node.get("page_template").asText();
                 retVal.setPageTemplate(pageTemplate);
+
+                if (node.get("page_title") != null) {
+                    String pageTitle = node.get("page_title").asText();
+                    retVal.setPageTitle(pageTitle);
+                }
+
                 String text = node.get("text").asText();
                 retVal.setText(text);
 

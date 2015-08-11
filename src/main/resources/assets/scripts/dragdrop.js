@@ -62,12 +62,15 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         //passed in from mouse.js (the original block we were over when starting to drag)
         currentDraggedBlock = eventData.block;
 
-        //mark the current overlay as being dragged
-        currentDraggedBlock.overlay.addClass(BlocksConstants.OVERLAY_DRAGGING_CLASS);
+
 
         //we're dragging an existing block
         if (draggingEnabled && currentDraggedBlock != null && currentDraggedBlock.canDrag && currentDraggedBlock.getTotalBlocks() > 1) {
             //currentDraggedBlock.getContainer().createAllDropspots();
+
+            //mark the current overlay as being dragged
+            currentDraggedBlock.overlay.addClass(BlocksConstants.OVERLAY_DRAGGING_CLASS);
+
             Hover.getFocusedBlock().createAllDropspots();
             createDropPointerElement();
             dragging = true;
@@ -255,7 +258,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                             })
                             .fail(function (xhr, textStatus, exception)
                             {
-                                Notification.error(BlocksMessages.savePageError + (exception ? "; " + exception : ""), xhr);
+                                Notification.error(BlocksMessages.newBlockError + (exception ? "; " + exception : ""), xhr);
                             })
                             .always(function ()
                             {
