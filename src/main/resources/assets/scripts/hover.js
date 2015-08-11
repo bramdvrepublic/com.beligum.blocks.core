@@ -122,6 +122,9 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", function (BlocksConst
     {
         //we go hunting for the first property up the chain, starting from the specific element we did the mouseup on
         var propertyOrTagElement = element;
+
+        //TOD if container, if column, if row code should come here (debug when clicking on high column)
+
         while (!(propertyOrTagElement.hasAttribute("property") || propertyOrTagElement.hasAttribute("data-property")) && propertyOrTagElement.prop("tagName").indexOf("-") == -1 && propertyOrTagElement.prop("tagName") != "BODY") {
             propertyOrTagElement = propertyOrTagElement.parent();
         }
