@@ -24,6 +24,7 @@ public class WebPageImpl extends ResourceImpl implements WebPage
     private String parsedHtml;
     private String pageTemplate;
     private String text;
+    private String pageTitle;
     private Set<String> templates;
     private Set<String> resources;
     Set<HashMap<String, String>> links;
@@ -64,6 +65,16 @@ public class WebPageImpl extends ResourceImpl implements WebPage
     public String getPageTemplate()
     {
         return pageTemplate;
+    }
+
+    @Override
+    public String getPageTitle() {
+        return this.pageTitle;
+    }
+
+    @Override
+    public void setPageTitle(String pageTitle) {
+        this.pageTitle = pageTitle;
     }
 
     @Override

@@ -112,6 +112,7 @@ public class PageEndpoint
             localizedWebpage.setLinks(pageParser.getLinks());
             localizedWebpage.setResources(pageParser.getResources().keySet());
             localizedWebpage.setTemplates(pageParser.getTemplates());
+            localizedWebpage.setPageTitle(pageParser.getPageTitle());
 
             // Put all found property values inside the resources'
             // return the resources that were changed

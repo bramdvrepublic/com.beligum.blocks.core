@@ -6,18 +6,14 @@
 
 <meta property="blocks:icon" content="fa-paperclip">
 
+<meta property="blocks:controller" content="com.beligum.blocks.site.controllers.BreadcrumbController" >
+
 <link href="/assets/styles/imports/block-breadcrumb.less" rel="stylesheet">
 
 <template>
     <ol class="breadcrumb">
-        <li>
-            <a href="/">Het MOT</a>
-        </li>
-        <li>
-            <a href="/">Under construction</a>
-        </li>
-        <li>
-            <a href="/">For now, don't use please</a>
-        </li>
+        #foreach($map in $controller.breadcrumbs())
+            <li><a href="$map.get("url")">$map.get("title")</a></li>
+        #end
     </ol>
 </template>
