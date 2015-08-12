@@ -11,7 +11,7 @@ base.plugin("blocks.core.Notification", ["blocks.core.Broadcaster", function (Br
             buttons: [
                 {
                     label: 'Information',
-                    cssClass: 'btn-info',
+                    cssClass: '',
                     action: function (dialogRef)
                     {
                         dialogRef.close();
@@ -30,8 +30,8 @@ base.plugin("blocks.core.Notification", ["blocks.core.Broadcaster", function (Br
             type: BootstrapDialog.TYPE_WARNING,
             buttons: [
                 {
-                    label: 'Warning',
-                    cssClass: 'btn-warning',
+                    label: 'Close',
+                    cssClass: '',
                     action: function (dialogRef)
                     {
                         dialogRef.close();
@@ -51,7 +51,7 @@ base.plugin("blocks.core.Notification", ["blocks.core.Broadcaster", function (Br
             buttons: [
                 {
                     label: 'Close',
-                    cssClass: 'btn-danger',
+                    cssClass: '',
                     action: function (dialogRef)
                     {
                         dialogRef.close();

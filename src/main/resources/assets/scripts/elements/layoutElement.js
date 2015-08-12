@@ -8,7 +8,7 @@
  * */
 
 
-base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core.Constants", "blocks.core.DomManipulation", "constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Hover", function (Class, Constants, DOM, BlocksConstants, Broadcaster, Hover)
+base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants.base.core", "blocks.core.DomManipulation", "constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Hover", function (Class, Constants, DOM, BlocksConstants, Broadcaster, Hover)
 {
     var body = $("body");
 
@@ -204,7 +204,8 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "base.core
         {
             if (this instanceof blocks.elements.Block) {
                 this.generateDropspots();
-            } else {
+            }
+            else {
                 if (this.children.length > 0) {
                     for (var i = 0; i < this.children.length; i++) {
                         this.children[i].createAllDropspots();

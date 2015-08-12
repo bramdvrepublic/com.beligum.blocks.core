@@ -1,6 +1,6 @@
 // Special kind of row that can contains a template
 // Draggable templates are the elements inside a column
-base.plugin("blocks.core.Elements.Block", ["base.core.Class", "base.core.Constants", "constants.blocks.core", function (Class, Constants, BlocksConstants)
+base.plugin("blocks.core.Elements.Block", ["base.core.Class", "constants.base.core", "constants.blocks.core", function (Class, Constants, BlocksConstants)
 {
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};
@@ -104,19 +104,17 @@ base.plugin("blocks.core.Elements.Block", ["base.core.Class", "base.core.Constan
             if (currentDropspot == null || !currentDropspot.makeTriggers(x, y, direction)) {
                 var newDropspot = currentDropspot;
                 //Logger.debug("Create new trigger triggers");
-                try {
-                    if (direction == Constants.DIRECTION.UP) {
-                        newDropspot = this.verticalDropspots[this.verticalDropspots.length - 1];
-                    } else if (direction == Constants.DIRECTION.DOWN) {
-                        newDropspot = this.verticalDropspots[0];
-                    } else if (direction == Constants.DIRECTION.LEFT) {
-                        newDropspot = this.horizontalDropspots[this.horizontalDropspots.length - 1];
-                    } else if (direction == Constants.DIRECTION.RIGHT) {
-                        newDropspot = this.horizontalDropspots[0];
-                    }
-                } catch (e) {
-                    Logger.error(this);
+
+                if (direction == Constants.DIRECTION.UP) {
+                    newDropspot = this.verticalDropspots[this.verticalDropspots.length - 1];
+                } else if (direction == Constants.DIRECTION.DOWN) {
+                    newDropspot = this.verticalDropspots[0];
+                } else if (direction == Constants.DIRECTION.LEFT) {
+                    newDropspot = this.horizontalDropspots[this.horizontalDropspots.length - 1];
+                } else if (direction == Constants.DIRECTION.RIGHT) {
+                    newDropspot = this.horizontalDropspots[0];
                 }
+
                 //Logger.debug("Calculate at border - direction=" + direction);
                 if (newDropspot != null) {
                     newDropspot.makeTriggers(x, y, direction);

@@ -1,4 +1,4 @@
-base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Hover", "blocks.core.DomManipulation", "constants.blocks.core", "blocks.core.Sidebar", "messages.blocks.core", function (Broadcaster, Notification, Hover, DOM, BlocksConstants, Sidebar, BlocksMessages)
+base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notification", "blocks.core.Hover", "blocks.core.DomManipulation", "constants.blocks.core", "blocks.core.Sidebar", "messages.blocks.core", "blocks.core.UI", function (Broadcaster, Notification, Hover, DOM, BlocksConstants, Sidebar, BlocksMessages, UI)
 {
     var Frame = this;
 
@@ -17,6 +17,9 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         toggleSidebar($("body").children("." + BlocksConstants.PAGE_CONTENT_CLASS).length == 0);
     });
 
+    // Add the start button as only notice of our presence
+    $("body").append(menuStartButton);
+
     var sidebarElement = $("<div class='" + BlocksConstants.PAGE_SIDEBAR_CLASS + " " + BlocksConstants.PREVENT_BLUR_CLASS + "'></div>");
     sidebarElement.load("/templates/sidebar");
 
@@ -34,6 +37,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         var cookieState = SIDEBAR_STATE_NULL;
 
         if (show) {
+
             cookieState = SIDEBAR_STATE_SHOW;
 
             // Remove the menu button while animating sidebar
@@ -48,11 +52,35 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             $("body").addClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
 
             // Prevent clicking on links while in editing mode
-            $(document).on("click.prevent_click_editing", "a", function (e)
+            $(document).on("click.prevent_click_editing", "a, button", function (e)
             {
-                e.preventDefault();
-                //TODO we should show some kind of info box?
-                //Notification.warn(BlocksMessages.clicksDisabledWhileEditing);
+                var control = $(this);
+
+                //this attribute allows us to let some components pass through after all
+                var controlRole = control.attr(BlocksConstants.CLICK_ROLE_ATTR);
+                var pierceThrough = controlRole!=null && controlRole==BlocksConstants.FORCE_CLICK_ATTR_VALUE;
+
+                //also check all the parents for that attribute to allow for easy management and grouping
+                if (!pierceThrough) {
+                    pierceThrough = control.parents('[' + BlocksConstants.FORCE_CLICK_ATTR + ']').length > 0;
+                }
+
+                //allow all the buttons in modal dialogs to work as usual
+                if (!pierceThrough) {
+                    pierceThrough = control.parents('.modal-dialog').length > 0;
+                }
+
+                if (pierceThrough) {
+                    //NOOP
+                }
+                //controls in the sidebar are enabled by default
+                else if (UI.sidebar.find(control).length>0) {
+                    //NOOP
+                }
+                else {
+                    e.preventDefault();
+                    Notification.warn(BlocksMessages.clicksDisabledWhileEditing);
+                }
             });
 
             // Get old sidebar width from cookie
@@ -307,9 +335,8 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 },
                 {
                     id: 'btn-ok',
-                    icon: 'glyphicon glyphicon-check',
                     label: 'Ok',
-                    cssClass: 'btn-primary',
+                    cssClass: 'btn-danger',
                     action: function (dialogRef)
                     {
                         onConfirm();
@@ -325,9 +352,6 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         });
 
     });
-
-    // Add the start button as only notice of our presence
-    $("body").append(menuStartButton);
 
     //TODO SETUP THE KEYBOARD SHORTCUTS (messed up the editor)
     //$(document).keydown(function (e)

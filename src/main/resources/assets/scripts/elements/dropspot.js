@@ -12,7 +12,7 @@
  * y coordinate of 6
  *
  * */
-base.plugin("blocks.core.Elements.Dropspot", ["base.core.Class", "base.core.Constants", function (Class, Constants)
+base.plugin("blocks.core.Elements.Dropspot", ["base.core.Class", "constants.base.core", function (Class, Constants)
 {
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};

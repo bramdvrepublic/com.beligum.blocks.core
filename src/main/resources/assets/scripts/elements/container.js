@@ -2,7 +2,7 @@
  * Created by wouter on 5/03/15.
  */
 
-base.plugin("blocks.core.Elements.Container", ["base.core.Class", "base.core.Constants", "blocks.core.DomManipulation", function (Class, Constants, DOM)
+base.plugin("blocks.core.Elements.Container", ["base.core.Class", "constants.base.core", "blocks.core.DomManipulation", function (Class, Constants, DOM)
 {
     blocks = window['blocks'] || {};
     // Region where templates can be dragged

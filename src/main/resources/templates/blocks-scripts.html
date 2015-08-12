@@ -1,4 +1,5 @@
-#if($PRINCIPAL)
+## this $ALLOW_EDIT is set server-side
+#if($PRINCIPAL && $ALLOW_EDIT)
 
 ##-----STYLES----
 
@@ -32,6 +33,7 @@
 <script src="/assets/scripts/elements/block.js" type="application/javascript"></script>
 <script src="/assets/scripts/elements/page.js" type="application/javascript"></script>
 
+<script src="/assets/scripts/ui.js" type="application/javascript"></script>
 <script src="/assets/scripts/broadcaster.js" type="application/javascript"></script>
 <script src="/assets/scripts/layout.js" type="application/javascript"></script>
 <script src="/assets/scripts/mouse.js" type="application/javascript"></script>

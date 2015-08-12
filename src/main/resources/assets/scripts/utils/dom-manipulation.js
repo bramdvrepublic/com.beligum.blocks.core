@@ -14,8 +14,10 @@
  * */
 
 
-base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.blocks.core", function (Constants, BlocksConstants)
+base.plugin("blocks.core.DomManipulation", ["constants.base.core", "constants.blocks.core", function (Constants, BlocksConstants)
 {
+    var DOM = this;
+
     // LOCAL CONSTANTS
     this.COLUMN_WIDTH_CLASS = [
         {name: "col-xs-", min: 0, max: 767},
@@ -25,13 +27,12 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
     ];
     this.MAX_COLUMNS = 12;
 
+    var maxZIndex = 0;
+
     $.fn.hasAttribute = function (name)
     {
         return this.attr(name) !== undefined;
     };
-
-    var _thisService = this;
-    var DOM = this;
 
     this.isRow = function (element)
     {
@@ -60,7 +61,7 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
 
     //this.isBlock = function (element)
     //{
-    //    return element.hasAttribute(Constants.IS_PROPERTY) || !(_thisService.isColumn(element) && _thisService.isRow(element));
+    //    return element.hasAttribute(Constants.IS_PROPERTY) || !(DOM.isColumn(element) && DOM.isRow(element));
     //};
 
     // TODO check tagname for '-'
@@ -161,7 +162,7 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
         for (var i = 0; i < tcolumns.length; i++) {
             var col = $(tcolumns[i]);
             if (DOM.isColumn(col)) {
-                totalWidth += _thisService.getColumnWidth($(tcolumns[i]));
+                totalWidth += DOM.getColumnWidth($(tcolumns[i]));
                 columns.push(col);
             }
         }
@@ -175,7 +176,7 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
         var ratio = DOM.MAX_COLUMNS / totalWidth;
         var newTotalWidth = 0;
         for (var i = 0; i < columnCount; i++) {
-            columnsWidth[i] = Math.round(_thisService.getColumnWidth($(columns[i])) * ratio);
+            columnsWidth[i] = Math.round(DOM.getColumnWidth($(columns[i])) * ratio);
             if (columnsWidth[i] < 1) {
                 columnsWidth[i] = 1;
             }
@@ -194,7 +195,7 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
                     diff -= 1;
                     columnsWidth[index] += 1;
                 }
-                _thisService.setColumnWidth($(columns[index]), columnsWidth[index], 50, function ()
+                DOM.setColumnWidth($(columns[index]), columnsWidth[index], 50, function ()
                 {
                     index += 1;
                     doSetColumnWidth();
@@ -205,6 +206,25 @@ base.plugin("blocks.core.DomManipulation", ["base.core.Constants", "constants.bl
             }
         };
         doSetColumnWidth();
+    };
+
+    /**
+     * Finds the maximum z-index in the DOM tree of elements that are relative or absolutely positioned.
+     * Returns 1 when no such elements were found.
+     */
+    this.calculateMaxIndex = function ()
+    {
+        maxZIndex = Math.max.apply(null, $.map($('body  *'), function (e, n)
+            {
+                if ($(e).css('position') == 'absolute' || $(e).css('position') == 'relative') {
+                    return parseInt($(e).css('z-index')) || 1;
+                }
+            })
+        );
+    };
+    this.getMaxZIndex = function()
+    {
+        return maxZIndex;
     };
 
     /*

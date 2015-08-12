@@ -3,35 +3,17 @@
  *
  * The manager is the central point. here we catch all the events to keep an overview
  */
-base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Hover", "blocks.core.Edit", "blocks.core.DomManipulation", "blocks.core.Sidebar", function (Constants, Broadcaster, Mouse, DragDrop, Resizer, Hover, Edit, DOM, Sidebar)
+base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Hover", "blocks.core.Edit", "blocks.core.DomManipulation", "blocks.core.Sidebar", "blocks.core.UI", function (Constants, Broadcaster, Mouse, DragDrop, Resizer, Hover, Edit, DOM, Sidebar, UI)
 {
     var Manager = this;
-
-    /*
-     * Because there is no good place to put this we hang this here to the base inside a utils package
-     * This is referenced from different lot of locations
-     * */
-    base.utils = base.functions || {};
-    base.utils.maxZIndex = 0;
-    /**
-     * Finds the maximum z-index in the DOM tree of elements that are relative or absolutely positioned.
-     * Returns 1 when no such elements were found.
-     */
-    base.utils.calculateMaxIndex = function ()
-    {
-        this.maxIndex = Math.max.apply(null, $.map($('body  *'), function (e, n)
-            {
-                if ($(e).css('position') == 'absolute' || $(e).css('position') == 'relative') {
-                    return parseInt($(e).css('z-index')) || 1;
-                }
-            })
-        );
-    };
 
     //-----EVENTS-----
     //main entry point for blocks after all the GUI events are handled
     $(document).on(Broadcaster.EVENTS.START_BLOCKS, function (event)
     {
+        //load in all the elements
+        UI.init();
+
         //note that this encapsulates DO_REFRESH_LAYOUT, but initializes a few other things first
         Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, event);
 
@@ -79,7 +61,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
     $(document).on(Broadcaster.EVENTS.DOM_CHANGED, function (event)
     {
         //update the max z-index of positioned elements
-        base.utils.calculateMaxIndex();
+        DOM.calculateMaxIndex();
 
         Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, event);
     });
@@ -117,6 +99,10 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         Mouse.allowDrag();
         DragDrop.setActive(true);
         Resizer.activate(true);
+
+        if (UI.newBlockBtn) {
+            UI.newBlockBtn.removeAttr("disabled");
+        }
     });
 
     /**
@@ -127,6 +113,11 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         Mouse.disallowDrag();
         DragDrop.setActive(false);
         Resizer.activate(false);
+
+        if (UI.newBlockBtn) {
+            UI.newBlockBtn.attr("disabled", "");
+            UI.newBlockBtn.attr("title", "Your window is not wide enough to drag and drop new blocks.");
+        }
     });
 
     /**

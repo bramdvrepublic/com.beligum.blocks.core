@@ -7,7 +7,7 @@
  * drop between 2 blocks, we also overlay the other block (other)
  * We show arrows in the overlay to indicate the direction the block will move.
  */
-base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "constants.blocks.core", "blocks.core.Hover", "messages.blocks.core", "blocks.core.Notification", "blocks.core.Mouse", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, Hover, BlocksMessages, Notification, Mouse)
+base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Layouter", "constants.base.core", "constants.blocks.core", "blocks.core.Hover", "messages.blocks.core", "blocks.core.Notification", "blocks.core.Mouse", "blocks.core.DomManipulation", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, Hover, BlocksMessages, Notification, Mouse, DOM)
 {
     var DragDrop = this;
     var draggingEnabled = false;
@@ -61,8 +61,6 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
 
         //passed in from mouse.js (the original block we were over when starting to drag)
         currentDraggedBlock = eventData.block;
-
-
 
         //we're dragging an existing block
         if (draggingEnabled && currentDraggedBlock != null && currentDraggedBlock.canDrag && currentDraggedBlock.getTotalBlocks() > 1) {
@@ -294,6 +292,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         }
 
         sidebarLeft = null;
+        currentDraggedBlock = null;
     };
 
     var addHeadResource = function(resourceArray, className, isScript)
@@ -396,7 +395,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     var createDropPointerElement = function ()
     {
         //Logger.debug("create droppointer ");
-        var zindex = base.utils.maxZIndex + 3;
+        var zindex = DOM.getMaxZIndex() + 3;
         if (dropPointerElements == null) {
             dropPointerElements = $("<div class='" + BlocksConstants.BLOCKS_DROPSPOT_CLASS + "' />");
             dropPointerElements.css("z-index", zindex);

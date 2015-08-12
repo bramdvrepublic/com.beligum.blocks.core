@@ -2,7 +2,7 @@
  * Created by wouter on 5/03/15.
  */
 
-base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Constants", "constants.blocks.core", "blocks.core.DomManipulation", "blocks.core.Edit", "base.core.Commons", function (Class, BaseConstants, BlocksConstants, DOM, Edit, Commons)
+base.plugin("blocks.core.Elements.Property", ["base.core.Class", "constants.base.core", "constants.blocks.core", "blocks.core.DomManipulation", "blocks.core.Edit", "base.core.Commons", function (Class, BaseConstants, BlocksConstants, DOM, Edit, Commons)
 {
 
     var body = $("body");
@@ -38,7 +38,7 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "base.core.Cons
             this.editFunction = Edit.makeEditable(this.element);
             this.canEdit = this.editFunction != null;
 
-            this.overlay = $("<div />").css("z-index", base.utils.maxZIndex).addClass(BlocksConstants.SURFACE_ELEMENT_CLASS);
+            this.overlay = $("<div />").css("z-index", DOM.getMaxZIndex()).addClass(BlocksConstants.SURFACE_ELEMENT_CLASS);
             if (this.isTemplate) {
                 this.overlay.addClass(BlocksConstants.BLOCK_OVERLAY_CLASS);
             }

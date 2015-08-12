@@ -103,11 +103,11 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.co
          */
         setStyles: function (newStyles)
         {
-            editorStyles = newStyles;
+            this.editorStyles = newStyles;
         },
         getStyles: function ()
         {
-            return editorStyles;
+            return this.editorStyles;
         },
 
         //-----PRIVATE FUNCTIONS-----

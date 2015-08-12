@@ -1,4 +1,4 @@
-base.plugin("blocks.core.edit.Text", ["constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Edit", "blocks.core.MediumEditor", "blocks.core.Sidebar", function (Constants, Broadcaster, Edit, Editor, Sidebar)
+base.plugin("blocks.core.edit.Text", ["constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Edit", "blocks.core.MediumEditor", "blocks.core.Sidebar", function (BlocksConstants, Broadcaster, Edit, Editor, Sidebar)
 {
     /*
      * Start full text editing on a block (start Scribe)
@@ -15,7 +15,8 @@ base.plugin("blocks.core.edit.Text", ["constants.blocks.core", "blocks.core.Broa
         // Add toolbar to sidebar
         setCursor(hotspot.left, hotspot.top);
         var toolbar = $(Editor.getToolbarElement());
-        toolbar.addClass(Constants.PREVENT_BLUR_CLASS);
+        toolbar.addClass(BlocksConstants.PREVENT_BLUR_CLASS);
+        toolbar.attr(BlocksConstants.CLICK_ROLE_ATTR, BlocksConstants.FORCE_CLICK_ATTR_VALUE);
 
         return retVal;
     };

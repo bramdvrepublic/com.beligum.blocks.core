@@ -1,9 +1,11 @@
+#constants("blocks.core")
 
 <div class="form-group sub-container">
     <label>$I18N.blocks.core.selectFromTheListBelow</label>
     <div class="list-group">
         #foreach($block in $templates)
-            <a href="javascript:void(0)" class="list-group-item" data-value="$block.name">
+            ## Note: constant will pierce through the click-blocker
+            <a href="javascript:void(0)" class="list-group-item" data-value="$block.name" $CONSTANTS.blocks.core.FORCE_CLICK_ATTR>
                 <div class="preview">
                     <i class="fa fa-fw #if($block.icon)$block.icon#{else}fa-square-o#end"></i>
                 </div>

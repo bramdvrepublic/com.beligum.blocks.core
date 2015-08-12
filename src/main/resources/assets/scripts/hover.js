@@ -110,7 +110,7 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManip
     };
 
     //note: these are not really overlays, but actually classes on siblings etc
-    this.removeFocusOverlays = function()
+    this.removeFocusOverlays = function ()
     {
         $("." + BlocksConstants.OPACITY_CLASS).removeClass(BlocksConstants.OPACITY_CLASS);
         $("." + BlocksConstants.PREVENT_BLUR_CLASS).removeClass(BlocksConstants.PREVENT_BLUR_CLASS);
@@ -118,7 +118,13 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManip
         $("." + BlocksConstants.BLOCK_EDIT_CLASS).removeClass(BlocksConstants.BLOCK_EDIT_CLASS);
     };
 
-    this.createHoverClickObject = function(block, element, event)
+    /**
+     * @param block The block we started on, can be null if we're creating a new block
+     * @param element The target element from the event
+     * @param event
+     * @returns {*}
+     */
+    this.createHoverClickObject = function (block, element, event)
     {
         var retVal = null;
 
@@ -165,15 +171,15 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManip
         return retVal;
     };
 
-    this.findFirstParentPropertyOrTemplate = function(block, element)
+    this.findFirstParentPropertyOrTemplate = function (block, element)
     {
         //this will help solving the "I clicked below a block, but it seemed like that block extended all the way down, because it has a large block next to it"
         //note that if element is null, this is overridden by that
         var clickedElement = element;
-        if (clickedElement!=null) {
+        if (clickedElement != null) {
             //if we didn't click on a tag inside the block we hovered on, just select the block element (to start with, see below)
-            if (block.element!=clickedElement) {
-                if (block.element.find(clickedElement).length==0) {
+            if (block.element != clickedElement) {
+                if (block.element.find(clickedElement).length == 0) {
                     clickedElement = block.element;
                 }
             }
@@ -181,7 +187,7 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManip
 
         // if we clicked on the block (or made it look like that) and that block has exactly one property
         // it makes sense to fall through and select the element holding that property
-        if (clickedElement==block.element) {
+        if (clickedElement == block.element) {
             var directProperties = clickedElement.find('> [property], [data-property]');
             if (directProperties.length == 1) {
                 clickedElement = directProperties;

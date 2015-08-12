@@ -36,6 +36,8 @@ public class HtmlRouter extends AbstractRouter
     private static final String TITLE = "title";
     private static final String DESCRIPTION = "description";
 
+    private static final String ALLOW_EDIT_VARIABLE = "ALLOW_EDIT";
+
     private PersistenceController database;
 
     public HtmlRouter(Route route)
@@ -53,9 +55,12 @@ public class HtmlRouter extends AbstractRouter
         Response retVal = null;
 
         String newTemplate = null;
+
+        //this means we redirected from the new-template-selection page
         if (R.cacheManager().getFlashCache().getTransferredEntries() != null) {
             newTemplate = (String) R.cacheManager().getFlashCache().getTransferredEntries().get(PageEndpoint.PAGE_TEMPLATE_NAME);
         }
+
         // Check if we just selected a template for this new page
         if (newTemplate == null) {
             if (!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
@@ -126,7 +131,12 @@ public class HtmlRouter extends AbstractRouter
     public Response showCreatedPage(final String pageTemplateName)
     {
         //by returning an empty tag (eg. <main-page></main-page>) the template engine will render a default page
-        return Response.ok(this.buildTemplateInstance(pageTemplateName, "")).build();
+        Template template = this.buildTemplateInstance(pageTemplateName, "");
+
+        //this will allow the blocks javascript/css to be included
+        template.set(ALLOW_EDIT_VARIABLE, true);
+
+        return Response.ok(template).build();
     }
 
     /*
@@ -145,18 +155,23 @@ public class HtmlRouter extends AbstractRouter
             URI master = path.getMasterPage();
             WebPage page = null;
             page = route.getBlocksDatabase().getWebPage(master, route.getLocale());
-            String template = page.getPageTemplate();
-            if (StringUtils.isEmpty(template)) {
+            String templateStr = page.getPageTemplate();
+            if (StringUtils.isEmpty(templateStr)) {
                 List<HtmlTemplate> allPageTemplates = HtmlParser.getTemplateCache().getPageTemplates();
                 //TODO we'll get the first, this should probably be configured somewhere
-                template = allPageTemplates.isEmpty() ? null : allPageTemplates.get(0).getTemplateName();
+                templateStr = allPageTemplates.isEmpty() ? null : allPageTemplates.get(0).getTemplateName();
             }
 
-            if (StringUtils.isEmpty(template)) {
+            if (StringUtils.isEmpty(templateStr)) {
                 throw new IOException("Unable to fetch or find a default page template, can't continue");
             }
 
-            entity = this.buildTemplateInstance(template, page.getParsedHtml());
+            Template template = this.buildTemplateInstance(templateStr, page.getParsedHtml());
+
+            //this will allow the blocks javascript/css to be included
+            template.set(ALLOW_EDIT_VARIABLE, true);
+
+            entity = template;
         }
 
         return Response.ok(entity).build();

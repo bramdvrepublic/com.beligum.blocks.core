@@ -59,7 +59,7 @@
  *
  */
 
-base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "base.core.Constants", "constants.blocks.core", "blocks.core.Sidebar", "blocks.core.Hover", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, SideBar, Hover)
+base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "constants.base.core", "constants.blocks.core", "blocks.core.Sidebar", "blocks.core.Hover", "blocks.core.UI", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, SideBar, Hover, UI)
 {
     // watch out with this value: it should be smaller than the smallest possible object in the layout system (width or height)
     // but when clicking near the edge of such an object, even smaller; so maybe TODO: activate the DnD when entering a new block?
@@ -100,7 +100,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         draggingStatus = BaseConstants.DRAGGING.NO;
 
         //re-enable (or reset) the events of the overlays to work
-        var overlays = $('.'+BlocksConstants.BLOCK_OVERLAY_CLASS);
+        var overlays = $('.' + BlocksConstants.BLOCK_OVERLAY_CLASS);
         overlays.removeClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
 
         overlays.removeClass("invisible");
@@ -190,10 +190,19 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         if (active) {
             // check for left mouse click
             if (event.which == 1) {
+                var creatingNew = false;
+
+                // this variable will more or less controls if we're dragging a new block or not,
+                // so make sure it's null when we're dragging the new-block button
                 var block = Hover.getHoveredBlock();
+                var target = $(event.target);
+                if (target.hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || target.parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0) {
+                    creatingNew = true;
+                    block = null;
+                }
 
                 //we need this to enable sidebar.js to know on which element we really clicked (instead of click-events on the overlay)
-                $('.'+BlocksConstants.BLOCK_OVERLAY_CLASS).addClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
+                $('.' + BlocksConstants.BLOCK_OVERLAY_CLASS).addClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
 
                 //we're attempting to dnd an existing block
                 if (draggingStatus == BaseConstants.DRAGGING.NO) {
@@ -203,12 +212,12 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                         startBlock = block;
                     }
                     else {
-                        // Signalfor dragging new block
+                        // Signal for dragging new block
                         startBlock = null;
                     }
 
                     //if we don't have a startblock, we must be dragging from the new-block button
-                    if (startBlock!=null || event.target != null && ($(event.target).hasClass(BlocksConstants.CREATE_BLOCK_CLASS) || $(event.target).parents("." + BlocksConstants.CREATE_BLOCK_CLASS).length > 0)) {
+                    if (startBlock != null || creatingNew) {
                         draggingStatus = BaseConstants.DRAGGING.WAITING;
                         draggingStartEvent = event;
 
@@ -256,22 +265,25 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                     Broadcaster.send(Broadcaster.EVENTS.END_DRAG, event);
                 }
                 // this means we were dragging, but haven't exceeded the threshold yet
-                // so, instead of starting to drag a block, we clicked one
+                // so, instead of starting to drag a block, we clicked one (or the create block button)
                 else if (draggingStatus == BaseConstants.DRAGGING.WAITING) {
 
-                    var hoverObj = Hover.createHoverClickObject(startBlock, element, event);
-                    if (hoverObj) {
-                        //this will mainly end up in sidebar.js
-                        Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, hoverObj);
-                    }
-                    else {
-                        Logger.error("Got null object while creating a hover object; this shouldn't happen");
+                    //Note: when we drag the new block button, startBlock will be null (and the popover will do it's work)
+                    if (startBlock!=null) {
+                        var hoverObj = Hover.createHoverClickObject(startBlock, element, event);
+                        if (hoverObj) {
+                            //this will mainly end up in sidebar.js
+                            Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, hoverObj);
+                        }
+                        else {
+                            Logger.error("Got null object while creating a hover object; this shouldn't happen");
+                        }
                     }
                 }
                 // this means the mousedown happened outside of any block or other kind of hotspot
                 // eg. on the page itself, so we're focusing the page (and it should blur any active focus down the line)
                 else if (draggingStatus == BaseConstants.DRAGGING.TEXT_SELECTION) {
-                    if (Hover.getFocusedBlock()!=null) {
+                    if (Hover.getFocusedBlock() != null) {
                         //this will mainly end up in sidebar.js
                         Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, {
                             //this is an alternative for launching a blur
@@ -303,7 +315,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             draggingStatus = BaseConstants.DRAGGING.YES;
             //Logger.debug("Start drag");
 
-            var overlays = $('.'+BlocksConstants.BLOCK_OVERLAY_CLASS);
+            var overlays = $('.' + BlocksConstants.BLOCK_OVERLAY_CLASS);
             //we need this to enable sidebar.js to know on which element we really clicked (instead of click-events on the overlay)
             overlays.removeClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
 

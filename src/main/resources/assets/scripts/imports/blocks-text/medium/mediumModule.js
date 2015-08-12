@@ -9,6 +9,7 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
     //default values, overridable
     var toolbarButtons = [Extensions.StylesPicker.NAME, 'bold', 'italic', 'underline', 'strike-through', 'superscript', Extensions.LinkInput.NAME, 'orderedlist', 'unorderedlist', 'justifyLeft', 'justifyCenter', 'justifyRight'];
     var stylePickerStyles = [];
+    var toolbarOptions = {};
 
     this.getToolbarElement = function ()
     {
@@ -26,7 +27,7 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
         }
 
         var options = {};
-        var toolbarOptions = {};
+        toolbarOptions = {};
 
         options.buttonLabels = 'fontawesome';
         var stylePicker = new Extensions.StylesPicker({});
@@ -61,7 +62,6 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
     {
         toolbarOptions = buttonArray;
     };
-
     this.setStylePickerStyles = function (newStyles)
     {
         stylePickerStyles = newStyles;

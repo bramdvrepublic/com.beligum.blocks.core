@@ -2,17 +2,19 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.server.RequestContext;
 import com.beligum.blocks.config.BlocksConfig;
-import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.routing.HtmlRouter;
-import com.beligum.blocks.routing.ifaces.Router;
 import com.beligum.blocks.routing.Route;
+import com.beligum.blocks.routing.ifaces.Router;
 
-import javax.ws.rs.*;
+import javax.ws.rs.GET;
+import javax.ws.rs.NotFoundException;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
-import java.util.*;
+import java.util.Locale;
 
 @Path("/")
 public class ApplicationEndpoint
@@ -20,7 +22,8 @@ public class ApplicationEndpoint
     //TODO implement this?
     @Path("/favicon.ico")
     @GET
-    public Response favicon() {
+    public Response favicon()
+    {
         throw new NotFoundException();
     }
 
@@ -36,13 +39,13 @@ public class ApplicationEndpoint
     *
     * */
 
-    //TODO ????
-    @Path(ParserConstants.RESOURCE_ENDPOINT + "{block_id:.*}")
-    @GET
-    public Response getPageWithId(@PathParam("block_id") String blockId, @QueryParam("resource") String resource_block_id, @QueryParam("language") String lang)
-    {
-        return Response.ok().build();
-    }
+    //TODO this is the endpoint url of a resource, we don't know what to reply here yet
+    //    @Path(ParserConstants.RESOURCE_ENDPOINT + "{block_id:.*}")
+    //    @GET
+    //    public Response getPageWithId(@PathParam("block_id") String blockId, @QueryParam("resource") String resource_block_id, @QueryParam("language") String lang)
+    //    {
+    //        return Response.ok().build();
+    //    }
 
 
     /*
@@ -62,10 +65,13 @@ public class ApplicationEndpoint
         if (!route.getLocale().equals(Locale.ROOT)) {
             Router router = new HtmlRouter(route);
             retVal = router.response();
-        } else {
+        }
+        else {
             URI url = UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path(BlocksConfig.instance().getDefaultLanguage().getLanguage()).path(route.getLanguagedPath().toString()).build();
             retVal = Response.seeOther(url).build();
         }
+
+
 
         return retVal;
     }
@@ -131,7 +137,5 @@ public class ApplicationEndpoint
     //        }
     //
     //    }
-
-
 
 }
