@@ -2,7 +2,7 @@
  * Created by wouter on 10/06/15.
  */
 
-base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.core", "blocks.core.Edit", function (Class, Constants, Edit)
+base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.core", function (Class, Constants)
 {
     blocks = window['blocks'] || {};
     // Region where templates can be dragged
@@ -16,7 +16,6 @@ base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.c
 
             // find everything that is a container or a template or a property
             this.overlay = null;
-            this.editFunction = Edit.makeEditable(this.element);
         },
 
         generateProperties: function (parent, index)

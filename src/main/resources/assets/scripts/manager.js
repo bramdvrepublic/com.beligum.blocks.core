@@ -3,7 +3,7 @@
  *
  * The manager is the central point. here we catch all the events to keep an overview
  */
-base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Hover", "blocks.core.Edit", "blocks.core.DomManipulation", "blocks.core.Sidebar", "blocks.core.UI", function (Constants, Broadcaster, Mouse, DragDrop, Resizer, Hover, Edit, DOM, Sidebar, UI)
+base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadcaster", "blocks.core.Mouse", "blocks.core.DragDrop", "blocks.core.Resizer", "blocks.core.Hover", "blocks.core.DomManipulation", "blocks.core.Sidebar", "blocks.core.UI", function (Constants, Broadcaster, Mouse, DragDrop, Resizer, Hover, DOM, Sidebar, UI)
 {
     var Manager = this;
 

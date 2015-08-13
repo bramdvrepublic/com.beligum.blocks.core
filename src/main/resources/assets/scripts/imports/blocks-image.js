@@ -1,32 +1,50 @@
 /*
- * Allows editiong of an image when youy click on it
+ * Allows editing of an image when youy click on it
  * */
-base.plugin("blocks.edit.Image", ["constants.blocks.core", "blocks.core.Edit", "blocks.core.Sidebar", "blocks.core.SidebarUtils",  function (Constants, Edit, Sidebar, SidebarUtils)
+base.plugin("blocks.edit.Image", ["base.core.Class", "blocks.edit.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils",  function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
 {
+    var ImageWidget = this;
+    var TAGS = ["IMG"];
 
-    this.focus = function(block, element, hotspot, event)
-    {
-        var retVal = [];
+    (this.Class = Class.create(Widget.Class, {
 
-        retVal.push(SidebarUtils.addUniqueClass(Sidebar, element, "Rand", [
-            {value: "bordered", name: "Met rand"},
-            {value: "", name: "Zonder rand"}
-        ]));
-        retVal.push(SidebarUtils.addValueAttribute(Sidebar, element, "Image url", "Paste or type an image link", "src", false, true, false));
+        //-----VARIABLES-----
 
-        return retVal;
-    };
+        //-----CONSTRUCTORS-----
+        constructor: function ()
+        {
+            ImageWidget.Class.Super.call(this);
+        },
 
-    this.blur = function(block, element)
-    {
-    };
+        //-----IMPLEMENTED METHODS-----
+        init: function ()
+        {
+        },
+        focus: function (block, element, hotspot, event)
+        {
+            ImageWidget.Class.Super.prototype.focus.call(this);
+        },
+        blur: function (block, element)
+        {
+            ImageWidget.Class.Super.prototype.blur.call(this);
+        },
+        getOptionConfigs: function (block, element)
+        {
+            var retVal = [];
 
-    this.getWindowName = function ()
-    {
-        return "Image";
-    };
+            retVal.push(SidebarUtils.addUniqueClass(Sidebar, element, "Rand", [
+                {value: "bordered", name: "Met rand"},
+                {value: "", name: "Zonder rand"}
+            ]));
+            retVal.push(SidebarUtils.addValueAttribute(Sidebar, element, "Image url", "Paste or type an image link", "src", false, true, false));
 
-    Edit.registerByTag("IMG", this);
+            return retVal;
+        },
+        getWindowName: function ()
+        {
+            return BlocksMessages.widgetImageTitle;
+        },
 
+    })).register(TAGS);
 
 }]);

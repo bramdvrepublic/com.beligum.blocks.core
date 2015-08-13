@@ -25,7 +25,6 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
         parent: null,
         canLayout: false,
         canDrag: false,
-        canEdit: false,
 
         constructor: function (element, parent, index)
         {
@@ -57,7 +56,6 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
             this.canLayout = false;
             // only for first level blocks inside a container
             this.canDrag = false;
-            this.canEdit = false;
             this.overlay = null;
             this.isTemplate = false;
 

@@ -1,5 +1,5 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
 
@@ -110,37 +110,37 @@
         </dependency>
 
         <!--<dependency>-->
-            <!--<groupId>org.apache.jena</groupId>-->
-            <!--<artifactId>apache-jena-libs</artifactId>-->
-            <!--<version>2.13.0</version>-->
-            <!--<type>pom</type>-->
-            <!--<exclusions>-->
-                <!--<exclusion>  &lt;!&ndash; declare the exclusion here &ndash;&gt;-->
-                    <!--<groupId>org.slf4j</groupId>-->
-                    <!--<artifactId>slf4j-log4j12</artifactId>-->
-                <!--</exclusion>-->
-            <!--</exclusions>-->
+        <!--<groupId>org.apache.jena</groupId>-->
+        <!--<artifactId>apache-jena-libs</artifactId>-->
+        <!--<version>2.13.0</version>-->
+        <!--<type>pom</type>-->
+        <!--<exclusions>-->
+        <!--<exclusion>  &lt;!&ndash; declare the exclusion here &ndash;&gt;-->
+        <!--<groupId>org.slf4j</groupId>-->
+        <!--<artifactId>slf4j-log4j12</artifactId>-->
+        <!--</exclusion>-->
+        <!--</exclusions>-->
         <!--</dependency>-->
 
         <!---->
 
         <!--<dependency>-->
-            <!--<groupId>com.orientechnologies</groupId>-->
-            <!--<artifactId>orientdb-core</artifactId>-->
-            <!--<version>2.0.8</version>-->
+        <!--<groupId>com.orientechnologies</groupId>-->
+        <!--<artifactId>orientdb-core</artifactId>-->
+        <!--<version>2.0.8</version>-->
         <!--</dependency>-->
 
         <!--<dependency>-->
-            <!--<groupId>com.tinkerpop.blueprints</groupId>-->
-            <!--<artifactId>blueprints-core</artifactId>-->
-            <!--<version>2.6.0</version>-->
+        <!--<groupId>com.tinkerpop.blueprints</groupId>-->
+        <!--<artifactId>blueprints-core</artifactId>-->
+        <!--<version>2.6.0</version>-->
         <!--</dependency>-->
 
 
         <!--<dependency>-->
-            <!--<groupId>com.orientechnologies</groupId>-->
-            <!--<artifactId>orientdb-graphdb</artifactId>-->
-            <!--<version>2.0.8</version>-->
+        <!--<groupId>com.orientechnologies</groupId>-->
+        <!--<artifactId>orientdb-graphdb</artifactId>-->
+        <!--<version>2.0.8</version>-->
         <!--</dependency>-->
 
         <dependency>
@@ -148,11 +148,6 @@
             <artifactId>elasticsearch</artifactId>
             <version>1.5.2</version>
         </dependency>
-
-
-
-
-
 
     </dependencies>
 

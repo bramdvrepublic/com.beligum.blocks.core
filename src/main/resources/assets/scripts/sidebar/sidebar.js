@@ -2,7 +2,7 @@
  * Created by wouter on 15/06/15.
  */
 
-base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.core.SidebarUtils", "blocks.core.Edit", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", "blocks.core.Hover", function (Broadcaster, Constants, DOM, Layouter, SidebarUtils, Edit, Finder, Notification, Commons, Hover)
+base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.core.SidebarUtils", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", "blocks.core.Hover", "blocks.edit.Widget", function (Broadcaster, Constants, DOM, Layouter, SidebarUtils, Finder, Notification, Commons, Hover, Widget)
 {
     var SideBar = this;
     var configPanels = {};
@@ -53,13 +53,13 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         for (var i=activeBlocks.length-1;i>=0;i--) {
             var e = activeBlocks[i];
 
-            var editFunction = Edit.makeEditable(e.element);
+            var widget = Widget.Class.create(e.element);
 
             //don't make windows for (real) properties, only blocks and pages
             var isRealProperty = e.block.element != e.element;
             var blockTitle = isRealProperty ? 'Property' : 'Block';
-            if (editFunction != null && editFunction.getWindowName != null) {
-                blockTitle = editFunction.getWindowName();
+            if (widget) {
+                blockTitle = widget.getWindowName();
             }
 
             if (title == null) {
@@ -72,34 +72,35 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             // if a parent stopped the creation of sub-windows, keep executing the focus() method,
             // but without a window ID (allowing for logic without UI consequences)
             var windowID = SideBar.createWindow(e.element, title);
-            var addedWidgets = false;
+            var addedOptions = false;
 
             // don't render the remove button for properties: only blocks can be deleted
             if (!isRealProperty && windowID) {
                 if (e.block.canDrag) {
                     this.addRemoveBlockButton(windowID, e.block);
-                    addedWidgets = true;
+                    addedOptions = true;
                 }
             }
 
-            if (editFunction != null && editFunction.focus != null) {
+            if (widget) {
                 // the focus method can return a list of UI widgets it needs to add to the window
                 // this way, we have control over that (where we have all the information to decide; eg. what property in which block, etc)
-                var widgetsToAdd = editFunction.focus(e.block, e.element, hotspot, event);
-                if (widgetsToAdd) {
-                    if (addedWidgets && widgetsToAdd.length>0) {
+                widget.focus(e.block, e.element, hotspot, event);
+                var optionsToAdd = widget.getOptionConfigs(e.block, e.element);
+                if (optionsToAdd) {
+                    if (addedOptions && optionsToAdd.length>0) {
                         this.addUIForProperty(windowID, '<hr>');
-                        addedWidgets = true;
+                        addedOptions = true;
                     }
-                    for (var w=0;w<widgetsToAdd.length;w++) {
-                        this.addUIForProperty(windowID, widgetsToAdd[w]);
-                        addedWidgets = true;
+                    for (var w=0;w<optionsToAdd.length;w++) {
+                        this.addUIForProperty(windowID, optionsToAdd[w]);
+                        addedOptions = true;
                     }
                 }
             }
 
             //don't add an empty panel
-            if (addedWidgets) {
+            if (addedOptions) {
                 this.appendWindowToSidebar(Constants.CONTEXT, windowID);
             }
         }
@@ -109,9 +110,9 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     {
         for (var i=0;i<activeBlocks.length;i++) {
             var e = activeBlocks[i];
-            var editFunction = Edit.makeEditable(e.element);
-            if (editFunction != null && editFunction.blur != null) {
-                editFunction.blur(e.block, e.element);
+            var widget = Widget.Class.create(e.element);
+            if (widget) {
+                widget.blur(e.block, e.element);
             }
         }
         configPanels = {};

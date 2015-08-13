@@ -70,6 +70,11 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                     pierceThrough = control.parents('.modal-dialog').length > 0;
                 }
 
+                //disable the popup when we're editing text
+                if (!pierceThrough) {
+                    pierceThrough = control.parents('[contenteditable=true]').length > 0;
+                }
+
                 if (pierceThrough) {
                     //NOOP
                 }

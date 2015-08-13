@@ -269,6 +269,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
 
                 var cancelled = true;
                 boxDialog = BootstrapDialog.show({
+                    title: BlocksMessages.selectFromTheListBelow,
                     cssClass: BlocksConstants.NEW_BLOCK_MODAL_CLASS,
                     message: function ()
                     {
@@ -334,19 +335,6 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     this.dragAborted = function ()
     {
         resetDragDrop();
-    };
-
-    var isInsideDraggedBlock = function (x, y)
-    {
-        var retVal = false;
-
-        if (currentDraggedBlock != null) {
-            retVal = currentDraggedBlock.isTriggered(x, y);
-        }
-
-        //Logger.debug("Inside dragged block? "+retVal);
-
-        return retVal;
     };
 
     /*

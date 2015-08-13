@@ -201,6 +201,13 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                     block = null;
                 }
 
+                //this is a good failsafe for the hovered block implementation
+                //this happens when eg. we hover a block, do Alt+TAB to another window, move the mouse, and come back on another page position
+                if (block!=null && !block.isTriggered(event.pageX, event.pageY)) {
+                    block = null;
+                    Hover.setHoveredBlock(null);
+                }
+
                 //we need this to enable sidebar.js to know on which element we really clicked (instead of click-events on the overlay)
                 $('.' + BlocksConstants.BLOCK_OVERLAY_CLASS).addClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
 
@@ -274,6 +281,9 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                         if (hoverObj) {
                             //this will mainly end up in sidebar.js
                             Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, hoverObj);
+
+                            //we'll hiding the overlays during hover, so we can't be on any hovered object after focus
+                            Hover.setHoveredBlock(null);
                         }
                         else {
                             Logger.error("Got null object while creating a hover object; this shouldn't happen");

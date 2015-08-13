@@ -27,7 +27,8 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.co
 
         //-----CONSTANTS-----
         STATIC: {
-            NAME: "styles-picker"
+            NAME: "styles-picker",
+            VALUE_ATTR: "data-value"
         },
 
         editorStyles: [],
@@ -118,18 +119,27 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.co
 
             var styles = $('<ul class="dropdown-menu"/>');
 
-            var valueAttr = "data-value";
             for (var i = 0; i < this.editorStyles.length; i++) {
                 var val = this.editorStyles[i];
 
-                //note that we bind to this, but pass the data in the function()
-                var btn = $('<a href="javascript:void(0)" ' + valueAttr + '="' + val.value + '">' + val.text + '</a>');
-                btn.click(btn.attr(valueAttr), function (event)
-                {
-                    this._onSelect(event.data);
-                }.bind(this));
+                // we'll use the texts with value null as a means to let the user define custom html (like subtitles)
+                //note that you should know what's you're doing when using this
+                if (val.text==null) {
+                    if (val.value!=null) {
+                        styles.append(val.value);
+                    }
+                }
+                //if it's not a special html case, add a link
+                else {
+                    //note that we bind to this, but pass the data in the function()
+                    var btn = $('<a href="javascript:void(0)" ' + MediumEditorExtensions.StylesPicker.VALUE_ATTR + '="' + val.value + '">' + val.text + '</a>');
+                    btn.click(btn.attr(MediumEditorExtensions.StylesPicker.VALUE_ATTR), function (event)
+                    {
+                        this._onSelect(event.data);
+                    }.bind(this));
 
-                styles.append($('<li></li>').append(btn));
+                    styles.append($('<li></li>').append(btn));
+                }
             }
 
             button.append(toggle).append(styles);
