@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
 
 /**
  * Created by bram on 5/16/15.
- *
+ * <p/>
  * TODO: replace property values not only on the string name of the property, but also
  * keep a refernece to prefixes or the default vocab. (e.g. property="pagetitle" and
  * property="http://www.mot.be/ontology/pagetitle" and property="mot:pagetitle" could all reference the same
@@ -151,39 +151,39 @@ public class HtmlParser extends AbstractAssetParser
         if (sourcePath != null && templateCache.containsKey(sourcePath)) {
             //first of all, since this method is only called when something changed, update the cache value
             HtmlTemplate oldTemplate = templateCache.get(sourcePath);//fetch the old value for the paths
-            HtmlTemplate tagTemplate = HtmlTemplate.create(source, oldTemplate.getAbsolutePath(), oldTemplate.getRelativePath());
-            templateCache.put(sourcePath, tagTemplate);
+            HtmlTemplate newTemplate = HtmlTemplate.create(oldTemplate.getTemplateName(), source, oldTemplate.getAbsolutePath(), oldTemplate.getRelativePath(), oldTemplate.getParent());
+            templateCache.put(sourcePath, newTemplate);
 
             StringBuilder builder = new StringBuilder();
 
             //this is the base for all coming preprocessing
-            Segment templateHtml = tagTemplate.getHtml();
+            Segment templateHtml = newTemplate.getHtml();
             OutputDocument output = new OutputDocument(templateHtml);
 
-            if (tagTemplate instanceof TagTemplate) {
+            if (newTemplate instanceof TagTemplate) {
                 isTagTemplate = true;
 
                 //this blocks the resources include from being evaluated repeatedly in loops; we only need to evaluate it once per call
-                String resourceTestVar = "R_" + tagTemplate.getVelocityTemplateName();
+                String resourceTestVar = "R_" + newTemplate.getVelocityTemplateName();
                 builder.append("#if(!$").append(resourceTestVar).append(")").append("\n");
 
                 // note that this "false" means it must be eaten (and spit out somewhere else)
                 // note that we can't use the "ElementsForCurrentUser()" methods here, cause they're cached for all users
                 boolean renderResources = false;
-                for (Element style : tagTemplate.getAllInlineStyleElements()) {
+                for (Element style : newTemplate.getAllInlineStyleElements()) {
                     builder.append("#").append(TagTemplateInlineStyleResourceDirective.NAME).append("(").append(renderResources).append(",'").append(HtmlTemplate.getResourceRoleScope(style))
                            .append("')").append(style.toString()).append("#end").append("\n");
                 }
-                for (Element style : tagTemplate.getAllExternalStyleElements()) {
+                for (Element style : newTemplate.getAllExternalStyleElements()) {
                     builder.append("#").append(TagTemplateExternalStyleResourceDirective.NAME).append("(").append(renderResources).append(",'").append(style.getAttributeValue("href")).append(
                                     "','").append(HtmlTemplate.getResourceRoleScope(style)).append("')").append(style.toString())
                            .append("#end").append("\n");
                 }
-                for (Element script : tagTemplate.getAllInlineScriptElements()) {
+                for (Element script : newTemplate.getAllInlineScriptElements()) {
                     builder.append("#").append(TagTemplateInlineScriptResourceDirective.NAME).append("(").append(renderResources).append(",'").append(HtmlTemplate.getResourceRoleScope(script))
                            .append("')").append(script.toString()).append("#end").append("\n");
                 }
-                for (Element script : tagTemplate.getAllExternalScriptElements()) {
+                for (Element script : newTemplate.getAllExternalScriptElements()) {
                     builder.append("#").append(TagTemplateExternalScriptResourceDirective.NAME).append("(").append(renderResources).append(",'").append(script.getAttributeValue("src")).append("','")
                            .append(HtmlTemplate.getResourceRoleScope(script)).append("')")
                            .append(script.toString())
@@ -194,7 +194,7 @@ public class HtmlParser extends AbstractAssetParser
                 builder.append(" #set($").append(resourceTestVar).append("=true)").append("\n");
                 builder.append("#end").append("\n");
             }
-            else if (tagTemplate instanceof PageTemplate) {
+            else if (newTemplate instanceof PageTemplate) {
                 //NOOP
             }
 
@@ -234,11 +234,11 @@ public class HtmlParser extends AbstractAssetParser
                 templateInstance.getAttributes().populateMap(attributes, false);
 
                 //copy in all the attributes of the template to the attributes map, except the ones that were already set in the instance
-                Attributes templateAttributes = tagTemplate.getAttributes();
+                Map<String, String> templateAttributes = tagTemplate.getAttributes();
                 if (templateAttributes != null) {
-                    for (Attribute attribute : templateAttributes) {
-                        if (!attributes.containsKey(attribute.getName())) {
-                            attributes.put(attribute.getName(), attribute.getValue());
+                    for (Map.Entry<String, String> attribute : templateAttributes.entrySet()) {
+                        if (!attributes.containsKey(attribute.getKey())) {
+                            attributes.put(attribute.getKey(), attribute.getValue());
                         }
                     }
                 }
@@ -264,7 +264,7 @@ public class HtmlParser extends AbstractAssetParser
 
                         //skip the entire tree of the element, we'll handle it now
                         // but watch out: an <img> element doens't have and end tag, so check for null
-                        if (immediateChild.getEndTag()!=null) {
+                        if (immediateChild.getEndTag() != null) {
                             while (iter.hasNext() && !iter.next().equals(immediateChild.getEndTag()))
                                 ;
                         }
@@ -368,7 +368,7 @@ public class HtmlParser extends AbstractAssetParser
         // if we're not dealing with a template (but a regular html file), make sure we wrap all styles and scripts so we can perform a match-and-mix
         // note that the "true" argument in the directives means it really needs to end up in the html (after registering it)
         if (!isTagTemplate) {
-            List<Element> elements = TagTemplate.getInlineStyles(source);
+            Iterable<Element> elements = TagTemplate.getInlineStyles(source);
             for (Element element : elements) {
                 StringBuilder builder = new StringBuilder();
                 builder.append("#").append(TagTemplateInlineStyleResourceDirective.NAME).append("(true").append(",'")
@@ -443,19 +443,57 @@ public class HtmlParser extends AbstractAssetParser
         List<ResourceSearchResult> htmlFiles = new ArrayList<>();
         htmlFiles.addAll(R.resourceLoader().searchResourceGlob("/imports/**.{html,htm}"));
 
+        // first, we'll keep a reference to all the templates with the same name in the path
+        // they're returned priority-first, so the parents and grandparents will end up deepest in the list
+        Map<String, List<Path[]>> inheritanceTree = new HashMap<>();
         for (ResourceSearchResult htmlFile : htmlFiles) {
-            try (Reader reader = Files.newBufferedReader(htmlFile.getResource(), Charset.forName(Charsets.UTF_8.name()))) {
-                Path absolutePath = htmlFile.getResource();
-                //note the toString(); it works around files found in jar files and throwing a ProviderMismatchException
-                Path relativePath = Paths.get("/").resolve(htmlFile.getResourceFolder().relativize(htmlFile.getResource()).toString());
-                Source source = new Source(reader);
-                HtmlTemplate template = HtmlTemplate.create(source, absolutePath, relativePath);
-                if (template != null) {
-                    templateCache.put(absolutePath, template);
-                }
+            Path absolutePath = htmlFile.getResource();
+            //note the toString(); it works around files found in jar files and throwing a ProviderMismatchException
+            Path relativePath = Paths.get("/").resolve(htmlFile.getResourceFolder().relativize(htmlFile.getResource()).toString());
+            String templateName = HtmlTemplate.parseTemplateName(relativePath);
+
+            List<Path[]> entries = inheritanceTree.get(templateName);
+            if (entries == null) {
+                inheritanceTree.put(templateName, entries = new ArrayList<>());
             }
-            catch (Exception e) {
-                Logger.error("Exception caught while parsing a possible tag template file; " + htmlFile, e);
+
+            //let's keep both so we don't have to recalculate
+            entries.add(new Path[] { absolutePath, relativePath });
+        }
+
+        // now iterate the list in reverse order to parse the grandparents first
+        // and be able to pass them to the overloading children
+        for (Map.Entry<String, List<Path[]>> entry : inheritanceTree.entrySet()) {
+            String templateName = entry.getKey();
+            List<Path[]> inheritList = entry.getValue();
+            HtmlTemplate parent = null;
+            for (int i = inheritList.size() - 1; i >= 0; i--) {
+                Path[] absRelArr = inheritList.get(i);;
+                Path absolutePath = absRelArr[0];
+                Path relativePath = absRelArr[1];
+
+                try (Reader reader = Files.newBufferedReader(absolutePath, Charset.forName(Charsets.UTF_8.name()))) {
+                    Source source = new Source(reader);
+                    HtmlTemplate template = HtmlTemplate.create(templateName, source, absolutePath, relativePath, parent);
+
+                    if (template != null) {
+                        // Note: because this will return the files in priority order, don't overwrite an already parsed template,
+                        // because we want to be able to 'overload' the files with our priority system.
+                        // we're iterating in reverse order for the parent system, so keep the 'last' = last (grand)child
+                        if (i==0) {
+                            templateCache.put(absolutePath, template);
+                        }
+
+                        //this can be used by the next loop
+                        parent = template;
+                    }
+                    else {
+                        Logger.warn("Encountered null-valued html template after parsing it; " + absolutePath.toString());
+                    }
+                }
+                catch (Exception e) {
+                    Logger.error("Exception caught while parsing a possible tag template file; " + absolutePath, e);
+                }
             }
         }
     }

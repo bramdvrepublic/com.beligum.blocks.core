@@ -115,7 +115,6 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManip
         $("." + BlocksConstants.OPACITY_CLASS).removeClass(BlocksConstants.OPACITY_CLASS);
         $("." + BlocksConstants.PREVENT_BLUR_CLASS).removeClass(BlocksConstants.PREVENT_BLUR_CLASS);
         $("." + BlocksConstants.PROPERTY_EDIT_CLASS).removeClass(BlocksConstants.PROPERTY_EDIT_CLASS);
-        $("." + BlocksConstants.BLOCK_EDIT_CLASS).removeClass(BlocksConstants.BLOCK_EDIT_CLASS);
     };
 
     /**

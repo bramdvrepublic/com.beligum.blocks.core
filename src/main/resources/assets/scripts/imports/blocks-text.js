@@ -1,7 +1,7 @@
-base.plugin("blocks.core.edit.Text", ["base.core.Class", "blocks.edit.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.MediumEditor", "blocks.core.Sidebar", function (Class, Widget, BlocksConstants, BlocksMessages, Broadcaster, Editor, Sidebar)
+base.plugin("blocks.imports.Text", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.MediumEditor", "blocks.core.Sidebar", function (Class, Widget, BlocksConstants, BlocksMessages, Broadcaster, Editor, Sidebar)
 {
-    var TextWidget = this;
-    var TAGS = ["DIV", "SPAN"];
+    var BlocksText = this;
+    this.TAGS = ["DIV", "SPAN"];
 
     (this.Class = Class.create(Widget.Class, {
 
@@ -10,7 +10,7 @@ base.plugin("blocks.core.edit.Text", ["base.core.Class", "blocks.edit.Widget", "
         //-----CONSTRUCTORS-----
         constructor: function ()
         {
-            TextWidget.Class.Super.call(this);
+            BlocksText.Class.Super.call(this);
         },
 
         //-----IMPLEMENTED METHODS-----
@@ -19,7 +19,7 @@ base.plugin("blocks.core.edit.Text", ["base.core.Class", "blocks.edit.Widget", "
         },
         focus: function (block, element, hotspot, event)
         {
-            TextWidget.Class.Super.prototype.focus.call(this);
+            BlocksText.Class.Super.prototype.focus.call(this, block, element, hotspot, event);
 
             // Preparation
             element.attr("contenteditable", true);
@@ -35,7 +35,7 @@ base.plugin("blocks.core.edit.Text", ["base.core.Class", "blocks.edit.Widget", "
         },
         blur: function (block, element)
         {
-            TextWidget.Class.Super.prototype.blur.call(this);
+            BlocksText.Class.Super.prototype.blur.call(this, block, element);
 
             Editor.removeEditor(element);
             element.removeAttr("contenteditable");
@@ -81,6 +81,6 @@ base.plugin("blocks.core.edit.Text", ["base.core.Class", "blocks.edit.Widget", "
             return range;
         },
 
-    })).register(TAGS);
+    })).register(this.TAGS);
 
 }]);

@@ -1,0 +1,27 @@
+@import "/assets/webjars/bootstrap/3.3.4/less/variables.less";
+@import "/assets/webjars/bootstrap/3.3.4/less/mixins/clearfix.less";
+@import "/constants/blocks/core?type=less";
+
+blocks-spacer {
+  @import "/assets/styles/imports/blocks-spacer/variables.less";
+
+  .clearfix;
+
+  min-height: @defaultHeight;
+
+  &.xs {
+    min-height: @height_xs;
+  }
+  &.sm {
+    min-height: @height_sm;
+  }
+  &.md {
+    min-height: @height_md;
+  }
+  &.lg {
+    min-height: @height_lg;
+  }
+  &.xl {
+    min-height: @height_xl;
+  }
+}

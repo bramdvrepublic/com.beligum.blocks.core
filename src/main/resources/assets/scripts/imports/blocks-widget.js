@@ -4,9 +4,9 @@
 /*
  * This is the abstract superclass that all widgets need to extend
  */
-base.plugin("blocks.edit.Widget", ["constants.blocks.core", "base.core.Class", "base.core.Commons", "blocks.core.SidebarUtils",  function (BlocksConstants, Class, Commons, SidebarUtils)
+base.plugin("blocks.imports.Widget", ["constants.blocks.core", "base.core.Class", "base.core.Commons", "blocks.core.SidebarUtils",  function (BlocksConstants, Class, Commons, SidebarUtils)
 {
-    var Widget = this;
+    var BlocksWidget = this;
 
     this.Class = Class.create({
 
@@ -25,12 +25,13 @@ base.plugin("blocks.edit.Widget", ["constants.blocks.core", "base.core.Class", "
                 if (tags && tags.length && tags.length>0) {
                     for (var i=0;i<tags.length;i++) {
                         var tag = tags[i].toUpperCase();
-                        if (!Widget.Class.TAG_INDEX[tag]) {
-                            Widget.Class.TAG_INDEX[tag] = this;
+                        // note that this will happen when we extend eg. blocks-spacer in a subclass;
+                        // the superclass will be registered first, and later overwritten by it's subclass
+                        if (BlocksWidget.Class.TAG_INDEX[tag]) {
+                            Logger.warn("Encountered a double Widget registration for <"+tag+">, overwriting.", this);
                         }
-                        else {
-                            Logger.warn("Encountered a double Widget registration for <"+tag+">, ignoring this second bound", this);
-                        }
+
+                        BlocksWidget.Class.TAG_INDEX[tag] = this;
                     }
                 }
                 else {
@@ -50,9 +51,9 @@ base.plugin("blocks.edit.Widget", ["constants.blocks.core", "base.core.Class", "
                 if (element != null) {
                     var clazz = null;
                     if (element.hasClass(BlocksConstants.PAGE_CONTENT_CLASS)) {
-                        clazz = Widget.Class.TAG_INDEX[BlocksConstants.PAGE_CONTENT_CLASS.toUpperCase()];
+                        clazz = BlocksWidget.Class.TAG_INDEX[BlocksConstants.PAGE_CONTENT_CLASS.toUpperCase()];
                     } else {
-                        clazz = Widget.Class.TAG_INDEX[element.prop("tagName").toUpperCase()];
+                        clazz = BlocksWidget.Class.TAG_INDEX[element.prop("tagName").toUpperCase()];
                     }
 
                     //if we found a class, instantiate it
@@ -78,12 +79,12 @@ base.plugin("blocks.edit.Widget", ["constants.blocks.core", "base.core.Class", "
             this.creationStamp = new Date().getTime();
 
             //note: this.constructor returns the class
-            if (!Widget.Class.OBJ_REFS[this.constructor]) {
-                Widget.Class.OBJ_REFS[this.constructor] = {};
+            if (!BlocksWidget.Class.OBJ_REFS[this.constructor]) {
+                BlocksWidget.Class.OBJ_REFS[this.constructor] = {};
                 this.init();
             }
             //add a reference to this object
-            Widget.Class.OBJ_REFS[this.constructor][this.id] = this;
+            BlocksWidget.Class.OBJ_REFS[this.constructor][this.id] = this;
         },
 
         //-----'ABSTRACT' METHODS-----

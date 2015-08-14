@@ -23,9 +23,8 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
 
     $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function (event)
     {
-        //don't know if this is necessary anymore; reenable when problems occur
-        //some cleanup
-        //focusSwitch(null);
+        //some cleanup: helps bugs when closing the bar during focus
+        focusSwitch(Hover.getPageBlock());
 
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
     });

@@ -11,6 +11,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     //----MORE OR LESS THE START OF EVERYTHING----
     //note: the icon is set in blocks.less
     var menuStartButton = $('<a class="' + BlocksConstants.BLOCKS_START_BUTTON + '"></a>');
+    menuStartButton.attr(BlocksConstants.CLICK_ROLE_ATTR, BlocksConstants.FORCE_CLICK_ATTR_VALUE);
     // Hide show bar on click of menu button
     $(document).on("click", "." + BlocksConstants.BLOCKS_START_BUTTON, function (event)
     {
@@ -54,15 +55,15 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             // Prevent clicking on links while in editing mode
             $(document).on("click.prevent_click_editing", "a, button", function (e)
             {
-                var control = $(this);
+                //this is needed (instead of $(this)) to detect the [contenteditable]
+                var control = $(e.target);
 
                 //this attribute allows us to let some components pass through after all
-                var controlRole = control.attr(BlocksConstants.CLICK_ROLE_ATTR);
-                var pierceThrough = controlRole!=null && controlRole==BlocksConstants.FORCE_CLICK_ATTR_VALUE;
+                var pierceThrough = false;
 
                 //also check all the parents for that attribute to allow for easy management and grouping
                 if (!pierceThrough) {
-                    pierceThrough = control.parents('[' + BlocksConstants.FORCE_CLICK_ATTR + ']').length > 0;
+                    pierceThrough = control.is('[' + BlocksConstants.FORCE_CLICK_ATTR + ']') || control.parents('[' + BlocksConstants.FORCE_CLICK_ATTR + ']').length > 0;
                 }
 
                 //allow all the buttons in modal dialogs to work as usual
@@ -72,20 +73,31 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
                 //disable the popup when we're editing text
                 if (!pierceThrough) {
-                    pierceThrough = control.parents('[contenteditable=true]').length > 0;
+                    pierceThrough = control.is('[contenteditable=true]') || control.parents('[contenteditable=true]').length > 0;
+                }
+
+                if (!pierceThrough) {
+                    //controls in the sidebar are enabled by default
+                    pierceThrough = UI.sidebar.find(control).length>0;
+                }
+
+                //check if we clicked on the link, or on something inside a link
+                //and pass through if we didn't click on a link itself
+                if (!pierceThrough) {
+                    if (!control.is($(this))) {
+                        pierceThrough = true;
+                    }
                 }
 
                 if (pierceThrough) {
-                    //NOOP
-                }
-                //controls in the sidebar are enabled by default
-                else if (UI.sidebar.find(control).length>0) {
                     //NOOP
                 }
                 else {
                     e.preventDefault();
                     Notification.warn(BlocksMessages.clicksDisabledWhileEditing);
                 }
+
+                return !pierceThrough;
             });
 
             // Get old sidebar width from cookie

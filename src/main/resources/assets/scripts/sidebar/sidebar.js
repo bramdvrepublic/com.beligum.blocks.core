@@ -2,7 +2,7 @@
  * Created by wouter on 15/06/15.
  */
 
-base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.core.SidebarUtils", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", "blocks.core.Hover", "blocks.edit.Widget", function (Broadcaster, Constants, DOM, Layouter, SidebarUtils, Finder, Notification, Commons, Hover, Widget)
+base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.core.SidebarUtils", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", "blocks.core.Hover", "blocks.imports.Widget", function (Broadcaster, Constants, DOM, Layouter, SidebarUtils, Finder, Notification, Commons, Hover, Widget)
 {
     var SideBar = this;
     var configPanels = {};
@@ -28,20 +28,39 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         activeBlocks = [];
 
         //we'll cycle through the parents until we hit the page, then reversing the order and creating windows, starting with the page
-        while (currBlock != null) {
-            if (currBlock instanceof blocks.elements.Property || currBlock instanceof blocks.elements.Block || currBlock instanceof blocks.elements.Page) {
+        var lastRow = null;
 
+        //little helper function to refactor things
+        var pushActiveBlock = function(currBlock, currElement)
+        {
+            activeBlocks.push({
+                block: currBlock,
+                element: currElement
+            });
+
+            //we also push the properties inside a block
+            //note: this is evened out after the first cycle
+            if (currElement!=currBlock.element) {
                 activeBlocks.push({
                     block: currBlock,
-                    element: currElement
+                    element: currBlock.element
                 });
-
-                if (currElement!=currBlock.element) {
-                    activeBlocks.push({
-                        block: currBlock,
-                        element: currBlock.element
-                    });
-                }
+            }
+        };
+        while (currBlock != null) {
+            if (currBlock instanceof blocks.elements.Property || currBlock instanceof blocks.elements.Block) {
+                pushActiveBlock(currBlock, currElement);
+            }
+            else if (currBlock instanceof blocks.elements.Page) {
+                //TODO not yet, but might be interesting to keep for later..
+                //if we have a row, push that one first before closing with the page
+                //if (lastRow!=null) {
+                //    pushActiveBlock(lastRow.element, lastRow.element);
+                //}
+                pushActiveBlock(currBlock, currElement);
+            }
+            else if (currBlock instanceof blocks.elements.Row) {
+                lastRow = currBlock;
             }
             currBlock = currBlock.parent;
             // if the element is not the same as block.element, the first loop will be different, but
@@ -57,7 +76,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
             //don't make windows for (real) properties, only blocks and pages
             var isRealProperty = e.block.element != e.element;
-            var blockTitle = isRealProperty ? 'Property' : 'Block';
+            var blockTitle = isRealProperty ? 'property' : 'block';
             if (widget) {
                 blockTitle = widget.getWindowName();
             }
@@ -278,6 +297,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             }
             else {
                 Finder.init(options);
+                //don't show the warning when clicking something in the finder
+                finder.attr(Constants.CLICK_ROLE_ATTR, Constants.FORCE_CLICK_ATTR_VALUE);
                 finder.removeClass(Constants.LOADING_CLASS);
             }
         });

@@ -185,6 +185,9 @@ public class HtmlRouter extends AbstractRouter
 
     /**
      * A default tag instance with specified html inside
+     * NOTE: both cases where this method is used don't use TagTemplates, so it's safe to just return the empty instance
+     * If you ever want to use this method for TagTempaltes, don't, cause it won't include the attributes.
+     * for that, use HtmlTemplate.createNewHtmlInstance() instead
      */
     private Template buildTemplateInstance(String templateName, String propertiesHtml)
     {

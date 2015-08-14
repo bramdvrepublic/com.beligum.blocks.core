@@ -1,10 +1,10 @@
 /**
  * Created by wouter on 17/06/15.
  */
-base.plugin("blocks.edit.Page", ["base.core.Class", "blocks.edit.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.Broadcaster", "blocks.core.SidebarUtils", "blocks.core.UI", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, Broadcaster, SidebarUtils, UI)
+base.plugin("blocks.imports.Page", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.Broadcaster", "blocks.core.SidebarUtils", "blocks.core.UI", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, Broadcaster, SidebarUtils, UI)
 {
-    var PageWidget = this;
-    var TAGS = [BlocksConstants.PAGE_CONTENT_CLASS];
+    var BlocksPage = this;
+    this.TAGS = [BlocksConstants.PAGE_CONTENT_CLASS];
 
     (this.Class = Class.create(Widget.Class, {
 
@@ -13,7 +13,7 @@ base.plugin("blocks.edit.Page", ["base.core.Class", "blocks.edit.Widget", "const
         //-----CONSTRUCTORS-----
         constructor: function ()
         {
-            PageWidget.Class.Super.call(this);
+            BlocksPage.Class.Super.call(this);
         },
 
         //-----IMPLEMENTED METHODS-----
@@ -23,11 +23,11 @@ base.plugin("blocks.edit.Page", ["base.core.Class", "blocks.edit.Widget", "const
         },
         focus: function (block, element, hotspot, event)
         {
-            PageWidget.Class.Super.prototype.focus.call(this);
+            BlocksPage.Class.Super.prototype.focus.call(this, block, element, hotspot, event);
         },
         blur: function (block, element)
         {
-            PageWidget.Class.Super.prototype.blur.call(this);
+            BlocksPage.Class.Super.prototype.blur.call(this, block, element);
         },
         getOptionConfigs: function (block, element)
         {
@@ -35,7 +35,7 @@ base.plugin("blocks.edit.Page", ["base.core.Class", "blocks.edit.Widget", "const
 
             var pageActions = $('<ul class="' + BlocksConstants.BLOCK_ACTIONS_CLASS + '"/>');
             var savePage = $('<li><span>Save changes</span></li>').append($('<a class="' + BlocksConstants.SAVE_PAGE_BUTTON + ' btn btn-primary btn-sm pull-right"><i class="fa fa-fw fa-floppy-o"></i></a>')).appendTo(pageActions);
-            var deletePage = $('<li><span>Delete page</span></li>').append($('<a class="' + BlocksConstants.DELETE_PAGE_BUTTON + ' btn btn-danger btn-sm pull-right"><i class="fa fa-fw fa-trash-o"></i></a>')).appendTo(pageActions);
+            var deletePage = $('<li><span>Delete page</span></li>').append($('<a class="' + BlocksConstants.DELETE_PAGE_BUTTON + ' btn btn-default btn-sm pull-right"><i class="fa fa-fw fa-trash-o"></i></a>')).appendTo(pageActions);
             var newBlock = $('<li><span>New block</span></li>').append($('<a class="' + BlocksConstants.CREATE_BLOCK_CLASS + ' btn btn-default btn-sm pull-right" data-toggle="popover" data-trigger="click" data-placement="bottom" data-content="Drag this button to your page to create a new block."><i class="fa fa-fw fa-magic"></i></a>')).appendTo(pageActions);
 
             //activation is done in menu.js
@@ -77,6 +77,6 @@ base.plugin("blocks.edit.Page", ["base.core.Class", "blocks.edit.Widget", "const
             return BlocksMessages.widgetPageTitle;
         },
 
-    })).register(TAGS);
+    })).register(this.TAGS);
 
 }]);

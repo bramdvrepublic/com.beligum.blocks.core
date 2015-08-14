@@ -1,10 +1,11 @@
 /**
  * Created by wouter on 18/06/15.
  */
-base.plugin("blocks.edit.Carousel", ["base.core.Class", "blocks.edit.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", "constants.blocks.core", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils, Constants)
+base.plugin("blocks.imports.Carousel", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", "constants.blocks.core", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils, Constants)
 {
-    var CarouselWidget = this;
-    var TAGS = ["BLOCKS-CAROUSEL"];
+    var BlocksCarousel = this;
+
+    this.TAGS = ["BLOCKS-CAROUSEL"];
 
     (this.Class = Class.create(Widget.Class, {
 
@@ -14,7 +15,7 @@ base.plugin("blocks.edit.Carousel", ["base.core.Class", "blocks.edit.Widget", "c
         //-----CONSTRUCTORS-----
         constructor: function ()
         {
-            CarouselWidget.Class.Super.call(this);
+            BlocksCarousel.Class.Super.call(this);
         },
 
         //-----IMPLEMENTED METHODS-----
@@ -31,11 +32,11 @@ base.plugin("blocks.edit.Carousel", ["base.core.Class", "blocks.edit.Widget", "c
         },
         focus: function (block, element, hotspot, event)
         {
-            CarouselWidget.Class.Super.prototype.focus.call(this);
+            BlocksCarousel.Class.Super.prototype.focus.call(this, block, element, hotspot, event);
         },
         blur: function (block, element)
         {
-            CarouselWidget.Class.Super.prototype.blur.call(this);
+            BlocksCarousel.Class.Super.prototype.blur.call(this, block, element);
 
             var element = element.find(".carousel");
 
@@ -166,6 +167,6 @@ base.plugin("blocks.edit.Carousel", ["base.core.Class", "blocks.edit.Widget", "c
             carousel.find(".carousel-inner").children().first().addClass("active");
         }
 
-    })).register(TAGS);
+    })).register(this.TAGS);
 
 }]);

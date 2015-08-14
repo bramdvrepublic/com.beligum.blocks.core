@@ -23,7 +23,6 @@ import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.beligum.blocks.utils.RdfTools;
 import com.beligum.blocks.utils.comparators.MapComparator;
 import com.google.common.base.Functions;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import gen.com.beligum.blocks.core.fs.html.views.modals.newblock;
 import org.apache.commons.lang3.StringUtils;
@@ -191,7 +190,7 @@ public class PageEndpoint
         }
 
         //TODO change these to constants
-        Template block = R.templateEngine().getNewStringTemplate("<" + name + "></" + name + ">");
+        Template block = R.templateEngine().getNewStringTemplate(htmlTemplate.createNewHtmlInstance());
         retVal.put("html", block.render());
         retVal.put("inlineStyles", Lists.transform(Lists.newArrayList(htmlTemplate.getInlineStyleElementsForCurrentUser()), Functions.toStringFunction()));
         retVal.put("externalStyles", Lists.transform(Lists.newArrayList(htmlTemplate.getExternalStyleElementsForCurrentUser()), Functions.toStringFunction()));

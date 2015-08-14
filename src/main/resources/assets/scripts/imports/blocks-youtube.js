@@ -1,10 +1,10 @@
 /*
  * Allows editiong of an embedded youtube video when you click on it
  * */
-base.plugin("blocks.edit.Youtube", ["base.core.Class", "blocks.edit.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
+base.plugin("blocks.imports.Youtube", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
 {
-    var YoutubeWidget = this;
-    var TAGS = ["BLOCKS-YOUTUBE"];
+    var BlocksYoutube = this;
+    this.TAGS = ["BLOCKS-YOUTUBE"];
 
     (this.Class = Class.create(Widget.Class, {
 
@@ -13,7 +13,7 @@ base.plugin("blocks.edit.Youtube", ["base.core.Class", "blocks.edit.Widget", "co
         //-----CONSTRUCTORS-----
         constructor: function ()
         {
-            YoutubeWidget.Class.Super.call(this);
+            BlocksYoutube.Class.Super.call(this);
         },
 
         //-----IMPLEMENTED METHODS-----
@@ -22,11 +22,11 @@ base.plugin("blocks.edit.Youtube", ["base.core.Class", "blocks.edit.Widget", "co
         },
         focus: function (block, element, hotspot, event)
         {
-            YoutubeWidget.Class.Super.prototype.focus.call(this);
+            BlocksYoutube.Class.Super.prototype.focus.call(this, block, element, hotspot, event);
         },
         blur: function (block, element)
         {
-            YoutubeWidget.Class.Super.prototype.blur.call(this);
+            BlocksYoutube.Class.Super.prototype.blur.call(this, block, element);
         },
         getOptionConfigs: function (block, element)
         {
@@ -48,6 +48,6 @@ base.plugin("blocks.edit.Youtube", ["base.core.Class", "blocks.edit.Widget", "co
 
         //-----PRIVATE METHODS-----
 
-    })).register(TAGS);
+    })).register(this.TAGS);
 
 }]);
