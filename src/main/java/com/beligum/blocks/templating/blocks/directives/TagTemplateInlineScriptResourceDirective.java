@@ -43,9 +43,10 @@ public class TagTemplateInlineScriptResourceDirective extends TagTemplateAbstrac
     {
         boolean print = (boolean) TagTemplateDirectiveUtils.readArg(context, node, 0);
         PermissionRole roleScope = R.configuration().getSecurityConfig().lookupPermissionRole((String)TagTemplateDirectiveUtils.readArg(context, node, 1));
+        HtmlTemplate.ResourceScopeMode mode = HtmlTemplate.ResourceScopeMode.values()[(int)TagTemplateDirectiveUtils.readArg(context, node, 2)];
         String element = TagTemplateDirectiveUtils.readValue(context, node);
 
-        if (HtmlTemplate.testResourceRoleScope(roleScope)) {
+        if (HtmlTemplate.testResourceRoleScope(roleScope) && HtmlTemplate.testResourceModeScope(mode)) {
             TemplateResourcesDirective.getContextResources(context).addInlineScript(print, element);
             if (print) {
                 writer.write(element);

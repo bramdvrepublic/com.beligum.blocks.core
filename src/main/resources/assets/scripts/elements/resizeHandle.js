@@ -18,9 +18,7 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
         {
             this.leftColumn = leftColumn;
             this.rightColumn = rightColumn;
-
-            this.overlay = $("<div />").addClass(BlocksConstants.SURFACE_ELEMENT_CLASS+" "+BlocksConstants.COLUMN_RESIZER_CLASS);
-
+            this.overlay = $("<div />").addClass(BlocksConstants.SURFACE_ELEMENT_CLASS + " " + BlocksConstants.COLUMN_RESIZER_CLASS);
         },
 
         update: function ()
@@ -72,7 +70,8 @@ base.plugin("blocks.core.Elements.ResizeHandle", ["base.core.Class", "constants.
             body.append(this.overlay);
         },
 
-        updateHeight: function() {
+        updateHeight: function ()
+        {
             var height = this.leftColumn.parent.element.height();
             this.overlay.css("height", height);
         },

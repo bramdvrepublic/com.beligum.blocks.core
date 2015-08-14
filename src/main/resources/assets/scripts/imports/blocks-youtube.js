@@ -4,7 +4,7 @@
 base.plugin("blocks.imports.Youtube", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
 {
     var BlocksYoutube = this;
-    this.TAGS = ["BLOCKS-YOUTUBE"];
+    this.TAGS = ["blocks-youtube"];
 
     (this.Class = Class.create(Widget.Class, {
 

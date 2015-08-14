@@ -1,10 +1,10 @@
 /**
  * Created by wouter on 17/07/15.
  */
-base.plugin("blocks.imports.Spacer", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.mot.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Widget, BlocksConstants, MotMessages, Sidebar, SidebarUtils)
+base.plugin("blocks.imports.Spacer", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
 {
     var BlocksSpacer = this;
-    this.TAGS = ["BLOCKS-SPACER"];
+    this.TAGS = ["blocks-spacer"];
 
     (this.Class = Class.create(Widget.Class, {
 
@@ -44,7 +44,7 @@ base.plugin("blocks.imports.Spacer", ["base.core.Class", "blocks.imports.Widget"
         },
         getWindowName: function ()
         {
-            return MotMessages.widgetSpacerTitle;
+            return BlocksMessages.widgetSpacerTitle;
         },
 
         //-----PRIVATE METHODS-----

@@ -3,6 +3,8 @@ package com.beligum.blocks.routing;
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
+import com.beligum.base.templating.ifaces.TemplateContext;
+import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.caching.PageCache;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
@@ -35,8 +37,6 @@ public class HtmlRouter extends AbstractRouter
     private static final String NAME = "name";
     private static final String TITLE = "title";
     private static final String DESCRIPTION = "description";
-
-    private static final String ALLOW_EDIT_VARIABLE = "ALLOW_EDIT";
 
     private PersistenceController database;
 
@@ -134,7 +134,7 @@ public class HtmlRouter extends AbstractRouter
         Template template = this.buildTemplateInstance(pageTemplateName, "");
 
         //this will allow the blocks javascript/css to be included
-        template.set(ALLOW_EDIT_VARIABLE, true);
+        this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template.getContext());
 
         return Response.ok(template).build();
     }
@@ -169,7 +169,7 @@ public class HtmlRouter extends AbstractRouter
             Template template = this.buildTemplateInstance(templateStr, page.getParsedHtml());
 
             //this will allow the blocks javascript/css to be included
-            template.set(ALLOW_EDIT_VARIABLE, true);
+            this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template.getContext());
 
             entity = template;
         }
@@ -192,5 +192,10 @@ public class HtmlRouter extends AbstractRouter
     private Template buildTemplateInstance(String templateName, String propertiesHtml)
     {
         return R.templateEngine().getNewStringTemplate(new StringBuilder().append("<" + templateName + ">").append(propertiesHtml).append("</" + templateName + ">").toString());
+    }
+    private void setBlocksMode(HtmlTemplate.ResourceScopeMode mode, TemplateContext context)
+    {
+        R.cacheManager().getRequestCache().put(CacheKeys.BLOCKS_MODE, mode);
+        context.set(CacheKeys.BLOCKS_MODE.name(), mode.name());
     }
 }

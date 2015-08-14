@@ -21,5 +21,8 @@ public enum CacheKeys implements CacheKey
     TAG_TEMPLATE_TYPES,
     //the hashmap that contains mappings for the parsed html files on disk (parsed to Velocity intermediates)
     BLOCKS_TEMPLATES,
-    PAGES
+    //the key that maps to the eh cache that contains the cached pages
+    PAGES,
+    //the key that maps to the mode in which we are now (set in HtmlRouter)
+    BLOCKS_MODE
 }

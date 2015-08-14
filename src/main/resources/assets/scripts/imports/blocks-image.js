@@ -4,7 +4,7 @@
 base.plugin("blocks.imports.Image", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils",  function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
 {
     var BlocksImage = this;
-    this.TAGS = ["IMG"];
+    this.TAGS = ["img"];
 
     (this.Class = Class.create(Widget.Class, {
 

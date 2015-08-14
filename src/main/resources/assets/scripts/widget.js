@@ -12,30 +12,30 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "base.core.Class"
 
         //-----STATICS-----
         STATIC: {
-            TAG_INDEX: {},
+            SELECTOR_INDEX: {},
             OBJ_REFS: {},
 
             /**
              * Register a new widget class for the supplied tags
-             * @param tags the array of tags you want to register this widget class to
+             * @param selectors the array of jquery selectors you want to register this widget class to
              */
-            register: function(tags)
+            register: function(selectors)
             {
                 //there should always be a tags option specified
-                if (tags && tags.length && tags.length>0) {
-                    for (var i=0;i<tags.length;i++) {
-                        var tag = tags[i].toUpperCase();
+                if (selectors && selectors.length && selectors.length>0) {
+                    for (var i=0;i<selectors.length;i++) {
+                        var selector = selectors[i];
                         // note that this will happen when we extend eg. blocks-spacer in a subclass;
                         // the superclass will be registered first, and later overwritten by it's subclass
-                        if (BlocksWidget.Class.TAG_INDEX[tag]) {
-                            Logger.warn("Encountered a double Widget registration for <"+tag+">, overwriting.", this);
+                        if (BlocksWidget.Class.SELECTOR_INDEX[selector]) {
+                            Logger.warn("Encountered a double Widget registration for '"+selector+"', overwriting.", this);
                         }
 
-                        BlocksWidget.Class.TAG_INDEX[tag] = this;
+                        BlocksWidget.Class.SELECTOR_INDEX[selector] = this;
                     }
                 }
                 else {
-                    throw Logger.error("Could not instantiate widget because the 'tags' option (an array containing the tags you want this widget to be registered to) was missing or wrong has the type.", tags);
+                    throw Logger.error("Could not instantiate widget because the 'tags' option (an array containing the tags you want this widget to be registered to) was missing or wrong has the type.", selectors);
                 }
             },
 
@@ -50,11 +50,20 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "base.core.Class"
 
                 if (element != null) {
                     var clazz = null;
-                    if (element.hasClass(BlocksConstants.PAGE_CONTENT_CLASS)) {
-                        clazz = BlocksWidget.Class.TAG_INDEX[BlocksConstants.PAGE_CONTENT_CLASS.toUpperCase()];
-                    } else {
-                        clazz = BlocksWidget.Class.TAG_INDEX[element.prop("tagName").toUpperCase()];
-                    }
+
+                    //search for the first selector that matches
+                    $.each(BlocksWidget.Class.SELECTOR_INDEX, function(selector, widget) {
+                        if (element.is(selector)) {
+                            clazz = widget;
+                            return false; // == break
+                        }
+                    });
+                    //
+                    //if (element.hasClass(BlocksConstants.PAGE_CONTENT_CLASS)) {
+                    //    clazz = BlocksWidget.Class.SELECTOR_INDEX[BlocksConstants.PAGE_CONTENT_CLASS.toUpperCase()];
+                    //} else {
+                    //    clazz = BlocksWidget.Class.SELECTOR_INDEX[element.prop("tagName").toUpperCase()];
+                    //}
 
                     //if we found a class, instantiate it
                     if (clazz) {

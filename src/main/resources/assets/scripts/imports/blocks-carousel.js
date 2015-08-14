@@ -5,7 +5,7 @@ base.plugin("blocks.imports.Carousel", ["base.core.Class", "blocks.imports.Widge
 {
     var BlocksCarousel = this;
 
-    this.TAGS = ["BLOCKS-CAROUSEL"];
+    this.TAGS = ["blocks-carousel"];
 
     (this.Class = Class.create(Widget.Class, {
 

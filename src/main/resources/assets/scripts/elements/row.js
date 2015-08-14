@@ -10,9 +10,8 @@ base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core
         {
             blocks.elements.Row.Super.call(this, element, parent, index);
 
-            this.canDrag = true;
+            this.canDrag = true;//need this to show the resizeHandles
             this.generateChildrenForRow();
-
             this.overlay = null;
         },
 

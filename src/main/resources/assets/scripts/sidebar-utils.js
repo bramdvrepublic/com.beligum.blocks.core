@@ -18,13 +18,22 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
     {
         var classFound = false;
 
+        //small dryrun so we know if the (possible) empty value needs to be selected
+        var hasNonEmptyClass = false;
+        for (var i = 0; i < values.length; i++) {
+            var cl = values[i].value;
+            if (cl != null && cl != "" && element.hasClass(cl)) {
+                hasNonEmptyClass = true;
+            }
+        }
+
         var retVal = this.createCombobox(Sidebar, labelText, values,
             function initCallback(testValue)
             {
                 var retVal = false;
 
                 //second uses lazy testing: element doens't have the class, but the value is the empty string, so it should match
-                if (element.hasClass(testValue) || (testValue == null || testValue == "")) {
+                if (element.hasClass(testValue) || ((testValue == null || testValue == "") && !hasNonEmptyClass)) {
                     if (!classFound) {
                         classFound = true;
                         retVal = true;
@@ -39,9 +48,11 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
             },
             function changeCallback(oldValue, newValue)
             {
-                if (oldValue) {
-                    element.removeClass(oldValue);
+                //this will reset the classes even if newValue is ""
+                for (var i = 0; i < values.length; i++) {
+                    element.removeClass(values[i].value);
                 }
+
                 element.addClass(newValue);
             });
 
@@ -60,9 +71,9 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
 
         // Create checkboxes for each value
         var id = Commons.generateId();
-        var label = $('<label for="'+id+'">' + labelText + '</label>').appendTo(formGroup);
+        var label = $('<label for="' + id + '">' + labelText + '</label>').appendTo(formGroup);
         var wrapper = $('<div class="checkbox" />').appendTo(formGroup);
-        var input = $('<input id="'+id+'" type="checkbox" >').appendTo(wrapper);
+        var input = $('<input id="' + id + '" type="checkbox" >').appendTo(wrapper);
         input.attr("value", value);
         if (element.hasClass(value)) {
             input.attr("checked", "checked");
@@ -106,7 +117,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
         }
 
         var inputGroup = $('<div class="input-group"></div>').appendTo(formGroup);
-        var input = $('<input ' + id + ' type="range" class="form-control" min="0" max="'+(values.length - 1)+'" step="1" value="'+initValue+'">').appendTo(inputGroup);
+        var input = $('<input ' + id + ' type="range" class="form-control" min="0" max="' + (values.length - 1) + '" step="1" value="' + initValue + '">').appendTo(inputGroup);
 
         //init the bootstrap-slider (see https://github.com/seiyria/bootstrap-slider)
         input.slider({
@@ -116,7 +127,8 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
             value: initValue,
             step: 1,
             tooltip: showTooltip ? 'show' : 'hide',
-            formatter: function(value) {
+            formatter: function (value)
+            {
                 return values[value].name;
             }
         });
@@ -127,7 +139,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
 
             for (var i = 0; i < values.length; i++) {
                 var className = values[i].value;
-                if (i==value) {
+                if (i == value) {
                     element.addClass(className);
                 }
                 else {

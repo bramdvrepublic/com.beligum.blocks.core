@@ -192,10 +192,10 @@ public class PageEndpoint
         //TODO change these to constants
         Template block = R.templateEngine().getNewStringTemplate(htmlTemplate.createNewHtmlInstance());
         retVal.put("html", block.render());
-        retVal.put("inlineStyles", Lists.transform(Lists.newArrayList(htmlTemplate.getInlineStyleElementsForCurrentUser()), Functions.toStringFunction()));
-        retVal.put("externalStyles", Lists.transform(Lists.newArrayList(htmlTemplate.getExternalStyleElementsForCurrentUser()), Functions.toStringFunction()));
-        retVal.put("inlineScripts", Lists.transform(Lists.newArrayList(htmlTemplate.getInlineScriptElementsForCurrentUser()), Functions.toStringFunction()));
-        retVal.put("externalScripts", Lists.transform(Lists.newArrayList(htmlTemplate.getExternalScriptElementsForCurrentUser()), Functions.toStringFunction()));
+        retVal.put("inlineStyles", Lists.transform(Lists.newArrayList(htmlTemplate.getInlineStyleElementsForCurrentScope()), Functions.toStringFunction()));
+        retVal.put("externalStyles", Lists.transform(Lists.newArrayList(htmlTemplate.getExternalStyleElementsForCurrentScope()), Functions.toStringFunction()));
+        retVal.put("inlineScripts", Lists.transform(Lists.newArrayList(htmlTemplate.getInlineScriptElementsForCurrentScope()), Functions.toStringFunction()));
+        retVal.put("externalScripts", Lists.transform(Lists.newArrayList(htmlTemplate.getExternalScriptElementsForCurrentScope()), Functions.toStringFunction()));
 
         return Response.ok(retVal).build();
     }

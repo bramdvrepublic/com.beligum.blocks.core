@@ -44,9 +44,10 @@ public class TagTemplateExternalStyleResourceDirective extends TagTemplateAbstra
         boolean print = (boolean) TagTemplateDirectiveUtils.readArg(context, node, 0);
         String href = (String) TagTemplateDirectiveUtils.readArg(context, node, 1);
         PermissionRole roleScope = R.configuration().getSecurityConfig().lookupPermissionRole((String)TagTemplateDirectiveUtils.readArg(context, node, 2));
+        HtmlTemplate.ResourceScopeMode mode = HtmlTemplate.ResourceScopeMode.values()[(int)TagTemplateDirectiveUtils.readArg(context, node, 3)];
         String element = TagTemplateDirectiveUtils.readValue(context, node);
 
-        if (HtmlTemplate.testResourceRoleScope(roleScope)) {
+        if (HtmlTemplate.testResourceRoleScope(roleScope) && HtmlTemplate.testResourceModeScope(mode)) {
             TemplateResourcesDirective.getContextResources(context).addExternalStyle(print, href, element);
             if (print) {
                 writer.write(element);

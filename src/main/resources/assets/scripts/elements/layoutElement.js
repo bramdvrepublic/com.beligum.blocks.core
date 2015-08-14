@@ -311,7 +311,7 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
 
                         newColumn = new blocks.elements.Column(currentColumn, this, i);
 
-                        var outside = this.parent != null && this.parent.parent != null && this.parent.parent instanceof blocks.elements.Container
+                        var outside = this.parent != null && this.parent.parent != null && this.parent.parent instanceof blocks.elements.Container;
 
                         if (oldColumn != null) {
                             this.resizeHandles.push(new blocks.elements.ResizeHandle(oldColumn, newColumn));

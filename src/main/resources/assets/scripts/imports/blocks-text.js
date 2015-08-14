@@ -1,7 +1,7 @@
 base.plugin("blocks.imports.Text", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.MediumEditor", "blocks.core.Sidebar", function (Class, Widget, BlocksConstants, BlocksMessages, Broadcaster, Editor, Sidebar)
 {
     var BlocksText = this;
-    this.TAGS = ["DIV", "SPAN"];
+    this.TAGS = ["blocks-text div", "blocks-text span"];
 
     (this.Class = Class.create(Widget.Class, {
 

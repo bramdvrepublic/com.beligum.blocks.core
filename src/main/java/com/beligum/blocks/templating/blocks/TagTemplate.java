@@ -2,6 +2,7 @@ package com.beligum.blocks.templating.blocks;
 
 import net.htmlparser.jericho.Element;
 import net.htmlparser.jericho.OutputDocument;
+import net.htmlparser.jericho.Segment;
 import net.htmlparser.jericho.Source;
 
 import java.io.IOException;
@@ -32,13 +33,13 @@ public class TagTemplate extends HtmlTemplate
 
     //-----PROTECTED METHODS-----
     @Override
-    protected OutputDocument doInitHtmlPreparsing(Source document, OutputDocument output, HtmlTemplate parent) throws IOException
+    protected OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate parent) throws IOException
     {
-        List<Element> templateElements = document.getAllElements("template");
+        List<Element> templateElements = document.getSegment().getAllElements("template");
 
         // Note that there always needs to be a <template> tag to indicate this is a template
         if (templateElements != null && !templateElements.isEmpty()) {
-            if (templateElements.size() != 1) {
+            if (templateElements.size() > 1) {
                 throw new IOException("Encountered tag template with more than one <template> tags ("+templateElements.size()+"); " + absolutePath);
             }
 
@@ -55,23 +56,43 @@ public class TagTemplate extends HtmlTemplate
                 templateTag.getAttributes().populateMap(attrs, true);
             }
             this.setAttributes(attrs);
-
-            //THEN, parse the body
-            //if the <template> tag is empty and we have a parent, inherit the content from the parent
-            //note that .isEmpty() also returns true when the element has attributes
-            if (templateTag.isEmpty() && parent!=null) {
-                output = new OutputDocument(parent.getHtml());
-            }
-            else {
-                //we'll 'ignore' the code around the <template> tag
-                output.replace(document, templateTag.getContent());
-            }
-
-            return output;
         }
         else {
             throw new IOException("Encountered tag template with an invalid <template> tag config (found " + (templateElements == null ? null : templateElements.size()) + " tags); " + absolutePath);
         }
+
+        return document;
+    }
+    @Override
+    protected Segment unwrapHtml(OutputDocument document, HtmlTemplate parent)
+    {
+        Segment retVal = null;
+
+        //first, we need to render it out, because we've changed it a lot, and any query
+        // on the non-rendered version will be wrong (querying the original)
+        Segment documentSource = new Source(document.toString());
+
+        //note that we already checked there's exactly one <template> tag
+        Element templateTag = documentSource.getFirstElement("template");
+
+        //this checks if the template tag is there pro-forma (just to make it a template file)
+        //if the <template> tag is empty and we have a parent, inherit the content from the parent
+        //note that .isEmpty() also returns true when the element has attributes
+        if (templateTag.isEmpty() && parent!=null) {
+            retVal = parent.getHtml();
+        }
+        else {
+            //now we want to unwrap the <template> tag
+            // note that it's not enough to return the content of that tag,
+            // because we want to keep the wrapped resources outside the template too...
+            OutputDocument htmlDoc = new OutputDocument(documentSource);
+            htmlDoc.replace(templateTag, templateTag.getContent());
+
+            //and now, wrap it in a source again...
+            retVal = new Source(htmlDoc.toString());
+        }
+
+        return retVal;
     }
 
     //-----PRIVATE METHODS-----

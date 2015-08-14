@@ -27,9 +27,6 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         var currElement = element;
         activeBlocks = [];
 
-        //we'll cycle through the parents until we hit the page, then reversing the order and creating windows, starting with the page
-        var lastRow = null;
-
         //little helper function to refactor things
         var pushActiveBlock = function(currBlock, currElement)
         {
@@ -47,21 +44,24 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 });
             }
         };
+
+        var lastRow = null;
+        //we'll cycle through the parents until we hit the page, then reversing the order and creating windows, starting with the page
         while (currBlock != null) {
             if (currBlock instanceof blocks.elements.Property || currBlock instanceof blocks.elements.Block) {
                 pushActiveBlock(currBlock, currElement);
             }
             else if (currBlock instanceof blocks.elements.Page) {
-                //TODO not yet, but might be interesting to keep for later..
                 //if we have a row, push that one first before closing with the page
-                //if (lastRow!=null) {
-                //    pushActiveBlock(lastRow.element, lastRow.element);
-                //}
+                if (lastRow!=null) {
+                    pushActiveBlock(lastRow, lastRow.element);
+                }
                 pushActiveBlock(currBlock, currElement);
             }
             else if (currBlock instanceof blocks.elements.Row) {
                 lastRow = currBlock;
             }
+
             currBlock = currBlock.parent;
             // if the element is not the same as block.element, the first loop will be different, but
             // after one time, it will ease out
@@ -73,6 +73,10 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             var e = activeBlocks[i];
 
             var widget = Widget.Class.create(e.element);
+            //save it for blur()
+            if (widget) {
+                activeBlocks[i].widget = widget;
+            }
 
             //don't make windows for (real) properties, only blocks and pages
             var isRealProperty = e.block.element != e.element;
@@ -81,20 +85,21 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 blockTitle = widget.getWindowName();
             }
 
+            var windowTitle = title;
             if (title == null) {
-                title = blockTitle;
+                windowTitle = blockTitle;
             }
             else {
-                title = title + '<i class="fa fa-fw fa-angle-right"/>' + blockTitle;
+                windowTitle = title + '<i class="fa fa-fw fa-angle-right"/>' + blockTitle;
             }
 
             // if a parent stopped the creation of sub-windows, keep executing the focus() method,
             // but without a window ID (allowing for logic without UI consequences)
-            var windowID = SideBar.createWindow(e.element, title);
+            var windowID = SideBar.createWindow(e.element, windowTitle);
             var addedOptions = false;
 
             // don't render the remove button for properties: only blocks can be deleted
-            if (!isRealProperty && windowID) {
+            if (!isRealProperty && e.block instanceof blocks.elements.Block && windowID) {
                 if (e.block.canDrag) {
                     this.addRemoveBlockButton(windowID, e.block);
                     addedOptions = true;
@@ -121,6 +126,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             //don't add an empty panel
             if (addedOptions) {
                 this.appendWindowToSidebar(Constants.CONTEXT, windowID);
+                title = windowTitle;
             }
         }
     };
@@ -129,9 +135,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     {
         for (var i=0;i<activeBlocks.length;i++) {
             var e = activeBlocks[i];
-            var widget = Widget.Class.create(e.element);
-            if (widget) {
-                widget.blur(e.block, e.element);
+            if (e.widget) {
+                e.widget.blur(e.block, e.element);
             }
         }
         configPanels = {};
@@ -205,7 +210,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     {
         var config = SideBar.getWindowForId(windowId);
         if (config) {
-            var content = config.children(".panel-body");
+            var content = config.find(".panel-body");
             content.append(html);
         }
         else {
@@ -222,10 +227,11 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
         if (configPanels[windowId] == null) {
 
-            var div = $("<div class='panel panel-default'/>");
-            var header = $("<div class='panel-heading'>" + title + "</div>");
-            var content = $("<div class='panel-body'/>");
-            div.append(header).append(content);
+            var bodyId = windowId+'-body';
+            var div = $('<div id="'+windowId+'" class="panel panel-default"/>');
+            var header = $('<div class="panel-heading collapser" data-toggle="collapse" data-target="#'+bodyId+'" aria-expanded="false" aria-controls="'+bodyId+'">' + title + '</div>').appendTo(div);
+            var collapse = $('<div id="'+bodyId+'" class="collapse">').appendTo(div);
+            var content = $('<div class="panel-body"/>').appendTo(collapse);
 
             configPanels[windowId] = div;
 

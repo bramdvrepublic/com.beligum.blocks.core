@@ -12,8 +12,9 @@ base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.c
         {
             //super(this, element, parent, index)
             blocks.elements.Page.Super.call(this, $("." + Constants.PAGE_CONTENT_CLASS), null, 0);
-            this.blocks = [];
 
+            this.canDrag = false;
+            this.blocks = [];
             // find everything that is a container or a template or a property
             this.overlay = null;
         },

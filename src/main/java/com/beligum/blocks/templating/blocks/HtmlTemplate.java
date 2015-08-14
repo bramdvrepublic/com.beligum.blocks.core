@@ -3,6 +3,11 @@ package com.beligum.blocks.templating.blocks;
 import com.beligum.base.security.PermissionRole;
 import com.beligum.base.security.PermissionsConfigurator;
 import com.beligum.base.server.R;
+import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.templating.blocks.directives.TagTemplateExternalScriptResourceDirective;
+import com.beligum.blocks.templating.blocks.directives.TagTemplateExternalStyleResourceDirective;
+import com.beligum.blocks.templating.blocks.directives.TagTemplateInlineScriptResourceDirective;
+import com.beligum.blocks.templating.blocks.directives.TagTemplateInlineStyleResourceDirective;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
@@ -51,9 +56,16 @@ public abstract class HtmlTemplate
     // use it like this: <script data-scope-role="admin"> to eg. only include the script when and ADMIN-role is logged in
     // Role names are the same ones we use for Shiro
     public static final String RESOURCE_ROLE_SCOPE_ATTRIBUTE = "data-scope-role";
+    //set to 'edit' if you only want the resource to be included if the $BLOCKS_MODE variable is set
+    public static final String RESOURCE_MODE_SCOPE_ATTRIBUTE = "data-scope-mode";
+    public enum ResourceScopeMode
+    {
+        UNDEFINED,
+        EMPTY,
+        edit
+    }
 
     //-----VARIABLES-----
-    protected Source document;
     protected Segment html;
     protected Map<String, String> attributes;
     protected Path absolutePath;
@@ -115,46 +127,6 @@ public abstract class HtmlTemplate
      */
     public abstract boolean renderTemplateTag();
 
-    public static Iterable<Element> getInlineStyles(Source source)
-    {
-        return source.getAllElements("style");
-    }
-    public static Iterable<Element> getExternalStyles(Source source)
-    {
-        List<Element> retVal = source.getAllElements("rel", styleLinkRelAttrValue);
-        Iterator<Element> iter = retVal.iterator();
-        while (iter.hasNext()) {
-            if (!iter.next().getName().equals("link")) {
-                iter.remove();
-            }
-        }
-
-        return retVal;
-    }
-    public static Iterable<Element> getInlineScripts(Source source)
-    {
-        List<Element> retVal = source.getAllElements("script");
-        Iterator<Element> iter = retVal.iterator();
-        while (iter.hasNext()) {
-            if (iter.next().getAttributeValue("src") != null) {
-                iter.remove();
-            }
-        }
-
-        return retVal;
-    }
-    public static Iterable<Element> getExternalScripts(Source source)
-    {
-        List<Element> retVal = source.getAllElements("script");
-        Iterator<Element> iter = retVal.iterator();
-        while (iter.hasNext()) {
-            if (iter.next().getAttributeValue("src") == null) {
-                iter.remove();
-            }
-        }
-
-        return retVal;
-    }
     /**
      * @return the name of the file, without the file extension, where parent directories are represented by dashes.
      * Eg. /blocks/test/tag.html will have the name "blocks-test-tag" and result in tags like <blocks-test-tag></blocks-test-tag>
@@ -221,21 +193,21 @@ public abstract class HtmlTemplate
         return externalStyleElements;
     }
     //TODO we should probably optimize this a bit, but beware, it still needs to be user-dynamic...
-    public Iterable<Element> getInlineScriptElementsForCurrentUser()
+    public Iterable<Element> getInlineScriptElementsForCurrentScope()
     {
-        return this.buildRoleScopeResourceIterator(this.getAllInlineScriptElements());
+        return this.buildScopeResourceIterator(this.getAllInlineScriptElements());
     }
-    public Iterable<Element> getExternalScriptElementsForCurrentUser()
+    public Iterable<Element> getExternalScriptElementsForCurrentScope()
     {
-        return this.buildRoleScopeResourceIterator(this.getAllExternalScriptElements());
+        return this.buildScopeResourceIterator(this.getAllExternalScriptElements());
     }
-    public Iterable<Element> getInlineStyleElementsForCurrentUser()
+    public Iterable<Element> getInlineStyleElementsForCurrentScope()
     {
-        return this.buildRoleScopeResourceIterator(this.getAllInlineStyleElements());
+        return this.buildScopeResourceIterator(this.getAllInlineStyleElements());
     }
-    public Iterable<Element> getExternalStyleElementsForCurrentUser()
+    public Iterable<Element> getExternalStyleElementsForCurrentScope()
     {
-        return this.buildRoleScopeResourceIterator(this.getAllExternalStyleElements());
+        return this.buildScopeResourceIterator(this.getAllExternalStyleElements());
     }
     /**
      * Will create a new html tag; eg for <template class="classname"></template>, this will return <tag-name class="classname"></tag-name>
@@ -256,7 +228,7 @@ public abstract class HtmlTemplate
     }
 
     //-----PROTECTED METHODS-----
-    protected void init(String templateName, Source document, Path absolutePath, Path relativePath, HtmlTemplate parent) throws Exception
+    protected void init(String templateName, Source source, Path absolutePath, Path relativePath, HtmlTemplate parent) throws Exception
     {
         //INIT THE PATHS
         this.absolutePath = absolutePath;
@@ -265,24 +237,23 @@ public abstract class HtmlTemplate
         //INIT THE NAMES
         this.templateName = templateName;
         this.velocityName = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, this.templateName);
+        this.parent = parent;
 
         //INIT THE HTML
-        this.document = document;
-        OutputDocument templateHtml = new OutputDocument(document);
         //note: this should take the parent into account
-        templateHtml = this.doInitHtmlPreparsing(document, templateHtml, parent);
+        OutputDocument tempHtml = this.doInitHtmlPreparsing(new OutputDocument(source),  parent);
 
         //Note that we need to eat these values for PageTemplates because we don't want them to end up at the client side (no problem for TagTemplates)
         this.titles = parent != null ? parent.getTitles() : new HashMap<Locale, String>();
-        this.fillMetaValues(this.document, templateHtml, this.titles, MetaProperty.title, true);
+        this.fillMetaValues(tempHtml, this.titles, MetaProperty.title, true);
 
         this.descriptions = parent != null ? parent.getDescriptions() : new HashMap<Locale, String>();
-        this.fillMetaValues(this.document, templateHtml, this.descriptions, MetaProperty.description, true);
+        this.fillMetaValues(tempHtml, this.descriptions, MetaProperty.description, true);
 
         this.icons = parent != null ? parent.getIcons() : new HashMap<Locale, String>();
-        this.fillMetaValues(this.document, templateHtml, this.icons, MetaProperty.icon, true);
+        this.fillMetaValues(tempHtml, this.icons, MetaProperty.icon, true);
 
-        String controllerClassStr = this.getMetaValue(this.document, templateHtml, MetaProperty.controller, true);
+        String controllerClassStr = this.getMetaValue(tempHtml, MetaProperty.controller, true);
         if (!StringUtils.isEmpty(controllerClassStr)) {
             Class<?> clazz = Class.forName(controllerClassStr);
             if (TemplateController.class.isAssignableFrom(clazz)) {
@@ -298,43 +269,43 @@ public abstract class HtmlTemplate
         }
 
         this.displayType = parent!=null ? parent.getDisplayType() : MetaDisplayType.DEFAULT;
-        String displayType = this.getMetaValue(this.document, templateHtml, MetaProperty.display, true);
+        String displayType = this.getMetaValue(tempHtml, MetaProperty.display, true);
         if (!StringUtils.isEmpty(displayType)) {
             this.displayType = MetaDisplayType.valueOf(displayType.toUpperCase());
         }
 
-        this.inlineStyleElements = getInlineStyles(this.document);
+        //NOTE: these eatItUp's will make sure the <script> and <style> tags in the body of the template are parsed too (and removed)
+        this.inlineStyleElements = getInlineStyles(tempHtml, true);
         if (parent!=null) {
             //this will keep the order: parents first, then this elements
             this.inlineStyleElements = Iterables.concat(parent.getAllInlineStyleElements(), this.inlineStyleElements);
         }
 
-        this.externalStyleElements = getExternalStyles(this.document);
+        this.externalStyleElements = getExternalStyles(tempHtml, true);
         if (parent!=null) {
             //this will keep the order: parents first, then this elements
             this.externalStyleElements = Iterables.concat(parent.getAllExternalStyleElements(), this.externalStyleElements);
         }
 
-        this.inlineScriptElements = getInlineScripts(this.document);
+        this.inlineScriptElements = getInlineScripts(tempHtml, true);
         if (parent!=null) {
             //this will keep the order: parents first, then this elements
             this.inlineScriptElements = Iterables.concat(parent.getAllInlineScriptElements(), this.inlineScriptElements);
         }
 
-        this.externalScriptElements = getExternalScripts(this.document);
+        this.externalScriptElements = getExternalScripts(tempHtml, true);
         if (parent!=null) {
             //this will keep the order: parents first, then this elements
             this.externalScriptElements = Iterables.concat(parent.getAllExternalScriptElements(), this.externalScriptElements);
         }
 
-        this.parent = parent;
-
-        //now save the (possibly altered) html source
-        this.html = new Source(templateHtml.toString());
+        //now save the (possibly altered) html source (and unwrap it in case of a tag template)
+        this.html = this.unwrapHtml(tempHtml, parent);
     }
+    protected abstract Segment unwrapHtml(OutputDocument document, HtmlTemplate parent);
 
     //-----PROTECTED METHODS-----
-    protected abstract OutputDocument doInitHtmlPreparsing(Source document, OutputDocument html, HtmlTemplate parent) throws IOException;
+    protected abstract OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate parent) throws IOException;
     protected void setAttributes(Map<String, String> attributes)
     {
         this.attributes = attributes;
@@ -372,9 +343,9 @@ public abstract class HtmlTemplate
     }
 
     //-----PRIVATE METHODS-----
-    private void fillMetaValues(Source source, OutputDocument output, Map<Locale, String> target, MetaProperty property, boolean eatItUp)
+    private void fillMetaValues(OutputDocument html, Map<Locale, String> target, MetaProperty property, boolean eatItUp)
     {
-        List<Element> metas = source.getAllElements("meta");
+        List<Element> metas = html.getSegment().getAllElements("meta");
         Iterator<Element> iter = metas.iterator();
         while (iter.hasNext()) {
             Element element = iter.next();
@@ -389,16 +360,16 @@ public abstract class HtmlTemplate
                 target.put(locale, value);
 
                 if (eatItUp) {
-                    output.remove(element);
+                    html.remove(element);
                 }
             }
         }
     }
-    private String getMetaValue(Source source, OutputDocument output, MetaProperty property, boolean eatItUp)
+    private String getMetaValue(OutputDocument output, MetaProperty property, boolean eatItUp)
     {
         String retVal = null;
 
-        List<Element> metas = source.getAllElements("meta");
+        List<Element> metas = output.getSegment().getAllElements("meta");
         Iterator<Element> iter = metas.iterator();
         while (retVal == null && iter.hasNext()) {
             Element element = iter.next();
@@ -418,6 +389,84 @@ public abstract class HtmlTemplate
     {
         return displayType;
     }
+    private Iterable<Element> getInlineStyles(OutputDocument html, boolean eatItUp)
+    {
+        Collection<Element> retVal = html.getSegment().getAllElements("style");
+
+        Iterator<Element> iter = retVal.iterator();
+        while (iter.hasNext()) {
+            Element element = iter.next();
+            if (eatItUp) {
+                //html.remove(retVal);
+                StringBuilder builder = new StringBuilder();
+                builder.append("#").append(TagTemplateInlineStyleResourceDirective.NAME).append("(").append(!eatItUp).append(",'")
+                       .append(HtmlTemplate.getResourceRoleScope(element)).append(",").append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(")").append(element.toString()).append("#end");
+                html.replace(element, builder.toString());
+            }
+        }
+
+        return retVal;
+    }
+    private Iterable<Element> getExternalStyles(OutputDocument html, boolean eatItUp)
+    {
+        List<Element> retVal = html.getSegment().getAllElements("rel", styleLinkRelAttrValue);
+        Iterator<Element> iter = retVal.iterator();
+        while (iter.hasNext()) {
+            Element element = iter.next();
+            if (!element.getName().equals("link")) {
+                iter.remove();
+            }
+            else if (eatItUp) {
+                //html.remove(el);
+                StringBuilder builder = new StringBuilder();
+                builder.append("#").append(TagTemplateExternalStyleResourceDirective.NAME).append("(").append(!eatItUp).append(",'").append(element.getAttributeValue("href")).append("','")
+                       .append(HtmlTemplate.getResourceRoleScope(element)).append("',").append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(")").append(element.toString()).append("#end");
+                html.replace(element, builder.toString());
+            }
+        }
+
+        return retVal;
+    }
+    private Iterable<Element> getInlineScripts(OutputDocument html, boolean eatItUp)
+    {
+        List<Element> retVal = html.getSegment().getAllElements("script");
+        Iterator<Element> iter = retVal.iterator();
+        while (iter.hasNext()) {
+            Element element = iter.next();
+            if (element.getAttributeValue("src") != null) {
+                iter.remove();
+            }
+            else if (eatItUp) {
+                //html.remove(el);
+                StringBuilder builder = new StringBuilder();
+                builder.append("#").append(TagTemplateInlineScriptResourceDirective.NAME).append("(").append(!eatItUp).append(",'")
+                       .append(HtmlTemplate.getResourceRoleScope(element)).append("',").append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(")").append(element.toString()).append("#end");
+                html.replace(element, builder.toString());
+            }
+        }
+
+        return retVal;
+    }
+    private Iterable<Element> getExternalScripts(OutputDocument html, boolean eatItUp)
+    {
+        List<Element> retVal = html.getSegment().getAllElements("script");
+        Iterator<Element> iter = retVal.iterator();
+        while (iter.hasNext()) {
+            Element element = iter.next();
+            if (element.getAttributeValue("src") == null) {
+                iter.remove();
+            }
+            else if (eatItUp) {
+                //html.remove(el);
+                StringBuilder builder = new StringBuilder();
+                builder.append("#").append(TagTemplateExternalScriptResourceDirective.NAME).append("(").append(!eatItUp).append(",'").append(element.getAttributeValue("src")).append("','")
+                       .append(HtmlTemplate.getResourceRoleScope(element)).append("',").append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(")").append(element.toString()).append("#end");
+                html.replace(element, builder.toString());
+            }
+        }
+
+        return retVal;
+    }
     public static PermissionRole getResourceRoleScope(Element resource)
     {
         PermissionRole retVal = PermissionsConfigurator.ROLE_GUEST;
@@ -430,6 +479,24 @@ public abstract class HtmlTemplate
         //possible that the above function re-fills it with null
         if (retVal == null) {
             retVal = PermissionsConfigurator.ROLE_GUEST;
+        }
+
+        return retVal;
+    }
+    public static ResourceScopeMode getResourceModeScope(Element resource)
+    {
+        ResourceScopeMode retVal = null;
+
+        Attribute scope = resource.getAttributes().get(RESOURCE_MODE_SCOPE_ATTRIBUTE);
+        if (scope == null) {
+            retVal = ResourceScopeMode.UNDEFINED;
+        }
+        else if (StringUtils.isEmpty(scope.getValue())) {
+            retVal = ResourceScopeMode.EMPTY;
+        }
+        else {
+            //this will throw an exception if nothing was found
+            retVal = ResourceScopeMode.valueOf(scope.getValue());
         }
 
         return retVal;
@@ -450,14 +517,28 @@ public abstract class HtmlTemplate
             return SecurityUtils.getSubject().hasRole(role.getRoleName());
         }
     }
-    private Iterable<Element> buildRoleScopeResourceIterator(Iterable<Element> elements)
+    public static boolean testResourceModeScope(ResourceScopeMode mode)
+    {
+        switch (mode) {
+            // if you specifically set the mode flag, test it
+            case edit:
+                return mode.equals(R.cacheManager().getRequestCache().get(CacheKeys.BLOCKS_MODE));
+
+            //in default mode (no specific mode set), we always display the resource since this is what you expect as a web developer
+            case EMPTY:
+            case UNDEFINED:
+            default:
+                return true;
+        }
+    }
+    private Iterable<Element> buildScopeResourceIterator(Iterable<Element> elements)
     {
         final Iterator iter = Iterators.filter(elements.iterator(), new Predicate<Element>()
         {
             @Override
             public boolean apply(Element element)
             {
-                return testResourceRoleScope(getResourceRoleScope(element));
+                return testResourceModeScope(getResourceModeScope(element)) && testResourceRoleScope(getResourceRoleScope(element));
             }
         });
 
