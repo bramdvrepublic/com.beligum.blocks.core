@@ -43,8 +43,9 @@ public class TagTemplateInlineScriptResourceDirective extends TagTemplateAbstrac
     public boolean render(InternalContextAdapter context, Writer writer, Node node) throws IOException, ResourceNotFoundException, ParseErrorException, MethodInvocationException
     {
         boolean print = (boolean) TagTemplateDirectiveUtils.readArg(context, node, 0);
-        PermissionRole roleScope = R.configuration().getSecurityConfig().lookupPermissionRole((String)TagTemplateDirectiveUtils.readArg(context, node, 1));
-        HtmlTemplate.ResourceScopeMode mode = HtmlTemplate.ResourceScopeMode.values()[(int)TagTemplateDirectiveUtils.readArg(context, node, 2)];
+        String unused = (String) TagTemplateDirectiveUtils.readArg(context, node, 1);
+        PermissionRole roleScope = R.configuration().getSecurityConfig().lookupPermissionRole((String)TagTemplateDirectiveUtils.readArg(context, node, 2));
+        HtmlTemplate.ResourceScopeMode mode = HtmlTemplate.ResourceScopeMode.values()[(int)TagTemplateDirectiveUtils.readArg(context, node, 3)];
         String element = TagTemplateDirectiveUtils.readValue(context, node);
 
         if (HtmlTemplate.testResourceRoleScope(roleScope) && HtmlTemplate.testResourceModeScope(mode)) {

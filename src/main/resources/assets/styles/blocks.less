@@ -90,7 +90,7 @@
 }
 
 //overloaded from elements.less to be able to specify the property
-.transition(@property: all, @duration:0.2s, @ease:ease-out) {
+.transition(@duration:0.2s, @ease:ease-out, @property: all) {
   -webkit-transition: @property @duration @ease;
   -moz-transition: @property @duration @ease;
   -o-transition: @property @duration @ease;
@@ -385,7 +385,7 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   width: @initSidebarWidth;
   //animates the width only when not DnD-ing (see js code)
   &.@{SIDEBAR_ANIMATED_CLASS} {
-    .transition(width, 0.2s, ease-in);
+    .transition(0.2s, ease-in, width);
   }
 
   .@{PAGE_SIDEBAR_RESIZE_CLASS} {
@@ -455,6 +455,10 @@ ul.@{BLOCK_ACTIONS_CLASS} {
     @sidebarPanelMargin: 10px;
     .panel {
       margin: @sidebarPanelMargin;
+
+      label {
+        font-weight: normal;
+      }
 
       .collapser {
         cursor: pointer;

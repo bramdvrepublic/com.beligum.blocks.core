@@ -2,7 +2,7 @@
  * Created by wouter on 8/07/15.
  */
 
-base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Sidebar, SidebarUtils)
+base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.core.Sidebar", "blocks.core.SidebarUtils", "base.core.Commons", function (Class, Sidebar, SidebarUtils, Commons)
 {
     var MediumEditorExtensions = this;
 
@@ -114,10 +114,11 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.co
         //-----PRIVATE FUNCTIONS-----
         _createButtonElement: function ()
         {
+            var id = Commons.generateId();
             var button = $('<div class="dropdown btn-group medium-editor-action"/>');
-            var toggle = $('<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Style <span class="caret"></span></button>');
+            var toggle = $('<button id="' + id + '" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Style <span class="caret"></span></button>');
 
-            var styles = $('<ul class="dropdown-menu"/>');
+            var styles = $('<ul class="dropdown-menu" aria-labelledby="' + id + '"/>');
 
             for (var i = 0; i < this.editorStyles.length; i++) {
                 var val = this.editorStyles[i];
@@ -136,6 +137,9 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.co
                     btn.click(btn.attr(MediumEditorExtensions.StylesPicker.VALUE_ATTR), function (event)
                     {
                         this._onSelect(event.data);
+
+                        //close the dropdown on click, apparently this didn't work automatically...
+                        $('#'+id).dropdown("toggle");
                     }.bind(this));
 
                     styles.append($('<li></li>').append(btn));

@@ -29,6 +29,11 @@ public class PageTemplate extends HtmlTemplate
 
     //-----PROTECTED METHODS-----
     @Override
+    protected Segment getTemplateHtml()
+    {
+        return this.html;
+    }
+    @Override
     protected OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate parent) throws IOException
     {
         // note that it doesn't really make sense to do something with the parent here;
@@ -53,10 +58,10 @@ public class PageTemplate extends HtmlTemplate
         return document;
     }
     @Override
-    protected Segment unwrapHtml(OutputDocument document, HtmlTemplate parent)
+    protected void saveHtml(OutputDocument document, HtmlTemplate parent)
     {
         //NOOP
-        return new Source(document.toString());
+        this.html = new Source(document.toString());
     }
 
     //-----PRIVATE METHODS-----

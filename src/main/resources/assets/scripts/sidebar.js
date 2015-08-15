@@ -93,17 +93,25 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 windowTitle = title + '<i class="fa fa-fw fa-angle-right"/>' + blockTitle;
             }
 
+            //we'll expand all windows by default, except the row
+            var collapsed = false;
+            if (e.block instanceof blocks.elements.Row) {
+                collapsed = true;
+            }
+            //if we're showing the controls for a block, close the window panel
+            else if (block instanceof blocks.elements.Block && e.block instanceof blocks.elements.Page) {
+                collapsed = true;
+            }
+
             // if a parent stopped the creation of sub-windows, keep executing the focus() method,
             // but without a window ID (allowing for logic without UI consequences)
-            var windowID = SideBar.createWindow(e.element, windowTitle);
+            var windowID = SideBar.createWindow(e.element, windowTitle, collapsed);
             var addedOptions = false;
 
             // don't render the remove button for properties: only blocks can be deleted
-            if (!isRealProperty && e.block instanceof blocks.elements.Block && windowID) {
-                if (e.block.canDrag) {
-                    this.addRemoveBlockButton(windowID, e.block);
-                    addedOptions = true;
-                }
+            if (!isRealProperty && e.block instanceof blocks.elements.Block && e.block.canDrag && windowID) {
+                this.addRemoveBlockButton(windowID, e.block);
+                addedOptions = true;
             }
 
             if (widget) {
@@ -187,7 +195,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     {
         //var remove = $("<div class='panel panel-default "+ Constants.REMOVE_BLOCK_CLASS +"'/>");
         var blockActions = $("<ul/>").addClass(Constants.BLOCK_ACTIONS_CLASS);
-        var removeAction = $("<li><span>Remove block</span></li>");
+        var removeAction = $("<li><label>Remove block</label></li>");
         var removeButton = $("<a class='btn btn-danger btn-sm pull-right'><i class='fa fa-fw fa-trash-o'></i></a>");
         blockActions.append(removeAction);
         removeAction.append(removeButton);
@@ -218,7 +226,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         }
     };
 
-    this.createWindow = function (element, title)
+    this.createWindow = function (element, title, collapsed)
     {
         var windowId = Commons.generateId();
         if (configPanels == null) {
@@ -227,11 +235,12 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
         if (configPanels[windowId] == null) {
 
-            var bodyId = windowId+'-body';
-            var div = $('<div id="'+windowId+'" class="panel panel-default"/>');
-            var header = $('<div class="panel-heading collapser" data-toggle="collapse" data-target="#'+bodyId+'" aria-expanded="true" aria-controls="'+bodyId+'">' + title + '</div>').appendTo(div);
+            var panelId = windowId+'-panel';
+            var bodyId = windowId+'-panel-body';
+            var div = $('<div id="'+panelId+'" class="panel panel-default"/>');
+            var header = $('<div class="panel-heading collapser" data-toggle="collapse" data-target="#'+bodyId+'" aria-expanded="'+(collapsed?'false':'true')+'" aria-controls="'+bodyId+'">' + title + '</div>').appendTo(div);
             // note: the "in" makes it start unfolded
-            var collapse = $('<div id="'+bodyId+'" class="collapse in" role="tabpanel">').appendTo(div);
+            var collapse = $('<div id="'+bodyId+'" class="collapse '+(collapsed?'':'in')+'" role="tabpanel">').appendTo(div);
             var content = $('<div class="panel-body"/>').appendTo(collapse);
 
             configPanels[windowId] = div;

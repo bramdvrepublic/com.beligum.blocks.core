@@ -248,7 +248,7 @@ public abstract class HtmlTemplate
 
         //INIT THE HTML
         //note: this should take the parent into account
-        OutputDocument tempHtml = this.doInitHtmlPreparsing(new OutputDocument(source),  parent);
+        OutputDocument tempHtml = this.doInitHtmlPreparsing(new OutputDocument(source), parent);
 
         //Note that we need to eat these values for PageTemplates because we don't want them to end up at the client side (no problem for TagTemplates)
         this.titles = parent != null ? parent.getTitles() : new HashMap<Locale, String>();
@@ -275,42 +275,26 @@ public abstract class HtmlTemplate
             this.controllerClass = parent.getControllerClass();
         }
 
-        this.displayType = parent!=null ? parent.getDisplayType() : MetaDisplayType.DEFAULT;
+        this.displayType = parent != null ? parent.getDisplayType() : MetaDisplayType.DEFAULT;
         String displayType = this.getMetaValue(tempHtml, MetaProperty.display, true);
         if (!StringUtils.isEmpty(displayType)) {
             this.displayType = MetaDisplayType.valueOf(displayType.toUpperCase());
         }
 
-        //NOTE: these eatItUp's will make sure the <script> and <style> tags in the body of the template are parsed too (and removed)
-        final boolean eatItUp = true;
-        this.inlineStyleElements = getInlineStyles(tempHtml, eatItUp);
-        if (parent!=null) {
-            //this will keep the order: parents first, then this elements
-            this.inlineStyleElements = Iterables.concat(parent.getAllInlineStyleElements(), this.inlineStyleElements);
-        }
-
-        this.externalStyleElements = getExternalStyles(tempHtml, eatItUp);
-        if (parent!=null) {
-            //this will keep the order: parents first, then this elements
-            this.externalStyleElements = Iterables.concat(parent.getAllExternalStyleElements(), this.externalStyleElements);
-        }
-
-        this.inlineScriptElements = getInlineScripts(tempHtml, eatItUp);
-        if (parent!=null) {
-            //this will keep the order: parents first, then this elements
-            this.inlineScriptElements = Iterables.concat(parent.getAllInlineScriptElements(), this.inlineScriptElements);
-        }
-
-        this.externalScriptElements = getExternalScripts(tempHtml, eatItUp);
-        if (parent!=null) {
-            //this will keep the order: parents first, then this elements
-            this.externalScriptElements = Iterables.concat(parent.getAllExternalScriptElements(), this.externalScriptElements);
-        }
+        this.inlineStyleElements = getInlineStyles(tempHtml, parent != null ? parent.getAllInlineStyleElements() : null);
+        this.externalStyleElements = getExternalStyles(tempHtml, parent != null ? parent.getAllExternalStyleElements() : null);
+        this.inlineScriptElements = getInlineScripts(tempHtml, parent != null ? parent.getAllInlineScriptElements() : null);
+        this.externalScriptElements = getExternalScripts(tempHtml, parent != null ? parent.getAllExternalScriptElements() : null);
 
         //now save the (possibly altered) html source (and unwrap it in case of a tag template)
-        this.html = this.unwrapHtml(tempHtml, parent);
+        this.saveHtml(tempHtml, parent);
     }
-    protected abstract Segment unwrapHtml(OutputDocument document, HtmlTemplate parent);
+    protected abstract void saveHtml(OutputDocument document, HtmlTemplate parent);
+
+    /**
+     * @return only the html inside the <template> tag (or the entire html in case of Page Templates)
+     */
+    protected abstract Segment getTemplateHtml();
 
     //-----PROTECTED METHODS-----
     protected abstract OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate parent) throws IOException;
@@ -397,83 +381,111 @@ public abstract class HtmlTemplate
     {
         return displayType;
     }
-    private Iterable<Element> getInlineStyles(OutputDocument html, boolean eatItUp)
+    private Iterable<Element> getInlineStyles(OutputDocument html, Iterable<Element> parentElements)
     {
-        Collection<Element> retVal = html.getSegment().getAllElements("style");
+        Iterable<Element> retVal = html.getSegment().getAllElements("style");
 
         Iterator<Element> iter = retVal.iterator();
         while (iter.hasNext()) {
             Element element = iter.next();
-            if (eatItUp) {
-                //html.remove(retVal);
-                StringBuilder builder = new StringBuilder();
-                builder.append("#").append(TagTemplateInlineStyleResourceDirective.NAME).append("(").append(!eatItUp).append(",'")
-                       .append(HtmlTemplate.getResourceRoleScope(element)).append(",").append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(")").append(element.toString()).append("#end");
-                html.replace(element, builder.toString());
+            //html.remove(retVal);
+            html.replace(element, buildResourceHtml(TagTemplateInlineStyleResourceDirective.NAME, element, null));
+        }
+
+        if (parentElements!=null) {
+            for (Element element : parentElements) {
+                html.insert(0, buildResourceHtml(TagTemplateInlineStyleResourceDirective.NAME, element, null));
             }
+            retVal = Iterables.concat(parentElements, retVal);
         }
 
         return retVal;
     }
-    private Iterable<Element> getExternalStyles(OutputDocument html, boolean eatItUp)
+    private Iterable<Element> getExternalStyles(OutputDocument html, Iterable<Element> parentElements)
     {
-        List<Element> retVal = html.getSegment().getAllElements("rel", styleLinkRelAttrValue);
+        Iterable<Element> retVal = html.getSegment().getAllElements("rel", styleLinkRelAttrValue);
+
         Iterator<Element> iter = retVal.iterator();
         while (iter.hasNext()) {
             Element element = iter.next();
             if (!element.getName().equals("link")) {
                 iter.remove();
             }
-            else if (eatItUp) {
+            else {
                 //html.remove(el);
-                StringBuilder builder = new StringBuilder();
-                builder.append("#").append(TagTemplateExternalStyleResourceDirective.NAME).append("(").append(!eatItUp).append(",'").append(element.getAttributeValue("href")).append("','")
-                       .append(HtmlTemplate.getResourceRoleScope(element)).append("',").append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(")").append(element.toString()).append("#end");
-                html.replace(element, builder.toString());
+                html.replace(element, buildResourceHtml(TagTemplateExternalStyleResourceDirective.NAME, element, element.getAttributeValue("href")));
             }
+        }
+
+        if (parentElements!=null) {
+            for (Element element : parentElements) {
+                html.insert(0, buildResourceHtml(TagTemplateExternalStyleResourceDirective.NAME, element, element.getAttributeValue("href")));
+            }
+            retVal = Iterables.concat(parentElements, retVal);
         }
 
         return retVal;
     }
-    private Iterable<Element> getInlineScripts(OutputDocument html, boolean eatItUp)
+    private Iterable<Element> getInlineScripts(OutputDocument html, Iterable<Element> parentElements)
     {
-        List<Element> retVal = html.getSegment().getAllElements("script");
+        Iterable<Element> retVal = html.getSegment().getAllElements("script");
+
         Iterator<Element> iter = retVal.iterator();
         while (iter.hasNext()) {
             Element element = iter.next();
             if (element.getAttributeValue("src") != null) {
                 iter.remove();
             }
-            else if (eatItUp) {
+            else {
                 //html.remove(el);
-                StringBuilder builder = new StringBuilder();
-                builder.append("#").append(TagTemplateInlineScriptResourceDirective.NAME).append("(").append(!eatItUp).append(",'")
-                       .append(HtmlTemplate.getResourceRoleScope(element)).append("',").append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(")").append(element.toString()).append("#end");
-                html.replace(element, builder.toString());
+                html.replace(element, buildResourceHtml(TagTemplateInlineScriptResourceDirective.NAME, element, null));
             }
+        }
+
+        if (parentElements!=null) {
+            for (Element element : parentElements) {
+                html.insert(0, buildResourceHtml(TagTemplateInlineScriptResourceDirective.NAME, element, null));
+            }
+            retVal = Iterables.concat(parentElements, retVal);
         }
 
         return retVal;
     }
-    private Iterable<Element> getExternalScripts(OutputDocument html, boolean eatItUp)
+    private Iterable<Element> getExternalScripts(OutputDocument html, Iterable<Element> parentElements)
     {
-        List<Element> retVal = html.getSegment().getAllElements("script");
+        Iterable<Element> retVal = html.getSegment().getAllElements("script");
+
         Iterator<Element> iter = retVal.iterator();
         while (iter.hasNext()) {
             Element element = iter.next();
             if (element.getAttributeValue("src") == null) {
                 iter.remove();
             }
-            else if (eatItUp) {
+            else {
                 //html.remove(el);
-                StringBuilder builder = new StringBuilder();
-                builder.append("#").append(TagTemplateExternalScriptResourceDirective.NAME).append("(").append(!eatItUp).append(",'").append(element.getAttributeValue("src")).append("','")
-                       .append(HtmlTemplate.getResourceRoleScope(element)).append("',").append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(")").append(element.toString()).append("#end");
-                html.replace(element, builder.toString());
+                html.replace(element, buildResourceHtml(TagTemplateExternalScriptResourceDirective.NAME, element, element.getAttributeValue("src")));
             }
         }
 
+        if (parentElements!=null) {
+            for (Element element : parentElements) {
+                html.insert(0, buildResourceHtml(TagTemplateExternalScriptResourceDirective.NAME, element, element.getAttributeValue("src")));
+            }
+            retVal = Iterables.concat(parentElements, retVal);
+        }
+
         return retVal;
+    }
+    private String buildResourceHtml(String directive, Element element, String attr)
+    {
+        final boolean print = false;
+        StringBuilder builder = new StringBuilder();
+
+        builder.append("#").append(directive).append("(").append(print).append(",'").append(attr).append("','")
+               .append(HtmlTemplate.getResourceRoleScope(element)).append("',").append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(")").append(element.toString())
+               .append("#end").append("\n");
+
+        return builder.toString();
     }
     public static PermissionRole getResourceRoleScope(Element resource)
     {

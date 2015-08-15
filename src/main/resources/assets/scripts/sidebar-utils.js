@@ -495,7 +495,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
         var content = $('<div class="form-group" />');
         content.append($('<label for="' + id + '">' + labelText + '</label>'));
         var dropdown = $('<div class="dropdown"/>').appendTo(content);
-        var button = $('<button class="btn btn-default dropdown-toggle" type="button" id="' + id + '" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true"><span class="text">-----</span>&#160;<span class="caret"></span></button>').appendTo(dropdown);
+        var button = $('<button id="' + id + '" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="btn btn-default dropdown-toggle"><span class="text">-----</span>&#160;<span class="caret"></span></button>').appendTo(dropdown);
 
         // Create values inside selectbox and see which one to select
         var classFound = false;
@@ -520,8 +520,11 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
                 $(this).parents("li").addClass("active");
 
                 if (changeCallback) {
-                    changeCallback(oldValue, newValue);
+                    changeCallback(oldValue, newValue, event);
                 }
+
+                //close the dropdown on click, apparently this didn't work automatically...
+                $('#'+id).dropdown("toggle");
             });
 
             if (initCallback) {

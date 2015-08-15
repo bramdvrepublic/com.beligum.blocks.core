@@ -19,6 +19,7 @@ public class TagTemplate extends HtmlTemplate
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    private Segment templateHtml;
 
     //-----CONSTRUCTORS-----
     protected TagTemplate(String templateName, Source document, Path absolutePath, Path relativePath, HtmlTemplate parent) throws Exception
@@ -35,6 +36,11 @@ public class TagTemplate extends HtmlTemplate
 
     //-----PROTECTED METHODS-----
     @Override
+    protected Segment getTemplateHtml()
+    {
+        return this.templateHtml;
+    }
+    @Override
     protected OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate parent) throws IOException
     {
         List<Element> templateElements = document.getSegment().getAllElements("template");
@@ -42,7 +48,7 @@ public class TagTemplate extends HtmlTemplate
         // Note that there always needs to be a <template> tag to indicate this is a template
         if (templateElements != null && !templateElements.isEmpty()) {
             if (templateElements.size() > 1) {
-                throw new IOException("Encountered tag template with more than one <template> tags ("+templateElements.size()+"); " + absolutePath);
+                throw new IOException("Encountered tag template with more than one <template> tags (" + templateElements.size() + "); " + absolutePath);
             }
 
             Element templateTag = templateElements.get(0);
@@ -50,10 +56,10 @@ public class TagTemplate extends HtmlTemplate
             //FIRST, parse the attributes
             //we'll merge the attributes of the <template> tag from the parent, but let them be overridden by this child template
             Map<String, String> attrs = new LinkedHashMap<>();
-            if (parent!=null && parent.getAttributes()!=null) {
+            if (parent != null && parent.getAttributes() != null) {
                 attrs = parent.getAttributes();
             }
-            if (templateTag.getAttributes()!=null) {
+            if (templateTag.getAttributes() != null) {
                 //note that populate just does a put() so this works well to override the parent properties
                 templateTag.getAttributes().populateMap(attrs, true);
             }
@@ -66,7 +72,7 @@ public class TagTemplate extends HtmlTemplate
         return document;
     }
     @Override
-    protected Segment unwrapHtml(OutputDocument document, HtmlTemplate parent)
+    protected void saveHtml(OutputDocument document, HtmlTemplate parent)
     {
         Segment retVal = null;
 
@@ -77,24 +83,33 @@ public class TagTemplate extends HtmlTemplate
         //note that we already checked there's exactly one <template> tag
         Element templateTag = documentSource.getFirstElement("template");
 
+        //now we want to unwrap the <template> tag
+        // note that it's not enough to return the content of that tag,
+        // because we want to keep the wrapped resources outside the template too...
+        OutputDocument htmlDoc = new OutputDocument(documentSource);
+
         //this checks if the template tag is there pro-forma (just to make it a template file)
-        //if the <template> tag is empty and we have a parent, inherit the content from the parent
+        //if the <template> tag is empty and we have a parent, inherit the content from the parent <template> tag
         //note that .isEmpty() also returns true when the element has attributes
-        if (templateTag.isEmpty() && parent!=null) {
-            retVal = parent.getHtml();
+        //note that we already copied over the styles and scripts in the init() method
+        if (templateTag.isEmpty() && parent != null) {
+            this.templateHtml = parent.getTemplateHtml();
+
+            htmlDoc.replace(templateTag, this.templateHtml);
         }
         else {
-            //now we want to unwrap the <template> tag
-            // note that it's not enough to return the content of that tag,
-            // because we want to keep the wrapped resources outside the template too...
-            OutputDocument htmlDoc = new OutputDocument(documentSource);
-            htmlDoc.replace(templateTag, templateTag.getContent());
+            this.templateHtml = templateTag.getContent();
 
-            //and now, wrap it in a source again...
-            retVal = new Source(htmlDoc.toString());
+            htmlDoc.replace(templateTag, this.templateHtml);
         }
 
-        return retVal;
+        //and now, wrap it in a source again...
+        retVal = new Source(htmlDoc.toString());
+
+        //not really needed
+        //retVal = new Source(new SourceFormatter(retVal).setCollapseWhiteSpace(true).toString());
+
+        this.html = retVal;
     }
 
     //-----PRIVATE METHODS-----
