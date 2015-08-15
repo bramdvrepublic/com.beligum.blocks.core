@@ -16,6 +16,7 @@ public class TemplateContextMap implements com.beligum.base.templating.ifaces.Te
 {
     //-----CONSTANTS-----
     public static final String TAG_TEMPLATE_PROPERTIES_VARIABLE = "property";
+    public static final String TAG_TEMPLATE_TEMPLATE_VARIABLE = "template";
     public static final String TAG_TEMPLATE_CONTROLLER_VARIABLE = "controller";
     public static final String TEMPLATE_STACK_VARIABLE = "controllerStack";
 

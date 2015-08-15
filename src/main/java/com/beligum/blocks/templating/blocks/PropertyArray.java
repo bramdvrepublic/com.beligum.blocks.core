@@ -36,6 +36,7 @@ public class PropertyArray<E> extends ArrayList<E>
         String retVal = "";
 
         if (this.writeCounter < 1) {
+            //will use the overloaded toString() below
             retVal = this.toString();
             this.writeCounter++;
         }

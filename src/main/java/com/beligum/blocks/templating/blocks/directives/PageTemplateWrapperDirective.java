@@ -72,14 +72,14 @@ public class PageTemplateWrapperDirective extends Directive
     {
         boolean retVal = node.jjtGetChild(0).render(context, writer);
 
-        List<TemplateResourcesDirective.WriterBufferReference> inserts = (List<TemplateResourcesDirective.WriterBufferReference>) context.get(TemplateResourcesDirective.RESOURCES_INSERTS);
+        List<WriterBufferReference> inserts = (List<WriterBufferReference>) context.get(TemplateResourcesDirective.RESOURCES_INSERTS);
         if (inserts!=null) {
             StringBuffer buffer = ((StringWriter) writer).getBuffer();
             TemplateResources resources = TemplateResourcesDirective.getContextResources(context);
 
             //note: we need to move along with the previously inserted char count
             int insertedChars = 0;
-            for (TemplateResourcesDirective.WriterBufferReference ref : inserts) {
+            for (WriterBufferReference ref : inserts) {
 
                 switch (ref.getType()) {
                     case inlineStyles:

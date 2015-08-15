@@ -30,12 +30,27 @@ public abstract class HtmlTemplate
     //-----CONSTANTS-----
     //this is the prefix to use in the <meta property="prefix:your-name" value="value comes here" > so that it doesn't get sent to the client
     public static final String BLOCKS_META_TAG_PROPERTY_PREFIX = "blocks:";
-    /**
-     * These are the names of first folders that won't be taken into account when building the name of the element
-     * Eg. /imports/blocks/test/tag.html will have the name "blocks-test-tag"
-     */
-    protected static String[] INVISIBLE_START_FOLDERS = { "import", "imports" };
-    protected static final Pattern styleLinkRelAttrValue = Pattern.compile("stylesheet");
+
+    // controls if the <script> or <style> tag needs to be included in the rendering
+    // use it like this: <script data-scope-role="admin"> to eg. only include the script when and ADMIN-role is logged in
+    // Role names are the same ones we use for Shiro
+    public static final String ATTRIBUTE_RESOURCE_ROLE_SCOPE = "data-scope-role";
+
+    //set to 'edit' if you only want the resource to be included if the $BLOCKS_MODE variable is set
+    public static final String ATTRIBUTE_RESOURCE_MODE_SCOPE = "data-scope-mode";
+
+    // set this attribute on an instance to not render the tag itself, but mimic another tag name
+    // (eg <blocks-text data-render-tag="div"> to render out a <div> instead of a <blocks-text>)
+    // Beware: this will make the tag's direction server-to-client only!!
+    //NOTE: if this is set to empty, don't render the tag (and it's attributes) at all
+    public static final String ATTRIBUTE_RENDER_TAG = "data-render-tag";
+
+    public enum ResourceScopeMode
+    {
+        UNDEFINED,
+        EMPTY,
+        edit
+    }
 
     public enum MetaProperty
     {
@@ -52,18 +67,12 @@ public abstract class HtmlTemplate
         HIDDEN
     }
 
-    // controls if the <script> or <style> tag needs to be included in the rendering
-    // use it like this: <script data-scope-role="admin"> to eg. only include the script when and ADMIN-role is logged in
-    // Role names are the same ones we use for Shiro
-    public static final String RESOURCE_ROLE_SCOPE_ATTRIBUTE = "data-scope-role";
-    //set to 'edit' if you only want the resource to be included if the $BLOCKS_MODE variable is set
-    public static final String RESOURCE_MODE_SCOPE_ATTRIBUTE = "data-scope-mode";
-    public enum ResourceScopeMode
-    {
-        UNDEFINED,
-        EMPTY,
-        edit
-    }
+    /**
+     * These are the names of first folders that won't be taken into account when building the name of the element
+     * Eg. /imports/blocks/test/tag.html will have the name "blocks-test-tag"
+     */
+    protected static String[] INVISIBLE_START_FOLDERS = { "import", "imports" };
+    protected static final Pattern styleLinkRelAttrValue = Pattern.compile("stylesheet");
 
     //-----VARIABLES-----
     protected Segment html;
@@ -121,9 +130,7 @@ public abstract class HtmlTemplate
     }
 
     /**
-     * Controls if we need to wrap the instance with the <template-name></template-name> tag or not (eg. for page templates, we don't want this)
-     *
-     * @return
+     * Controls if we need to wrap the instance with the <template-name></template-name> tag or not (eg. for page templates, we don't want tturn
      */
     public abstract boolean renderTemplateTag();
 
@@ -264,7 +271,7 @@ public abstract class HtmlTemplate
             }
         }
         //parent controller is the backup if this child doesn't have one
-        if (this.controllerClass==null && parent!=null) {
+        if (this.controllerClass == null && parent != null) {
             this.controllerClass = parent.getControllerClass();
         }
 
@@ -275,25 +282,26 @@ public abstract class HtmlTemplate
         }
 
         //NOTE: these eatItUp's will make sure the <script> and <style> tags in the body of the template are parsed too (and removed)
-        this.inlineStyleElements = getInlineStyles(tempHtml, true);
+        final boolean eatItUp = true;
+        this.inlineStyleElements = getInlineStyles(tempHtml, eatItUp);
         if (parent!=null) {
             //this will keep the order: parents first, then this elements
             this.inlineStyleElements = Iterables.concat(parent.getAllInlineStyleElements(), this.inlineStyleElements);
         }
 
-        this.externalStyleElements = getExternalStyles(tempHtml, true);
+        this.externalStyleElements = getExternalStyles(tempHtml, eatItUp);
         if (parent!=null) {
             //this will keep the order: parents first, then this elements
             this.externalStyleElements = Iterables.concat(parent.getAllExternalStyleElements(), this.externalStyleElements);
         }
 
-        this.inlineScriptElements = getInlineScripts(tempHtml, true);
+        this.inlineScriptElements = getInlineScripts(tempHtml, eatItUp);
         if (parent!=null) {
             //this will keep the order: parents first, then this elements
             this.inlineScriptElements = Iterables.concat(parent.getAllInlineScriptElements(), this.inlineScriptElements);
         }
 
-        this.externalScriptElements = getExternalScripts(tempHtml, true);
+        this.externalScriptElements = getExternalScripts(tempHtml, eatItUp);
         if (parent!=null) {
             //this will keep the order: parents first, then this elements
             this.externalScriptElements = Iterables.concat(parent.getAllExternalScriptElements(), this.externalScriptElements);
@@ -471,7 +479,7 @@ public abstract class HtmlTemplate
     {
         PermissionRole retVal = PermissionsConfigurator.ROLE_GUEST;
 
-        Attribute scope = resource.getAttributes().get(RESOURCE_ROLE_SCOPE_ATTRIBUTE);
+        Attribute scope = resource.getAttributes().get(ATTRIBUTE_RESOURCE_ROLE_SCOPE);
         if (scope != null && !StringUtils.isEmpty(scope.getValue())) {
             retVal = R.configuration().getSecurityConfig().lookupPermissionRole(scope.getValue());
         }
@@ -487,7 +495,7 @@ public abstract class HtmlTemplate
     {
         ResourceScopeMode retVal = null;
 
-        Attribute scope = resource.getAttributes().get(RESOURCE_MODE_SCOPE_ATTRIBUTE);
+        Attribute scope = resource.getAttributes().get(ATTRIBUTE_RESOURCE_MODE_SCOPE);
         if (scope == null) {
             retVal = ResourceScopeMode.UNDEFINED;
         }

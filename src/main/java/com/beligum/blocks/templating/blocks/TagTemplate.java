@@ -18,6 +18,8 @@ public class TagTemplate extends HtmlTemplate
 {
     //-----CONSTANTS-----
 
+    //-----VARIABLES-----
+
     //-----CONSTRUCTORS-----
     protected TagTemplate(String templateName, Source document, Path absolutePath, Path relativePath, HtmlTemplate parent) throws Exception
     {

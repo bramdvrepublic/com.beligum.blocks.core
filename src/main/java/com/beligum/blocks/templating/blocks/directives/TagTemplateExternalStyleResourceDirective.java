@@ -11,6 +11,7 @@ import org.apache.velocity.exception.ResourceNotFoundException;
 import org.apache.velocity.runtime.parser.node.Node;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.Writer;
 
 /**
@@ -48,7 +49,7 @@ public class TagTemplateExternalStyleResourceDirective extends TagTemplateAbstra
         String element = TagTemplateDirectiveUtils.readValue(context, node);
 
         if (HtmlTemplate.testResourceRoleScope(roleScope) && HtmlTemplate.testResourceModeScope(mode)) {
-            TemplateResourcesDirective.getContextResources(context).addExternalStyle(print, href, element);
+            boolean added = TemplateResourcesDirective.getContextResources(context).addExternalStyle(print, href, element, (StringWriter) writer);
             if (print) {
                 writer.write(element);
             }

@@ -2,6 +2,7 @@ package com.beligum.blocks.templating.blocks;
 
 import com.google.common.collect.Iterators;
 
+import java.io.StringWriter;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -96,21 +97,21 @@ public class TemplateResources
             }
         };
     }
-    public void addInlineStyle(boolean print, String value)
+    public boolean addInlineStyle(boolean print, String value, StringWriter writer)
     {
-        this.addResource(print, new InlineStyle(value), this.styles);
+        return this.addResource(print, new InlineStyle(value, writer.getBuffer().length()), this.styles);
     }
-    public void addExternalStyle(boolean print, String href, String element)
+    public boolean addExternalStyle(boolean print, String href, String element, StringWriter writer)
     {
-        this.addResource(print, new ExternalStyle(href, element), this.styles);
+        return this.addResource(print, new ExternalStyle(href, element, writer.getBuffer().length()), this.styles);
     }
-    public void addInlineScript(boolean print, String value)
+    public boolean addInlineScript(boolean print, String value, StringWriter writer)
     {
-        this.addResource(print, new InlineScript(value), this.scripts);
+        return this.addResource(print, new InlineScript(value, writer.getBuffer().length()), this.scripts);
     }
-    public void addExternalScript(boolean print, String src, String element)
+    public boolean addExternalScript(boolean print, String src, String element, StringWriter writer)
     {
-        this.addResource(print, new ExternalScript(src, element), this.scripts);
+        return this.addResource(print, new ExternalScript(src, element, writer.getBuffer().length()), this.scripts);
     }
 
     //-----PROTECTED METHODS-----
@@ -120,9 +121,12 @@ public class TemplateResources
      * @param print Controls wether we print out the value to the output stream, or just eat it up for future use
      * @param res
      * @param set
+     * @return returns true if the resource was actually added, false it it was already there (and thus skipped)
      */
-    private void addResource(boolean print, Resource res, Set<Resource> set)
+    private boolean addResource(boolean print, Resource res, Set<Resource> set)
     {
+        boolean retVal = !set.contains(res);
+
         if (print) {
             this.printedResources.add(res);
             // remove it from the set if it's there
@@ -132,6 +136,8 @@ public class TemplateResources
         else if (!this.printedResources.contains(res)) {
             set.add(res);
         }
+
+        return retVal;
     }
 
     //-----PRIVATE CLASSES-----
@@ -141,15 +147,18 @@ public class TemplateResources
         protected String equalsValue;
         //this is the publicly accessible value
         protected String value;
+        //this is the position in the output writer the resource should be written (if not handled otherwise)
+        protected int bufferPosition;
 
-        protected Resource(String value)
+        protected Resource(String value, int bufferPosition)
         {
-            this(value, value);
+            this(value, value, bufferPosition);
         }
-        protected Resource(String equalsValue, String value)
+        protected Resource(String equalsValue, String value, int bufferPosition)
         {
             this.equalsValue = equalsValue;
             this.value = value;
+            this.bufferPosition = bufferPosition;
         }
 
         public String getValue()
@@ -183,30 +192,30 @@ public class TemplateResources
     }
     public class InlineStyle extends Resource
     {
-        public InlineStyle(String value)
+        public InlineStyle(String value, int bufferPosition)
         {
-            super(value);
+            super(value, bufferPosition);
         }
     }
     public class ExternalStyle extends Resource
     {
-        public ExternalStyle(String href, String element)
+        public ExternalStyle(String href, String element, int bufferPosition)
         {
-            super(href, element);
+            super(href, element, bufferPosition);
         }
     }
     public class InlineScript extends Resource
     {
-        public InlineScript(String value)
+        public InlineScript(String value, int bufferPosition)
         {
-            super(value);
+            super(value, bufferPosition);
         }
     }
     public class ExternalScript extends Resource
     {
-        public ExternalScript(String src, String element)
+        public ExternalScript(String src, String element, int bufferPosition)
         {
-            super(src, element);
+            super(src, element, bufferPosition);
         }
     }
 }

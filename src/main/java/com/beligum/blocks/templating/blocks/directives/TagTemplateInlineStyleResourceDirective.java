@@ -11,6 +11,7 @@ import org.apache.velocity.exception.ResourceNotFoundException;
 import org.apache.velocity.runtime.parser.node.Node;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.Writer;
 
 /**
@@ -44,10 +45,11 @@ public class TagTemplateInlineStyleResourceDirective extends TagTemplateAbstract
         boolean print = (boolean) TagTemplateDirectiveUtils.readArg(context, node, 0);
         PermissionRole roleScope = R.configuration().getSecurityConfig().lookupPermissionRole((String)TagTemplateDirectiveUtils.readArg(context, node, 1));
         HtmlTemplate.ResourceScopeMode mode = HtmlTemplate.ResourceScopeMode.values()[(int)TagTemplateDirectiveUtils.readArg(context, node, 2)];
+
         String element = TagTemplateDirectiveUtils.readValue(context, node);
 
         if (HtmlTemplate.testResourceRoleScope(roleScope) && HtmlTemplate.testResourceModeScope(mode)) {
-            TemplateResourcesDirective.getContextResources(context).addInlineStyle(print, element);
+            boolean added = TemplateResourcesDirective.getContextResources(context).addInlineStyle(print, element, (StringWriter) writer);
             if (print) {
                 writer.write(element);
             }

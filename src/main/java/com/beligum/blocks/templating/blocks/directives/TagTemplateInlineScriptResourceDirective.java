@@ -11,6 +11,7 @@ import org.apache.velocity.exception.ResourceNotFoundException;
 import org.apache.velocity.runtime.parser.node.Node;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.Writer;
 
 /**
@@ -47,7 +48,7 @@ public class TagTemplateInlineScriptResourceDirective extends TagTemplateAbstrac
         String element = TagTemplateDirectiveUtils.readValue(context, node);
 
         if (HtmlTemplate.testResourceRoleScope(roleScope) && HtmlTemplate.testResourceModeScope(mode)) {
-            TemplateResourcesDirective.getContextResources(context).addInlineScript(print, element);
+            boolean added = TemplateResourcesDirective.getContextResources(context).addInlineScript(print, element, (StringWriter) writer);
             if (print) {
                 writer.write(element);
             }

@@ -134,25 +134,5 @@ public class TemplateResourcesDirective extends Directive
     //-----PRIVATE METHODS-----
 
     //-----PRIVATE CLASSES-----
-    public static class WriterBufferReference
-    {
-        private Argument type;
-        private int writerBufferPosition = -1;
 
-        public WriterBufferReference(Argument type, StringWriter writer)
-        {
-            //we save the position so we can insert right here later on (when everything is rendered)
-            this.writerBufferPosition = writer.getBuffer().length();
-            this.type = type;
-        }
-
-        public Argument getType()
-        {
-            return type;
-        }
-        public int getWriterBufferPosition()
-        {
-            return writerBufferPosition;
-        }
-    }
 }

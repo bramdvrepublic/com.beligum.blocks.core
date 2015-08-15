@@ -11,6 +11,7 @@ import org.apache.velocity.exception.ResourceNotFoundException;
 import org.apache.velocity.runtime.parser.node.Node;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.Writer;
 
 /**
@@ -45,10 +46,11 @@ public class TagTemplateExternalScriptResourceDirective extends TagTemplateAbstr
         String src = (String) TagTemplateDirectiveUtils.readArg(context, node, 1);
         PermissionRole roleScope = R.configuration().getSecurityConfig().lookupPermissionRole((String)TagTemplateDirectiveUtils.readArg(context, node, 2));
         HtmlTemplate.ResourceScopeMode mode = HtmlTemplate.ResourceScopeMode.values()[(int)TagTemplateDirectiveUtils.readArg(context, node, 3)];
+
         String element = TagTemplateDirectiveUtils.readValue(context, node);
 
         if (HtmlTemplate.testResourceRoleScope(roleScope) && HtmlTemplate.testResourceModeScope(mode)) {
-            TemplateResourcesDirective.getContextResources(context).addExternalScript(print, src, element);
+            boolean added = TemplateResourcesDirective.getContextResources(context).addExternalScript(print, src, element, (StringWriter) writer);
             if (print) {
                 writer.write(element);
             }

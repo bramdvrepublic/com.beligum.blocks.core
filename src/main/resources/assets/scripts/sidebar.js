@@ -229,8 +229,9 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
             var bodyId = windowId+'-body';
             var div = $('<div id="'+windowId+'" class="panel panel-default"/>');
-            var header = $('<div class="panel-heading collapser" data-toggle="collapse" data-target="#'+bodyId+'" aria-expanded="false" aria-controls="'+bodyId+'">' + title + '</div>').appendTo(div);
-            var collapse = $('<div id="'+bodyId+'" class="collapse">').appendTo(div);
+            var header = $('<div class="panel-heading collapser" data-toggle="collapse" data-target="#'+bodyId+'" aria-expanded="true" aria-controls="'+bodyId+'">' + title + '</div>').appendTo(div);
+            // note: the "in" makes it start unfolded
+            var collapse = $('<div id="'+bodyId+'" class="collapse in" role="tabpanel">').appendTo(div);
             var content = $('<div class="panel-body"/>').appendTo(collapse);
 
             configPanels[windowId] = div;

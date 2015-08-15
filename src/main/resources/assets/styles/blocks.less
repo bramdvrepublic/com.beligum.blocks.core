@@ -7,6 +7,8 @@
 @import "/assets/webjars/font-awesome/4.3.0/less/core.less";
 @import "/assets/webjars/font-awesome/4.3.0/less/icons.less";
 @import "/assets/webjars/font-awesome/4.3.0/less/animated.less";
+@import "/assets/webjars/font-awesome/4.3.0/less/mixins.less";
+@import "/assets/webjars/font-awesome/4.3.0/less/rotated-flipped.less";
 @import "/assets/styles/loader.less";
 @import "/assets/styles/finder.less";
 
@@ -87,6 +89,14 @@
   }
 }
 
+//overloaded from elements.less to be able to specify the property
+.transition(@property: all, @duration:0.2s, @ease:ease-out) {
+  -webkit-transition: @property @duration @ease;
+  -moz-transition: @property @duration @ease;
+  -o-transition: @property @duration @ease;
+  transition: @property @duration @ease;
+}
+
 //-----MAIN-----
 html {
   position: relative;
@@ -164,7 +174,8 @@ body.@{BODY_EDIT_MODE_CLASS} {
     &.top {
       border-top: none;
     }
-  };
+  }
+;
 
   .defaultBorder();
 
@@ -374,12 +385,7 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   width: @initSidebarWidth;
   //animates the width only when not DnD-ing (see js code)
   &.@{SIDEBAR_ANIMATED_CLASS} {
-    @duration: 0.2s;
-    @ease: ease-in;
-    -webkit-transition: width @duration @ease;
-    -moz-transition: width @duration @ease;
-    -o-transition: width @duration @ease;
-    transition: width @duration @ease;
+    .transition(width, 0.2s, ease-in);
   }
 
   .@{PAGE_SIDEBAR_RESIZE_CLASS} {
@@ -451,7 +457,20 @@ ul.@{BLOCK_ACTIONS_CLASS} {
       margin: @sidebarPanelMargin;
 
       .collapser {
-        cursor: pointer; //makes the
+        cursor: pointer;
+
+        &:after {
+          font-family: fontawesome;
+          text-shadow: 0 1px 0 #fff;
+          content: @fa-var-chevron-down;
+          float: right;
+          color: grey;
+
+          .transition(0.2s, ease-in);
+        }
+        &.collapsed:after {
+          .fa-icon-rotate(90deg, 1);
+        }
       }
 
       .form-group {
@@ -611,7 +630,7 @@ blocks-image {
     overflow-y: auto;
     .list-group-item {
       .clearfix;
-      margin: 10px;//reset bootstrap
+      margin: 10px; //reset bootstrap
 
       .preview,
       .caption {
@@ -630,11 +649,12 @@ blocks-image {
           font-size: @fontSize;
           width: @size;
           height: @size;
-          line-height: @size + ((@size - @fontSize)/2);//more or less does the trick
+          line-height: @size + ((@size - @fontSize)/2); //more or less does the trick
+          text-align: center;
           .opacity(0.5);
         }
 
-        margin: 0 20px 0 0;//reset bootstrap thumbnail
+        margin: 0 20px 0 0; //reset bootstrap thumbnail
       }
       .caption {
         p {
@@ -677,7 +697,7 @@ blocks-image {
     padding: 0;
     margin: 0;
 
-   & > li {
+    & > li {
       margin: 0;
       padding: 0;
 

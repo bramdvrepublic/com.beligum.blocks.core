@@ -11,24 +11,28 @@ public class TemplateStackFrame
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    private HtmlTemplate template;
     private TemplateController controller;
     private Map<String, Object> properties;
+    private int frameDepth;
 
     //-----CONSTRUCTORS-----
-    public TemplateStackFrame()
+    public TemplateStackFrame(HtmlTemplate template, TemplateController controller, int frameDepth)
     {
-        this.controller = null;
+        this.template = template;
+        this.controller = controller;
+        this.frameDepth = frameDepth;
         this.properties = new HashMap<>();
     }
 
     //-----PUBLIC METHODS-----
+    public HtmlTemplate getTemplate()
+    {
+        return template;
+    }
     public TemplateController getController()
     {
         return controller;
-    }
-    public void setController(TemplateController controller)
-    {
-        this.controller = controller;
     }
     public Map<String, Object> getProperties()
     {
