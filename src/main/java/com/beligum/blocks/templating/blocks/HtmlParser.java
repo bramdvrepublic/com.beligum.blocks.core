@@ -4,12 +4,14 @@ import com.beligum.base.resources.Asset;
 import com.beligum.base.resources.ResourceDescriptor;
 import com.beligum.base.resources.ResourceSearchResult;
 import com.beligum.base.resources.parsers.AbstractAssetParser;
+import com.beligum.base.resources.parsers.AssetParser;
 import com.beligum.base.resources.parsers.results.ParseResult;
 import com.beligum.base.resources.parsers.results.StringParseResult;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.templating.blocks.directives.*;
+import com.beligum.blocks.templating.blocks.directives.PageTemplateWrapperDirective;
+import com.beligum.blocks.templating.blocks.directives.TemplateInstanceStackDirective;
 import net.htmlparser.jericho.*;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.lang3.StringUtils;
@@ -129,8 +131,17 @@ public class HtmlParser extends AbstractAssetParser
 
         return retVal;
     }
-    public static void resetTemplateCache()
+    public void resetTemplateCache() throws IOException
     {
+        //needed for the html files, because they're not postprocessed in the ResouceManager and changes are not detected throug the hash system
+        AssetParser htmlParser = R.resourceLoader().getAssetParserFor(Asset.MimeType.HTML);
+        for (HtmlTemplate htmlTemplate : HtmlParser.getTemplateCache().values()) {
+            Path cacheFile = this.getCacheFile(htmlTemplate.getAbsolutePath());
+            if (cacheFile!=null) {
+                Files.deleteIfExists(cacheFile);
+            }
+        }
+
         R.cacheManager().getApplicationCache().put(CacheKeys.TAG_TEMPLATES, null);
     }
 

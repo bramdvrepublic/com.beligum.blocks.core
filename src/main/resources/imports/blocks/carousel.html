@@ -8,7 +8,18 @@
 <script src="/assets/webjars/bootstrap-slider/4.8.3/bootstrap-slider.js" type="application/javascript"></script>
 <script src="/assets/scripts/imports/blocks-carousel.js" type="application/javascript" data-scope-role="admin"></script>
 
+## widget needs the scripts of blocks-image (TODO refactor this in one file?)
+<script src="/assets/scripts/imports/blocks-image.js" data-scope-role="admin" type="application/javascript"></script>
+
+## widget needs the scripts of blocks-text (TODO refactor this in one file?)
+<script src="/assets/scripts/imports/blocks-text/medium/medium-editor.js" type="application/javascript" data-scope-role="admin"></script>
+<script src="/assets/scripts/imports/blocks-text/medium/medium-styles-extension.js" type="application/javascript" data-scope-role="admin"></script>
+<script src="/assets/scripts/imports/blocks-text/medium/mediumModule.js" type="application/javascript" data-scope-role="admin"></script>
+<script src="/assets/scripts/imports/blocks-text.js" type="application/javascript" data-scope-role="admin"></script>
+<script src="/assets/scripts/imports/blocks-text/styles.js" type="application/javascript" data-scope-role="admin"></script>
+
 <template>
+    #constants('blocks.core')
     ## note: the data-interval false needs to be there to fix an editing bug (where a paused carousel starts cycling again after clicking an arrow))
     ## keyboard was disabled because it messed with the editor
     <div id="carousel-123" class="carousel slide" data-interval="false" data-keyboard="false">
@@ -40,12 +51,12 @@
                 <div class="item active">
                     <img property="image" src="/assets/images/blocks/placeholder_slide_1.jpg" >
                     <div class="carousel-caption">
-                        <div property="title" class="title">
-                            <p>Enter a title</p>
-                        </div>
-                        <div property="description" class="description">
+                        <span property="title" class="title" $CONSTANTS.blocks.core.TEXT_EDITOR_OPTIONS_ATTR="$CONSTANTS.blocks.core.TEXT_EDITOR_OPTIONS_NO_TOOLBAR">
+                            <p>Enter a title, this is a test</p>
+                        </span>
+                        <span property="description" class="description" $CONSTANTS.blocks.core.TEXT_EDITOR_OPTIONS_ATTR="$CONSTANTS.blocks.core.TEXT_EDITOR_OPTIONS_NO_TOOLBAR">
                             <p>Enter a description</p>
-                        </div>
+                        </span>
                     </div>
                 </div>
             #end

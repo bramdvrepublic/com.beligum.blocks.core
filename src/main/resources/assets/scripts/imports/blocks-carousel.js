@@ -1,7 +1,7 @@
 /**
  * Created by wouter on 18/06/15.
  */
-base.plugin("blocks.imports.Carousel", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", "constants.blocks.core", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils, Constants)
+base.plugin("blocks.imports.Carousel", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
 {
     var BlocksCarousel = this;
 
@@ -49,15 +49,13 @@ base.plugin("blocks.imports.Carousel", ["base.core.Class", "blocks.imports.Widge
         {
             var retVal = [];
 
+            retVal.push(SidebarUtils.addOptionalClass(Sidebar, block.element, "Seamless", BlocksConstants.SEAMLESS_CLASS));
+
             var element = element.find(".carousel");
-
             this._listGroup = $('<div class="list-group" />');
-
             this._redraw(element);
-
             retVal.push(this._listGroup);
             retVal.push(this._addImageButton(element));
-
             //pauses all carousels while editing
             $('.carousel').each(function ()
             {
@@ -90,12 +88,28 @@ base.plugin("blocks.imports.Carousel", ["base.core.Class", "blocks.imports.Widge
 
             var listGroupItem = $('<div class="list-group-item clearfix" />');
             var wrapper = $('<div></div>').appendTo(listGroupItem);
-            var label = $('<div class="pull-left">' + (item.find('.title p').html()) + '</div>').appendTo(wrapper);
+            //note: use text() instead of html() to remove the tags
+            //note: we only show the first x characters
+            var labelText = item.find('.title p').text();
+            var labelTextCrop = $.trim(labelText.substring(0, 20));
+            if (labelText!=labelTextCrop) {
+                labelTextCrop += "...";
+            }
+
+            var label = $('<div class="pull-left">#' + (index+1) + ') ' + labelTextCrop + '</div>').appendTo(wrapper);
             var buttons = $('<div class="btn-group pull-right" role="group"></div>').appendTo(wrapper);
 
             // Do not add remove when there is only one image
-            if (items.length > 1) {
-                var deleteButton = $('<span class="btn btn-danger btn-xs"><i class="fa fa-fw fa-trash-o"></i></span>').appendTo(buttons);
+            var disabled = items.length == 1;
+
+            var deleteButton = $('<span class="btn btn-danger btn-xs" '+(disabled?'disabled="true"':'')+'><i class="fa fa-fw fa-trash-o"></i></span>').appendTo(buttons);
+
+            if (!disabled) {
+                deleteButton.click(function ()
+                {
+                    deleteWrapper.removeClass("hidden");
+                    wrapper.addClass("hidden");
+                });
 
                 var deleteWrapper = $('<div class="hidden"></div>').appendTo(listGroupItem);
                 var deleteLabel = $('<div class="pull-left">Are you sure?</div>').appendTo(deleteWrapper);
@@ -103,26 +117,21 @@ base.plugin("blocks.imports.Carousel", ["base.core.Class", "blocks.imports.Widge
                 var yesRemoveButton = $('<span class="btn btn-success btn-xs"><i class="fa fa-check"></i></span>').appendTo(deleteGroup);
                 var noRemoveButton = $('<span class="btn btn-danger btn-xs"><i class="fa fa-times"></i></span>').appendTo(deleteGroup);
 
-                deleteButton.click(function ()
-                {
-                    deleteWrapper.removeClass("hidden");
-                    wrapper.addClass("hidden");
-                });
-
                 noRemoveButton.click(function ()
                 {
                     wrapper.removeClass("hidden");
                     deleteWrapper.addClass("hidden");
                 });
 
+                var _this = this;
                 yesRemoveButton.click(function ()
                 {
                     buttons.removeClass("hidden");
                     deleteWrapper.addClass("hidden");
                     listGroupItem.remove();
                     item.remove();
-                    this._redrawIndicators(carousel);
-                    this._redraw(carousel);
+                    _this._redrawIndicators(carousel);
+                    _this._redraw(carousel);
                 });
             }
 
@@ -135,17 +144,18 @@ base.plugin("blocks.imports.Carousel", ["base.core.Class", "blocks.imports.Widge
             var indicators = carousel.find(".carousel-indicators");
             var button = $('<button class="btn btn-primary btn-sm">Add slide</button>');
 
+            var _this = this;
             button.click(function ()
             {
                 //Sync this with carousel.html
                 var item = $('<div class="item" />').appendTo(items);
                 var image = $('<img property="image" src="/assets/images/blocks/placeholder_slide_1.jpg">').appendTo(item);
                 var caption = $('<div class="carousel-caption"></div>').appendTo(item);
-                var title = $('<div property="title" class="title"><p>Enter a title</p></div>').appendTo(caption);
-                var description = $('<div property="description" class="description"><p>Enter a description</p></div>').appendTo(caption);
+                var title = $('<span property="title" class="title" '+BlocksConstants.TEXT_EDITOR_OPTIONS_ATTR+'="'+BlocksConstants.TEXT_EDITOR_OPTIONS_NO_TOOLBAR+'"><p>Enter a title</p></span>').appendTo(caption);
+                var description = $('<span property="description" class="description" '+BlocksConstants.TEXT_EDITOR_OPTIONS_ATTR+'="'+BlocksConstants.TEXT_EDITOR_OPTIONS_NO_TOOLBAR+'"><p>Enter a description</p></span>').appendTo(caption);
 
-                this._redrawIndicators(carousel);
-                this._redraw(carousel);
+                _this._redrawIndicators(carousel);
+                _this._redraw(carousel);
             });
 
             return button;

@@ -1,9 +1,6 @@
 package com.beligum.blocks.templating.blocks;
 
-import net.htmlparser.jericho.Element;
-import net.htmlparser.jericho.OutputDocument;
-import net.htmlparser.jericho.Segment;
-import net.htmlparser.jericho.Source;
+import net.htmlparser.jericho.*;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -107,7 +104,7 @@ public class TagTemplate extends HtmlTemplate
         retVal = new Source(htmlDoc.toString());
 
         //not really needed
-        //retVal = new Source(new SourceFormatter(retVal).setCollapseWhiteSpace(true).toString());
+        //retVal = new Source(new SourceFormatter(retVal).setTidyTags(true).setIndentAllElements(true).setIndentString("    ").setCollapseWhiteSpace(true).toString());
 
         this.html = retVal;
     }

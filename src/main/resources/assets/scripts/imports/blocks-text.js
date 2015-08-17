@@ -1,7 +1,7 @@
 base.plugin("blocks.imports.Text", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.MediumEditor", "blocks.core.Sidebar", function (Class, Widget, BlocksConstants, BlocksMessages, Broadcaster, Editor, Sidebar)
 {
     var BlocksText = this;
-    this.TAGS = ["blocks-text div", "blocks-text span"];
+    this.TAGS = ["blocks-text div", "blocks-text span", "div[property]", "span[property]"];
 
     (this.Class = Class.create(Widget.Class, {
 
@@ -23,15 +23,33 @@ base.plugin("blocks.imports.Text", ["base.core.Class", "blocks.imports.Widget", 
 
             // Preparation
             element.attr("contenteditable", true);
+
+            //this allows us to set some specific additional options to the elements to control how the editor behaves
+            var options = {};
+            var optionsAttr = element.attr(BlocksConstants.TEXT_EDITOR_OPTIONS_ATTR);
+            if (optionsAttr) {
+                //this converts and array to an object
+                var optionsAttrValues = optionsAttr.split(" ");
+                for (var i=0;i<optionsAttrValues.length;i++) {
+                    //for now, we don't have values, so just set to true
+                    //note that code (eg the constuctor in mediumModule.js) depends on this to be true
+                    options[optionsAttrValues[i]] = true;
+                }
+            }
+
+            var inlineEditor = element.prop('tagName') == 'SPAN';
+
             // last argument means inline (no enter allowed) or not
-            var editor = Editor.getEditor(element, element.prop('tagName') == 'SPAN');
+            var editor = Editor.getEditor(element, inlineEditor, options[BlocksConstants.TEXT_EDITOR_OPTIONS_NO_TOOLBAR]);
             this._setCursor(hotspot.left, hotspot.top);
 
             // Add toolbar to sidebar
             var toolbar = $(Editor.getToolbarElement());
-            toolbar.addClass(BlocksConstants.PREVENT_BLUR_CLASS);
-            //make sure, if we click the toolbar, the block-window doesn't pop up
-            toolbar.attr(BlocksConstants.CLICK_ROLE_ATTR, BlocksConstants.FORCE_CLICK_ATTR_VALUE);
+            if (toolbar) {
+                toolbar.addClass(BlocksConstants.PREVENT_BLUR_CLASS);
+                //make sure, if we click the toolbar, the block-window doesn't pop up
+                toolbar.attr(BlocksConstants.CLICK_ROLE_ATTR, BlocksConstants.FORCE_CLICK_ATTR_VALUE);
+            }
         },
         blur: function (block, element)
         {

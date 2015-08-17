@@ -3,12 +3,18 @@
 @import "/assets/webjars/bootstrap/3.3.4/less/variables.less";
 @import "/assets/webjars/bootstrap/3.3.4/less/mixins/responsive-visibility.less";
 @import "/assets/webjars/bootstrap/3.3.4/less/responsive-utilities.less";
+@import "/assets/styles/imports/blocks-common.less";
+@import "/constants/blocks/core?type=less";
 
 //-----STYLES-----
 blocks-carousel {
 
   @carouselTitleColor: #ffffff;
   @carouselDescriptionColor: fadeout(#ffffff, 5%);
+
+  &.@{SEAMLESS_CLASS} {
+    .seamless();
+  }
 
   .carousel {
     .carousel-indicators {

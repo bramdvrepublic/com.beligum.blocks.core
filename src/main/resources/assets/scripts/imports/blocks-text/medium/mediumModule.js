@@ -15,12 +15,15 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
     {
         var retVal = null;
         if (Editor != null) {
-            retVal = Editor.getExtensionByName("toolbar").getToolbarElement();
+            var toolbarExt = Editor.getExtensionByName("toolbar");
+            if (toolbarExt) {
+                retVal = toolbarExt.getToolbarElement();
+            }
         }
         return retVal;
     };
 
-    this.getEditor = function (element, inline)
+    this.getEditor = function (element, inline, hideToolbar)
     {
         if (Editor != null) {
             MediumModule.removeEditor();
@@ -37,14 +40,21 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
         options.extensions[Extensions.StylesPicker.NAME] = stylePicker;
         options.extensions[Extensions.LinkInput.NAME] = new Extensions.LinkInput({});
 
-        // Always show toolbar
-        toolbarOptions.static = true;
-        toolbarOptions.updateOnEmptySelection = true;
-        toolbarOptions.buttons = toolbarButtons;
-        toolbarOptions.align = 'left';
+        if (!hideToolbar) {
+            toolbarOptions.static = true;
+            toolbarOptions.updateOnEmptySelection = true;
+            toolbarOptions.buttons = toolbarButtons;
+            toolbarOptions.align = 'left';
 
-        options.disableReturn = inline;
-        options.toolbar = toolbarOptions;
+            options.disableReturn = inline;
+            options.toolbar = toolbarOptions;
+        }
+        else {
+            options.toolbar = false;
+            //hmmm, this doesn't seem to work very well...
+            options.keyboardCommands = false;
+        }
+
         Editor = new MediumEditor(element[0], options);
 
         return Editor;

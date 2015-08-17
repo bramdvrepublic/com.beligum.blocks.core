@@ -37,7 +37,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
             //we also push the properties inside a block
             //note: this is evened out after the first cycle
-            if (currElement!=currBlock.element) {
+            if (!currElement.is(currBlock.element)) {
                 activeBlocks.push({
                     block: currBlock,
                     element: currBlock.element
@@ -303,7 +303,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         frame.addClass(Constants.SIDEBAR_FINDER_PANEL_CLASS);
 
         //TODO maybe not necessary to reload this every time, but it allows us to always present a fresh uptodate view of the server content
-        var finder = frame.children(".panel-body");
+        var finder = frame.find(".panel-body");
         finder.load("/media/finder-inline", function (response, status, xhr)
         {
             if (status == "error") {

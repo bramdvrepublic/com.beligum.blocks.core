@@ -281,10 +281,20 @@ public abstract class HtmlTemplate
             this.displayType = MetaDisplayType.valueOf(displayType.toUpperCase());
         }
 
-        this.inlineStyleElements = getInlineStyles(tempHtml, parent != null ? parent.getAllInlineStyleElements() : null);
-        this.externalStyleElements = getExternalStyles(tempHtml, parent != null ? parent.getAllExternalStyleElements() : null);
-        this.inlineScriptElements = getInlineScripts(tempHtml, parent != null ? parent.getAllInlineScriptElements() : null);
-        this.externalScriptElements = getExternalScripts(tempHtml, parent != null ? parent.getAllExternalScriptElements() : null);
+        this.inlineStyleElements = getInlineStyles(tempHtml);
+        this.externalStyleElements = getExternalStyles(tempHtml);
+        this.inlineScriptElements = getInlineScripts(tempHtml);
+        this.externalScriptElements = getExternalScripts(tempHtml);
+
+        //prepend the html with the parent resources if it's there
+        if (parent!=null) {
+            StringBuilder parentResourceHtml = new StringBuilder();
+            this.inlineStyleElements = addParentResources(parentResourceHtml, this.inlineStyleElements, parent.getAllInlineStyleElements(), null, TagTemplateInlineStyleResourceDirective.NAME);
+            this.externalStyleElements = addParentResources(parentResourceHtml, this.externalStyleElements, parent.getAllExternalStyleElements(), "href", TagTemplateExternalStyleResourceDirective.NAME);
+            this.inlineScriptElements = addParentResources(parentResourceHtml, this.inlineScriptElements, parent.getAllInlineScriptElements(), null, TagTemplateInlineScriptResourceDirective.NAME);
+            this.externalScriptElements = addParentResources(parentResourceHtml, this.externalScriptElements, parent.getAllExternalScriptElements(), "src", TagTemplateExternalScriptResourceDirective.NAME);
+            tempHtml.insert(0, parentResourceHtml);
+        }
 
         //now save the (possibly altered) html source (and unwrap it in case of a tag template)
         this.saveHtml(tempHtml, parent);
@@ -381,7 +391,7 @@ public abstract class HtmlTemplate
     {
         return displayType;
     }
-    private Iterable<Element> getInlineStyles(OutputDocument html, Iterable<Element> parentElements)
+    private Iterable<Element> getInlineStyles(OutputDocument html)
     {
         Iterable<Element> retVal = html.getSegment().getAllElements("style");
 
@@ -392,16 +402,9 @@ public abstract class HtmlTemplate
             html.replace(element, buildResourceHtml(TagTemplateInlineStyleResourceDirective.NAME, element, null));
         }
 
-        if (parentElements!=null) {
-            for (Element element : parentElements) {
-                html.insert(0, buildResourceHtml(TagTemplateInlineStyleResourceDirective.NAME, element, null));
-            }
-            retVal = Iterables.concat(parentElements, retVal);
-        }
-
         return retVal;
     }
-    private Iterable<Element> getExternalStyles(OutputDocument html, Iterable<Element> parentElements)
+    private Iterable<Element> getExternalStyles(OutputDocument html)
     {
         Iterable<Element> retVal = html.getSegment().getAllElements("rel", styleLinkRelAttrValue);
 
@@ -417,16 +420,9 @@ public abstract class HtmlTemplate
             }
         }
 
-        if (parentElements!=null) {
-            for (Element element : parentElements) {
-                html.insert(0, buildResourceHtml(TagTemplateExternalStyleResourceDirective.NAME, element, element.getAttributeValue("href")));
-            }
-            retVal = Iterables.concat(parentElements, retVal);
-        }
-
         return retVal;
     }
-    private Iterable<Element> getInlineScripts(OutputDocument html, Iterable<Element> parentElements)
+    private Iterable<Element> getInlineScripts(OutputDocument html)
     {
         Iterable<Element> retVal = html.getSegment().getAllElements("script");
 
@@ -442,16 +438,9 @@ public abstract class HtmlTemplate
             }
         }
 
-        if (parentElements!=null) {
-            for (Element element : parentElements) {
-                html.insert(0, buildResourceHtml(TagTemplateInlineScriptResourceDirective.NAME, element, null));
-            }
-            retVal = Iterables.concat(parentElements, retVal);
-        }
-
         return retVal;
     }
-    private Iterable<Element> getExternalScripts(OutputDocument html, Iterable<Element> parentElements)
+    private Iterable<Element> getExternalScripts(OutputDocument html)
     {
         Iterable<Element> retVal = html.getSegment().getAllElements("script");
 
@@ -467,13 +456,6 @@ public abstract class HtmlTemplate
             }
         }
 
-        if (parentElements!=null) {
-            for (Element element : parentElements) {
-                html.insert(0, buildResourceHtml(TagTemplateExternalScriptResourceDirective.NAME, element, element.getAttributeValue("src")));
-            }
-            retVal = Iterables.concat(parentElements, retVal);
-        }
-
         return retVal;
     }
     private String buildResourceHtml(String directive, Element element, String attr)
@@ -486,6 +468,19 @@ public abstract class HtmlTemplate
                .append("#end").append("\n");
 
         return builder.toString();
+    }
+    private Iterable<Element> addParentResources(StringBuilder html, Iterable<Element> templateElements, Iterable<Element> parentElements, String attribute, String directiveName)
+    {
+        Iterable<Element> retVal = templateElements;
+
+        if (parentElements!=null && parentElements.iterator().hasNext()) {
+            for (Element element : parentElements) {
+                html.append(buildResourceHtml(directiveName, element, attribute==null?null:element.getAttributeValue(attribute)));
+            }
+            retVal = Iterables.concat(parentElements, templateElements);
+        }
+
+        return retVal;
     }
     public static PermissionRole getResourceRoleScope(Element resource)
     {
