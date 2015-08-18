@@ -11,6 +11,7 @@ import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.templating.blocks.directives.PageTemplateWrapperDirective;
+import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
 import com.beligum.blocks.templating.blocks.directives.TemplateInstanceStackDirective;
 import net.htmlparser.jericho.*;
 import org.apache.commons.io.Charsets;
@@ -268,8 +269,20 @@ public class HtmlParser extends AbstractAssetParser
                     }
                     //if the segment is something else, save it in the right order for later use
                     else {
-                        //just use the key, ignore the value
-                        properties.add(new OtherToken(seg.toString()));
+                        // if we encounter a resource wrapper diretive, the tag inside will be a html tag,
+                        // so we need to make sure it doesn't get eaten because there's no property attribute set
+                        // on it.
+                        String segStr = seg.toString().trim();
+                        if (segStr.startsWith("#" + TagTemplateResourceDirective.NAME)) {
+                            StringBuilder resource = new StringBuilder(seg.toString());
+                            while (iter.hasNext() && !segStr.equals("#end")) {
+                                seg = iter.next();
+                                segStr = seg.toString().trim();
+                                resource.append(seg.toString());
+                            }
+                            segStr = resource.toString();
+                        }
+                        properties.add(new OtherToken(segStr));
                     }
                 }
 

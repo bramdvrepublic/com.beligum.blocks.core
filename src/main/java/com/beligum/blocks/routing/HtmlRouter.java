@@ -175,7 +175,6 @@ public class HtmlRouter extends AbstractRouter
         }
 
         return Response.ok(entity).build();
-
     }
 
     public Response redirect()

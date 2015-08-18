@@ -4,10 +4,7 @@ import com.beligum.base.security.PermissionRole;
 import com.beligum.base.security.PermissionsConfigurator;
 import com.beligum.base.server.R;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.templating.blocks.directives.TagTemplateExternalScriptResourceDirective;
-import com.beligum.blocks.templating.blocks.directives.TagTemplateExternalStyleResourceDirective;
-import com.beligum.blocks.templating.blocks.directives.TagTemplateInlineScriptResourceDirective;
-import com.beligum.blocks.templating.blocks.directives.TagTemplateInlineStyleResourceDirective;
+import com.beligum.blocks.templating.blocks.directives.*;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
@@ -309,10 +306,10 @@ public abstract class HtmlTemplate
         //prepend the html with the parent resources if it's there
         if (parent!=null) {
             StringBuilder parentResourceHtml = new StringBuilder();
-            this.inlineStyleElements = addParentResources(parentResourceHtml, this.inlineStyleElements, parent.getAllInlineStyleElements(), null, TagTemplateInlineStyleResourceDirective.NAME);
-            this.externalStyleElements = addParentResources(parentResourceHtml, this.externalStyleElements, parent.getAllExternalStyleElements(), "href", TagTemplateExternalStyleResourceDirective.NAME);
-            this.inlineScriptElements = addParentResources(parentResourceHtml, this.inlineScriptElements, parent.getAllInlineScriptElements(), null, TagTemplateInlineScriptResourceDirective.NAME);
-            this.externalScriptElements = addParentResources(parentResourceHtml, this.externalScriptElements, parent.getAllExternalScriptElements(), "src", TagTemplateExternalScriptResourceDirective.NAME);
+            this.inlineStyleElements = addParentResources(TemplateResourcesDirective.Argument.inlineStyles, parentResourceHtml, this.inlineStyleElements, parent.getAllInlineStyleElements(), null);
+            this.externalStyleElements = addParentResources(TemplateResourcesDirective.Argument.externalStyles, parentResourceHtml, this.externalStyleElements, parent.getAllExternalStyleElements(), "href");
+            this.inlineScriptElements = addParentResources(TemplateResourcesDirective.Argument.inlineScripts, parentResourceHtml, this.inlineScriptElements, parent.getAllInlineScriptElements(), null);
+            this.externalScriptElements = addParentResources(TemplateResourcesDirective.Argument.externalScripts, parentResourceHtml, this.externalScriptElements, parent.getAllExternalScriptElements(), "src");
             tempHtml.insert(0, parentResourceHtml);
         }
 
@@ -414,7 +411,7 @@ public abstract class HtmlTemplate
         while (iter.hasNext()) {
             Element element = iter.next();
             //html.remove(retVal);
-            html.replace(element, buildResourceHtml(TagTemplateInlineStyleResourceDirective.NAME, element, null));
+            html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.inlineStyles, element, null));
         }
 
         return retVal;
@@ -431,7 +428,7 @@ public abstract class HtmlTemplate
             }
             else {
                 //html.remove(el);
-                html.replace(element, buildResourceHtml(TagTemplateExternalStyleResourceDirective.NAME, element, element.getAttributeValue("href")));
+                html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.externalStyles, element, element.getAttributeValue("href")));
             }
         }
 
@@ -449,7 +446,7 @@ public abstract class HtmlTemplate
             }
             else {
                 //html.remove(el);
-                html.replace(element, buildResourceHtml(TagTemplateInlineScriptResourceDirective.NAME, element, null));
+                html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.inlineScripts, element, null));
             }
         }
 
@@ -467,30 +464,30 @@ public abstract class HtmlTemplate
             }
             else {
                 //html.remove(el);
-                html.replace(element, buildResourceHtml(TagTemplateExternalScriptResourceDirective.NAME, element, element.getAttributeValue("src")));
+                html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.externalScripts, element, element.getAttributeValue("src")));
             }
         }
 
         return retVal;
     }
-    private String buildResourceHtml(String directive, Element element, String attr)
+    private String buildResourceHtml(TemplateResourcesDirective.Argument type, Element element, String attr)
     {
         final boolean print = false;
         StringBuilder builder = new StringBuilder();
 
-        builder.append("#").append(directive).append("(").append(print).append(",'").append(attr).append("','")
+        builder.append("#").append(TagTemplateResourceDirective.NAME).append("(").append(type.ordinal()).append(",").append(print).append(",'").append(attr).append("','")
                .append(HtmlTemplate.getResourceRoleScope(element)).append("',").append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(")").append(element.toString())
                .append("#end").append("\n");
 
         return builder.toString();
     }
-    private Iterable<Element> addParentResources(StringBuilder html, Iterable<Element> templateElements, Iterable<Element> parentElements, String attribute, String directiveName)
+    private Iterable<Element> addParentResources(TemplateResourcesDirective.Argument type, StringBuilder html, Iterable<Element> templateElements, Iterable<Element> parentElements, String attribute)
     {
         Iterable<Element> retVal = templateElements;
 
         if (parentElements!=null && parentElements.iterator().hasNext()) {
             for (Element element : parentElements) {
-                html.append(buildResourceHtml(directiveName, element, attribute==null?null:element.getAttributeValue(attribute)));
+                html.append(buildResourceHtml(type, element, attribute==null?null:element.getAttributeValue(attribute)));
             }
             retVal = Iterables.concat(parentElements, templateElements);
         }
