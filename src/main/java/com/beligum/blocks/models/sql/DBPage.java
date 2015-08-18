@@ -17,6 +17,7 @@ import java.util.Locale;
 public class DBPage extends DBDocumentInfo
 {
 
+
     private String blockId;
 
     private String masterPage;

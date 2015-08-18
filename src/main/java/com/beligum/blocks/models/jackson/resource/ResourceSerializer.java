@@ -1,5 +1,6 @@
 package com.beligum.blocks.models.jackson.resource;
 
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.models.interfaces.Node;
 import com.beligum.blocks.models.interfaces.Resource;
@@ -19,12 +20,15 @@ import java.util.*;
 public class ResourceSerializer<T extends Resource> extends JsonSerializer
 {
 
+    protected Stack<URI> serializedResources = new Stack<URI>();
+
     @Override
     public void serialize(Object value, JsonGenerator jgen, SerializerProvider provider) throws IOException,
                                                                                                   JsonProcessingException
     {
-
-        printResource(jgen, (Resource)value);
+        serializedResources.push(((Resource) value).getBlockId());
+        printResource(jgen, (Resource) value);
+        serializedResources.pop();
 
     }
 
@@ -61,15 +65,17 @@ public class ResourceSerializer<T extends Resource> extends JsonSerializer
             String stringField = RdfTools.makeDbFieldFromUri(field);
             context.put(stringField, field.toString());
             Node fieldNode = resource.get(field);
-            jgen.writeFieldName(stringField);
-            jgen.writeStartArray();
-            printListNode(jgen, fieldNode, resource.getLanguage());
-            jgen.writeEndArray();
+            if (!fieldNode.isNull()) {
+                jgen.writeFieldName(stringField);
+                jgen.writeStartArray();
+                printListNode(jgen, fieldNode, resource.getLanguage());
+                jgen.writeEndArray();
+            } else {
+                Logger.debug("Do not write null values to json");
+            }
 
         }
 
-
-        if (printRootFields()) {
             // Write context
             jgen.writeFieldName(ParserConstants.JSONLD_CONTEXT);
             jgen.writeStartObject();
@@ -78,7 +84,7 @@ public class ResourceSerializer<T extends Resource> extends JsonSerializer
                 jgen.writeString(context.get(key));
             }
             jgen.writeEndObject();
-        }
+
 
         jgen.writeEndObject();
 
@@ -117,18 +123,22 @@ public class ResourceSerializer<T extends Resource> extends JsonSerializer
             printListNode(jgen, field, locale);
         } else if (field.isResource()) {
             nestResources(jgen, (Resource) field);
-        } else {
+        } else if (!field.isNull()) {
             jgen.writeStartObject();
             jgen.writeFieldName(ParserConstants.JSONLD_VALUE);
             writeValue(jgen, field);
 
             if (field.getLanguage() != Locale.ROOT) {
-                jgen.writeFieldName(ParserConstants.JSONLD_LANGUAGE);
-                jgen.writeString(field.getLanguage().getLanguage());
+
+                try {
+                    jgen.writeFieldName(ParserConstants.JSONLD_LANGUAGE);
+                    jgen.writeString(field.getLanguage().getLanguage());
+                } catch (Exception e) {
+                    int x = 0;
+                }
             }
             jgen.writeEndObject();
         }
-
     }
 
 
@@ -136,7 +146,22 @@ public class ResourceSerializer<T extends Resource> extends JsonSerializer
     // to prevent the serialization of nested objects
     protected void nestResources(JsonGenerator jgen, Resource resource) throws IOException
     {
-        printResource(jgen, resource);
+        // if we are here a resource will be nested inside another resource
+        if (serializedResources.contains(resource.getBlockId())) {
+            printResourceReference(jgen, resource);
+        } else {
+            serializedResources.push(resource.getBlockId());
+            printResource(jgen, resource);
+            serializedResources.pop();
+        }
+    }
+
+    protected void printResourceReference(JsonGenerator jgen, Resource resource) throws IOException
+    {
+        jgen.writeStartObject();
+        jgen.writeFieldName(ParserConstants.JSONLD_ID);
+        jgen.writeString(resource.getBlockId().toString());
+        jgen.writeEndObject();
     }
 
     protected void writeValue(JsonGenerator jgen, Node field) throws IOException
@@ -152,6 +177,8 @@ public class ResourceSerializer<T extends Resource> extends JsonSerializer
             jgen.writeString(field.getLong().toString());
         } else if (field.isString()) {
             jgen.writeString(field.toString());
+        } else {
+            Logger.error("No value was written to json. Unknown value.");
         }
     }
 

@@ -25,7 +25,6 @@ public class ResourceImpl extends AbstractResource
     private Map<String, Object> localized;
 
 
-
     public ResourceImpl(Map<String, Object> vertex, Map<String, Object> localized, Locale language) {
         this.vertex = vertex;
         this.localized = localized;
@@ -68,7 +67,7 @@ public class ResourceImpl extends AbstractResource
         Map<String, Object> vertex = localized;
         if (!vertex.containsKey(key)) {
             vertex = this.vertex;
-            //            lang = Locale.ROOT;
+            lang = Locale.ROOT;
         }
 
         fieldValue = ResourceFactoryImpl.instance().createNode(vertex.get(key), lang);

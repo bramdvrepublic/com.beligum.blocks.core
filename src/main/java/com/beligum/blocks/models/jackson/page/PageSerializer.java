@@ -1,6 +1,7 @@
 package com.beligum.blocks.models.jackson.page;
 
 import com.beligum.blocks.config.ParserConstants;
+import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.models.interfaces.Node;
 import com.beligum.blocks.models.jackson.resource.ResourceSerializer;
@@ -24,11 +25,12 @@ public class PageSerializer<T extends WebPage> extends ResourceSerializer
 
     @Override
     public void serialize(Object value, JsonGenerator jgen, SerializerProvider provider) throws IOException,
-                                                                                                  JsonProcessingException
+                                                                                                JsonProcessingException
     {
         WebPage webPage = (WebPage)value;
-
+        serializedResources.push(((Resource) value).getBlockId());
         printWebPageResource(jgen, webPage);
+        serializedResources.pop();
 
 
 
@@ -94,7 +96,7 @@ public class PageSerializer<T extends WebPage> extends ResourceSerializer
     }
 
     protected void printWebPageResource(JsonGenerator jgen, WebPage webPage) throws IOException {
-        HashMap<String, String> context = new HashMap<>();
+        HashMap<String, String> context = webPage.getContext();
 
         jgen.writeStartObject();
         if (printRootFields()) {
@@ -125,23 +127,23 @@ public class PageSerializer<T extends WebPage> extends ResourceSerializer
             String stringField = RdfTools.makeDbFieldFromUri(field);
             context.put(stringField, field.toString());
             Node fieldNode = webPage.get(field);
-            jgen.writeFieldName(stringField);
-            jgen.writeStartArray();
-            printListNode(jgen, fieldNode, webPage.getLanguage());
-            jgen.writeEndArray();
-
-        }
-
-        if (printRootFields()) {
-            // Write context
-            jgen.writeFieldName(ParserConstants.JSONLD_CONTEXT);
-            jgen.writeStartObject();
-            for (String key : context.keySet()) {
-                jgen.writeFieldName(key);
-                jgen.writeString(context.get(key));
+            if (!fieldNode.isNull()) {
+                jgen.writeFieldName(stringField);
+                jgen.writeStartArray();
+                printListNode(jgen, fieldNode, webPage.getLanguage());
+                jgen.writeEndArray();
             }
-            jgen.writeEndObject();
         }
+
+        // Write context
+        jgen.writeFieldName(ParserConstants.JSONLD_CONTEXT);
+        jgen.writeStartObject();
+        for (String key : context.keySet()) {
+            jgen.writeFieldName(key);
+            jgen.writeString(context.get(key));
+        }
+        jgen.writeEndObject();
+
 
 
         // now wri

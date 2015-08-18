@@ -25,26 +25,25 @@ public class ResourceRootSerializer extends ResourceSerializer
         return resource.getRootFields().iterator();
     }
 
-    @Override
-    protected void printNode(JsonGenerator jgen, Node field, Locale locale) throws IOException
-    {
-        if (field.isIterable()) {
-            printListNode(jgen, field, locale);
-        } else if (field.isResource()) {
-            nestResources(jgen, (Resource) field);
-        } else {
-            writeValue(jgen, field);
-        }
-
-    }
+//    @Override
+//    protected void printNode(JsonGenerator jgen, Node field, Locale locale) throws IOException
+//    {
+//        if (field.isIterable()) {
+//            for (Node node: field) {
+//                printNode(jgen, node, locale);
+//            }
+//        } else if (field.isResource()) {
+//            nestResources(jgen, (Resource) field);
+//        } else {
+//            writeValue(jgen, field);
+//        }
+//
+//    }
 
     @Override
     protected void nestResources(JsonGenerator jgen, Resource resource) throws IOException
     {
-        jgen.writeStartObject();
-        jgen.writeFieldName(ParserConstants.JSONLD_ID);
-        jgen.writeString(resource.getBlockId().toString());
-        jgen.writeEndObject();
+        printResourceReference(jgen, resource);
     }
 
 }

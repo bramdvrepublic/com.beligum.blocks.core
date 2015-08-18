@@ -73,6 +73,8 @@ public class ResourceFactoryImpl implements ResourceFactory
         } else {
             if (isResource(value)) {
                 retVal = getResource(value, language);
+            } else if (value instanceof Map && ((Map) value).containsKey(ParserConstants.JSONLD_VALUE)) {
+                retVal = createNode(((Map) value).get(ParserConstants.JSONLD_VALUE), language);
             } else {
                 retVal = new NodeImpl(value, language);
             }
