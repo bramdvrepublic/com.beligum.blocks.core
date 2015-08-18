@@ -1,12 +1,12 @@
 /**
  * Created by wouter on 17/07/15.
  */
-base.plugin("blocks.imports.Spacer", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
+base.plugin("blocks.imports.Spacer", ["base.core.Class", "blocks.imports.Block", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Block, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
 {
     var BlocksSpacer = this;
     this.TAGS = ["blocks-spacer"];
 
-    (this.Class = Class.create(Widget.Class, {
+    (this.Class = Class.create(Block.Class, {
 
         //-----VARIABLES-----
 
@@ -30,7 +30,7 @@ base.plugin("blocks.imports.Spacer", ["base.core.Class", "blocks.imports.Widget"
         },
         getOptionConfigs: function (block, element)
         {
-            var retVal = [];
+            var retVal = BlocksSpacer.Class.Super.prototype.getOptionConfigs.call(this, block, element);
 
             retVal.push(SidebarUtils.addSliderClass(Sidebar, block.element, "Hoogte", [
                 {value: "xs", name: "Extra small"},

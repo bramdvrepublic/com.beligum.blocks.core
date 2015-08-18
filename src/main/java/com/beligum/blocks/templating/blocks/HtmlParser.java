@@ -164,10 +164,9 @@ public class HtmlParser extends AbstractAssetParser
             sourceTemplate = HtmlTemplate.create(oldTemplate.getTemplateName(), source, oldTemplate.getAbsolutePath(), oldTemplate.getRelativePath(), oldTemplate.getParent());
             templateCache.put(sourcePath, sourceTemplate);
 
-            StringBuilder builder = new StringBuilder();
-
             //this is the base for all coming preprocessing
-            Segment templateHtml = sourceTemplate.getHtml();
+            //note that we only use the inner html, the prefix and suffix will be rendered out before and after every instance (see loops below)
+            Segment templateHtml = sourceTemplate.getInnerHtml();
             OutputDocument output = new OutputDocument(templateHtml);
 
             //from here, it's the same for a Tag or Page template; preprocess the replaceable properties
@@ -186,10 +185,8 @@ public class HtmlParser extends AbstractAssetParser
                 }
             }
 
-            builder.append(output.toString());
-
             //replace the source with the (parsed) <template> content
-            source = new Source(builder.toString());
+            source = new Source(output.toString());
         }
 
         //parse the main html (same for templates and instances)
@@ -223,22 +220,31 @@ public class HtmlParser extends AbstractAssetParser
                 // -->     #end
                 //     </tag-template-name>
                 // so instead of iterating over the child-elements, we iterate over all nodes, saving "other" text for future use
-                Map<String, List<String>> properties = new LinkedHashMap<>();
+                List<Token> properties = new ArrayList<>();
+                Map<String, PropertyToken> propertyRefs = new HashMap<>();
                 // note: this is a tricky one. It doesn't have to be the immediate children, but we can't cross the "boundary"
                 // of another template instance either (otherwise the grandchild-properties would get assigned to the grandparent)
                 // In practice, restricting this to the immediate children works pretty well (and neatly conforms to the WebComponents standard)
                 Iterator<Segment> iter = templateInstance.getContent().getNodeIterator();
                 while (iter.hasNext()) {
                     Segment seg = iter.next();
+
                     //if the segment is a tag, parse the element
                     if (seg instanceof StartTag) {
-                        Element immediateChild = ((StartTag) seg).getElement();
+                        StartTag startTag = ((StartTag) seg);
+                        Element immediateChild = startTag.getElement();
+
+                        // Note: this first check check if the tag (eg. a <link> tag that's not closed; eg. that's not <link/>)
+                        // occurs. For more details, see http://jericho.htmlparser.net/docs/javadoc/net/htmlparser/jericho/Element.html
+                        boolean isVoidTag = startTag.equals(immediateChild);
 
                         //skip the entire tree of the element, we'll handle it now
                         // but watch out: an <img> element doens't have and end tag, so check for null
-                        if (immediateChild.getEndTag() != null) {
-                            while (iter.hasNext() && !iter.next().equals(immediateChild.getEndTag()))
-                                ;
+                        if (!isVoidTag) {
+                            if (immediateChild.getEndTag() != null) {
+                                while (iter.hasNext() && !iter.next().equals(immediateChild.getEndTag()))
+                                    ;
+                            }
                         }
 
                         //since (for our template system) the RDF and non-RDF attributes are equal, we can treat them the same way
@@ -251,9 +257,11 @@ public class HtmlParser extends AbstractAssetParser
                             String value = immediateChild.toString();
 
                             // this list allows us to specify multiple properties with the same name in the instance
-                            List<String> values = properties.get(name);
+                            PropertyToken values = propertyRefs.get(name);
                             if (values == null) {
-                                properties.put(name, values = new ArrayList<String>());
+                                propertyRefs.put(name, values = new PropertyToken(name));
+                                //note that this will 'eat up' all same properties that are coming in this tag
+                                properties.add(values);
                             }
                             values.add(value);
                         }
@@ -261,12 +269,14 @@ public class HtmlParser extends AbstractAssetParser
                     //if the segment is something else, save it in the right order for later use
                     else {
                         //just use the key, ignore the value
-                        properties.put(seg.toString(), null);
+                        properties.add(new OtherToken(seg.toString()));
                     }
                 }
 
                 //now start building the new tag
                 StringBuilder builder = new StringBuilder();
+
+                builder.append(htmlTemplate.getPrefixHtml());
 
                 //render the start tag, except if the template is eg. a page template
                 String renderTag = !htmlTemplate.renderTemplateTag() ? null : htmlTemplate.getTemplateName();
@@ -308,18 +318,19 @@ public class HtmlParser extends AbstractAssetParser
                 builder.append(")").append("\n");
 
                 //define the properties in the context
-                for (Map.Entry<String, List<String>> property : properties.entrySet()) {
+                for (Token token : properties) {
                     //see above: if we have a value, it's a proper property
-                    if (property.getValue() != null) {
+                    if (token instanceof PropertyToken) {
+                        PropertyToken propertyToken = (PropertyToken)token;
                         //this allows us to assign multiple tags to a single property key
-                        for (String value : property.getValue()) {
+                        for (String value : ((PropertyToken) token).getValues()) {
                             builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.DEFINE.ordinal()).append(",\"")
-                                   .append(property.getKey()).append("\")").append(value).append("#end").append("\n");
+                                   .append(propertyToken.getProperty()).append("\")").append(value).append("#end").append("\n");
                         }
                     }
                     //otherwise it's something else, stored in the key
                     else {
-                        builder.append(property.getKey());
+                        builder.append(token.getValue());
                     }
                 }
 
@@ -340,6 +351,10 @@ public class HtmlParser extends AbstractAssetParser
                 if (renderTag!=null) {
                     builder.append("</").append(renderTag).append(">");
                 }
+
+                //the suffix html (mostly empty)
+                builder.append(htmlTemplate.getSuffixHtml());
+
 
                 //replace the tag in the output with it's instance
                 output.replace(templateInstance, builder);
@@ -451,4 +466,62 @@ public class HtmlParser extends AbstractAssetParser
     }
 
     //-----PRIVATE CLASSES-----
+    private static abstract class Token
+    {
+        public abstract String getValue();
+    }
+    private static class PropertyToken extends Token
+    {
+        String property;
+        List<String> values;
+        public PropertyToken(String property)
+        {
+            this.property = property;
+            this.values = new ArrayList<>();
+        }
+        public void add(String value)
+        {
+            this.values.add(value);
+        }
+        public String getProperty()
+        {
+            return property;
+        }
+        public List<String> getValues()
+        {
+            return values;
+        }
+        //NOT USED, see loops above
+        @Override
+        public String getValue()
+        {
+            return null;
+        }
+
+        @Override
+        public String toString()
+        {
+            return this.values.toString();
+        }
+    }
+    private static class OtherToken extends Token
+    {
+        String value;
+        public OtherToken(String value)
+        {
+            this.value = value;
+        }
+
+        @Override
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Override
+        public String toString()
+        {
+            return value;
+        }
+    }
 }

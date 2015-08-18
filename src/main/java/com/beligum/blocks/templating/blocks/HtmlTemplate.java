@@ -75,7 +75,6 @@ public abstract class HtmlTemplate
     protected static final Pattern styleLinkRelAttrValue = Pattern.compile("stylesheet");
 
     //-----VARIABLES-----
-    protected Segment html;
     protected Map<String, String> attributes;
     protected Path absolutePath;
     protected Path relativePath;
@@ -93,6 +92,15 @@ public abstract class HtmlTemplate
 
     //this will enable us to save the 'inheritance tree'
     protected HtmlTemplate parent;
+
+    // This will hold the html before the <template> tags
+    protected Segment prefixHtml;
+
+    // This will hold the html inside the <template> tags
+    protected Segment innerHtml;
+
+    // This will hold the html after the <template> tags
+    protected Segment suffixHtml;
 
     //-----CONSTRUCTORS-----
 
@@ -147,10 +155,22 @@ public abstract class HtmlTemplate
     {
         return velocityName;
     }
-    public Segment getHtml()
+    public Segment getPrefixHtml()
     {
-        return html;
+        return prefixHtml;
     }
+    public Segment getInnerHtml()
+    {
+        return innerHtml;
+    }
+    public Segment getSuffixHtml()
+    {
+        return suffixHtml;
+    }
+//    public Segment buildFullHtml()
+//    {
+//        return new Source(Joiner.on("").join(this.getPrefixHtml(), this.getInnerHtml(), this.getSuffixHtml()));
+//    }
     public Map<String, String> getAttributes()
     {
         return attributes;
@@ -300,11 +320,6 @@ public abstract class HtmlTemplate
         this.saveHtml(tempHtml, parent);
     }
     protected abstract void saveHtml(OutputDocument document, HtmlTemplate parent);
-
-    /**
-     * @return only the html inside the <template> tag (or the entire html in case of Page Templates)
-     */
-    protected abstract Segment getTemplateHtml();
 
     //-----PROTECTED METHODS-----
     protected abstract OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate parent) throws IOException;

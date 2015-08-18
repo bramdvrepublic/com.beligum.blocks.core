@@ -110,8 +110,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
             // don't render the remove button for properties: only blocks can be deleted
             if (!isRealProperty && e.block instanceof blocks.elements.Block && e.block.canDrag && windowID) {
-                this.addRemoveBlockButton(windowID, e.block);
-                addedOptions = true;
+                //this.addRemoveBlockButton(windowID, e.block);
+                //addedOptions = true;
             }
 
             if (widget) {
