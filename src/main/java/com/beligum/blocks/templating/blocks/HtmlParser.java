@@ -42,9 +42,9 @@ public class HtmlParser extends AbstractAssetParser
     //-----VARIABLES-----
     private static final Pattern notEmptyPropertyAttrValue = Pattern.compile(".+");
     //this is the name of the RDFa property attribute (eg. the one that plays a role while parsing RDFa)
-    private static final String RDF_PROPERTY_ATTR = "property";
+    public static final String RDF_PROPERTY_ATTR = "property";
     //this is the name of the property attribute that can be used in the template system, but doesn't 'mean' anything RDFa-wise
-    private static final String NON_RDF_PROPERTY_ATTR = "data-property";
+    public static final String NON_RDF_PROPERTY_ATTR = "data-property";
 
     //-----CONSTRUCTORS-----
     public HtmlParser()
