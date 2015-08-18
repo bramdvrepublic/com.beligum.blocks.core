@@ -189,8 +189,8 @@ public class WebPageParser
 
         // Set property value of current resource when property is content-editable
         //TODO (b) Wouter, what about data-property here?
-        if (element.getAttributeValue("property") != null) {
-            URI property = getAbsoluteRdfName(element.getAttributeValue("property"));
+        if (isProperty(element)) {
+            URI property = getAbsoluteRdfName(getPropertyName(element));
             Locale propertyLocale = locale;
             if (element.getAttributeValue("lang") != null) {
                 propertyLocale = Locale.ROOT;
@@ -217,13 +217,6 @@ public class WebPageParser
                 content = ResourceFactoryImpl.instance().createNode(element.getContent().toString(), propertyLocale);
             }
 
-            Integer index = null;
-            String value = element.getAttributeValue("data-index");
-            if (value != null) {
-                index = Integer.parseInt(value);
-            }
-            //TODO (b) index is ignored here?
-
             readProperty(resource, property, content);
         }
 
@@ -233,7 +226,9 @@ public class WebPageParser
             newResource = resource;
         }
 
-        if (siteTags.contains(element.getStartTag().getName())) {
+        // A template tag was found. Only add this to the parsed html if this tag has a property attribute,
+        // or if this tag sits inside a property
+        if (siteTags.contains(element.getStartTag().getName()) && (addContent || isProperty(element))) {
             // write startTag
             if (textPos < element.getStartTag().getEnd()) {
                 parsedHtml.append(source.subSequence(element.getStartTag().getBegin(), element.getStartTag().getEnd()));
@@ -249,7 +244,7 @@ public class WebPageParser
                 parsedHtml.append(source.subSequence(element.getEndTag().getBegin(), element.getEndTag().getEnd()));
             }
         }
-        else if (element.getAttributeValue("property") != null || element.getAttributeValue("data-property") != null) {
+        else if (isProperty(element)) {
             while (next != null && element.encloses(next)) {
                 Element prev = next;
                 next = parse(next, textPos, newResource, true);
@@ -264,6 +259,17 @@ public class WebPageParser
         return next;
     }
 
+    private boolean isProperty(Element element) {
+        return element.getAttributeValue(HtmlParser.RDF_PROPERTY_ATTR) != null || element.getAttributeValue(HtmlParser.NON_RDF_PROPERTY_ATTR) != null;
+    }
+
+    private String getPropertyName(Element element) {
+        String retVal = element.getAttributeValue(HtmlParser.RDF_PROPERTY_ATTR);
+        if (retVal == null) {
+            retVal = element.getAttributeValue(HtmlParser.NON_RDF_PROPERTY_ATTR);
+        }
+        return retVal;
+    }
     /*
     * Get the next special element that has to be saved
     * Used while parsing the html
@@ -278,10 +284,7 @@ public class WebPageParser
             if (retVal.getAttributeValue("typeof") != null) {
                 found = true;
             }
-            else if (retVal.getAttributeValue("property") != null) {
-                found = true;
-            }
-            else if (retVal.getAttributeValue("data-property") != null) {
+            else if (isProperty(retVal)) {
                 found = true;
             }
             else if (siteTags.contains(retVal.getStartTag().getName())) {
