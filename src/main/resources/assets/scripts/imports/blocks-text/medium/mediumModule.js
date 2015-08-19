@@ -7,7 +7,7 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
 
     var Editor = null;
     //default values, overridable
-    var toolbarButtons = [Extensions.StylesPicker.NAME, 'bold', 'italic', 'underline', 'strike-through', 'superscript', Extensions.LinkInput.NAME, 'orderedlist', 'unorderedlist', 'justifyLeft', 'justifyCenter', 'justifyRight'];
+    var toolbarButtons = [Extensions.StylesPicker.NAME, 'bold', 'italic', 'underline', 'strike-through', 'superscript', Extensions.LinkInput.NAME, 'orderedlist', 'unorderedlist', 'justifyLeft', 'justifyCenter', 'justifyRight', 'removeFormat'];
     var stylePickerStyles = [];
     var toolbarOptions = {};
 

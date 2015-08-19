@@ -7,6 +7,10 @@ base.plugin("blocks.imports.Block", ["base.core.Class", "blocks.imports.Widget",
 
     (this.Class = Class.create(Widget.Class, {
 
+        STATIC: {
+            extraOptionConfigs: null
+        },
+
         //-----VARIABLES-----
 
         //-----CONSTRUCTORS-----
@@ -46,6 +50,10 @@ base.plugin("blocks.imports.Block", ["base.core.Class", "blocks.imports.Widget",
             });
 
             retVal.push(blockActions);
+
+            if (Block.Class.extraOptionConfigs) {
+                Block.Class.extraOptionConfigs(this, block, element, retVal);
+            }
 
             return retVal;
         },
