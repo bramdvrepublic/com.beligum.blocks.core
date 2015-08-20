@@ -1,5 +1,7 @@
 package com.beligum.blocks.wiki;
 
+import com.beligum.base.cache.CacheKey;
+import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.config.ParserConstants;
@@ -60,6 +62,7 @@ public abstract class WikiParser
 //        mapper = new ObjectMapper();
 //        mapper.registerModule(module);
 
+        R.cacheManager().getApplicationCache().put(getCacheKey(), new ArrayList<HashMap<String, Resource>>());
         this.bulkRequest = ElasticSearch.instance().getClient().prepareBulk();
 
     }
@@ -172,9 +175,11 @@ public abstract class WikiParser
             // fix some fields
             HashMap<String, Resource> basicResources = changeEntity(resource);
 
-            for (Locale locale : LANGUAGES) {
-                createWebPages(basicResources.get(locale.getLanguage()), locale);
-            }
+            ((ArrayList<HashMap<String, Resource>>)R.cacheManager().getApplicationCache().get(getCacheKey())).add(basicResources);
+
+//            for (Locale locale : LANGUAGES) {
+//                createWebPages(basicResources.get(locale.getLanguage()), locale);
+//            }
 
 
             count++;
@@ -199,6 +204,7 @@ public abstract class WikiParser
     }
 
 
+    public abstract CacheKey getCacheKey();
 
     public abstract URI createId(HashMap<String, HashMap<String, String>> item);
 
