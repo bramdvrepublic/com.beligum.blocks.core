@@ -34,6 +34,7 @@ public class DBResource extends DBDocumentInfo
     public static final ObjectMapper localizedMapper = new ObjectMapper().registerModule(new SimpleModule().addSerializer(Resource.class, new ResourceLocalizedSerializer()));
     public static final ObjectMapper rootMapper = new ObjectMapper().registerModule(new SimpleModule().addSerializer(Resource.class, new ResourceRootSerializer()));
 
+    public static final Map<String, Resource> tempcache = new HashMap<String, Resource>();
 
     protected String blockId;
 
@@ -46,6 +47,11 @@ public class DBResource extends DBDocumentInfo
     // This alerts us to update all translations in ElasticSearch
     @Transient
     protected boolean updatedRoot = false;
+
+    @Transient
+    // referenve to all linked resources to prevent an endless loop with
+    // calls to db while linking self-referencing resources
+    protected Map<String, Resource> linkedResources = new HashMap<String, Resource>();
 
     //    @MapKey(name = "language")
     @OneToMany(mappedBy="resource", cascade = CascadeType.ALL)
@@ -94,6 +100,8 @@ public class DBResource extends DBDocumentInfo
         }
 
         retVal = new ResourceImpl(new HashMap<String, Object>(), new HashMap<String, Object>(), locale);
+        addToCache(this.blockId, retVal);
+
 
         HashMap<String, String> context = (HashMap<String, String>)rootDataMap.get(ParserConstants.JSONLD_CONTEXT);
         for (String key: rootDataMap.keySet()) {
@@ -127,7 +135,7 @@ public class DBResource extends DBDocumentInfo
                 }
             }
         }
-
+        emptyCache();
         return retVal;
     }
 
@@ -183,19 +191,35 @@ public class DBResource extends DBDocumentInfo
         return localized;
     }
 
-    protected void addValueToResource(Resource resource, URI key, Object value, Locale resourceLocale, Locale valueLocale) {
 
-        if (ResourceFactoryImpl.instance().isResource(value)) {
-            Resource resourceValue = ResourceFactoryImpl.instance().getResource(value, resourceLocale);
-            resource.add(key, resourceValue);
-        } else if (value instanceof List) {
-            for (Object item: (List)value) {
-                addValueToResource(resource, key, item, resourceLocale, valueLocale);
-            }
-        } else {
-            Node nodeValue = ResourceFactoryImpl.instance().createNode(value, valueLocale);
-            resource.add(key, nodeValue);
-        }
+    protected void addValueToResource(Resource resource, URI key, Object value, Locale resourceLocale, Locale valueLocale) {
+      try {
+          if (ResourceFactoryImpl.instance().isResource(value)) {
+              URI id = ResourceFactoryImpl.instance().getResourceId(value);
+              Resource resourceValue = getFromCache(id.toString());
+              if (resourceValue == null) {
+                  resourceValue = ResourceFactoryImpl.instance().getResource(value, resourceLocale);
+              }
+              resource.add(key, resourceValue);
+          }
+          else if (value instanceof List) {
+              for (Object item : (List) value) {
+                  if (!(item instanceof List)) {
+                      addValueToResource(resource, key, item, resourceLocale, valueLocale);
+                  }
+                  else {
+                      // Todo: this can happen but causes a bug a the moment so we skip this case until bug is found.
+                      Logger.error("Error: list in a list");
+                  }
+              }
+          }
+          else {
+              Node nodeValue = ResourceFactoryImpl.instance().createNode(value, valueLocale);
+              resource.add(key, nodeValue);
+          }
+      } catch (Exception e) {
+          Logger.error("");
+      }
     }
 
     protected Resource getRootResource(Locale locale) throws IOException
@@ -226,6 +250,26 @@ public class DBResource extends DBDocumentInfo
             }
         }
         return retVal;
+    }
+
+    /*
+    * These are temporary functions to cache resources when resources are selfreferencing, so we still
+    * deserialize self-referencing resources. But this has to be improved
+    * TODO: create a better system. When do we clear the cache???
+    * */
+
+    protected Resource getFromCache(String id) {
+        return tempcache.get(id);
+    }
+
+    protected void addToCache(String id, Resource resource) {
+        if (!tempcache.containsKey(id)) {
+            tempcache.put(id, resource);
+        }
+    }
+
+    protected void emptyCache() {
+        tempcache.clear();
     }
 
 

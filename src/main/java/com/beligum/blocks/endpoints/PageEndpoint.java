@@ -15,6 +15,7 @@ import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.pages.WebPageParser;
 import com.beligum.blocks.routing.Route;
+import com.beligum.blocks.search.ElasticSearch;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
@@ -65,7 +66,8 @@ public class PageEndpoint
     @POST
     @Path("/save/{url:.*}")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response savePage(@PathParam("url") String url, String content)
+    // @bulk:  if true, we have to flusht the bulk upload to ElasticSearch (used during import)
+    public Response savePage(@PathParam("url") String url, @QueryParam("bulk")boolean bulk, String content)
                     throws Exception
 
     {
@@ -141,6 +143,12 @@ public class PageEndpoint
 
         if (PageCache.isEnabled()) {
             PageCache.instance().flush();
+        }
+
+        // When we are importing in bulk, we do not save the bulk but wait for the user to do it
+        // otherwise we now persist all changes from our request to elastic search
+        if (bulk) {
+            ElasticSearch.instance().saveBulk();
         }
 
         return Response.ok().build();

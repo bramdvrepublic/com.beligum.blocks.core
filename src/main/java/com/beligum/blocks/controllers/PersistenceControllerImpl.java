@@ -245,6 +245,8 @@ public class PersistenceControllerImpl  implements PersistenceController
             retVal = RequestContext.getEntityManager().createQuery("select r FROM DBResource r where r.blockId = :id", DBResource.class).setParameter("id", id.toString()).getSingleResult();
         } catch (NoResultException e) {
             Logger.debug("Searching for resource but resource not found");
+        } catch (StackOverflowError e) {
+            Logger.debug("StackOverflow error !");
         }
         return retVal;
     }
@@ -278,12 +280,12 @@ public class PersistenceControllerImpl  implements PersistenceController
         ElasticSearch.instance().getBulk().add(ElasticSearch.instance().getClient().prepareIndex(index, name)
                                                             .setSource(json)
                                                             .setId(id).request());
-//        IndexResponse is = ElasticSearch.instance().getClient().prepareIndex(index, name)
-//                                        .setSource(json).setId(id)
-//                                        .execute().actionGet();
-//        if (!is.isCreated()) {
-//            Logger.error("Webpage could not be added to Lucene");
-//        }
+        IndexResponse is = ElasticSearch.instance().getClient().prepareIndex(index, name)
+                                        .setSource(json).setId(id)
+                                        .execute().actionGet();
+        if (!is.isCreated()) {
+            Logger.error("Webpage could not be added to Lucene");
+        }
     }
 
     private void addPathToLucene(String id, String json) {
