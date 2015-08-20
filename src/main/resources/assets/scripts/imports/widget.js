@@ -6,7 +6,7 @@
  */
 base.plugin("blocks.imports.Widget", ["constants.blocks.core", "base.core.Class", "base.core.Commons", "blocks.core.SidebarUtils",  function (BlocksConstants, Class, Commons, SidebarUtils)
 {
-    var BlocksWidget = this;
+    var Widget = this;
 
     this.Class = Class.create({
 
@@ -27,11 +27,11 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "base.core.Class"
                         var selector = selectors[i];
                         // note that this will happen when we extend eg. blocks-spacer in a subclass;
                         // the superclass will be registered first, and later overwritten by it's subclass
-                        if (BlocksWidget.Class.SELECTOR_INDEX[selector]) {
+                        if (Widget.Class.SELECTOR_INDEX[selector]) {
                             Logger.warn("Encountered a double Widget registration for '"+selector+"', overwriting.", this);
                         }
 
-                        BlocksWidget.Class.SELECTOR_INDEX[selector] = this;
+                        Widget.Class.SELECTOR_INDEX[selector] = this;
                     }
                 }
                 else {
@@ -52,18 +52,12 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "base.core.Class"
                     var clazz = null;
 
                     //search for the first selector that matches
-                    $.each(BlocksWidget.Class.SELECTOR_INDEX, function(selector, widget) {
+                    $.each(Widget.Class.SELECTOR_INDEX, function(selector, widget) {
                         if (element.is(selector)) {
                             clazz = widget;
                             return false; // == break
                         }
                     });
-                    //
-                    //if (element.hasClass(BlocksConstants.PAGE_CONTENT_CLASS)) {
-                    //    clazz = BlocksWidget.Class.SELECTOR_INDEX[BlocksConstants.PAGE_CONTENT_CLASS.toUpperCase()];
-                    //} else {
-                    //    clazz = BlocksWidget.Class.SELECTOR_INDEX[element.prop("tagName").toUpperCase()];
-                    //}
 
                     //if we found a class, instantiate it
                     if (clazz) {
@@ -88,12 +82,12 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "base.core.Class"
             this.creationStamp = new Date().getTime();
 
             //note: this.constructor returns the class
-            if (!BlocksWidget.Class.OBJ_REFS[this.constructor]) {
-                BlocksWidget.Class.OBJ_REFS[this.constructor] = {};
+            if (!Widget.Class.OBJ_REFS[this.constructor]) {
+                Widget.Class.OBJ_REFS[this.constructor] = {};
                 this.init();
             }
             //add a reference to this object
-            BlocksWidget.Class.OBJ_REFS[this.constructor][this.id] = this;
+            Widget.Class.OBJ_REFS[this.constructor][this.id] = this;
         },
 
         //-----'ABSTRACT' METHODS-----
@@ -128,13 +122,13 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "base.core.Class"
          * @param first two parameters as in focus()
          * @return an array containing config UI, created with the SidebarUtils factory classes (eg. SidebarUtils.addValueAttribute())
          */
-        getOptionConfigs: function (block, element)
+        getConfigs: function (block, element)
         {
             return [];
         },
 
         /**
-         * @return the name of the sidebar window for this widget
+         * @return the name of the sidebar window for this widget if it's a block
          */
         getWindowName: function ()
         {

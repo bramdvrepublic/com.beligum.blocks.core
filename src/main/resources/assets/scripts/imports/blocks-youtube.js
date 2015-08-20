@@ -1,7 +1,7 @@
 /*
  * Allows editiong of an embedded youtube video when you click on it
  * */
-base.plugin("blocks.imports.Youtube", ["base.core.Class", "blocks.imports.Block", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Block, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
+base.plugin("blocks.imports.BlocksYoutube", ["base.core.Class", "blocks.imports.Block", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Block, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
 {
     var BlocksYoutube = this;
     this.TAGS = ["blocks-youtube"];
@@ -28,9 +28,9 @@ base.plugin("blocks.imports.Youtube", ["base.core.Class", "blocks.imports.Block"
         {
             BlocksYoutube.Class.Super.prototype.blur.call(this, block, element);
         },
-        getOptionConfigs: function (block, element)
+        getConfigs: function (block, element)
         {
-            var retVal = BlocksYoutube.Class.Super.prototype.getOptionConfigs.call(this, block, element);
+            var retVal = BlocksYoutube.Class.Super.prototype.getConfigs.call(this, block, element);
 
             var embedded = block.element.children(".embed-responsive");
             var iframe = embedded.children("iframe");

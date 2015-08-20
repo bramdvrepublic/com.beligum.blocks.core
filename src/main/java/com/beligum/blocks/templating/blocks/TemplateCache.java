@@ -21,6 +21,7 @@ public class TemplateCache
     private String cachedSpacedTagNames;
     private String cachedCsvTagNames;
     private String cachedCssReset;
+    private String cachedJsArray;
 
 
     //-----CONSTRUCTORS-----
@@ -87,6 +88,15 @@ public class TemplateCache
 
         return this.cachedSpacedTagNames;
     }
+    public String getAllTagNamesCsv()
+    {
+        if (this.cachedCsvTagNames ==null) {
+            this.cachedCsvTagNames = Joiner.on(",").join(this.nameMapping.keySet());
+        }
+
+        return this.cachedCsvTagNames;
+    }
+
     /**
      * Returns and caches css code that resets our custom template tags
      * @return
@@ -115,6 +125,32 @@ public class TemplateCache
 
         return cachedCssReset;
     }
+    /**
+     * Returns and caches javascript code of an array with all the tag names of our custom template tags
+     * @return
+     */
+    public String getJsArray()
+    {
+        if (this.cachedJsArray == null) {
+            StringBuilder js = new StringBuilder();
+            js.append("base.plugin(\"blocks.imports.All\", function () ").append("{").append("this.IMPORTS = [");
+
+            boolean first = true;
+            for (HtmlTemplate htmlTemplate : this.nameMapping.values()) {
+                if (!first) {
+                    js.append(",");
+                }
+                js.append("'").append(htmlTemplate.getTemplateName()).append("'");
+                first = false;
+            }
+
+            js.append("];").append("});");
+
+            this.cachedJsArray = js.toString();
+        }
+
+        return cachedJsArray;
+    }
 
     //-----PROTECTED METHODS-----
 
@@ -123,6 +159,8 @@ public class TemplateCache
     {
         this.cachedSpacedTagNames = null;
         this.cachedCsvTagNames = null;
+        this.cachedCssReset = null;
+        this.cachedJsArray = null;
     }
 
     //-----PRIVATE CLASSES-----

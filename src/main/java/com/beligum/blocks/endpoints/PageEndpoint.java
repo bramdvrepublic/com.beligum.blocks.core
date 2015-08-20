@@ -84,7 +84,8 @@ public class PageEndpoint
             route.getWebPath().setPageOk(masterWebpage);
             PersistenceControllerImpl.instance().savePath(route.getWebPath());
 
-        } else if (route.getWebPath().isRedirect()) {
+        }
+        else if (route.getWebPath().isRedirect()) {
             //TODO get path to redirect
         }
 
@@ -92,8 +93,11 @@ public class PageEndpoint
         WebPage localizedWebpage = PersistenceControllerImpl.instance().getWebPage(masterWebpage, route.getLocale());
         // if this page does not yet exist -> create
         if (localizedWebpage == null) {
-            localizedWebpage = ResourceFactoryImpl.instance().createWebPage(masterWebpage, RdfTools.createLocalResourceId(StringUtils.capitalize(PersistenceController.WEB_PAGE_CLASS)), route.getLocale());
-        } else {
+            localizedWebpage =
+                            ResourceFactoryImpl.instance()
+                                               .createWebPage(masterWebpage, RdfTools.createLocalResourceId(StringUtils.capitalize(PersistenceController.WEB_PAGE_CLASS)), route.getLocale());
+        }
+        else {
             doVersion = true;
         }
 
@@ -116,16 +120,17 @@ public class PageEndpoint
 
             // Put all found property values inside the resources'
             // return the resources that were changed
-            WebPageParser.fillResourceProperties(pageParser.getResources(), pageParser.getResourceProperties(), oldPageParser.getResourceProperties(), PersistenceControllerImpl.instance(), localizedWebpage.getLanguage());
+            WebPageParser.fillResourceProperties(pageParser.getResources(), pageParser.getResourceProperties(), oldPageParser.getResourceProperties(), PersistenceControllerImpl.instance(),
+                                                 localizedWebpage.getLanguage());
 
             // TODO set webpage properties
-            for (Resource resource: pageParser.getResources().values()) {
+            for (Resource resource : pageParser.getResources().values()) {
                 if (!resource.getBlockId().equals(pageParser.getPageResource().getBlockId())) {
                     PersistenceControllerImpl.instance().saveResource(resource);
                 }
             }
 
-            for (URI field: pageParser.getPageResource().getFields()) {
+            for (URI field : pageParser.getPageResource().getFields()) {
                 localizedWebpage.set(field, pageParser.getPageResource().get(field));
             }
 
@@ -138,24 +143,24 @@ public class PageEndpoint
             PageCache.instance().flush();
         }
 
-
         return Response.ok().build();
     }
 
     @GET
     @Path("/blocks")
-    public Response getBlocks() {
+    public Response getBlocks()
+    {
         TemplateCache cache = HtmlParser.getTemplateCache();
         List<Map<String, String>> templates = new ArrayList<>();
         Locale lang = BlocksConfig.instance().getRequestDefaultLanguage();
         for (HtmlTemplate template : cache.values()) {
-            if (!(template instanceof PageTemplate) && template.getDisplayType()!=HtmlTemplate.MetaDisplayType.HIDDEN) {
+            if (!(template instanceof PageTemplate) && template.getDisplayType() != HtmlTemplate.MetaDisplayType.HIDDEN) {
                 HashMap<String, String> pageTemplate = new HashMap();
                 String title = null;
                 String description = null;
                 String icon = null;
 
-                final Locale[] LANGS = {lang, BlocksConfig.instance().getDefaultLanguage(), Locale.ROOT};
+                final Locale[] LANGS = { lang, BlocksConfig.instance().getDefaultLanguage(), Locale.ROOT };
 
                 // TODO make defaults a translation
                 pageTemplate.put("name", template.getTemplateName());
@@ -178,11 +183,12 @@ public class PageEndpoint
     @GET
     @Path("/block/{name:.*}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getBlock(@PathParam("name") String name) {
+    public Response getBlock(@PathParam("name") String name)
+    {
         HashMap<String, Object> retVal = new HashMap<>();
 
         HtmlTemplate htmlTemplate = null;
-        for (HtmlTemplate t: HtmlParser.getTemplateCache().values()) {
+        for (HtmlTemplate t : HtmlParser.getTemplateCache().values()) {
             if (t.getTemplateName().equals(name)) {
                 htmlTemplate = t;
                 break;
@@ -217,7 +223,6 @@ public class PageEndpoint
         return Response.ok().build();
     }
 
-
     private String findI18NValue(Locale[] langs, Map<Locale, String> values, String defaultValue)
     {
         String retVal = null;
@@ -231,12 +236,12 @@ public class PageEndpoint
                 }
             }
 
-            if (retVal==null) {
+            if (retVal == null) {
                 retVal = values.values().iterator().next();
             }
         }
 
-        if (retVal==null) {
+        if (retVal == null) {
             retVal = defaultValue;
         }
 

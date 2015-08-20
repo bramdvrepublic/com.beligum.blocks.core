@@ -66,29 +66,22 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
      * */
     this.addOptionalClass = function (Sidebar, element, labelText, value)
     {
-        // Create selectbox to add to sidebar
-        var formGroup = $("<div class='form-group' />");
+        var retVal = this.createToggleButton(labelText,
+            function initStateCallback()
+            {
+                return element.hasClass(value);
+            },
 
-        // Create checkboxes for each value
-        var id = Commons.generateId();
-        var label = $('<label for="' + id + '">' + labelText + '</label>').appendTo(formGroup);
-        var wrapper = $('<div class="checkbox" />').appendTo(formGroup);
-        var input = $('<input id="' + id + '" type="checkbox" >').appendTo(wrapper);
-        input.attr("value", value);
-        if (element.hasClass(value)) {
-            input.attr("checked", "checked");
-        }
-        input.change(function (e)
-        {
-            var box = $(this);
-            if (box.is(':checked')) {
-                element.addClass(box.val());
-            } else {
-                element.removeClass(box.val());
-            }
+            function switchStateCallback(oldState, newState)
+            {
+                if (newState) {
+                    element.addClass(value);
+                } else {
+                    element.removeClass(value);
+                }
         });
 
-        return formGroup;
+        return retVal;
     };
 
     /*
@@ -543,6 +536,52 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
         }
 
         return content;
+    };
+    this.createToggleButton = function(labelText, initStateCallback, switchStateCallback)
+    {
+        var INACTIVE_FA_CLASS = 'fa-square-o';
+        var ACTIVE_FA_CLASS = 'fa-check-square-o';
+
+        // Create selectbox to add to sidebar
+        var formGroup = $("<div class='form-group' />");
+
+        // Create checkboxes for each value
+        var id = Commons.generateId();
+        var label = $('<label for="' + id + '">' + labelText + '</label>').appendTo(formGroup);
+        var input = $('<button id="' + id + '" type="button" class="btn btn-default btn-sm btn-toggle pull-right" data-toggle="button" aria-pressed="false" autocomplete="off"><i class="fa fa-fw"></i></button>').appendTo(formGroup);
+
+        var toggleState = function(setActive)
+        {
+            var fa = input.find(".fa");
+            fa.removeClass(ACTIVE_FA_CLASS);
+            fa.removeClass(INACTIVE_FA_CLASS);
+
+            //don't set .active or aria-pressed; bootstrap does it already for you
+            if (setActive) {
+                fa.addClass(ACTIVE_FA_CLASS);
+            } else {
+                fa.addClass(INACTIVE_FA_CLASS);
+            }
+        };
+
+        //init state
+        var initState = initStateCallback();
+        toggleState(initState);
+        // we need to set this once manually
+        if (initState) {
+            input.attr('aria-pressed', 'true');
+            input.addClass('active');
+        }
+
+        //listener
+        input.click(function (e)
+        {
+            var oldState = input.hasClass('active');
+            toggleState(!oldState);
+            switchStateCallback(oldState, !oldState);
+        });
+
+        return formGroup;
     };
 
 }]);

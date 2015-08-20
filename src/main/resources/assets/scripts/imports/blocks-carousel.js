@@ -1,7 +1,7 @@
 /**
  * Created by wouter on 18/06/15.
  */
-base.plugin("blocks.imports.Carousel", ["base.core.Class", "blocks.imports.Block", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Block, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
+base.plugin("blocks.imports.BlocksCarousel", ["base.core.Class", "blocks.imports.Block", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Block, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
 {
     var BlocksCarousel = this;
     this.TAGS = ["blocks-carousel"];
@@ -44,9 +44,9 @@ base.plugin("blocks.imports.Carousel", ["base.core.Class", "blocks.imports.Block
 
             this._listGroup = null;
         },
-        getOptionConfigs: function (block, element)
+        getConfigs: function (block, element)
         {
-            var retVal = BlocksCarousel.Class.Super.prototype.getOptionConfigs.call(this, block, element);
+            var retVal = BlocksCarousel.Class.Super.prototype.getConfigs.call(this, block, element);
 
             retVal.push(SidebarUtils.addOptionalClass(Sidebar, block.element, "Seamless", BlocksConstants.SEAMLESS_CLASS));
 

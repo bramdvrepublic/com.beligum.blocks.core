@@ -2,6 +2,7 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.annotations.JavascriptPackage;
 import com.beligum.base.endpoints.AssetsEndpoint;
+import com.beligum.base.resources.Asset;
 import com.beligum.base.resources.ResourceDescriptor;
 import com.beligum.base.server.R;
 import com.beligum.blocks.templating.blocks.HtmlParser;
@@ -31,7 +32,15 @@ public class TemplatesEndpoint extends AssetsEndpoint
     @Path("/styles/imports/reset.css")
     public Response getResources()
     {
-        return Response.ok(HtmlParser.getTemplateCache().getCssReset(), "text/css").build();
+        return Response.ok(HtmlParser.getTemplateCache().getCssReset(), Asset.MimeType.CSS.getMimeType()).build();
+    }
+
+    @GET
+    //note: the .less is needed to use @include in other less files
+    @Path("/scripts/imports/all.js")
+    public Response getImportsArray()
+    {
+        return Response.ok(HtmlParser.getTemplateCache().getJsArray(), Asset.MimeType.JAVASCRIPT.getMimeType()).build();
     }
 
     @GET

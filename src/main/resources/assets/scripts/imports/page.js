@@ -3,7 +3,7 @@
  */
 base.plugin("blocks.imports.Page", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.Broadcaster", "blocks.core.SidebarUtils", "blocks.core.UI", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, Broadcaster, SidebarUtils, UI)
 {
-    var BlocksPage = this;
+    var Page = this;
     this.TAGS = ['.'+BlocksConstants.PAGE_CONTENT_CLASS];
 
     (this.Class = Class.create(Widget.Class, {
@@ -13,7 +13,7 @@ base.plugin("blocks.imports.Page", ["base.core.Class", "blocks.imports.Widget", 
         //-----CONSTRUCTORS-----
         constructor: function ()
         {
-            BlocksPage.Class.Super.call(this);
+            Page.Class.Super.call(this);
         },
 
         //-----IMPLEMENTED METHODS-----
@@ -23,13 +23,13 @@ base.plugin("blocks.imports.Page", ["base.core.Class", "blocks.imports.Widget", 
         },
         focus: function (block, element, hotspot, event)
         {
-            BlocksPage.Class.Super.prototype.focus.call(this, block, element, hotspot, event);
+            Page.Class.Super.prototype.focus.call(this, block, element, hotspot, event);
         },
         blur: function (block, element)
         {
-            BlocksPage.Class.Super.prototype.blur.call(this, block, element);
+            Page.Class.Super.prototype.blur.call(this, block, element);
         },
-        getOptionConfigs: function (block, element)
+        getConfigs: function (block, element)
         {
             var retVal = [];
 

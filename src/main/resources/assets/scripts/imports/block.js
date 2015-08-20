@@ -1,15 +1,14 @@
 /**
  * Created by wouter on 17/07/15.
  */
-base.plugin("blocks.imports.Block", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", "blocks.core.Layouter", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils, Layouter)
+base.plugin("blocks.imports.Block", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", "blocks.core.Layouter", "base.core.Commons", "blocks.imports.All", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils, Layouter, Commons, All)
 {
     var Block = this;
+    this.TAGS = All.IMPORTS;
 
     (this.Class = Class.create(Widget.Class, {
 
-        STATIC: {
-            extraOptionConfigs: null
-        },
+        STATIC: {},
 
         //-----VARIABLES-----
 
@@ -31,14 +30,14 @@ base.plugin("blocks.imports.Block", ["base.core.Class", "blocks.imports.Widget",
         {
             Block.Class.Super.prototype.blur.call(this, block, element);
         },
-        getOptionConfigs: function (block, element)
+        getConfigs: function (block, element, addCreateLink)
         {
             var retVal = [];
 
             var blockActions = $("<ul/>").addClass(BlocksConstants.BLOCK_ACTIONS_CLASS);
+
             var removeAction = $("<li><label>Remove block</label></li>").appendTo(blockActions);
             var removeButton = $("<a class='btn btn-danger btn-sm pull-right'><i class='fa fa-fw fa-trash-o'></i></a>").appendTo(removeAction);
-
             removeButton.click(function ()
             {
                 //TODO let's not ask for a confirmation but implement an undo-function later on...
@@ -51,18 +50,14 @@ base.plugin("blocks.imports.Block", ["base.core.Class", "blocks.imports.Widget",
 
             retVal.push(blockActions);
 
-            if (Block.Class.extraOptionConfigs) {
-                Block.Class.extraOptionConfigs(this, block, element, retVal);
-            }
-
             return retVal;
         },
         getWindowName: function ()
         {
-            return Block.Class.Super.prototype.getWindowName.call(this);
+            return BlocksMessages.widgetBlockTitle;
         },
 
         //-----PRIVATE METHODS-----
 
-    }));
+    })).register(this.TAGS);
 }]);

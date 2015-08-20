@@ -79,8 +79,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             }
 
             //don't make windows for (real) properties, only blocks and pages
-            var isRealProperty = e.block.element != e.element;
-            var blockTitle = isRealProperty ? 'property' : 'block';
+            var isPropertyInBlock = !e.block.element.is(e.element);
+            var blockTitle = isPropertyInBlock ? 'property' : 'block';
             if (widget) {
                 blockTitle = widget.getWindowName();
             }
@@ -109,7 +109,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             var addedOptions = false;
 
             // don't render the remove button for properties: only blocks can be deleted
-            if (!isRealProperty && e.block instanceof blocks.elements.Block && e.block.canDrag && windowID) {
+            if (!isPropertyInBlock && e.block instanceof blocks.elements.Block && e.block.canDrag && windowID) {
                 //this.addRemoveBlockButton(windowID, e.block);
                 //addedOptions = true;
             }
@@ -118,7 +118,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 // the focus method can return a list of UI widgets it needs to add to the window
                 // this way, we have control over that (where we have all the information to decide; eg. what property in which block, etc)
                 widget.focus(e.block, e.element, hotspot, event);
-                var optionsToAdd = widget.getOptionConfigs(e.block, e.element);
+                var optionsToAdd = widget.getConfigs(e.block, e.element);
                 if (optionsToAdd) {
                     if (addedOptions && optionsToAdd.length>0) {
                         this.addUIForProperty(windowID, '<hr>');
@@ -128,6 +128,10 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                         this.addUIForProperty(windowID, optionsToAdd[w]);
                         addedOptions = true;
                     }
+                }
+
+                if (widget.getPropertyConfigs) {
+                    $.merge(optionsToAdd, widget.getPropertyConfigs(e.block, e.element));
                 }
             }
 
