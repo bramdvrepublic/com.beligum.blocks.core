@@ -30,7 +30,13 @@ public class TagTemplateDirectiveUtils
     }
     protected static String readValue(InternalContextAdapter context, Node node)
     {
-        return node.jjtGetChild(node.jjtGetNumChildren()-1).literal();
+        Node contentNode = node.jjtGetChild(node.jjtGetNumChildren() - 1);
+        if (contentNode.jjtGetNumChildren()>0) {
+            return contentNode.literal();
+        }
+        else {
+            return null;
+        }
     }
 
     //-----PRIVATE METHODS-----

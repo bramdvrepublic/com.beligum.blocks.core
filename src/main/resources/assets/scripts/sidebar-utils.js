@@ -289,10 +289,12 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
             inputActions["Lookup page address (coming soon)"] = pageSelectOptions;
         }
 
-        var content = this.createTextInput(Sidebar, function ()
+        var content = this.createTextInput(Sidebar,
+            function ()
             {
                 return element.attr(attribute);
-            }, function (val)
+            },
+            function (val)
             {
                 return element.attr(attribute, val);
             },
@@ -439,6 +441,11 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
                     if (value[SidebarUtils.TEXT_INPUT_ACTION_OPTION_ONSELECT]) {
                         link.click(function (event)
                         {
+                            if (selectBtn) {
+                                //close the dropdown menu
+                                selectBtn.dropdown('toggle');
+                            }
+
                             //let's pass the input field so the function knows where to put the result
                             value[SidebarUtils.TEXT_INPUT_ACTION_OPTION_ONSELECT](event, input);
                         });

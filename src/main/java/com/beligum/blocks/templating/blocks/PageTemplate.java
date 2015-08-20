@@ -29,11 +29,6 @@ public class PageTemplate extends HtmlTemplate
 
     //-----PROTECTED METHODS-----
     @Override
-    protected Segment getTemplateHtml()
-    {
-        return this.html;
-    }
-    @Override
     protected OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate parent) throws IOException
     {
         // note that it doesn't really make sense to do something with the parent here;
@@ -60,8 +55,9 @@ public class PageTemplate extends HtmlTemplate
     @Override
     protected void saveHtml(OutputDocument document, HtmlTemplate parent)
     {
-        //NOOP
-        this.html = new Source(document.toString());
+        this.prefixHtml = new Source("");
+        this.innerHtml = new Source(document.toString());
+        this.suffixHtml = new Source("");
     }
 
     //-----PRIVATE METHODS-----

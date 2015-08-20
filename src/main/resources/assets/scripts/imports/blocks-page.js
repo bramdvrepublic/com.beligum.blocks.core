@@ -38,7 +38,7 @@ base.plugin("blocks.imports.Page", ["base.core.Class", "blocks.imports.Widget", 
             var deletePage = $('<li><label>Delete page</label></li>').append($('<a class="' + BlocksConstants.DELETE_PAGE_BUTTON + ' btn btn-default btn-sm pull-right"><i class="fa fa-fw fa-trash-o"></i></a>')).appendTo(pageActions);
             var newBlock = $('<li><label>New block</label></li>').append($('<a class="' + BlocksConstants.CREATE_BLOCK_CLASS + ' btn btn-default btn-sm pull-right" data-toggle="popover" data-trigger="click" data-placement="bottom" data-content="Drag this button to your page to create a new block."><i class="fa fa-fw fa-magic"></i></a>')).appendTo(pageActions);
 
-            //activation is done in menu.js
+            //activation is done in menu.js (we need one element)
             pageActions = pageActions.wrap('<div/>');
             pageActions.append('<hr>');
 

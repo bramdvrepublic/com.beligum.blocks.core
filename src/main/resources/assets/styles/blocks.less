@@ -343,9 +343,17 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   list-style-type: none;
   padding-left: 0;
 
+  &:last-child {
+    margin-bottom: 0;
+  }
+
   li {
     .clearfix;
     margin-bottom: 5px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
   }
 }
 

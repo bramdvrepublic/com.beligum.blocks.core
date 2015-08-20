@@ -1,12 +1,12 @@
 /*
  * Allows editing of an image when youy click on it
  * */
-base.plugin("blocks.imports.Image", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils",  function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
+base.plugin("blocks.imports.Image", ["base.core.Class", "blocks.imports.Block", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils",  function (Class, Block, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
 {
     var BlocksImage = this;
     this.TAGS = ["img"];
 
-    (this.Class = Class.create(Widget.Class, {
+    (this.Class = Class.create(Block.Class, {
 
         //-----VARIABLES-----
 
@@ -30,7 +30,7 @@ base.plugin("blocks.imports.Image", ["base.core.Class", "blocks.imports.Widget",
         },
         getOptionConfigs: function (block, element)
         {
-            var retVal = [];
+            var retVal = BlocksImage.Class.Super.prototype.getOptionConfigs.call(this, block, element);
 
             retVal.push(SidebarUtils.addValueAttribute(Sidebar, element, "Image url", "Paste or type an image link", "src", false, true, false));
 

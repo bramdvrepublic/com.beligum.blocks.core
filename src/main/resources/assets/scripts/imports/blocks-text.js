@@ -1,9 +1,9 @@
-base.plugin("blocks.imports.Text", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.MediumEditor", "blocks.core.Sidebar", function (Class, Widget, BlocksConstants, BlocksMessages, Broadcaster, Editor, Sidebar)
+base.plugin("blocks.imports.Text", ["base.core.Class", "blocks.imports.Block", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.MediumEditor", "blocks.core.Sidebar", function (Class, Block, BlocksConstants, BlocksMessages, Broadcaster, Editor, Sidebar)
 {
     var BlocksText = this;
     this.TAGS = ["blocks-text div", "blocks-text span", "div[property]", "span[property]"];
 
-    (this.Class = Class.create(Widget.Class, {
+    (this.Class = Class.create(Block.Class, {
 
         //-----VARIABLES-----
 
@@ -60,7 +60,7 @@ base.plugin("blocks.imports.Text", ["base.core.Class", "blocks.imports.Widget", 
         },
         getOptionConfigs: function (block, element)
         {
-            return [];
+            return BlocksText.Class.Super.prototype.getOptionConfigs.call(this, block, element);
         },
         getWindowName: function ()
         {

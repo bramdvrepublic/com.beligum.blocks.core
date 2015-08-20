@@ -16,7 +16,6 @@ public class TagTemplate extends HtmlTemplate
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private Segment templateHtml;
 
     //-----CONSTRUCTORS-----
     protected TagTemplate(String templateName, Source document, Path absolutePath, Path relativePath, HtmlTemplate parent) throws Exception
@@ -32,11 +31,6 @@ public class TagTemplate extends HtmlTemplate
     }
 
     //-----PROTECTED METHODS-----
-    @Override
-    protected Segment getTemplateHtml()
-    {
-        return this.templateHtml;
-    }
     @Override
     protected OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate parent) throws IOException
     {
@@ -85,28 +79,33 @@ public class TagTemplate extends HtmlTemplate
         // because we want to keep the wrapped resources outside the template too...
         OutputDocument htmlDoc = new OutputDocument(documentSource);
 
+        //the prefix equals the prefix of the parent, plus the prefix of us
+        StringBuilder prefix = new StringBuilder();
+        if (parent!=null) {
+            prefix.append(parent.getPrefixHtml());
+        }
+        prefix.append(documentSource.subSequence(0, templateTag.getBegin()));
+        this.prefixHtml = new Source(prefix);
+
+        //same for the suffix but in reverse order
+        StringBuilder suffix = new StringBuilder();
+        suffix.append(documentSource.subSequence(templateTag.getEnd(), documentSource.length()));
+        if (parent!=null) {
+            suffix.append(parent.getSuffixHtml());
+        }
+        this.suffixHtml = new Source(suffix);
+
         //this checks if the template tag is there pro-forma (just to make it a template file)
         //if the <template> tag is empty and we have a parent, inherit the content from the parent <template> tag
+        //this allows us to really overload the <template> tag and start over
         //note that .isEmpty() also returns true when the element has attributes
-        //note that we already copied over the styles and scripts in the init() method
         if (templateTag.isEmpty() && parent != null) {
-            this.templateHtml = parent.getTemplateHtml();
-
-            htmlDoc.replace(templateTag, this.templateHtml);
+            this.innerHtml = parent.getInnerHtml();
         }
         else {
-            this.templateHtml = templateTag.getContent();
-
-            htmlDoc.replace(templateTag, this.templateHtml);
+            //we unwrap the template tag (already saved the attributes)
+            this.innerHtml = templateTag.getContent();
         }
-
-        //and now, wrap it in a source again...
-        retVal = new Source(htmlDoc.toString());
-
-        //not really needed
-        //retVal = new Source(new SourceFormatter(retVal).setTidyTags(true).setIndentAllElements(true).setIndentString("    ").setCollapseWhiteSpace(true).toString());
-
-        this.html = retVal;
     }
 
     //-----PRIVATE METHODS-----
