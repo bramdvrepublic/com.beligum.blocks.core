@@ -1,0 +1,74 @@
+
+#constants('mot.rdf')
+<div typeof="http://www.mot.be/ontology/Smithsign" resource="$!resource.getBlockId()">
+
+    <span property="name">$!resource.get($CONSTANTS.mot.rdf.NAME_PROPERTY)</span>
+
+    #foreach($figure in $resource.get($CONSTANTS.mot.rdf.FIGURE_PROPERTY))
+        <span property="figure" >$!figure</span>
+    #end
+
+    <span property="id" lang="">$!resource.get($CONSTANTS.mot.rdf.ID_PROPERTY)</span>
+    <span property="technique" >$!resource.get($CONSTANTS.mot.rdf.TECHNIQUE_PROPERTY)</span>
+
+    #foreach($image in $resource.get($CONSTANTS.mot.rdf.IMAGE_PROPERTY))
+        <img property="image" lang="" src="$image"/>
+    #end
+
+    <span property="notes">$!resource.get($CONSTANTS.mot.rdf.NOTES_PROPERTY)</span>
+    <span property="text" lang="">$!resource.get($CONSTANTS.mot.rdf.TEXT_PROPERTY)</span>
+    <span property="characteristics" lang="">$!resource.get($CONSTANTS.mot.rdf.CHARACTERISTICS_PROPERTY)</span>
+    <span property="hyperlinks" lang="">$!resource.get($CONSTANTS.mot.rdf.HYPERLINKS_PROPERTY)</span>
+    <span property="numbers" lang="">$!resource.get($CONSTANTS.mot.rdf.NUMBERS_PROPERTY)</span>
+    <span property="verified" lang="">$!resource.get($CONSTANTS.mot.rdf.VERIFIED_PROPERTY)</span>
+
+    #foreach($smith in $resource.get($CONSTANTS.mot.rdf.WHO_PROPERTY))
+        <mot-smithsign-who property="who" resource="$!smith.getBlockId()">
+
+            <span property="notes">$!smith.get($CONSTANTS.mot.rdf.NOTES_PROPERTY)</span>
+
+            <span property="address">$!smith.get($CONSTANTS.mot.rdf.ADDRESS_PROPERTY)</span>
+            <span property="postalcode">$!smith.get($CONSTANTS.mot.rdf.POSTALCODE_PROPERTY)</span>
+            <span property="country" lang="">$!smith.get($CONSTANTS.mot.rdf.COUNTRY_PROPERTY)</span>
+            <span property="locality">$!smith.get($CONSTANTS.mot.rdf.CITY_PROPERTY)</span>
+
+            #foreach($brand in $smith.get($CONSTANTS.mot.rdf.BRAND_PROPERTY))
+                <span property="brand" lang="">$!brand</span>
+            #end
+
+            #foreach($periode in $smith.get($CONSTANTS.mot.rdf.PERIOD_PROPERTY))
+                <span property="period" lang="">$!periode</span>
+            #end
+
+            #foreach($source in $smith.get($CONSTANTS.mot.rdf.SOURCE_PROPERTY))
+                <span property="source" lang="">$!source</span>
+            #end
+
+            #foreach($name in $smith.get($CONSTANTS.mot.rdf.NAME_PROPERTY))
+                <span property="name" lang="">$!name</span>
+            #end
+
+
+        </mot-smithsign-who>
+    #end
+
+
+    #foreach($where in $resource.get($CONSTANTS.mot.rdf.WHERE_PROPERTY))
+        <mot-smithsign-where property="$CONSTANTS.mot.rdf.WHERE_PROPERTY" resource="$!where.getBlockId()">
+            <span property="whereType" lang="">$!where.get($CONSTANTS.mot.rdf.WHERETYPE_PROPERTY)</span>
+
+            <span property="page" lang="">$!where.get($CONSTANTS.mot.rdf.PAGE_PROPERTY)</span>
+            <span property="place" lang="">$!where.get($CONSTANTS.mot.rdf.PLACE_PROPERTY)</span>
+            <span property="yearOfPublication" lang="">$!where.get($CONSTANTS.mot.rdf.YEAR_OF_PUBLICATION_PROPERTY)</span>
+            <span property="title" lang="">$!where.get($CONSTANTS.mot.rdf.TITLE_PROPERTY)</span>
+            <span property="volume" lang="">$!where.get($CONSTANTS.mot.rdf.VOLUME_PROPERTY)</span>
+            <span property="hyperlinks" lang="">$!where.get($CONSTANTS.mot.rdf.HYPERLINKS_PROPERTY)</span>
+            <span property="rcb" lang="">$!where.get($CONSTANTS.mot.rdf.RCB_PROPERTY)</span>
+
+            <span property="inventoryNumber" lang="">$!where.get($CONSTANTS.mot.rdf.INVENTORYNUMBER_PROPERTY)</span>
+
+            <span property="name">$!where.get($CONSTANTS.mot.rdf.NAME_PROPERTY)</span>
+            <span property="store" lang="">$!where.get($CONSTANTS.mot.rdf.STORE_PROPERTY)</span>
+        </mot-smithsign-where>
+    #end
+</div>

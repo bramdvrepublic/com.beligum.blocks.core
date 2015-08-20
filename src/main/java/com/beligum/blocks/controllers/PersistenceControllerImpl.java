@@ -280,21 +280,21 @@ public class PersistenceControllerImpl  implements PersistenceController
         ElasticSearch.instance().getBulk().add(ElasticSearch.instance().getClient().prepareIndex(index, name)
                                                             .setSource(json)
                                                             .setId(id).request());
-        IndexResponse is = ElasticSearch.instance().getClient().prepareIndex(index, name)
-                                        .setSource(json).setId(id)
-                                        .execute().actionGet();
-        if (!is.isCreated()) {
-            Logger.error("Webpage could not be added to Lucene");
-        }
+//        IndexResponse is = ElasticSearch.instance().getClient().prepareIndex(index, name)
+//                                        .setSource(json).setId(id)
+//                                        .execute().actionGet();
+//        if (!is.isCreated()) {
+//            Logger.error("Webpage could not be added to Lucene");
+//        }
     }
 
     private void addPathToLucene(String id, String json) {
 
         String name = PersistenceController.PATH_CLASS;
         String index = "routing";
-        ElasticSearch.instance().getClient().prepareIndex(index, name)
-                     .setSource(json)
-                     .setId(id).execute().actionGet();
+        ElasticSearch.instance().getBulk().add(ElasticSearch.instance().getClient().prepareIndex(index, name)
+                                                            .setSource(json)
+                                                            .setId(id).request());
     }
 
     private void removePathFromLucene(String id) {

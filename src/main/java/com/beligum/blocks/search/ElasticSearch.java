@@ -27,6 +27,8 @@ public class ElasticSearch
 {
     private static ElasticSearch instance;
     private Client client;
+    private BulkRequestBuilder bulkRequestBuilder;
+
 
     public enum ESCacheKeys implements CacheKey
     {
@@ -102,15 +104,15 @@ public class ElasticSearch
     // -------- PRIVATE METHODS -----------
 
     private BulkRequestBuilder getBulkFromCache() {
-        return (BulkRequestBuilder)R.cacheManager().getRequestCache().get(ESCacheKeys.BULK_REQUEST);
+        return this.bulkRequestBuilder;
     }
 
     private void setBulkInCache() {
-        R.cacheManager().getRequestCache().put(ESCacheKeys.BULK_REQUEST, this.getClient().prepareBulk());
+        bulkRequestBuilder =  this.getClient().prepareBulk();
     }
 
     private void removeBulkFromCache() {
-        R.cacheManager().getRequestCache().remove(ESCacheKeys.BULK_REQUEST);
+        bulkRequestBuilder = null;
     }
 
     private void init() {

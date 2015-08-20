@@ -147,7 +147,7 @@ public class PageEndpoint
 
         // When we are importing in bulk, we do not save the bulk but wait for the user to do it
         // otherwise we now persist all changes from our request to elastic search
-        if (bulk) {
+        if (!bulk) {
             ElasticSearch.instance().saveBulk();
         }
 
