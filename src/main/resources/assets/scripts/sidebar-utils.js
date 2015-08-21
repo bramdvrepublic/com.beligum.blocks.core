@@ -1,7 +1,7 @@
 /**
  * Created by wouter on 18/06/15.
  */
-base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.Finder", "base.core.Commons", function (Constants, Finder, Commons)
+base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "messages.blocks.core", "blocks.media.Finder", "base.core.Commons", function (BlocksConstants, BlocksMessages, Finder, Commons)
 {
     var SidebarUtils = this;
 
@@ -79,7 +79,10 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
                 } else {
                     element.removeClass(value);
                 }
-        });
+            },
+            BlocksMessages.toggleLabelYes,
+            BlocksMessages.toggleLabelNo
+        );
 
         return retVal;
     };
@@ -231,9 +234,15 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
             fileSelectOptions[SidebarUtils.TEXT_INPUT_ACTION_OPTION_ONSELECT] = function (event, input)
             {
                 // Define variable so we can access it after of or cancel
-                var sidebarWidth = $("." + Constants.PAGE_SIDEBAR_CLASS).outerWidth();
+                var sidebarWidth = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS).outerWidth();
 
                 var finderOptions = {};
+
+                var currentValue = element.attr(attribute);
+                if (currentValue && currentValue.indexOf('/webhdfs') === 0) {
+                    finderOptions.selectedFile = currentValue;
+                }
+
                 finderOptions.onSelect = function (selectedFileUrls)
                 {
                     if (selectedFileUrls.length > 0) {
@@ -260,7 +269,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
 
                 Sidebar.loadFinder(finderOptions);
                 // save sidebar width
-                sidebarWidth = $("." + Constants.PAGE_SIDEBAR_CLASS).outerWidth();
+                sidebarWidth = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS).outerWidth();
                 var windowWidth = $(window).width();
 
                 if (windowWidth / 2 > sidebarWidth) {
@@ -346,11 +355,11 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
         input.val(oldVal);
         input.change();
 
-        var inputActions = $('<div class="input-actions right"/>').appendTo(inputGroup);
+        var inputActions = $('<div class="input-group-btn"/>').appendTo(inputGroup);
 
         //check if we need to show the reset button
         if (input.attr(SidebarUtils.OLD_VAL_ATTR) !== '') {
-            resetBtn = $('<a title="Reset value" class="input-btn input-btn-reset"><i class="fa fa-rotate-left"></a>').appendTo(inputActions);
+            resetBtn = $('<a title="Reset value" class="btn btn-default btn-reset"><i class="fa fa-rotate-left"></a>').appendTo(inputActions);
             resetBtn.click(function (e)
             {
                 input.val(input.attr(SidebarUtils.OLD_VAL_ATTR));
@@ -365,9 +374,11 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
         }
 
         //append the clear button
-        var clearBtn = $('<a title="Clear value" class="input-btn input-btn-clear"><i class="fa fa-times"></a>').appendTo(inputActions);
+        var clearBtn = $('<a title="Clear value" class="btn btn-default btn-clear"><i class="fa fa-times"></a>').appendTo(inputActions);
         input.on("change keyup focus", function (event)
         {
+            inputGroup.addClass('focus');
+
             if (input.val() == null || input.val() == '') {
                 clearBtn.removeClass("show");
             }
@@ -394,6 +405,8 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
         });
         input.on("blur", function (event)
         {
+            inputGroup.removeClass('focus');
+
             if (clearBtn) {
                 clearBtn.removeClass("show");
             }
@@ -453,14 +466,14 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
             if (dropdownOptions.children().length) {
                 //if we only have one link, let the users click it immediately
                 if (dropdownOptions.children().length == 1) {
-                    selectBtn = $('<a title="' + firstLinkCaption + '" class="input-btn input-btn-actions"><i class="fa fa-search"></a>').appendTo(inputActions);
+                    selectBtn = $('<a title="' + firstLinkCaption + '" class="btn btn-default input-btn-actions"><i class="fa fa-search"></a>').appendTo(inputActions);
                     selectBtn.mousedown(function (e)
                     {
                         firstLink.click();
                     });
                 }
                 else {
-                    selectBtn = $('<a title="More actions" class="input-btn input-btn-actions" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="fa fa-search"></a>').appendTo(inputActions);
+                    selectBtn = $('<a title="More actions" class="btn btn-default input-btn-actions" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="fa fa-search"></a>').appendTo(inputActions);
                     //don't let input lose focus when the button is clicked
                     selectBtn.mousedown(function (e)
                     {
@@ -537,10 +550,17 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
 
         return content;
     };
-    this.createToggleButton = function(labelText, initStateCallback, switchStateCallback)
+    this.createToggleButton = function(labelText, initStateCallback, switchStateCallback, onLabel, offLabel)
     {
         var INACTIVE_FA_CLASS = 'fa-square-o';
         var ACTIVE_FA_CLASS = 'fa-check-square-o';
+
+        if (!onLabel) {
+            onLabel = BlocksMessages.toggleLabelOn;
+        }
+        if (!offLabel) {
+            offLabel = BlocksMessages.toggleLabelOff;
+        }
 
         // Create selectbox to add to sidebar
         var formGroup = $("<div class='form-group' />");
@@ -548,19 +568,32 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
         // Create checkboxes for each value
         var id = Commons.generateId();
         var label = $('<label for="' + id + '">' + labelText + '</label>').appendTo(formGroup);
-        var input = $('<button id="' + id + '" type="button" class="btn btn-default btn-sm btn-toggle pull-right" data-toggle="button" aria-pressed="false" autocomplete="off"><i class="fa fa-fw"></i></button>').appendTo(formGroup);
+        var ACTIVE_ATTR = "data-active";
+        var input = $('<input id="' + id + '" type="checkbox" data-toggle="toggle" data-size="small" '+ACTIVE_ATTR+'="false" aria-pressed="false">').appendTo(formGroup);
+        //var input = $('<button id="' + id + '" type="button" class="btn btn-default btn-sm btn-toggle pull-right" data-toggle="button" aria-pressed="false" autocomplete="off"><i class="fa fa-fw"></i></button>').appendTo(formGroup);
 
-        var toggleState = function(setActive)
+        //init the toggle api
+        input.bootstrapToggle({
+            on: onLabel,
+            off: offLabel,
+            style: 'pull-right'
+        });
+
+        var toggleState = function(newState)
         {
-            var fa = input.find(".fa");
-            fa.removeClass(ACTIVE_FA_CLASS);
-            fa.removeClass(INACTIVE_FA_CLASS);
+            input.attr(ACTIVE_ATTR, ''+newState);
 
-            //don't set .active or aria-pressed; bootstrap does it already for you
-            if (setActive) {
-                fa.addClass(ACTIVE_FA_CLASS);
-            } else {
-                fa.addClass(INACTIVE_FA_CLASS);
+            var fa = input.find(".fa");
+            if (fa.length>0) {
+                fa.removeClass(ACTIVE_FA_CLASS);
+                fa.removeClass(INACTIVE_FA_CLASS);
+
+                //don't set .active or aria-pressed; bootstrap does it already for you
+                if (newState) {
+                    fa.addClass(ACTIVE_FA_CLASS);
+                } else {
+                    fa.addClass(INACTIVE_FA_CLASS);
+                }
             }
         };
 
@@ -571,12 +604,13 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "blocks.media.
         if (initState) {
             input.attr('aria-pressed', 'true');
             input.addClass('active');
+            input.attr(ACTIVE_ATTR, 'true');
         }
 
         //listener
-        input.click(function (e)
+        input.change(function (e)
         {
-            var oldState = input.hasClass('active');
+            var oldState = input.attr(ACTIVE_ATTR)==='true';
             toggleState(!oldState);
             switchStateCallback(oldState, !oldState);
         });

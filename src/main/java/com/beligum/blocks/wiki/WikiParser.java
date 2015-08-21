@@ -371,7 +371,4 @@ public abstract class WikiParser
             }
         }
     }
-
-    public abstract void createWebPages(Resource resource, Locale locale);
-
 }

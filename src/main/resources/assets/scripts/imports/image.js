@@ -34,17 +34,14 @@ base.plugin("blocks.imports.Image", ["base.core.Class", "blocks.imports.Property
 
             retVal.push(SidebarUtils.addValueAttribute(Sidebar, element, "Image url", "Paste or type an image link", "src", false, true, false));
 
+            retVal.push(this._getCreateLinkConfig(block, element));
+
             // if we click on a random IMG element (eg inside another block), don't show the bordered options,
             // because it won't work since the css styling for the .bordered class is wrapped in 'blocks-image'
             if (block.element.prop("tagName") == 'BLOCKS-IMAGE') {
                 //note that we always add the config classes to the outer block (the template instance) to be as flexible as possible
-                retVal.push(SidebarUtils.addUniqueClass(Sidebar, block.element, "Rand", [
-                    {value: "bordered", name: "Met rand"},
-                    {value: "", name: "Zonder rand"}
-                ]));
+                retVal.push(SidebarUtils.addOptionalClass(Sidebar, block.element, "Rand", BlocksConstants.IMAGE_BORDERED_CLASS));
             }
-
-            retVal.push(this._getCreateLinkConfig(block, element));
 
             return retVal;
         },

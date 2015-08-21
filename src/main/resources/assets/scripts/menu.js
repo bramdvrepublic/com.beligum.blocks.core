@@ -5,6 +5,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     var SIDEBAR_STATE_NULL = "";
     var SIDEBAR_STATE_SHOW = "show";
     var SIDEBAR_STATE_HIDE = "hide";
+    var SIDEBAR_COOKIE_PATH = '';
 
     var MIN_SIDEBAR_WIDTH = 200;
 
@@ -25,7 +26,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     sidebarElement.load("/templates/sidebar");
 
     //check for a cookie and auto-open when the sidebar was active
-    var sidebarState = $.cookie(BlocksConstants.COOKIE_SIDEBAR_STATE);
+    var sidebarState = Cookies.get(BlocksConstants.COOKIE_SIDEBAR_STATE);
     if (sidebarState === SIDEBAR_STATE_SHOW) {
         $(document).ready(function ()
         {
@@ -101,10 +102,19 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             });
 
             // Get old sidebar width from cookie
-            var cookieSidebarWidth = $.cookie(BlocksConstants.COOKIE_SIDEBAR_WIDTH);
+            var cookieSidebarWidth = Cookies.get(BlocksConstants.COOKIE_SIDEBAR_WIDTH);
+            //make sure the value is OK and cleanup if not
+            if (!$.isNumeric(cookieSidebarWidth)) {
+                cookieSidebarWidth = null;
+                Cookies.remove(BlocksConstants.COOKIE_SIDEBAR_WIDTH);
+            }
+            else {
+                cookieSidebarWidth = parseInt(cookieSidebarWidth);
+            }
+
             var windowWidth = $(window).width();
             var INIT_SIDEBAR_WIDTH = windowWidth * 0.2; // default width of sidebar is 20% of window
-            if (cookieSidebarWidth != null) {
+            if (cookieSidebarWidth != null && cookieSidebarWidth>0) {
                 INIT_SIDEBAR_WIDTH = cookieSidebarWidth;
             }
 
@@ -145,7 +155,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         }
 
         //Note: by default, the cookie is deleted when the browser is closed:
-        $.cookie(BlocksConstants.COOKIE_SIDEBAR_STATE, cookieState);
+        Cookies.set(BlocksConstants.COOKIE_SIDEBAR_STATE, cookieState, {path: SIDEBAR_COOKIE_PATH});
     };
 
     var enableSidebarDrag = function ()
@@ -197,7 +207,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 //Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD, event);
 
                 //Note: by default, the cookie is deleted when the browser is closed:
-                $.cookie(BlocksConstants.COOKIE_SIDEBAR_WIDTH, sidebarElement.width());
+                Cookies.set(BlocksConstants.COOKIE_SIDEBAR_WIDTH, sidebarElement.width(), {path: SIDEBAR_COOKIE_PATH});
             });
         });
     };

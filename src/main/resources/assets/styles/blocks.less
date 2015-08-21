@@ -35,36 +35,55 @@
 //-----MIXINS-----
 //note that this requires a relatively positioned parent
 .inline-input-buttons() {
-
   @inputZIndex: 2;
-  .input-actions {
-    float: right;
 
-    //position: relative; //to make the z-index work
-    //z-index: @inputZIndex+1;
-    margin-top: -30px;
-    padding-right: 10px;
-    .clearfix();
+  //make the wrapping container look like an input box
+  @border-color: #ccc;
+  @background-color: #ffffff;
+  border: 1px solid @border-color;
+  background-color: @background-color;
+  .box-shadow(inset 0 1px 1px rgba(0, 0, 0, .075)); // Redeclare so transitions work
+  padding-right: 12px; //this is the default value of an input box
 
-    @btnPaddingLeft: 6px;
-    .input-btn {
+  &.focus {
+    @color: @input-border-focus;
+    @color-rgba: rgba(red(@color), green(@color), blue(@color), .6);
+    border-color: @color;
+    outline: 0;
+    .box-shadow(~"inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px @{color-rgba}");
+  }
+
+  // this will reset the bootstrap shadows etc on the input and buttons
+  // because we'll simulate it on the wrapping container instead
+  input[type='text'],
+  .input-group-btn .btn {
+    border: none;
+    .box-shadow(none);
+    background-color: transparent;
+  }
+
+  input[type='text'] {
+    padding-right: 0px; //reset because we set it on the wrapper instead
+    left: -1px; //something weird: the vertical separator between the input and the buttons seems to overflow without a little help...
+  }
+
+  @bgColor: #ffffff;
+  .input-group-btn {
+    background-color: @bgColor;
+
+    .btn {
       display: none;
-      &.show {
-        display: block;
-      }
-
-      float: left;
       cursor: pointer;
       text-shadow: 0 1px 0 #fff;
-      font-size: 16px;
-      margin-top: 2px;
       color: #333;
-      padding-left: @btnPaddingLeft;
-      padding-right: 1px;
+      padding-left: 8px;
+      padding-right: 0px;
+      background-color: @bgColor;
 
-      position: relative;
-      z-index: @inputZIndex+2;
-      background-color: #FFFFFF;
+      &.show {
+        //the .show class from bootstrap forces this to become a block, and it messes up the floating
+        display: inline-block !important;
+      }
 
       .fa {
         .opacity(0.4) !important;
@@ -78,14 +97,12 @@
 
     //From http://stackoverflow.com/questions/2717480/css-selector-for-first-element-with-class/8539107#8539107
     // Select all .shown buttons that are children of .input-actions, including the first one
-    & > .input-btn.show {
-      border-left: 1px solid rgba(0, 0, 0, 0.2);
-      padding-left: 8px;
+    & > .btn.show {
+      border-left: 1px solid rgba(0, 0, 0, 0.1);
     }
     //Then "undo" the styles for elements with the class that come after the first one
-    & > .input-btn.show ~ .input-btn.show {
-      border-left: none;
-      padding-left: @btnPaddingLeft;
+    & > .btn.show ~ .btn.show {
+      border-left: 1px solid transparent;
     }
   }
 }
@@ -488,8 +505,8 @@ ul.@{BLOCK_ACTIONS_CLASS} {
 
       .form-group {
         .input-group {
-          .inline-input-buttons();
           width: 100%;
+          .inline-input-buttons();
         }
         //make all dropdowns behave more like <select>s
         .dropdown,
