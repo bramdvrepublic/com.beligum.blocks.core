@@ -28,7 +28,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "base.core.Class"
                         // note that this will happen when we extend eg. blocks-spacer in a subclass;
                         // the superclass will be registered first, and later overwritten by it's subclass
                         if (Widget.Class.SELECTOR_INDEX[selector]) {
-                            Logger.warn("Encountered a double Widget registration for '"+selector+"', overwriting.", this);
+                            //Logger.warn("Encountered a double Widget registration for '"+selector+"', overwriting.", this);
                         }
 
                         Widget.Class.SELECTOR_INDEX[selector] = this;
