@@ -147,4 +147,5 @@ public class ResourceSearch
         }
         return retVal;
     }
+
 }

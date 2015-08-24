@@ -98,11 +98,11 @@ public class ResourceJsonDeserializer extends JsonDeserializer<Resource>
                 // parse resource
                 JsonNode types = entry.getValue();
                 if (types.isArray()) {
-                    for (JsonNode valueNode: entry.getValue().findValues(ParserConstants.JSONLD_TYPE)) {
+                    for (JsonNode valueNode: entry.getValue()) {
                         resource.addRdfType(new URI(valueNode.asText()));
                     }
                 } else {
-                    resource.setRdfType(new URI(entry.getValue().get(ParserConstants.JSONLD_TYPE).textValue()));
+                    resource.setRdfType(new URI(entry.getValue().asText()));
                 }
             } else if (entry.getKey().equals(ParserConstants.JSONLD_ID)) {
                 resource.setBlockId(new URI(entry.getValue().asText()));

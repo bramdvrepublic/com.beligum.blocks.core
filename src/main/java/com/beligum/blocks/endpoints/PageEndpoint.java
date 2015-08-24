@@ -110,8 +110,8 @@ public class PageEndpoint
         //        4. get href and src attributes
         WebPageParser oldPageParser = new WebPageParser(uri, localizedWebpage.getLanguage(), localizedWebpage.getParsedHtml(), PersistenceControllerImpl.instance());
         WebPageParser pageParser = new WebPageParser(uri, localizedWebpage.getLanguage(), content, PersistenceControllerImpl.instance());
-
-        if (!(pageParser.getParsedHtml().equals(localizedWebpage.getParsedHtml()))) {
+        boolean saveNoMatterWhatForDebug = true;
+        if (saveNoMatterWhatForDebug || !(pageParser.getParsedHtml().equals(localizedWebpage.getParsedHtml()))) {
             localizedWebpage.setPageTemplate(pageParser.getPageTemplate());
             localizedWebpage.setParsedHtml(pageParser.getParsedHtml());
             localizedWebpage.setText(pageParser.getText());
@@ -126,6 +126,7 @@ public class PageEndpoint
                                                  localizedWebpage.getLanguage());
 
             // TODO set webpage properties
+
             for (Resource resource : pageParser.getResources().values()) {
                 if (!resource.getBlockId().equals(pageParser.getPageResource().getBlockId())) {
                     PersistenceControllerImpl.instance().saveResource(resource);
