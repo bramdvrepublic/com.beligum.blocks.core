@@ -5,7 +5,7 @@
 
     <groupId>com.beligum.blocks</groupId>
     <artifactId>blocks-core</artifactId>
-    <version>0.1.14-SNAPSHOT</version>
+    <version>0.1.16-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <url>http://www.beligum.com</url>
@@ -28,7 +28,7 @@
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-core</artifactId>
-            <version>0.3.7</version>
+            <version>0.3.9-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -53,8 +53,8 @@
         </dependency>
         <dependency>
             <groupId>org.webjars</groupId>
-            <artifactId>jquery-cookie</artifactId>
-            <version>1.4.1-1</version>
+            <artifactId>js-cookie</artifactId>
+            <version>2.0.2</version>
         </dependency>
         <dependency>
             <groupId>org.webjars</groupId>
@@ -95,6 +95,11 @@
             <groupId>org.webjars</groupId>
             <artifactId>bootstrap-slider</artifactId>
             <version>4.8.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars.bower</groupId>
+            <artifactId>bootstrap-toggle</artifactId>
+            <version>2.2.0</version>
         </dependency>
 
         <dependency>

@@ -95,7 +95,9 @@ base.plugin("blocks.imports.Property", ["base.core.Class", "blocks.imports.Widge
                         element.parent(LINK_SELECTOR).children().unwrap();
                         removeInputForm();
                     }
-                }
+                },
+                BlocksMessages.toggleLabelYes,
+                BlocksMessages.toggleLabelNo
             );
 
             retVal.append(toggleButton);

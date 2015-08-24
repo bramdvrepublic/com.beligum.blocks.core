@@ -1,6 +1,7 @@
 //-----IMPORTS-----
 @import "/assets/webjars/bootstrap/3.3.4/less/variables.less";
 @import "/assets/webjars/bootstrap/3.3.4/less/mixins.less";
+@import "/constants/blocks/core?type=less";
 
 // Components
 @import "/assets/webjars/bootstrap/3.3.4/less/thumbnails.less";
@@ -8,7 +9,7 @@
 //-----STYLES-----
 blocks-image {
   //the bordered option
-  &.bordered {
+  &.@{IMAGE_BORDERED_CLASS} {
     img {
       &:extend(.thumbnail);
     }
