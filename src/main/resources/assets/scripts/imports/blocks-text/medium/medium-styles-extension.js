@@ -245,6 +245,8 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.co
         {
             var form = $('<div id="'+('medium-editor-toolbar-form-anchor-' + this.getEditorId())+'" class="form-inline medium-editor-toolbar-form"></div>');
 
+            //var inputActions = SidebarUtils.buildInputActions(Sidebar, true, true, null);
+            //TODO add the inputActions to the constructor below, but make it work with the sidebar finder
             var formGroup = SidebarUtils.createTextInput(Sidebar, function getterFunction()
                 {
                     //return element.attr(attribute);
@@ -252,8 +254,7 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.co
                 {
                     //return element.attr(attribute, val);
                 },
-                null, this.placeholderText, false, null
-            ).appendTo(form);
+                null, this.placeholderText, false, null).appendTo(form);
 
             var okBtn = $('<a class="btn btn-primary ' + this.confirmBtnClass + '"><i class="fa fa-check"></i></a>').appendTo(form);
             var cancelBtn = $('<a class="btn btn-link" class="' + this.cancelBtnClass + '">cancel</a>').appendTo(form);

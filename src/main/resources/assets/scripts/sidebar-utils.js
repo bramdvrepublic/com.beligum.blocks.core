@@ -227,69 +227,8 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "messages.bloc
      * */
     this.addValueAttribute = function (Sidebar, element, labelText, placeholderText, attribute, confirm, fileSelect, pageSelect)
     {
-        var inputActions = {};
-
-        if (fileSelect) {
-            var fileSelectOptions = {};
-            fileSelectOptions[SidebarUtils.TEXT_INPUT_ACTION_OPTION_ONSELECT] = function (event, input)
-            {
-                // Define variable so we can access it after of or cancel
-                var sidebarWidth = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS).outerWidth();
-
-                var finderOptions = {};
-
-                var currentValue = element.attr(attribute);
-                if (currentValue && currentValue.indexOf('/webhdfs') === 0) {
-                    finderOptions.selectedFile = currentValue;
-                }
-
-                finderOptions.onSelect = function (selectedFileUrls)
-                {
-                    if (selectedFileUrls.length > 0) {
-                        var fileUrl = selectedFileUrls[0];
-                        if (fileUrl.charAt(0) !== "/") {
-                            fileUrl = "/" + fileUrl;
-                        }
-
-                        input.val(fileUrl);
-                        input.change();
-                        input.focus();
-                    }
-                    Sidebar.unloadFinder();
-                    // restore sidebar width
-                    Sidebar.animateSidebarWidth(sidebarWidth);
-                };
-
-                finderOptions.onCancel = function ()
-                {
-                    Sidebar.unloadFinder();
-                    // restore sidebar width
-                    Sidebar.animateSidebarWidth(sidebarWidth);
-                };
-
-                Sidebar.loadFinder(finderOptions);
-                // save sidebar width
-                sidebarWidth = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS).outerWidth();
-                var windowWidth = $(window).width();
-
-                if (windowWidth / 2 > sidebarWidth) {
-                    Sidebar.animateSidebarWidth(windowWidth / 2);
-                }
-            };
-
-            inputActions["Select file from server..."] = fileSelectOptions;
-        }
-
-        if (pageSelect) {
-            var pageSelectOptions = {};
-            pageSelectOptions[SidebarUtils.TEXT_INPUT_ACTION_OPTION_DISABLE] = true;
-            pageSelectOptions[SidebarUtils.TEXT_INPUT_ACTION_OPTION_ONSELECT] = function (event, input)
-            {
-                alert("Coming soon!");
-            };
-
-            inputActions["Lookup page address (coming soon)"] = pageSelectOptions;
-        }
+        var selectedFilePath = element.attr(attribute);
+        var inputActions = this.buildInputActions(Sidebar, fileSelect, pageSelect, selectedFilePath);
 
         var content = this.createTextInput(Sidebar,
             function ()
@@ -341,7 +280,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "messages.bloc
         if (labelText) {
             var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
         }
-        var inputGroup = $('<div class="input-group"></div>').appendTo(formGroup);
+        var inputGroup = $('<div class="input-group '+BlocksConstants.INPUT_WITH_BUTTONS_CLASS+'"></div>').appendTo(formGroup);
         var input = $('<input ' + id + ' type="text" class="form-control" placeholder="' + placeholderText + '">').appendTo(inputGroup);
 
         var oldVal = '';
@@ -501,6 +440,74 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "messages.bloc
 
         return formGroup;
     };
+    this.buildInputActions = function(Sidebar, fileSelect, pageSelect, selectedFilePath)
+    {
+        var retVal = {};
+
+        if (fileSelect) {
+            var fileSelectOptions = {};
+            fileSelectOptions[SidebarUtils.TEXT_INPUT_ACTION_OPTION_ONSELECT] = function (event, input)
+            {
+                // Define variable so we can access it after of or cancel
+                var sidebarWidth = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS).outerWidth();
+
+                var finderOptions = {};
+
+                //TODO make this MediaConstants.AJAX_URL
+                if (selectedFilePath && selectedFilePath.indexOf('/webhdfs') === 0) {
+                    finderOptions.selectedFile = selectedFilePath;
+                }
+
+                finderOptions.onSelect = function (selectedFileUrls)
+                {
+                    if (selectedFileUrls.length > 0) {
+                        var fileUrl = selectedFileUrls[0];
+                        if (fileUrl.charAt(0) !== "/") {
+                            fileUrl = "/" + fileUrl;
+                        }
+
+                        input.val(fileUrl);
+                        input.change();
+                        input.focus();
+                    }
+                    Sidebar.unloadFinder();
+                    // restore sidebar width
+                    Sidebar.animateSidebarWidth(sidebarWidth);
+                };
+
+                finderOptions.onCancel = function ()
+                {
+                    Sidebar.unloadFinder();
+                    // restore sidebar width
+                    Sidebar.animateSidebarWidth(sidebarWidth);
+                };
+
+                Sidebar.loadFinder(finderOptions);
+                // save sidebar width
+                sidebarWidth = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS).outerWidth();
+                var windowWidth = $(window).width();
+
+                if (windowWidth / 2 > sidebarWidth) {
+                    Sidebar.animateSidebarWidth(windowWidth / 2);
+                }
+            };
+
+            retVal["Select file from server..."] = fileSelectOptions;
+        }
+
+        if (pageSelect) {
+            var pageSelectOptions = {};
+            pageSelectOptions[SidebarUtils.TEXT_INPUT_ACTION_OPTION_DISABLE] = true;
+            pageSelectOptions[SidebarUtils.TEXT_INPUT_ACTION_OPTION_ONSELECT] = function (event, input)
+            {
+                alert("Coming soon!");
+            };
+
+            retVal["Lookup page address (coming soon)"] = pageSelectOptions;
+        }
+
+        return retVal;
+    };
     this.createCombobox = function (Sidebar, labelText, values, initCallback, changeCallback)
     {
         // Create selectbox to add to sidebar
@@ -572,16 +579,16 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "messages.bloc
         var input = $('<input id="' + id + '" type="checkbox" data-toggle="toggle" data-size="small" '+ACTIVE_ATTR+'="false" aria-pressed="false">').appendTo(formGroup);
         //var input = $('<button id="' + id + '" type="button" class="btn btn-default btn-sm btn-toggle pull-right" data-toggle="button" aria-pressed="false" autocomplete="off"><i class="fa fa-fw"></i></button>').appendTo(formGroup);
 
-        //init the toggle api
-        input.bootstrapToggle({
-            on: onLabel,
-            off: offLabel,
-            style: 'pull-right'
-        });
-
         var toggleState = function(newState)
         {
             input.attr(ACTIVE_ATTR, ''+newState);
+
+            if (newState) {
+                input.attr("checked", "checked");
+            }
+            else {
+                input.removeAttr("checked");
+            }
 
             var fa = input.find(".fa");
             if (fa.length>0) {
@@ -606,6 +613,13 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "messages.bloc
             input.addClass('active');
             input.attr(ACTIVE_ATTR, 'true');
         }
+
+        //init the toggle api
+        input.bootstrapToggle({
+            on: onLabel,
+            off: offLabel,
+            style: 'pull-right'
+        });
 
         //listener
         input.change(function (e)

@@ -43,7 +43,7 @@
   border: 1px solid @border-color;
   background-color: @background-color;
   .box-shadow(inset 0 1px 1px rgba(0, 0, 0, .075)); // Redeclare so transitions work
-  padding-right: 12px; //this is the default value of an input box
+  padding-right: 8px; //this is the default value of an input box
 
   &.focus {
     @color: @input-border-focus;
@@ -63,13 +63,14 @@
   }
 
   input[type='text'] {
-    padding-right: 0px; //reset because we set it on the wrapper instead
+    padding-right: 3px; //reset because we set it on the wrapper instead
     left: -1px; //something weird: the vertical separator between the input and the buttons seems to overflow without a little help...
   }
 
   @bgColor: #ffffff;
   .input-group-btn {
     background-color: @bgColor;
+    width: 1%;
 
     .btn {
       display: none;
@@ -506,7 +507,9 @@ ul.@{BLOCK_ACTIONS_CLASS} {
       .form-group {
         .input-group {
           width: 100%;
-          .inline-input-buttons();
+          &.@{INPUT_WITH_BUTTONS_CLASS} {
+            .inline-input-buttons();
+          }
         }
         //make all dropdowns behave more like <select>s
         .dropdown,
