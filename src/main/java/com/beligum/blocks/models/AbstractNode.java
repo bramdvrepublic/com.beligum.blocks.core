@@ -166,7 +166,9 @@ public abstract class AbstractNode implements Node
     public String asString()
     {
         String retVal = null;
-        if (isString()) {
+        if (isNull()) {
+            retVal = "";
+        } else if (isString()) {
             retVal = (String)wrappedObject;
         } else if (isInt() || isBoolean() || isDouble() || isLong()) {
             retVal = wrappedObject.toString();
