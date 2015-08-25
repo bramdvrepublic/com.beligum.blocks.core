@@ -177,7 +177,7 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManip
         var clickedElement = element;
         if (clickedElement != null) {
             //if we didn't click on a tag inside the block we hovered on, just select the block element (to start with, see below)
-            if (block.element != clickedElement) {
+            if (!block.element.is(clickedElement)) {
                 if (block.element.find(clickedElement).length == 0) {
                     clickedElement = block.element;
                 }
@@ -186,7 +186,7 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManip
 
         // if we clicked on the block (or made it look like that) and that block has exactly one property
         // it makes sense to fall through and select the element holding that property
-        if (clickedElement == block.element) {
+        if (clickedElement.is(block.element)) {
             var directProperties = clickedElement.find('> [property], [data-property]');
             if (directProperties.length == 1) {
                 clickedElement = directProperties;
@@ -208,7 +208,15 @@ base.plugin("blocks.core.Hover", ["constants.blocks.core", "blocks.core.DomManip
         //if we hit a template boundary and it's not the same as the startBlock, we didn't find anything (weird situation though...)
         else if (propertyOrTagElement.prop("tagName").indexOf("-") != -1) {
             if (!propertyOrTagElement.is(block.element)) {
-                propertyOrTagElement = null;
+                // note: this happens when you click on a tag template inside a block (without a property set) that doesn't have a widget registered to it
+                // so it's safe to select the outer block, when it's a child of the block, I assume?
+                if (block.element.find(propertyOrTagElement).length) {
+                    propertyOrTagElement = block.element;
+                }
+                //notify there's something wrong
+                else {
+                    propertyOrTagElement = null;
+                }
             }
         }
 
