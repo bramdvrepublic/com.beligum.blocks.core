@@ -12,14 +12,12 @@ import java.util.*;
  */
 public abstract class AbstractNode implements Node
 {
-    protected Object wrappedObject = null;
     protected Boolean isString = null;
     protected Boolean isDouble = null;
     protected Boolean isLong = null;
     protected Boolean isBoolean = null;
     protected Boolean isInt = null;
     protected Boolean isIterable = null;
-    protected Boolean isMap = null;
     protected Locale language = Locale.ROOT;
 
     // ---- CONSTRUCTORS -------
@@ -30,66 +28,15 @@ public abstract class AbstractNode implements Node
 
     protected AbstractNode(Object object, Locale language) {
         if (language == null) language = Locale.ROOT;
-        this.wrappedObject = object;
         this.language = language;
-        if (this.wrappedObject instanceof String) {
-            String str = (String)object;
-
-            if (isNumeric(str)) {
-                try {
-                    this.wrappedObject = Double.parseDouble(str);
-
-                    // Check if our numeric has decimals. If not it is a Long or an Int
-                    if (this.wrappedObject.equals(Math.rint((Double) this.wrappedObject))) {
-                        Long longValue = ((Double)this.wrappedObject).longValue();
-                        if (longValue < Integer.MAX_VALUE && longValue > Integer.MIN_VALUE) {
-                            this.wrappedObject = ((Double)this.wrappedObject).intValue();
-                            this.isInt = true;
-                        } else {
-                            this.wrappedObject = longValue;
-                            this.isLong = true;
-                        }
-                    } else {
-                        this.isDouble = true;
-                    }
-                } catch (Exception e) {
-                    this.isString = true;
-                }
-
-            }
-            // Special parse for boolean because Boolean.parseBoolean always returns false if string != 'true'
-            // What would make all our strings into fals booleans
-            else if (Boolean.parseBoolean(str) || (str.length() == 5 && str.toLowerCase().equals("false"))) {
-                this.wrappedObject = Boolean.parseBoolean(str);
-                this.isBoolean = true;
-            } else {
-                this.isString = true;
-            }
-        } else if (this.wrappedObject instanceof List || this.wrappedObject instanceof Set) {
-            isIterable = true;
-        } else if (this.wrappedObject instanceof Map) {
-            isMap = true;
-        } else if (this.wrappedObject instanceof Boolean) {
-            isBoolean = true;
-        } else if (this.wrappedObject instanceof Double) {
-            isDouble = true;
-        } else if (this.wrappedObject instanceof Float) {
-            isDouble = true;
-        } else if (this.wrappedObject instanceof Integer) {
-            isInt = true;
-        } else if (this.wrappedObject instanceof Long) {
-            isLong = true;
-        } else {
-            this.wrappedObject = null;
-        }
-
+        this.setValue(object);
     }
 
 
     @Override
     public boolean isString() {
         boolean retVal = false;
-        if ((isString != null && isString) || wrappedObject instanceof String){
+        if ((isString != null && isString) || getValue() instanceof String){
             retVal = true;
         }
         isString = retVal;
@@ -98,7 +45,7 @@ public abstract class AbstractNode implements Node
     @Override
     public boolean isDouble() {
         boolean retVal = false;
-        if ((isDouble != null && isDouble) || wrappedObject instanceof Double){
+        if ((isDouble != null && isDouble) || getValue() instanceof Double){
             retVal = true;
         }
         isDouble = retVal;
@@ -107,7 +54,7 @@ public abstract class AbstractNode implements Node
     @Override
     public boolean isLong() {
         boolean retVal = false;
-        if ((isLong != null && isLong) || wrappedObject instanceof Long){
+        if ((isLong != null && isLong) || getValue() instanceof Long){
             retVal = true;
         }
         isLong = retVal;
@@ -116,7 +63,7 @@ public abstract class AbstractNode implements Node
     @Override
     public boolean isBoolean() {
         boolean retVal = false;
-        if ((isBoolean != null && isBoolean) ||  wrappedObject instanceof Boolean){
+        if ((isBoolean != null && isBoolean) ||  getValue() instanceof Boolean){
             retVal = true;
         }
         isBoolean = retVal;
@@ -125,36 +72,56 @@ public abstract class AbstractNode implements Node
     @Override
     public boolean isInt() {
         boolean retVal = false;
-        if ((isInt != null && isInt) ||  wrappedObject instanceof Integer){
+        if ((isInt != null && isInt) ||  getValue() instanceof Integer){
             retVal = true;
         }
         isInt = retVal;
         return retVal;
     }
     @Override
-    public boolean isIterable() {
+    public boolean equals(Object o)
+    {
+        if (this == o)
+            return true;
+
+        if (this.getValue() == o)
+            return true;
+
         boolean retVal = false;
-        if ((isIterable != null && isIterable) ||  (wrappedObject instanceof Iterable  && !this.isResource())){
-            retVal = true;
+        if (this.getValue() == null) {
+            retVal = o == null;
+        } else if (o instanceof Node){
+            retVal = this.getValue().equals(((Node)o).getValue());
+        } else {
+            retVal = this.getValue().equals(o);
         }
-        isIterable = retVal;
         return retVal;
+
+    }
+    @Override
+    public int hashCode()
+    {
+        return this.getValue() != null ? this.getValue().hashCode() : 0;
+    }
+    @Override
+    public boolean isIterable() {
+        return false;
     }
 
     @Override
     public boolean isMap() {
-        boolean retVal = false;
-        if ((isMap != null && isMap) ||  (wrappedObject instanceof Map  && !this.isResource())){
-            retVal = true;
-        }
-        isIterable = retVal;
-        return retVal;
+        return false;
+    }
+
+    @Override
+    public boolean isReference() {
+        return false;
     }
 
     @Override
     public boolean isNull()
     {
-        return wrappedObject == null;
+        return getValue() == null;
     }
     @Override
     public boolean isResource()
@@ -169,11 +136,11 @@ public abstract class AbstractNode implements Node
         if (isNull()) {
             retVal = "";
         } else if (isString()) {
-            retVal = (String)wrappedObject;
+            retVal = (String)getValue();
         } else if (isInt() || isBoolean() || isDouble() || isLong()) {
-            retVal = wrappedObject.toString();
-        } else if (wrappedObject instanceof List) {
-            retVal = wrappedObject.toString();
+            retVal = getValue().toString();
+        } else if (getValue() instanceof List) {
+            retVal = getValue().toString();
         }
         return retVal;
     }
@@ -195,7 +162,7 @@ public abstract class AbstractNode implements Node
     {
         Double retVal = null;
         if (isDouble() || isInt() || isLong()) {
-            retVal = (Double)wrappedObject;
+            retVal = (Double)getValue();
         }
         return retVal;
     }
@@ -204,7 +171,7 @@ public abstract class AbstractNode implements Node
     {
         Integer retVal = null;
         if (isInt()) {
-            retVal = (Integer)wrappedObject;
+            retVal = (Integer)getValue();
         }
         return retVal;
     }
@@ -213,7 +180,7 @@ public abstract class AbstractNode implements Node
     {
         Boolean retVal = null;
         if (isBoolean()) {
-            retVal = (Boolean)wrappedObject;
+            retVal = (Boolean)getValue();
         }
         return retVal;
     }
@@ -222,43 +189,28 @@ public abstract class AbstractNode implements Node
     {
         Long retVal = null;
         if (isLong() || isInt()) {
-            retVal = (Long)wrappedObject;
+            retVal = (Long)getValue();
         }
         return retVal;
     }
 
     @Override
-    public Object getValue()
-    {
-        return wrappedObject;
-    }
+    public abstract Object getValue();
+
+    protected abstract void setValue(Object value);
+
 
     @Override
     public Iterator<Node> iterator()
     {
-        Iterator retVal = null;
-        if (this.isIterable()) {
-            retVal = new NodeIterator(((Iterable)wrappedObject).iterator(), language);
-        } else if (this.isResource()) {
-            List list = new ArrayList();
-            list.add(this);
-            retVal = new NodeIterator(list.iterator(), language);
-        } else {
-            List list = new ArrayList();
-            if (wrappedObject != null) {
-                list.add(wrappedObject);
-            }
-            retVal = new NodeIterator(list.iterator(), language);
-        }
-        return retVal;
+        List list = new ArrayList<Node>();
+        list.add(this);
+        return list.iterator();
     }
 
+    // ----- PROTECTED METHODS --------
 
-
-
-    // ----- PRIVATE METHODS --------
-
-    private boolean isNumeric(String str) {
+    protected boolean isNumeric(String str) {
         {
             str = str.trim();
             if (str.equals("")) return false;
@@ -286,7 +238,7 @@ public abstract class AbstractNode implements Node
         }
     }
 
-    private class NodeIterator implements Iterator<Node>
+    protected class NodeIterator implements Iterator<Node>
     {
         private Iterator internalIterator;
         private Locale locale;

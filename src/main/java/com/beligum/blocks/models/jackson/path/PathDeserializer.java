@@ -28,7 +28,12 @@ public class PathDeserializer extends JsonDeserializer<DBPath>
         DBPath retVal = null;
         JsonNode node = jsonParser.readValueAsTree();
         if (node.isObject()) {
-            URI masterPage = UriBuilder.fromUri(node.get("masterPage").asText()).build();
+            URI masterPage = null;
+            if (node.has("masterPage")) {
+                masterPage = UriBuilder.fromUri(node.get("blockId").asText()).build();
+            } else if (node.has("blockId")){
+                masterPage = UriBuilder.fromUri(node.get("blockId").asText()).build();
+            }
             Path url = Paths.get(node.get("url").asText());
             Locale locale = BlocksConfig.instance().getLocaleForLanguage(node.get("language").asText());
             retVal = new DBPath(masterPage, url, locale);

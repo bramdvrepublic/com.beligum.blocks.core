@@ -17,9 +17,15 @@ public interface Resource extends Node, DocumentInfo
 
     public Node remove(URI key);
 
+    public Node remove(URI field, Locale locale);
+
     public Node get(URI key);
 
     public Node get(String field);
+
+    public Node get(URI field, Locale locale);
+
+    public Node get(String field, Locale locale);
 
     public Object getDBId();
 
@@ -35,19 +41,17 @@ public interface Resource extends Node, DocumentInfo
 
     public void addRdfType(URI uri);
 
-    public HashMap<String, String> getContext();
+    public Map<String, String> getContext();
 
     public boolean isEmpty();
+
+    public Set<Locale> getLocalesForField(URI field);
 
     public Set<URI> getFields();
 
     public Set<URI> getLocalizedFields();
 
     public Set<URI> getRootFields();
-
-    public void merge(Resource resource);
-
-    public String toJson() throws JsonProcessingException;
 
     public void setLanguage(Locale locale);
 

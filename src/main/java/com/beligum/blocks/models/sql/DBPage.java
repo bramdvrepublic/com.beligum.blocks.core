@@ -1,7 +1,9 @@
 package com.beligum.blocks.models.sql;
 
 import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.models.WebPageImpl;
+import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.WebPage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
@@ -20,12 +22,10 @@ public class DBPage extends DBDocumentInfo
 
     private String blockId;
 
-    private String masterPage;
 
     @Lob
-    private String webPage;
+    private String data;
 
-    private String language;
 
 
     // Default constructor for Hibernate
@@ -45,22 +45,13 @@ public class DBPage extends DBDocumentInfo
     public void setWebPage(WebPage webPage) throws JsonProcessingException
     {
         this.blockId = webPage.getBlockId().toString();
-        this.language = webPage.getLanguage().getLanguage();
-        this.masterPage = webPage.getMasterpageId().toString();
-        this.webPage = webPage.toJson();
+        this.data = ResourceFactoryImpl.instance().serializeWebpage(webPage, true);
     }
 
     public WebPage getWebPage() throws IOException
     {
-        return WebPageImpl.pageMapper.readValue(this.webPage, WebPage.class);
+        return ResourceFactoryImpl.instance().deserializeWebpage(this.data.getBytes(), Locale.ROOT);
     }
 
-    public Locale getLanguage() {
-        Locale retVal = BlocksConfig.instance().getLocaleForLanguage(this.language);
-        if (retVal == null) {
-            retVal = new Locale(this.language);
-        }
-        return retVal;
-    }
 
 }

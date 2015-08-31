@@ -43,9 +43,9 @@ public class WebPageParser
     private String pageTemplate;
     private String pageTitle;
     private String text = "";
-    private Set<HashMap<String, String>> links = new HashSet<HashMap<String, String>>();
+    private Set<Map<String, String>> links = new HashSet<Map<String, String>>();
     private Set<String> templates = new HashSet<String>();
-    private HashMap<String, Resource> resources = new HashMap<String, Resource>();
+    private Map<String, Resource> resources = new HashMap<String, Resource>();
 
     // All elements in this html
     private List<Element> elements;
@@ -58,7 +58,7 @@ public class WebPageParser
     private boolean inBody = false;
     private URI vocab;
     private HashMap<String, URI> prefixes = new HashMap<>();
-    private HashMap<URI, HashMap<URI, List<PropertyValue>>> resourceMap = new HashMap<>();
+    private HashMap<URI, Map<URI, List<PropertyValue>>> resourceMap = new HashMap<>();
     // Resource that contains all properties that are attached to the page
     private Resource pageResource;
 
@@ -98,7 +98,7 @@ public class WebPageParser
         return this.text;
     }
 
-    public Set<HashMap<String, String>> getLinks()
+    public Set<Map<String, String>> getLinks()
     {
         return this.links;
     }
@@ -122,12 +122,12 @@ public class WebPageParser
         return this.pageResource;
     }
 
-    public HashMap<String, Resource> getResources()
+    public Map<String, Resource> getResources()
     {
         return this.resources;
     }
 
-    public HashMap<URI, HashMap<URI, List<PropertyValue>>> getResourceProperties()
+    public Map<URI, Map<URI, List<PropertyValue>>> getResourceProperties()
     {
         return resourceMap;
     }
@@ -493,7 +493,7 @@ public class WebPageParser
         if (resource.getBlockId() != null && !resourceMap.containsKey(resource.getBlockId())) {
             resourceMap.put(resource.getBlockId(), new HashMap<URI, List<PropertyValue>>());
         }
-        HashMap<URI, List<PropertyValue>> properties = resourceMap.get(resource.getBlockId());
+        Map<URI, List<PropertyValue>> properties = resourceMap.get(resource.getBlockId());
         if (properties != null) {
             if (!properties.containsKey(propertyName)) {
                 properties.put(propertyName, new ArrayList<PropertyValue>());
@@ -519,14 +519,14 @@ public class WebPageParser
     *
     * TODO: Compare values to values in webpage (not value in resource object). This way default values are not saved.
     * */
-    public static void fillResourceProperties(HashMap<String, Resource> resources, HashMap<URI, HashMap<URI, List<PropertyValue>>> resourceProperties,
-                                              HashMap<URI, HashMap<URI, List<PropertyValue>>> oldResourceProperties, PersistenceController database, Locale locale)
+    public static void fillResourceProperties(Map<String, Resource> resources, Map<URI, Map<URI, List<PropertyValue>>> resourceProperties,
+                                              Map<URI, Map<URI, List<PropertyValue>>> oldResourceProperties, PersistenceController database, Locale locale)
     {
         // TODO return only changed resources
         for (URI resourceID : resourceProperties.keySet()) {
             Resource resource = resources.get(resourceID.toString());
-            HashMap<URI, List<PropertyValue>> properties = resourceProperties.get(resource.getBlockId());
-            HashMap<URI, List<PropertyValue>> oldProperties = oldResourceProperties.get(resource.getBlockId());
+            Map<URI, List<PropertyValue>> properties = resourceProperties.get(resource.getBlockId());
+            Map<URI, List<PropertyValue>> oldProperties = oldResourceProperties.get(resource.getBlockId());
             if (oldProperties == null)
                 oldProperties = new HashMap<URI, List<PropertyValue>>();
 

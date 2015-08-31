@@ -1,4 +1,4 @@
-package com.beligum.blocks.models.jackson.resource;
+package com.beligum.blocks.models.jackson;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.ParserConstants;
@@ -15,21 +15,19 @@ import java.net.URI;
 import java.util.*;
 
 /**
- * Created by wouter on 21/05/15.
+ * Created by wouter on 26/08/15.
  */
-public class ResourceSerializer<T extends Resource> extends JsonSerializer
+public class NodeSerializer<T extends Node> extends JsonSerializer<Node>
 {
-
     protected Stack<URI> serializedResources = new Stack<URI>();
 
     @Override
-    public void serialize(Object value, JsonGenerator jgen, SerializerProvider provider) throws IOException,
-                                                                                                  JsonProcessingException
+    public void serialize(Node value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException
     {
-        serializedResources.push(((Resource) value).getBlockId());
-        printResource(jgen, (Resource) value);
-        serializedResources.pop();
-
+        serializedResources = new Stack<URI>();
+        printNode(jgen, value, value.getLanguage());
+        // Reset resources cache for next run
+        serializedResources = new Stack<URI>();
     }
 
     // Print all fields in an object
@@ -37,24 +35,22 @@ public class ResourceSerializer<T extends Resource> extends JsonSerializer
         Map<String, String> context = resource.getContext();
 
         jgen.writeStartObject();
-        if (printRootFields()) {
 
-            // Add @id to json
-            if (resource.getBlockId() != null) {
-                jgen.writeStringField(ParserConstants.JSONLD_ID, resource.getBlockId().toString());
-            }
+        // Add @id to json
+        if (resource.getBlockId() != null) {
+            jgen.writeStringField(ParserConstants.JSONLD_ID, resource.getBlockId().toString());
+        }
 
-            // Add @type to json
-            if (resource.getRdfType() != null) {
-                Set<URI> typeNode = resource.getRdfType();
-                jgen.writeFieldName(ParserConstants.JSONLD_TYPE);
-                if (typeNode != null) {
-                    jgen.writeStartArray();
-                    for (URI fieldValue : typeNode) {
-                        jgen.writeString(fieldValue.toString());
-                    }
-                    jgen.writeEndArray();
+        // Add @type to json
+        if (resource.getRdfType() != null) {
+            Set<URI> typeNode = resource.getRdfType();
+            jgen.writeFieldName(ParserConstants.JSONLD_TYPE);
+            if (typeNode != null) {
+                jgen.writeStartArray();
+                for (URI fieldValue : typeNode) {
+                    jgen.writeString(fieldValue.toString());
                 }
+                jgen.writeEndArray();
             }
         }
 
@@ -64,36 +60,59 @@ public class ResourceSerializer<T extends Resource> extends JsonSerializer
             URI field = it.next();
             String stringField = RdfTools.makeDbFieldFromUri(field);
             context.put(stringField, field.toString());
+
+            // Write the default Value (Locale.ROOOT)
             Node fieldNode = resource.get(field);
             if (!fieldNode.isNull()) {
                 jgen.writeFieldName(stringField);
                 jgen.writeStartArray();
-                printListNode(jgen, fieldNode, resource.getLanguage());
+                printListNode(jgen, fieldNode, Locale.ROOT);
                 jgen.writeEndArray();
-            } else {
-                Logger.debug("Do not write null values to json");
             }
 
+            // Check if this property has values in other locales
+            Set<Locale> locales = resource.getLocalesForField(field);
+            locales.remove(Locale.ROOT);
+            if (locales.size() > 0) {
+                // Add new field to context as container for localized values for this property
+                String localeStringField = stringField + ParserConstants.LOCALIZED_PROPERTY;
+                context.put(localeStringField, field.toString());
+                jgen.writeFieldName(localeStringField);
+                jgen.writeStartObject();
+
+                for (Locale locale : resource.getLocalesForField(field)) {
+                    if (locale != Locale.ROOT) {
+                        fieldNode = resource.get(field, locale);
+                        jgen.writeFieldName(locale.getLanguage());
+                        jgen.writeStartArray();
+                        printListNode(jgen, fieldNode, locale);
+                        jgen.writeEndArray();
+                    }
+                }
+                jgen.writeEndObject();
+            }
         }
 
-            // Write context
-            jgen.writeFieldName(ParserConstants.JSONLD_CONTEXT);
-            jgen.writeStartObject();
-            for (String key : context.keySet()) {
-                jgen.writeFieldName(key);
-                jgen.writeString(context.get(key));
-            }
-            jgen.writeEndObject();
+
+        // Add extra properties
+        writeSpecialProperties(jgen, resource);
 
 
+        // Write context
+        jgen.writeFieldName(ParserConstants.JSONLD_CONTEXT);
+        jgen.writeStartObject();
+        for (String key : context.keySet()) {
+            jgen.writeFieldName(key);
+            jgen.writeString(context.get(key));
+        }
+        jgen.writeEndObject();
+
+        // End of resource
         jgen.writeEndObject();
 
 
     }
 
-    protected boolean printRootFields() {
-        return true;
-    }
 
     protected Iterator<URI> getFieldIterator(Resource resource) {
         return resource.getFields().iterator();
@@ -130,12 +149,9 @@ public class ResourceSerializer<T extends Resource> extends JsonSerializer
 
             if (field.getLanguage() != Locale.ROOT) {
 
-                try {
-                    jgen.writeFieldName(ParserConstants.JSONLD_LANGUAGE);
-                    jgen.writeString(field.getLanguage().getLanguage());
-                } catch (Exception e) {
-                    int x = 0;
-                }
+                jgen.writeFieldName(ParserConstants.JSONLD_LANGUAGE);
+                jgen.writeString(field.getLanguage().getLanguage());
+
             }
             jgen.writeEndObject();
         }
@@ -182,5 +198,11 @@ public class ResourceSerializer<T extends Resource> extends JsonSerializer
         }
     }
 
+    /*
+    * Method to ovewrwrite to write special properties inside the resource
+    * */
+    protected void writeSpecialProperties(JsonGenerator jgen, Resource resource) throws IOException
+    {
 
+    }
 }

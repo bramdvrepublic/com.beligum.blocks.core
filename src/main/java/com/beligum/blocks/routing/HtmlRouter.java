@@ -152,9 +152,9 @@ public class HtmlRouter extends AbstractRouter
             entity = PageCache.instance().get(url);
         }
         else {
-            URI master = path.getMasterPage();
+            URI blockId = path.getBlockId();
             WebPage page = null;
-            page = route.getBlocksDatabase().getWebPage(master, route.getLocale());
+            page = route.getBlocksDatabase().getWebPage(blockId, route.getLocale());
             String templateStr = page.getPageTemplate();
             if (StringUtils.isEmpty(templateStr)) {
                 List<HtmlTemplate> allPageTemplates = HtmlParser.getTemplateCache().getPageTemplates();
@@ -166,7 +166,7 @@ public class HtmlRouter extends AbstractRouter
                 throw new IOException("Unable to fetch or find a default page template, can't continue");
             }
 
-            Template template = this.buildTemplateInstance(templateStr, page.getParsedHtml());
+            Template template = this.buildTemplateInstance(templateStr, page.getParsedHtml(true));
 
             //this will allow the blocks javascript/css to be included
             this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template.getContext());

@@ -7,6 +7,7 @@ import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import com.beligum.blocks.models.WebPageImpl;
+import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.models.sql.DBPage;
@@ -49,7 +50,7 @@ public class PersistenceControllerImpl  implements PersistenceController
         return PersistenceControllerImpl.instance;
     }
 
-    public WebPage getWebPage(URI masterWebPage, Locale locale) throws IOException
+    public WebPage getWebPage(URI blockId, Locale locale) throws IOException
     {
         WebPage retVal = null;
         // When user can not modify a page we get the page from our ES cluster
@@ -57,20 +58,25 @@ public class PersistenceControllerImpl  implements PersistenceController
         // when user can modify the page
         if (!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
             QueryBuilder query = QueryBuilders
-                            .boolQuery().must(QueryBuilders.matchQuery("master_page", masterWebPage.toString())).must(QueryBuilders.matchQuery(ParserConstants.JSONLD_LANGUAGE, locale.getLanguage()));
+                            .boolQuery().must(QueryBuilders.matchQuery("master_page", blockId.toString())).must(QueryBuilders.matchQuery(ParserConstants.JSONLD_LANGUAGE, locale.getLanguage()));
             SearchResponse searchResponse = ElasticSearch.instance().getClient().prepareSearch(ElasticSearch.instance().getPageIndexName(locale)).setQuery(query).execute().actionGet();
 
             if (searchResponse.getHits().getHits().length > 0) {
-                retVal = WebPageImpl.pageMapper.readValue(searchResponse.getHits().getHits()[0].getSourceAsString(), WebPage.class);
+                retVal = ResourceFactoryImpl.instance().deserializeWebpage(searchResponse.getHits().getHits()[0].getSourceAsString().getBytes(), locale);
+//                retVal = WebPageImpl.pageMapper.readValue(searchResponse.getHits().getHits()[0].getSourceAsString(), WebPage.class);
             }
         }
 
         // If page is not found, double check in DB
         if (retVal == null) {
-            DBPage page = findPageInDB(masterWebPage, locale);
+            DBPage page = findPageInDB(blockId);
             if (page != null) {
                 retVal = page.getWebPage();
             }
+        }
+
+        if (retVal != null) {
+            retVal.setLanguage(locale);
         }
 
         return retVal;
@@ -80,7 +86,7 @@ public class PersistenceControllerImpl  implements PersistenceController
 
     public WebPage saveWebPage(WebPage webPage, boolean doVersion) throws IOException
     {
-        DBPage dbPage = findPageInDB(webPage.getMasterpageId(), webPage.getLanguage());
+        DBPage dbPage = findPageInDB(webPage.getBlockId());
 
         if (dbPage == null) {
             dbPage = new DBPage(webPage);
@@ -89,17 +95,17 @@ public class PersistenceControllerImpl  implements PersistenceController
         }
         RequestContext.getEntityManager().persist(dbPage);
 
-        addPageToLucene(dbPage.getId().toString(), webPage.toJson(), webPage.getLanguage());
+        addPageToLucene(dbPage.getId().toString(), ResourceFactoryImpl.instance().serializeWebpage(webPage, false), Locale.ROOT);
         return webPage;
     }
 
-    public void deleteWebPage(URI masterPage)
+    public void deleteWebPage(URI blockId)
     {
         // Do not remove the page but mark the path as not found
-        List<DBPath> paths = RequestContext.getEntityManager().createQuery("select p FROM DBPath p where p.masterPage = :master", DBPath.class).setParameter("master", masterPage.toString()).getResultList();
-        RequestContext.getEntityManager().createQuery("update DBPath p SET p.statusCode = 404 where p.masterPage = :master").setParameter("master", masterPage.toString())
+        List<DBPath> paths = RequestContext.getEntityManager().createQuery("select p FROM DBPath p where p.blockId = :id", DBPath.class).setParameter("id", blockId.toString()).getResultList();
+        RequestContext.getEntityManager().createQuery("update DBPath p SET p.statusCode = 404 where p.blockId = :id").setParameter("id", blockId.toString())
                       .executeUpdate();
-        List<Long> pages = RequestContext.getEntityManager().createQuery("select p.id FROM DBPage p where p.masterPage = :master", Long.class).setParameter("master", masterPage.toString()).getResultList();
+        List<Long> pages = RequestContext.getEntityManager().createQuery("select p.id FROM DBPage p where p.blockId = :id", Long.class).setParameter("id", blockId.toString()).getResultList();
 
         for (DBPath path: paths) {
             removePathFromLucene(path.getId().toString());
@@ -132,7 +138,7 @@ public class PersistenceControllerImpl  implements PersistenceController
         // use this masterpageid
         Map<String, WebPath> retVal = new HashMap<>();
         try {
-            List<DBPath> paths = RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.masterPage = :masterPage", DBPath.class).setParameter("masterPage", masterPage.toString()).getResultList();
+            List<DBPath> paths = RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.blockId = :id", DBPath.class).setParameter("id", masterPage.toString()).getResultList();
             for (DBPath path: paths) {
                 retVal.put(path.getLanguage().getLanguage(), path);
             }
@@ -214,17 +220,7 @@ public class PersistenceControllerImpl  implements PersistenceController
         String type = "resource";
         if (types.iterator().hasNext()) type = RdfTools.makeDbFieldFromUri(types.iterator().next());
 
-        addResourceToLucene(dbResource.getId().toString(), type, resource.toJson(), resource.getLanguage());
-
-        // if a root value was updated, update all localized resources in elasticsearch
-        // TODO: unccommeny. Commented for batch upload resources
-//        if (!dbResource.hasUpdatedRoot()) {
-//            addResourceToLucene(dbResource.getId().toString(), type, resource.toJson(), resource.getLanguage());
-//        } else {
-//            for (Locale locale: dbResource.getLanguages()) {
-//                addResourceToLucene(dbResource.getId().toString(), type, dbResource.getResource(locale).toJson(), locale);
-//            }
-//        }
+        addResourceToLucene(dbResource.getId().toString(), type, ResourceFactoryImpl.instance().serializeResource(resource, false), Locale.ROOT);
 
         return resource;
     }
@@ -251,11 +247,11 @@ public class PersistenceControllerImpl  implements PersistenceController
         return retVal;
     }
 
-    private DBPage findPageInDB(URI masterWebPage, Locale locale) {
+    private DBPage findPageInDB(URI id) {
         DBPage retVal = null;
         try {
-            retVal = RequestContext.getEntityManager().createQuery("select p FROM DBPage p where p.masterPage = :master AND p.language = :language", DBPage.class)
-                                        .setParameter("master", masterWebPage.toString()).setParameter("language", locale.getLanguage()).getSingleResult();
+            retVal = RequestContext.getEntityManager().createQuery("select p FROM DBPage p where p.blockId = :id", DBPage.class)
+                                        .setParameter("id", id.toString()).getSingleResult();
 
         } catch (NoResultException e) {
             Logger.debug("Searching for resource but resource not found");

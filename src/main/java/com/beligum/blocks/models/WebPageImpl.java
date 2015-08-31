@@ -1,5 +1,8 @@
 package com.beligum.blocks.models;
 
+import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.models.factories.ResourceFactoryImpl;
+import com.beligum.blocks.models.interfaces.Node;
 import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.models.jackson.page.PageDeserializer;
 import com.beligum.blocks.models.jackson.page.PageSerializer;
@@ -13,229 +16,380 @@ import java.net.URI;
 import java.util.*;
 
 /**
-* Created by wouter on 28/05/15.
-*/
+ * Created by wouter on 28/05/15.
+ */
 public class WebPageImpl extends ResourceImpl implements WebPage
 {
 
-    public static final ObjectMapper pageMapper = new ObjectMapper().registerModule(new SimpleModule().addSerializer(WebPage.class, new PageSerializer<>()).addDeserializer(WebPage.class, new PageDeserializer()));
+    private Map<Locale, String> parsedHtml;
+    private Map<Locale, String> pageTemplate = new HashMap<>();
+    private Map<Locale, String> text = new HashMap<>();
+    private Map<Locale, String> pageTitle = new HashMap<>();
+    private Map<Locale, Set<String>> templates = new HashMap<>();
+    private Map<Locale, Set<String>> resources = new HashMap<>();
+    private Map<Locale, Set<Map<String, String>>> links = new HashMap<>();
+    private Map<Locale, LocalDateTime> updatedAt = new HashMap<>();
+    private Map<Locale, String> updatedBy = new HashMap<>();
+    private Map<Locale, LocalDateTime> createdAt = new HashMap<>();
+    private Map<Locale, String> createdBy = new HashMap<>();
+    private Set<Locale> languages = new HashSet<Locale>();
 
-    private String masterPage;
-    private String parsedHtml;
-    private String pageTemplate;
-    private String text;
-    private String pageTitle;
-    private Set<String> templates;
-    private Set<String> resources;
-    Set<HashMap<String, String>> links;
-    private LocalDateTime updatedAt;
-    private String updatedBy;
-    private LocalDateTime createdAt;
-    private String createdBy;
-    private Locale locale;
+    public WebPageImpl() {
 
+    }
 
-
-    public WebPageImpl(URI masterPage, URI id, Locale locale) {
-        super(new HashMap<String, Object>(), new HashMap<String, Object>(), locale);
+    public WebPageImpl(URI id, Locale locale) {
+        super(locale);
         this.setBlockId(id);
-        this.masterPage = masterPage.toString();
-        this.locale = locale;
+        this.language = locale;
+        this.getLanguages().add(locale);
     }
 
 
     @Override
-    public String getParsedHtml()
+    public String getParsedHtml(boolean fallback)
     {
-        return parsedHtml;
+        return getParsedHtml(this.getLanguage(), fallback);
+    }
+
+    @Override
+    public String getParsedHtml(Locale locale, boolean fallback)
+    {
+        this.getLanguages().add(locale);
+        this.parsedHtml = ensure(this.parsedHtml);
+        return this.getDefaultValue(this.parsedHtml, locale);
     }
 
     @Override
     public void setParsedHtml(String html)
     {
-        parsedHtml = html;
+        setParsedHtml(html, this.getLanguage());
+    }
+    @Override
+    public void setParsedHtml(String parsedHtml, Locale locale)
+    {
+        this.getLanguages().add(locale);
+        this.parsedHtml = ensure(this.parsedHtml);
+        this.parsedHtml.put(locale, parsedHtml);
+    }
+
+    @Override
+    public String getPageTemplate()
+    {
+        return getPageTemplate(this.getLanguage());
+    }
+
+    @Override
+    public String getPageTemplate(Locale locale)
+    {
+        this.getLanguages().add(locale);
+        this.pageTemplate = ensure(this.pageTemplate);
+        return this.pageTemplate.get(locale);
     }
 
     @Override
     public void setPageTemplate(String template)
     {
-        pageTemplate = template;
-    }
-    @Override
-    public String getPageTemplate()
-    {
-        return pageTemplate;
+        setPageTemplate(template, this.getLanguage());
     }
 
     @Override
-    public String getPageTitle() {
-        return this.pageTitle;
+    public void setPageTemplate(String template, Locale locale)
+    {
+        this.getLanguages().add(locale);
+        this.pageTemplate = ensure(this.pageTemplate);
+        this.pageTemplate.put(locale, template);
+    }
+
+
+    @Override
+    public String getPageTitle(boolean fallback) {
+        return getPageTitle(this.getLanguage(), fallback);
+    }
+    @Override
+    public String getPageTitle(Locale locale, boolean fallback)
+    {
+        String retVal = null;
+        this.getLanguages().add(locale);
+        this.pageTitle = ensure(this.pageTitle);
+        if (fallback) {
+            retVal = this.getDefaultValue(this.pageTitle, locale);
+        } else {
+            retVal = this.pageTitle.get(locale);
+        }
+        return retVal;
     }
 
     @Override
     public void setPageTitle(String pageTitle) {
-        this.pageTitle = pageTitle;
+        this.setPageTitle(pageTitle, this.getLanguage());
+    }
+    @Override
+    public void setPageTitle(String title, Locale locale)
+    {
+        this.getLanguages().add(locale);
+        this.pageTitle = ensure(this.pageTitle);
+        this.pageTitle.put(locale, title);
     }
 
     @Override
     public String getText()
     {
-        return text;
+        return getText(this.getLanguage());
     }
 
     @Override
     public void setText(String html)
     {
-        text = html;
+        setText(html, this.getLanguage());
     }
-
     @Override
-    public URI getMasterpageId() {
-        return UriBuilder.fromUri(this.masterPage).build();
+    public String getText(Locale locale)
+    {
+        this.text = ensure(this.text);
+        return this.text.get(locale);
+    }
+    @Override
+    public void setText(String text, Locale locale)
+    {
+        this.getLanguages().add(locale);
+        this.text = ensure(this.text);
+        this.text.put(locale, text);
     }
 
-    public void setLanguage(Locale locale)
-    {
-        this.locale = locale;
-    }
-
-    public Locale getLanguage()
-    {
-        return this.locale;
-    }
 
     @Override
     public Set<String> getTemplates()
     {
-        Set<String> retVal = this.templates;
-        if (retVal == null) {
-            retVal = new HashSet<String>();
-        }
-        return retVal;
+        return getTemplates(this.getLanguage());
     }
 
     @Override
     public void setTemplates(Set<String> templates)
     {
-        if (templates == null) {
-            templates = new HashSet<String>();
-        }
-        this.templates = templates;
+        setTemplates(templates, this.getLanguage());
     }
 
     @Override
-    public void addTemplate(String template)
+    public Set<String> getTemplates(Locale locale)
     {
-        Set<String> retVal = getTemplates();
-        retVal.add(template);
+        Set<String> retVal = new HashSet();
+        if (this.templates != null) {
+            if (this.templates.containsKey(locale)) {
+                retVal = this.templates.get(locale);
+            }
+        }
+        this.getLanguages().add(locale);
+        return retVal;
+    }
+    @Override
+    public void setTemplates(Set<String> templates, Locale locale)
+    {
+        if (this.templates == null) {
+            this.templates = new HashMap<Locale, Set<String>>();
+        }
+        this.getLanguages().add(locale);
+        this.templates.put(locale, templates);
     }
 
     @Override
     public Set<String> getResources()
     {
-        Set<String> retVal = this.resources;
-        if (retVal == null) {
-            retVal = new HashSet<String>();
-        }
-        return retVal;
+        return getResources(this.getLanguage());
     }
 
     @Override
     public void setResources(Set<String> resources)
     {
-        if (resources == null) {
-            resources = new HashSet<String>();
-        }
-        this.resources = resources;
+        setResources(resources, this.getLanguage());
     }
 
     @Override
-    public void addResource(String resource)
+    public Set<String> getResources(Locale locale)
     {
-        Set<String> retVal = getResources();
-        retVal.add(resource);
+        Set<String> retVal = new HashSet();
+        if (this.templates != null) {
+            if (this.templates.containsKey(locale)) {
+                retVal = this.templates.get(locale);
+            }
+        }
+        this.getLanguages().add(locale);
+        return retVal;
+    }
+    @Override
+    public void setResources(Set<String> resources, Locale locale)
+    {
+        if (this.resources == null) {
+            this.resources = new HashMap<Locale, Set<String>>();
+        }
+        this.getLanguages().add(locale);
+        this.resources.put(locale, resources);
     }
 
     @Override
-    public Set<HashMap<String, String>> getLinks()
+    public Set<Map<String, String>> getLinks()
     {
-        Set<HashMap<String, String>> retVal = this.links;
-        if (retVal == null) {
-            retVal = new HashSet<HashMap<String, String>>();
+        return getLinks(this.getLanguage());
+    }
+
+    @Override
+    public void setLinks(Set<Map<String, String>> links)
+    {
+        setLinks(links, this.getLanguage());
+    }
+
+    @Override
+    public Set<Map<String, String>> getLinks(Locale locale)
+    {
+        Set<Map<String, String>> retVal = new HashSet<Map<String, String>>();
+        if (this.links == null) {
+            this.links = new HashMap<Locale, Set<Map<String, String>>>();
         }
+        if (this.links.get(locale) != null) {
+            retVal = this.links.get(locale);
+        }
+        this.getLanguages().add(locale);
         return retVal;
     }
 
     @Override
-    public void setLinks(Set<HashMap<String, String>> links)
+    public void setLinks(Set<Map<String, String>> links, Locale locale)
     {
-        this.links = links;
-    }
-
-    @Override
-    public void addLink(HashMap<String, String> link)
-    {
-        Set<HashMap<String, String>> retVal = getLinks();
-        if (retVal == null) {
-            retVal = new HashSet<HashMap<String, String>>();
+        if (this.links == null) {
+            this.links = new HashMap<Locale, Set<Map<String, String>>>();
         }
-        retVal.add(link);
+        this.getLanguages().add(locale);
+        this.links.put(locale, links);
     }
 
     @Override
     public void setCreatedAt(LocalDateTime date)
     {
-        this.createdAt = date;
+        setCreatedAt(date, this.getLanguage());
     }
 
     @Override
-    public LocalDateTime getCreatedAt()
+    public void setCreatedAt(LocalDateTime date, Locale locale)
     {
-        return this.createdAt;
-
+        if (this.createdAt == null) {
+            this.createdAt = new HashMap<Locale, LocalDateTime>();
+        }
+        this.getLanguages().add(locale);
+        this.createdAt.put(locale, date);
     }
 
     @Override
-    public void setCreatedBy(String user)
+    public LocalDateTime getCreatedAt(Locale locale)
     {
-        this.createdBy = user;
-    }
-
-    @Override
-    public String getCreatedBy()
-    {
-        return this.createdBy;
-    }
-
-    @Override
-    public void setUpdatedAt(LocalDateTime date)
-    {
-        this.updatedAt = date;
-    }
-
-    @Override
-    public LocalDateTime getUpdatedAt()
-    {
-        return this.updatedAt;
+        if (this.createdAt == null) {
+            this.createdAt = new HashMap<Locale, LocalDateTime>();
+        }
+        return this.createdAt.get(locale);
 
     }
 
     @Override
-    public void setUpdatedBy(String user)
+    public void setCreatedBy(String user, Locale locale)
     {
-        this.updatedBy = user;
+        if (this.createdBy == null) {
+            this.createdBy = new HashMap<Locale, String>();
+        }
+        this.getLanguages().add(locale);
+        this.createdBy.put(locale, user);
     }
 
     @Override
-    public String getUpdatedBy()
+    public String getCreatedBy(Locale locale)
     {
-        return this.updatedBy;
+        if (this.createdBy == null) {
+            this.createdBy = new HashMap<Locale, String>();
+        }
+        return this.createdBy.get(locale);
     }
 
     @Override
-    public String toJson() throws JsonProcessingException
+    public void setUpdatedAt(LocalDateTime date, Locale locale)
     {
-        return WebPageImpl.pageMapper.writeValueAsString(this);
+        if (this.updatedAt == null) {
+            this.updatedAt = new HashMap<Locale, LocalDateTime>();
+        }
+        this.getLanguages().add(locale);
+        this.updatedAt.put(locale, date);
     }
+
+    @Override
+    public LocalDateTime getUpdatedAt(Locale locale)
+    {
+        if (this.updatedAt == null) {
+            this.updatedAt = new HashMap<Locale, LocalDateTime>();
+        }
+        return this.updatedAt.get(locale);
+
+    }
+
+    @Override
+    public void setUpdatedBy(String user, Locale locale)
+    {
+        if (this.updatedBy == null) {
+            this.updatedBy = new HashMap<Locale, String>();
+        }
+        this.getLanguages().add(locale);
+        this.updatedBy.put(locale, user);
+    }
+
+    @Override
+    public String getUpdatedBy(Locale locale)
+    {
+        if (this.updatedBy == null) {
+            this.updatedBy = new HashMap<Locale, String>();
+        }
+        return this.updatedBy.get(locale);
+    }
+
+    @Override
+    public Set<Locale> getLanguages() {
+        if (this.languages == null) {
+            this.languages = new HashSet<>();
+        }
+        if (this.languages.contains(Locale.ROOT)) {
+            this.languages.remove(Locale.ROOT);
+        }
+        return this.languages;
+    }
+
+    // ------- PROTECTED METHODS ----------
+
+    protected Map<Locale, String> ensure(Map<Locale, String> value) {
+        Map<Locale, String> retVal = value;
+        if (retVal == null) {
+            retVal = new HashMap<>();
+        }
+        return retVal;
+    }
+
+    /*
+    * If no value is found for the give locale we fall back:
+    *  - to a not localized value
+    *  - to the default language
+    *
+    *  if force == true we return any value if a value is available and the fallback did not work
+    * */
+    protected String getDefaultValue(Map<Locale, String> value, Locale locale) {
+        String retVal = value.get(locale);
+        if (retVal == null) {
+            if (value.containsKey(Locale.ROOT)) {
+                retVal = value.get(Locale.ROOT);
+            } else if (value.containsKey(BlocksConfig.instance().getDefaultLanguage())) {
+                retVal = value.get(BlocksConfig.instance().getDefaultLanguage());
+            } else if (value.containsKey(this.getLanguage())) {
+                retVal = value.get(this.getLanguage());
+            } else if (value.size() > 0) {
+                retVal = value.values().iterator().next();
+            }
+        }
+
+        return retVal;
+    }
+
 
 }
