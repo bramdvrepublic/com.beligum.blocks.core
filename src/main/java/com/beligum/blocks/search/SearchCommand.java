@@ -11,9 +11,11 @@ import java.util.Locale;
 public interface SearchCommand
 {
     public final int RESOURCES_ON_PAGE = 25;
+
     public List<Resource> search(String query, long page, Locale locale);
 
     public List<String> getTerms(String firstLetter, Locale locale);
 
     public long totalHits(String query, Locale locale);
+
 }

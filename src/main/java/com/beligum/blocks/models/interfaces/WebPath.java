@@ -17,7 +17,7 @@ public interface WebPath
 
     public String getDBid();
 
-    public URI getMasterPage();
+    public URI getBlockId();
 
     public Locale getLanguage();
 

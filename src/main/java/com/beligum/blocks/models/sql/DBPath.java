@@ -25,7 +25,8 @@ public class DBPath extends DBDocumentInfo implements WebPath
 
     public static  ObjectMapper PATH_MAPPER = new ObjectMapper().registerModule(new SimpleModule().addSerializer(DBPath.class, new PathSerializer()).addDeserializer(DBPath.class, new PathDeserializer()));
 
-    private String masterPage;
+    @Column(name="block_id")
+    private String blockId;
 
     private String language;
 
@@ -42,8 +43,8 @@ public class DBPath extends DBDocumentInfo implements WebPath
 
     }
 
-    public DBPath(URI masterPage, Path path, Locale locale) {
-        this.masterPage = masterPage.toString();
+    public DBPath(URI blockId, Path path, Locale locale) {
+        this.blockId = blockId.toString();
         this.url = Paths.get("/").resolve(path).normalize().toString();
         this.language = locale.getLanguage();
         this.localizedUrl = Paths.get("/").resolve(Paths.get(language)).resolve(url).normalize().toString();
@@ -59,9 +60,9 @@ public class DBPath extends DBDocumentInfo implements WebPath
     }
 
     @Override
-    public URI getMasterPage()
+    public URI getBlockId()
     {
-        return UriBuilder.fromUri(masterPage).build();
+        return UriBuilder.fromUri(blockId).build();
     }
 
     @Override
@@ -95,10 +96,10 @@ public class DBPath extends DBDocumentInfo implements WebPath
 
 
     @Override
-    public void setPageOk(URI masterPage)
+    public void setPageOk(URI id)
     {
         this.statusCode = 200;
-        this.masterPage = masterPage.toString();
+        this.blockId = id.toString();
     }
     @Override
     public void setPageRedirect(URI masterPage)

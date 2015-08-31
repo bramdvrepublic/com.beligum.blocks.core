@@ -1,119 +1,329 @@
 package com.beligum.blocks.models.jackson.page;
 
-import com.beligum.base.utils.Logger;
+import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.models.WebPageImpl;
 import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.models.interfaces.Resource;
-import com.beligum.blocks.models.jackson.resource.ResourceJsonDeserializer;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
+import com.beligum.blocks.models.jackson.NodeDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.elasticsearch.search.aggregations.metrics.percentiles.InternalPercentileRanks;
 import org.joda.time.LocalDateTime;
 
 import javax.ws.rs.core.UriBuilder;
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.*;
 
 /**
  * Created by wouter on 30/06/15.
  */
-public class PageDeserializer<T extends WebPage> extends ResourceJsonDeserializer
+public class PageDeserializer<T extends WebPage> extends NodeDeserializer
 {
 
+    // ---------- PRIVATE METHDOS --------------
+
     @Override
-    public Resource deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException
-    {
-        JsonNode node = jsonParser.readValueAsTree();
-        WebPage retVal = null;
-        try {
-            if (node.isObject()) {
-                URI masterpage = UriBuilder.fromUri(node.get("master_page").asText()).build();
+    protected Resource createNewResource(JsonNode node) {
+        if (isWebPage(node)) {
+            return new WebPageImpl();
+        } else {
+            return super.createNewResource(node);
+        }
+    }
 
-                // Insert all resource values into webpage
-                Resource resource =  parseResource(node);
-                retVal = new WebPageImpl(masterpage, resource.getBlockId(), resource.getLanguage());
+    @Override
+    protected void parseSpecialFields(JsonNode node, Resource resource) {
+        node = getPageNode(node);
 
-                Set<URI> fields = resource.getFields();
-                Iterator<URI> fieldIterator = fields.iterator();
-                while (fieldIterator.hasNext()) {
-                    URI field = fieldIterator.next();
-                    retVal.set(field, resource.get(field));
-                }
+        if (isWebPage(node)) {
+            WebPage webPage = (WebPage)resource;
 
-                String language = node.get(ParserConstants.JSONLD_LANGUAGE).asText();
-                retVal.setLanguage(new Locale(language));
-                String html = node.get("html").asText();
-                retVal.setParsedHtml(html);
-                String pageTemplate = node.get("page_template").asText();
-                retVal.setPageTemplate(pageTemplate);
+            /*
+             * Start filling the fields of the web page. Those fields were not parser by the resource
+             * */
+            String value = node.get(ParserConstants.PAGE_PROPERTY_HTML).asText();
+            webPage.setParsedHtml(value, Locale.ROOT);
 
-                if (node.get("page_title") != null) {
-                    String pageTitle = node.get("page_title").asText();
-                    retVal.setPageTitle(pageTitle);
-                }
-
-                String text = node.get("text").asText();
-                retVal.setText(text);
-
-                if (node.has("updated_at")) {
-                    String updatedBy = node.get("updated_by").asText();
-                    retVal.setUpdatedBy(updatedBy);
-                    LocalDateTime updatedAt = new LocalDateTime(node.get("updated_at").asLong());
-                    retVal.setUpdatedAt(updatedAt);
-                }
-
-                if (node.has("created_at")) {
-                    String createdBy = node.get("created_by").asText();
-                    retVal.setCreatedBy(createdBy);
-                    LocalDateTime createdAt = new LocalDateTime(node.get("created_at").asLong());
-                    retVal.setCreatedAt(createdAt);
-                }
-
-                Set<String> templates = new HashSet<String>();
-                if (node.get("templates").isArray()) {
-                    Iterator<JsonNode> iterator = node.get("templates").iterator();
-                    while (iterator.hasNext()) {
-                        templates.add(iterator.next().asText());
+            JsonNode o = getLocalValues(node, ParserConstants.PAGE_PROPERTY_HTML);
+            if (o != null) {
+                Iterator<String> fieldnames = o.fieldNames();
+                while (fieldnames.hasNext()) {
+                    String lang = fieldnames.next();
+                    Locale locale = BlocksConfig.instance().getLocaleForLanguage(lang);
+                    if (locale != null) {
+                        webPage.setParsedHtml(o.get(lang).asText(), locale);
                     }
                 }
-                retVal.setTemplates(templates);
+            }
 
-                Set<String> resources = new HashSet<String>();
-                if (node.get("resources").isArray()) {
-                    Iterator<JsonNode> iterator = node.get("resources").iterator();
-                    while (iterator.hasNext()) {
-                        resources.add(iterator.next().asText());
+            if (node.has(ParserConstants.PAGE_PROPERTY_PAGETEMPLATE)) {
+                value = node.get(ParserConstants.PAGE_PROPERTY_PAGETEMPLATE).asText();
+                webPage.setPageTemplate(value, Locale.ROOT);
+            }
+
+            o = getLocalValues(node, ParserConstants.PAGE_PROPERTY_PAGETEMPLATE);
+            if (o != null) {
+                Iterator<String> fieldnames = o.fieldNames();
+                while (fieldnames.hasNext()) {
+                    String lang = fieldnames.next();
+                    Locale locale = BlocksConfig.instance().getLocaleForLanguage(lang);
+                    if (locale != null) {
+                        webPage.setPageTemplate(o.get(lang).asText(), locale);
                     }
                 }
-                retVal.setResources(resources);
+            }
 
-                Set<HashMap<String, String>> links = new HashSet<HashMap<String, String>>();
-                if (node.get("links").isArray()) {
-                    Iterator<JsonNode> iterator = node.get("links").iterator();
-                    while (iterator.hasNext()) {
-                        JsonNode next = iterator.next();
-                        if (next.isObject()) {
-                            HashMap<String, String> value = new HashMap<>();
-                            value.put("absolute", next.get("absolute").asText());
-                            value.put("html", next.get("html").asText());
-                            value.put("page", next.get("page").asText());
-                            links.add(value);
+            if (node.has(ParserConstants.PAGE_PROPERTY_PAGETITLE)) {
+                value = node.get(ParserConstants.PAGE_PROPERTY_PAGETITLE).asText();
+                webPage.setPageTitle(value, Locale.ROOT);
+            }
+
+            o = getLocalValues(node, ParserConstants.PAGE_PROPERTY_PAGETITLE);
+            if (o != null) {
+                Iterator<String> fieldnames = o.fieldNames();
+                while (fieldnames.hasNext()) {
+                    String lang = fieldnames.next();
+                    Locale locale = BlocksConfig.instance().getLocaleForLanguage(lang);
+                    if (locale != null) {
+                        webPage.setPageTitle(o.get(lang).asText(), locale);
+                    }
+                }
+            }
+
+            if (node.has(ParserConstants.PAGE_PROPERTY_TEXT)) {
+                value = node.get(ParserConstants.PAGE_PROPERTY_TEXT).asText();
+                webPage.setText(value, Locale.ROOT);
+            }
+
+            o = getLocalValues(node, ParserConstants.PAGE_PROPERTY_TEXT);
+            if (o != null) {
+                Iterator<String> fieldnames = o.fieldNames();
+                while (fieldnames.hasNext()) {
+                    String lang = fieldnames.next();
+                    Locale locale = BlocksConfig.instance().getLocaleForLanguage(lang);
+                    if (locale != null) {
+                        webPage.setText(o.get(lang).asText(), locale);
+                    }
+                }
+            }
+
+            if (node.has(ParserConstants.PAGE_PROPERTY_UPDATED_AT)) {
+                LocalDateTime date = new LocalDateTime(node.get(ParserConstants.PAGE_PROPERTY_UPDATED_AT).asLong());
+                webPage.setUpdatedAt(date, Locale.ROOT);
+            }
+
+            o = getLocalValues(node, ParserConstants.PAGE_PROPERTY_UPDATED_AT);
+            if (o != null) {
+                Iterator<String> fieldnames = o.fieldNames();
+                while (fieldnames.hasNext()) {
+                    String lang = fieldnames.next();
+                    Locale locale = BlocksConfig.instance().getLocaleForLanguage(lang);
+                    if (locale != null) {
+                        webPage.setUpdatedAt(new LocalDateTime(o.get(lang).asLong()), locale);
+                    }
+                }
+            }
+
+            if (node.has(ParserConstants.PAGE_PROPERTY_CREATED_AT)) {
+                LocalDateTime date = new LocalDateTime(node.get(ParserConstants.PAGE_PROPERTY_CREATED_AT).asLong());
+                webPage.setCreatedAt(date, Locale.ROOT);
+            }
+
+            o = getLocalValues(node, ParserConstants.PAGE_PROPERTY_CREATED_AT);
+            if (o != null) {
+                Iterator<String> fieldnames = o.fieldNames();
+                while (fieldnames.hasNext()) {
+                    String lang = fieldnames.next();
+                    Locale locale = BlocksConfig.instance().getLocaleForLanguage(lang);
+                    if (locale != null) {
+                        webPage.setCreatedAt(new LocalDateTime(o.get(lang).asLong()), locale);
+                    }
+                }
+            }
+
+            if (node.has(ParserConstants.PAGE_PROPERTY_CREATED_BY)) {
+                value = node.get(ParserConstants.PAGE_PROPERTY_CREATED_BY).asText();
+                webPage.setCreatedBy(value, Locale.ROOT);
+            }
+
+            o = getLocalValues(node, ParserConstants.PAGE_PROPERTY_CREATED_BY);
+            if (o != null) {
+                Iterator<String> fieldnames = o.fieldNames();
+                while (fieldnames.hasNext()) {
+                    String lang = fieldnames.next();
+                    Locale locale = BlocksConfig.instance().getLocaleForLanguage(lang);
+                    if (locale != null) {
+                        webPage.setCreatedBy(o.get(lang).asText(), locale);
+                    }
+                }
+            }
+
+            if (node.has(ParserConstants.PAGE_PROPERTY_UPDATED_BY)) {
+                value = node.get(ParserConstants.PAGE_PROPERTY_UPDATED_BY).asText();
+                webPage.setUpdatedBy(value, Locale.ROOT);
+            }
+
+            o = getLocalValues(node, ParserConstants.PAGE_PROPERTY_UPDATED_BY);
+            if (o != null) {
+                Iterator<String> fieldnames = o.fieldNames();
+                while (fieldnames.hasNext()) {
+                    String lang = fieldnames.next();
+                    Locale locale = BlocksConfig.instance().getLocaleForLanguage(lang);
+                    if (locale != null) {
+                        webPage.setUpdatedBy(o.get(lang).asText(), locale);
+                    }
+                }
+            }
+
+            // Add templates
+
+            Set<String> templates = new HashSet<String>();
+            if (node.get(ParserConstants.PAGE_PROPERTY_TEMPLATES).isArray()) {
+                Iterator<JsonNode> iterator = node.get(ParserConstants.PAGE_PROPERTY_TEMPLATES).iterator();
+                while (iterator.hasNext()) {
+                    templates.add(iterator.next().asText());
+                }
+            }
+            webPage.setTemplates(templates, Locale.ROOT);
+
+            if (getLocalValues(node, ParserConstants.PAGE_PROPERTY_TEMPLATES) != null && getLocalValues(node, ParserConstants.PAGE_PROPERTY_TEMPLATES).isObject()) {
+                o = getLocalValues(node, ParserConstants.PAGE_PROPERTY_TEMPLATES);
+                if (o != null) {
+                    Iterator<String> fieldnames = o.fieldNames();
+                    while (fieldnames.hasNext()) {
+                        String lang = fieldnames.next();
+                        Locale locale = BlocksConfig.instance().getLocaleForLanguage(lang);
+                        if (isArray(node, lang)) {
+                            templates = new HashSet<String>();
+                            Iterator<JsonNode> iterator = node.get(lang).iterator();
+                            while (iterator.hasNext()) {
+                                templates.add(iterator.next().asText());
+                            }
+                            webPage.setTemplates(templates, locale);
                         }
                     }
                 }
-                retVal.setLinks(links);
-
             }
 
+
+            // Add resources
+
+            Set<String> resources = new HashSet<String>();
+            if (isArray(node, ParserConstants.PAGE_PROPERTY_RESOURCES)) {
+                Iterator<JsonNode> iterator = node.get(ParserConstants.PAGE_PROPERTY_RESOURCES).iterator();
+                while (iterator.hasNext()) {
+                    resources.add(iterator.next().asText());
+                }
+            }
+            webPage.setTemplates(templates, Locale.ROOT);
+
+            if (isLocalObject(node, ParserConstants.PAGE_PROPERTY_RESOURCES)) {
+                o = getLocalValues(node, ParserConstants.PAGE_PROPERTY_RESOURCES);
+                if (o != null) {
+                    Iterator<String> fieldnames = o.fieldNames();
+                    while (fieldnames.hasNext()) {
+                        String lang = fieldnames.next();
+                        Locale locale = BlocksConfig.instance().getLocaleForLanguage(lang);
+                        if (isArray(node, lang)) {
+                            resources = new HashSet<String>();
+                            Iterator<JsonNode> iterator = node.get(lang).iterator();
+                            while (iterator.hasNext()) {
+                                templates.add(iterator.next().asText());
+                            }
+                            webPage.setTemplates(resources, locale);
+                        }
+                    }
+                }
+            }
+
+
+
+            Set<Map<String, String>> links = new HashSet<Map<String, String>>();
+            if (isArray(node, ParserConstants.PAGE_PROPERTY_LINKS)) {
+                Iterator<JsonNode> iterator = node.get(ParserConstants.PAGE_PROPERTY_LINKS).iterator();
+                while (iterator.hasNext()) {
+                    JsonNode next = iterator.next();
+                    if (next.isObject()) {
+                        HashMap<String, String> link = new HashMap<>();
+                        link.put(ParserConstants.PAGE_PROPERTY_ABSOLUTE, next.get(ParserConstants.PAGE_PROPERTY_ABSOLUTE).asText());
+                        link.put(ParserConstants.PAGE_PROPERTY_HTML, next.get(ParserConstants.PAGE_PROPERTY_HTML).asText());
+                        link.put(ParserConstants.PAGE_PROPERTY_REFERENCED_PAGE, next.get(ParserConstants.PAGE_PROPERTY_REFERENCED_PAGE).asText());
+                        links.add(link);
+                    }
+                }
+            }
+            webPage.setLinks(links, Locale.ROOT);
+
+            if (isLocalObject(node, ParserConstants.PAGE_PROPERTY_LINKS)) {
+                o = getLocalValues(node, ParserConstants.PAGE_PROPERTY_LINKS);
+                if (o != null) {
+                    Iterator<String> fieldnames = o.fieldNames();
+                    while (fieldnames.hasNext()) {
+                        String lang = fieldnames.next();
+                        Locale locale = BlocksConfig.instance().getLocaleForLanguage(lang);
+                        if (isArray(node, lang)) {
+                            resources = new HashSet<String>();
+                            Iterator<JsonNode> iterator = node.get(lang).iterator();
+                            while (iterator.hasNext()) {
+                                JsonNode next = iterator.next();
+                                if (next.isObject()) {
+                                    HashMap<String, String> link = new HashMap<>();
+                                    link.put(ParserConstants.PAGE_PROPERTY_ABSOLUTE, next.get(ParserConstants.PAGE_PROPERTY_ABSOLUTE).asText());
+                                    link.put(ParserConstants.PAGE_PROPERTY_HTML, next.get(ParserConstants.PAGE_PROPERTY_HTML).asText());
+                                    link.put(ParserConstants.PAGE_PROPERTY_REFERENCED_PAGE, next.get(ParserConstants.PAGE_PROPERTY_REFERENCED_PAGE).asText());
+                                    links.add(link);
+                                }
+                            }
+                            webPage.setLinks(links, locale);
+                        }
+                    }
+                }
+            }
+
+            webPage.setLinks(links);
+
         }
-        catch (URISyntaxException e) {
-            Logger.error("Exception while deserializing resource", e);
+
+
+    }
+
+    // ---------- PRIVATE METHDOS --------------
+    private boolean isWebPage(JsonNode node) {
+        boolean retVal = false;
+        if (node.isObject() && node.has(ParserConstants.PAGE_PROPERTY_HTML)) {
+            retVal = true;
+        } else if (node.isObject() && node.has(ParserConstants.PAGE_PROPERTY) && node.get(ParserConstants.PAGE_PROPERTY).has(ParserConstants.PAGE_PROPERTY_HTML)) {
+            retVal = true;
         }
         return retVal;
+    }
+
+    private JsonNode getPageNode(JsonNode node) {
+        JsonNode retVal = node;
+        if (node.isObject() && node.has(ParserConstants.PAGE_PROPERTY) && isWebPage(node.get(ParserConstants.PAGE_PROPERTY))) {
+            retVal = node.get(ParserConstants.PAGE_PROPERTY);
+        }
+        return retVal;
+    }
+
+    private JsonNode getLocalValues(JsonNode node, String property) {
+        JsonNode retVal = null;
+        if (node.has(property + ParserConstants.LOCALIZED_PROPERTY) && node.get(property + ParserConstants.LOCALIZED_PROPERTY).isObject()) {
+            retVal = node.get(property + ParserConstants.LOCALIZED_PROPERTY);
+        }
+        return retVal;
+    }
+
+    private boolean isLocalObject(JsonNode node, String property) {
+        return getLocalValues(node, property) != null && getLocalValues(node, property).isObject();
+    }
+
+    private boolean isLocalArray(JsonNode node, String property) {
+        return getLocalValues(node, property) != null && getLocalValues(node, property).isArray();
+    }
+
+    private boolean isArray(JsonNode node, String property) {
+        return node.has(property) && node.get(property).isArray();
     }
 
 }

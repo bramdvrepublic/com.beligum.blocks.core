@@ -81,14 +81,14 @@ public class Route
     public void create() throws Exception
     {
         WebPath retVal = PersistenceControllerImpl.instance().getPath(simplePath, locale);
-        URI masterPage = RdfTools.createLocalResourceId(PersistenceControllerImpl.MASTER_WEB_PAGE_CLASS);
+        URI blockId = RdfTools.createLocalResourceId(PersistenceControllerImpl.WEB_PAGE_CLASS);
         if (retVal == null) {
             // this path does not yet exist for this getLanguage, so we can create it
-            retVal = new DBPath(masterPage, simplePath, locale);
+            retVal = new DBPath(blockId, simplePath, locale);
 
             PersistenceControllerImpl.instance().savePath(retVal);
 
-            Map<String, WebPath> paths = PersistenceControllerImpl.instance().getPaths(masterPage);
+            Map<String, WebPath> paths = PersistenceControllerImpl.instance().getPaths(blockId);
 
             //TODO: implement better localized paths
             // find the subpath for this language based our current path
@@ -97,7 +97,7 @@ public class Route
             // now add paths for other languages
             for (Locale l : BlocksConfig.instance().getLanguages().values()) {
                 if (!l.equals(locale) && !paths.containsKey(l.getLanguage())) {
-                    WebPath webPath = new DBPath(masterPage, simplePath, l);
+                    WebPath webPath = new DBPath(blockId, simplePath, l);
                     PersistenceControllerImpl.instance().savePath(webPath);
                 }
             }

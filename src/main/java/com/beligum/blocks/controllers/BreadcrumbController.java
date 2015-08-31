@@ -46,8 +46,8 @@ public class BreadcrumbController extends DefaultTemplateController
             }
 
             if (route.exists()) {
-                WebPage webPage = PersistenceControllerImpl.instance().getWebPage(route.getWebPath().getMasterPage(), route.getLocale());
-                String title = webPage.getPageTitle();
+                WebPage webPage = PersistenceControllerImpl.instance().getWebPage(route.getWebPath().getBlockId(), route.getLocale());
+                String title = webPage.getPageTitle(true);
                 if (title == null) {
                     title = I18nFactory.instance().getResourceBundle(route.getLocale()).get("blocks.core.defaultPageTitle");
                 }

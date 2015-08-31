@@ -80,10 +80,10 @@ public class PageEndpoint
             route.create();
         }
 
-        URI masterWebpage = route.getWebPath().getMasterPage();
+        URI blockId = route.getWebPath().getBlockId();
 
         if (route.getWebPath().isNotFound()) {
-            route.getWebPath().setPageOk(masterWebpage);
+            route.getWebPath().setPageOk(blockId);
             PersistenceControllerImpl.instance().savePath(route.getWebPath());
 
         }
@@ -92,12 +92,12 @@ public class PageEndpoint
         }
 
         // fetch page for locale
-        WebPage localizedWebpage = PersistenceControllerImpl.instance().getWebPage(masterWebpage, route.getLocale());
+        WebPage localizedWebpage = PersistenceControllerImpl.instance().getWebPage(blockId, route.getLocale());
         // if this page does not yet exist -> create
         if (localizedWebpage == null) {
             localizedWebpage =
                             ResourceFactoryImpl.instance()
-                                               .createWebPage(masterWebpage, RdfTools.createLocalResourceId(StringUtils.capitalize(PersistenceController.WEB_PAGE_CLASS)), route.getLocale());
+                                               .createWebPage(blockId, route.getLocale());
         }
         else {
             doVersion = true;
@@ -108,10 +108,10 @@ public class PageEndpoint
         //        2. get filtered html
         //        3. get resources - update new resources with resource-tag
         //        4. get href and src attributes
-        WebPageParser oldPageParser = new WebPageParser(uri, localizedWebpage.getLanguage(), localizedWebpage.getParsedHtml(), PersistenceControllerImpl.instance());
+        WebPageParser oldPageParser = new WebPageParser(uri, localizedWebpage.getLanguage(), localizedWebpage.getParsedHtml(false), PersistenceControllerImpl.instance());
         WebPageParser pageParser = new WebPageParser(uri, localizedWebpage.getLanguage(), content, PersistenceControllerImpl.instance());
         boolean saveNoMatterWhatForDebug = true;
-        if (saveNoMatterWhatForDebug || !(pageParser.getParsedHtml().equals(localizedWebpage.getParsedHtml()))) {
+        if (saveNoMatterWhatForDebug || !(pageParser.getParsedHtml().equals(localizedWebpage.getParsedHtml(true)))) {
             localizedWebpage.setPageTemplate(pageParser.getPageTemplate());
             localizedWebpage.setParsedHtml(pageParser.getParsedHtml());
             localizedWebpage.setText(pageParser.getText());
@@ -133,8 +133,13 @@ public class PageEndpoint
                 }
             }
 
+            // Add all the root properties on the page to the webpage
             for (URI field : pageParser.getPageResource().getFields()) {
-                localizedWebpage.set(field, pageParser.getPageResource().get(field));
+                if (!pageParser.getPageResource().get(field, Locale.ROOT).isNull()) {
+                    localizedWebpage.set(field, pageParser.getPageResource().get(field));
+                } else if (!pageParser.getPageResource().get(field).isNull()) {
+                    localizedWebpage.set(field, pageParser.getPageResource().get(field));
+                }
             }
 
             // TODO update other pages that contain changed resources
@@ -224,7 +229,7 @@ public class PageEndpoint
     {
         URI uri = new URI(url);
         Route route = new Route(uri, PersistenceControllerImpl.instance());
-        URI masterPage = route.getWebPath().getMasterPage();
+        URI masterPage = route.getWebPath().getBlockId();
         PersistenceControllerImpl.instance().deleteWebPage(masterPage);
         if (PageCache.isEnabled()) {
             PageCache.instance().flush();

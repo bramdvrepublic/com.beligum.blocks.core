@@ -23,6 +23,8 @@ public interface Node extends Iterable<Node>
 
     public boolean isMap();
 
+    public boolean isReference();
+
     public boolean isNull();
 
     public boolean isResource();

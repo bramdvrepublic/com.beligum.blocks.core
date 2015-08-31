@@ -5,6 +5,7 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.controllers.PersistenceControllerImpl;
+import com.beligum.blocks.models.ListNode;
 import com.beligum.blocks.models.interfaces.ResourceFactory;
 import com.beligum.blocks.models.NodeImpl;
 import com.beligum.blocks.models.ResourceImpl;
@@ -13,10 +14,21 @@ import com.beligum.blocks.models.interfaces.WebPath;
 import com.beligum.blocks.models.interfaces.Node;
 import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.models.interfaces.WebPage;
+import com.beligum.blocks.models.jackson.NodeDeserializer;
+import com.beligum.blocks.models.jackson.NodeSerializer;
+import com.beligum.blocks.models.jackson.page.PageDeserializer;
+import com.beligum.blocks.models.jackson.page.PageSerializer;
+import com.beligum.blocks.models.jackson.path.PathDeserializer;
+import com.beligum.blocks.models.jackson.path.PathSerializer;
 import com.beligum.blocks.models.sql.DBPath;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import org.w3c.dom.NodeList;
 
 import javax.ws.rs.core.UriBuilder;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.*;
@@ -26,6 +38,11 @@ import java.util.*;
  */
 public class ResourceFactoryImpl implements ResourceFactory
 {
+
+    private ObjectMapper resourceMapper;
+    private ObjectMapper pageMapper;
+
+
     private static ResourceFactoryImpl instance;
 
     private ResourceFactoryImpl() {
@@ -40,41 +57,40 @@ public class ResourceFactoryImpl implements ResourceFactory
     }
 
     @Override
-    public WebPage createWebPage(URI masterWebPage, URI id, Locale locale)
+    public WebPage createWebPage(URI id, Locale locale)
     {
-        return new WebPageImpl(masterWebPage, id, locale);
+        return new WebPageImpl(id, locale);
     }
 
 
-    @Override
-    public WebPath createPath(URI masterPage, Path path, Locale locale)
-    {
-        return new DBPath(masterPage, path, locale);
-    }
 
     @Override
     public Resource createResource(URI id, URI rdfType, Locale language)
     {
-        HashMap<String, Object> vertex = new HashMap<String, Object>();
-        HashMap<String, Object> localized = new HashMap<String, Object>();
-        Resource retVal = new ResourceImpl(vertex, localized, language);
+        Resource retVal = new ResourceImpl(language);
         retVal.setBlockId(id);
         retVal.setRdfType(rdfType);
 
         return retVal;
     }
 
-
+    @Override
     public Node createNode(Object value, Locale language)
     {
         Node retVal = null;
         if (value instanceof Resource || value instanceof Node) {
             retVal = (Node)value;
         } else {
-            if (isResource(value)) {
-                retVal = getResource(value, language);
-            } else if (value instanceof Map && ((Map) value).containsKey(ParserConstants.JSONLD_VALUE)) {
+            if (value instanceof Map && ((Map) value).containsKey(ParserConstants.JSONLD_VALUE)) {
                 retVal = createNode(((Map) value).get(ParserConstants.JSONLD_VALUE), language);
+            } else if (value instanceof List || value instanceof Set) {
+                // TDOD create ListNode
+                ListNode listNode = new ListNode(language);
+                for (Object v: (Collection)value) {
+                    Node node = createNode(value, language);
+                    listNode.add(node);
+                }
+                retVal = listNode;
             } else {
                 retVal = new NodeImpl(value, language);
             }
@@ -83,69 +99,56 @@ public class ResourceFactoryImpl implements ResourceFactory
         return retVal;
     }
 
+
     @Override
-    public boolean isResource(Object value) {
-        boolean retVal = false;
-        if (value instanceof Resource) {
-            retVal = true;
-        }
-        else if (value instanceof List && ((List)value).size() == 2
-                 && ((List)value).get(0) instanceof HashMap
-                 && ((HashMap<String, Object>)((List)value).get(0)).containsKey(ParserConstants.JSONLD_ID)) {
-            retVal = true;
-        } else if (value instanceof Map && ((Map)value).containsKey(ParserConstants.JSONLD_ID)) {
-            retVal = true;
-        }
+    public Resource deserializeResource(byte[] source, Locale locale) throws IOException
+    {
+        ObjectMapper mapper = getResourceMapper(false);
+        Resource retVal = mapper.readValue(source, Resource.class);
+        retVal.setLanguage(locale);
         return retVal;
     }
 
     @Override
-    public Resource getResource(Object value, Locale language) {
-        Resource retVal = null;
-        if (value instanceof Resource) {
-            retVal = (Resource)value;
-        }
-        // Is this a resource wrapped as a list?
-        else if (value instanceof List && ((List)value).size() == 2
-                 && ((List)value).get(0) instanceof HashMap
-                 && ((HashMap<String, Object>)((List)value).get(0)).containsKey(ParserConstants.JSONLD_ID)) {
-            HashMap<String, Object> rootVector = (HashMap<String, Object>) ((List) value).get(0);
-            HashMap<String, Object> localVector = (HashMap<String, Object>) ((List) value).get(1);
-
-            retVal = new ResourceImpl(rootVector, localVector, language);
-        }
-        // This is a reference to a resource
-        else if (value instanceof Map && ((Map)value).containsKey(ParserConstants.JSONLD_ID)) {
-            try {
-                retVal = PersistenceControllerImpl.instance().getResource(UriBuilder.fromUri((String) ((Map) value).get(ParserConstants.JSONLD_ID)).build(), language);
-            }
-            catch (Exception e) {
-                Logger.error("Could not fetch resource as child of parent resource");
-                // TODO how to catch this?
-            }
-        }
+    public WebPage deserializeWebpage(byte[] source, Locale locale) throws IOException
+    {
+        ObjectMapper mapper = getPageMapper(false);
+        WebPage retVal = mapper.readValue(source, WebPage.class);
+        retVal.setLanguage(locale);
         return retVal;
     }
 
     @Override
-    public URI getResourceId(Object value) {
-        URI retVal = null;
-        if (value instanceof Resource) {
-            retVal = ((Resource)value).getBlockId();
-        }
-        // Is this a resource wrapped as a list?
-        else if (value instanceof List && ((List)value).size() == 2
-                 && ((List)value).get(0) instanceof HashMap
-                 && ((HashMap<String, Object>)((List)value).get(0)).containsKey(ParserConstants.JSONLD_ID)) {
-            String id = (String)((HashMap<String, Object>)((List)value).get(0)).get(ParserConstants.JSONLD_ID);
+    public String serializeResource(Resource resource, boolean makeReferences) throws JsonProcessingException
+    {
+        ObjectMapper mapper = getResourceMapper(makeReferences);
+        return mapper.writeValueAsString(resource);
+    }
 
-            retVal = UriBuilder.fromUri(id).build();
+    @Override
+    public String serializeWebpage(WebPage page, boolean makeReferences) throws JsonProcessingException
+    {
+        ObjectMapper mapper = getPageMapper(makeReferences);
+        return mapper.writeValueAsString(page);
+    }
+
+
+//    ------------- PROTECTED METHODS
+
+    protected ObjectMapper getResourceMapper(boolean makeReferences)
+    {
+        if (this.resourceMapper == null) {
+            this.resourceMapper = new ObjectMapper().registerModule(new SimpleModule().addSerializer(Resource.class, new NodeSerializer()).addDeserializer(Resource.class, new NodeDeserializer()));;
         }
-        // This is a reference to a resource
-        else if (value instanceof Map && ((Map)value).containsKey(ParserConstants.JSONLD_ID)) {
-            retVal = UriBuilder.fromUri((String) ((Map) value).get(ParserConstants.JSONLD_ID)).build();
+        return this.resourceMapper;
+    }
+
+    protected ObjectMapper getPageMapper(boolean makeReferences)
+    {
+        if (this.pageMapper == null) {
+            this.pageMapper = new ObjectMapper().registerModule(new SimpleModule().addSerializer(WebPage.class, new PageSerializer<WebPage>()).addDeserializer(WebPage.class, new PageDeserializer()));;
         }
-        return retVal;
+        return this.pageMapper;
     }
 
 

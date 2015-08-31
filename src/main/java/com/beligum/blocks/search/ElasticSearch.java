@@ -66,7 +66,7 @@ public class ElasticSearch
         if (locale != null && locale != Locale.ROOT) {
             retVal = retVal + "_" + locale.getLanguage();
         }
-        return retVal;
+        return "page";
     }
 
     public String getResourceIndexName(Locale locale)
@@ -75,7 +75,7 @@ public class ElasticSearch
         if (locale != null && locale != Locale.ROOT) {
             retVal = retVal + "_" + locale.getLanguage();
         }
-        return retVal;
+        return "resource";
     }
 
     // Start a bulk transaction for this request
@@ -136,14 +136,13 @@ public class ElasticSearch
                 Logger.error("Could not read mapings for elastic search", e);
             }
 
-            for (Locale locale : BlocksConfig.instance().getLanguages().values()) {
-                this.client.admin().indices().prepareCreate(this.getPageIndexName(locale)).setSettings(settings)
+                this.client.admin().indices().prepareCreate(this.getPageIndexName(Locale.ROOT)).setSettings(settings)
                              .addMapping(PersistenceController.WEB_PAGE_CLASS.toLowerCase(),
                                          pageMapping).execute().actionGet();
-                this.client.admin().indices().prepareCreate(this.getResourceIndexName(locale)).setSettings(settings)
+                this.client.admin().indices().prepareCreate(this.getResourceIndexName(Locale.ROOT)).setSettings(settings)
                              .addMapping("_default_", resourceMapping).execute()
                              .actionGet();
-            }
+
 
             this.client.admin().indices().prepareCreate(PersistenceController.PATH_CLASS).setSettings(settings).addMapping(PersistenceController.PATH_CLASS, pathMapping)
                          .execute()
@@ -153,8 +152,6 @@ public class ElasticSearch
 
     private void reset()
     {
-
-
         init();
     }
 

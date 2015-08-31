@@ -22,8 +22,8 @@ public class PathSerializer extends JsonSerializer<DBPath>
         jgen.writeFieldName("id");
         jgen.writeString(value.getDBid());
 
-        jgen.writeFieldName("master_page");
-        jgen.writeString(value.getMasterPage().toString());
+        jgen.writeFieldName("block_id");
+        jgen.writeString(value.getBlockId().toString());
 
         jgen.writeFieldName("language");
         jgen.writeString(value.getLanguage().getLanguage());
