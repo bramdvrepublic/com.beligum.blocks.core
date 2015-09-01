@@ -485,7 +485,20 @@ public class HtmlParser extends AbstractAssetParser
         // (see above, specifically in TemplateInstanceStackDirective). But when we would spit out that array for every occurrence of this array variable,
         // the output would get doubled (or more). By ensuring we only write one entry per one, with a special method, we keep the order and don't get doubles.
         //
-        sb.append("$").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("']." + PropertyArray.WRITE_ONCE_METHOD_NAME + "()");
+        // Note that this construct will first check if it's an instance of the special class by testing a specific boolean (PROPARR_FIELD)
+        // if not, the normal toString() method is called on the object. This will allow us to manually intervene in the process,
+        // eg by using code like this:
+        // #foreach($image in $PROPERTY["http://www.mot.be/ontology/image"])
+        //   <blocks-image class="bordered">
+        //     #set($PROPERTY['image']=$image)
+        //   </blocks-image>
+        // #end
+        sb.append("#if($").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("'].").append(PropertyArray.PROPARR_FIELD).append(")");
+        sb.append("$").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("'].").append(PropertyArray.WRITE_ONCE_METHOD_NAME).append("()");
+        sb.append("#{else}");
+        sb.append("$!").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("']");
+        sb.append("#end");
+
         sb.append("#end");
 
         output.replace(tag, sb);

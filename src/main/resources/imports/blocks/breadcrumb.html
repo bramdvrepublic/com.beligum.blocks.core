@@ -12,7 +12,7 @@
 
 <template>
     <ol class="breadcrumb">
-        #foreach($map in $controller.breadcrumbs())
+        #foreach($map in $CONTROLLER.breadcrumbs())
             <li><a href="$map.get("url")">$map.get("title")</a></li>
         #end
     </ol>

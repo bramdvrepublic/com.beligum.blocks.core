@@ -11,6 +11,9 @@ import java.util.ArrayList;
 public class PropertyArray<E> extends ArrayList<E>
 {
     //-----CONSTANTS-----
+    //sync these two
+    public static final String PROPARR_FIELD = "PROPARR";
+    public static final boolean PROPARR = true;
 
     //-----VARIABLES-----
     private String cachedJoin = null;
@@ -37,7 +40,7 @@ public class PropertyArray<E> extends ArrayList<E>
 
         if (this.writeCounter < 1) {
             //will use the overloaded toString() below
-            retVal = this.toString();
+            retVal = this.buildString();
             this.writeCounter++;
         }
 
@@ -45,6 +48,15 @@ public class PropertyArray<E> extends ArrayList<E>
     }
 
     //-----PROTECTED METHODS-----
+    private String buildString()
+    {
+        //this is safe because this array is constructed from the VTL while parsing and only rendered out when done
+        if (this.cachedJoin == null) {
+            this.cachedJoin = Joiner.on("").join(this);
+        }
+
+        return this.cachedJoin;
+    }
 
     //-----PRIVATE METHODS-----
 
@@ -55,11 +67,6 @@ public class PropertyArray<E> extends ArrayList<E>
     @Override
     public String toString()
     {
-        //this is safe because this array is constructed from the VTL while parsing and only rendered out when done
-        if (this.cachedJoin == null) {
-            this.cachedJoin = Joiner.on("").join(this);
-        }
-
-        return this.cachedJoin;
+        return this.buildString();
     }
 }

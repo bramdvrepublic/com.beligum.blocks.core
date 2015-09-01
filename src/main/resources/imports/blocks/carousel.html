@@ -27,8 +27,8 @@
     <div id="carousel-123" class="carousel slide" data-interval="false" data-keyboard="false">
         <!-- Indicators -->
         <ol class="carousel-indicators">
-            #if ($property['image'])
-                #foreach($img in $property['image'])
+            #if ($PROPERTY['image'])
+                #foreach($img in $PROPERTY['image'])
                     <li data-target="#carousel-123" data-slide-to="$foreach.index" class="#if ($foreach.index == 0) active #end"></li>
                 #end
             #else
@@ -39,8 +39,8 @@
         <!-- Wrapper for slides -->
         <!-- WARNING: don't add role="listbox", cause it blocks the editor events -->
         <div class="carousel-inner">
-            #if ($property['image'])
-                #foreach($img in $property['image'])
+            #if ($PROPERTY['image'])
+                #foreach($img in $PROPERTY['image'])
                     <div class="item #if ($foreach.index == 0)active#end">
                         $img
                         <div class="carousel-caption">
