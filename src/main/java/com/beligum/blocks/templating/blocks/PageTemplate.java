@@ -49,6 +49,8 @@ public class PageTemplate extends HtmlTemplate
         attrs.put("template", this.getTemplateName());
         document.replace(templateAttr, Attributes.generateHTML(attrs));
 
+        this.setAttributes(attrs);
+
         //we didn't change the html structure, so we can return it
         return document;
     }

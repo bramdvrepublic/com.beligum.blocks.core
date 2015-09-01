@@ -4,7 +4,8 @@ import com.beligum.base.security.PermissionRole;
 import com.beligum.base.security.PermissionsConfigurator;
 import com.beligum.base.server.R;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.templating.blocks.directives.*;
+import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
+import com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
@@ -14,6 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.*;
@@ -86,6 +88,8 @@ public abstract class HtmlTemplate
     protected Iterable<Element> inlineStyleElements;
     protected Iterable<Element> externalStyleElements;
     protected MetaDisplayType displayType;
+    protected URI vocab;
+    protected Map<String, URI> prefixes;
 
     //this will enable us to save the 'inheritance tree'
     protected HtmlTemplate parent;
@@ -164,10 +168,10 @@ public abstract class HtmlTemplate
     {
         return suffixHtml;
     }
-//    public Segment buildFullHtml()
-//    {
-//        return new Source(Joiner.on("").join(this.getPrefixHtml(), this.getInnerHtml(), this.getSuffixHtml()));
-//    }
+    //    public Segment buildFullHtml()
+    //    {
+    //        return new Source(Joiner.on("").join(this.getPrefixHtml(), this.getInnerHtml(), this.getSuffixHtml()));
+    //    }
     public Map<String, String> getAttributes()
     {
         return attributes;
@@ -250,6 +254,14 @@ public abstract class HtmlTemplate
 
         return retVal.toString();
     }
+    public URI getVocab()
+    {
+        return vocab;
+    }
+    public Map<String, URI> getPrefixes()
+    {
+        return prefixes;
+    }
 
     //-----PROTECTED METHODS-----
     protected void init(String templateName, Source source, Path absolutePath, Path relativePath, HtmlTemplate parent) throws Exception
@@ -266,6 +278,11 @@ public abstract class HtmlTemplate
         //INIT THE HTML
         //note: this should take the parent into account
         OutputDocument tempHtml = this.doInitHtmlPreparsing(new OutputDocument(source), parent);
+
+        this.vocab = HtmlParser.parseRdfVocabAttribute(this, this.attributes.get("vocab"));
+
+        this.prefixes = new LinkedHashMap<>();
+        HtmlParser.parseRdfPrefixAttribute(this, this.attributes.get("prefix"), this.prefixes);
 
         //Note that we need to eat these values for PageTemplates because we don't want them to end up at the client side (no problem for TagTemplates)
         this.titles = parent != null ? parent.getTitles() : new HashMap<Locale, String>();
@@ -304,12 +321,14 @@ public abstract class HtmlTemplate
         this.externalScriptElements = getExternalScripts(tempHtml);
 
         //prepend the html with the parent resources if it's there
-        if (parent!=null) {
+        if (parent != null) {
             StringBuilder parentResourceHtml = new StringBuilder();
             this.inlineStyleElements = addParentResources(TemplateResourcesDirective.Argument.inlineStyles, parentResourceHtml, this.inlineStyleElements, parent.getAllInlineStyleElements(), null);
-            this.externalStyleElements = addParentResources(TemplateResourcesDirective.Argument.externalStyles, parentResourceHtml, this.externalStyleElements, parent.getAllExternalStyleElements(), "href");
+            this.externalStyleElements =
+                            addParentResources(TemplateResourcesDirective.Argument.externalStyles, parentResourceHtml, this.externalStyleElements, parent.getAllExternalStyleElements(), "href");
             this.inlineScriptElements = addParentResources(TemplateResourcesDirective.Argument.inlineScripts, parentResourceHtml, this.inlineScriptElements, parent.getAllInlineScriptElements(), null);
-            this.externalScriptElements = addParentResources(TemplateResourcesDirective.Argument.externalScripts, parentResourceHtml, this.externalScriptElements, parent.getAllExternalScriptElements(), "src");
+            this.externalScriptElements =
+                            addParentResources(TemplateResourcesDirective.Argument.externalScripts, parentResourceHtml, this.externalScriptElements, parent.getAllExternalScriptElements(), "src");
             tempHtml.insert(0, parentResourceHtml);
         }
 
@@ -485,9 +504,9 @@ public abstract class HtmlTemplate
     {
         Iterable<Element> retVal = templateElements;
 
-        if (parentElements!=null && parentElements.iterator().hasNext()) {
+        if (parentElements != null && parentElements.iterator().hasNext()) {
             for (Element element : parentElements) {
-                html.append(buildResourceHtml(type, element, attribute==null?null:element.getAttributeValue(attribute)));
+                html.append(buildResourceHtml(type, element, attribute == null ? null : element.getAttributeValue(attribute)));
             }
             retVal = Iterables.concat(parentElements, templateElements);
         }

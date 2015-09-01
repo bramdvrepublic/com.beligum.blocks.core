@@ -21,6 +21,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -138,7 +139,7 @@ public class HtmlParser extends AbstractAssetParser
         AssetParser htmlParser = R.resourceLoader().getAssetParserFor(Asset.MimeType.HTML);
         for (HtmlTemplate htmlTemplate : HtmlParser.getTemplateCache().values()) {
             Path cacheFile = this.getCacheFile(htmlTemplate.getAbsolutePath());
-            if (cacheFile!=null) {
+            if (cacheFile != null) {
                 Files.deleteIfExists(cacheFile);
             }
         }
@@ -172,17 +173,73 @@ public class HtmlParser extends AbstractAssetParser
 
             //from here, it's the same for a Tag or Page template; preprocess the replaceable properties
 
-            //find and replace all property tags to velocity variables
-            List<Element> allPropertyElements = templateHtml.getAllElements(RDF_PROPERTY_ATTR, notEmptyPropertyAttrValue);
-            for (Element property : allPropertyElements) {
-                this.replaceTemplateProperty(RDF_PROPERTY_ATTR, property, output);
-            }
-            //now do the same for the non-rdf properties
-            List<Element> allDataPropertyElements = templateHtml.getAllElements(NON_RDF_PROPERTY_ATTR, notEmptyPropertyAttrValue);
-            for (Element property : allDataPropertyElements) {
-                //don't re-do the elements that also have a property attribute (because that one has precedence over the non-rdf attribute)
-                if (!allPropertyElements.contains(property)) {
-                    this.replaceTemplateProperty(NON_RDF_PROPERTY_ATTR, property, output);
+            Stack<URI> currentVocabStack = new Stack<>();
+            currentVocabStack.push(sourceTemplate.getVocab());
+
+            Stack<Map<String, URI>> currentPrefixesStack = new Stack<>();
+            currentPrefixesStack.push(sourceTemplate.getPrefixes());
+
+            Set<EndTag> vocabPopTags = new HashSet<>();
+            Set<EndTag> prefixPopTags = new HashSet<>();
+
+            for (Iterator<Segment> nodeIterator = templateHtml.getNodeIterator(); nodeIterator.hasNext(); ) {
+                Segment nodeSegment = nodeIterator.next();
+                if (nodeSegment instanceof StartTag) {
+                    StartTag tag = (StartTag) nodeSegment;
+
+                    URI currentVocab = currentVocabStack.isEmpty() ? null : currentVocabStack.peek();
+                    Map<String, URI> currentPrefixes = currentPrefixesStack.isEmpty() ? null : currentPrefixesStack.peek();
+
+                    Attributes attributes = tag.getAttributes();
+                    if (attributes!=null) {
+
+                        Attribute vocabAttr = attributes.get("vocab");
+                        if (vocabAttr!=null) {
+                            currentVocab = parseRdfVocabAttribute(sourceTemplate, vocabAttr.getValue());
+                            if (!tag.isEmptyElementTag()) {
+                                currentVocabStack.push(currentVocab);
+                                vocabPopTags.add(tag.getElement().getEndTag());
+                            }
+                        }
+
+                        Attribute prefixAttr = attributes.get("prefix");
+                        if (prefixAttr!=null) {
+                            currentPrefixes = new LinkedHashMap<>();
+                            parseRdfPrefixAttribute(sourceTemplate, prefixAttr.getValue(), currentPrefixes);
+                            if (!tag.isEmptyElementTag()) {
+                                currentPrefixesStack.push(currentPrefixes);
+                                prefixPopTags.add(tag.getElement().getEndTag());
+                            }
+                        }
+
+                        Attribute propertyAttr = attributes.get(RDF_PROPERTY_ATTR);
+                        if (propertyAttr != null) {
+                            this.replaceTemplateProperty(sourceTemplate, tag.getElement(), propertyAttr, output, currentVocab, currentPrefixes);
+                        }
+
+                        Attribute dataPropertyAttr = attributes.get(NON_RDF_PROPERTY_ATTR);
+                        if (dataPropertyAttr != null) {
+                            if (propertyAttr == null) {
+                                this.replaceTemplateProperty(sourceTemplate, tag.getElement(), dataPropertyAttr, output, currentVocab, currentPrefixes);
+                            }
+                            else {
+                                Logger.warn("Not using attribute '" + NON_RDF_PROPERTY_ATTR + "' of tag " + tag.toString() + " because there's also a '" + RDF_PROPERTY_ATTR +
+                                            "' attribute set that has precedence because it's an official RDFa attribute");
+                            }
+                        }
+                    }
+                }
+                else if (nodeSegment instanceof EndTag) {
+                    EndTag tag = (EndTag) nodeSegment;
+
+                    if (vocabPopTags.contains(tag)) {
+                        currentVocabStack.pop();
+                        vocabPopTags.remove(tag);
+                    }
+                    if (prefixPopTags.contains(tag)) {
+                        currentPrefixesStack.pop();
+                        prefixPopTags.remove(tag);
+                    }
                 }
             }
 
@@ -293,10 +350,10 @@ public class HtmlParser extends AbstractAssetParser
 
                 //render the start tag, except if the template is eg. a page template
                 String renderTag = !htmlTemplate.renderTemplateTag() ? null : htmlTemplate.getTemplateName();
-                if (renderTag!=null) {
+                if (renderTag != null) {
                     String attr = templateInstance.getAttributeValue(HtmlTemplate.ATTRIBUTE_RENDER_TAG);
                     //if it's not set, just render the tag name
-                    if (attr!=null) {
+                    if (attr != null) {
                         //NOTE: if this is set to empty, don't render the tag (and it's attributes) at all
                         if (attr.equals("")) {
                             renderTag = null;
@@ -307,8 +364,7 @@ public class HtmlParser extends AbstractAssetParser
                     }
                 }
 
-
-                if (renderTag!=null) {
+                if (renderTag != null) {
                     builder.append("<").append(renderTag);
 
                     //the optional attributes
@@ -334,7 +390,7 @@ public class HtmlParser extends AbstractAssetParser
                 for (Token token : properties) {
                     //see above: if we have a value, it's a proper property
                     if (token instanceof PropertyToken) {
-                        PropertyToken propertyToken = (PropertyToken)token;
+                        PropertyToken propertyToken = (PropertyToken) token;
                         //this allows us to assign multiple tags to a single property key
                         for (String value : ((PropertyToken) token).getValues()) {
                             builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.DEFINE.ordinal()).append(",\"")
@@ -361,13 +417,12 @@ public class HtmlParser extends AbstractAssetParser
                 builder.append("#end").append("\n");
 
                 //the end tag
-                if (renderTag!=null) {
+                if (renderTag != null) {
                     builder.append("</").append(renderTag).append(">");
                 }
 
                 //the suffix html (mostly empty)
                 builder.append(htmlTemplate.getSuffixHtml());
-
 
                 //replace the tag in the output with it's instance
                 output.replace(templateInstance, builder);
@@ -393,14 +448,14 @@ public class HtmlParser extends AbstractAssetParser
 
         return retVal.toString();
     }
-    private void replaceTemplateProperty(String attribute, Element property, OutputDocument output)
+    private void replaceTemplateProperty(HtmlTemplate template, Element tag, Attribute attribute, OutputDocument output, URI currentVocab, Map<String, URI> currentPrefixes) throws Exception
     {
-        String name = property.getAttributeValue(attribute);
-        String value = property.toString();
+        String name = this.expandProperty(template, tag, attribute.getValue(), currentVocab, currentPrefixes);
+
         StringBuilder sb = new StringBuilder();
         //if there's no property active in this context, use the (default) value of the template
         sb.append("#if(!$").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("'])");
-        sb.append(property.toString());
+        sb.append(tag.toString());
         sb.append("#{else}");
         // This is something special:
         // If we have multiple properties, eg. like this:
@@ -413,7 +468,124 @@ public class HtmlParser extends AbstractAssetParser
         sb.append("$").append(TemplateContextMap.TAG_TEMPLATE_PROPERTIES_VARIABLE).append("['").append(name).append("']." + PropertyArray.WRITE_ONCE_METHOD_NAME + "()");
         sb.append("#end");
 
-        output.replace(property, sb);
+        output.replace(tag, sb);
+    }
+    /**
+     * Expands the property, based on the current vocab and prefix settings of this template
+     *
+     * @param attributeValue the value you want to expand
+     * @return the full absolute RDFa URI that describes this attribute
+     */
+    private String expandProperty(HtmlTemplate template, Element tag, String attributeValue, URI currentVocab, Map<String, URI> currentPrefixes) throws Exception
+    {
+        // According to http://www.w3.org/TR/rdfa-syntax/#A-property
+        // a property is a "A white space separated list of TERMorCURIEorAbsIRIs"
+        // We'll ignore the possibility it's a list for now, so a TERMorCURIEorAbsIRI can be one of these:
+        // - TERM: a xs:Name with pattern [\i-[:]][/\c-[:]]*
+        // - CURIE: a xs:string of min length 1 with pattern (([\i-[:]][\c-[:]]*)?:)?(/[^\s/][^\s]*|[^\s/][^\s]*|[^\s]?)
+        // - AbsIRI: a xs:string with pattern [\i-[:]][\c-[:]]+:.+
+        // TODO Start here (http://www.w3.org/TR/rdfa-syntax/#P_term) for a better implementation, this is just a first tryout
+        String retVal = null;
+
+        if (!StringUtils.isEmpty(attributeValue)) {
+            if (attributeValue.contains(":")) {
+                URI uri = null;
+                try {
+                    uri = URI.create(attributeValue);
+                }
+                catch (IllegalArgumentException e) {
+                    //ignored
+                }
+
+                //if the value is not a valid URI, try the CURIE syntax if we have a valid prefix
+                if (uri!=null) {
+                    retVal = uri.toString();
+                }
+                else {
+                    //this means the value is possibly a CURIE, so look up the prefix in the currentPrefixes
+                    String[] colonSplit = attributeValue.split(":");
+                    if (colonSplit.length != 2) {
+                        throw new Exception("Encountered attribute '"+attributeValue+"' in tag '"+tag.getStartTag().toString()+"' around line "+tag.getStartTag().getBegin()+" as a CURIE with more than one colon, this is not supported (and I can't seem to find if it's valid or not); " + template.getAbsolutePath());
+                    }
+                    URI prefix = currentPrefixes.get(colonSplit[0]);
+                    if (prefix != null) {
+                        String prefixUri = prefix.toString();
+                        if (!prefixUri.endsWith("/")) {
+                            prefixUri += "/";
+                        }
+                        String suffix = colonSplit[1];
+                        while (suffix.startsWith("/")) {
+                            suffix = suffix.substring(1);
+                        }
+                        retVal = prefixUri + suffix;
+                    }
+                    else {
+                        throw new Exception("Encountered attribute '"+attributeValue+"' in tag '"+tag.getStartTag().toString()+"' around line "+tag.getStartTag().getBegin()+" as a CURIE with an unknown prefix '\"+(colonSplit[0])+\"' in this context; " + template.getAbsolutePath());
+                    }
+                }
+            }
+            //if the value is no CURIE or URI, prefix it with the currentVocab if we have one
+            else if (currentVocab!=null) {
+                String prefixUri = currentVocab.toString();
+                if (!prefixUri.endsWith("/")) {
+                    prefixUri += "/";
+                }
+                String suffix = attributeValue;
+                while (suffix.startsWith("/")) {
+                    suffix = suffix.substring(1);
+                }
+                retVal = prefixUri+suffix;
+            }
+            //the value is no curie and we don't have a vocab; it's invalid
+            else {
+                //TODO: check the commented exception below, do we want this?
+                retVal = attributeValue;
+                //throw new Exception("Encountered attribute '"+attributeValue+"' in tag '"+tag.getStartTag().toString()+"' around line "+tag.getStartTag().getBegin()+" that is not connected to any vocabulary or ontology. As much as I want to allow this, I can't; " + template.getAbsolutePath());
+            }
+        }
+
+        return retVal;
+    }
+    public static URI parseRdfVocabAttribute(HtmlTemplate sourceTemplate, String vocabAttrValue) throws Exception
+    {
+        URI retVal = null;
+
+        if (vocabAttrValue != null) {
+            try {
+                retVal = URI.create(vocabAttrValue);
+            }
+            catch (IllegalArgumentException e) {
+                throw new Exception("You supplied a 'vocab' attribute in template '" + sourceTemplate.getTemplateName() + "', but it's not a valid URI; " + vocabAttrValue + "; " +
+                                    sourceTemplate.getAbsolutePath(), e);
+            }
+        }
+
+        return retVal;
+    }
+    public static void parseRdfPrefixAttribute(HtmlTemplate sourceTemplate, String prefixAttrValue, Map<String, URI> retVal) throws Exception
+    {
+        if (prefixAttrValue != null) {
+            if (!StringUtils.isEmpty(prefixAttrValue)) {
+                String[] prefixAttrSplit = prefixAttrValue.split(" ");
+                if (prefixAttrSplit.length % 2 != 0) {
+                    throw new Exception("You supplied a 'prefix' attribute in template '" + sourceTemplate.getTemplateName() +
+                                        "', but it doesn't contain an even space-separated list that form one (or more) key-value pairs; " + sourceTemplate.getAbsolutePath());
+                }
+                for (int i = 0; i < prefixAttrSplit.length; i += 2) {
+                    String p = prefixAttrSplit[i];
+                    URI uri = null;
+                    try {
+                        uri = URI.create(prefixAttrSplit[i + 1]);
+                    }
+                    catch (IllegalArgumentException e) {
+                        throw new Exception("You supplied a 'prefix' attribute in template '" + sourceTemplate.getTemplateName() + "', but the value for prefix '" + p +
+                                            "' is not a valid URI; " + uri + "; " + sourceTemplate.getAbsolutePath(), e);
+                    }
+
+                    retVal.put(p, uri);
+                }
+            }
+        }
     }
     private static void searchAllTemplates(TemplateCache templateCache) throws Exception
     {
@@ -448,7 +620,8 @@ public class HtmlParser extends AbstractAssetParser
             List<Path[]> inheritList = entry.getValue();
             HtmlTemplate parent = null;
             for (int i = inheritList.size() - 1; i >= 0; i--) {
-                Path[] absRelArr = inheritList.get(i);;
+                Path[] absRelArr = inheritList.get(i);
+                ;
                 Path absolutePath = absRelArr[0];
                 Path relativePath = absRelArr[1];
 
@@ -460,7 +633,7 @@ public class HtmlParser extends AbstractAssetParser
                         // Note: because this will return the files in priority order, don't overwrite an already parsed template,
                         // because we want to be able to 'overload' the files with our priority system.
                         // we're iterating in reverse order for the parent system, so keep the 'last' = last (grand)child
-                        if (i==0) {
+                        if (i == 0) {
                             templateCache.put(absolutePath, template);
                         }
 
@@ -483,6 +656,7 @@ public class HtmlParser extends AbstractAssetParser
     {
         public abstract String getValue();
     }
+
     private static class PropertyToken extends Token
     {
         String property;
@@ -517,6 +691,7 @@ public class HtmlParser extends AbstractAssetParser
             return this.values.toString();
         }
     }
+
     private static class OtherToken extends Token
     {
         String value;
