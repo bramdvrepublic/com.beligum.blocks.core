@@ -2,7 +2,11 @@
 <meta property="blocks:description" content="A map of the world. By Google." lang="en">
 <meta property="blocks:icon" content="fa-map-o">
 
-<template>
-    <iframe height="300px" width="100%" frameborder="0" style="border:0" src="https://www.google.com/maps/embed/v1/place?key=AIzaSyBUJ_7-cSbN6bzMwIT1di0UE_s367umqgM&q=Space+Needle,Seattle+WA" allowfullscreen>
-    </iframe>
+<script src="/assets/scripts/imports/blocks-google-maps.js" data-scope-role="admin"></script>
+<script src="/assets/scripts/imports/blocks-google-maps-user.js"></script>
+
+<meta property="blocks:controller" content="com.beligum.blocks.controllers.GoogleMapsController" >
+
+<template  data-address="Belgium">
+    <span data-api-key="$controller.getApiKey()" style="display: none"; />
 </template>
