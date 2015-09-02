@@ -15,10 +15,10 @@ import java.util.Map;
 public class TemplateContextMap implements com.beligum.base.templating.ifaces.TemplateContextMap
 {
     //-----CONSTANTS-----
-    public static final String TAG_TEMPLATE_PROPERTIES_VARIABLE = "property";
-    public static final String TAG_TEMPLATE_TEMPLATE_VARIABLE = "template";
-    public static final String TAG_TEMPLATE_CONTROLLER_VARIABLE = "controller";
-    public static final String TEMPLATE_STACK_VARIABLE = "controllerStack";
+    public static final String TAG_TEMPLATE_PROPERTIES_VARIABLE = "PROPERTY";
+    public static final String TAG_TEMPLATE_TEMPLATE_VARIABLE = "TEMPLATE";
+    public static final String TAG_TEMPLATE_CONTROLLER_VARIABLE = "CONTROLLER";
+    public static final String TEMPLATE_STACK_VARIABLE = "CONTROLLER_STACK";
 
     //-----VARIABLES-----
 
