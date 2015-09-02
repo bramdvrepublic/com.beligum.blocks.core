@@ -148,7 +148,7 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.
      * Function to call to add a block relative to a block
      * This function changes the dom
      * */
-    var drop = function (droppedElement, dropLocationElement, droppedContainer, dropContainer, side)
+    var drop = function (droppedElement, dropLocationElement, droppedContainer, dropContainer, side, onComplete)
     {
         // If we drop on the edge of the container, wrap the container so we drop inside
         // (because we drop always outside the droplocation)
@@ -176,6 +176,10 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.
                 droppedElement.css("display", "");
                 Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, event);
                 Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
+
+                if (onComplete) {
+                    onComplete(droppedElement);
+                }
             });
         };
 
@@ -206,12 +210,12 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.
     };
 
     // Add new jquery Object at bottom of dropLocation
-    this.addNewBlockAtLocation = function (blockElement,  dropLocation, side)
+    this.addNewBlockAtLocation = function (blockElement,  dropLocation, side, onComplete)
     {
         dropLocationElement = dropLocationElement = findDropLocationElement(dropLocation, side);
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
 
-        drop(blockElement, dropLocationElement, null, dropLocation.getContainer().element, side);
+        drop(blockElement, dropLocationElement, null, dropLocation.getContainer().element, side, onComplete);
 
         // TODO return false if invalid so we can cancel everything
     };

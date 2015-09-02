@@ -245,14 +245,15 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                             {
                                 addHeadResource(data.inlineStyles, name+"-in-style");
                                 addHeadResource(data.externalStyles, name+"-ex-style");
-                                addHeadResource(data.inlineScripts, name+"-in-script", true);
-                                addHeadResource(data.externalScripts, name+"-ex-script", true);
 
                                 var block = $(data.html);
                                 Hover.removeHoverOverlays();
                                 resetDragDrop();
                                 cancelled = false;
-                                Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side);
+                                Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side, function onComplete(){
+                                    addHeadResource(data.inlineScripts, name+"-in-script", true);
+                                    addHeadResource(data.externalScripts, name+"-ex-script", true);
+                                });
                             })
                             .fail(function (xhr, textStatus, exception)
                             {
