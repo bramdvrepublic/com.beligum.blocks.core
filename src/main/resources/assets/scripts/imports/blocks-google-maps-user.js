@@ -32,7 +32,7 @@ base.plugin("mot.imports.MapsUser", ["base.core.Class", function () {
         var parent = element.parent();
 
         // Search our parent block. We will search inside this parent for our address values
-        while (!(element.prop("tagName").indexOf("-") != -1) && !(element.prop("tagName") === "body")) {
+        while (!(parent.prop("tagName").indexOf("-") != -1) && !(parent.prop("tagName") === "body")) {
             parent = parent.parent();
         }
         var country = parent.find("[property='http://www.mot.be/ontology/country']").html();
