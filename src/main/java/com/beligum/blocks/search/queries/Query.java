@@ -1,5 +1,6 @@
 package com.beligum.blocks.search.queries;
 
+import com.beligum.blocks.search.fields.AbstractField;
 import com.beligum.blocks.search.fields.Field;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;

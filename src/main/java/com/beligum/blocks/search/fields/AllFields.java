@@ -5,7 +5,7 @@ import java.util.Locale;
 /**
  * Created by wouter on 3/09/15.
  */
-public class AllFields extends Field
+public class AllFields extends AbstractField
 {
     public AllFields() {
         this.field = "_all";

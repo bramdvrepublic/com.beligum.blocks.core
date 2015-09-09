@@ -7,7 +7,7 @@ import java.util.Locale;
 /**
  * Created by wouter on 3/09/15.
  */
-public class IdField extends Field
+public class IdField extends AbstractField
 {
 
     public IdField()

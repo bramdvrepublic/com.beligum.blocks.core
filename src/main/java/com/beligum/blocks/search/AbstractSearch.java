@@ -3,6 +3,7 @@ package com.beligum.blocks.search;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.Resource;
+import com.beligum.blocks.search.fields.AbstractField;
 import com.beligum.blocks.search.fields.Field;
 import com.beligum.blocks.search.queries.Query;
 import org.elasticsearch.action.count.CountRequestBuilder;
