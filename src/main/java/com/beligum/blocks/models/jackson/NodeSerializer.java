@@ -62,7 +62,7 @@ public class NodeSerializer<T extends Node> extends JsonSerializer<Node>
             context.put(stringField, field.toString());
 
             // Write the default Value (Locale.ROOOT)
-            Node fieldNode = resource.get(field);
+            Node fieldNode = resource.get(field, Locale.ROOT);
             if (!fieldNode.isNull()) {
                 jgen.writeFieldName(stringField);
                 jgen.writeStartArray();
@@ -70,17 +70,19 @@ public class NodeSerializer<T extends Node> extends JsonSerializer<Node>
                 jgen.writeEndArray();
             }
 
-            // Check if this property has values in other locales
+
             Set<Locale> locales = resource.getLocalesForField(field);
-            locales.remove(Locale.ROOT);
-            if (locales.size() > 0) {
+            boolean hasRoot = locales.contains(Locale.ROOT);
+
+            // Check if this property has values in other locales
+            if ((hasRoot && locales.size() > 1) || locales.size() > 2) {
                 // Add new field to context as container for localized values for this property
                 String localeStringField = stringField + ParserConstants.LOCALIZED_PROPERTY;
                 context.put(localeStringField, field.toString());
                 jgen.writeFieldName(localeStringField);
                 jgen.writeStartObject();
 
-                for (Locale locale : resource.getLocalesForField(field)) {
+                for (Locale locale : locales) {
                     if (locale != Locale.ROOT) {
                         fieldNode = resource.get(field, locale);
                         jgen.writeFieldName(locale.getLanguage());

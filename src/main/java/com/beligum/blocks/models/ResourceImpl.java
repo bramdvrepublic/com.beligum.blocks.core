@@ -82,14 +82,19 @@ public class ResourceImpl extends AbstractNode implements Resource
     @Override
     public void add(URI field, Node node)
     {
-        String key = addFieldToContext(field, node.getLanguage());
+        Locale locale = node.getLanguage();
+        if (node.isResource()) {
+            locale = Locale.ROOT;
+        }
+
+        String key = addFieldToContext(field, locale);
         if (node.isIterable()) {
             for (Node n: node) {
                 this.add(field, n);
             }
         } else {
             Map<Locale, ArrayList<Node>> value = properties.get(key);
-            ArrayList<Node> list = value.get(node.getLanguage());
+            ArrayList<Node> list = value.get(locale);
             if (list == null) {
                 list = new ArrayList<Node>();
                 list.add(node);
@@ -97,17 +102,22 @@ public class ResourceImpl extends AbstractNode implements Resource
                 list.add(node);
             }
 
-            properties.get(key).put(node.getLanguage(), list);
+            properties.get(key).put(locale, list);
         }
     }
 
     @Override
     public void set(URI field, Node node)
     {
-        String key = addFieldToContext(field, node.getLanguage());
+        Locale locale = node.getLanguage();
+        if (node.isResource()) {
+            locale = Locale.ROOT;
+        }
+
+        String key = addFieldToContext(field, locale);
         Map<Locale, ArrayList<Node>> value = properties.get(key);
-        if (value.get(node.getLanguage()).size() > 0) {
-            value.put(node.getLanguage(), new ArrayList<Node>());
+        if (value.get(locale).size() > 0) {
+            value.put(locale, new ArrayList<Node>());
         }
 
         add(field, node);
@@ -486,6 +496,10 @@ public class ResourceImpl extends AbstractNode implements Resource
 
     // -------- PROTECTED METHODS -----------
 
+    /*
+    * Make sure we never return null. Wrap null or lists in a special node,
+    * If we haven only 1 node in a list, return this node
+    * */
     protected Node returnValidNode(List<Node> list, Locale locale) {
         Node retVal = null;
         if (list == null) {

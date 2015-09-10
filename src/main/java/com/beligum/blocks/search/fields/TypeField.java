@@ -7,7 +7,7 @@ import java.util.Locale;
 /**
  * Created by wouter on 3/09/15.
  */
-public class TypeField extends Field
+public class TypeField extends AbstractField
 {
 
     public TypeField()
@@ -25,4 +25,5 @@ public class TypeField extends Field
     public String getRawField() {
         return this.field;
     }
+
 }
