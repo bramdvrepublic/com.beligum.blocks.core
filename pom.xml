@@ -28,7 +28,7 @@
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-core</artifactId>
-            <version>0.3.10</version>
+            <version>0.3.11-SNAPSHOT</version>
         </dependency>
 
         <dependency>

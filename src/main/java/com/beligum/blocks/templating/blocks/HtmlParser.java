@@ -384,6 +384,18 @@ public class HtmlParser extends AbstractAssetParser
                     }
                 }
 
+                //the 'body' starts here
+
+                // push the controller with the tag-attributes as arguments
+                // note that we want to use the controller inside the <template> tag, so make sure it comes before the start tag
+                builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.STACK.ordinal()).append(",\"")
+                       .append(htmlTemplate.getTemplateName()).append("\"");
+                for (Map.Entry<String, String> attribute : attributes.entrySet()) {
+                    String value = attribute.getValue();
+                    builder.append(",\"").append(attribute.getKey()).append("\",\"").append(value == null ? "" : value).append("\"");
+                }
+                builder.append(")").append("\n");
+
                 if (renderTag != null) {
                     builder.append("<").append(renderTag);
 
@@ -394,17 +406,6 @@ public class HtmlParser extends AbstractAssetParser
                     //close the start tag
                     builder.append(">").append("\n");
                 }
-
-                //the 'body' starts here
-
-                //push the controller with the tag-attributes as arguments
-                builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.STACK.ordinal()).append(",\"")
-                       .append(htmlTemplate.getTemplateName()).append("\"");
-                for (Map.Entry<String, String> attribute : attributes.entrySet()) {
-                    String value = attribute.getValue();
-                    builder.append(",\"").append(attribute.getKey()).append("\",\"").append(value == null ? "" : value).append("\"");
-                }
-                builder.append(")").append("\n");
 
                 //define the properties in the context
                 for (Token token : properties) {
@@ -433,13 +434,13 @@ public class HtmlParser extends AbstractAssetParser
                     builder.append("#parse('").append(htmlTemplate.getRelativePath()).append("')").append("\n");
                 }
 
-                //pop the controller
-                builder.append("#end").append("\n");
-
                 //the end tag
                 if (renderTag != null) {
                     builder.append("</").append(renderTag).append(">");
                 }
+
+                //pop the controller
+                builder.append("#end").append("\n");
 
                 //the suffix html (mostly empty)
                 builder.append(htmlTemplate.getSuffixHtml());
