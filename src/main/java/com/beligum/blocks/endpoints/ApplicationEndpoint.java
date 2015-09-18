@@ -1,6 +1,7 @@
 package com.beligum.blocks.endpoints;
 
 import com.beligum.base.server.RequestContext;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.routing.HtmlRouter;
@@ -14,7 +15,9 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.Locale;
+import java.util.concurrent.ExecutionException;
 
 @Path("/")
 public class ApplicationEndpoint
@@ -29,13 +32,6 @@ public class ApplicationEndpoint
 
     /*
     * Every resource on this domain has a url as id in for http://xxx.org/v1/resources/...
-    *
-    * These resources are mapped to clean urls in the routing table in the db.
-    * Currently there ar 2 types of routes:
-    * - OKURL: shows a resource (normally a view with optionally an other resource as argument, based on the current path
-    * - MovedPermanentlyURL: redirects to an other url
-    *
-    * Language is not a part of the url-path in the database.
     *
     * */
 
@@ -67,7 +63,29 @@ public class ApplicationEndpoint
             retVal = router.response();
         }
         else {
-            URI url = UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path(BlocksConfig.instance().getDefaultLanguage().getLanguage()).path(route.getLanguagedPath().toString()).build();
+            Locale locale = BlocksConfig.instance().getDefaultLanguage();
+
+            // We have to redirect the user to a url containing a language
+            // We use the language of the referrer if there is one in that url
+            // otherwise redirect to default language
+            String referrer = RequestContext.getJaxRsRequest().getHeaderString("Referer");
+            if (referrer != null) {
+                try {
+                    URI ref = new URI(referrer);
+                    java.nio.file.Path path = Paths.get(ref.getPath());
+                    if (path.getNameCount() > 0) {
+                        String lang = path.getName(0).toString();
+                        // This will return the default language if no language was found
+                        locale = BlocksConfig.instance().getLocaleForLanguage(lang);
+                    }
+
+                } catch (Exception e) {
+                    // We do nothing with the exception. User will be redirected to the default language
+                    Logger.error("Referrer in header is not a valid URI");
+                }
+            }
+
+            URI url = UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path(locale.getLanguage()).path(route.getLanguagedPath().toString()).replaceQuery(currentURI.getQuery()).build();
             retVal = Response.seeOther(url).build();
         }
 

@@ -16,17 +16,25 @@
               }
             }
           }
+        }, {
+          "id_fields": {
+            "match": "@id",
+            "mapping": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
+        }, {
+          "type_fields": {
+            "match": "@type",
+            "mapping": {
+              "type": "string",
+              "index": "not_analyzed"
+            }
+          }
         }]
       ,
       "properties": {
-        "@id": {
-          "type": "string",
-          "index": "not_analyzed"
-        },
-        "@type": {
-          "type": "string",
-          "index": "not_analyzed"
-        },
         "@language": {
           "type": "string",
           "index": "not_analyzed"

@@ -384,6 +384,10 @@ public class HtmlParser extends AbstractAssetParser
                     }
                 }
 
+                //the 'body' starts here
+
+
+
                 if (renderTag != null) {
                     builder.append("<").append(renderTag);
 
@@ -395,9 +399,8 @@ public class HtmlParser extends AbstractAssetParser
                     builder.append(">").append("\n");
                 }
 
-                //the 'body' starts here
-
-                //push the controller with the tag-attributes as arguments
+                // push the controller with the tag-attributes as arguments
+                // note that we want to use the controller inside the <template> tag, so make sure it comes before the start tag
                 builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.STACK.ordinal()).append(",\"")
                        .append(htmlTemplate.getTemplateName()).append("\"");
                 for (Map.Entry<String, String> attribute : attributes.entrySet()) {

@@ -75,7 +75,7 @@ public class NodeSerializer<T extends Node> extends JsonSerializer<Node>
             boolean hasRoot = locales.contains(Locale.ROOT);
 
             // Check if this property has values in other locales
-            if ((hasRoot && locales.size() > 1) || locales.size() > 2) {
+            if ((hasRoot && locales.size() > 1) || (!hasRoot && locales.size() > 0)) {
                 // Add new field to context as container for localized values for this property
                 String localeStringField = stringField + ParserConstants.LOCALIZED_PROPERTY;
                 context.put(localeStringField, field.toString());
