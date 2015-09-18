@@ -34,7 +34,7 @@ public class UrlsEndpoint
             newURL = new URL(original, newPath);
         }
         catch (Exception e) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(I18nFactory.instance().getDefaultResourceBundle().getMessage("badChangeUrl")).build();
+            return Response.status(Response.Status.BAD_REQUEST).entity(I18nFactory.instance().getBrowserResourceBundle().getMessage("badChangeUrl")).build();
         }
         //        BlocksID id = XMLUrlIdMapper.getInstance().getId(original);
         //        XMLUrlIdMapper.getInstance().put(id, newURL);
