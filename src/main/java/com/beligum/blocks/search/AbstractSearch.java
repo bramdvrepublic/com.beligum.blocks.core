@@ -72,9 +72,16 @@ public abstract class AbstractSearch
             this.builder.setQuery(this.query.getQuery());
         }
 
-        if (this.page != null && this.pageLength != null) {
+        if (this.page != null) {
             this.builder.setFrom((int) ((this.page - 1) * this.pageLength));
+        } else {
+            this.builder.setFrom(0);
+        }
+
+        if (this.pageLength != null) {
             this.builder.setSize(this.pageLength);
+        } else {
+            this.builder.setSize(25);
         }
 
         SearchResponse searchResponse = this.builder.execute().actionGet();

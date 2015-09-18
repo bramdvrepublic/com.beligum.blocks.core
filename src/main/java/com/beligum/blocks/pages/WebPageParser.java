@@ -350,6 +350,12 @@ public class WebPageParser
     * */
     private void addLink(String link)
     {
+        // We only save the link without the query params
+        String[] parts = link.split("\\?");
+        if (parts.length > 1) {
+            link = parts[0];
+        }
+
         URI absoluteLink = makeLinkAbsolute(link);
         URI pageId = getPageId(absoluteLink);
         HashMap<String, String> newLink = new HashMap<String, String>();

@@ -33,13 +33,6 @@ public class ApplicationEndpoint
     /*
     * Every resource on this domain has a url as id in for http://xxx.org/v1/resources/...
     *
-    * These resources are mapped to clean urls in the routing table in the db.
-    * Currently there ar 2 types of routes:
-    * - OKURL: shows a resource (normally a view with optionally an other resource as argument, based on the current path
-    * - MovedPermanentlyURL: redirects to an other url
-    *
-    * Language is not a part of the url-path in the database.
-    *
     * */
 
     //TODO this is the endpoint url of a resource, we don't know what to reply here yet
@@ -92,7 +85,7 @@ public class ApplicationEndpoint
                 }
             }
 
-            URI url = UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path(locale.getLanguage()).path(route.getLanguagedPath().toString()).build();
+            URI url = UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path(locale.getLanguage()).path(route.getLanguagedPath().toString()).replaceQuery(currentURI.getQuery()).build();
             retVal = Response.seeOther(url).build();
         }
 
