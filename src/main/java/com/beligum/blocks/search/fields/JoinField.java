@@ -24,22 +24,20 @@ public class JoinField extends CustomField
     }
 
     public JoinField join(URI uri) {
-        joinedFields.add(new CustomField(uri));
-        return this;
+        return join(uri, Locale.ROOT);
     }
 
     public JoinField join(URI uri, Locale locale) {
-        joinedFields.add(new CustomField(uri));
+        joinedFields.add(new CustomField(uri, locale));
         return this;
     }
 
     public Field get(URI uri) {
-        joinedFields.add(new CustomField(uri));
-        return this;
+        return get(uri, Locale.ROOT);
     }
 
     public Field get(URI uri, Locale locale) {
-        joinedFields.add(new CustomField(uri));
+        joinedFields.add(new CustomField(uri, locale));
         return this;
     }
 
@@ -67,7 +65,7 @@ public class JoinField extends CustomField
         for (Field f: tempJoinedFields) {
             if (counter < total) {
                 localizedField.append(getRootFieldName()).append(".");
-            } else if (f.equals(this)){
+            } else if (f == this){
                 // This is the last field in the join (probably no join, so print teh full value)
                 localizedField.append(super.getField());
             } else {
@@ -95,7 +93,7 @@ public class JoinField extends CustomField
         for (Field f: tempJoinedFields) {
             if (counter < total) {
                 localizedField.append(getRootFieldName()).append(".");
-            } else if (f.equals(this)){
+            } else if (f == this){
                 // This is the last field in the join (probably no join at all, so print the full value)
                 localizedField.append(super.getRawField());
             } else {

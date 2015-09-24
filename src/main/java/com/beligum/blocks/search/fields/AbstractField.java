@@ -56,7 +56,22 @@ public abstract class AbstractField implements Field
         return this.field;
     }
 
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o)
+            return true;
+        if (!(o instanceof AbstractField))
+            return false;
 
+        AbstractField that = (AbstractField) o;
 
+        return !(getRawField() != null ? !getRawField().equals(that.getRawField()) : that.getRawField() != null);
 
+    }
+    @Override
+    public int hashCode()
+    {
+        return getRawField() != null ? getRawField().hashCode() : 0;
+    }
 }
