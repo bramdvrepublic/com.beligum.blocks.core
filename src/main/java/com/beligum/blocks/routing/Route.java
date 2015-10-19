@@ -83,24 +83,38 @@ public class Route
         WebPath retVal = PersistenceControllerImpl.instance().getPath(simplePath, locale);
         URI blockId = RdfTools.createLocalResourceId(PersistenceControllerImpl.WEB_PAGE_CLASS);
         if (retVal == null) {
-            // this path does not yet exist for this getLanguage, so we can create it
-            retVal = new DBPath(blockId, simplePath, locale);
 
-            PersistenceControllerImpl.instance().savePath(retVal);
-
-            Map<String, WebPath> paths = PersistenceControllerImpl.instance().getPaths(blockId);
-
-            //TODO: implement better localized paths
-            // find the subpath for this language based our current path
-            // check if this path exists, if not create
-
-            // now add paths for other languages
-            for (Locale l : BlocksConfig.instance().getLanguages().values()) {
-                if (!l.equals(locale) && !paths.containsKey(l.getLanguage())) {
-                    WebPath webPath = new DBPath(blockId, simplePath, l);
-                    PersistenceControllerImpl.instance().savePath(webPath);
+            // Check if other languages are linked to this path
+            Map<String, WebPath> languagePaths = PersistenceControllerImpl.instance().getLanguagePaths(simplePath.toString());
+            if (languagePaths.size() > 0) {
+                if (languagePaths.containsKey(BlocksConfig.instance().getDefaultLanguage().toString())) {
+                    blockId = languagePaths.get(BlocksConfig.instance().getDefaultLanguage().toString()).getBlockId();
+                } else {
+                    blockId = languagePaths.values().iterator().next().getBlockId();
                 }
+                retVal = new DBPath(blockId, simplePath, locale);
+            } else {
+                // this path does not yet exist for any language, so we can create it for al known languages
+                retVal = new DBPath(blockId, simplePath, locale);
+
+                PersistenceControllerImpl.instance().savePath(retVal);
+
+                Map<String, WebPath> paths = PersistenceControllerImpl.instance().getPaths(blockId);
+
+                //TODO: implement better localized paths
+                // find the subpath for this language based our current path
+                // check if this path exists, if not create
+
+                // now add paths for other languages
+                for (Locale l : BlocksConfig.instance().getLanguages().values()) {
+                    if (!l.equals(locale) && !paths.containsKey(l.getLanguage())) {
+                        WebPath webPath = new DBPath(blockId, simplePath, l);
+                        PersistenceControllerImpl.instance().savePath(webPath);
+                    }
+                }
+
             }
+
 
         }
 

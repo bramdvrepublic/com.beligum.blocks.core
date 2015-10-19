@@ -38,7 +38,7 @@ public interface PersistenceController
     // returns a webnode (containing all urls and redirects for this page)
     public Map<String, WebPath> getPaths(URI masterPage);
 
-    public boolean pathExists(Path path, Locale locale);
+    public Map<String, WebPath> getLanguagePaths(String pathName);
 
     // returns a webnode (containing all urls and redirects for this page)
     public WebPath getPath(Path path, Locale locale);

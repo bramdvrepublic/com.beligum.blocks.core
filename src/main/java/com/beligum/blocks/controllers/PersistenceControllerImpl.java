@@ -150,17 +150,28 @@ public class PersistenceControllerImpl  implements PersistenceController
 
         return retVal;
     }
+
     @Override
-    public boolean pathExists(Path path, Locale locale)
-    {
-        boolean retVal = false;
-        Long count = RequestContext.getEntityManager().createQuery("select count(p) from DBPath p where p.url = :path and p.language = :language", Long.class).setParameter(
-                        "path", path.toString()).setParameter("language", locale.getLanguage()).getSingleResult();
-        if (count > 0) {
-            retVal = true;
+    public Map<String, WebPath> getLanguagePaths(String pathName) {
+        // find the path for this language
+        // if this path has statuscode 404, search if this path for another language has code 200
+        // use this masterpageid
+        Map<String, WebPath> retVal = new HashMap<>();
+        try {
+            List<DBPath> paths = RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.localizedUrl = :pathName", DBPath.class).setParameter("pathName", pathName).getResultList();
+            for (DBPath path: paths) {
+                retVal.put(path.getLanguage().getLanguage(), path);
+            }
+        } catch (NoResultException e) {
+            Logger.debug("Searching for path but path not found");
+        } catch (Exception e) {
+            Logger.error(e);
         }
+
         return retVal;
     }
+
+
 
     public WebPath getActivePath(Path path) {
         WebPath retVal = null;
