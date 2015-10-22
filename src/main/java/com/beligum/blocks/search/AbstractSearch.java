@@ -1,16 +1,21 @@
 package com.beligum.blocks.search;
 
+import com.beligum.base.security.PermissionsConfigurator;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.search.fields.AbstractField;
+import com.beligum.blocks.search.fields.CustomField;
 import com.beligum.blocks.search.fields.Field;
+import com.beligum.blocks.search.queries.BoolQuery;
 import com.beligum.blocks.search.queries.Query;
+import org.apache.shiro.SecurityUtils;
 import org.elasticsearch.action.count.CountRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.sort.SortOrder;
 
+import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -69,7 +74,9 @@ public abstract class AbstractSearch
 
     public List<Resource> search(Locale locale) {
         if (this.query != null) {
-            this.builder.setQuery(this.query.getQuery());
+            if (this instanceof ResourceSearch) {
+                this.builder.setQuery(this.query.getQuery());
+            }
         }
 
         if (this.page != null) {

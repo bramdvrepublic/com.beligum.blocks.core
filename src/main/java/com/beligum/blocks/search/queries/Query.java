@@ -39,8 +39,13 @@ public class Query
 
         public FieldQuery(Field field, String value, Query.Type type) {
             this.field = field;
-            this.value = value;
             this.type = type;
+            this.value = value;
+            // If our serarch is not an exact search -> convert value to lowercase to
+            // adapt to the elasticsearch standard analyzer (make search case insensitive)
+            if (!type.equals(Type.EXACT) && !type.equals(Type.EXACT_TERMS)) {
+                this.value = this.value.toLowerCase();
+            }
         }
 
         protected QueryBuilder getQuery() {
