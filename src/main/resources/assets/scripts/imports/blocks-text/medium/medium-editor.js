@@ -721,7 +721,9 @@ var Util;
 
             if (doc.queryCommandSupported('insertHTML')) {
                 try {
-                    return doc.execCommand('insertHTML', false, html);
+                    // by Wouter: I uncommented this to solve a problem that teh inserted html is changed while inserting
+                    // It seems better to use the range - see below
+                    //return doc.execCommand('insertHTML', false, html);
                 } catch (ignore) {}
             }
 
@@ -6006,8 +6008,8 @@ function MediumEditor(elements, options) {
 
                             Selection.select(this.options.ownerDocument,
                                 parentElement.firstChild, 0,
-                                parentElement.lastChild, parentElement.lastChild.nodeType === 3 ?
-                                parentElement.lastChild.nodeValue.length : parentElement.lastChild.childNodes.length);
+                                parentElement.lastChild,
+                                parentElement.lastChild.nodeType === 3 ? parentElement.lastChild.nodeValue.length : parentElement.lastChild.childNodes.length);
                         } else {
                             Selection.select(this.options.ownerDocument,
                                 parentElement, 0,
