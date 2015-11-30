@@ -26,8 +26,7 @@ public class ParserConstants
         }
     }
 
-    public final static String RESOURCE_ENDPOINT= "/v1/resource/";
-
+    public final static String RESOURCE_ENDPOINT = "/v1/resource/";
 
     public final static String JSONLD_ID = "@id";
     public final static String JSONLD_TYPE = "@type";
@@ -52,9 +51,6 @@ public class ParserConstants
     public final static String PAGE_PROPERTY_ABSOLUTE = "absolute";
     public final static String PAGE_PROPERTY_REFERENCED_PAGE = "page";
 
-
-
-
     // Appendix for a localized property in a resource
     // this property contains localized values
     public final static String LOCALIZED_PROPERTY = "_local";
@@ -62,8 +58,6 @@ public class ParserConstants
     public final static String CAN_LAYOUT = "can-layout";
     public final static String CAN_EDIT_PROPERTY = "can-edit";
 
-
     public static final String ENTITY_URL = "entityUrl";
-
 
 }

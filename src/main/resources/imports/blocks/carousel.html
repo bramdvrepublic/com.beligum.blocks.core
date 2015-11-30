@@ -22,8 +22,8 @@
 
 <template>
     #constants('blocks.core')
-    ## note: the data-interval false needs to be there to fix an editing bug (where a paused carousel starts cycling again after clicking an arrow))
-    ## keyboard was disabled because it messed with the editor
+## note: the data-interval false needs to be there to fix an editing bug (where a paused carousel starts cycling again after clicking an arrow))
+## keyboard was disabled because it messed with the editor
     <div id="carousel-123" class="carousel slide" data-interval="false" data-keyboard="false">
         <!-- Indicators -->
         <ol class="carousel-indicators">
@@ -51,13 +51,14 @@
                 #end
             #else
                 <div class="item active">
-                    <img property="image" src="/assets/images/blocks/placeholder_slide_1.jpg" >
+                    <img property="image" src="/assets/images/blocks/placeholder_slide_1.jpg">
+
                     <div class="carousel-caption">
                         <span property="title" class="title" $CONSTANTS.blocks.core.TEXT_EDITOR_OPTIONS_ATTR="$CONSTANTS.blocks.core.TEXT_EDITOR_OPTIONS_NO_TOOLBAR">
-                            <p>Enter a title, this is a test</p>
+                        <p>Enter a title, this is a test</p>
                         </span>
                         <span property="description" class="description" $CONSTANTS.blocks.core.TEXT_EDITOR_OPTIONS_ATTR="$CONSTANTS.blocks.core.TEXT_EDITOR_OPTIONS_NO_TOOLBAR">
-                            <p>Enter a description</p>
+                        <p>Enter a description</p>
                         </span>
                     </div>
                 </div>

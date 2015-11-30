@@ -41,7 +41,8 @@ base.plugin("blocks.core.Elements.Container", ["base.core.Class", "constants.bas
             return dropspots;
         },
 
-        generateProperties: function(parent, index) {
+        generateProperties: function (parent, index)
+        {
 
         },
 

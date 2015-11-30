@@ -3,16 +3,18 @@ package com.beligum.blocks.models.sql;
 import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.Resource;
 
-import javax.persistence.*;
+import javax.persistence.Entity;
+import javax.persistence.Lob;
+import javax.persistence.Table;
 import java.io.IOException;
-import java.util.*;
+import java.util.Locale;
 
 /**
  * Created by wouter on 29/06/15.
  */
 
 @Entity
-@Table(name="resource")
+@Table(name = "resource")
 public class DBResource extends DBDocumentInfo
 {
 
@@ -22,7 +24,8 @@ public class DBResource extends DBDocumentInfo
     protected byte[] data;
 
     // Default constructor for hibernate
-    public DBResource() {
+    public DBResource()
+    {
 
     }
 
@@ -34,10 +37,10 @@ public class DBResource extends DBDocumentInfo
 
     // ------ GETTERS AND SETTERS ----------
 
-    public Long getId() {
+    public Long getId()
+    {
         return this.id;
     }
-
 
     // ---------PUBLIC METHODS -----------
 
@@ -46,13 +49,10 @@ public class DBResource extends DBDocumentInfo
         return ResourceFactoryImpl.instance().deserializeResource(this.data, locale);
     }
 
-
     // Serializes the resource
     public void setResource(Resource resource) throws IOException
     {
         this.data = ResourceFactoryImpl.instance().serializeResource(resource, true).getBytes();
     }
-
-
 
 }

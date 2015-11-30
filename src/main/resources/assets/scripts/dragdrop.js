@@ -44,7 +44,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         currentDraggedBlock = null;
     };
 
-    this.isDragging = function()
+    this.isDragging = function ()
     {
         return draggingEnabled && dragging;
     };
@@ -111,7 +111,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                 // when outside container block of last droplocation is null
                 var now = $.now();
                 //will prevent the dropspots from flickering when changing fast
-                if (now-oldDirection.stamp > 100) {
+                if (now - oldDirection.stamp > 100) {
                     if (direction != oldDirection.dir && !(lastDropLocation != null && lastDropLocation.block == null)) {
                         //Logger.debug("Direction changed " + direction + " from " + oldDirection.dir);
                         dropBlock.recalculateTriggers(direction, pageX, pageY, lastDropLocation);
@@ -243,16 +243,17 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                         $.getJSON("/blocks/admin/page/block/" + name)
                             .done(function (data)
                             {
-                                addHeadResource(data.inlineStyles, name+"-in-style");
-                                addHeadResource(data.externalStyles, name+"-ex-style");
+                                addHeadResource(data.inlineStyles, name + "-in-style");
+                                addHeadResource(data.externalStyles, name + "-ex-style");
 
                                 var block = $(data.html);
                                 Hover.removeHoverOverlays();
                                 resetDragDrop();
                                 cancelled = false;
-                                Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side, function onComplete(){
-                                    addHeadResource(data.inlineScripts, name+"-in-script", true);
-                                    addHeadResource(data.externalScripts, name+"-ex-script", true);
+                                Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side, function onComplete()
+                                {
+                                    addHeadResource(data.inlineScripts, name + "-in-script", true);
+                                    addHeadResource(data.externalScripts, name + "-ex-script", true);
                                 });
                             })
                             .fail(function (xhr, textStatus, exception)
@@ -297,12 +298,12 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         currentDraggedBlock = null;
     };
 
-    var addHeadResource = function(resourceArray, className, isScript)
+    var addHeadResource = function (resourceArray, className, isScript)
     {
-        if (resourceArray != null && resourceArray.length>0) {
+        if (resourceArray != null && resourceArray.length > 0) {
             //remove existing ones
-            $("head ."+className).remove();
-            for (var i=0;i<resourceArray.length;i++) {
+            $("head ." + className).remove();
+            for (var i = 0; i < resourceArray.length; i++) {
                 var newEl = $(resourceArray[i]);
                 newEl.addClass(className);
 
@@ -311,11 +312,13 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
 
                 if (isScript && srcAttr) {
                     $.getScript(srcAttr)
-                        .done(function(script, textStatus) {
+                        .done(function (script, textStatus)
+                        {
                             //this is needed to auto-wire the plugins (was a quick fix, hope it's ok)
                             base.run();
                         })
-                        .fail(function (xhr, textStatus, exception) {
+                        .fail(function (xhr, textStatus, exception)
+                        {
                             Notification.error(BlocksMessages.savePageError + (exception ? "; " + exception : ""), xhr);
                         });
                 }
@@ -327,7 +330,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     {
         $("body").removeClass(BlocksConstants.FORCE_DRAG_CURSOR_CLASS);
         removeDropPointerElements();
-        $('.'+BlocksConstants.BLOCK_OVERLAY_CLASS+'.'+BlocksConstants.OVERLAY_DRAGGING_CLASS).removeClass(BlocksConstants.OVERLAY_DRAGGING_CLASS);
+        $('.' + BlocksConstants.BLOCK_OVERLAY_CLASS + '.' + BlocksConstants.OVERLAY_DRAGGING_CLASS).removeClass(BlocksConstants.OVERLAY_DRAGGING_CLASS);
         //removeDraggedOverlay();
         draggingEnabled = false;
         dragging = false;

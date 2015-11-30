@@ -222,7 +222,7 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core", "constants.bl
             })
         );
     };
-    this.getMaxZIndex = function()
+    this.getMaxZIndex = function ()
     {
         return maxZIndex;
     };

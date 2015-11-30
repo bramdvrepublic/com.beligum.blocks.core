@@ -178,7 +178,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         // except when we click on an element that's inside the currently focused block
         var previousFocusedBlock = Hover.getFocusedBlock();
 
-        if (previousFocusedBlock==null || (previousFocusedBlock != Hover.getPageBlock() && previousFocusedBlock.element.find(propertyElement).length == 0)) {
+        if (previousFocusedBlock == null || (previousFocusedBlock != Hover.getPageBlock() && previousFocusedBlock.element.find(propertyElement).length == 0)) {
             Sidebar.focusBlock(Hover.getPageBlock(), Hover.getPageBlock().element, Hover.getPageBlock().element.offset(), event);
             Hover.removeFocusOverlays();
             Hover.setFocusedBlock(Hover.getPageBlock());
@@ -197,7 +197,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         }
     };
 
-    var enableFocusBlurDetection = function(block, focusedElement)
+    var enableFocusBlurDetection = function (block, focusedElement)
     {
         // this basically comes down to this:
         // we'll make the entire block a hotspot, not just the focusedElement
@@ -220,7 +220,7 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
             //e.preventDefault();
             event.stopPropagation();
         });
-        var page = $('.'+Constants.PAGE_CONTENT_CLASS);
+        var page = $('.' + Constants.PAGE_CONTENT_CLASS);
         page.on("mousedown.manager_focus_end", function (event)
         {
             event.preventDefault();

@@ -11,12 +11,14 @@ import java.util.Iterator;
 public class ResourceLocalizedSerializer extends ResourceRootSerializer
 {
     @Override
-    protected boolean printRootFields() {
+    protected boolean printRootFields()
+    {
         return false;
     }
 
     @Override
-    protected Iterator<URI> getFieldIterator(Resource resource) {
+    protected Iterator<URI> getFieldIterator(Resource resource)
+    {
         return resource.getLocalizedFields().iterator();
     }
 }

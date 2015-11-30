@@ -13,7 +13,8 @@ public abstract class AbstractRouter implements Router
 {
     protected Route route;
 
-    public AbstractRouter(Route route) {
+    public AbstractRouter(Route route)
+    {
         this.route = route;
     }
 
@@ -28,14 +29,16 @@ public abstract class AbstractRouter implements Router
 
         if (!this.route.exists() || this.route.getWebPath().isNotFound()) {
             // If page does not exist, throw error for normal user and allow admin to create a new page
-           retVal = newPage();
+            retVal = newPage();
         }
         // Return ok. Show Page
         else if (this.route.getWebPath().isPage()) {
             retVal = showPage();
-        } else if (this.route.getWebPath().isRedirect()) {
+        }
+        else if (this.route.getWebPath().isRedirect()) {
             retVal = redirect();
-        } else {
+        }
+        else {
             throw new BadRequestException();
         }
 

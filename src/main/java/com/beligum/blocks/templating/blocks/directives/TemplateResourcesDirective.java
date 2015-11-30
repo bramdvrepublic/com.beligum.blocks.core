@@ -121,7 +121,8 @@ public class TemplateResourcesDirective extends Directive
                 inserts.add(new WriterBufferReference(arg, (StringWriter) writer));
             }
             else {
-                throw new IOException("Encountered a writer while processing #"+NAME+" directive that's not a StringWriter; this shouldn't happen and should be fixed in "+PageTemplateWrapperDirective.class.getCanonicalName()+"; template file was "+
+                throw new IOException("Encountered a writer while processing #" + NAME + " directive that's not a StringWriter; this shouldn't happen and should be fixed in " +
+                                      PageTemplateWrapperDirective.class.getCanonicalName() + "; template file was " +
                                       Log.formatFileString(this));
             }
         }

@@ -3,7 +3,6 @@ package com.beligum.blocks.models.jackson.resource;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.models.ResourceImpl;
 import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.Node;
@@ -17,7 +16,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Created by wouter on 21/05/15.
@@ -31,7 +33,7 @@ public class ResourceJsonDeserializer extends JsonDeserializer<Resource>
         JsonNode node = jsonParser.readValueAsTree();
         Resource retVal = null;
         try {
-            retVal =  parseResource(node);
+            retVal = parseResource(node);
         }
         catch (URISyntaxException e) {
             Logger.error("Exception while deserializing resource", e);
@@ -43,7 +45,6 @@ public class ResourceJsonDeserializer extends JsonDeserializer<Resource>
     {
         Node retVal = null;
 
-
         if (jsonNode.isObject()) {
             if (jsonNode.has(ParserConstants.JSONLD_VALUE)) {
                 Locale locale = Locale.ROOT;
@@ -52,11 +53,14 @@ public class ResourceJsonDeserializer extends JsonDeserializer<Resource>
                     locale = l != null ? l : locale;
                 }
                 retVal = ResourceFactoryImpl.instance().createNode(jsonNode.get(ParserConstants.JSONLD_VALUE).asText(), locale);
-            } else if (jsonNode.has(ParserConstants.JSONLD_ID) && jsonNode.has(ParserConstants.JSONLD_TYPE)) {
+            }
+            else if (jsonNode.has(ParserConstants.JSONLD_ID) && jsonNode.has(ParserConstants.JSONLD_TYPE)) {
                 retVal = parseResource(jsonNode);
-            } else if (jsonNode.has(ParserConstants.JSONLD_ID)) {
+            }
+            else if (jsonNode.has(ParserConstants.JSONLD_ID)) {
                 // parse hashMap
-            } else {
+            }
+            else {
 
             }
         }
@@ -74,9 +78,10 @@ public class ResourceJsonDeserializer extends JsonDeserializer<Resource>
             String lang = node.get(ParserConstants.JSONLD_LANGUAGE).asText();
             locale = BlocksConfig.instance().getLocaleForLanguage(lang);
             if (locale == null) {
-               locale = new Locale(lang);
+                locale = new Locale(lang);
             }
-        } else {
+        }
+        else {
             locale = Locale.ROOT;
         }
 
@@ -91,7 +96,7 @@ public class ResourceJsonDeserializer extends JsonDeserializer<Resource>
         }
 
         Iterator<Map.Entry<String, JsonNode>> iterator = node.fields();
-        while(iterator.hasNext()) {
+        while (iterator.hasNext()) {
             Map.Entry<String, JsonNode> entry = iterator.next();
 
             // fetch value
@@ -99,17 +104,21 @@ public class ResourceJsonDeserializer extends JsonDeserializer<Resource>
                 // parse resource
                 JsonNode types = entry.getValue();
                 if (types.isArray()) {
-                    for (JsonNode valueNode: entry.getValue()) {
+                    for (JsonNode valueNode : entry.getValue()) {
                         resource.addRdfType(new URI(valueNode.asText()));
                     }
-                } else {
+                }
+                else {
                     resource.setRdfType(new URI(entry.getValue().asText()));
                 }
-            } else if (entry.getKey().equals(ParserConstants.JSONLD_ID)) {
+            }
+            else if (entry.getKey().equals(ParserConstants.JSONLD_ID)) {
                 resource.setBlockId(new URI(entry.getValue().asText()));
-            } else if (entry.getKey().equals(ParserConstants.JSONLD_CONTEXT)) {
+            }
+            else if (entry.getKey().equals(ParserConstants.JSONLD_CONTEXT)) {
                 // skip because already parsed
-            } else if (context.containsKey(entry.getKey())) {
+            }
+            else if (context.containsKey(entry.getKey())) {
                 // Only parse values that are in the context
                 if (entry.getValue().isArray()) {
                     parseList(entry.getValue(), resource, context.get(entry.getKey()));
@@ -135,17 +144,19 @@ public class ResourceJsonDeserializer extends JsonDeserializer<Resource>
             JsonNode node = iterator.next();
             if (node.isArray()) {
                 parseList(node, resource, fieldName);
-            } else if (node.isObject()) {
+            }
+            else if (node.isObject()) {
                 resource.add(fieldName, parseObject(node));
-            } else {
+            }
+            else {
                 resource.add(fieldName, ResourceFactoryImpl.instance().createNode(node.asText(), Locale.ROOT));
             }
         }
     }
 
-    protected Resource getEmptyResource(Locale locale) {
+    protected Resource getEmptyResource(Locale locale)
+    {
         return new ResourceImpl(locale);
     }
-
 
 }

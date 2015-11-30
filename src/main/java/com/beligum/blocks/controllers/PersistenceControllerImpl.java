@@ -1,24 +1,21 @@
 package com.beligum.blocks.controllers;
 
-
 import com.beligum.base.server.RequestContext;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
-import com.beligum.blocks.models.WebPageImpl;
 import com.beligum.blocks.models.factories.ResourceFactoryImpl;
-import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.models.interfaces.Resource;
+import com.beligum.blocks.models.interfaces.WebPage;
+import com.beligum.blocks.models.interfaces.WebPath;
 import com.beligum.blocks.models.sql.DBPage;
 import com.beligum.blocks.models.sql.DBPath;
 import com.beligum.blocks.models.sql.DBResource;
-import com.beligum.blocks.models.interfaces.WebPath;
 import com.beligum.blocks.search.ElasticSearch;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.shiro.SecurityUtils;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -32,18 +29,18 @@ import java.util.*;
 /**
  * Created by wouter on 22/06/15.
  */
-public class PersistenceControllerImpl  implements PersistenceController
+public class PersistenceControllerImpl implements PersistenceController
 {
-
-
 
     private static PersistenceControllerImpl instance;
 
-    private PersistenceControllerImpl() {
+    private PersistenceControllerImpl()
+    {
 
     }
 
-    public static PersistenceControllerImpl instance() {
+    public static PersistenceControllerImpl instance()
+    {
         if (PersistenceControllerImpl.instance == null) {
             PersistenceControllerImpl.instance = new PersistenceControllerImpl();
         }
@@ -63,7 +60,7 @@ public class PersistenceControllerImpl  implements PersistenceController
 
             if (searchResponse.getHits().getHits().length > 0) {
                 retVal = ResourceFactoryImpl.instance().deserializeWebpage(searchResponse.getHits().getHits()[0].getSourceAsString().getBytes(), locale);
-//                retVal = WebPageImpl.pageMapper.readValue(searchResponse.getHits().getHits()[0].getSourceAsString(), WebPage.class);
+                //                retVal = WebPageImpl.pageMapper.readValue(searchResponse.getHits().getHits()[0].getSourceAsString(), WebPage.class);
             }
         }
 
@@ -82,15 +79,14 @@ public class PersistenceControllerImpl  implements PersistenceController
         return retVal;
     }
 
-
-
     public WebPage saveWebPage(WebPage webPage, boolean doVersion) throws IOException
     {
         DBPage dbPage = findPageInDB(webPage.getBlockId());
 
         if (dbPage == null) {
             dbPage = new DBPage(webPage);
-        } else {
+        }
+        else {
             dbPage.setWebPage(webPage);
         }
         RequestContext.getEntityManager().persist(dbPage);
@@ -107,44 +103,51 @@ public class PersistenceControllerImpl  implements PersistenceController
                       .executeUpdate();
         List<Long> pages = RequestContext.getEntityManager().createQuery("select p.id FROM DBPage p where p.blockId = :id", Long.class).setParameter("id", blockId.toString()).getResultList();
 
-        for (DBPath path: paths) {
+        for (DBPath path : paths) {
             removePathFromLucene(path.getId().toString());
         }
 
-        for (Long id: pages) {
+        for (Long id : pages) {
             removePageFromLucene(id.toString());
         }
     }
 
-
-    public WebPath getPath(Path path, Locale locale) {
+    public WebPath getPath(Path path, Locale locale)
+    {
         // find the path for this language
         DBPath webpath = null;
         try {
-            webpath = RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.url = :path and p.language = :language", DBPath.class).setParameter("language", locale.getLanguage()).setParameter(
-                            "path", path.toString()).getSingleResult();
-        } catch (NoResultException e) {
+            webpath =
+                            RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.url = :path and p.language = :language", DBPath.class)
+                                          .setParameter("language", locale.getLanguage()).setParameter(
+                                            "path", path.toString()).getSingleResult();
+        }
+        catch (NoResultException e) {
             Logger.debug("Searching for path but path not found");
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             Logger.error(e);
         }
 
         return webpath;
     }
 
-    public Map<String, WebPath> getPaths(URI masterPage) {
+    public Map<String, WebPath> getPaths(URI masterPage)
+    {
         // find the path for this language
         // if this path has statuscode 404, search if this path for another language has code 200
         // use this masterpageid
         Map<String, WebPath> retVal = new HashMap<>();
         try {
             List<DBPath> paths = RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.blockId = :id", DBPath.class).setParameter("id", masterPage.toString()).getResultList();
-            for (DBPath path: paths) {
+            for (DBPath path : paths) {
                 retVal.put(path.getLanguage().getLanguage(), path);
             }
-        } catch (NoResultException e) {
+        }
+        catch (NoResultException e) {
             Logger.debug("Searching for path but path not found");
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             Logger.error(e);
         }
 
@@ -152,39 +155,46 @@ public class PersistenceControllerImpl  implements PersistenceController
     }
 
     @Override
-    public Map<String, WebPath> getLanguagePaths(String pathName) {
+    public Map<String, WebPath> getLanguagePaths(String pathName)
+    {
         // find the path for this language
         // if this path has statuscode 404, search if this path for another language has code 200
         // use this masterpageid
         Map<String, WebPath> retVal = new HashMap<>();
         try {
-            List<DBPath> paths = RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.localizedUrl = :pathName", DBPath.class).setParameter("pathName", pathName).getResultList();
-            for (DBPath path: paths) {
+            List<DBPath>
+                            paths =
+                            RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.localizedUrl = :pathName", DBPath.class).setParameter("pathName", pathName).getResultList();
+            for (DBPath path : paths) {
                 retVal.put(path.getLanguage().getLanguage(), path);
             }
-        } catch (NoResultException e) {
+        }
+        catch (NoResultException e) {
             Logger.debug("Searching for path but path not found");
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             Logger.error(e);
         }
 
         return retVal;
     }
 
-
-
-    public WebPath getActivePath(Path path) {
+    public WebPath getActivePath(Path path)
+    {
         WebPath retVal = null;
         // search all urls with code 200 and return the first active language code
         // in the config file
 
-        List<DBPath> paths = RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.url = :path and p.statusCode = 200", DBPath.class).setParameter("path", path.toString()).getResultList();
+        List<DBPath>
+                        paths =
+                        RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.url = :path and p.statusCode = 200", DBPath.class).setParameter("path", path.toString())
+                                      .getResultList();
         Map<String, DBPath> pathMap = new HashMap<String, DBPath>();
-        for (DBPath p: paths) {
+        for (DBPath p : paths) {
             pathMap.put(p.getLanguage().getLanguage(), p);
         }
         // now find the best match for the page -> take the order of the languages in the config file
-        for (Locale l: BlocksConfig.instance().getLanguages().values()) {
+        for (Locale l : BlocksConfig.instance().getLanguages().values()) {
             if (pathMap.containsKey(l.getLanguage())) {
                 retVal = pathMap.get(l.getLanguage());
                 break;
@@ -194,7 +204,6 @@ public class PersistenceControllerImpl  implements PersistenceController
         return retVal;
     }
 
-
     public WebPath savePath(WebPath path) throws Exception
     {
         RequestContext.getEntityManager().persist(path);
@@ -202,12 +211,11 @@ public class PersistenceControllerImpl  implements PersistenceController
         return path;
     }
 
-
-
     public Resource getResource(URI id, Locale language) throws Exception
     {
         Resource retVal = null;
-        DBResource dbResource = findResourceInDB(id);;
+        DBResource dbResource = findResourceInDB(id);
+        ;
         if (dbResource != null) {
             retVal = dbResource.getResource(language);
         }
@@ -215,27 +223,27 @@ public class PersistenceControllerImpl  implements PersistenceController
 
     }
 
-
     public Resource saveResource(Resource resource) throws Exception
     {
         DBResource dbResource = findResourceInDB(resource.getBlockId());
 
         if (dbResource == null) {
             dbResource = new DBResource(resource);
-        } else {
+        }
+        else {
             dbResource.setResource(resource);
         }
 
         RequestContext.getEntityManager().persist(dbResource);
         Set<URI> types = resource.getRdfType();
         String type = "resource";
-        if (types.iterator().hasNext()) type = RdfTools.makeDbFieldFromUri(types.iterator().next());
+        if (types.iterator().hasNext())
+            type = RdfTools.makeDbFieldFromUri(types.iterator().next());
 
         addResourceToLucene(dbResource.getId().toString(), type, ResourceFactoryImpl.instance().serializeResource(resource, false), Locale.ROOT);
 
         return resource;
     }
-
 
     public Resource deleteResource(Resource resource)
     {
@@ -245,33 +253,37 @@ public class PersistenceControllerImpl  implements PersistenceController
 
     // ------- PRIVATE METHODS  ---------
 
-
-    private DBResource findResourceInDB(URI id) {
+    private DBResource findResourceInDB(URI id)
+    {
         DBResource retVal = null;
         try {
             retVal = RequestContext.getEntityManager().createQuery("select r FROM DBResource r where r.blockId = :id", DBResource.class).setParameter("id", id.toString()).getSingleResult();
-        } catch (NoResultException e) {
+        }
+        catch (NoResultException e) {
             Logger.debug("Searching for resource but resource not found");
-        } catch (StackOverflowError e) {
+        }
+        catch (StackOverflowError e) {
             Logger.debug("StackOverflow error !");
         }
         return retVal;
     }
 
-    private DBPage findPageInDB(URI id) {
+    private DBPage findPageInDB(URI id)
+    {
         DBPage retVal = null;
         try {
             retVal = RequestContext.getEntityManager().createQuery("select p FROM DBPage p where p.blockId = :id", DBPage.class)
-                                        .setParameter("id", id.toString()).getSingleResult();
+                                   .setParameter("id", id.toString()).getSingleResult();
 
-        } catch (NoResultException e) {
+        }
+        catch (NoResultException e) {
             Logger.debug("Searching for resource but resource not found");
         }
         return retVal;
     }
 
-
-    private void addResourceToLucene(String id, String type, String json, Locale locale) {
+    private void addResourceToLucene(String id, String type, String json, Locale locale)
+    {
         String index = ElasticSearch.instance().getResourceIndexName(locale);
 
         ElasticSearch.instance().getBulk().add(ElasticSearch.instance().getClient().prepareIndex(index, type)
@@ -280,22 +292,24 @@ public class PersistenceControllerImpl  implements PersistenceController
 
     }
 
-    private void addPageToLucene(String id, String json, Locale locale) {
+    private void addPageToLucene(String id, String json, Locale locale)
+    {
 
         String name = PersistenceController.WEB_PAGE_CLASS;
         String index = ElasticSearch.instance().getPageIndexName(locale);
         ElasticSearch.instance().getBulk().add(ElasticSearch.instance().getClient().prepareIndex(index, name)
                                                             .setSource(json)
                                                             .setId(id).request());
-//        IndexResponse is = ElasticSearch.instance().getClient().prepareIndex(index, name)
-//                                        .setSource(json).setId(id)
-//                                        .execute().actionGet();
-//        if (!is.isCreated()) {
-//            Logger.error("Webpage could not be added to Lucene");
-//        }
+        //        IndexResponse is = ElasticSearch.instance().getClient().prepareIndex(index, name)
+        //                                        .setSource(json).setId(id)
+        //                                        .execute().actionGet();
+        //        if (!is.isCreated()) {
+        //            Logger.error("Webpage could not be added to Lucene");
+        //        }
     }
 
-    private void addPathToLucene(String id, String json) {
+    private void addPathToLucene(String id, String json)
+    {
 
         String name = PersistenceController.PATH_CLASS;
         String index = "routing";
@@ -304,20 +318,21 @@ public class PersistenceControllerImpl  implements PersistenceController
                                                             .setId(id).request());
     }
 
-    private void removePathFromLucene(String id) {
+    private void removePathFromLucene(String id)
+    {
         String name = PersistenceController.PATH_CLASS;
         String index = "routing";
         ElasticSearch.instance().getClient().prepareDelete(index, name, id).execute().actionGet();
     }
 
-    private void removePageFromLucene(String id) {
+    private void removePageFromLucene(String id)
+    {
         String name = PersistenceController.WEB_PAGE_CLASS;
-        for (Locale locale: BlocksConfig.instance().getLanguages().values()) {
+        for (Locale locale : BlocksConfig.instance().getLanguages().values()) {
             String index = ElasticSearch.instance().getPageIndexName(locale);
             ElasticSearch.instance().getClient().prepareDelete(index, name, id).execute().actionGet();
         }
 
     }
-
 
 }

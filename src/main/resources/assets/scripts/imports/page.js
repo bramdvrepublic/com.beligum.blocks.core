@@ -4,7 +4,7 @@
 base.plugin("blocks.imports.Page", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.Broadcaster", "blocks.core.SidebarUtils", "blocks.core.UI", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, Broadcaster, SidebarUtils, UI)
 {
     var Page = this;
-    this.TAGS = ['.'+BlocksConstants.PAGE_CONTENT_CLASS];
+    this.TAGS = ['.' + BlocksConstants.PAGE_CONTENT_CLASS];
 
     (this.Class = Class.create(Widget.Class, {
 

@@ -280,7 +280,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "messages.bloc
         if (labelText) {
             var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
         }
-        var inputGroup = $('<div class="input-group '+BlocksConstants.INPUT_WITH_BUTTONS_CLASS+'"></div>').appendTo(formGroup);
+        var inputGroup = $('<div class="input-group ' + BlocksConstants.INPUT_WITH_BUTTONS_CLASS + '"></div>').appendTo(formGroup);
         var input = $('<input ' + id + ' type="text" class="form-control" placeholder="' + placeholderText + '">').appendTo(inputGroup);
 
         var oldVal = '';
@@ -440,7 +440,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "messages.bloc
 
         return formGroup;
     };
-    this.buildInputActions = function(Sidebar, fileSelect, pageSelect, selectedFilePath)
+    this.buildInputActions = function (Sidebar, fileSelect, pageSelect, selectedFilePath)
     {
         var retVal = {};
 
@@ -544,7 +544,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "messages.bloc
                 }
 
                 //close the dropdown on click, apparently this didn't work automatically...
-                $('#'+id).dropdown("toggle");
+                $('#' + id).dropdown("toggle");
             });
 
             if (initCallback) {
@@ -557,7 +557,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "messages.bloc
 
         return content;
     };
-    this.createToggleButton = function(labelText, initStateCallback, switchStateCallback, onLabel, offLabel)
+    this.createToggleButton = function (labelText, initStateCallback, switchStateCallback, onLabel, offLabel)
     {
         var INACTIVE_FA_CLASS = 'fa-square-o';
         var ACTIVE_FA_CLASS = 'fa-check-square-o';
@@ -576,12 +576,12 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "messages.bloc
         var id = Commons.generateId();
         var label = $('<label for="' + id + '">' + labelText + '</label>').appendTo(formGroup);
         var ACTIVE_ATTR = "data-active";
-        var input = $('<input id="' + id + '" type="checkbox" data-toggle="toggle" data-size="small" '+ACTIVE_ATTR+'="false" aria-pressed="false">').appendTo(formGroup);
+        var input = $('<input id="' + id + '" type="checkbox" data-toggle="toggle" data-size="small" ' + ACTIVE_ATTR + '="false" aria-pressed="false">').appendTo(formGroup);
         //var input = $('<button id="' + id + '" type="button" class="btn btn-default btn-sm btn-toggle pull-right" data-toggle="button" aria-pressed="false" autocomplete="off"><i class="fa fa-fw"></i></button>').appendTo(formGroup);
 
-        var toggleState = function(newState)
+        var toggleState = function (newState)
         {
-            input.attr(ACTIVE_ATTR, ''+newState);
+            input.attr(ACTIVE_ATTR, '' + newState);
 
             if (newState) {
                 input.attr("checked", "checked");
@@ -591,7 +591,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "messages.bloc
             }
 
             var fa = input.find(".fa");
-            if (fa.length>0) {
+            if (fa.length > 0) {
                 fa.removeClass(ACTIVE_FA_CLASS);
                 fa.removeClass(INACTIVE_FA_CLASS);
 
@@ -624,7 +624,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "messages.bloc
         //listener
         input.change(function (e)
         {
-            var oldState = input.attr(ACTIVE_ATTR)==='true';
+            var oldState = input.attr(ACTIVE_ATTR) === 'true';
             toggleState(!oldState);
             switchStateCallback(oldState, !oldState);
         });

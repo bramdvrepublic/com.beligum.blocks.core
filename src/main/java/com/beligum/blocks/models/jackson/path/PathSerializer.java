@@ -16,7 +16,7 @@ public class PathSerializer extends JsonSerializer<DBPath>
 
     @Override
     public void serialize(DBPath value, JsonGenerator jgen, SerializerProvider provider) throws IOException,
-                                                                                                  JsonProcessingException
+                                                                                                JsonProcessingException
     {
         jgen.writeStartObject();
         jgen.writeFieldName("id");
@@ -38,9 +38,6 @@ public class PathSerializer extends JsonSerializer<DBPath>
         jgen.writeNumber(value.getStatusCode());
         jgen.writeEndObject();
 
-
     }
-
-
 
 }

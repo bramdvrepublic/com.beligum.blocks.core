@@ -203,7 +203,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
 
                 //this is a good failsafe for the hovered block implementation
                 //this happens when eg. we hover a block, do Alt+TAB to another window, move the mouse, and come back on another page position
-                if (block!=null && !block.isTriggered(event.pageX, event.pageY)) {
+                if (block != null && !block.isTriggered(event.pageX, event.pageY)) {
                     block = null;
                     Hover.setHoveredBlock(null);
                 }
@@ -276,7 +276,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 else if (draggingStatus == BaseConstants.DRAGGING.WAITING) {
 
                     //Note: when we drag the new block button, startBlock will be null (and the popover will do it's work)
-                    if (startBlock!=null) {
+                    if (startBlock != null) {
                         var hoverObj = Hover.createHoverClickObject(startBlock, element, event);
                         if (hoverObj) {
                             //this will mainly end up in sidebar.js

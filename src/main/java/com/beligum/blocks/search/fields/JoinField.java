@@ -23,52 +23,60 @@ public class JoinField extends CustomField
         super(field, locale);
     }
 
-    public JoinField join(URI uri) {
+    public JoinField join(URI uri)
+    {
         return join(uri, Locale.ROOT);
     }
 
-    public JoinField join(URI uri, Locale locale) {
+    public JoinField join(URI uri, Locale locale)
+    {
         joinedFields.add(new CustomField(uri, locale));
         return this;
     }
 
-    public Field get(URI uri) {
+    public Field get(URI uri)
+    {
         return get(uri, Locale.ROOT);
     }
 
-    public Field get(URI uri, Locale locale) {
+    public Field get(URI uri, Locale locale)
+    {
         joinedFields.add(new CustomField(uri, locale));
         return this;
     }
 
-
-    public Field id() {
+    public Field id()
+    {
         IdField retVal = new IdField();
         joinedFields.add(retVal);
         return this;
     }
 
-    public Field type() {
+    public Field type()
+    {
         TypeField retVal = new TypeField();
         joinedFields.add(retVal);
         return this;
     }
 
     @Override
-    public String getField() {
+    public String getField()
+    {
         int counter = 1;
         StringBuilder localizedField = new StringBuilder();
         List<Field> tempJoinedFields = new ArrayList();
         tempJoinedFields.add(this);
         tempJoinedFields.addAll(this.joinedFields);
         int total = tempJoinedFields.size();
-        for (Field f: tempJoinedFields) {
+        for (Field f : tempJoinedFields) {
             if (counter < total) {
                 localizedField.append(getRootFieldName()).append(".");
-            } else if (f == this){
+            }
+            else if (f == this) {
                 // This is the last field in the join (probably no join, so print teh full value)
                 localizedField.append(super.getField());
-            } else {
+            }
+            else {
                 localizedField.append(f.getField());
             }
             counter++;
@@ -79,7 +87,8 @@ public class JoinField extends CustomField
     }
 
     @Override
-    public String getRawField() {
+    public String getRawField()
+    {
         int counter = 1;
         StringBuilder localizedField = new StringBuilder();
         List<Field> tempJoinedFields = new ArrayList();
@@ -90,13 +99,15 @@ public class JoinField extends CustomField
         // The last field gets a special treatment
         // Fields.get("http://schema.org/address").join("http://schema.org/street")
         // Should give us schema_org_address._schema_org_street.@value
-        for (Field f: tempJoinedFields) {
+        for (Field f : tempJoinedFields) {
             if (counter < total) {
                 localizedField.append(getRootFieldName()).append(".");
-            } else if (f == this){
+            }
+            else if (f == this) {
                 // This is the last field in the join (probably no join at all, so print the full value)
                 localizedField.append(super.getRawField());
-            } else {
+            }
+            else {
                 localizedField.append(f.getRawField());
             }
             counter++;
@@ -105,6 +116,5 @@ public class JoinField extends CustomField
         return localizedField.toString();
 
     }
-
 
 }

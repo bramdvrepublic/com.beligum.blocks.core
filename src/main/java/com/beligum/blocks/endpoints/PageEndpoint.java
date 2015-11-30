@@ -9,7 +9,6 @@ import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.PageCache;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.controllers.PersistenceControllerImpl;
-import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.models.interfaces.WebPage;
@@ -21,12 +20,10 @@ import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
-import com.beligum.blocks.utils.RdfTools;
 import com.beligum.blocks.utils.comparators.MapComparator;
 import com.google.common.base.Functions;
 import com.google.common.collect.Lists;
 import gen.com.beligum.blocks.core.fs.html.views.modals.newblock;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -67,7 +64,7 @@ public class PageEndpoint
     @Path("/save/{url:.*}")
     @Consumes(MediaType.APPLICATION_JSON)
     // @bulk:  if true, we have to flusht the bulk upload to ElasticSearch (used during import)
-    public Response savePage(@PathParam("url") String url, @QueryParam("bulk")boolean bulk, String content)
+    public Response savePage(@PathParam("url") String url, @QueryParam("bulk") boolean bulk, String content)
                     throws Exception
 
     {
@@ -137,7 +134,8 @@ public class PageEndpoint
             for (URI field : pageParser.getPageResource().getFields()) {
                 if (!pageParser.getPageResource().get(field, Locale.ROOT).isNull()) {
                     localizedWebpage.set(field, pageParser.getPageResource().get(field));
-                } else if (!pageParser.getPageResource().get(field).isNull()) {
+                }
+                else if (!pageParser.getPageResource().get(field).isNull()) {
                     localizedWebpage.set(field, pageParser.getPageResource().get(field));
                 }
             }

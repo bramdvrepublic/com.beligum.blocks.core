@@ -1,6 +1,9 @@
 package com.beligum.blocks.templating.blocks;
 
-import net.htmlparser.jericho.*;
+import net.htmlparser.jericho.Element;
+import net.htmlparser.jericho.OutputDocument;
+import net.htmlparser.jericho.Segment;
+import net.htmlparser.jericho.Source;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -81,7 +84,7 @@ public class TagTemplate extends HtmlTemplate
 
         //the prefix equals the prefix of the parent, plus the prefix of us
         StringBuilder prefix = new StringBuilder();
-        if (parent!=null) {
+        if (parent != null) {
             prefix.append(parent.getPrefixHtml());
         }
         prefix.append(documentSource.subSequence(0, templateTag.getBegin()));
@@ -90,7 +93,7 @@ public class TagTemplate extends HtmlTemplate
         //same for the suffix but in reverse order
         StringBuilder suffix = new StringBuilder();
         suffix.append(documentSource.subSequence(templateTag.getEnd(), documentSource.length()));
-        if (parent!=null) {
+        if (parent != null) {
             suffix.append(parent.getSuffixHtml());
         }
         this.suffixHtml = new Source(suffix);

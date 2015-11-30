@@ -1,21 +1,15 @@
 package com.beligum.blocks.search;
 
-import com.beligum.base.security.PermissionsConfigurator;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.Resource;
-import com.beligum.blocks.search.fields.AbstractField;
-import com.beligum.blocks.search.fields.CustomField;
 import com.beligum.blocks.search.fields.Field;
-import com.beligum.blocks.search.queries.BoolQuery;
 import com.beligum.blocks.search.queries.Query;
-import org.apache.shiro.SecurityUtils;
 import org.elasticsearch.action.count.CountRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.sort.SortOrder;
 
-import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -26,34 +20,36 @@ import java.util.Locale;
 public abstract class AbstractSearch
 {
     protected Query query = null;
-//    protected Filter filter = null;
+    //    protected Filter filter = null;
     protected Integer page = null;
     protected Integer pageLength = null;
     protected SearchRequestBuilder builder = null;
     protected CountRequestBuilder countBuilder = null;
 
-
-    public AbstractSearch setQuery(Query query) {
+    public AbstractSearch setQuery(Query query)
+    {
         this.query = query;
         return this;
     }
 
-    public Query getQuery() {
+    public Query getQuery()
+    {
         return this.query;
     }
 
-//  we do not add filters at the moment
-//    because the count does not work with filters
-//
-//    public void setFilter(Filter filter) {
-//        this.filter = filter;
-//    }
-//
-//    public Filter getFilter() {
-//        return this.filter;
-//    }
+    //  we do not add filters at the moment
+    //    because the count does not work with filters
+    //
+    //    public void setFilter(Filter filter) {
+    //        this.filter = filter;
+    //    }
+    //
+    //    public Filter getFilter() {
+    //        return this.filter;
+    //    }
 
-    public AbstractSearch addSort(Field field, SortOrder order) {
+    public AbstractSearch addSort(Field field, SortOrder order)
+    {
         this.builder.addSort(field.getRawField(), order);
         return this;
     }
@@ -65,14 +61,14 @@ public abstract class AbstractSearch
         return this;
     }
 
-
     public AbstractSearch setPageLength(Integer pageLength)
     {
         this.pageLength = pageLength;
         return this;
     }
 
-    public List<Resource> search(Locale locale) {
+    public List<Resource> search(Locale locale)
+    {
         if (this.query != null) {
             if (this instanceof ResourceSearch) {
                 this.builder.setQuery(this.query.getQuery());
@@ -81,13 +77,15 @@ public abstract class AbstractSearch
 
         if (this.page != null) {
             this.builder.setFrom((int) ((this.page - 1) * this.pageLength));
-        } else {
+        }
+        else {
             this.builder.setFrom(0);
         }
 
         if (this.pageLength != null) {
             this.builder.setSize(this.pageLength);
-        } else {
+        }
+        else {
             this.builder.setSize(25);
         }
 
@@ -99,13 +97,15 @@ public abstract class AbstractSearch
                 resource.setLanguage(locale);
                 retVal.add(resource);
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             Logger.error("Could not parse resource from ElasticSearch", e);
         }
         return retVal;
     }
 
-    public Long totalHits() {
+    public Long totalHits()
+    {
         if (this.query != null) {
             this.countBuilder.setQuery(this.query.getQuery());
         }

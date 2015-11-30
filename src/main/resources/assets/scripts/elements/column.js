@@ -52,7 +52,8 @@ base.plugin("blocks.core.Elements.Column", ["base.core.Class", "constants.base.c
             return dropspots;
         },
 
-        generateProperties: function() {
+        generateProperties: function ()
+        {
 
         }
 

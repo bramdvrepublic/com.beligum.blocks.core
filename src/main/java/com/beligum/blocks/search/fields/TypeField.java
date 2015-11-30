@@ -17,12 +17,14 @@ public class TypeField extends AbstractField
     }
 
     @Override
-    public String getField() {
+    public String getField()
+    {
         return this.getRawField();
     }
 
     @Override
-    public String getRawField() {
+    public String getRawField()
+    {
         return this.field;
     }
 

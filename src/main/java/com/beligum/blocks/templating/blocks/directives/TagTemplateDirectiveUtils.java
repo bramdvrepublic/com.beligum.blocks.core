@@ -21,8 +21,8 @@ public class TagTemplateDirectiveUtils
     {
         Object retVal = null;
 
-        Node argNode = node.jjtGetNumChildren()>index ? node.jjtGetChild(index) : null;
-        if (argNode!=null) {
+        Node argNode = node.jjtGetNumChildren() > index ? node.jjtGetChild(index) : null;
+        if (argNode != null) {
             retVal = argNode.value(context);
         }
 
@@ -31,7 +31,7 @@ public class TagTemplateDirectiveUtils
     protected static String readValue(InternalContextAdapter context, Node node)
     {
         Node contentNode = node.jjtGetChild(node.jjtGetNumChildren() - 1);
-        if (contentNode.jjtGetNumChildren()>0) {
+        if (contentNode.jjtGetNumChildren() > 0) {
             return contentNode.literal();
         }
         else {

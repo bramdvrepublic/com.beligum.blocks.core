@@ -6,7 +6,8 @@
  * must be loaded even if we are not admin, because it is part of the general functionality
  * of this block
  * */
-base.plugin("mot.imports.MapsUser", ["base.core.Class", function () {
+base.plugin("mot.imports.MapsUser", ["base.core.Class", function ()
+{
     var mapIndex = 0;
     var DATA_INDEX = "data-index";
     var DATA_AUTOLOAD = "data-autoload";
@@ -17,7 +18,7 @@ base.plugin("mot.imports.MapsUser", ["base.core.Class", function () {
     var geocoder = null;
 
 
-    var setLocation = function(element)
+    var setLocation = function (element)
     {
         if (element.hasAttribute(DATA_AUTOLOAD)) {
             autoSetAddress(element);
@@ -28,7 +29,8 @@ base.plugin("mot.imports.MapsUser", ["base.core.Class", function () {
 
     };
 
-    var autoSetAddress = function(element) {
+    var autoSetAddress = function (element)
+    {
         var parent = element.parent();
 
         // Search our parent block. We will search inside this parent for our address values
@@ -48,9 +50,11 @@ base.plugin("mot.imports.MapsUser", ["base.core.Class", function () {
      * Try to geocode the address. If we can not find the address, try with a shorter version until we find
      * Keep trying until our address is an empty string
      * */
-    var geocodeAddress = function(address, resultsMap) {
+    var geocodeAddress = function (address, resultsMap)
+    {
         if (address != null && address.length > 0) {
-            geocoder.geocode({'address': address}, function (results, status) {
+            geocoder.geocode({'address': address}, function (results, status)
+            {
                 if (status === google.maps.GeocoderStatus.OK) {
                     resultsMap.setCenter(results[0].geometry.location);
                     var marker = new google.maps.Marker({
@@ -66,7 +70,8 @@ base.plugin("mot.imports.MapsUser", ["base.core.Class", function () {
         }
     };
 
-    var shorterAddress = function(address) {
+    var shorterAddress = function (address)
+    {
         var retVal = address;
         var i = retVal.lastIndexOf(",");
         if (i > 0) {
@@ -78,7 +83,8 @@ base.plugin("mot.imports.MapsUser", ["base.core.Class", function () {
     };
 
     // Create a js map object for each google maps block
-    var createMap = function(index, element) {
+    var createMap = function (index, element)
+    {
         element.attr(DATA_INDEX, index);
         map = new google.maps.Map(element[0], {
             zoom: 12
@@ -87,30 +93,32 @@ base.plugin("mot.imports.MapsUser", ["base.core.Class", function () {
     };
 
 
-
     // Called by the google api when script is loaded
-    initBlocksGoogleMaps = function()
+    initBlocksGoogleMaps = function ()
     {
         geocoder = new google.maps.Geocoder();
         var mapElements = $("blocks-google-maps");
-        mapElements.each(function (index) {
+        mapElements.each(function (index)
+        {
             var element = $(this);
             createMap(index, element);
             setLocation(element);
         })
     };
 
-    $(document).ready(function () {
+    $(document).ready(function ()
+    {
         // find a block with an api key defined. We will use this key for all maps
-        var keyBlock = $("blocks-google-maps > span["+DATA_API_KEY+"]").remove().first();
+        var keyBlock = $("blocks-google-maps > span[" + DATA_API_KEY + "]").remove().first();
         var apiKey = null;
 
         if (keyBlock.length == 1) {
-             apiKey = keyBlock.attr(DATA_API_KEY).trim();
+            apiKey = keyBlock.attr(DATA_API_KEY).trim();
         }
 
         if (apiKey != null && apiKey != "") {
-            $.getScript("https://maps.googleapis.com/maps/api/js?key=" + apiKey + "&callback=initBlocksGoogleMaps", function () {
+            $.getScript("https://maps.googleapis.com/maps/api/js?key=" + apiKey + "&callback=initBlocksGoogleMaps", function ()
+            {
             });
         } else {
             Logger.error("No Google API key found on page. Could not load the map(s)");
@@ -118,7 +126,6 @@ base.plugin("mot.imports.MapsUser", ["base.core.Class", function () {
 
 
     });
-
 
 
 }]);

@@ -31,12 +31,12 @@ public class DBDocumentInfo implements BasicModel
     protected LocalDateTime updatedAt;
     @Column(name = "deleted", nullable = false)
     protected boolean deleted = false;
-    @ManyToOne(fetch = FetchType.LAZY, targetEntity = AbstractSubject.class, cascade = { })
+    @ManyToOne(fetch = FetchType.LAZY, targetEntity = AbstractSubject.class, cascade = {})
     @JoinColumn(name = "created_by", updatable = false, insertable = false)
     private Subject createdBy;
     @Column(name = "created_by")
     private Long createdByRawId;
-    @ManyToOne(fetch = FetchType.LAZY, targetEntity = AbstractSubject.class, cascade = { })
+    @ManyToOne(fetch = FetchType.LAZY, targetEntity = AbstractSubject.class, cascade = {})
     @JoinColumn(name = "updated_by", updatable = false, insertable = false)
     private Subject updatedBy;
     @Column(name = "updated_by")
@@ -127,8 +127,6 @@ public class DBDocumentInfo implements BasicModel
     {
         return this.getId() == null || this.getId() <= 0;
     }
-
-
 
     //-----PRIVATE CLASSES-----
     public static class DBDocumentInfoListener

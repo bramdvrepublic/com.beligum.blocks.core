@@ -83,7 +83,7 @@ base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core
             }
         },
 
-        generateProperties: function()
+        generateProperties: function ()
         {
         }
 

@@ -6,26 +6,19 @@ package com.beligum.blocks.routing;
 public class RouteController
 {
 
-
-
     public static RouteController instance;
 
-    private RouteController() {
+    private RouteController()
+    {
 
     }
 
-    public static RouteController instance() {
+    public static RouteController instance()
+    {
         if (RouteController.instance == null) {
             RouteController.instance = new RouteController();
         }
         return RouteController.instance;
     }
-
-
-
-
-
-
-
 
 }

@@ -23,7 +23,6 @@ public class TemplateCache
     private String cachedCssReset;
     private String cachedJsArray;
 
-
     //-----CONSTRUCTORS-----
     public TemplateCache()
     {
@@ -82,7 +81,7 @@ public class TemplateCache
 
     public String getAllTagNamesBySpace()
     {
-        if (this.cachedSpacedTagNames ==null) {
+        if (this.cachedSpacedTagNames == null) {
             this.cachedSpacedTagNames = Joiner.on(" ").join(this.nameMapping.keySet());
         }
 
@@ -90,7 +89,7 @@ public class TemplateCache
     }
     public String getAllTagNamesCsv()
     {
-        if (this.cachedCsvTagNames ==null) {
+        if (this.cachedCsvTagNames == null) {
             this.cachedCsvTagNames = Joiner.on(",").join(this.nameMapping.keySet());
         }
 
@@ -99,6 +98,7 @@ public class TemplateCache
 
     /**
      * Returns and caches css code that resets our custom template tags
+     *
      * @return
      */
     public String getCssReset()
@@ -127,6 +127,7 @@ public class TemplateCache
     }
     /**
      * Returns and caches javascript code of an array with all the tag names of our custom template tags
+     *
      * @return
      */
     public String getJsArray()

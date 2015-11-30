@@ -3,13 +3,14 @@
 <div class="form-group">
     <div class="list-group">
         #foreach($block in $templates)
-            ## Note: constant will pierce through the click-blocker
+        ## Note: constant will pierce through the click-blocker
             <a href="javascript:void(0)" class="list-group-item" data-value="$block.name" $CONSTANTS.blocks.core.FORCE_CLICK_ATTR>
                 <div class="preview">
                     <i class="fa fa-fw #if($block.icon)$block.icon#{else}fa-square-o#end"></i>
                 </div>
                 <div class="caption">
                     <h4>$block.title</h4>
+
                     <p>
                         $block.description
                     </p>

@@ -1,12 +1,15 @@
 package com.beligum.blocks.models.sql;
 
-import javax.persistence.*;
+import javax.persistence.Entity;
+import javax.persistence.Lob;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 
 /**
  * Created by wouter on 1/07/15.
  */
 @Entity
-@Table(name="resource_language")
+@Table(name = "resource_language")
 public class DBResourceLocalized extends DBDocumentInfo
 {
     @ManyToOne
@@ -15,28 +18,33 @@ public class DBResourceLocalized extends DBDocumentInfo
     @Lob
     private byte[] data;
 
-    public DBResourceLocalized() {
+    public DBResourceLocalized()
+    {
 
     }
 
-
-    public DBResourceLocalized(byte[] data) {
+    public DBResourceLocalized(byte[] data)
+    {
         this.setdata(data);
     }
 
-    public byte[] getData() {
+    public byte[] getData()
+    {
         return this.data;
     }
 
-    public void setdata(byte[] data) {
+    public void setdata(byte[] data)
+    {
         this.data = data;
     }
 
-    public DBResource getResource() {
+    public DBResource getResource()
+    {
         return resource;
     }
 
-    public void setResource(DBResource resource) {
+    public void setResource(DBResource resource)
+    {
         this.resource = resource;
     }
 

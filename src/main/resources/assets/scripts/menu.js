@@ -79,7 +79,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
                 if (!pierceThrough) {
                     //controls in the sidebar are enabled by default
-                    pierceThrough = UI.sidebar.find(control).length>0;
+                    pierceThrough = UI.sidebar.find(control).length > 0;
                 }
 
                 //check if we clicked on the link, or on something inside a link
@@ -114,12 +114,12 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
             var windowWidth = $(window).width();
             var INIT_SIDEBAR_WIDTH = windowWidth * 0.2; // default width of sidebar is 20% of window
-            if (cookieSidebarWidth != null && cookieSidebarWidth>0) {
+            if (cookieSidebarWidth != null && cookieSidebarWidth > 0) {
                 INIT_SIDEBAR_WIDTH = cookieSidebarWidth;
             }
 
             //control the bounds, even if the cookie says otherwise
-            if (INIT_SIDEBAR_WIDTH<MIN_SIDEBAR_WIDTH) {
+            if (INIT_SIDEBAR_WIDTH < MIN_SIDEBAR_WIDTH) {
                 INIT_SIDEBAR_WIDTH = MIN_SIDEBAR_WIDTH;
             }
 
@@ -296,11 +296,11 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         dialog.open();
 
         $.ajax({
-            type: 'POST',
-            url: "/blocks/admin/page/save/" + window.location.href,
-            data: page,
-            contentType: 'application/json; charset=UTF-8',
-        })
+                type: 'POST',
+                url: "/blocks/admin/page/save/" + window.location.href,
+                data: page,
+                contentType: 'application/json; charset=UTF-8',
+            })
             .done(function (url, textStatus, response)
             {
             })
@@ -372,7 +372,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
                 }
             ],
-            onhide: function()
+            onhide: function ()
             {
                 Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
             }

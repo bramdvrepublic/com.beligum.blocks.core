@@ -1,7 +1,7 @@
 /*
  * Allows editing of an image when youy click on it
  * */
-base.plugin("blocks.imports.Image", ["base.core.Class", "blocks.imports.Property", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils",  function (Class, Property, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
+base.plugin("blocks.imports.Image", ["base.core.Class", "blocks.imports.Property", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Property, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
 {
     var Image = this;
     this.TAGS = ["img"];

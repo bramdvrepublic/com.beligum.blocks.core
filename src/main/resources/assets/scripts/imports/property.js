@@ -7,8 +7,7 @@ base.plugin("blocks.imports.Property", ["base.core.Class", "blocks.imports.Widge
 
     (this.Class = Class.create(Widget.Class, {
 
-        STATIC: {
-        },
+        STATIC: {},
 
         //-----VARIABLES-----
 
@@ -42,9 +41,9 @@ base.plugin("blocks.imports.Property", ["base.core.Class", "blocks.imports.Widge
         },
 
         //-----PRIVATE METHODS-----
-        _getCreateLinkConfig: function(block, element)
+        _getCreateLinkConfig: function (block, element)
         {
-            var retVal = $('<div class="'+BlocksConstants.CREATE_LINK_WRAPPER_CLASS+'"></div>');
+            var retVal = $('<div class="' + BlocksConstants.CREATE_LINK_WRAPPER_CLASS + '"></div>');
 
             var elementProperty = element.attr('property');
             if (!elementProperty) {
@@ -54,8 +53,8 @@ base.plugin("blocks.imports.Property", ["base.core.Class", "blocks.imports.Widge
                 throw Logger.error("Trying to wrap a Property element with a link, but I can't seem to find the property attribute?", element);
             }
             var LINK_PROP_ATTR = 'data-property';
-            var LINK_SELECTOR = 'a['+LINK_PROP_ATTR+'='+elementProperty+']';
-            var wrapLink = $('<a '+LINK_PROP_ATTR+'="'+elementProperty+'"></a>');
+            var LINK_SELECTOR = 'a[' + LINK_PROP_ATTR + '=' + elementProperty + ']';
+            var wrapLink = $('<a ' + LINK_PROP_ATTR + '="' + elementProperty + '"></a>');
 
             //TODO those two are a little bit ugly, but it works...
             var addInputForm = function ()

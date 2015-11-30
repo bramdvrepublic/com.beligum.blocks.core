@@ -4,7 +4,7 @@
 /*
  * This is the abstract superclass that all widgets need to extend
  */
-base.plugin("blocks.imports.Widget", ["constants.blocks.core", "base.core.Class", "base.core.Commons", "blocks.core.SidebarUtils",  function (BlocksConstants, Class, Commons, SidebarUtils)
+base.plugin("blocks.imports.Widget", ["constants.blocks.core", "base.core.Class", "base.core.Commons", "blocks.core.SidebarUtils", function (BlocksConstants, Class, Commons, SidebarUtils)
 {
     var Widget = this;
 
@@ -19,11 +19,11 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "base.core.Class"
              * Register a new widget class for the supplied tags
              * @param selectors the array of jquery selectors you want to register this widget class to
              */
-            register: function(selectors)
+            register: function (selectors)
             {
                 //there should always be a tags option specified
-                if (selectors && selectors.length && selectors.length>0) {
-                    for (var i=0;i<selectors.length;i++) {
+                if (selectors && selectors.length && selectors.length > 0) {
+                    for (var i = 0; i < selectors.length; i++) {
                         var selector = selectors[i];
                         // note that this will happen when we extend eg. blocks-spacer in a subclass;
                         // the superclass will be registered first, and later overwritten by it's subclass
@@ -52,7 +52,8 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "base.core.Class"
                     var clazz = null;
 
                     //search for the first selector that matches
-                    $.each(Widget.Class.SELECTOR_INDEX, function(selector, widget) {
+                    $.each(Widget.Class.SELECTOR_INDEX, function (selector, widget)
+                    {
                         if (element.is(selector)) {
                             clazz = widget;
                             return false; // == break

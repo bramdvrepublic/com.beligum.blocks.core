@@ -24,7 +24,7 @@ public class ResourceSerializer<T extends Resource> extends JsonSerializer
 
     @Override
     public void serialize(Object value, JsonGenerator jgen, SerializerProvider provider) throws IOException,
-                                                                                                  JsonProcessingException
+                                                                                                JsonProcessingException
     {
         serializedResources.push(((Resource) value).getBlockId());
         printResource(jgen, (Resource) value);
@@ -33,7 +33,8 @@ public class ResourceSerializer<T extends Resource> extends JsonSerializer
     }
 
     // Print all fields in an object
-    protected void printResource(JsonGenerator jgen, Resource resource) throws IOException {
+    protected void printResource(JsonGenerator jgen, Resource resource) throws IOException
+    {
         Map<String, String> context = resource.getContext();
 
         jgen.writeStartObject();
@@ -70,32 +71,33 @@ public class ResourceSerializer<T extends Resource> extends JsonSerializer
                 jgen.writeStartArray();
                 printListNode(jgen, fieldNode, resource.getLanguage());
                 jgen.writeEndArray();
-            } else {
+            }
+            else {
                 Logger.debug("Do not write null values to json");
             }
 
         }
 
-            // Write context
-            jgen.writeFieldName(ParserConstants.JSONLD_CONTEXT);
-            jgen.writeStartObject();
-            for (String key : context.keySet()) {
-                jgen.writeFieldName(key);
-                jgen.writeString(context.get(key));
-            }
-            jgen.writeEndObject();
-
+        // Write context
+        jgen.writeFieldName(ParserConstants.JSONLD_CONTEXT);
+        jgen.writeStartObject();
+        for (String key : context.keySet()) {
+            jgen.writeFieldName(key);
+            jgen.writeString(context.get(key));
+        }
+        jgen.writeEndObject();
 
         jgen.writeEndObject();
 
-
     }
 
-    protected boolean printRootFields() {
+    protected boolean printRootFields()
+    {
         return true;
     }
 
-    protected Iterator<URI> getFieldIterator(Resource resource) {
+    protected Iterator<URI> getFieldIterator(Resource resource)
+    {
         return resource.getFields().iterator();
     }
 
@@ -103,17 +105,18 @@ public class ResourceSerializer<T extends Resource> extends JsonSerializer
     protected void printListNode(JsonGenerator jgen, Node field, Locale locale) throws IOException
     {
         if (field.isIterable()) {
-            for (Node node: field) {
+            for (Node node : field) {
                 printNode(jgen, node, locale);
             }
-        } else if (field.isResource()) {
+        }
+        else if (field.isResource()) {
             nestResources(jgen, (Resource) field);
-        } else {
+        }
+        else {
             printNode(jgen, field, locale);
         }
 
     }
-
 
     // Print a simple value for a field
     // delegates for Resources and lists
@@ -121,9 +124,11 @@ public class ResourceSerializer<T extends Resource> extends JsonSerializer
     {
         if (field.isIterable()) {
             printListNode(jgen, field, locale);
-        } else if (field.isResource()) {
+        }
+        else if (field.isResource()) {
             nestResources(jgen, (Resource) field);
-        } else if (!field.isNull()) {
+        }
+        else if (!field.isNull()) {
             jgen.writeStartObject();
             jgen.writeFieldName(ParserConstants.JSONLD_VALUE);
             writeValue(jgen, field);
@@ -133,14 +138,14 @@ public class ResourceSerializer<T extends Resource> extends JsonSerializer
                 try {
                     jgen.writeFieldName(ParserConstants.JSONLD_LANGUAGE);
                     jgen.writeString(field.getLanguage().getLanguage());
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     int x = 0;
                 }
             }
             jgen.writeEndObject();
         }
     }
-
 
     // This methods only purpose is to be overwritten by the ResourceSimpleJsonSerializer
     // to prevent the serialization of nested objects
@@ -149,7 +154,8 @@ public class ResourceSerializer<T extends Resource> extends JsonSerializer
         // if we are here a resource will be nested inside another resource
         if (serializedResources.contains(resource.getBlockId())) {
             printResourceReference(jgen, resource);
-        } else {
+        }
+        else {
             serializedResources.push(resource.getBlockId());
             printResource(jgen, resource);
             serializedResources.pop();
@@ -169,18 +175,22 @@ public class ResourceSerializer<T extends Resource> extends JsonSerializer
 
         if (field.isBoolean()) {
             jgen.writeBoolean(field.getBoolean());
-        } else if (field.isInt()) {
+        }
+        else if (field.isInt()) {
             jgen.writeNumber(field.getInteger());
-        } else if (field.isDouble()) {
+        }
+        else if (field.isDouble()) {
             jgen.writeNumber(field.getDouble());
-        } else if (field.isLong()) {
+        }
+        else if (field.isLong()) {
             jgen.writeString(field.getLong().toString());
-        } else if (field.isString()) {
+        }
+        else if (field.isString()) {
             jgen.writeString(field.toString());
-        } else {
+        }
+        else {
             Logger.error("No value was written to json. Unknown value.");
         }
     }
-
 
 }

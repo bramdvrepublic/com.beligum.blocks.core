@@ -1,7 +1,6 @@
 package com.beligum.blocks.controllers;
 
 import com.beligum.base.server.R;
-import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.templating.blocks.DefaultTemplateController;
 
 /**
@@ -16,7 +15,8 @@ public class GoogleMapsController extends DefaultTemplateController
 
     }
 
-    public String getApiKey() {
+    public String getApiKey()
+    {
         String retVal = R.configuration().getString("blocks.core.google-maps.api-key");
         if (retVal == null) {
             retVal = "";

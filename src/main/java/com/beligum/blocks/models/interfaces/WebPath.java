@@ -22,16 +22,21 @@ public interface WebPath
     public Locale getLanguage();
 
     public Path getUrl();
+
     public Path getLocalizedUrl();
 
     public int getStatusCode();
 
     public void setPageOk(URI pageUrl);
+
     public void setPageRedirect(URI pageUrl);
+
     public void setPageNotFound();
 
     public boolean isNotFound();
+
     public boolean isPage();
+
     public boolean isRedirect();
 
     public String toJson() throws JsonProcessingException;

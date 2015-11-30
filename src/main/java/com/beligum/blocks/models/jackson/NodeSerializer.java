@@ -31,7 +31,8 @@ public class NodeSerializer<T extends Node> extends JsonSerializer<Node>
     }
 
     // Print all fields in an object
-    protected void printResource(JsonGenerator jgen, Resource resource) throws IOException {
+    protected void printResource(JsonGenerator jgen, Resource resource) throws IOException
+    {
         Map<String, String> context = resource.getContext();
 
         jgen.writeStartObject();
@@ -70,7 +71,6 @@ public class NodeSerializer<T extends Node> extends JsonSerializer<Node>
                 jgen.writeEndArray();
             }
 
-
             Set<Locale> locales = resource.getLocalesForField(field);
             boolean hasRoot = locales.contains(Locale.ROOT);
 
@@ -95,10 +95,8 @@ public class NodeSerializer<T extends Node> extends JsonSerializer<Node>
             }
         }
 
-
         // Add extra properties
         writeSpecialProperties(jgen, resource);
-
 
         // Write context
         jgen.writeFieldName(ParserConstants.JSONLD_CONTEXT);
@@ -112,11 +110,10 @@ public class NodeSerializer<T extends Node> extends JsonSerializer<Node>
         // End of resource
         jgen.writeEndObject();
 
-
     }
 
-
-    protected Iterator<URI> getFieldIterator(Resource resource) {
+    protected Iterator<URI> getFieldIterator(Resource resource)
+    {
         return resource.getFields().iterator();
     }
 
@@ -124,17 +121,18 @@ public class NodeSerializer<T extends Node> extends JsonSerializer<Node>
     protected void printListNode(JsonGenerator jgen, Node field, Locale locale) throws IOException
     {
         if (field.isIterable()) {
-            for (Node node: field) {
+            for (Node node : field) {
                 printNode(jgen, node, locale);
             }
-        } else if (field.isResource()) {
+        }
+        else if (field.isResource()) {
             nestResources(jgen, (Resource) field);
-        } else {
+        }
+        else {
             printNode(jgen, field, locale);
         }
 
     }
-
 
     // Print a simple value for a field
     // delegates for Resources and lists
@@ -142,9 +140,11 @@ public class NodeSerializer<T extends Node> extends JsonSerializer<Node>
     {
         if (field.isIterable()) {
             printListNode(jgen, field, locale);
-        } else if (field.isResource()) {
+        }
+        else if (field.isResource()) {
             nestResources(jgen, (Resource) field);
-        } else if (!field.isNull()) {
+        }
+        else if (!field.isNull()) {
             jgen.writeStartObject();
             jgen.writeFieldName(ParserConstants.JSONLD_VALUE);
             writeValue(jgen, field);
@@ -159,7 +159,6 @@ public class NodeSerializer<T extends Node> extends JsonSerializer<Node>
         }
     }
 
-
     // This methods only purpose is to be overwritten by the ResourceSimpleJsonSerializer
     // to prevent the serialization of nested objects
     protected void nestResources(JsonGenerator jgen, Resource resource) throws IOException
@@ -167,7 +166,8 @@ public class NodeSerializer<T extends Node> extends JsonSerializer<Node>
         // if we are here a resource will be nested inside another resource
         if (serializedResources.contains(resource.getBlockId())) {
             printResourceReference(jgen, resource);
-        } else {
+        }
+        else {
             serializedResources.push(resource.getBlockId());
             printResource(jgen, resource);
             serializedResources.pop();
@@ -187,15 +187,20 @@ public class NodeSerializer<T extends Node> extends JsonSerializer<Node>
 
         if (field.isBoolean()) {
             jgen.writeBoolean(field.getBoolean());
-        } else if (field.isInt()) {
+        }
+        else if (field.isInt()) {
             jgen.writeNumber(field.getInteger());
-        } else if (field.isDouble()) {
+        }
+        else if (field.isDouble()) {
             jgen.writeNumber(field.getDouble());
-        } else if (field.isLong()) {
+        }
+        else if (field.isLong()) {
             jgen.writeString(field.getLong().toString());
-        } else if (field.isString()) {
+        }
+        else if (field.isString()) {
             jgen.writeString(field.toString());
-        } else {
+        }
+        else {
             Logger.error("No value was written to json. Unknown value.");
         }
     }

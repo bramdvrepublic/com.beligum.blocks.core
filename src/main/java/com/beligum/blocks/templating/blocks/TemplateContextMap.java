@@ -67,7 +67,7 @@ public class TemplateContextMap implements com.beligum.base.templating.ifaces.Te
         {
             TemplateController retVal = null;
             if (!RequestContext.getRequestCache().containsKey(key)) {
-                if (key!=null) {
+                if (key != null) {
                     Class<TemplateController> controllerClass = (Class<TemplateController>) this.mapping.get(key);
                     if (controllerClass != null) {
                         try {
@@ -88,6 +88,7 @@ public class TemplateContextMap implements com.beligum.base.templating.ifaces.Te
             return retVal;
         }
     }
+
     static class OverloadedPropertyMap extends HashMap<String, Object>
     {
     }

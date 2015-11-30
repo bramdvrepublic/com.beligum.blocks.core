@@ -1,14 +1,11 @@
 package com.beligum.blocks.models.jackson.resource;
 
-import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.models.interfaces.Node;
 import com.beligum.blocks.models.interfaces.Resource;
 import com.fasterxml.jackson.core.JsonGenerator;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.Iterator;
-import java.util.Locale;
 
 /**
  * Created by wouter on 29/06/15.
@@ -16,15 +13,16 @@ import java.util.Locale;
 public class ResourceRootSerializer extends ResourceSerializer
 {
     @Override
-    protected boolean printRootFields() {
+    protected boolean printRootFields()
+    {
         return true;
     }
 
     @Override
-    protected Iterator<URI> getFieldIterator(Resource resource) {
+    protected Iterator<URI> getFieldIterator(Resource resource)
+    {
         return resource.getRootFields().iterator();
     }
-
 
     @Override
     protected void nestResources(JsonGenerator jgen, Resource resource) throws IOException

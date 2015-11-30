@@ -34,7 +34,8 @@ public class TemplateResources
     public Iterable<Resource> getStyles()
     {
         final Iterator iter = styles.iterator();
-        return new Iterable<Resource>() {
+        return new Iterable<Resource>()
+        {
             @Override
             public Iterator iterator()
             {
@@ -45,7 +46,8 @@ public class TemplateResources
     public Iterable<Resource> getInlineStyles()
     {
         final Iterator iter = Iterators.filter(styles.iterator(), InlineStyle.class);
-        return new Iterable<Resource>() {
+        return new Iterable<Resource>()
+        {
             @Override
             public Iterator iterator()
             {
@@ -56,7 +58,8 @@ public class TemplateResources
     public Iterable<Resource> getExternalStyles()
     {
         final Iterator iter = Iterators.filter(styles.iterator(), ExternalStyle.class);
-        return new Iterable<Resource>() {
+        return new Iterable<Resource>()
+        {
             @Override
             public Iterator<Resource> iterator()
             {
@@ -67,7 +70,8 @@ public class TemplateResources
     public Iterable<Resource> getScripts()
     {
         final Iterator iter = scripts.iterator();
-        return new Iterable<Resource>() {
+        return new Iterable<Resource>()
+        {
             @Override
             public Iterator iterator()
             {
@@ -78,7 +82,8 @@ public class TemplateResources
     public Iterable<Resource> getInlineScripts()
     {
         final Iterator iter = Iterators.filter(scripts.iterator(), InlineScript.class);
-        return new Iterable<Resource>() {
+        return new Iterable<Resource>()
+        {
             @Override
             public Iterator iterator()
             {
@@ -89,7 +94,8 @@ public class TemplateResources
     public Iterable<Resource> getExternalScripts()
     {
         final Iterator iter = Iterators.filter(scripts.iterator(), ExternalScript.class);
-        return new Iterable<Resource>() {
+        return new Iterable<Resource>()
+        {
             @Override
             public Iterator iterator()
             {
@@ -190,6 +196,7 @@ public class TemplateResources
             return equalsValue != null ? equalsValue.hashCode() : 0;
         }
     }
+
     public class InlineStyle extends Resource
     {
         public InlineStyle(String value, int bufferPosition)
@@ -197,6 +204,7 @@ public class TemplateResources
             super(value, bufferPosition);
         }
     }
+
     public class ExternalStyle extends Resource
     {
         public ExternalStyle(String href, String element, int bufferPosition)
@@ -204,6 +212,7 @@ public class TemplateResources
             super(href, element, bufferPosition);
         }
     }
+
     public class InlineScript extends Resource
     {
         public InlineScript(String value, int bufferPosition)
@@ -211,6 +220,7 @@ public class TemplateResources
             super(value, bufferPosition);
         }
     }
+
     public class ExternalScript extends Resource
     {
         public ExternalScript(String src, String element, int bufferPosition)

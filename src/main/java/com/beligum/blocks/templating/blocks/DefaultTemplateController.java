@@ -37,7 +37,8 @@ public abstract class DefaultTemplateController implements TemplateController
 
     //-----PROTECTED METHODS-----
     // Find the getLanguage of this url.
-    protected Locale getCurrentLocale() {
+    protected Locale getCurrentLocale()
+    {
         URI currentURI = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
         Locale retVal = null;
         java.nio.file.Path path = Paths.get(currentURI.getPath());
@@ -52,7 +53,6 @@ public abstract class DefaultTemplateController implements TemplateController
 
         return retVal;
     }
-
 
     //-----PRIVATE METHODS-----
 

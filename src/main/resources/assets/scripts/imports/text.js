@@ -30,7 +30,7 @@ base.plugin("blocks.imports.Text", ["base.core.Class", "blocks.imports.Property"
             if (optionsAttr) {
                 //this converts and array to an object
                 var optionsAttrValues = optionsAttr.split(" ");
-                for (var i=0;i<optionsAttrValues.length;i++) {
+                for (var i = 0; i < optionsAttrValues.length; i++) {
                     //for now, we don't have values, so just set to true
                     //note that code (eg the constuctor in mediumModule.js) depends on this to be true
                     options[optionsAttrValues[i]] = true;

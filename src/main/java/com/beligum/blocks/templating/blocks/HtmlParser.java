@@ -174,12 +174,12 @@ public class HtmlParser extends AbstractAssetParser
             //from here, it's the same for a Tag or Page template; preprocess the replaceable properties
 
             Stack<URI> currentVocabStack = new Stack<>();
-            if (sourceTemplate.getVocab()!=null) {
+            if (sourceTemplate.getVocab() != null) {
                 currentVocabStack.push(sourceTemplate.getVocab());
             }
 
             Stack<Map<String, URI>> currentPrefixesStack = new Stack<>();
-            if (sourceTemplate.getPrefixes()!=null && !sourceTemplate.getPrefixes().isEmpty()) {
+            if (sourceTemplate.getPrefixes() != null && !sourceTemplate.getPrefixes().isEmpty()) {
                 currentPrefixesStack.push(sourceTemplate.getPrefixes());
             }
 
@@ -195,10 +195,10 @@ public class HtmlParser extends AbstractAssetParser
                     Map<String, URI> currentPrefixes = currentPrefixesStack.isEmpty() ? null : currentPrefixesStack.peek();
 
                     Attributes attributes = tag.getAttributes();
-                    if (attributes!=null) {
+                    if (attributes != null) {
 
                         Attribute vocabAttr = attributes.get("vocab");
-                        if (vocabAttr!=null) {
+                        if (vocabAttr != null) {
                             currentVocab = parseRdfVocabAttribute(sourceTemplate, vocabAttr.getValue());
                             //if the tag is not stand-alone, push it on the stack and save it's end tag for popping
                             if (!tag.isEmptyElementTag()) {
@@ -206,8 +206,9 @@ public class HtmlParser extends AbstractAssetParser
 
                                 //since it's not an empty element tag, it should have an end tag
                                 EndTag endTag = tag.getElement().getEndTag();
-                                if (endTag==null) {
-                                    throw new Exception("Encountered non-empty element '"+tag.toString()+"' (at line "+getAbsoluteTemplateTagLineNumber(source, tag.getBegin())+")  without a matching end tag; "+sourceTemplate.getAbsolutePath());
+                                if (endTag == null) {
+                                    throw new Exception("Encountered non-empty element '" + tag.toString() + "' (at line " + getAbsoluteTemplateTagLineNumber(source, tag.getBegin()) +
+                                                        ")  without a matching end tag; " + sourceTemplate.getAbsolutePath());
                                 }
                                 else {
                                     vocabPopTags.add(endTag);
@@ -216,8 +217,8 @@ public class HtmlParser extends AbstractAssetParser
                         }
 
                         Attribute prefixAttr = attributes.get("prefix");
-                        if (prefixAttr!=null) {
-                            if (currentPrefixes==null) {
+                        if (prefixAttr != null) {
+                            if (currentPrefixes == null) {
                                 currentPrefixes = new LinkedHashMap<>();
                             }
                             else {
@@ -386,8 +387,6 @@ public class HtmlParser extends AbstractAssetParser
 
                 //the 'body' starts here
 
-
-
                 if (renderTag != null) {
                     builder.append("<").append(renderTag);
 
@@ -471,7 +470,8 @@ public class HtmlParser extends AbstractAssetParser
 
         return retVal.toString();
     }
-    private void replaceTemplateProperty(Source source, HtmlTemplate template, Element tag, Attribute attribute, OutputDocument output, URI currentVocab, Map<String, URI> currentPrefixes) throws Exception
+    private void replaceTemplateProperty(Source source, HtmlTemplate template, Element tag, Attribute attribute, OutputDocument output, URI currentVocab, Map<String, URI> currentPrefixes)
+                    throws Exception
     {
         String name = this.expandProperty(source, template, tag, attribute.getValue(), currentVocab, currentPrefixes);
 
@@ -534,14 +534,16 @@ public class HtmlParser extends AbstractAssetParser
                 }
 
                 //if the value is not a valid URI, try the CURIE syntax if we have a valid prefix
-                if (uri!=null) {
+                if (uri != null) {
                     retVal = uri.toString();
                 }
                 else {
                     //this means the value is possibly a CURIE, so look up the prefix in the currentPrefixes
                     String[] colonSplit = attributeValue.split(":");
                     if (colonSplit.length != 2) {
-                        throw new Exception("Encountered attribute '"+attributeValue+"' in tag '"+tag.getStartTag().toString()+"' (at line "+getAbsoluteTemplateTagLineNumber(source, tag.getStartTag().getBegin())+") as a CURIE with more than one colon, this is not supported (and I can't seem to find if it's valid or not); " + template.getAbsolutePath());
+                        throw new Exception("Encountered attribute '" + attributeValue + "' in tag '" + tag.getStartTag().toString() + "' (at line " +
+                                            getAbsoluteTemplateTagLineNumber(source, tag.getStartTag().getBegin()) +
+                                            ") as a CURIE with more than one colon, this is not supported (and I can't seem to find if it's valid or not); " + template.getAbsolutePath());
                     }
                     URI prefix = currentPrefixes.get(colonSplit[0]);
                     if (prefix != null) {
@@ -556,12 +558,14 @@ public class HtmlParser extends AbstractAssetParser
                         retVal = prefixUri + suffix;
                     }
                     else {
-                        throw new Exception("Encountered attribute '"+attributeValue+"' in tag '"+tag.getStartTag().toString()+"' (at line "+getAbsoluteTemplateTagLineNumber(source, tag.getStartTag().getBegin())+ ") as a CURIE with an unknown prefix '\"+(colonSplit[0])+\"' in this context; " + template.getAbsolutePath());
+                        throw new Exception("Encountered attribute '" + attributeValue + "' in tag '" + tag.getStartTag().toString() + "' (at line " +
+                                            getAbsoluteTemplateTagLineNumber(source, tag.getStartTag().getBegin()) + ") as a CURIE with an unknown prefix '\"+(colonSplit[0])+\"' in this context; " +
+                                            template.getAbsolutePath());
                     }
                 }
             }
             //if the value is no CURIE or URI, prefix it with the currentVocab if we have one
-            else if (currentVocab!=null) {
+            else if (currentVocab != null) {
                 String prefixUri = currentVocab.toString();
                 if (!prefixUri.endsWith("/")) {
                     prefixUri += "/";
@@ -570,7 +574,7 @@ public class HtmlParser extends AbstractAssetParser
                 while (suffix.startsWith("/")) {
                     suffix = suffix.substring(1);
                 }
-                retVal = prefixUri+suffix;
+                retVal = prefixUri + suffix;
             }
             //the value is no curie and we don't have a vocab; it's invalid
             else {
@@ -584,7 +588,7 @@ public class HtmlParser extends AbstractAssetParser
     }
     private int getAbsoluteTemplateTagLineNumber(Source source, int relativeBegin)
     {
-        return source.getRow(source.getFirstElement("template").getBegin())+source.getRow(relativeBegin);
+        return source.getRow(source.getFirstElement("template").getBegin()) + source.getRow(relativeBegin);
     }
     public static URI parseRdfVocabAttribute(HtmlTemplate sourceTemplate, String vocabAttrValue) throws Exception
     {

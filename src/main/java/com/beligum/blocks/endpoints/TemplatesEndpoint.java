@@ -23,7 +23,8 @@ public class TemplatesEndpoint extends AssetsEndpoint
 {
     @GET
     @Path("/sidebar")
-    public Response getSidebar() {
+    public Response getSidebar()
+    {
         return Response.ok(side.get().getNewTemplate().render()).build();
     }
 

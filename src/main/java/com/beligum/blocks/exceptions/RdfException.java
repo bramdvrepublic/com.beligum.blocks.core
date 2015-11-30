@@ -5,11 +5,13 @@ package com.beligum.blocks.exceptions;
  */
 public class RdfException extends Exception
 {
-    public RdfException(String message) {
+    public RdfException(String message)
+    {
         super(message);
     }
 
-    public RdfException(String message, Throwable throwable) {
+    public RdfException(String message, Throwable throwable)
+    {
         super(message, throwable);
     }
 

@@ -7,7 +7,8 @@ import java.util.Locale;
  */
 public class WebpageSearch extends AbstractSearch
 {
-    public WebpageSearch() {
+    public WebpageSearch()
+    {
         this.countBuilder = ElasticSearch.instance().getClient().prepareCount(ElasticSearch.instance().getPageIndexName(Locale.ROOT));
         this.builder = ElasticSearch.instance().getClient().prepareSearch(ElasticSearch.instance().getPageIndexName(Locale.ROOT));
     }

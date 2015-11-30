@@ -12,9 +12,8 @@ import java.util.HashMap;
 
 /**
  * Created by wouter on 27/04/15.
- *
+ * <p/>
  * Simple functions to make the RDF life easier
- *
  */
 public class RdfTools
 {
@@ -26,7 +25,8 @@ public class RdfTools
     * create a local type based on the ontology in the config
     * e.g. http://www.republic.be/ontology/address
     * */
-    public static URI createLocalType(String type) {
+    public static URI createLocalType(String type)
+    {
         return makeLocalAbsolute(type);
     }
 
@@ -34,7 +34,8 @@ public class RdfTools
     * create a locale resource id, based on the type and an existing id-value
     * e.g. http://www.republic.be/v1/resource/address/big-street-in-antwerp
     * */
-    public static URI createLocalResourceId(String type, String id) {
+    public static URI createLocalResourceId(String type, String id)
+    {
 
         return UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path(ParserConstants.RESOURCE_ENDPOINT).path(type.toLowerCase()).path(id).build();
     }
@@ -43,29 +44,34 @@ public class RdfTools
     * create a local resource based on the resource endpoint and a type. Generate an id-value
     * e.g. http://www.republic.be/v1/resource/address/156465
     * */
-    public static URI createLocalResourceId(String type) {
+    public static URI createLocalResourceId(String type)
+    {
         return createLocalResourceId(type, new Long(RdfTools.simpleFlake.generate()).toString());
     }
 
     /*
     * Make a path absolute relative to the local ontology uri
     * */
-    public static URI makeLocalAbsolute(String relativePath) {
+    public static URI makeLocalAbsolute(String relativePath)
+    {
         return addToUri(BlocksConfig.instance().getDefaultRdfSchema(), relativePath);
     }
 
     /*
    * Make a path absolute relative to the local ontology uri
    * */
-    public static URI addToUri(URI uri, String relativePath) {
+    public static URI addToUri(URI uri, String relativePath)
+    {
         URI retVal = findInUrlCache(uri, relativePath);
 
-        if (retVal != null) return retVal;
+        if (retVal != null)
+            return retVal;
 
-        if (relativePath.startsWith("/")) relativePath = relativePath.substring(1);
+        if (relativePath.startsWith("/"))
+            relativePath = relativePath.substring(1);
         String fragment = BlocksConfig.instance().getDefaultRdfSchema().getFragment();
         if (fragment == null) {
-            Path path =  Paths.get(uri.getPath());
+            Path path = Paths.get(uri.getPath());
             path = path.resolve(relativePath).normalize();
             retVal = UriBuilder.fromUri(BlocksConfig.instance().getDefaultRdfSchema()).replacePath(path.toString()).build();
         }
@@ -74,8 +80,10 @@ public class RdfTools
             fragment = fragment.trim();
             if (fragment.equals("")) {
                 retVal = UriBuilder.fromUri(BlocksConfig.instance().getDefaultRdfSchema()).fragment(relativePath).build();
-            } else {
-                if (!fragment.endsWith("/")) fragment = fragment + "/";
+            }
+            else {
+                if (!fragment.endsWith("/"))
+                    fragment = fragment + "/";
                 retVal = UriBuilder.fromUri(BlocksConfig.instance().getDefaultRdfSchema()).fragment(fragment + relativePath).build();
             }
         }
@@ -93,7 +101,6 @@ public class RdfTools
     public static HashMap<String, URI> parsePrefixes(String prefixString) throws RdfException
     {
         // TODO the parsing of prefixes is not correct yet. see specs
-
 
         HashMap<String, URI> retVal = new HashMap<>();
 
@@ -146,7 +153,8 @@ public class RdfTools
         return retVal;
     }
 
-    public static void putInURLCache(URI uri, String path, URI result) {
+    public static void putInURLCache(URI uri, String path, URI result)
+    {
         if (!urlcache.containsKey(uri)) {
             urlcache.put(uri, new HashMap<String, URI>());
         }
@@ -156,7 +164,8 @@ public class RdfTools
     /*
     * Checks if a URI is a valid absolute URI
     * */
-    public static boolean isValidAbsoluteURI(URI uri) {
+    public static boolean isValidAbsoluteURI(URI uri)
+    {
         return uri.getHost() != null && uri.getScheme() != null;
     }
 
@@ -168,9 +177,11 @@ public class RdfTools
     * http://www.example.com/test@address -> www_example_com_test_address
     *
     * */
-    public static String makeDbFieldFromUri(URI field) {
-        String retVal = field.getHost()+ "_" + field.getPath();
-        if (field.getFragment() != null) retVal = retVal + "_" + field.getFragment();
+    public static String makeDbFieldFromUri(URI field)
+    {
+        String retVal = field.getHost() + "_" + field.getPath();
+        if (field.getFragment() != null)
+            retVal = retVal + "_" + field.getFragment();
         retVal = retVal.trim().replaceAll("[^A-Za-z0-9]", "_");
         retVal = retVal.replaceAll("_+", "_");
         return retVal;

@@ -1,6 +1,9 @@
 package com.beligum.blocks.templating.blocks;
 
-import net.htmlparser.jericho.*;
+import net.htmlparser.jericho.Attributes;
+import net.htmlparser.jericho.Element;
+import net.htmlparser.jericho.OutputDocument;
+import net.htmlparser.jericho.Source;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -38,13 +41,13 @@ public class PageTemplate extends HtmlTemplate
         // so we know what template was used when the code comes back from the client
         Element html = document.getSegment().getFirstElement("template", null);
         if (!html.getName().equalsIgnoreCase("html")) {
-            throw new IOException("Found a template attribute on a non-html element, this shouldn't happen since it's been checked before; "+relativePath);
+            throw new IOException("Found a template attribute on a non-html element, this shouldn't happen since it's been checked before; " + relativePath);
         }
 
         // fill in the template attribute's value
         // a little bit verbose, but I didn't find a shorter way...
         Attributes templateAttr = html.getAttributes();
-        Map<String,String> attrs = new LinkedHashMap<>();
+        Map<String, String> attrs = new LinkedHashMap<>();
         templateAttr.populateMap(attrs, true);
         attrs.put("template", this.getTemplateName());
         document.replace(templateAttr, Attributes.generateHTML(attrs));

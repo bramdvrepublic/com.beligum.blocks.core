@@ -42,6 +42,7 @@ public class PageTemplateWrapperDirective extends Directive
     }
     /**
      * Initialize and check arguments.
+     *
      * @param rs
      * @param context
      * @param node
@@ -51,12 +52,13 @@ public class PageTemplateWrapperDirective extends Directive
                      Node node)
                     throws TemplateInitException
     {
-        super.init( rs, context, node );
+        super.init(rs, context, node);
     }
 
     /**
      * Evaluate the argument, convert to a String, and evaluate again
      * (with the same context).
+     *
      * @param context
      * @param writer
      * @param node
@@ -73,7 +75,7 @@ public class PageTemplateWrapperDirective extends Directive
         boolean retVal = node.jjtGetChild(0).render(context, writer);
 
         List<WriterBufferReference> inserts = (List<WriterBufferReference>) context.get(TemplateResourcesDirective.RESOURCES_INSERTS);
-        if (inserts!=null) {
+        if (inserts != null) {
             StringBuffer buffer = ((StringWriter) writer).getBuffer();
             TemplateResources resources = TemplateResourcesDirective.getContextResources(context);
 
@@ -108,7 +110,6 @@ public class PageTemplateWrapperDirective extends Directive
                 }
             }
         }
-
 
         return retVal;
     }

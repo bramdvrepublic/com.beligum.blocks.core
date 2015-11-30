@@ -115,7 +115,7 @@ public class TemplateInstanceStackDirective extends Block
                     // by only converting to a list when multiple mappings are present, we allow for natural coding in VTL syntax
                     // and also save the fact "there's only one"
                     PropertyArray propertyValues = (PropertyArray) properties.get(variable);
-                    if (propertyValues==null) {
+                    if (propertyValues == null) {
                         //specially crafted ArrayList with a modified toString()
                         properties.put(variable, propertyValues = new PropertyArray());
                     }

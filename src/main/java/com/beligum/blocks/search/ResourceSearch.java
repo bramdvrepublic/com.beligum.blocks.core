@@ -7,7 +7,8 @@ import java.util.Locale;
  */
 public class ResourceSearch extends AbstractSearch
 {
-    public ResourceSearch() {
+    public ResourceSearch()
+    {
         this.countBuilder = ElasticSearch.instance().getClient().prepareCount(ElasticSearch.instance().getResourceIndexName(Locale.ROOT));
         this.builder = ElasticSearch.instance().getClient().prepareSearch(ElasticSearch.instance().getResourceIndexName(Locale.ROOT));
     }

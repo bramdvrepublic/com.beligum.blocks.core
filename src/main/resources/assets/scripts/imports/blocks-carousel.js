@@ -91,17 +91,17 @@ base.plugin("blocks.imports.BlocksCarousel", ["base.core.Class", "blocks.imports
             //note: we only show the first x characters
             var labelText = item.find('.title p').text();
             var labelTextCrop = $.trim(labelText.substring(0, 20));
-            if (labelText!=labelTextCrop) {
+            if (labelText != labelTextCrop) {
                 labelTextCrop += "...";
             }
 
-            var label = $('<div class="pull-left">#' + (index+1) + ') ' + labelTextCrop + '</div>').appendTo(wrapper);
+            var label = $('<div class="pull-left">#' + (index + 1) + ') ' + labelTextCrop + '</div>').appendTo(wrapper);
             var buttons = $('<div class="btn-group pull-right" role="group"></div>').appendTo(wrapper);
 
             // Do not add remove when there is only one image
             var disabled = items.length == 1;
 
-            var deleteButton = $('<span class="btn btn-danger btn-xs" '+(disabled?'disabled="true"':'')+'><i class="fa fa-fw fa-trash-o"></i></span>').appendTo(buttons);
+            var deleteButton = $('<span class="btn btn-danger btn-xs" ' + (disabled ? 'disabled="true"' : '') + '><i class="fa fa-fw fa-trash-o"></i></span>').appendTo(buttons);
 
             if (!disabled) {
                 deleteButton.click(function ()
@@ -150,8 +150,8 @@ base.plugin("blocks.imports.BlocksCarousel", ["base.core.Class", "blocks.imports
                 var item = $('<div class="item" />').appendTo(items);
                 var image = $('<img property="image" src="/assets/images/blocks/placeholder_slide_1.jpg">').appendTo(item);
                 var caption = $('<div class="carousel-caption"></div>').appendTo(item);
-                var title = $('<span property="title" class="title" '+BlocksConstants.TEXT_EDITOR_OPTIONS_ATTR+'="'+BlocksConstants.TEXT_EDITOR_OPTIONS_NO_TOOLBAR+'"><p>Enter a title</p></span>').appendTo(caption);
-                var description = $('<span property="description" class="description" '+BlocksConstants.TEXT_EDITOR_OPTIONS_ATTR+'="'+BlocksConstants.TEXT_EDITOR_OPTIONS_NO_TOOLBAR+'"><p>Enter a description</p></span>').appendTo(caption);
+                var title = $('<span property="title" class="title" ' + BlocksConstants.TEXT_EDITOR_OPTIONS_ATTR + '="' + BlocksConstants.TEXT_EDITOR_OPTIONS_NO_TOOLBAR + '"><p>Enter a title</p></span>').appendTo(caption);
+                var description = $('<span property="description" class="description" ' + BlocksConstants.TEXT_EDITOR_OPTIONS_ATTR + '="' + BlocksConstants.TEXT_EDITOR_OPTIONS_NO_TOOLBAR + '"><p>Enter a description</p></span>').appendTo(caption);
 
                 _this._redrawIndicators(carousel);
                 _this._redraw(carousel);

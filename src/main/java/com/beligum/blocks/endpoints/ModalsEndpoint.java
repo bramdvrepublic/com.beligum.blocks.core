@@ -22,26 +22,25 @@ public class ModalsEndpoint
                     @QueryParam("original")
                     String originalUrl) throws MalformedURLException
     {
-//        Template template = change_url_modal.get().getNewTemplate();
-//        String originalPath = new URL(originalUrl).getPath();
-//        String[] splitted = originalPath.split("/");
-//        if (splitted.length > 2) {
-//            template.set("originalUrlPathEnd", "/" + splitted[splitted.length - 1]);
-//        }
-//        else if (splitted.length == 2) {
-//            //            if(Languages.isNonEmptyLanguageCode(splitted[1])){
-//            //                template.set("originalUrlPathEnd", "");
-//            //            }
-//            //            else{
-//            //                template.set("originalUrlPathEnd", "/" + splitted[splitted.length - 1]);
-//            //            }
-//        }
-//        else {
-//            template.set("originalUrlPathEnd", "");
-//        }
-//        template.set("languages", Arrays.asList(BlocksConfig.instance().getLanguages()));
+        //        Template template = change_url_modal.get().getNewTemplate();
+        //        String originalPath = new URL(originalUrl).getPath();
+        //        String[] splitted = originalPath.split("/");
+        //        if (splitted.length > 2) {
+        //            template.set("originalUrlPathEnd", "/" + splitted[splitted.length - 1]);
+        //        }
+        //        else if (splitted.length == 2) {
+        //            //            if(Languages.isNonEmptyLanguageCode(splitted[1])){
+        //            //                template.set("originalUrlPathEnd", "");
+        //            //            }
+        //            //            else{
+        //            //                template.set("originalUrlPathEnd", "/" + splitted[splitted.length - 1]);
+        //            //            }
+        //        }
+        //        else {
+        //            template.set("originalUrlPathEnd", "");
+        //        }
+        //        template.set("languages", Arrays.asList(BlocksConfig.instance().getLanguages()));
         return Response.ok().build();
     }
-
 
 }

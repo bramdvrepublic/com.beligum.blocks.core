@@ -28,7 +28,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         activeBlocks = [];
 
         //little helper function to refactor things
-        var pushActiveBlock = function(currBlock, currElement)
+        var pushActiveBlock = function (currBlock, currElement)
         {
             activeBlocks.push({
                 block: currBlock,
@@ -53,7 +53,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             }
             else if (currBlock instanceof blocks.elements.Page) {
                 //if we have a row, push that one first before closing with the page
-                if (lastRow!=null) {
+                if (lastRow != null) {
                     pushActiveBlock(lastRow, lastRow.element);
                 }
                 pushActiveBlock(currBlock, currElement);
@@ -65,11 +65,11 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
             currBlock = currBlock.parent;
             // if the element is not the same as block.element, the first loop will be different, but
             // after one time, it will ease out
-            currElement = currBlock==null?null:currBlock.element;
+            currElement = currBlock == null ? null : currBlock.element;
         }
 
         var title = null;
-        for (var i=activeBlocks.length-1;i>=0;i--) {
+        for (var i = activeBlocks.length - 1; i >= 0; i--) {
             var e = activeBlocks[i];
 
             var widget = Widget.Class.create(e.element);
@@ -120,11 +120,11 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 widget.focus(e.block, e.element, hotspot, event);
                 var optionsToAdd = widget.getConfigs(e.block, e.element);
                 if (optionsToAdd) {
-                    if (addedOptions && optionsToAdd.length>0) {
+                    if (addedOptions && optionsToAdd.length > 0) {
                         this.addUIForProperty(windowID, '<hr>');
                         addedOptions = true;
                     }
-                    for (var w=0;w<optionsToAdd.length;w++) {
+                    for (var w = 0; w < optionsToAdd.length; w++) {
                         this.addUIForProperty(windowID, optionsToAdd[w]);
                         addedOptions = true;
                     }
@@ -143,9 +143,9 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         }
     };
 
-    this.reset = function()
+    this.reset = function ()
     {
-        for (var i=0;i<activeBlocks.length;i++) {
+        for (var i = 0; i < activeBlocks.length; i++) {
             var e = activeBlocks[i];
             if (e.widget) {
                 e.widget.blur(e.block, e.element);
@@ -239,12 +239,12 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
         if (configPanels[windowId] == null) {
 
-            var panelId = windowId+'-panel';
-            var bodyId = windowId+'-panel-body';
-            var div = $('<div id="'+panelId+'" class="panel panel-default"/>');
-            var header = $('<div class="panel-heading collapser" data-toggle="collapse" data-target="#'+bodyId+'" aria-expanded="'+(collapsed?'false':'true')+'" aria-controls="'+bodyId+'">' + title + '</div>').appendTo(div);
+            var panelId = windowId + '-panel';
+            var bodyId = windowId + '-panel-body';
+            var div = $('<div id="' + panelId + '" class="panel panel-default"/>');
+            var header = $('<div class="panel-heading collapser" data-toggle="collapse" data-target="#' + bodyId + '" aria-expanded="' + (collapsed ? 'false' : 'true') + '" aria-controls="' + bodyId + '">' + title + '</div>').appendTo(div);
             // note: the "in" makes it start unfolded
-            var collapse = $('<div id="'+bodyId+'" class="collapse '+(collapsed?'':'in')+'" role="tabpanel">').appendTo(div);
+            var collapse = $('<div id="' + bodyId + '" class="collapse ' + (collapsed ? '' : 'in') + '" role="tabpanel">').appendTo(div);
             var content = $('<div class="panel-body"/>').appendTo(collapse);
 
             configPanels[windowId] = div;

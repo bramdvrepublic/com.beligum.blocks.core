@@ -1,7 +1,6 @@
 package com.beligum.blocks.search;
 
 import com.beligum.base.cache.CacheKey;
-import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
@@ -29,15 +28,13 @@ public class ElasticSearch
     private Client client;
     private BulkRequestBuilder bulkRequestBuilder;
 
-
     public enum ESCacheKeys implements CacheKey
     {
         BULK_REQUEST
     }
 
-
-
-    private ElasticSearch() {
+    private ElasticSearch()
+    {
         Map params = new HashMap();
         params.put("cluster.name", BlocksConfig.instance().getElasticSearchClusterName());
         String host = BlocksConfig.instance().getElasticSearchHostName();
@@ -79,7 +76,8 @@ public class ElasticSearch
     }
 
     // Start a bulk transaction for this request
-    public BulkRequestBuilder getBulk() {
+    public BulkRequestBuilder getBulk()
+    {
         BulkRequestBuilder bulk = getBulkFromCache();
         if (bulk == null) {
             setBulkInCache();
@@ -88,7 +86,8 @@ public class ElasticSearch
     }
 
     // save bulk transaction for this request if one exists
-    public BulkResponse saveBulk() {
+    public BulkResponse saveBulk()
+    {
         BulkResponse retVal = null;
         if (getBulkFromCache() != null) {
             retVal = getBulkFromCache().execute().actionGet();
@@ -100,22 +99,25 @@ public class ElasticSearch
         return retVal;
     }
 
-
     // -------- PRIVATE METHODS -----------
 
-    private BulkRequestBuilder getBulkFromCache() {
+    private BulkRequestBuilder getBulkFromCache()
+    {
         return this.bulkRequestBuilder;
     }
 
-    private void setBulkInCache() {
-        bulkRequestBuilder =  this.getClient().prepareBulk();
+    private void setBulkInCache()
+    {
+        bulkRequestBuilder = this.getClient().prepareBulk();
     }
 
-    private void removeBulkFromCache() {
+    private void removeBulkFromCache()
+    {
         bulkRequestBuilder = null;
     }
 
-    private void init() {
+    private void init()
+    {
         // TODO: should check for all indexes. e.g. when new language is created we don't have to remove all indexes
         if (!this.client.admin().indices().exists(new IndicesExistsRequest(getPageIndexName(BlocksConfig.instance().getDefaultLanguage()))).actionGet().isExists()) {
             // Delete all to start fresh
@@ -136,17 +138,16 @@ public class ElasticSearch
                 Logger.error("Could not read mapings for elastic search", e);
             }
 
-                this.client.admin().indices().prepareCreate(this.getPageIndexName(Locale.ROOT)).setSettings(settings)
-                             .addMapping(PersistenceController.WEB_PAGE_CLASS.toLowerCase(),
-                                         pageMapping).execute().actionGet();
-                this.client.admin().indices().prepareCreate(this.getResourceIndexName(Locale.ROOT)).setSettings(settings)
-                             .addMapping("_default_", resourceMapping).execute()
-                             .actionGet();
-
+            this.client.admin().indices().prepareCreate(this.getPageIndexName(Locale.ROOT)).setSettings(settings)
+                       .addMapping(PersistenceController.WEB_PAGE_CLASS.toLowerCase(),
+                                   pageMapping).execute().actionGet();
+            this.client.admin().indices().prepareCreate(this.getResourceIndexName(Locale.ROOT)).setSettings(settings)
+                       .addMapping("_default_", resourceMapping).execute()
+                       .actionGet();
 
             this.client.admin().indices().prepareCreate(PersistenceController.PATH_CLASS).setSettings(settings).addMapping(PersistenceController.PATH_CLASS, pathMapping)
-                         .execute()
-                         .actionGet();
+                       .execute()
+                       .actionGet();
         }
     }
 
@@ -155,7 +156,8 @@ public class ElasticSearch
         init();
     }
 
-    public void flush() {
+    public void flush()
+    {
         this.client.admin().indices().delete(new DeleteIndexRequest("*")).actionGet();
         this.reset();
     }

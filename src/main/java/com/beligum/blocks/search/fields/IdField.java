@@ -17,12 +17,14 @@ public class IdField extends AbstractField
     }
 
     @Override
-    public String getField() {
+    public String getField()
+    {
         return getRawField();
     }
 
     @Override
-    public String getRawField() {
+    public String getRawField()
+    {
         return this.field;
     }
 

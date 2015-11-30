@@ -2,18 +2,20 @@ package com.beligum.blocks.utils;
 
 /**
  * Created by wouter on 2/05/15.
- *
+ * <p/>
  * copied from: https://github.com/emidln/simpleflake-java/blob/master/src/main/java/com/outjected/simpleflake/SimpleFlake.java
- *
+ * <p/>
  * See: http://engineering.custommade.com/simpleflake-distributed-id-generation-for-the-lazy/
  */
+
 import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class SimpleFlake {
+public class SimpleFlake
+{
 
     private static final long EPOCH = 1288834974657L;
     private static final long MAX_SIGNED_LONG = 2199023255551L;
@@ -30,7 +32,8 @@ public class SimpleFlake {
      *
      * @return long
      */
-    public long generate() {
+    public long generate()
+    {
 
         long currentTimestamp = System.currentTimeMillis();
 
@@ -54,7 +57,8 @@ public class SimpleFlake {
             // timestamp has advanced so reset it and clear the previous cache
             lastTimestamp = currentTimestamp;
             recentRandoms.clear();
-        } else {
+        }
+        else {
             // Same timestamp as previous keep generating randoms till new is found
             while (recentRandoms.contains(random)) {
                 random = nextRandomPart();
@@ -70,11 +74,13 @@ public class SimpleFlake {
      *
      * @return byte[]
      */
-    public byte[] generateBytes() {
+    public byte[] generateBytes()
+    {
         return ByteBuffer.allocate(8).putLong(generate()).array();
     }
 
-    private long nextRandomPart() {
+    private long nextRandomPart()
+    {
         return ThreadLocalRandom.current().nextLong() >>> RANDOM_SHIFT;
     }
 }

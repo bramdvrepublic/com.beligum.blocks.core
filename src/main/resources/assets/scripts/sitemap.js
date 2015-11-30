@@ -6,10 +6,10 @@ base.plugin("blocks.core.Sitemap", ["blocks.core.Notification", function (Notifi
     this.urlsModal = function ()
     {
         $.ajax({
-            type: 'GET',
-            url: "/urls",
-            dataType: "json"
-        })
+                type: 'GET',
+                url: "/urls",
+                dataType: "json"
+            })
             .success(function (sitemap)
             {
                 var root = sitemap.root;

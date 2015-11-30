@@ -1,6 +1,5 @@
 package com.beligum.blocks.models.jackson.path;
 
-
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.models.sql.DBPath;
 import com.fasterxml.jackson.core.JsonParser;
@@ -31,7 +30,8 @@ public class PathDeserializer extends JsonDeserializer<DBPath>
             URI masterPage = null;
             if (node.has("masterPage")) {
                 masterPage = UriBuilder.fromUri(node.get("blockId").asText()).build();
-            } else if (node.has("blockId")){
+            }
+            else if (node.has("blockId")) {
                 masterPage = UriBuilder.fromUri(node.get("blockId").asText()).build();
             }
             Path url = Paths.get(node.get("url").asText());

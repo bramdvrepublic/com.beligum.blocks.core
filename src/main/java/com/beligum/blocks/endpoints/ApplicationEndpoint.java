@@ -17,7 +17,6 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Locale;
-import java.util.concurrent.ExecutionException;
 
 @Path("/")
 public class ApplicationEndpoint
@@ -79,7 +78,8 @@ public class ApplicationEndpoint
                         locale = BlocksConfig.instance().getLocaleForLanguage(lang);
                     }
 
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     // We do nothing with the exception. User will be redirected to the default language
                     Logger.error("Referrer in header is not a valid URI");
                 }
@@ -88,8 +88,6 @@ public class ApplicationEndpoint
             URI url = UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path(locale.getLanguage()).path(route.getLanguagedPath().toString()).replaceQuery(currentURI.getQuery()).build();
             retVal = Response.seeOther(url).build();
         }
-
-
 
         return retVal;
     }

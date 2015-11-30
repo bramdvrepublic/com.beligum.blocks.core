@@ -41,6 +41,4 @@ public class UrlsEndpoint
         return Response.ok(newURL.toString()).build();
     }
 
-
-
 }

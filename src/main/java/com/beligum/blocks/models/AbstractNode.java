@@ -1,11 +1,13 @@
 package com.beligum.blocks.models;
 
-
 import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.Node;
 
 import java.text.DecimalFormatSymbols;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Created by wouter on 31/05/15.
@@ -22,57 +24,64 @@ public abstract class AbstractNode implements Node
 
     // ---- CONSTRUCTORS -------
 
-    protected AbstractNode() {
+    protected AbstractNode()
+    {
 
     }
 
-    protected AbstractNode(Object object, Locale language) {
-        if (language == null) language = Locale.ROOT;
+    protected AbstractNode(Object object, Locale language)
+    {
+        if (language == null)
+            language = Locale.ROOT;
         this.language = language;
         this.setValue(object);
     }
 
-
     @Override
-    public boolean isString() {
+    public boolean isString()
+    {
         boolean retVal = false;
-        if ((isString != null && isString) || getValue() instanceof String){
+        if ((isString != null && isString) || getValue() instanceof String) {
             retVal = true;
         }
         isString = retVal;
         return retVal;
     }
     @Override
-    public boolean isDouble() {
+    public boolean isDouble()
+    {
         boolean retVal = false;
-        if ((isDouble != null && isDouble) || getValue() instanceof Double){
+        if ((isDouble != null && isDouble) || getValue() instanceof Double) {
             retVal = true;
         }
         isDouble = retVal;
         return retVal;
     }
     @Override
-    public boolean isLong() {
+    public boolean isLong()
+    {
         boolean retVal = false;
-        if ((isLong != null && isLong) || getValue() instanceof Long){
+        if ((isLong != null && isLong) || getValue() instanceof Long) {
             retVal = true;
         }
         isLong = retVal;
         return retVal;
     }
     @Override
-    public boolean isBoolean() {
+    public boolean isBoolean()
+    {
         boolean retVal = false;
-        if ((isBoolean != null && isBoolean) ||  getValue() instanceof Boolean){
+        if ((isBoolean != null && isBoolean) || getValue() instanceof Boolean) {
             retVal = true;
         }
         isBoolean = retVal;
         return retVal;
     }
     @Override
-    public boolean isInt() {
+    public boolean isInt()
+    {
         boolean retVal = false;
-        if ((isInt != null && isInt) ||  getValue() instanceof Integer){
+        if ((isInt != null && isInt) || getValue() instanceof Integer) {
             retVal = true;
         }
         isInt = retVal;
@@ -90,9 +99,11 @@ public abstract class AbstractNode implements Node
         boolean retVal = false;
         if (this.getValue() == null) {
             retVal = o == null;
-        } else if (o instanceof Node){
-            retVal = this.getValue().equals(((Node)o).getValue());
-        } else {
+        }
+        else if (o instanceof Node) {
+            retVal = this.getValue().equals(((Node) o).getValue());
+        }
+        else {
             retVal = this.getValue().equals(o);
         }
         return retVal;
@@ -104,17 +115,20 @@ public abstract class AbstractNode implements Node
         return this.getValue() != null ? this.getValue().hashCode() : 0;
     }
     @Override
-    public boolean isIterable() {
+    public boolean isIterable()
+    {
         return false;
     }
 
     @Override
-    public boolean isMap() {
+    public boolean isMap()
+    {
         return false;
     }
 
     @Override
-    public boolean isReference() {
+    public boolean isReference()
+    {
         return false;
     }
 
@@ -135,11 +149,14 @@ public abstract class AbstractNode implements Node
         String retVal = null;
         if (isNull()) {
             retVal = "";
-        } else if (isString()) {
-            retVal = (String)getValue();
-        } else if (isInt() || isBoolean() || isDouble() || isLong()) {
+        }
+        else if (isString()) {
+            retVal = (String) getValue();
+        }
+        else if (isInt() || isBoolean() || isDouble() || isLong()) {
             retVal = getValue().toString();
-        } else if (getValue() instanceof List) {
+        }
+        else if (getValue() instanceof List) {
             retVal = getValue().toString();
         }
         return retVal;
@@ -162,7 +179,7 @@ public abstract class AbstractNode implements Node
     {
         Double retVal = null;
         if (isDouble() || isInt() || isLong()) {
-            retVal = (Double)getValue();
+            retVal = (Double) getValue();
         }
         return retVal;
     }
@@ -171,7 +188,7 @@ public abstract class AbstractNode implements Node
     {
         Integer retVal = null;
         if (isInt()) {
-            retVal = (Integer)getValue();
+            retVal = (Integer) getValue();
         }
         return retVal;
     }
@@ -180,7 +197,7 @@ public abstract class AbstractNode implements Node
     {
         Boolean retVal = null;
         if (isBoolean()) {
-            retVal = (Boolean)getValue();
+            retVal = (Boolean) getValue();
         }
         return retVal;
     }
@@ -189,7 +206,7 @@ public abstract class AbstractNode implements Node
     {
         Long retVal = null;
         if (isLong() || isInt()) {
-            retVal = (Long)getValue();
+            retVal = (Long) getValue();
         }
         return retVal;
     }
@@ -198,7 +215,6 @@ public abstract class AbstractNode implements Node
     public abstract Object getValue();
 
     protected abstract void setValue(Object value);
-
 
     @Override
     public Iterator<Node> iterator()
@@ -210,24 +226,24 @@ public abstract class AbstractNode implements Node
 
     // ----- PROTECTED METHODS --------
 
-    protected boolean isNumeric(String str) {
+    protected boolean isNumeric(String str)
+    {
         {
             str = str.trim();
-            if (str.equals("")) return false;
+            if (str.equals(""))
+                return false;
             DecimalFormatSymbols currentLocaleSymbols = DecimalFormatSymbols.getInstance();
             char localeMinusSign = currentLocaleSymbols.getMinusSign();
 
-            if ( !Character.isDigit( str.charAt( 0 ) ) && str.charAt( 0 ) != localeMinusSign ) return false;
+            if (!Character.isDigit(str.charAt(0)) && str.charAt(0) != localeMinusSign)
+                return false;
 
             boolean isDecimalSeparatorFound = false;
             char localeDecimalSeparator = currentLocaleSymbols.getDecimalSeparator();
 
-            for ( char c : str.substring( 1 ).toCharArray() )
-            {
-                if ( !Character.isDigit( c ) )
-                {
-                    if ( (c == ',' || c == '.')  && !isDecimalSeparatorFound )
-                    {
+            for (char c : str.substring(1).toCharArray()) {
+                if (!Character.isDigit(c)) {
+                    if ((c == ',' || c == '.') && !isDecimalSeparatorFound) {
                         isDecimalSeparatorFound = true;
                         continue;
                     }
@@ -243,7 +259,8 @@ public abstract class AbstractNode implements Node
         private Iterator internalIterator;
         private Locale locale;
 
-        public NodeIterator(Iterator value, Locale locale) {
+        public NodeIterator(Iterator value, Locale locale)
+        {
             internalIterator = value;
             this.locale = locale;
         }
@@ -259,7 +276,7 @@ public abstract class AbstractNode implements Node
         {
             Node retVal = null;
             Object value = internalIterator.next();
-            retVal =  ResourceFactoryImpl.instance().createNode(value, locale);
+            retVal = ResourceFactoryImpl.instance().createNode(value, locale);
             return retVal;
 
         }

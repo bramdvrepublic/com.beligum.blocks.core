@@ -125,8 +125,8 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.co
 
                 // we'll use the texts with value null as a means to let the user define custom html (like subtitles)
                 //note that you should know what's you're doing when using this
-                if (val.text==null) {
-                    if (val.value!=null) {
+                if (val.text == null) {
+                    if (val.value != null) {
                         styles.append(val.value);
                     }
                 }
@@ -139,7 +139,7 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.co
                         this._onSelect(event.data);
 
                         //close the dropdown on click, apparently this didn't work automatically...
-                        $('#'+id).dropdown("toggle");
+                        $('#' + id).dropdown("toggle");
                     }.bind(this));
 
                     styles.append($('<li></li>').append(btn));
@@ -243,7 +243,7 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.co
         //-----OVERLOADED FUNCTIONS-----
         createForm: function ()
         {
-            var form = $('<div id="'+('medium-editor-toolbar-form-anchor-' + this.getEditorId())+'" class="form-inline medium-editor-toolbar-form"></div>');
+            var form = $('<div id="' + ('medium-editor-toolbar-form-anchor-' + this.getEditorId()) + '" class="form-inline medium-editor-toolbar-form"></div>');
 
             //var inputActions = SidebarUtils.buildInputActions(Sidebar, true, true, null);
             //TODO add the inputActions to the constructor below, but make it work with the sidebar finder

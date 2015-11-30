@@ -222,31 +222,62 @@
 
 
 
-{"@graph" :
-[ {
-  "@id" : "mot:e36c2c8b-f44e-495b-9791-b7d420e11d7e" ,
-  "http://www.beligum.com/blocks/schema/value" : [ "" , "<div class=\"row\"> \n <div class=\"col-md-12\"> %%BLOCKS-PROPERTY-START%%http://www.mot.be/ontology/title%%BLOCKS-PROPERTY-END%% %%BLOCKS-PROPERTY-START%%http://www.mot.be/ontology/sectiontitle%%BLOCKS-PROPERTY-END%% %%BLOCKS-PROPERTY-START%%http://www.mot.be/ontology/exhibitions%%BLOCKS-PROPERTY-END%% %%BLOCKS-PROPERTY-START%%http://www.mot.be/ontology/layout%%BLOCKS-PROPERTY-END%% %%BLOCKS-PROPERTY-START%%http://www.mot.be/ontology/sectiontitle%%BLOCKS-PROPERTY-END%% %%BLOCKS-PROPERTY-START%%http://www.mot.be/ontology/buildings%%BLOCKS-PROPERTY-END%% \n </div> \n</div>"] ,
-  "http://www.beligum.com/blocks/schema/htmlElement" : { "@id" : "_b:1"} ,
-  "http://www.beligum.com/blocks/schema/inlist" : false ,
-  "http://www.beligum.com/blocks/schema/blueprintname" : "http://www.mot.be/ontology/museum-page" ,
-  "http://www.beligum.com/blocks/schema/readonly" : false ,
-  "http://www.beligum.com/blocks/schema/pageTemplateName" : "menu-footer" ,
-  "http://www.beligum.com/blocks/schema/name" : "http://www.mot.be/ontology/museum-page" ,
-  "http://www.beligum.com/blocks/schema/wrapper" : false ,
-  "http://www.beligum.com/blocks/schema/addableBlock" : false ,
-  "http://www.beligum.com/blocks/schema/pageBlock" : true ,
-  "http://www.beligum.com/blocks/schema/rdfType," : "http://www.mot.be/ontology/museum" ,
-  "http://www.beligum.com/blocks/schema/canChange" : true ,
-  "http://www.mot.be/ontology/title" : { "@id" : "_b:2"} ,
-  "http://www.mot.be/ontology/sectiontitle" : [ { "@id" : "NULL"} , { "@id" : "NULL"}] ,
-  "http://www.mot.be/ontology/exhibitions" : { "@id" : "_b:3"} ,
-  "http://www.mot.be/ontology/layout" : { "@id" : "_b:4"} ,
-  "http://www.mot.be/ontology/buildings" : { "@id" : "_b:5"}
-} ,
-  { "@id" : "_b:1"}
-, { "@id" : "_b:2"} ,
-  { "@id" : "_b:3"} ,
-  { "@id" : "_b:4"} ,
-  { "@id" : "_b:5"}
-]
+{
+  "@graph": [
+    {
+      "@id": "mot:e36c2c8b-f44e-495b-9791-b7d420e11d7e",
+      "http://www.beligum.com/blocks/schema/value": [
+        "",
+        "<div class=\"row\"> \n <div class=\"col-md-12\"> %%BLOCKS-PROPERTY-START%%http://www.mot.be/ontology/title%%BLOCKS-PROPERTY-END%% %%BLOCKS-PROPERTY-START%%http://www.mot.be/ontology/sectiontitle%%BLOCKS-PROPERTY-END%% %%BLOCKS-PROPERTY-START%%http://www.mot.be/ontology/exhibitions%%BLOCKS-PROPERTY-END%% %%BLOCKS-PROPERTY-START%%http://www.mot.be/ontology/layout%%BLOCKS-PROPERTY-END%% %%BLOCKS-PROPERTY-START%%http://www.mot.be/ontology/sectiontitle%%BLOCKS-PROPERTY-END%% %%BLOCKS-PROPERTY-START%%http://www.mot.be/ontology/buildings%%BLOCKS-PROPERTY-END%% \n </div> \n</div>"
+      ],
+      "http://www.beligum.com/blocks/schema/htmlElement": {
+        "@id": "_b:1"
+      },
+      "http://www.beligum.com/blocks/schema/inlist": false,
+      "http://www.beligum.com/blocks/schema/blueprintname": "http://www.mot.be/ontology/museum-page",
+      "http://www.beligum.com/blocks/schema/readonly": false,
+      "http://www.beligum.com/blocks/schema/pageTemplateName": "menu-footer",
+      "http://www.beligum.com/blocks/schema/name": "http://www.mot.be/ontology/museum-page",
+      "http://www.beligum.com/blocks/schema/wrapper": false,
+      "http://www.beligum.com/blocks/schema/addableBlock": false,
+      "http://www.beligum.com/blocks/schema/pageBlock": true,
+      "http://www.beligum.com/blocks/schema/rdfType,": "http://www.mot.be/ontology/museum",
+      "http://www.beligum.com/blocks/schema/canChange": true,
+      "http://www.mot.be/ontology/title": {
+        "@id": "_b:2"
+      },
+      "http://www.mot.be/ontology/sectiontitle": [
+        {
+          "@id": "NULL"
+        },
+        {
+          "@id": "NULL"
+        }
+      ],
+      "http://www.mot.be/ontology/exhibitions": {
+        "@id": "_b:3"
+      },
+      "http://www.mot.be/ontology/layout": {
+        "@id": "_b:4"
+      },
+      "http://www.mot.be/ontology/buildings": {
+        "@id": "_b:5"
+      }
+    },
+    {
+      "@id": "_b:1"
+    },
+    {
+      "@id": "_b:2"
+    },
+    {
+      "@id": "_b:3"
+    },
+    {
+      "@id": "_b:4"
+    },
+    {
+      "@id": "_b:5"
+    }
+  ]
 }

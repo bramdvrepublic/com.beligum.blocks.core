@@ -6,7 +6,9 @@ package com.beligum.blocks.search.fields;
 public interface Field
 {
     String getField();
+
     String getRawField();
+
     String getRootFieldName();
 
 }

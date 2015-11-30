@@ -7,18 +7,21 @@ import java.util.Locale;
  */
 public class AllFields extends AbstractField
 {
-    public AllFields() {
+    public AllFields()
+    {
         this.field = "_all";
         this.locale = Locale.ROOT;
     }
 
     @Override
-    public String getField() {
+    public String getField()
+    {
         return this.field;
     }
 
     @Override
-    public String getRawField() {
+    public String getRawField()
+    {
         return getField();
     }
 

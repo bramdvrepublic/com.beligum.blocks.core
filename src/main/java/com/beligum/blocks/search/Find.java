@@ -6,15 +6,16 @@ package com.beligum.blocks.search;
 public class Find
 {
 
-    public static AbstractSearch resources() {
+    public static AbstractSearch resources()
+    {
         AbstractSearch retVal = new ResourceSearch();
         return retVal;
     }
 
-    public static AbstractSearch webpages() {
+    public static AbstractSearch webpages()
+    {
         AbstractSearch retVal = new WebpageSearch();
         return retVal;
     }
-
 
 }

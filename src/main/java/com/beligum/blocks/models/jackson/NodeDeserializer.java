@@ -34,7 +34,7 @@ public class NodeDeserializer extends JsonDeserializer<Resource>
         JsonNode node = jsonParser.readValueAsTree();
         Resource retVal = null;
         try {
-            retVal =  parseResource(node);
+            retVal = parseResource(node);
         }
         catch (URISyntaxException e) {
             Logger.error("Exception while deserializing resource", e);
@@ -62,9 +62,8 @@ public class NodeDeserializer extends JsonDeserializer<Resource>
             }
         }
 
-
         Iterator<Map.Entry<String, JsonNode>> iterator = node.fields();
-        while(iterator.hasNext()) {
+        while (iterator.hasNext()) {
             Map.Entry<String, JsonNode> entry = iterator.next();
 
             // We found the type. Add them to the resource
@@ -72,17 +71,21 @@ public class NodeDeserializer extends JsonDeserializer<Resource>
                 // parse resource
                 JsonNode types = entry.getValue();
                 if (types.isArray()) {
-                    for (JsonNode valueNode: entry.getValue()) {
+                    for (JsonNode valueNode : entry.getValue()) {
                         resource.addRdfType(new URI(valueNode.asText()));
                     }
-                } else {
+                }
+                else {
                     resource.setRdfType(new URI(entry.getValue().asText()));
                 }
-            } else if (entry.getKey().equals(ParserConstants.JSONLD_ID)) {
+            }
+            else if (entry.getKey().equals(ParserConstants.JSONLD_ID)) {
                 resource.setBlockId(new URI(entry.getValue().asText()));
-            } else if (entry.getKey().equals(ParserConstants.JSONLD_CONTEXT)) {
+            }
+            else if (entry.getKey().equals(ParserConstants.JSONLD_CONTEXT)) {
                 // skip because already parsed
-            } else if (context.containsKey(entry.getKey())) {
+            }
+            else if (context.containsKey(entry.getKey())) {
                 // Only parse values that are in the context
                 if (entry.getValue().isArray()) {
                     parseList(entry.getValue(), resource, context.get(entry.getKey()));
@@ -108,14 +111,16 @@ public class NodeDeserializer extends JsonDeserializer<Resource>
     /*
     * Returns a new resource
     * */
-    protected Resource createNewResource(JsonNode node) {
+    protected Resource createNewResource(JsonNode node)
+    {
         return new ResourceImpl(Locale.ROOT);
     }
 
     /*
     * To be overridden by deserializers that want to add special properties
     * */
-    protected void parseSpecialFields(JsonNode node, Resource resource) {
+    protected void parseSpecialFields(JsonNode node, Resource resource)
+    {
 
     }
 
@@ -134,7 +139,6 @@ public class NodeDeserializer extends JsonDeserializer<Resource>
     {
         Node retVal = null;
 
-
         if (jsonNode.isObject()) {
             if (jsonNode.has(ParserConstants.JSONLD_VALUE)) {
                 Locale locale = Locale.ROOT;
@@ -143,18 +147,22 @@ public class NodeDeserializer extends JsonDeserializer<Resource>
                     locale = l != null ? l : locale;
                 }
                 retVal = ResourceFactoryImpl.instance().createNode(jsonNode.get(ParserConstants.JSONLD_VALUE).asText(), locale);
-            } else if (jsonNode.has(ParserConstants.JSONLD_ID) && jsonNode.has(ParserConstants.JSONLD_TYPE)) {
+            }
+            else if (jsonNode.has(ParserConstants.JSONLD_ID) && jsonNode.has(ParserConstants.JSONLD_TYPE)) {
                 retVal = parseResource(jsonNode);
-            } else if (jsonNode.has(ParserConstants.JSONLD_ID)) {
+            }
+            else if (jsonNode.has(ParserConstants.JSONLD_ID)) {
                 // parse hashMap
                 retVal = new ReferenceNode(jsonNode.get(ParserConstants.JSONLD_ID));
-            } else {
+            }
+            else {
                 Iterator<String> fieldNames = jsonNode.fieldNames();
                 while (fieldNames.hasNext()) {
                     Locale locale = BlocksConfig.instance().getLocaleForLanguage(fieldNames.next());
                     if (locale != null && jsonNode.get(locale.getLanguage()).isArray()) {
                         parseList(jsonNode.get(locale.getLanguage()), resource, field);
-                    } else {
+                    }
+                    else {
                         Logger.error("Null value found while parsing resource");
                     }
                 }
@@ -163,7 +171,6 @@ public class NodeDeserializer extends JsonDeserializer<Resource>
         return retVal;
     }
 
-
     private void parseList(JsonNode listNode, Resource resource, URI fieldName) throws URISyntaxException
     {
         Iterator<JsonNode> iterator = listNode.iterator();
@@ -171,15 +178,14 @@ public class NodeDeserializer extends JsonDeserializer<Resource>
             JsonNode node = iterator.next();
             if (node.isArray()) {
                 parseList(node, resource, fieldName);
-            } else if (node.isObject()) {
+            }
+            else if (node.isObject()) {
                 resource.add(fieldName, parseObject(node, resource, fieldName));
-            } else {
+            }
+            else {
                 resource.add(fieldName, ResourceFactoryImpl.instance().createNode(node.asText(), Locale.ROOT));
             }
         }
     }
-
-
-
 
 }

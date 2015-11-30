@@ -17,27 +17,32 @@ public class ReferenceNode extends NodeImpl
     }
 
     @Override
-    public Object getValue() {
+    public Object getValue()
+    {
         if (reference != null) {
             return reference;
-        } else {
+        }
+        else {
             return super.getValue();
         }
     }
 
     @Override
-    public void setValue(Object value) {
+    public void setValue(Object value)
+    {
         if (value instanceof String) {
             try {
-                UriBuilder.fromUri((String)value).build();
-            } catch (Exception e) {
+                UriBuilder.fromUri((String) value).build();
+            }
+            catch (Exception e) {
                 super.setValue(value);
             }
         }
     }
 
     @Override
-    public boolean isReference() {
+    public boolean isReference()
+    {
         boolean retVal = false;
         if (reference != null) {
             retVal = true;

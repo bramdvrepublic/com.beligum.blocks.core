@@ -12,7 +12,7 @@
  *
  * */
 
-base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.DomManipulation",  function (Broadcaster, Constants, DOM)
+base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.DomManipulation", function (Broadcaster, Constants, DOM)
 {
     var Resizer = this;
 
@@ -37,11 +37,11 @@ base.plugin("blocks.core.Resizer", ["blocks.core.Broadcaster", "constants.blocks
         maxColumn = null;
     };
 
-    this.allowResize = function()
+    this.allowResize = function ()
     {
         blockResizing = false;
     };
-    this.disallowResize = function()
+    this.disallowResize = function ()
     {
         blockResizing = true;
     };

@@ -4,19 +4,14 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.models.interfaces.WebPage;
-import com.beligum.blocks.models.interfaces.Node;
 import com.beligum.blocks.models.jackson.NodeSerializer;
-import com.beligum.blocks.models.jackson.resource.ResourceSerializer;
-import com.beligum.blocks.utils.RdfTools;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.*;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 
 import java.io.IOException;
-import java.net.URI;
-import java.util.*;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Created by wouter on 30/06/15.
@@ -156,7 +151,7 @@ public class PageSerializer<T extends WebPage> extends NodeSerializer
     {
         jgen.writeFieldName(property + ParserConstants.LOCALIZED_PROPERTY);
         jgen.writeStartObject();
-        for (Locale locale: resource.getLanguages()) {
+        for (Locale locale : resource.getLanguages()) {
             String value = null;
             if (property.equals(ParserConstants.PAGE_PROPERTY_HTML)) {
                 value = resource.getParsedHtml(locale, false);
@@ -164,37 +159,43 @@ public class PageSerializer<T extends WebPage> extends NodeSerializer
                     jgen.writeFieldName(locale.getLanguage());
                     jgen.writeString(value);
                 }
-            } else if (property.equals(ParserConstants.PAGE_PROPERTY_TEXT)) {
+            }
+            else if (property.equals(ParserConstants.PAGE_PROPERTY_TEXT)) {
                 value = resource.getText(locale);
                 if (value != null) {
                     jgen.writeFieldName(locale.getLanguage());
                     jgen.writeString(value);
                 }
-            } else if (property.equals(ParserConstants.PAGE_PROPERTY_PAGETEMPLATE)) {
+            }
+            else if (property.equals(ParserConstants.PAGE_PROPERTY_PAGETEMPLATE)) {
                 value = resource.getPageTemplate(locale);
                 if (value != null) {
                     jgen.writeFieldName(locale.getLanguage());
                     jgen.writeString(value);
                 }
-            } else if (property.equals(ParserConstants.PAGE_PROPERTY_PAGETITLE)) {
+            }
+            else if (property.equals(ParserConstants.PAGE_PROPERTY_PAGETITLE)) {
                 value = resource.getPageTitle(locale, false);
                 if (value != null) {
                     jgen.writeFieldName(locale.getLanguage());
                     jgen.writeString(value);
                 }
-            } else if (property.equals(ParserConstants.PAGE_PROPERTY_UPDATED_BY)) {
+            }
+            else if (property.equals(ParserConstants.PAGE_PROPERTY_UPDATED_BY)) {
                 value = resource.getUpdatedBy(locale);
                 if (value != null) {
                     jgen.writeFieldName(locale.getLanguage());
                     jgen.writeString(value);
                 }
-            } else if (property.equals(ParserConstants.PAGE_PROPERTY_CREATED_BY)) {
+            }
+            else if (property.equals(ParserConstants.PAGE_PROPERTY_CREATED_BY)) {
                 value = resource.getCreatedBy(locale);
                 if (value != null) {
                     jgen.writeFieldName(locale.getLanguage());
                     jgen.writeString(value);
                 }
-            } else {
+            }
+            else {
                 Logger.error("Trying to write localized string field while serializing webpage for unknown property");
             }
 
@@ -206,7 +207,7 @@ public class PageSerializer<T extends WebPage> extends NodeSerializer
     {
         jgen.writeFieldName(property + ParserConstants.LOCALIZED_PROPERTY);
         jgen.writeStartObject();
-        for (Locale locale: resource.getLanguages()) {
+        for (Locale locale : resource.getLanguages()) {
             jgen.writeFieldName(locale.getLanguage());
 
             if (property.equals(ParserConstants.PAGE_PROPERTY_TEMPLATES)) {
@@ -215,13 +216,15 @@ public class PageSerializer<T extends WebPage> extends NodeSerializer
                     jgen.writeString(value);
                 }
                 jgen.writeEndArray();
-            } else if (property.equals(ParserConstants.PAGE_PROPERTY_RESOURCES)) {
+            }
+            else if (property.equals(ParserConstants.PAGE_PROPERTY_RESOURCES)) {
                 jgen.writeStartArray();
-                for (String value: resource.getResources(locale)) {
+                for (String value : resource.getResources(locale)) {
                     jgen.writeString(value);
                 }
                 jgen.writeEndArray();
-            } else {
+            }
+            else {
                 Logger.error("Trying to write localized string field while serializing webpage for unknown property");
             }
         }

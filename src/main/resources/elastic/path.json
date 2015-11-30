@@ -1,9 +1,9 @@
 {
   "path": {
     "properties": {
-      "url" : {
-        "type" : "string",
-        "index-analyzer" : "path_hierarchy",
+      "url": {
+        "type": "string",
+        "index-analyzer": "path_hierarchy",
         "fields": {
           "@raw": {
             "type": "string",
@@ -12,8 +12,8 @@
         }
       },
       "localized_url": {
-        "type" : "string",
-        "index-analyzer" : "path_hierarchy",
+        "type": "string",
+        "index-analyzer": "path_hierarchy",
         "fields": {
           "@raw": {
             "type": "string",

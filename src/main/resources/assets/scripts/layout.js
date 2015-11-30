@@ -171,8 +171,10 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.
         dropLocationElement = dropOnFunctions[dropString](droppedElement, dropLocationElement);
         droppedElement = droppedFunctions[droppedString](droppedElement, dropLocationElement);
 
-        var finish = function() {
-            droppedElement.toggle(200, function(event) {
+        var finish = function ()
+        {
+            droppedElement.toggle(200, function (event)
+            {
                 droppedElement.css("display", "");
                 Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, event);
                 Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
@@ -183,13 +185,17 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.
             });
         };
 
-        droppedElement.toggle(200, function() {
+        droppedElement.toggle(200, function ()
+        {
             droppedElement.hide();
-            DOM.appendElement(droppedElement, dropLocationElement, side, function () {
+            DOM.appendElement(droppedElement, dropLocationElement, side, function ()
+            {
                 if (droppedContainer == null || droppedContainer == dropContainer) {
                     DOM.cleanup(dropContainer, finish);
                 } else {
-                    DOM.cleanup(droppedContainer, function() {});
+                    DOM.cleanup(droppedContainer, function ()
+                    {
+                    });
                     DOM.cleanup(dropContainer, finish);
                 }
             });
@@ -210,7 +216,7 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.
     };
 
     // Add new jquery Object at bottom of dropLocation
-    this.addNewBlockAtLocation = function (blockElement,  dropLocation, side, onComplete)
+    this.addNewBlockAtLocation = function (blockElement, dropLocation, side, onComplete)
     {
         dropLocationElement = dropLocationElement = findDropLocationElement(dropLocation, side);
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
@@ -229,7 +235,8 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.
             Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE);
             DOM.removeBlock(block.element, 300, function ()
             {
-                DOM.cleanup(container.element, function() {
+                DOM.cleanup(container.element, function ()
+                {
                     Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED);
                     Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE);
                 });

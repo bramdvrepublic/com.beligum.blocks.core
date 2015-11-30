@@ -3,15 +3,12 @@ package com.beligum.blocks.models.jackson.page;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.models.WebPageImpl;
-import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.models.interfaces.Resource;
+import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.models.jackson.NodeDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.elasticsearch.search.aggregations.metrics.percentiles.InternalPercentileRanks;
 import org.joda.time.LocalDateTime;
 
-import javax.ws.rs.core.UriBuilder;
-import java.net.URI;
 import java.util.*;
 
 /**
@@ -23,20 +20,23 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
     // ---------- PRIVATE METHDOS --------------
 
     @Override
-    protected Resource createNewResource(JsonNode node) {
+    protected Resource createNewResource(JsonNode node)
+    {
         if (isWebPage(node)) {
             return new WebPageImpl();
-        } else {
+        }
+        else {
             return super.createNewResource(node);
         }
     }
 
     @Override
-    protected void parseSpecialFields(JsonNode node, Resource resource) {
+    protected void parseSpecialFields(JsonNode node, Resource resource)
+    {
         node = getPageNode(node);
 
         if (isWebPage(node)) {
-            WebPage webPage = (WebPage)resource;
+            WebPage webPage = (WebPage) resource;
 
             /*
              * Start filling the fields of the web page. Those fields were not parser by the resource
@@ -205,7 +205,6 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
                 }
             }
 
-
             // Add resources
 
             Set<String> resources = new HashSet<String>();
@@ -235,8 +234,6 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
                     }
                 }
             }
-
-
 
             Set<Map<String, String>> links = new HashSet<Map<String, String>>();
             if (isArray(node, ParserConstants.PAGE_PROPERTY_LINKS)) {
@@ -284,21 +281,23 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
 
         }
 
-
     }
 
     // ---------- PRIVATE METHDOS --------------
-    private boolean isWebPage(JsonNode node) {
+    private boolean isWebPage(JsonNode node)
+    {
         boolean retVal = false;
         if (node.isObject() && node.has(ParserConstants.PAGE_PROPERTY_HTML)) {
             retVal = true;
-        } else if (node.isObject() && node.has(ParserConstants.PAGE_PROPERTY) && node.get(ParserConstants.PAGE_PROPERTY).has(ParserConstants.PAGE_PROPERTY_HTML)) {
+        }
+        else if (node.isObject() && node.has(ParserConstants.PAGE_PROPERTY) && node.get(ParserConstants.PAGE_PROPERTY).has(ParserConstants.PAGE_PROPERTY_HTML)) {
             retVal = true;
         }
         return retVal;
     }
 
-    private JsonNode getPageNode(JsonNode node) {
+    private JsonNode getPageNode(JsonNode node)
+    {
         JsonNode retVal = node;
         if (node.isObject() && node.has(ParserConstants.PAGE_PROPERTY) && isWebPage(node.get(ParserConstants.PAGE_PROPERTY))) {
             retVal = node.get(ParserConstants.PAGE_PROPERTY);
@@ -306,7 +305,8 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
         return retVal;
     }
 
-    private JsonNode getLocalValues(JsonNode node, String property) {
+    private JsonNode getLocalValues(JsonNode node, String property)
+    {
         JsonNode retVal = null;
         if (node.has(property + ParserConstants.LOCALIZED_PROPERTY) && node.get(property + ParserConstants.LOCALIZED_PROPERTY).isObject()) {
             retVal = node.get(property + ParserConstants.LOCALIZED_PROPERTY);
@@ -314,15 +314,18 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
         return retVal;
     }
 
-    private boolean isLocalObject(JsonNode node, String property) {
+    private boolean isLocalObject(JsonNode node, String property)
+    {
         return getLocalValues(node, property) != null && getLocalValues(node, property).isObject();
     }
 
-    private boolean isLocalArray(JsonNode node, String property) {
+    private boolean isLocalArray(JsonNode node, String property)
+    {
         return getLocalValues(node, property) != null && getLocalValues(node, property).isArray();
     }
 
-    private boolean isArray(JsonNode node, String property) {
+    private boolean isArray(JsonNode node, String property)
+    {
         return node.has(property) && node.get(property).isArray();
     }
 

@@ -4,8 +4,6 @@ import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.utils.RdfTools;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 /**
@@ -16,27 +14,32 @@ public abstract class AbstractField implements Field
     protected String field;
     protected Locale locale;
 
-    protected AbstractField() {
+    protected AbstractField()
+    {
 
     }
 
-    public AbstractField(URI field, Locale locale) {
+    public AbstractField(URI field, Locale locale)
+    {
         this.field = RdfTools.makeDbFieldFromUri(field);
         this.locale = locale;
     }
 
-    public AbstractField(URI field) {
+    public AbstractField(URI field)
+    {
         this.field = RdfTools.makeDbFieldFromUri(field);
         this.locale = Locale.ROOT;
     }
 
     @Override
-    public String getField() {
+    public String getField()
+    {
         String localizedField = this.field;
 
         if (!this.locale.equals(Locale.ROOT)) {
             localizedField = localizedField + ParserConstants.LOCALIZED_PROPERTY + "." + locale.getLanguage() + "." + ParserConstants.JSONLD_VALUE;
-        } else {
+        }
+        else {
             localizedField = localizedField + "." + ParserConstants.JSONLD_VALUE;
         }
 
@@ -45,9 +48,10 @@ public abstract class AbstractField implements Field
     }
 
     @Override
-    public String getRawField() {
+    public String getRawField()
+    {
 
-        return getField()  + "." + ParserConstants.JSONLD_RAW;
+        return getField() + "." + ParserConstants.JSONLD_RAW;
     }
 
     @Override

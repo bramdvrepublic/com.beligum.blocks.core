@@ -10,6 +10,7 @@
 
             <div class="form-group sub-container">
                 <label>$I18N.blocks.core.selectFromTheListBelow</label>
+
                 <div class="list-group">
                     #foreach($template in $templates)
                         <a href="/blocks/admin/page/template?page_url=$TOOLKIT.esc.url($url)&page_class_name=$TOOLKIT.esc.url($template.get("name"))" class="list-group-item">
@@ -18,6 +19,7 @@
                             </div>
                             <div class="caption">
                                 <h4>$template.title</h4>
+
                                 <p>
                                     $template.description
                                 </p>

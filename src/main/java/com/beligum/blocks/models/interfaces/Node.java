@@ -1,7 +1,5 @@
 package com.beligum.blocks.models.interfaces;
 
-import com.beligum.blocks.controllers.interfaces.PersistenceController;
-
 import java.util.Locale;
 
 /**

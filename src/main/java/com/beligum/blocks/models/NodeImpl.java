@@ -1,14 +1,9 @@
 package com.beligum.blocks.models;
 
-import com.beligum.blocks.controllers.PersistenceControllerImpl;
-import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.ResourceFactory;
 
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by wouter on 22/06/15.
@@ -17,7 +12,8 @@ public class NodeImpl extends AbstractNode
 {
     protected Object value;
 
-    public NodeImpl(Object value, Locale lang) {
+    public NodeImpl(Object value, Locale lang)
+    {
         super(value, lang);
     }
 
@@ -28,12 +24,14 @@ public class NodeImpl extends AbstractNode
     }
 
     @Override
-    public Object getValue() {
+    public Object getValue()
+    {
         return this.value;
     }
 
     @Override
-    protected void setValue(Object value) {
+    protected void setValue(Object value)
+    {
         isString = false;
         isDouble = false;
         isLong = false;
@@ -42,7 +40,7 @@ public class NodeImpl extends AbstractNode
         isInt = false;
         this.value = value;
         if (value instanceof String) {
-            String str = (String)value;
+            String str = (String) value;
 
             if (isNumeric(str)) {
                 try {
@@ -50,18 +48,21 @@ public class NodeImpl extends AbstractNode
 
                     // Check if our numeric has decimals. If not it is a Long or an Int
                     if (this.getValue().equals(Math.rint((Double) this.getValue()))) {
-                        Long longValue = ((Double)this.getValue()).longValue();
+                        Long longValue = ((Double) this.getValue()).longValue();
                         if (longValue < Integer.MAX_VALUE && longValue > Integer.MIN_VALUE) {
                             this.value = ((Double) this.getValue()).intValue();
                             this.isInt = true;
-                        } else {
+                        }
+                        else {
                             this.value = longValue;
                             this.isLong = true;
                         }
-                    } else {
+                    }
+                    else {
                         this.isDouble = true;
                     }
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     this.isString = true;
                 }
 
@@ -71,21 +72,28 @@ public class NodeImpl extends AbstractNode
             else if (Boolean.parseBoolean(str) || (str.length() == 5 && str.toLowerCase().equals("false"))) {
                 this.value = Boolean.parseBoolean(str);
                 this.isBoolean = true;
-            } else {
+            }
+            else {
                 this.isString = true;
             }
 
-        } else if (this.getValue() instanceof Boolean) {
+        }
+        else if (this.getValue() instanceof Boolean) {
             isBoolean = true;
-        } else if (this.getValue() instanceof Double) {
+        }
+        else if (this.getValue() instanceof Double) {
             isDouble = true;
-        } else if (this.getValue() instanceof Float) {
+        }
+        else if (this.getValue() instanceof Float) {
             isDouble = true;
-        } else if (this.getValue() instanceof Integer) {
+        }
+        else if (this.getValue() instanceof Integer) {
             isInt = true;
-        } else if (this.getValue() instanceof Long) {
+        }
+        else if (this.getValue() instanceof Long) {
             isLong = true;
-        } else {
+        }
+        else {
             this.value = null;
         }
     }

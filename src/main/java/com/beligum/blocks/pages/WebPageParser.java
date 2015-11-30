@@ -113,7 +113,8 @@ public class WebPageParser
         return this.pageTemplate;
     }
 
-    public String getPageTitle() {
+    public String getPageTitle()
+    {
         return this.pageTitle;
     }
 
@@ -259,11 +260,13 @@ public class WebPageParser
         return next;
     }
 
-    private boolean isProperty(Element element) {
+    private boolean isProperty(Element element)
+    {
         return element.getAttributeValue(HtmlParser.RDF_PROPERTY_ATTR) != null || element.getAttributeValue(HtmlParser.NON_RDF_PROPERTY_ATTR) != null;
     }
 
-    private String getPropertyName(Element element) {
+    private String getPropertyName(Element element)
+    {
         String retVal = element.getAttributeValue(HtmlParser.RDF_PROPERTY_ATTR);
         if (retVal == null) {
             retVal = element.getAttributeValue(HtmlParser.NON_RDF_PROPERTY_ATTR);

@@ -18,11 +18,11 @@ base.plugin("mot.site.styles", ["messages.blocks.core", function (Messages)
         // text is the text in the dropdown
         MediumEditor.setStylePickerStyles([
 
-            {text: null, value: '<li class="dropdown-header">'+Messages.styles_sectionText+'</li>'},
+            {text: null, value: '<li class="dropdown-header">' + Messages.styles_sectionText + '</li>'},
             {text: Messages.styles_p, value: "p:"},
             {text: null, value: '<li role="separator" class="divider"></li>'},
 
-            {text: null, value: '<li class="dropdown-header">'+Messages.styles_sectionTitles+'</li>'},
+            {text: null, value: '<li class="dropdown-header">' + Messages.styles_sectionTitles + '</li>'},
             {text: Messages.styles_h1, value: "h1:"},
             {text: Messages.styles_h2, value: "h2:"},
             {text: Messages.styles_h3, value: "h3:"},

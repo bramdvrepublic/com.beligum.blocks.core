@@ -6,6 +6,7 @@ import com.beligum.base.server.R;
 import com.beligum.base.server.RequestContext;
 import com.beligum.base.utils.Logger;
 import com.google.common.base.Charsets;
+import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.shiro.UnavailableSecurityManagerException;
 
 import java.io.IOException;
@@ -25,18 +26,24 @@ public class BlocksConfig
     public static final String PROJECT_VERSION_KEY = "appVersion";
     public static final String PROPERTIES_FILE = "blocks.properties";
 
-    /**the languages this site can work with, ordered from most preferred languages, to less preferred*/
+    private static final String ELASTIC_SEARCH_PROPERTIES_KEY = "blocks.core.elastic-search.properties.property";
+
+    /**
+     * the languages this site can work with, ordered from most preferred languages, to less preferred
+     */
     private LinkedHashMap<String, Locale> cachedLanguages;
     private Locale defaultLanguage;
     public String projectVersion = null;
     private URI siteDomain;
     private URI defaultRdfSchema;
+    protected HashMap<String, String> cachedEsProperties = null;
 
     private BlocksConfig()
     {
     }
 
-    public static BlocksConfig instance() {
+    public static BlocksConfig instance()
+    {
         if (BlocksConfig.instance == null) {
             BlocksConfig.instance = new BlocksConfig();
         }
@@ -48,7 +55,8 @@ public class BlocksConfig
         if (this.siteDomain == null) {
             try {
                 this.siteDomain = new URI(getConfiguration("blocks.core.site.domain"));
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 Logger.error("Site domain in blocks config is not valid. We return null");
             }
         }
@@ -60,7 +68,8 @@ public class BlocksConfig
         if (this.defaultRdfSchema == null) {
             try {
                 this.defaultRdfSchema = new URI(getConfiguration("blocks.core.rdf.schema.url"));
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 Logger.error("Default RDF Schema is not valid");
             }
         }
@@ -97,19 +106,21 @@ public class BlocksConfig
     /**
      * @return The languages this site can work with, ordered from most preferred getLanguage, to less preferred. If no such languages are specified in the configuration xml, an array with a default getLanguage is returned.
      */
-    public LinkedHashMap<String, Locale> getLanguages(){
-        if(cachedLanguages==null){
+    public LinkedHashMap<String, Locale> getLanguages()
+    {
+        if (cachedLanguages == null) {
             cachedLanguages = new LinkedHashMap<>();
             ArrayList<String> cachedLanguagesTemp = new ArrayList<String>(Arrays.asList(R.configuration().getStringArray("blocks.core.site.languages")));
 
             for (String l : cachedLanguagesTemp) {
 
                 Locale locale = new Locale(l);
-                if (this.defaultLanguage == null) this.defaultLanguage = locale;
-//                String getLanguage = locale;
+                if (this.defaultLanguage == null)
+                    this.defaultLanguage = locale;
+                //                String getLanguage = locale;
                 cachedLanguages.put(locale.getLanguage(), locale);
             }
-            if(cachedLanguages.size() == 0){
+            if (cachedLanguages.size() == 0) {
                 this.defaultLanguage = Locale.ENGLISH;
                 cachedLanguages.put(defaultLanguage.getLanguage(), defaultLanguage);
             }
@@ -117,7 +128,8 @@ public class BlocksConfig
         return cachedLanguages;
     }
 
-    public Locale getLocaleForLanguage(String language) {
+    public Locale getLocaleForLanguage(String language)
+    {
         Locale retVal = this.getDefaultLanguage();
         if (this.cachedLanguages.containsKey(language)) {
             retVal = this.cachedLanguages.get(language);
@@ -144,22 +156,28 @@ public class BlocksConfig
     }
 
     /**
-     *
      * @return The first languages in the languages-list, or the no-getLanguage-constant if no such list is present in the configuration-xml.
      */
-    public Locale getDefaultLanguage(){
+    public Locale getDefaultLanguage()
+    {
         if (defaultLanguage == null) {
             this.getLanguages();
         }
         return defaultLanguage;
     }
 
-    public String getElasticSearchClusterName() {
-        String retVal = R.configuration().getString("blocks.core.elastic-search.cluster");
-        return retVal;
+    public boolean getElasticSearchLaunchEmbedded()
+    {
+        return R.configuration().getBoolean("blocks.core.elastic-search.launch-embedded", true);
     }
 
-    public String getElasticSearchHostName() {
+    public String getElasticSearchClusterName()
+    {
+        return R.configuration().getString("blocks.core.elastic-search.cluster-name");
+    }
+
+    public String getElasticSearchHostName()
+    {
         String retVal = R.configuration().getString("blocks.core.elastic-search.host");
         if (retVal == null) {
             retVal = "localhost";
@@ -167,7 +185,8 @@ public class BlocksConfig
         return retVal;
     }
 
-    public Integer getElasticSearchPort() {
+    public Integer getElasticSearchPort()
+    {
         Integer retVal = R.configuration().getInt("blocks.core.elastic-search.port");
         if (retVal == null) {
             retVal = 9300;
@@ -175,7 +194,23 @@ public class BlocksConfig
         return retVal;
     }
 
-    public Locale getRequestDefaultLanguage() {
+    public HashMap<String, String> getElasticSearchProperties()
+    {
+        if (this.cachedEsProperties == null) {
+            this.cachedEsProperties = new HashMap<String, String>();
+            List<HierarchicalConfiguration> properties = R.configuration().configurationsAt(ELASTIC_SEARCH_PROPERTIES_KEY);
+            for (HierarchicalConfiguration property : properties) {
+                String propertyKey = property.getString("name");
+                String propertyValue = property.getString("value");
+                this.cachedEsProperties.put(propertyKey, propertyValue);
+            }
+        }
+
+        return this.cachedEsProperties;
+    }
+
+    public Locale getRequestDefaultLanguage()
+    {
         Locale retVal = null;
         List<Locale> languages = RequestContext.getJaxRsRequest().getAcceptableLanguages();
         while (retVal == null && languages.iterator().hasNext()) {
@@ -184,7 +219,8 @@ public class BlocksConfig
                 retVal = loc;
             }
         }
-        if (retVal == null) retVal = getDefaultLanguage();
+        if (retVal == null)
+            retVal = getDefaultLanguage();
         return retVal;
     }
 

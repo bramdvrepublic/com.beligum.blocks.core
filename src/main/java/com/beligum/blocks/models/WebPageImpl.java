@@ -1,17 +1,9 @@
 package com.beligum.blocks.models;
 
 import com.beligum.blocks.config.BlocksConfig;
-import com.beligum.blocks.models.factories.ResourceFactoryImpl;
-import com.beligum.blocks.models.interfaces.Node;
 import com.beligum.blocks.models.interfaces.WebPage;
-import com.beligum.blocks.models.jackson.page.PageDeserializer;
-import com.beligum.blocks.models.jackson.page.PageSerializer;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.joda.time.LocalDateTime;
 
-import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.*;
 
@@ -34,17 +26,18 @@ public class WebPageImpl extends ResourceImpl implements WebPage
     private Map<Locale, String> createdBy = new HashMap<>();
     private Set<Locale> languages = new HashSet<Locale>();
 
-    public WebPageImpl() {
+    public WebPageImpl()
+    {
 
     }
 
-    public WebPageImpl(URI id, Locale locale) {
+    public WebPageImpl(URI id, Locale locale)
+    {
         super(locale);
         this.setBlockId(id);
         this.language = locale;
         this.getLanguages().add(locale);
     }
-
 
     @Override
     public String getParsedHtml(boolean fallback)
@@ -101,9 +94,9 @@ public class WebPageImpl extends ResourceImpl implements WebPage
         this.pageTemplate.put(locale, template);
     }
 
-
     @Override
-    public String getPageTitle(boolean fallback) {
+    public String getPageTitle(boolean fallback)
+    {
         return getPageTitle(this.getLanguage(), fallback);
     }
     @Override
@@ -114,14 +107,16 @@ public class WebPageImpl extends ResourceImpl implements WebPage
         this.pageTitle = ensure(this.pageTitle);
         if (fallback) {
             retVal = this.getDefaultValue(this.pageTitle, locale);
-        } else {
+        }
+        else {
             retVal = this.pageTitle.get(locale);
         }
         return retVal;
     }
 
     @Override
-    public void setPageTitle(String pageTitle) {
+    public void setPageTitle(String pageTitle)
+    {
         this.setPageTitle(pageTitle, this.getLanguage());
     }
     @Override
@@ -156,7 +151,6 @@ public class WebPageImpl extends ResourceImpl implements WebPage
         this.text = ensure(this.text);
         this.text.put(locale, text);
     }
-
 
     @Override
     public Set<String> getTemplates()
@@ -347,7 +341,8 @@ public class WebPageImpl extends ResourceImpl implements WebPage
     }
 
     @Override
-    public Set<Locale> getLanguages() {
+    public Set<Locale> getLanguages()
+    {
         if (this.languages == null) {
             this.languages = new HashSet<>();
         }
@@ -359,7 +354,8 @@ public class WebPageImpl extends ResourceImpl implements WebPage
 
     // ------- PROTECTED METHODS ----------
 
-    protected Map<Locale, String> ensure(Map<Locale, String> value) {
+    protected Map<Locale, String> ensure(Map<Locale, String> value)
+    {
         Map<Locale, String> retVal = value;
         if (retVal == null) {
             retVal = new HashMap<>();
@@ -374,22 +370,25 @@ public class WebPageImpl extends ResourceImpl implements WebPage
     *
     *  if force == true we return any value if a value is available and the fallback did not work
     * */
-    protected String getDefaultValue(Map<Locale, String> value, Locale locale) {
+    protected String getDefaultValue(Map<Locale, String> value, Locale locale)
+    {
         String retVal = value.get(locale);
         if (retVal == null) {
             if (value.containsKey(Locale.ROOT)) {
                 retVal = value.get(Locale.ROOT);
-            } else if (value.containsKey(BlocksConfig.instance().getDefaultLanguage())) {
+            }
+            else if (value.containsKey(BlocksConfig.instance().getDefaultLanguage())) {
                 retVal = value.get(BlocksConfig.instance().getDefaultLanguage());
-            } else if (value.containsKey(this.getLanguage())) {
+            }
+            else if (value.containsKey(this.getLanguage())) {
                 retVal = value.get(this.getLanguage());
-            } else if (value.size() > 0) {
+            }
+            else if (value.size() > 0) {
                 retVal = value.values().iterator().next();
             }
         }
 
         return retVal;
     }
-
 
 }

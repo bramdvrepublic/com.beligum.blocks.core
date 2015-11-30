@@ -367,7 +367,7 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
                     child.bottom = middle;
 
                 }
-                if (child instanceof  blocks.elements.Row) {
+                if (child instanceof blocks.elements.Row) {
                     child.fillColumns();
                 }
                 if (child instanceof blocks.elements.Block) {
@@ -399,7 +399,7 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
                     child.right = middle;
 
                 }
-                if (child instanceof  blocks.elements.Column) child.fillRows();
+                if (child instanceof blocks.elements.Column) child.fillRows();
             }
         },
 
@@ -408,7 +408,7 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
             if (this.totalBlocks != null) return this.totalBlocks;
             this.totalBlocks = 0;
             for (var i = 0; i < this.children.length; i++) {
-                if (this.children[i] instanceof  blocks.elements.Block) {
+                if (this.children[i] instanceof blocks.elements.Block) {
                     this.totalBlocks += 1;
                 } else {
                     this.totalBlocks += this.children[i].getBlocks();
@@ -450,11 +450,13 @@ base.plugin("blocks.core.Elements.LayoutElement", ["base.core.Class", "constants
                 // see http://jsfiddle.net/ZCWvJ/7/ (from http://stackoverflow.com/questions/7286532/jquery-mouseenter-vs-mouseover)
                 // each time your mouse enters or leaves a child element, mouseover is triggered, but not mouseenter.
                 var _this = this;
-                this.overlay.mouseenter(function(event) {
+                this.overlay.mouseenter(function (event)
+                {
                     $(this).addClass(BlocksConstants.OVERLAY_HOVER_CLASS);
                     Hover.setHoveredBlock(_this);
                     Broadcaster.send(Broadcaster.EVENTS.HOVER_ENTER_OVERLAY, event, _this);
-                }).mouseleave(function(event) {
+                }).mouseleave(function (event)
+                {
                     $(this).removeClass(BlocksConstants.OVERLAY_HOVER_CLASS);
                     //this might be troublesome: what if the event is processed after the mouseenter of the next block?
                     Hover.setHoveredBlock(null);

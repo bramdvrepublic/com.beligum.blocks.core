@@ -7,7 +7,6 @@ import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import com.beligum.blocks.search.ElasticSearch;
-import com.beligum.blocks.search.ElasticSearch;
 import com.beligum.blocks.security.Permissions;
 import org.apache.commons.io.IOUtils;
 import org.apache.shiro.SecurityUtils;
@@ -28,7 +27,6 @@ import java.util.Locale;
 public class DebugEndpoint
 {
 
-
     @GET
     @Path("/flush")
     public Response flushEntities() throws Exception
@@ -46,10 +44,11 @@ public class DebugEndpoint
         String settings = null;
         try {
             resourceMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/resource.json"));
-            pageMapping =  IOUtils.toString(classLoader.getResourceAsStream("elastic/page.json"));
-            pathMapping =  IOUtils.toString(classLoader.getResourceAsStream("elastic/path.json"));
-            settings =  IOUtils.toString(classLoader.getResourceAsStream("elastic/settings.json"));
-        } catch (Exception e) {
+            pageMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/page.json"));
+            pathMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/path.json"));
+            settings = IOUtils.toString(classLoader.getResourceAsStream("elastic/settings.json"));
+        }
+        catch (Exception e) {
             Logger.error("Could not read mapings for elastic search", e);
         }
 
@@ -58,26 +57,27 @@ public class DebugEndpoint
         RequestContext.getEntityManager().createNativeQuery("delete from resource where id > 0").executeUpdate();
         RequestContext.getEntityManager().createNativeQuery("delete from path where id > 0").executeUpdate();
 
-
-        for (Locale locale: BlocksConfig.instance().getLanguages().values()) {
-            ElasticSearch.instance().getClient().admin().indices().prepareCreate(ElasticSearch.instance().getPageIndexName(locale)).setSettings(settings).addMapping(PersistenceController.WEB_PAGE_CLASS,
-                                                                                                                                                                         pageMapping).execute().actionGet();
+        for (Locale locale : BlocksConfig.instance().getLanguages().values()) {
+            ElasticSearch.instance().getClient().admin().indices().prepareCreate(ElasticSearch.instance().getPageIndexName(locale)).setSettings(settings)
+                         .addMapping(PersistenceController.WEB_PAGE_CLASS,
+                                     pageMapping).execute().actionGet();
             ElasticSearch.instance().getClient().admin().indices().prepareCreate(ElasticSearch.instance().getResourceIndexName(locale)).setSettings(settings).addMapping("_default_",
-                                                                                                                                                                                     resourceMapping).execute().actionGet();
+                                                                                                                                                                         resourceMapping).execute()
+                         .actionGet();
         }
 
-        ElasticSearch.instance().getClient().admin().indices().prepareCreate(PersistenceController.PATH_CLASS).setSettings(settings).addMapping(PersistenceController.PATH_CLASS, pathMapping).execute().actionGet();
+        ElasticSearch.instance().getClient().admin().indices().prepareCreate(PersistenceController.PATH_CLASS).setSettings(settings).addMapping(PersistenceController.PATH_CLASS, pathMapping).execute()
+                     .actionGet();
         return Response.ok("<ul><li>Database emptied</li><li>Cache reset</li></ul>").build();
     }
 
-
-        @GET
-        @Path("/reset")
-        public Response clearTemplates() throws Exception
-        {
-            R.cacheManager().getApplicationCache().remove(CacheKeys.TAG_TEMPLATES);
-            return Response.ok("templates cleared").build();
-        }
+    @GET
+    @Path("/reset")
+    public Response clearTemplates() throws Exception
+    {
+        R.cacheManager().getApplicationCache().remove(CacheKeys.TAG_TEMPLATES);
+        return Response.ok("templates cleared").build();
+    }
     //
     //    @GET
     //    @Path("/pagetemplates/{pageTemplateName}")

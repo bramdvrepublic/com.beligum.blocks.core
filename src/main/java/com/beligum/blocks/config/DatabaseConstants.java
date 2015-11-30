@@ -11,7 +11,6 @@ public class DatabaseConstants
      */
     public final static String SCRIPTS = "scripts";
 
-
     public static final String SERVER_USER_NAME = "blocksServer";
     public static final String SERVER_START_UP = "blocksServerStartUp";
 }

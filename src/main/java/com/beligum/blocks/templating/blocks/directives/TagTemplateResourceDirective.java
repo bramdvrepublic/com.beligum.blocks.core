@@ -46,8 +46,8 @@ public class TagTemplateResourceDirective extends Directive
         TemplateResourcesDirective.Argument type = TemplateResourcesDirective.Argument.values()[((int) TagTemplateDirectiveUtils.readArg(context, node, 0))];
         boolean print = (boolean) TagTemplateDirectiveUtils.readArg(context, node, 1);
         String urlArgument = (String) TagTemplateDirectiveUtils.readArg(context, node, 2);
-        PermissionRole roleScope = R.configuration().getSecurityConfig().lookupPermissionRole((String)TagTemplateDirectiveUtils.readArg(context, node, 3));
-        HtmlTemplate.ResourceScopeMode mode = HtmlTemplate.ResourceScopeMode.values()[(int)TagTemplateDirectiveUtils.readArg(context, node, 4)];
+        PermissionRole roleScope = R.configuration().getSecurityConfig().lookupPermissionRole((String) TagTemplateDirectiveUtils.readArg(context, node, 3));
+        HtmlTemplate.ResourceScopeMode mode = HtmlTemplate.ResourceScopeMode.values()[(int) TagTemplateDirectiveUtils.readArg(context, node, 4)];
 
         String element = TagTemplateDirectiveUtils.readValue(context, node);
 
@@ -67,7 +67,7 @@ public class TagTemplateResourceDirective extends Directive
                     added = TemplateResourcesDirective.getContextResources(context).addExternalScript(print, urlArgument, element, (StringWriter) writer);
                     break;
                 default:
-                    throw new ParseErrorException("Encountered unsupported resource type in directive #"+NAME+" of type "+type+"; this shouldn't happen");
+                    throw new ParseErrorException("Encountered unsupported resource type in directive #" + NAME + " of type " + type + "; this shouldn't happen");
             }
 
             if (print) {

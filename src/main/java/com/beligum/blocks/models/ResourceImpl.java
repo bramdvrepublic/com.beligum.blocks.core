@@ -1,16 +1,11 @@
 package com.beligum.blocks.models;
 
-import com.beligum.blocks.config.BlocksConfig;
-import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.Node;
 import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.models.interfaces.ResourceFactory;
 import com.beligum.blocks.utils.RdfTools;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.joda.time.LocalDateTime;
-import org.w3c.dom.NodeList;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
@@ -27,11 +22,13 @@ public class ResourceImpl extends AbstractNode implements Resource
     private Map<String, String> context = new HashMap<>();
     private Map<String, Map<Locale, ArrayList<Node>>> properties = new HashMap<>();
 
-    public ResourceImpl() {
+    public ResourceImpl()
+    {
         this(Locale.ROOT);
     }
 
-    public ResourceImpl(Locale language) {
+    public ResourceImpl(Locale language)
+    {
         this.language = language;
     }
 
@@ -77,8 +74,6 @@ public class ResourceImpl extends AbstractNode implements Resource
         this.rdfType.add(uri);
     }
 
-
-
     @Override
     public void add(URI field, Node node)
     {
@@ -89,16 +84,18 @@ public class ResourceImpl extends AbstractNode implements Resource
 
         String key = addFieldToContext(field, locale);
         if (node.isIterable()) {
-            for (Node n: node) {
+            for (Node n : node) {
                 this.add(field, n);
             }
-        } else {
+        }
+        else {
             Map<Locale, ArrayList<Node>> value = properties.get(key);
             ArrayList<Node> list = value.get(locale);
             if (list == null) {
                 list = new ArrayList<Node>();
                 list.add(node);
-            } else if (!(list.contains(node))) {
+            }
+            else if (!(list.contains(node))) {
                 list.add(node);
             }
 
@@ -138,7 +135,8 @@ public class ResourceImpl extends AbstractNode implements Resource
 
             if (this.properties.get(key).containsKey(locale)) {
                 list = this.properties.get(key).get(locale);
-            } else if (this.properties.get(key).containsKey(Locale.ROOT)) {
+            }
+            else if (this.properties.get(key).containsKey(Locale.ROOT)) {
                 list = this.properties.get(key).get(Locale.ROOT);
             }
         }
@@ -180,7 +178,7 @@ public class ResourceImpl extends AbstractNode implements Resource
         }
 
         // Remove this property from context when no values are available in all languages
-        if (properties.get(key) != null && properties.get(key).size() ==0) {
+        if (properties.get(key) != null && properties.get(key).size() == 0) {
             removeFieldFromContext(key);
             properties.remove(key);
         }
@@ -317,7 +315,7 @@ public class ResourceImpl extends AbstractNode implements Resource
     @Override
     public Set<URI> getFields()
     {
-        Set<URI>retVal = new HashSet<URI>();
+        Set<URI> retVal = new HashSet<URI>();
         retVal.addAll(getLocalizedFields());
         retVal.addAll(getRootFields());
 
@@ -326,10 +324,10 @@ public class ResourceImpl extends AbstractNode implements Resource
     @Override
     public Set<URI> getLocalizedFields()
     {
-        Set<URI>retVal = new HashSet<URI>();
+        Set<URI> retVal = new HashSet<URI>();
         Set<String> properties = this.properties.keySet();
         Map<String, String> context = getContext();
-        for (String prop: properties) {
+        for (String prop : properties) {
             if (context.containsKey(prop) && (!this.properties.get(prop).containsKey(Locale.ROOT) || this.properties.get(prop).size() > 1)) {
                 retVal.add(UriBuilder.fromUri(this.getContext().get(prop)).build());
             }
@@ -339,12 +337,12 @@ public class ResourceImpl extends AbstractNode implements Resource
     @Override
     public Set<URI> getRootFields()
     {
-        Set<URI>retVal = new HashSet<URI>();
+        Set<URI> retVal = new HashSet<URI>();
         Set<String> properties = this.properties.keySet();
 
         // fetch context first to prevent ConcurrentModifictionException
         Map<String, String> context = getContext();
-        for (String prop: properties) {
+        for (String prop : properties) {
             if (context.containsKey(prop) && this.properties.get(prop).containsKey(Locale.ROOT)) {
                 retVal.add(UriBuilder.fromUri(this.getContext().get(prop)).build());
             }
@@ -358,9 +356,9 @@ public class ResourceImpl extends AbstractNode implements Resource
         this.language = locale;
     }
 
-
     @Override
-    public Map<String, String> getContext() {
+    public Map<String, String> getContext()
+    {
 
         return this.context;
     }
@@ -377,7 +375,8 @@ public class ResourceImpl extends AbstractNode implements Resource
         Set<Locale> retVal = null;
         if (this.properties.containsKey(key)) {
             retVal = this.properties.get(key).keySet();
-        } else {
+        }
+        else {
             retVal = new HashSet<>();
         }
         return retVal;
@@ -403,7 +402,6 @@ public class ResourceImpl extends AbstractNode implements Resource
             context.put(shortFieldName, field.toString());
         }
 
-
         // Put this property also in the map, if it does not yet exist
         if (!this.properties.containsKey(shortFieldName)) {
             this.properties.put(shortFieldName, new HashMap<Locale, ArrayList<Node>>());
@@ -418,10 +416,10 @@ public class ResourceImpl extends AbstractNode implements Resource
     }
 
     @Override
-    public boolean isResource() {
+    public boolean isResource()
+    {
         return true;
     }
-
 
     @Override
     public void setCreatedAt(LocalDateTime date)
@@ -470,7 +468,8 @@ public class ResourceImpl extends AbstractNode implements Resource
     }
 
     @Override
-    public String toString() {
+    public String toString()
+    {
         return "A resource";
     }
 
@@ -493,27 +492,28 @@ public class ResourceImpl extends AbstractNode implements Resource
         return blockId.hashCode();
     }
 
-
     // -------- PROTECTED METHODS -----------
 
     /*
     * Make sure we never return null. Wrap null or lists in a special node,
     * If we haven only 1 node in a list, return this node
     * */
-    protected Node returnValidNode(List<Node> list, Locale locale) {
+    protected Node returnValidNode(List<Node> list, Locale locale)
+    {
         Node retVal = null;
         if (list == null) {
             retVal = ResourceFactoryImpl.instance().createNode(null, locale);
-        } else if (list.size() == 1) {
+        }
+        else if (list.size() == 1) {
             retVal = list.get(0);
-        } else {
+        }
+        else {
             retVal = new ListNode(list, locale);
         }
 
-
         // Set the language of the resource as the expected language
         if (retVal.isResource()) {
-            ((Resource)retVal).setLanguage(language);
+            ((Resource) retVal).setLanguage(language);
         }
         return retVal;
     }

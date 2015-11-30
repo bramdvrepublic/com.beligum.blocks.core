@@ -1,8 +1,6 @@
 package com.beligum.blocks.models;
 
-import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.Node;
-import com.beligum.blocks.models.interfaces.ResourceFactory;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -21,7 +19,7 @@ public class ListNode extends NodeImpl
         super(value, lang);
     }
 
-    public ListNode( Locale lang)
+    public ListNode(Locale lang)
     {
         super(new ArrayList<Node>(), lang);
     }
@@ -30,15 +28,17 @@ public class ListNode extends NodeImpl
     protected void setValue(Object value)
     {
         try {
-            nodeList = (List<Node>)value;
+            nodeList = (List<Node>) value;
             this.value = nodeList;
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             super.setValue(value);
         }
     }
 
     @Override
-    public boolean isIterable() {
+    public boolean isIterable()
+    {
         boolean retVal = false;
         if (nodeList != null) {
             retVal = true;
@@ -52,18 +52,21 @@ public class ListNode extends NodeImpl
         Iterator<Node> retVal = null;
         if (isIterable()) {
             retVal = nodeList.iterator();
-        } else {
+        }
+        else {
             retVal = super.iterator();
         }
         return retVal;
     }
 
-    public void add(Node node) {
+    public void add(Node node)
+    {
         if (node.isIterable()) {
-            for (Node n: node) {
+            for (Node n : node) {
                 this.add(n);
             }
-        } else {
+        }
+        else {
             nodeList.add(node);
         }
     }

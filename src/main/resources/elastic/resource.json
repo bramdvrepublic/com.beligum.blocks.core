@@ -1,46 +1,47 @@
 {
-    "_default_": {
-      "dynamic_templates":
-        [{
-          "string_fields": {
-            "match": "@value",
-            "mapping": {
-              "type": "string",
-              "index": "analyzed",
-              "fields": {
-                "@raw": {
-                  "type": "string",
-                  "index": "not_analyzed",
-                  "ignore_above": 256
-                }
+  "_default_": {
+    "dynamic_templates": [
+      {
+        "string_fields": {
+          "match": "@value",
+          "mapping": {
+            "type": "string",
+            "index": "analyzed",
+            "fields": {
+              "@raw": {
+                "type": "string",
+                "index": "not_analyzed",
+                "ignore_above": 256
               }
             }
           }
-        }, {
-          "id_fields": {
-            "match": "@id",
-            "mapping": {
-              "type": "string",
-              "index": "not_analyzed"
-            }
-          }
-        }, {
-          "type_fields": {
-            "match": "@type",
-            "mapping": {
-              "type": "string",
-              "index": "not_analyzed"
-            }
-          }
-        }]
-      ,
-      "properties": {
-        "@language": {
-          "type": "string",
-          "index": "not_analyzed"
         }
-
+      },
+      {
+        "id_fields": {
+          "match": "@id",
+          "mapping": {
+            "type": "string",
+            "index": "not_analyzed"
+          }
+        }
+      },
+      {
+        "type_fields": {
+          "match": "@type",
+          "mapping": {
+            "type": "string",
+            "index": "not_analyzed"
+          }
+        }
+      }
+    ],
+    "properties": {
+      "@language": {
+        "type": "string",
+        "index": "not_analyzed"
       }
     }
+  }
 }
 

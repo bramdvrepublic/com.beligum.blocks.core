@@ -1,9 +1,9 @@
 package com.beligum.blocks.models.interfaces;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
 import java.net.URI;
-import java.util.*;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by wouter on 24/04/15.

@@ -1,14 +1,16 @@
 package com.beligum.blocks.models.sql;
 
 import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.models.interfaces.WebPath;
 import com.beligum.blocks.models.jackson.path.PathDeserializer;
 import com.beligum.blocks.models.jackson.path.PathSerializer;
-import com.beligum.blocks.models.interfaces.WebPath;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.nio.file.Path;
@@ -19,13 +21,15 @@ import java.util.Locale;
  * Created by wouter on 30/06/15.
  */
 @Entity
-@Table(name="path")
+@Table(name = "path")
 public class DBPath extends DBDocumentInfo implements WebPath
 {
 
-    public static  ObjectMapper PATH_MAPPER = new ObjectMapper().registerModule(new SimpleModule().addSerializer(DBPath.class, new PathSerializer()).addDeserializer(DBPath.class, new PathDeserializer()));
+    public static ObjectMapper
+                    PATH_MAPPER =
+                    new ObjectMapper().registerModule(new SimpleModule().addSerializer(DBPath.class, new PathSerializer()).addDeserializer(DBPath.class, new PathDeserializer()));
 
-    @Column(name="block_id")
+    @Column(name = "block_id")
     private String blockId;
 
     private String language;
@@ -36,14 +40,14 @@ public class DBPath extends DBDocumentInfo implements WebPath
 
     private int statusCode = 404;
 
-
-
     // Default constructor for hibernate
-    public DBPath() {
+    public DBPath()
+    {
 
     }
 
-    public DBPath(URI blockId, Path path, Locale locale) {
+    public DBPath(URI blockId, Path path, Locale locale)
+    {
         this.blockId = blockId.toString();
         this.url = Paths.get("/").resolve(path).normalize().toString();
         this.language = locale.getLanguage();
@@ -51,11 +55,13 @@ public class DBPath extends DBDocumentInfo implements WebPath
     }
 
     @Override
-    public String getDBid() {
+    public String getDBid()
+    {
         return this.id.toString();
     }
 
-    public void setDBid(String id) {
+    public void setDBid(String id)
+    {
         this.id = Long.parseLong(id);
     }
 
@@ -93,7 +99,6 @@ public class DBPath extends DBDocumentInfo implements WebPath
     {
         statusCode = code;
     }
-
 
     @Override
     public void setPageOk(URI id)
