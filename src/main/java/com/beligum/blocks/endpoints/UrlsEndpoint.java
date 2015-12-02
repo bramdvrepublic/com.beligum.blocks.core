@@ -1,6 +1,7 @@
 package com.beligum.blocks.endpoints;
 
 import com.beligum.base.i18n.I18nFactory;
+import gen.com.beligum.blocks.core.messages.blocks.core;
 
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -15,11 +16,7 @@ import java.net.URL;
 public class UrlsEndpoint
 {
     @POST
-    public Response changeUrlIdMapping(
-                    @QueryParam("original")
-                    String originalUrl,
-                    @QueryParam("newpath")
-                    String newPath) throws Exception
+    public Response changeUrlIdMapping(@QueryParam("original") String originalUrl, @QueryParam("newpath") String newPath) throws Exception
     {
         URL newURL = null;
         URL original = null;
@@ -34,7 +31,7 @@ public class UrlsEndpoint
             newURL = new URL(original, newPath);
         }
         catch (Exception e) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(I18nFactory.instance().getBrowserResourceBundle().getMessage("badChangeUrl")).build();
+            return Response.status(Response.Status.BAD_REQUEST).entity(I18nFactory.instance().getBrowserResourceBundle().get(core.Entries.badChangeUrl)).build();
         }
         //        BlocksID id = XMLUrlIdMapper.getInstance().getId(original);
         //        XMLUrlIdMapper.getInstance().put(id, newURL);

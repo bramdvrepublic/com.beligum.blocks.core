@@ -23,23 +23,15 @@ public interface PersistenceController
 
     public WebPage getWebPage(URI masterWebPage, Locale locale) throws IOException;
 
-    ;
-
     public void deleteWebPage(URI masterPage) throws Exception;
 
-    ;
-
     public WebPage saveWebPage(WebPage webPage, boolean doVersion) throws Exception;
-
-    ;
 
     public Resource getResource(URI id, Locale language) throws Exception;
 
     public Resource saveResource(Resource resource) throws Exception;
 
     public Resource deleteResource(Resource resource) throws Exception;
-
-    ;
 
     // returns a webnode (containing all urls and redirects for this page)
     public Map<String, WebPath> getPaths(URI masterPage);

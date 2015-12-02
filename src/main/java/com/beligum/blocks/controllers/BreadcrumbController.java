@@ -45,7 +45,7 @@ public class BreadcrumbController extends DefaultTemplateController
                 WebPage webPage = PersistenceControllerImpl.instance().getWebPage(route.getWebPath().getBlockId(), route.getLocale());
                 String title = webPage.getPageTitle(true);
                 if (title == null) {
-                    title = I18nFactory.instance().getResourceBundle(route.getLocale()).get("blocks.core.defaultPageTitle");
+                    title = I18nFactory.instance().getResourceBundle(route.getLocale()).get(gen.com.beligum.blocks.core.messages.blocks.core.Entries.defaultPageTitle);
                 }
                 String url = route.getLanguagedPath().toString();
                 HashMap<String, String> map = new HashMap<String, String>();

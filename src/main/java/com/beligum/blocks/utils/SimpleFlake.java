@@ -34,7 +34,6 @@ public class SimpleFlake
      */
     public long generate()
     {
-
         long currentTimestamp = System.currentTimeMillis();
 
         while (lastTimestamp > currentTimestamp) {

@@ -18,9 +18,7 @@ public class ModalsEndpoint
     @GET
     @Path("/changeurl")
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
-    public Response getChangeUrlModal(
-                    @QueryParam("original")
-                    String originalUrl) throws MalformedURLException
+    public Response getChangeUrlModal(@QueryParam("original") String originalUrl) throws MalformedURLException
     {
         //        Template template = change_url_modal.get().getNewTemplate();
         //        String originalPath = new URL(originalUrl).getPath();

@@ -54,8 +54,7 @@ public class Route
         if (locale.equals(Locale.ROOT)) {
             this.simplePath = Paths.get("/").resolve(currentPath).normalize();
             this.languagedPath = Paths.get("/").resolve(BlocksConfig.instance().getDefaultLanguage().getLanguage()).resolve(this.simplePath).normalize();
-            this.uri =
-                            UriBuilder.fromUri("").scheme(this.uri.getScheme()).userInfo(this.uri.getUserInfo()).host(this.uri.getHost()).port(this.uri.getPort()).path(this.languagedPath.toString())
+            this.uri = UriBuilder.fromUri("").scheme(this.uri.getScheme()).userInfo(this.uri.getUserInfo()).host(this.uri.getHost()).port(this.uri.getPort()).path(this.languagedPath.toString())
                                       .replaceQuery(this.uri.getQuery()).fragment(this.uri.getFragment()).build();
         }
         else {
@@ -69,7 +68,6 @@ public class Route
         }
 
         this.finalNode = PersistenceControllerImpl.instance().getPath(simplePath, this.locale);
-
     }
 
     public boolean exists()

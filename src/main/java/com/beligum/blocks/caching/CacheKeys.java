@@ -25,6 +25,8 @@ public enum CacheKeys implements CacheKey
     PAGES,
     //the key that maps to the mode in which we are now (set in HtmlRouter)
     BLOCKS_MODE,
+    // the ES controller singleton
+    ELASTIC_SEARCH_INSTANCE,
     //the ES node when in embedded mode
     ELASTIC_SEARCH_NODE
 }

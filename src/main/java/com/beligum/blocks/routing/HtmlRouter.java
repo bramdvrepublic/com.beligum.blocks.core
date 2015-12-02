@@ -97,10 +97,10 @@ public class HtmlRouter extends AbstractRouter
                         }
                         // No title available
                         else {
-                            title = I18nFactory.instance().get("blocks.core.emptyTemplateTitle");
+                            title = I18nFactory.instance().get(gen.com.beligum.blocks.core.messages.blocks.core.Entries.emptyTemplateTitle);
                         }
                         if (description == null) {
-                            description = I18nFactory.instance().get("blocks.core.emptyTemplateDescription");
+                            description = I18nFactory.instance().get(gen.com.beligum.blocks.core.messages.blocks.core.Entries.emptyTemplateDescription);
                         }
                         pageTemplate.put(NAME, template.getTemplateName());
                         pageTemplate.put(TITLE, title);

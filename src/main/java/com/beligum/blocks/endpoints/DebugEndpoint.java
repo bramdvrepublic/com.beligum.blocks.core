@@ -49,7 +49,7 @@ public class DebugEndpoint
             settings = IOUtils.toString(classLoader.getResourceAsStream("elastic/settings.json"));
         }
         catch (Exception e) {
-            Logger.error("Could not read mapings for elastic search", e);
+            Logger.error("Could not read mappings for elastic search", e);
         }
 
         RequestContext.getEntityManager().createNativeQuery("delete from page where id > 0").executeUpdate();

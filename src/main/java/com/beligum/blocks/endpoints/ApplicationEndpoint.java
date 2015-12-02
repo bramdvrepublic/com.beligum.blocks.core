@@ -7,6 +7,7 @@ import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.routing.HtmlRouter;
 import com.beligum.blocks.routing.Route;
 import com.beligum.blocks.routing.ifaces.Router;
+import com.google.common.net.HttpHeaders;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
@@ -67,7 +68,7 @@ public class ApplicationEndpoint
             // We have to redirect the user to a url containing a language
             // We use the language of the referrer if there is one in that url
             // otherwise redirect to default language
-            String referrer = RequestContext.getJaxRsRequest().getHeaderString("Referer");
+            String referrer = RequestContext.getJaxRsRequest().getHeaderString(HttpHeaders.REFERER);
             if (referrer != null) {
                 try {
                     URI ref = new URI(referrer);

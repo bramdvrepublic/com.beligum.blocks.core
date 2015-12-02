@@ -117,9 +117,8 @@ public class PersistenceControllerImpl implements PersistenceController
         // find the path for this language
         DBPath webpath = null;
         try {
-            webpath =
-                            RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.url = :path and p.language = :language", DBPath.class)
-                                          .setParameter("language", locale.getLanguage()).setParameter(
+            webpath = RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.url = :path and p.language = :language", DBPath.class)
+                                    .setParameter("language", locale.getLanguage()).setParameter(
                                             "path", path.toString()).getSingleResult();
         }
         catch (NoResultException e) {

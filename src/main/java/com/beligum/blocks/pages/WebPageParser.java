@@ -12,6 +12,7 @@ import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.utils.RdfTools;
+import gen.com.beligum.blocks.core.messages.blocks.core;
 import net.htmlparser.jericho.Element;
 import net.htmlparser.jericho.Source;
 import net.htmlparser.jericho.TextExtractor;
@@ -72,7 +73,7 @@ public class WebPageParser
         this.source.fullSequentialParse();
         this.database = database;
         this.vocab = BlocksConfig.instance().getDefaultRdfSchema();
-        this.pageTitle = I18nFactory.instance().getResourceBundle(locale).get("blocks.core.defaultPageTitle");
+        this.pageTitle = I18nFactory.instance().getResourceBundle(locale).get(core.Entries.defaultPageTitle);
         Element base = this.source.getFirstElement("base");
         this.setBase(base, uri);
         pageResource = ResourceFactoryImpl.instance().createResource(RdfTools.createLocalResourceId("webpage"), RdfTools.createLocalType("Webpage"), locale);

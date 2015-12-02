@@ -1,7 +1,8 @@
 package com.beligum.blocks.search;
 
-import com.beligum.base.cache.CacheKey;
+import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import org.apache.commons.io.IOUtils;
@@ -14,7 +15,10 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.node.Node;
+import org.elasticsearch.node.NodeBuilder;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -24,32 +28,34 @@ import java.util.Map;
  */
 public class ElasticSearch
 {
-    private static ElasticSearch instance;
     private Client client;
     private BulkRequestBuilder bulkRequestBuilder;
 
-    public enum ESCacheKeys implements CacheKey
-    {
-        BULK_REQUEST
-    }
-
     private ElasticSearch()
     {
-        Map params = new HashMap();
-        params.put("cluster.name", BlocksConfig.instance().getElasticSearchClusterName());
-        String host = BlocksConfig.instance().getElasticSearchHostName();
-        Integer port = BlocksConfig.instance().getElasticSearchPort();
-        Settings settings = ImmutableSettings.settingsBuilder().put(params).build();
-        this.client = new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(host, port));
-        init();
+        if (BlocksConfig.instance().getElasticSearchLaunchEmbedded()) {
+            this.client = this.getEmbeddedNode().client();
+        }
+        else {
+            this.client = this.buildRemoteClient();
+        }
+
+        try {
+            init();
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Caught error while launching Elastic Search; this is bad so I'm aborting", e);
+        }
     }
 
     public static ElasticSearch instance()
     {
-        if (ElasticSearch.instance == null) {
-            ElasticSearch.instance = new ElasticSearch();
+        ElasticSearch instance = (ElasticSearch) R.cacheManager().getApplicationCache().get(CacheKeys.ELASTIC_SEARCH_INSTANCE);
+        if (instance==null) {
+            R.cacheManager().getApplicationCache().put(CacheKeys.ELASTIC_SEARCH_INSTANCE, instance = new ElasticSearch());
         }
-        return ElasticSearch.instance;
+
+        return instance;
     }
 
     public Client getClient()
@@ -98,25 +104,75 @@ public class ElasticSearch
         }
         return retVal;
     }
+    public void flush() throws IOException
+    {
+        this.client.admin().indices().delete(new DeleteIndexRequest("*")).actionGet();
+        this.reset();
+    }
 
     // -------- PRIVATE METHODS -----------
+    private Node getEmbeddedNode()
+    {
+        Node esNode = (Node) R.cacheManager().getApplicationCache().get(CacheKeys.ELASTIC_SEARCH_NODE);
+        if (esNode==null) {
+            NodeBuilder nodeBuilder = new NodeBuilder();
+            String clusterName = BlocksConfig.instance().getElasticSearchClusterName();
 
+            //don't really know if this is ok, but since we're launching an embedded node, it makes sense to make it local
+            final boolean isLocalNode = true;
+            nodeBuilder.clusterName(clusterName).local(isLocalNode);
+            if (!isLocalNode) {
+                nodeBuilder.settings().put("http.enabled", true);
+            }
+
+            HashMap<String, String> extraProperties = BlocksConfig.instance().getElasticSearchProperties();
+            if (extraProperties!=null) {
+                for (Map.Entry<String, String> entry : extraProperties.entrySet()) {
+                    nodeBuilder.settings().put(entry.getKey(), entry.getValue());
+                }
+            }
+
+            esNode = nodeBuilder.node();
+            R.cacheManager().getApplicationCache().put(CacheKeys.ELASTIC_SEARCH_NODE, esNode);
+        }
+
+        return esNode;
+    }
+    private Client buildRemoteClient()
+    {
+        Map params = new HashMap();
+        params.put("cluster.name", BlocksConfig.instance().getElasticSearchClusterName());
+
+        HashMap<String, String> extraProperties = BlocksConfig.instance().getElasticSearchProperties();
+        if (extraProperties!=null) {
+            for (Map.Entry<String, String> entry : extraProperties.entrySet()) {
+                params.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        Settings settings = ImmutableSettings.settingsBuilder().put(params).build();
+        String hostname = BlocksConfig.instance().getElasticSearchHostName();
+        Integer port = BlocksConfig.instance().getElasticSearchPort();
+
+        return new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(hostname, port));
+    }
     private BulkRequestBuilder getBulkFromCache()
     {
         return this.bulkRequestBuilder;
     }
-
     private void setBulkInCache()
     {
         bulkRequestBuilder = this.getClient().prepareBulk();
     }
-
     private void removeBulkFromCache()
     {
         bulkRequestBuilder = null;
     }
-
-    private void init()
+    private void reset() throws IOException
+    {
+        init();
+    }
+    private void init() throws IOException
     {
         // TODO: should check for all indexes. e.g. when new language is created we don't have to remove all indexes
         if (!this.client.admin().indices().exists(new IndicesExistsRequest(getPageIndexName(BlocksConfig.instance().getDefaultLanguage()))).actionGet().isExists()) {
@@ -124,19 +180,10 @@ public class ElasticSearch
             this.client.admin().indices().delete(new DeleteIndexRequest("*")).actionGet();
 
             ClassLoader classLoader = getClass().getClassLoader();
-            String resourceMapping = null;
-            String pageMapping = null;
-            String pathMapping = null;
-            String settings = null;
-            try {
-                resourceMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/resource.json"));
-                pageMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/page.json"));
-                pathMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/path.json"));
-                settings = IOUtils.toString(classLoader.getResourceAsStream("elastic/settings.json"));
-            }
-            catch (Exception e) {
-                Logger.error("Could not read mapings for elastic search", e);
-            }
+            String resourceMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/resource.json"));
+            String pageMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/page.json"));
+            String pathMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/path.json"));
+            String settings = IOUtils.toString(classLoader.getResourceAsStream("elastic/settings.json"));
 
             this.client.admin().indices().prepareCreate(this.getPageIndexName(Locale.ROOT)).setSettings(settings)
                        .addMapping(PersistenceController.WEB_PAGE_CLASS.toLowerCase(),
@@ -144,22 +191,9 @@ public class ElasticSearch
             this.client.admin().indices().prepareCreate(this.getResourceIndexName(Locale.ROOT)).setSettings(settings)
                        .addMapping("_default_", resourceMapping).execute()
                        .actionGet();
-
             this.client.admin().indices().prepareCreate(PersistenceController.PATH_CLASS).setSettings(settings).addMapping(PersistenceController.PATH_CLASS, pathMapping)
                        .execute()
                        .actionGet();
         }
     }
-
-    private void reset()
-    {
-        init();
-    }
-
-    public void flush()
-    {
-        this.client.admin().indices().delete(new DeleteIndexRequest("*")).actionGet();
-        this.reset();
-    }
-
 }
