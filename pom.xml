@@ -52,9 +52,9 @@
             <version>3.3.2</version>
         </dependency>
         <dependency>
-            <groupId>org.webjars</groupId>
+            <groupId>com.beligum.webjars</groupId>
             <artifactId>jquery</artifactId>
-            <version>1.11.1</version>
+            <version>1.11.1-PATCHED-1987</version>
         </dependency>
         <dependency>
             <groupId>org.webjars</groupId>

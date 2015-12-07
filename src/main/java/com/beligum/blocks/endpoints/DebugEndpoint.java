@@ -2,7 +2,6 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.server.RequestContext;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import com.beligum.blocks.search.ElasticSearch;
 import com.beligum.blocks.security.Permissions;
@@ -16,7 +15,6 @@ import org.joda.time.LocalDateTime;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
-import java.util.Locale;
 
 /**
  * Created by bas on 27.01.15.
@@ -56,10 +54,11 @@ public class DebugEndpoint
         RequestContext.getEntityManager().createNativeQuery("delete from path where id > 0").executeUpdate();
 
         IndicesAdminClient esIndicesClient = ElasticSearch.instance().getClient().admin().indices();
-        for (Locale locale : BlocksConfig.instance().getLanguages().values()) {
-            esIndicesClient.prepareCreate(ElasticSearch.instance().getPageIndexName(locale)).setSettings(settings).addMapping(PersistenceController.WEB_PAGE_CLASS,pageMapping).execute().actionGet();
-            esIndicesClient.prepareCreate(ElasticSearch.instance().getResourceIndexName(locale)).setSettings(settings).addMapping("_default_",resourceMapping).execute().actionGet();
-        }
+        //there used to be an index for every language, but not anymore
+        //for (Locale locale : BlocksConfig.instance().getLanguages().values()) {
+        esIndicesClient.prepareCreate(ElasticSearch.instance().getPageIndexName(null)).setSettings(settings).addMapping(PersistenceController.WEB_PAGE_CLASS,pageMapping).execute().actionGet();
+        esIndicesClient.prepareCreate(ElasticSearch.instance().getResourceIndexName(null)).setSettings(settings).addMapping("_default_",resourceMapping).execute().actionGet();
+        //}
 
         esIndicesClient.prepareCreate(PersistenceController.PATH_CLASS).setSettings(settings).addMapping(PersistenceController.PATH_CLASS, pathMapping).execute().actionGet();
 

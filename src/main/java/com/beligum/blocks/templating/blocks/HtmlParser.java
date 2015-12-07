@@ -580,7 +580,14 @@ public class HtmlParser extends AbstractAssetParser
             else {
                 //TODO: check the commented exception below, do we want this to be an exception?
                 retVal = attributeValue;
-                Logger.warn("Encountered attribute '"+attributeValue+"' in tag '"+tag.getStartTag().toString()+"' around line "+source.getRow(tag.getStartTag().getBegin())+" that is not connected to any vocabulary or ontology and is in fact invalid." + template.getAbsolutePath());
+
+                int row = -1;
+                try {
+                    //hmm, this seems to happen sometimes...
+                    row = source.getRow(tag.getStartTag().getBegin());
+                }
+                catch (IndexOutOfBoundsException e) {}
+                Logger.warn("Encountered attribute '"+attributeValue+"' in tag '"+tag.getStartTag().toString()+"' around line "+row+" that is not connected to any vocabulary or ontology and is in fact invalid; " + template.getAbsolutePath());
                 //throw new Exception("Encountered attribute '"+attributeValue+"' in tag '"+tag.getStartTag().toString()+"' around line "+source.getRow(tag.getStartTag().getBegin())+" that is not connected to any vocabulary or ontology. As much as I want to allow this, I can't; " + template.getAbsolutePath());
             }
         }

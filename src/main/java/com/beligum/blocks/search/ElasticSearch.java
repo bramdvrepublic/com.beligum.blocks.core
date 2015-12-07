@@ -65,24 +65,22 @@ public class ElasticSearch
 
     public String getPageIndexName(Locale locale)
     {
-        String retVal = "page";
-        if (locale != null && locale != Locale.ROOT) {
-            retVal = retVal + "_" + locale.getLanguage();
-        }
-        //used to be this??
-        //return "page";
-        return retVal;
+//        String retVal = "page";
+//        if (locale != null && locale != Locale.ROOT) {
+//            retVal = retVal + "_" + locale.getLanguage();
+//        }
+
+        return "page";
     }
 
     public String getResourceIndexName(Locale locale)
     {
-        String retVal = "resource";
-        if (locale != null && locale != Locale.ROOT) {
-            retVal = retVal + "_" + locale.getLanguage();
-        }
-        //used to be this??
-        //return "resource";
-        return retVal;
+//        String retVal = "resource";
+//        if (locale != null && locale != Locale.ROOT) {
+//            retVal = retVal + "_" + locale.getLanguage();
+//        }
+
+        return "resource";
     }
 
     // Start a bulk transaction for this request

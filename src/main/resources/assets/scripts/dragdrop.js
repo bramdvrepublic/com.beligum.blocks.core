@@ -240,21 +240,34 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                         if (waitingDialog) {
                             waitingDialog.open();
                         }
+
                         $.getJSON("/blocks/admin/page/block/" + name)
                             .done(function (data)
                             {
                                 addHeadResource(data.inlineStyles, name + "-in-style");
                                 addHeadResource(data.externalStyles, name + "-ex-style");
 
-                                var block = $(data.html);
-                                Hover.removeHoverOverlays();
-                                resetDragDrop();
-                                cancelled = false;
-                                Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side, function onComplete()
-                                {
-                                    addHeadResource(data.inlineScripts, name + "-in-script", true);
-                                    addHeadResource(data.externalScripts, name + "-ex-script", true);
-                                });
+                                if (data.html && data.html!=="") {
+                                    // whow, this is weird stuff!
+                                    // Originally just $(data.html), but docs say the current version is safer.
+                                    // Problem was it failed with certains custom elements:
+                                    // th-search didn't work, where div-search did work.
+                                    // Seems to be a bug in JQuery: https://github.com/jquery/jquery/issues/1987
+                                    // Fixed with a patched version (see pom.xml)
+                                    var block = $($.parseHTML($.trim(data.html)));
+
+                                    Hover.removeHoverOverlays();
+                                    resetDragDrop();
+                                    cancelled = false;
+                                    Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side, function onComplete()
+                                    {
+                                        addHeadResource(data.inlineScripts, name + "-in-script", true);
+                                        addHeadResource(data.externalScripts, name + "-ex-script", true);
+                                    });
+                                }
+                                else {
+                                    Notification.error(BlocksMessages.newBlockError, data);
+                                }
                             })
                             .fail(function (xhr, textStatus, exception)
                             {
