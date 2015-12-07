@@ -63,10 +63,8 @@ public class PageEndpoint
     @POST
     @Path("/save/{url:.*}")
     @Consumes(MediaType.APPLICATION_JSON)
-    // @bulk:  if true, we have to flusht the bulk upload to ElasticSearch (used during import)
-    public Response savePage(@PathParam("url") String url, @QueryParam("bulk") boolean bulk, String content)
-                    throws Exception
-
+    // @bulk:  if true, we have to flush the bulk upload to ElasticSearch (used during import)
+    public Response savePage(@PathParam("url") String url, @QueryParam("bulk") @DefaultValue("false") boolean bulk, String content) throws Exception
     {
         URI uri = new URI(url);
         // Analyze the url to find the correct Route
@@ -92,9 +90,7 @@ public class PageEndpoint
         WebPage localizedWebpage = PersistenceControllerImpl.instance().getWebPage(blockId, route.getLocale());
         // if this page does not yet exist -> create
         if (localizedWebpage == null) {
-            localizedWebpage =
-                            ResourceFactoryImpl.instance()
-                                               .createWebPage(blockId, route.getLocale());
+            localizedWebpage = ResourceFactoryImpl.instance().createWebPage(blockId, route.getLocale());
         }
         else {
             doVersion = true;

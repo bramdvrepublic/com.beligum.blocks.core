@@ -178,20 +178,12 @@ public class BlocksConfig
 
     public String getElasticSearchHostName()
     {
-        String retVal = R.configuration().getString("blocks.core.elastic-search.host");
-        if (retVal == null) {
-            retVal = "localhost";
-        }
-        return retVal;
+        return R.configuration().getString("blocks.core.elastic-search.host", "localhost");
     }
 
     public Integer getElasticSearchPort()
     {
-        Integer retVal = R.configuration().getInt("blocks.core.elastic-search.port");
-        if (retVal == null) {
-            retVal = 9300;
-        }
-        return retVal;
+        return R.configuration().getInt("blocks.core.elastic-search.port", 9000);
     }
 
     public HashMap<String, String> getElasticSearchProperties()

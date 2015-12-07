@@ -36,7 +36,6 @@ public class RdfTools
     * */
     public static URI createLocalResourceId(String type, String id)
     {
-
         return UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path(ParserConstants.RESOURCE_ENDPOINT).path(type.toLowerCase()).path(id).build();
     }
 

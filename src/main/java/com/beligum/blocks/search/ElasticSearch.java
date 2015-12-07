@@ -69,7 +69,9 @@ public class ElasticSearch
         if (locale != null && locale != Locale.ROOT) {
             retVal = retVal + "_" + locale.getLanguage();
         }
-        return "page";
+        //used to be this??
+        //return "page";
+        return retVal;
     }
 
     public String getResourceIndexName(Locale locale)
@@ -78,7 +80,9 @@ public class ElasticSearch
         if (locale != null && locale != Locale.ROOT) {
             retVal = retVal + "_" + locale.getLanguage();
         }
-        return "resource";
+        //used to be this??
+        //return "resource";
+        return retVal;
     }
 
     // Start a bulk transaction for this request

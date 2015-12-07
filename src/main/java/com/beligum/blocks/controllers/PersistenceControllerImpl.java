@@ -54,8 +54,7 @@ public class PersistenceControllerImpl implements PersistenceController
         // Because ES only updates every second, we have to take the page from the real DB
         // when user can modify the page
         if (!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
-            QueryBuilder query = QueryBuilders
-                            .boolQuery().must(QueryBuilders.matchQuery("master_page", blockId.toString())).must(QueryBuilders.matchQuery(ParserConstants.JSONLD_LANGUAGE, locale.getLanguage()));
+            QueryBuilder query = QueryBuilders.boolQuery().must(QueryBuilders.matchQuery("master_page", blockId.toString())).must(QueryBuilders.matchQuery(ParserConstants.JSONLD_LANGUAGE, locale.getLanguage()));
             SearchResponse searchResponse = ElasticSearch.instance().getClient().prepareSearch(ElasticSearch.instance().getPageIndexName(locale)).setQuery(query).execute().actionGet();
 
             if (searchResponse.getHits().getHits().length > 0) {

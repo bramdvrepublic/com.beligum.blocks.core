@@ -12,6 +12,9 @@
                 <label>$I18N.blocks.core.selectFromTheListBelow</label>
 
                 <div class="list-group">
+                    #if($templates.isEmpty())
+                        <i>$I18N.blocks.core.noPageTemplatesAvailable</i>
+                    #end
                     #foreach($template in $templates)
                         <a href="/blocks/admin/page/template?page_url=$TOOLKIT.esc.url($url)&page_class_name=$TOOLKIT.esc.url($template.get("name"))" class="list-group-item">
                             <div class="preview">
