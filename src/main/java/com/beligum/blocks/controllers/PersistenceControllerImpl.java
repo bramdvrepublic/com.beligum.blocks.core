@@ -287,12 +287,10 @@ public class PersistenceControllerImpl implements PersistenceController
         ElasticSearch.instance().getBulk().add(ElasticSearch.instance().getClient().prepareIndex(index, type)
                                                             .setSource(json)
                                                             .setId(id).request());
-
     }
 
     private void addPageToLucene(String id, String json, Locale locale)
     {
-
         String name = PersistenceController.WEB_PAGE_CLASS;
         String index = ElasticSearch.instance().getPageIndexName(locale);
         ElasticSearch.instance().getBulk().add(ElasticSearch.instance().getClient().prepareIndex(index, name)
