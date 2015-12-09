@@ -6,6 +6,7 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.PageCache;
 import com.beligum.blocks.config.BlocksConfig;
 import com.beligum.blocks.controllers.PersistenceControllerImpl;
@@ -66,6 +67,8 @@ public class PageEndpoint
     // @bulk:  if true, we have to flush the bulk upload to ElasticSearch (used during import)
     public Response savePage(@PathParam("url") String url, @QueryParam("bulk") @DefaultValue("false") boolean bulk, String content) throws Exception
     {
+        Logger.info("New save page for url "+url+" is coming in; "+content);
+
         URI uri = new URI(url);
         // Analyze the url to find the correct Route
         Route route = new Route(uri, PersistenceControllerImpl.instance());
