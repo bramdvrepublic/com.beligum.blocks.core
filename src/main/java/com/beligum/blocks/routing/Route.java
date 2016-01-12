@@ -1,7 +1,7 @@
 package com.beligum.blocks.routing;
 
 import com.beligum.base.server.R;
-import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import com.beligum.blocks.models.interfaces.WebPath;
@@ -38,7 +38,7 @@ public class Route
         this.database = database;
 
         if (uri == null) {
-            uri = BlocksConfig.instance().getSiteDomain();
+            uri = Settings.instance().getSiteDomain();
         }
         this.uri = uri;
 
@@ -47,13 +47,13 @@ public class Route
         // If not in production set the domain manually (overwrite localhost)
         URI domain = uri;
         if (!R.configuration().getProduction()) {
-            domain = BlocksConfig.instance().getSiteDomain();
+            domain = Settings.instance().getSiteDomain();
         }
 
         this.locale = getLanguageFromPath(currentPath);
         if (locale.equals(Locale.ROOT)) {
             this.simplePath = Paths.get("/").resolve(currentPath).normalize();
-            this.languagedPath = Paths.get("/").resolve(BlocksConfig.instance().getDefaultLanguage().getLanguage()).resolve(this.simplePath).normalize();
+            this.languagedPath = Paths.get("/").resolve(Settings.instance().getDefaultLanguage().getLanguage()).resolve(this.simplePath).normalize();
             this.uri = UriBuilder.fromUri("").scheme(this.uri.getScheme()).userInfo(this.uri.getUserInfo()).host(this.uri.getHost()).port(this.uri.getPort()).path(this.languagedPath.toString())
                                       .replaceQuery(this.uri.getQuery()).fragment(this.uri.getFragment()).build();
         }
@@ -84,8 +84,8 @@ public class Route
             // Check if other languages are linked to this path
             Map<String, WebPath> languagePaths = PersistenceControllerImpl.instance().getLanguagePaths(simplePath.toString());
             if (languagePaths.size() > 0) {
-                if (languagePaths.containsKey(BlocksConfig.instance().getDefaultLanguage().toString())) {
-                    blockId = languagePaths.get(BlocksConfig.instance().getDefaultLanguage().toString()).getBlockId();
+                if (languagePaths.containsKey(Settings.instance().getDefaultLanguage().toString())) {
+                    blockId = languagePaths.get(Settings.instance().getDefaultLanguage().toString()).getBlockId();
                 }
                 else {
                     blockId = languagePaths.values().iterator().next().getBlockId();
@@ -105,7 +105,7 @@ public class Route
                 // check if this path exists, if not create
 
                 // now add paths for other languages
-                for (Locale l : BlocksConfig.instance().getLanguages().values()) {
+                for (Locale l : Settings.instance().getLanguages().values()) {
                     if (!l.equals(locale) && !paths.containsKey(l.getLanguage())) {
                         WebPath webPath = new DBPath(blockId, simplePath, l);
                         PersistenceControllerImpl.instance().savePath(webPath);
@@ -165,7 +165,7 @@ public class Route
         Locale retVal = null;
         if (path.getNameCount() > 0) {
             String lang = path.getName(0).toString();
-            retVal = BlocksConfig.instance().getLanguages().get(lang);
+            retVal = Settings.instance().getLanguages().get(lang);
             if (retVal == null) {
                 retVal = Locale.ROOT;
             }
@@ -186,7 +186,7 @@ public class Route
     //    public WebNode getNodeFromNodeWithPath(WebNode srcNode, Path path, Locale locale)
     //    {
     //        if (locale.equals(Locale.ROOT)) {
-    //            locale = BlocksConfig.instance().getDefaultLanguage();
+    //            locale = Settings.instance().getDefaultLanguage();
     //        }
     //
     //        WebNode currentNode = srcNode;
@@ -197,8 +197,8 @@ public class Route
     //        for (int i =0; i < path.getNameCount(); i++) {
     //            if (currentNode != null) {
     //                WebPath subPath = currentNode.getChildPath(path.getName(i).toString(), locale);
-    //                if (subPath == null && !locale.equals(BlocksConfig.instance().getDefaultLanguage())) {
-    //                    subPath = currentNode.getChildPath(path.getName(i).toString(), BlocksConfig.instance().getDefaultLanguage());
+    //                if (subPath == null && !locale.equals(Settings.instance().getDefaultLanguage())) {
+    //                    subPath = currentNode.getChildPath(path.getName(i).toString(), Settings.instance().getDefaultLanguage());
     //
     //                }
     //                if (subPath != null) {
@@ -225,7 +225,7 @@ public class Route
     //    public WebNode addPathToNode(URI masterpage, Path path, Locale locale)
     //    {
     //        if (locale.equals(Locale.ROOT)) {
-    //            locale = BlocksConfig.instance().getDefaultLanguage();
+    //            locale = Settings.instance().getDefaultLanguage();
     //        }
     //
     //        WebNode retVal = null;

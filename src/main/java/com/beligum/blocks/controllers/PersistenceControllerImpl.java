@@ -2,7 +2,7 @@ package com.beligum.blocks.controllers;
 
 import com.beligum.base.server.RequestContext;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import com.beligum.blocks.models.factories.ResourceFactoryImpl;
@@ -192,7 +192,7 @@ public class PersistenceControllerImpl implements PersistenceController
             pathMap.put(p.getLanguage().getLanguage(), p);
         }
         // now find the best match for the page -> take the order of the languages in the config file
-        for (Locale l : BlocksConfig.instance().getLanguages().values()) {
+        for (Locale l : Settings.instance().getLanguages().values()) {
             if (pathMap.containsKey(l.getLanguage())) {
                 retVal = pathMap.get(l.getLanguage());
                 break;
@@ -324,7 +324,7 @@ public class PersistenceControllerImpl implements PersistenceController
     private void removePageFromLucene(String id)
     {
         String name = PersistenceController.WEB_PAGE_CLASS;
-        for (Locale locale : BlocksConfig.instance().getLanguages().values()) {
+        for (Locale locale : Settings.instance().getLanguages().values()) {
             String index = ElasticSearch.instance().getPageIndexName(locale);
             ElasticSearch.instance().getClient().prepareDelete(index, name, id).execute().actionGet();
         }

@@ -3,7 +3,7 @@ package com.beligum.blocks.search;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import org.apache.commons.io.IOUtils;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -13,7 +13,6 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
@@ -33,7 +32,7 @@ public class ElasticSearch
 
     private ElasticSearch()
     {
-        if (BlocksConfig.instance().getElasticSearchLaunchEmbedded()) {
+        if (Settings.instance().getElasticSearchLaunchEmbedded()) {
             this.client = this.getEmbeddedNode().client();
         }
         else {
@@ -118,7 +117,7 @@ public class ElasticSearch
         Node esNode = (Node) R.cacheManager().getApplicationCache().get(CacheKeys.ELASTIC_SEARCH_NODE);
         if (esNode==null) {
             NodeBuilder nodeBuilder = new NodeBuilder();
-            String clusterName = BlocksConfig.instance().getElasticSearchClusterName();
+            String clusterName = Settings.instance().getElasticSearchClusterName();
 
             //don't really know if this is ok, but since we're launching an embedded node, it makes sense to make it local
             final boolean isLocalNode = true;
@@ -127,7 +126,7 @@ public class ElasticSearch
                 nodeBuilder.settings().put("http.enabled", true);
             }
 
-            HashMap<String, String> extraProperties = BlocksConfig.instance().getElasticSearchProperties();
+            HashMap<String, String> extraProperties = Settings.instance().getElasticSearchProperties();
             if (extraProperties!=null) {
                 for (Map.Entry<String, String> entry : extraProperties.entrySet()) {
                     nodeBuilder.settings().put(entry.getKey(), entry.getValue());
@@ -143,18 +142,18 @@ public class ElasticSearch
     private Client buildRemoteClient()
     {
         Map params = new HashMap();
-        params.put("cluster.name", BlocksConfig.instance().getElasticSearchClusterName());
+        params.put("cluster.name", Settings.instance().getElasticSearchClusterName());
 
-        HashMap<String, String> extraProperties = BlocksConfig.instance().getElasticSearchProperties();
+        HashMap<String, String> extraProperties = Settings.instance().getElasticSearchProperties();
         if (extraProperties!=null) {
             for (Map.Entry<String, String> entry : extraProperties.entrySet()) {
                 params.put(entry.getKey(), entry.getValue());
             }
         }
 
-        Settings settings = ImmutableSettings.settingsBuilder().put(params).build();
-        String hostname = BlocksConfig.instance().getElasticSearchHostName();
-        Integer port = BlocksConfig.instance().getElasticSearchPort();
+        org.elasticsearch.common.settings.Settings settings = ImmutableSettings.settingsBuilder().put(params).build();
+        String hostname = Settings.instance().getElasticSearchHostName();
+        Integer port = Settings.instance().getElasticSearchPort();
 
         return new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(hostname, port));
     }
@@ -177,7 +176,7 @@ public class ElasticSearch
     private void init() throws IOException
     {
         // TODO: should check for all indexes. e.g. when new language is created we don't have to remove all indexes
-        if (!this.client.admin().indices().exists(new IndicesExistsRequest(getPageIndexName(BlocksConfig.instance().getDefaultLanguage()))).actionGet().isExists()) {
+        if (!this.client.admin().indices().exists(new IndicesExistsRequest(getPageIndexName(Settings.instance().getDefaultLanguage()))).actionGet().isExists()) {
             // Delete all to start fresh
             this.client.admin().indices().delete(new DeleteIndexRequest("*")).actionGet();
 

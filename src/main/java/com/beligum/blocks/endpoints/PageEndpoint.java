@@ -1,13 +1,13 @@
 package com.beligum.blocks.endpoints;
 
-///**
-// * Created by bas on 07.10.14.
-// */
+/**
+ * Created by bas on 07.10.14.
+ */
 
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.PageCache;
-import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.Resource;
@@ -28,17 +28,24 @@ import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.hibernate.validator.constraints.NotBlank;
 
 import javax.ws.rs.*;
+import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URI;
+import java.nio.file.*;
 import java.util.*;
 
 @Path("/blocks/admin/page")
 @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
 public class PageEndpoint
 {
+    //-----CONSTANTS-----
     public static final String PAGE_TEMPLATE_NAME = "pageTemplateName";
+    private static final URI ROOT = URI.create("/");
 
+    //-----VARIABLES-----
+
+    //-----PUBLIC METHODS-----
     /**
      * Redirect back to the url where the page has to be created
      * We put the name of the pagetemplate in the flashcache
@@ -62,6 +69,40 @@ public class PageEndpoint
 
     @POST
     @Path("/save/{url:.*}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response savePageNew(@PathParam("url") URI url, String content) throws Exception
+    {
+        Settings settings = Settings.instance();
+
+        //note: the toString is mandatory, otherwise the Path creation fails because there's no scheme
+        //note2: second one is for security
+        String relativeUrlStr = url.getPath();
+        URI relativeUrl = URI.create(relativeUrlStr);
+        //note: we need to make it relative to match the one below
+        relativeUrl = ROOT.relativize(relativeUrl);
+        URI relativeUrlTest = settings.getSiteDomain().relativize(url);
+        if (!relativeUrl.equals(relativeUrlTest)) {
+            throw new SecurityException("Trying to save a page from outside the domain ("+settings.getSiteDomain()+"), can't proceed; "+url);
+        }
+
+        //note: we normalize before resolving for safety
+        //.toString() is needed because we don't have a scheme
+        java.nio.file.Path absPagePath = Paths.get(settings.getPageStorePath().resolve(relativeUrl.normalize()).toString());
+
+        //this is important: if the url ends with a slash, we're actually saving a 'directory', so it doesn't have a name (will become 'index' later on)
+        java.nio.file.Path pageName = null;
+        if (!relativeUrlStr.endsWith("/")) {
+            pageName = absPagePath.getFileName();
+        }
+        java.nio.file.Path pageParent = absPagePath.getParent();
+
+        Files.createDirectories(absPagePath);
+
+        return Response.ok().build();
+    }
+
+    @POST
+    @Path("/saveold/{url:.*}")
     @Consumes(MediaType.APPLICATION_JSON)
     // @bulk:  if true, we have to flush the bulk upload to ElasticSearch (used during import)
     public Response savePage(@PathParam("url") String url, @QueryParam("bulk") @DefaultValue("false") boolean bulk, String content) throws Exception
@@ -160,7 +201,7 @@ public class PageEndpoint
     {
         TemplateCache cache = HtmlParser.getTemplateCache();
         List<Map<String, String>> templates = new ArrayList<>();
-        Locale lang = BlocksConfig.instance().getRequestDefaultLanguage();
+        Locale lang = Settings.instance().getRequestDefaultLanguage();
         for (HtmlTemplate template : cache.values()) {
             if (!(template instanceof PageTemplate) && template.getDisplayType() != HtmlTemplate.MetaDisplayType.HIDDEN) {
                 HashMap<String, String> pageTemplate = new HashMap();
@@ -168,7 +209,7 @@ public class PageEndpoint
                 String description = null;
                 String icon = null;
 
-                final Locale[] LANGS = { lang, BlocksConfig.instance().getDefaultLanguage(), Locale.ROOT };
+                final Locale[] LANGS = { lang, Settings.instance().getDefaultLanguage(), Locale.ROOT };
 
                 // TODO make defaults a translation
                 pageTemplate.put("name", template.getTemplateName());
@@ -217,9 +258,7 @@ public class PageEndpoint
     @DELETE
     @Path("/delete")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response deletePage(String url)
-                    throws Exception
-
+    public Response deletePage(String url) throws Exception
     {
         URI uri = new URI(url);
         Route route = new Route(uri, PersistenceControllerImpl.instance());
@@ -231,6 +270,7 @@ public class PageEndpoint
         return Response.ok().build();
     }
 
+    //-----PRIVATE METHODS-----
     private String findI18NValue(Locale[] langs, Map<Locale, String> values, String defaultValue)
     {
         String retVal = null;

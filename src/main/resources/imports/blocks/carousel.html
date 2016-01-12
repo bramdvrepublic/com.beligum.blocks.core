@@ -2,14 +2,26 @@
 <meta property="blocks:description" content="A carousel or slideshow for images" lang="en">
 <meta property="blocks:icon" content="fa-file-image-o">
 
-<link href="/assets/webjars/bootstrap-slider/4.8.3/css/bootstrap-slider.css" rel="stylesheet"/>
+## Not needed anymore?
+##<link href="/assets/webjars/bootstrap-slider/4.8.3/css/bootstrap-slider.css" rel="stylesheet"/>
 <link href="/assets/styles/imports/blocks-carousel.less" rel="stylesheet"/>
 
-<script src="/assets/webjars/bootstrap-slider/4.8.3/bootstrap-slider.js" type="application/javascript"></script>
+## Not needed anymore?
+##<script src="/assets/webjars/bootstrap-slider/4.8.3/bootstrap-slider.js" type="application/javascript"></script>
 <script src="/assets/scripts/imports/blocks-carousel.js" type="application/javascript" data-scope-role="admin"></script>
 
+## we need this to be outside of the file above because it should always be called (also outside of the data-scope-role))
+## Note that this is needed to auto-activate the carousel on page load
+<script type="application/javascript">
+    //init the carousels on the page
+    $(document).ready(function ()
+    {
+        $('.carousel').carousel({});
+    });
+</script>
+
 ## widget needs the scripts of blocks-image (TODO refactor this in one file?)
-<script src="/assets/scripts/imports/blocks-image.js" data-scope-role="admin" type="application/javascript"></script>
+<script src="/assets/scripts/imports/blocks-image.js" type="application/javascript" data-scope-role="admin"></script>
 
 ## widget needs the scripts of blocks-text (TODO refactor this in one file?)
 <script src="/assets/scripts/imports/blocks-text/medium/medium-editor.js" type="application/javascript" data-scope-role="admin"></script>
@@ -24,7 +36,7 @@
     #constants('blocks.core')
 ## note: the data-interval false needs to be there to fix an editing bug (where a paused carousel starts cycling again after clicking an arrow))
 ## keyboard was disabled because it messed with the editor
-    <div id="carousel-123" class="carousel slide" data-interval="false" data-keyboard="false">
+    <div id="carousel-123" class="carousel slide" data-interval="$CONSTANTS.blocks.core.CAROUSEL_DEFAULT_INTERVAL_MS" data-keyboard="false">
         <!-- Indicators -->
         <ol class="carousel-indicators">
             #if ($PROPERTY['image'])
@@ -74,5 +86,6 @@
             <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
             <span class="sr-only">Next</span>
         </a>
+
     </div>
 </template>

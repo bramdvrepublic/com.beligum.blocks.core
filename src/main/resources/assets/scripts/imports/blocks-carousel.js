@@ -20,14 +20,14 @@ base.plugin("blocks.imports.BlocksCarousel", ["base.core.Class", "blocks.imports
         //-----IMPLEMENTED METHODS-----
         init: function ()
         {
-            //init the carousels on the page
-            $(document).ready(function ()
-            {
-                $('.carousel').carousel({
-                    interval: BlocksConstants.CAROUSEL_DEFAULT_INTERVAL_MS,
-                    keyboard: false //messes with the UI
-                });
-            });
+            // Already done outside of this class (see carousel.html), need to do it here too
+            //$(document).ready(function ()
+            //{
+            //    $('.carousel').carousel({
+            //        interval: BlocksConstants.CAROUSEL_DEFAULT_INTERVAL_MS,
+            //        keyboard: false //messes with the UI
+            //    });
+            //});
         },
         focus: function (block, element, hotspot, event)
         {

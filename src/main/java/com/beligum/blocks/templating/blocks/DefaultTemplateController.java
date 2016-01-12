@@ -1,7 +1,7 @@
 package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.server.RequestContext;
-import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.config.Settings;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -43,12 +43,12 @@ public abstract class DefaultTemplateController implements TemplateController
         Locale retVal = null;
         java.nio.file.Path path = Paths.get(currentURI.getPath());
         if (path.getNameCount() > 0) {
-            retVal = BlocksConfig.instance().getLocaleForLanguage(path.getName(0).toString());
+            retVal = Settings.instance().getLocaleForLanguage(path.getName(0).toString());
         }
 
         // if no language is found use default language
         if (retVal == null) {
-            retVal = BlocksConfig.instance().getDefaultLanguage();
+            retVal = Settings.instance().getDefaultLanguage();
         }
 
         return retVal;

@@ -6,7 +6,7 @@ import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.templating.ifaces.TemplateContext;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.caching.PageCache;
-import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import com.beligum.blocks.endpoints.PageEndpoint;
 import com.beligum.blocks.models.interfaces.WebPage;
@@ -81,9 +81,9 @@ public class HtmlRouter extends AbstractRouter
                             description = template.getDescriptions().get(this.route.getLocale());
                         }
                         // default getLanguage of the site
-                        else if (template.getTitles().containsKey(BlocksConfig.instance().getDefaultLanguage())) {
-                            title = template.getTitles().get(BlocksConfig.instance().getDefaultLanguage());
-                            description = template.getDescriptions().get(BlocksConfig.instance().getDefaultLanguage());
+                        else if (template.getTitles().containsKey(Settings.instance().getDefaultLanguage())) {
+                            title = template.getTitles().get(Settings.instance().getDefaultLanguage());
+                            description = template.getDescriptions().get(Settings.instance().getDefaultLanguage());
                         }
                         // No getLanguage if available
                         else if (template.getTitles().containsKey(Locale.ROOT)) {

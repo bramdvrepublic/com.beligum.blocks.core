@@ -20,9 +20,9 @@ import java.util.*;
 /**
  * Created by bas on 08.10.14.
  */
-public class BlocksConfig
+public class Settings
 {
-    public static BlocksConfig instance;
+    public static Settings instance;
     public static final String PROJECT_VERSION_KEY = "appVersion";
     public static final String PROPERTIES_FILE = "blocks.properties";
 
@@ -32,35 +32,87 @@ public class BlocksConfig
      * the languages this site can work with, ordered from most preferred languages, to less preferred
      */
     private LinkedHashMap<String, Locale> cachedLanguages;
-    private Locale defaultLanguage;
+    private Locale cachedDefaultLanguage;
     public String projectVersion = null;
-    private URI siteDomain;
+    private URI cachedSiteDomain;
     private URI defaultRdfSchema;
+    private URI cachedPageStorePath;
     protected HashMap<String, String> cachedEsProperties = null;
 
-    private BlocksConfig()
+    private Settings()
     {
     }
 
-    public static BlocksConfig instance()
+    public static Settings instance()
     {
-        if (BlocksConfig.instance == null) {
-            BlocksConfig.instance = new BlocksConfig();
+        if (Settings.instance == null) {
+            Settings.instance = new Settings();
         }
-        return BlocksConfig.instance;
+        return Settings.instance;
     }
 
     public URI getSiteDomain()
     {
-        if (this.siteDomain == null) {
+        if (this.cachedSiteDomain == null) {
             try {
-                this.siteDomain = new URI(getConfiguration("blocks.core.site.domain"));
+                this.cachedSiteDomain = new URI(getConfiguration("blocks.core.domain"));
             }
             catch (Exception e) {
-                Logger.error("Site domain in blocks config is not valid. We return null");
+                throw new RuntimeException("Site domain in blocks config is not valid. This setting is vital, can't proceed.");
             }
         }
-        return this.siteDomain;
+
+        return this.cachedSiteDomain;
+    }
+    /**
+     * @return The languages this site can work with, ordered from most preferred getLanguage, to less preferred. If no such languages are specified in the configuration xml, an array with a default getLanguage is returned.
+     */
+    public LinkedHashMap<String, Locale> getLanguages()
+    {
+        if (cachedLanguages == null) {
+            cachedLanguages = new LinkedHashMap<>();
+            ArrayList<String> cachedLanguagesTemp = new ArrayList<String>(Arrays.asList(R.configuration().getStringArray("blocks.core.languages")));
+
+            for (String l : cachedLanguagesTemp) {
+
+                Locale locale = new Locale(l);
+                if (this.cachedDefaultLanguage == null)
+                    this.cachedDefaultLanguage = locale;
+                //                String getLanguage = locale;
+                cachedLanguages.put(locale.getLanguage(), locale);
+            }
+            if (cachedLanguages.size() == 0) {
+                this.cachedDefaultLanguage = Locale.ENGLISH;
+                cachedLanguages.put(cachedDefaultLanguage.getLanguage(), cachedDefaultLanguage);
+            }
+        }
+        return cachedLanguages;
+    }
+    /**
+     * @return The first languages in the languages-list, or the no-getLanguage-constant if no such list is present in the configuration-xml.
+     */
+    public Locale getDefaultLanguage()
+    {
+        if (cachedDefaultLanguage == null) {
+            this.getLanguages();
+        }
+        return cachedDefaultLanguage;
+    }
+    public Locale getLocaleForLanguage(String language)
+    {
+        Locale retVal = this.getDefaultLanguage();
+        if (this.cachedLanguages.containsKey(language)) {
+            retVal = this.cachedLanguages.get(language);
+        }
+        return retVal;
+    }
+    public URI getPageStorePath()
+    {
+        if (this.cachedPageStorePath == null) {
+            this.cachedPageStorePath = URI.create(getConfiguration("blocks.core.page-store-path"));
+        }
+
+        return this.cachedPageStorePath;
     }
 
     public URI getDefaultRdfSchema()
@@ -102,41 +154,6 @@ public class BlocksConfig
         }
         return projectVersion;
     }
-
-    /**
-     * @return The languages this site can work with, ordered from most preferred getLanguage, to less preferred. If no such languages are specified in the configuration xml, an array with a default getLanguage is returned.
-     */
-    public LinkedHashMap<String, Locale> getLanguages()
-    {
-        if (cachedLanguages == null) {
-            cachedLanguages = new LinkedHashMap<>();
-            ArrayList<String> cachedLanguagesTemp = new ArrayList<String>(Arrays.asList(R.configuration().getStringArray("blocks.core.site.languages")));
-
-            for (String l : cachedLanguagesTemp) {
-
-                Locale locale = new Locale(l);
-                if (this.defaultLanguage == null)
-                    this.defaultLanguage = locale;
-                //                String getLanguage = locale;
-                cachedLanguages.put(locale.getLanguage(), locale);
-            }
-            if (cachedLanguages.size() == 0) {
-                this.defaultLanguage = Locale.ENGLISH;
-                cachedLanguages.put(defaultLanguage.getLanguage(), defaultLanguage);
-            }
-        }
-        return cachedLanguages;
-    }
-
-    public Locale getLocaleForLanguage(String language)
-    {
-        Locale retVal = this.getDefaultLanguage();
-        if (this.cachedLanguages.containsKey(language)) {
-            retVal = this.cachedLanguages.get(language);
-        }
-        return retVal;
-    }
-
     public String getCurrentUserName()
     {
         Principal currentPrincipal;
@@ -153,17 +170,6 @@ public class BlocksConfig
         catch (UnavailableSecurityManagerException e) {
             return DatabaseConstants.SERVER_START_UP;
         }
-    }
-
-    /**
-     * @return The first languages in the languages-list, or the no-getLanguage-constant if no such list is present in the configuration-xml.
-     */
-    public Locale getDefaultLanguage()
-    {
-        if (defaultLanguage == null) {
-            this.getLanguages();
-        }
-        return defaultLanguage;
     }
 
     public boolean getElasticSearchLaunchEmbedded()
@@ -207,7 +213,7 @@ public class BlocksConfig
         List<Locale> languages = RequestContext.getJaxRsRequest().getAcceptableLanguages();
         while (retVal == null && languages.iterator().hasNext()) {
             Locale loc = languages.iterator().next();
-            if (BlocksConfig.instance().getLocaleForLanguage(loc.getLanguage()) != null) {
+            if (Settings.instance().getLocaleForLanguage(loc.getLanguage()) != null) {
                 retVal = loc;
             }
         }

@@ -43,19 +43,26 @@ base.plugin("blocks.imports.Page", ["base.core.Class", "blocks.imports.Widget", 
             pageActions.append('<hr>');
 
             //initialize the newBlock popover
+            //Note that the popover might not be added to the DOM yet if things load fast (hence the timeout)
             $(document).ready(function ()
             {
-                var popover = newBlock.find('[data-toggle="popover"]').popover({
-                    container: 'body'
-                });
-                popover.on('shown.bs.popover', function ()
+                setTimeout(function ()
                 {
-                    var $pop = $(this);
-                    setTimeout(function ()
-                    {
-                        $pop.popover('hide');
-                    }, 2000);
-                });
+                    var pops = newBlock.find('[data-toggle="popover"]');
+                    if (pops) {
+                        pops.popover({
+                            container: 'body'
+                        });
+                        pops.on('shown.bs.popover', function ()
+                        {
+                            var _this = $(this);
+                            setTimeout(function ()
+                            {
+                                _this.popover('hide');
+                            }, 2000);
+                        });
+                    }
+                }, 1000);
             });
 
             retVal.push(pageActions);

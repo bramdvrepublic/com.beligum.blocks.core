@@ -1,6 +1,6 @@
 package com.beligum.blocks.utils;
 
-import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.exceptions.RdfException;
 
@@ -36,7 +36,7 @@ public class RdfTools
     * */
     public static URI createLocalResourceId(String type, String id)
     {
-        return UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path(ParserConstants.RESOURCE_ENDPOINT).path(type.toLowerCase()).path(id).build();
+        return UriBuilder.fromUri(Settings.instance().getSiteDomain()).path(ParserConstants.RESOURCE_ENDPOINT).path(type.toLowerCase()).path(id).build();
     }
 
     /*
@@ -53,7 +53,7 @@ public class RdfTools
     * */
     public static URI makeLocalAbsolute(String relativePath)
     {
-        return addToUri(BlocksConfig.instance().getDefaultRdfSchema(), relativePath);
+        return addToUri(Settings.instance().getDefaultRdfSchema(), relativePath);
     }
 
     /*
@@ -68,22 +68,22 @@ public class RdfTools
 
         if (relativePath.startsWith("/"))
             relativePath = relativePath.substring(1);
-        String fragment = BlocksConfig.instance().getDefaultRdfSchema().getFragment();
+        String fragment = Settings.instance().getDefaultRdfSchema().getFragment();
         if (fragment == null) {
             Path path = Paths.get(uri.getPath());
             path = path.resolve(relativePath).normalize();
-            retVal = UriBuilder.fromUri(BlocksConfig.instance().getDefaultRdfSchema()).replacePath(path.toString()).build();
+            retVal = UriBuilder.fromUri(Settings.instance().getDefaultRdfSchema()).replacePath(path.toString()).build();
         }
         // Add to fragment
         else {
             fragment = fragment.trim();
             if (fragment.equals("")) {
-                retVal = UriBuilder.fromUri(BlocksConfig.instance().getDefaultRdfSchema()).fragment(relativePath).build();
+                retVal = UriBuilder.fromUri(Settings.instance().getDefaultRdfSchema()).fragment(relativePath).build();
             }
             else {
                 if (!fragment.endsWith("/"))
                     fragment = fragment + "/";
-                retVal = UriBuilder.fromUri(BlocksConfig.instance().getDefaultRdfSchema()).fragment(fragment + relativePath).build();
+                retVal = UriBuilder.fromUri(Settings.instance().getDefaultRdfSchema()).fragment(fragment + relativePath).build();
             }
         }
 

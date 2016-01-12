@@ -2,7 +2,7 @@ package com.beligum.blocks.pages;
 
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import com.beligum.blocks.exceptions.RdfException;
 import com.beligum.blocks.models.factories.ResourceFactoryImpl;
@@ -72,7 +72,7 @@ public class WebPageParser
         this.source = new Source(source);
         this.source.fullSequentialParse();
         this.database = database;
-        this.vocab = BlocksConfig.instance().getDefaultRdfSchema();
+        this.vocab = Settings.instance().getDefaultRdfSchema();
         this.pageTitle = I18nFactory.instance().getResourceBundle(locale).get(core.Entries.defaultPageTitle);
         Element base = this.source.getFirstElement("base");
         this.setBase(base, uri);
@@ -420,7 +420,7 @@ public class WebPageParser
             this.base = UriBuilder.fromUri(this.base).replacePath("").build();
         }
         else {
-            this.base = cleanUri(BlocksConfig.instance().getSiteDomain());
+            this.base = cleanUri(Settings.instance().getSiteDomain());
         }
     }
 

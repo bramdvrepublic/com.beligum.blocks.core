@@ -1,7 +1,7 @@
 package com.beligum.blocks.models.jackson;
 
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.models.ReferenceNode;
 import com.beligum.blocks.models.ResourceImpl;
@@ -143,7 +143,7 @@ public class NodeDeserializer extends JsonDeserializer<Resource>
             if (jsonNode.has(ParserConstants.JSONLD_VALUE)) {
                 Locale locale = Locale.ROOT;
                 if (jsonNode.has(ParserConstants.JSONLD_LANGUAGE)) {
-                    Locale l = BlocksConfig.instance().getLocaleForLanguage(jsonNode.get(ParserConstants.JSONLD_LANGUAGE).asText());
+                    Locale l = Settings.instance().getLocaleForLanguage(jsonNode.get(ParserConstants.JSONLD_LANGUAGE).asText());
                     locale = l != null ? l : locale;
                 }
                 retVal = ResourceFactoryImpl.instance().createNode(jsonNode.get(ParserConstants.JSONLD_VALUE).asText(), locale);
@@ -158,7 +158,7 @@ public class NodeDeserializer extends JsonDeserializer<Resource>
             else {
                 Iterator<String> fieldNames = jsonNode.fieldNames();
                 while (fieldNames.hasNext()) {
-                    Locale locale = BlocksConfig.instance().getLocaleForLanguage(fieldNames.next());
+                    Locale locale = Settings.instance().getLocaleForLanguage(fieldNames.next());
                     if (locale != null && jsonNode.get(locale.getLanguage()).isArray()) {
                         parseList(jsonNode.get(locale.getLanguage()), resource, field);
                     }

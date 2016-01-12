@@ -1,6 +1,6 @@
 package com.beligum.blocks.models.jackson.path;
 
-import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.models.sql.DBPath;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -35,7 +35,7 @@ public class PathDeserializer extends JsonDeserializer<DBPath>
                 masterPage = UriBuilder.fromUri(node.get("blockId").asText()).build();
             }
             Path url = Paths.get(node.get("url").asText());
-            Locale locale = BlocksConfig.instance().getLocaleForLanguage(node.get("language").asText());
+            Locale locale = Settings.instance().getLocaleForLanguage(node.get("language").asText());
             retVal = new DBPath(masterPage, url, locale);
             retVal.setStatusCode(node.get("statuscode").asInt());
         }

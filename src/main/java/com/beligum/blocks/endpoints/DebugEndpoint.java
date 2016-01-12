@@ -55,7 +55,7 @@ public class DebugEndpoint
 
         IndicesAdminClient esIndicesClient = ElasticSearch.instance().getClient().admin().indices();
         //there used to be an index for every language, but not anymore
-        //for (Locale locale : BlocksConfig.instance().getLanguages().values()) {
+        //for (Locale locale : Settings.instance().getLanguages().values()) {
         esIndicesClient.prepareCreate(ElasticSearch.instance().getPageIndexName(null)).setSettings(settings).addMapping(PersistenceController.WEB_PAGE_CLASS,pageMapping).execute().actionGet();
         esIndicesClient.prepareCreate(ElasticSearch.instance().getResourceIndexName(null)).setSettings(settings).addMapping("_default_",resourceMapping).execute().actionGet();
         //}
@@ -74,7 +74,7 @@ public class DebugEndpoint
     //                    String getLanguage) throws Exception
     //    {
     //        if (StringUtils.isEmpty(getLanguage)) {
-    //            getLanguage = BlocksConfig.instance().getDefaultLanguage();
+    //            getLanguage = Settings.instance().getDefaultLanguage();
     //        }
     //        PageTemplate pageTemplate = Blocks.templateCache().getPageTemplate(pageTemplateName);
     //        Template template = pagetemplate.get().getNewTemplate();
@@ -102,7 +102,7 @@ public class DebugEndpoint
     //    public Response getBlueprintPage(@PathParam("blueprintName") String blueprintName, @QueryParam("lang") String getLanguage) throws Exception
     //    {
     //        if (StringUtils.isEmpty(getLanguage)) {
-    //            getLanguage = BlocksConfig.instance().getDefaultLanguage();
+    //            getLanguage = Settings.instance().getDefaultLanguage();
     //        }
     //        Blueprint blueprintObj = Blocks.templateCache().getBlueprint(blueprintName);
     //        Template template = blueprint.get().getNewTemplate();
@@ -112,7 +112,7 @@ public class DebugEndpoint
     //        template.set("activeLanguage", getLanguage);
     //        //TODO: rendering should include links ands scripts for full view of blueprint
     //        BlocksTemplateRenderer renderer = Blocks.factory().createTemplateRenderer();
-    //        template.set("src", renderer.render(blueprintObj, null, BlocksConfig.instance().getDefaultLanguage()));
+    //        template.set("src", renderer.render(blueprintObj, null, Settings.instance().getDefaultLanguage()));
     //        return Response.ok(template).build();
     //    }
     //
@@ -120,7 +120,7 @@ public class DebugEndpoint
     //    @Path("/sitemap")
     //    public Response viewSiteMap(@QueryParam("lang") String getLanguage) throws UrlIdMappingException
     //    {
-    //        ArrayList<String> languages = BlocksConfig.instance().getLanguages();
+    //        ArrayList<String> languages = Settings.instance().getLanguages();
     //
     //        Template template = sitemap.get().getNewTemplate();
     //        BlocksUrlDispatcher sitemap = Blocks.urlDispatcher();
@@ -136,7 +136,7 @@ public class DebugEndpoint
     //    public Response getBlueprintsCache(@QueryParam("lang") String getLanguage) throws Exception
     //    {
     //        if (getLanguage == null)
-    //            getLanguage = BlocksConfig.instance().getDefaultLanguage();
+    //            getLanguage = Settings.instance().getDefaultLanguage();
     //
     //        String cache = "";
     //        for (Blueprint blueprint : Blocks.templateCache().getBlueprints()) {
@@ -151,7 +151,7 @@ public class DebugEndpoint
     //    public Response getPageTemplateCache(@QueryParam("lang") String getLanguage) throws Exception
     //    {
     //        if (getLanguage == null)
-    //            getLanguage = BlocksConfig.instance().getDefaultLanguage();
+    //            getLanguage = Settings.instance().getDefaultLanguage();
     //
     //        String cache = "";
     //        for (PageTemplate pageTemplate : Blocks.templateCache().getPageTemplates()) {
@@ -184,7 +184,7 @@ public class DebugEndpoint
     //    //        }
     //    //        else if(template instanceof PageTemplate){
     //    //            Blueprint defaultBlueprint = BlueprintsCache.getInstance().get(ParserConstants.DEFAULT_BLUEPRINT);
-    //    //            return Response.ok(TemplateParser.renderTemplate(TemplateParser.parse(template.getTemplate()), BlocksConfig.instance().getSiteDomainUrl(), id.getLanguage(), template.getLinks(), template.getScripts()).outerHtml()).build();
+    //    //            return Response.ok(TemplateParser.renderTemplate(TemplateParser.parse(template.getTemplate()), Settings.instance().getSiteDomainUrl(), id.getLanguage(), template.getLinks(), template.getScripts()).outerHtml()).build();
     //    //        }
     //    //        else{
     //    //            return Response.ok(TemplateParser.renderTemplate(template, id.getLanguage())).build();
@@ -303,7 +303,7 @@ public class DebugEndpoint
     //        if (!StringUtils.isEmpty(fragment)) {
     //            resourcePath += "#" + fragment;
     //        }
-    //        return new URL(BlocksConfig.instance().getSiteDomain() + "/" + resourcePath);
+    //        return new URL(Settings.instance().getSiteDomain() + "/" + resourcePath);
     //    }
     //
     //    private Class<? extends AbstractTemplate> determineType(String typeName){

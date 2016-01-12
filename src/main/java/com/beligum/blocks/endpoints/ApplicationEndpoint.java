@@ -2,7 +2,7 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.server.RequestContext;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.config.BlocksConfig;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.routing.HtmlRouter;
 import com.beligum.blocks.routing.Route;
@@ -63,7 +63,7 @@ public class ApplicationEndpoint
             retVal = router.response();
         }
         else {
-            Locale locale = BlocksConfig.instance().getDefaultLanguage();
+            Locale locale = Settings.instance().getDefaultLanguage();
 
             // We have to redirect the user to a url containing a language
             // We use the language of the referrer if there is one in that url
@@ -76,7 +76,7 @@ public class ApplicationEndpoint
                     if (path.getNameCount() > 0) {
                         String lang = path.getName(0).toString();
                         // This will return the default language if no language was found
-                        locale = BlocksConfig.instance().getLocaleForLanguage(lang);
+                        locale = Settings.instance().getLocaleForLanguage(lang);
                     }
 
                 }
@@ -86,7 +86,7 @@ public class ApplicationEndpoint
                 }
             }
 
-            URI url = UriBuilder.fromUri(BlocksConfig.instance().getSiteDomain()).path(locale.getLanguage()).path(route.getLanguagedPath().toString()).replaceQuery(currentURI.getQuery()).build();
+            URI url = UriBuilder.fromUri(Settings.instance().getSiteDomain()).path(locale.getLanguage()).path(route.getLanguagedPath().toString()).replaceQuery(currentURI.getQuery()).build();
             retVal = Response.seeOther(url).build();
         }
 
@@ -98,7 +98,7 @@ public class ApplicationEndpoint
     //    public Response showResource(@PathParam("getLanguage") String getLanguage, @PathParam("name") String name, @QueryParam("q") String query, @DefaultValue("1") @QueryParam("page") long page) throws Exception
     //    {
     //        int RESOURCES_ON_PAGE = 25;
-    //        Locale locale = BlocksConfig.instance().getLocaleForLanguage(getLanguage);
+    //        Locale locale = Settings.instance().getLocaleForLanguage(getLanguage);
     //        java.nio.file.Path path = Paths.get(name);
     //        if (path.getNameCount() > 1 || !locale.getLanguage().equals(getLanguage)) {
     //            return getPageWithId(RequestContext.getJaxRsRequest().getUriInfo().getRequestUri().getPath().toString());
