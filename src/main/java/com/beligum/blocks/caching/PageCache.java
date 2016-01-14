@@ -7,7 +7,7 @@ import com.beligum.base.cache.EhCacheAdaptor;
  */
 public class PageCache
 {
-    // Page stays in cache for 1 hour since last visited default
+    // PageImpl stays in cache for 1 hour since last visited default
     public int IDLE_TIME = 3600;
 
     private static PageCache instance;

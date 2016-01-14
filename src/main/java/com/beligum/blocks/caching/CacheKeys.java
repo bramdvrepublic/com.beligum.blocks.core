@@ -28,5 +28,7 @@ public enum CacheKeys implements CacheKey
     // the ES controller singleton
     ELASTIC_SEARCH_INSTANCE,
     //the ES node when in embedded mode
-    ELASTIC_SEARCH_NODE
+    ELASTIC_SEARCH_NODE,
+    //application cache key to store the configuration of the HDFS page store
+    HDFS_PAGE_FS_CONFIG
 }

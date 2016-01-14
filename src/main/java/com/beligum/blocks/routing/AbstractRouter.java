@@ -31,7 +31,7 @@ public abstract class AbstractRouter implements Router
             // If page does not exist, throw error for normal user and allow admin to create a new page
             retVal = newPage();
         }
-        // Return ok. Show Page
+        // Return ok. Show PageImpl
         else if (this.route.getWebPath().isPage()) {
             retVal = showPage();
         }

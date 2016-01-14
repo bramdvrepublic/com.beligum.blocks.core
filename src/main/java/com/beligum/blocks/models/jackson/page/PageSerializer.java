@@ -139,7 +139,7 @@ public class PageSerializer<T extends WebPage> extends NodeSerializer
             }
             jgen.writeEndObject(); // end links
 
-            // End Page property
+            // End PageImpl property
             jgen.writeEndObject();
         }
 

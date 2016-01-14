@@ -22,12 +22,16 @@ import java.util.*;
  */
 public class Settings
 {
-    public static Settings instance;
     public static final String PROJECT_VERSION_KEY = "appVersion";
     public static final String PROPERTIES_FILE = "blocks.properties";
 
+    private static final String PAGES_HDFS_PROPERTIES_KEY = "blocks.core.pages.hdfs.properties.property";
     private static final String ELASTIC_SEARCH_PROPERTIES_KEY = "blocks.core.elastic-search.properties.property";
 
+    private static final String DEFAULT_FILE_EXT = ".html";
+    private static final String DEFAULT_LOCK_FILE_EXT = ".lock";
+
+    private static Settings instance;
     /**
      * the languages this site can work with, ordered from most preferred languages, to less preferred
      */
@@ -36,7 +40,8 @@ public class Settings
     public String projectVersion = null;
     private URI cachedSiteDomain;
     private URI defaultRdfSchema;
-    private URI cachedPageStorePath;
+    private URI cachedPagesStorePath;
+    protected HashMap<String, String> cachedHdfsProperties = null;
     protected HashMap<String, String> cachedEsProperties = null;
 
     private Settings()
@@ -54,8 +59,9 @@ public class Settings
     public URI getSiteDomain()
     {
         if (this.cachedSiteDomain == null) {
+            String schema = R.configuration().getString("blocks.core.domain");
             try {
-                this.cachedSiteDomain = new URI(getConfiguration("blocks.core.domain"));
+                this.cachedSiteDomain = URI.create(schema);
             }
             catch (Exception e) {
                 throw new RuntimeException("Site domain in blocks config is not valid. This setting is vital, can't proceed.");
@@ -106,23 +112,45 @@ public class Settings
         }
         return retVal;
     }
-    public URI getPageStorePath()
+    public URI getPagesStorePath()
     {
-        if (this.cachedPageStorePath == null) {
-            this.cachedPageStorePath = URI.create(getConfiguration("blocks.core.page-store-path"));
+        if (this.cachedPagesStorePath == null) {
+            this.cachedPagesStorePath = URI.create(R.configuration().getString("blocks.core.pages.store-path"));
         }
 
-        return this.cachedPageStorePath;
+        return this.cachedPagesStorePath;
     }
+    public Map<String, String> getPagesHdfsProperties()
+    {
+        if (this.cachedHdfsProperties == null) {
+            this.cachedHdfsProperties = new HashMap<String, String>();
+            List<HierarchicalConfiguration> properties = R.configuration().configurationsAt(PAGES_HDFS_PROPERTIES_KEY);
+            for (HierarchicalConfiguration property : properties) {
+                String propertyKey = property.getString("name");
+                String propertyValue = property.getString("value");
+                this.cachedHdfsProperties.put(propertyKey, propertyValue);
+            }
+        }
 
+        return this.cachedHdfsProperties;
+    }
+    public String getPagesFileExtension()
+    {
+        return R.configuration().getString("blocks.core.pages.file-ext", DEFAULT_FILE_EXT);
+    }
+    public String getPagesLockFileExtension()
+    {
+        return R.configuration().getString("blocks.core.pages.lock-file-ext", DEFAULT_LOCK_FILE_EXT);
+    }
     public URI getDefaultRdfSchema()
     {
         if (this.defaultRdfSchema == null) {
+            String schema = R.configuration().getString("blocks.core.rdf.schema.url");
             try {
-                this.defaultRdfSchema = new URI(getConfiguration("blocks.core.rdf.schema.url"));
+                this.defaultRdfSchema = URI.create(schema);
             }
             catch (Exception e) {
-                Logger.error("Default RDF Schema is not valid");
+                throw new RuntimeException("Wrong default RDF schema configured; "+schema, e);
             }
         }
         return this.defaultRdfSchema;
@@ -130,7 +158,7 @@ public class Settings
 
     public String getDefaultRdfPrefix()
     {
-        return getConfiguration("blocks.core.rdf.schema.prefix");
+        return R.configuration().getString("blocks.core.rdf.schema.prefix");
     }
 
     public String getProjectVersion()
@@ -219,23 +247,6 @@ public class Settings
         }
         if (retVal == null)
             retVal = getDefaultLanguage();
-        return retVal;
-    }
-
-    /**
-     * return the text from the applications configuration file in specified tag
-     *
-     * @param configTag the configuration-tag
-     * @return the value present in the configuration-tag, if '/' is the last character, it is removed
-     */
-    private String getConfiguration(String configTag)
-    {
-        String retVal = R.configuration().getString(configTag);
-        if (retVal != null) {
-            if (retVal.charAt(retVal.length() - 1) == '/') {
-                retVal = retVal.substring(0, retVal.length() - 1);
-            }
-        }
         return retVal;
     }
 }

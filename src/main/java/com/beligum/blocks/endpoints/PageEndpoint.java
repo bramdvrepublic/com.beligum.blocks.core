@@ -12,6 +12,8 @@ import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.models.interfaces.WebPage;
+import com.beligum.blocks.pages.HdfsPageStore;
+import com.beligum.blocks.pages.ifaces.PageStore;
 import com.beligum.blocks.pages.WebPageParser;
 import com.beligum.blocks.routing.Route;
 import com.beligum.blocks.search.ElasticSearch;
@@ -28,11 +30,9 @@ import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.hibernate.validator.constraints.NotBlank;
 
 import javax.ws.rs.*;
-import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URI;
-import java.nio.file.*;
 import java.util.*;
 
 @Path("/blocks/admin/page")
@@ -41,7 +41,6 @@ public class PageEndpoint
 {
     //-----CONSTANTS-----
     public static final String PAGE_TEMPLATE_NAME = "pageTemplateName";
-    private static final URI ROOT = URI.create("/");
 
     //-----VARIABLES-----
 
@@ -68,35 +67,13 @@ public class PageEndpoint
     }
 
     @POST
-    @Path("/save/{url:.*}")
+    @javax.ws.rs.Path("/save/{url:.*}")
     @Consumes(MediaType.APPLICATION_JSON)
     public Response savePageNew(@PathParam("url") URI url, String content) throws Exception
     {
-        Settings settings = Settings.instance();
+        PageStore pageStore = new HdfsPageStore();
 
-        //note: the toString is mandatory, otherwise the Path creation fails because there's no scheme
-        //note2: second one is for security
-        String relativeUrlStr = url.getPath();
-        URI relativeUrl = URI.create(relativeUrlStr);
-        //note: we need to make it relative to match the one below
-        relativeUrl = ROOT.relativize(relativeUrl);
-        URI relativeUrlTest = settings.getSiteDomain().relativize(url);
-        if (!relativeUrl.equals(relativeUrlTest)) {
-            throw new SecurityException("Trying to save a page from outside the domain ("+settings.getSiteDomain()+"), can't proceed; "+url);
-        }
-
-        //note: we normalize before resolving for safety
-        //.toString() is needed because we don't have a scheme
-        java.nio.file.Path absPagePath = Paths.get(settings.getPageStorePath().resolve(relativeUrl.normalize()).toString());
-
-        //this is important: if the url ends with a slash, we're actually saving a 'directory', so it doesn't have a name (will become 'index' later on)
-        java.nio.file.Path pageName = null;
-        if (!relativeUrlStr.endsWith("/")) {
-            pageName = absPagePath.getFileName();
-        }
-        java.nio.file.Path pageParent = absPagePath.getParent();
-
-        Files.createDirectories(absPagePath);
+        pageStore.save(url, content);
 
         return Response.ok().build();
     }

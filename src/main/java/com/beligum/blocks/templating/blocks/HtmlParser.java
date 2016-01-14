@@ -171,7 +171,7 @@ public class HtmlParser extends AbstractAssetParser
             Segment templateHtml = sourceTemplate.getInnerHtml();
             OutputDocument output = new OutputDocument(templateHtml);
 
-            //from here, it's the same for a Tag or Page template; preprocess the replaceable properties
+            //from here, it's the same for a Tag or PageImpl template; preprocess the replaceable properties
 
             Stack<URI> currentVocabStack = new Stack<>();
             if (sourceTemplate.getVocab() != null) {
