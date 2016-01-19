@@ -85,22 +85,42 @@ public class HdfsPageStore implements PageStore
                     // first, we'll create a snapshot of the meta folder to a sibling folder. We can't copy it to it's final destination
                     // because that is a subfolder of the folder we're copying.
                     Path tempMetaFolderCopy = new Path(pathInfo.getMetaFolder().getParent(), pathInfo.getMetaFolder().getName()+Constants.METADATA_TEMP_META_FOLDER_SNAPSHOT_SUFFIX);
-                    FileUtil.copy(fs, pathInfo.getMetaFolder(), fs, tempMetaFolderCopy, false, fs.getConf());
 
                     // Note: it makes sense to use the now timestamp because we're about to create a snapshot of the situation _now_
                     // we can't really rely on other timestamps because which one should we take?
                     Path newHistoryEntryFolder = new Path(historyFolder, Constants.FOLDER_TIMESTAMP_FORMAT.print(stamp));
-                    if (fs.exists(newHistoryEntryFolder)) {
-                        throw new IOException("Error while creating the history folder because it already existed; "+newHistoryEntryFolder);
-                    }
-                    else if (!fs.mkdirs(newHistoryEntryFolder)) {
-                        throw new IOException("Error while creating the history folder; "+newHistoryEntryFolder);
-                    }
 
+                    //the two version destinations
                     Path historyOriginal = new Path(newHistoryEntryFolder, pathInfo.getPath().getName());
                     Path historyMetaFolder = new Path(newHistoryEntryFolder, pathInfo.getMetaFolder().getName());
-                    FileUtil.copy(fs, pathInfo.getPath(), fs, historyOriginal, false, fs.getConf());
-                    fs.rename(tempMetaFolderCopy, historyMetaFolder);
+
+                    boolean versioningSuccess = false;
+                    try {
+                        FileUtil.copy(fs, pathInfo.getMetaFolder(), fs, tempMetaFolderCopy, false, fs.getConf());
+
+                        if (fs.exists(newHistoryEntryFolder)) {
+                            throw new IOException("Error while creating the history folder because it already existed; " + newHistoryEntryFolder);
+                        }
+                        else if (!fs.mkdirs(newHistoryEntryFolder)) {
+                            throw new IOException("Error while creating the history folder; " + newHistoryEntryFolder);
+                        }
+
+                        FileUtil.copy(fs, pathInfo.getPath(), fs, historyOriginal, false, fs.getConf());
+                        fs.rename(tempMetaFolderCopy, historyMetaFolder);
+
+                        versioningSuccess = true;
+                    }
+                    finally {
+                        //cleanup on error
+                        if (!versioningSuccess) {
+                            fs.delete(tempMetaFolderCopy, true);
+                            fs.delete(newHistoryEntryFolder, true);
+                            fs.delete(historyOriginal, true);
+                            fs.delete(historyMetaFolder, true);
+
+                            throw new IOException("Error happened while versioning (tried to clean up as good as possible) "+pathInfo.getPath()+" to "+newHistoryEntryFolder);
+                        }
+                    }
                 }
 
                 try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(fs.create(pathInfo.getPath())))) {
