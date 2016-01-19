@@ -30,5 +30,7 @@ public enum CacheKeys implements CacheKey
     //the ES node when in embedded mode
     ELASTIC_SEARCH_NODE,
     //application cache key to store the configuration of the HDFS page store
-    HDFS_PAGE_FS_CONFIG
+    HDFS_PAGE_FS_CONFIG,
+    //application cache key to store the HDFS page store
+    HDFS_PAGE_STORE
 }

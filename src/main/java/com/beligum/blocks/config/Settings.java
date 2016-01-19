@@ -115,7 +115,12 @@ public class Settings
     public URI getPagesStorePath()
     {
         if (this.cachedPagesStorePath == null) {
-            this.cachedPagesStorePath = URI.create(R.configuration().getString("blocks.core.pages.store-path"));
+            String path = R.configuration().getString("blocks.core.pages.store-path");
+            //this is used to resolve files on, so make sure it's always a formal directory
+            if (!path.endsWith("/")) {
+                path += "/";
+            }
+            this.cachedPagesStorePath = URI.create(path);
         }
 
         return this.cachedPagesStorePath;
@@ -145,12 +150,12 @@ public class Settings
     public URI getDefaultRdfSchema()
     {
         if (this.defaultRdfSchema == null) {
-            String schema = R.configuration().getString("blocks.core.rdf.schema.url");
+            String schema = R.configuration().getString("blocks.core.rdf.com.beligum.blocks.schema.schema.url");
             try {
                 this.defaultRdfSchema = URI.create(schema);
             }
             catch (Exception e) {
-                throw new RuntimeException("Wrong default RDF schema configured; "+schema, e);
+                throw new RuntimeException("Wrong default RDF com.beligum.blocks.schema.schema configured; "+schema, e);
             }
         }
         return this.defaultRdfSchema;
@@ -158,7 +163,7 @@ public class Settings
 
     public String getDefaultRdfPrefix()
     {
-        return R.configuration().getString("blocks.core.rdf.schema.prefix");
+        return R.configuration().getString("blocks.core.rdf.com.beligum.blocks.schema.schema.prefix");
     }
 
     public String getProjectVersion()

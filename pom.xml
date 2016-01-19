@@ -364,6 +364,12 @@
             </exclusions>
         </dependency>
 
+        <dependency>
+            <groupId>com.beligum.blocks</groupId>
+            <artifactId>blocks-schema-ebucore</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>

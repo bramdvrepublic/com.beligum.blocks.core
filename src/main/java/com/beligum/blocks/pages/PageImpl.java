@@ -21,9 +21,7 @@ public class PageImpl implements Page
 
     //-----VARIABLES-----
     private final boolean isDir;
-    private final Path path;
-    private final URI uri;
-    private final Path lockFile;
+    private final URI saveFile;
 
     //-----CONSTRUCTORS-----
     public PageImpl(URI uri) throws IOException
@@ -42,7 +40,7 @@ public class PageImpl implements Page
         }
 
         //note: we normalize before resolving for safety
-        //.toString() is needed because we don't have a scheme
+        //.toString() is needed because we don't have a schema
         Path tempPagePath = Paths.get(settings.getPagesStorePath().resolve(relativeUrl.normalize()).toString());
 
         //this is important: if the url ends with a slash, we're actually saving a 'directory', so it doesn't have a name (will become 'index' later on)
@@ -70,26 +68,14 @@ public class PageImpl implements Page
             tempPagePath = tempPagePath.getParent();
         }
 
-        this.path = tempPagePath.resolve(pageName);
-        this.uri = this.path.toUri();
-        this.lockFile = tempPagePath.resolve(pageName+settings.getPagesLockFileExtension());
+        this.saveFile = tempPagePath.resolve(pageName).toUri();
     }
 
     //-----PUBLIC METHODS-----
     @Override
-    public Path getPath()
+    public URI getSaveFile()
     {
-        return path;
-    }
-    @Override
-    public URI getURI()
-    {
-        return uri;
-    }
-    @Override
-    public Path getLockFile()
-    {
-        return lockFile;
+        return saveFile;
     }
 
     //-----PROTECTED METHODS-----

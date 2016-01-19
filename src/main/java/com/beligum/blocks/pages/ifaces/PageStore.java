@@ -8,5 +8,7 @@ import java.net.URI;
  */
 public interface PageStore
 {
+    //-----PUBLIC METHODS-----
+    void init() throws IOException;
     void save(URI page, String content) throws IOException;
 }

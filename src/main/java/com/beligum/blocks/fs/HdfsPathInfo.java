@@ -1,0 +1,198 @@
+package com.beligum.blocks.fs;
+
+import com.beligum.base.utils.Logger;
+import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.fs.ifaces.Constants;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+
+/**
+ * Created by bram on 1/19/16.
+ */
+public class HdfsPathInfo extends AbstractPathInfo<Path>
+{
+    //-----CONSTANTS-----
+
+    //-----VARIABLES-----
+    private FileSystem fileSystem;
+    private org.apache.hadoop.fs.Path path;
+    private org.apache.hadoop.fs.Path lockFile;
+    private org.apache.hadoop.fs.Path metaFolder;
+
+    //-----CONSTRUCTORS-----
+    public HdfsPathInfo(FileSystem fileSystem, URI uri) throws IOException
+    {
+        this(fileSystem, new Path(uri));
+    }
+    public HdfsPathInfo(FileSystem fileSystem, Path path) throws IOException
+    {
+        this.fileSystem = fileSystem;
+        this.path = path;
+    }
+
+    //-----PUBLIC METHODS-----
+    @Override
+    public Path getPath()
+    {
+        return this.path;
+    }
+    @Override
+    public Path getMetaFolder()
+    {
+        //only needs to be done once
+        if (this.metaFolder == null) {
+            this.metaFolder = new Path(this.path.getParent(), this.getMetaFolderName());
+        }
+
+        return this.metaFolder;
+    }
+    @Override
+    public String getMetaFolderName()
+    {
+        return Constants.METADATA_FOLDER_PREFIX + this.path.getName().toString();
+    }
+    @Override
+    public Path getMetaHashFile()
+    {
+        return new Path(this.getMetaFolder(), Constants.METADATA_SUBFILE_HASH);
+    }
+    @Override
+    public Path getMonitorFolder()
+    {
+        return new Path(this.getMetaFolder(), Constants.METADATA_SUBFOLDER_MONITOR);
+    }
+    /**
+     * Reads the stored checksum from the HASH file in the meta folder for the provided path (doesn't calculate anything)
+     *
+     * @return the hash or null if it doesn't exist
+     */
+    @Override
+    public String getMetaHashChecksum()
+    {
+        String retVal = null;
+
+        Path storedHashFile = this.getMetaHashFile();
+
+        try {
+            if (this.fileSystem.exists(storedHashFile)) {
+                retVal = HdfsUtils.readFile(this.fileSystem, storedHashFile);
+            }
+        }
+        catch (IOException e) {
+            Logger.error("Caught exception while reading the stored hash file contents of " + this.getPath(), e);
+        }
+
+        return retVal;
+    }
+    /**
+     * Calculates the SHA-1 checksum of the contents of the supplied path
+     *
+     * @return
+     * @throws IOException
+     */
+    @Override
+    public String calcHashChecksum() throws IOException
+    {
+        String retVal = null;
+
+        try (InputStream is = this.fileSystem.open(this.getPath())) {
+            retVal = DigestUtils.sha1Hex(is);
+        }
+
+        return retVal;
+    }
+    /**
+     * Pretty simple locking mechanism, probably full of holes, but a first try to create something simple to set up (eg. no Zookeeper)
+     * Note: this should work pretty ok, because creation/deletion of files MUST be atomic in HDFS;
+     * see https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/filesystem/introduction.html
+     *
+     * @return the lock file
+     */
+    @Override
+    public LockFile<Path> acquireLock() throws IOException
+    {
+        long timer = 0;
+
+        Path lock = this.getLockFile();
+
+        while (this.fileSystem.exists(lock)) {
+            try {
+                Thread.sleep(DEFAULT_LOCK_BACK_OFF);
+            }
+            catch (InterruptedException e) {
+                throw new IOException("Error happened while waiting on file lock; " + lock, e);
+            }
+            timer += DEFAULT_LOCK_BACK_OFF;
+
+            if (timer >= DEFAULT_LOCK_TIMEOUT) {
+                throw new IOException("Unable to get lock on file; timeout of (" + DEFAULT_LOCK_TIMEOUT + " ms exceeded); " + lock);
+            }
+        }
+
+        //note: not possible another process 'gets between' the loop above and this, because this will throw an exception if the file already exists.
+        if (!this.fileSystem.createNewFile(lock)) {
+            throw new IOException("Unable to create lock file because of an error or because (in the mean time) it already existed; " + lock);
+        }
+
+        return new LockFile(this, lock);
+    }
+    @Override
+    public void releaseLockFile(LockFile<Path> lock) throws IOException
+    {
+        if (lock != null) {
+            synchronized (lock) {
+
+                if (!this.fileSystem.exists(lock.getLockFile())) {
+                    throw new IOException("Trying to release a lock file that doesn't exist; something's wrong...; " + lock.getLockFile());
+                }
+
+                if (!this.fileSystem.delete(lock.getLockFile(), false)) {
+                    throw new IOException("Error happened while releasing a lock file; " + lock.getLockFile());
+                }
+            }
+        }
+    }
+
+    //-----PROTECTED METHODS-----
+    @Override
+    protected Path getLockFile()
+    {
+        //only needs to be done once
+        if (this.lockFile == null) {
+            this.lockFile = createLockPath(this.path);
+        }
+
+        return this.lockFile;
+    }
+
+    //-----PRIVATE METHODS-----
+
+    //-----MANAGEMENT METHODS-----
+    public static Path createLockPath(Path path)
+    {
+        return new Path(path.getParent(), LOCK_FILE_PREFIX + path.getName() + Settings.instance().getPagesLockFileExtension());
+    }
+    public static void recursiveDeleteLocks(FileSystem fs, Path path) throws IOException
+    {
+        FileStatus[] status = fs.listStatus(path);
+
+        for (int i = 0; i < status.length; i++) {
+            FileStatus fileStatus = status[i];
+
+            Path lockFile = HdfsPathInfo.createLockPath(fileStatus.getPath());
+            if (fs.exists(lockFile)) {
+                fs.delete(lockFile, false);
+            }
+
+            if (fileStatus.isDirectory()) {
+                recursiveDeleteLocks(fs, fileStatus.getPath());
+            }
+        }
+    }
+}

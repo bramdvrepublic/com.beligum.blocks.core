@@ -6,6 +6,7 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
+import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.caching.PageCache;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.controllers.PersistenceControllerImpl;
@@ -32,6 +33,7 @@ import org.hibernate.validator.constraints.NotBlank;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
@@ -71,9 +73,7 @@ public class PageEndpoint
     @Consumes(MediaType.APPLICATION_JSON)
     public Response savePageNew(@PathParam("url") URI url, String content) throws Exception
     {
-        PageStore pageStore = new HdfsPageStore();
-
-        pageStore.save(url, content);
+        this.getHdfsPageStore().save(url, content);
 
         return Response.ok().build();
     }
@@ -271,5 +271,16 @@ public class PageEndpoint
         }
 
         return retVal;
+    }
+    public PageStore getHdfsPageStore() throws IOException
+    {
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGE_STORE)) {
+            PageStore pageStore = new HdfsPageStore();
+            pageStore.init();
+
+            R.cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGE_STORE, pageStore);
+        }
+
+        return (PageStore) R.cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGE_STORE);
     }
 }
