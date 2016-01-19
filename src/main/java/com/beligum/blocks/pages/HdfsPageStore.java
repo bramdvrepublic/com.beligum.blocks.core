@@ -5,16 +5,17 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.HdfsPathInfo;
+import com.beligum.blocks.fs.HdfsUtils;
 import com.beligum.blocks.fs.LockFile;
+import com.beligum.blocks.fs.ifaces.Constants;
 import com.beligum.blocks.fs.ifaces.PathInfo;
 import com.beligum.blocks.pages.ifaces.Page;
 import com.beligum.blocks.pages.ifaces.PageStore;
 import com.beligum.blocks.schema.ebucore.v1_6.jaxb.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
+import org.joda.time.DateTime;
 
 import javax.xml.bind.JAXB;
 import java.io.BufferedWriter;
@@ -55,7 +56,7 @@ public class HdfsPageStore implements PageStore
         Path pagesRoot = new Path(settings.getPagesStorePath());
         try (FileSystem fs = this.getFileSystem()) {
             if (fs.exists(pagesRoot)) {
-                HdfsPathInfo.recursiveDeleteLocks(fs, pagesRoot);
+                HdfsUtils.recursiveDeleteLockFiles(fs, pagesRoot);
             }
         }
     }
@@ -71,13 +72,35 @@ public class HdfsPageStore implements PageStore
 
             try (LockFile lock = pathInfo.acquireLock()) {
 
+                DateTime stamp = DateTime.now();
+
                 //make sure the path dirs exist
                 //Note: this also works for dirs, since they're special files inside the actual dir
                 fs.mkdirs(pathInfo.getPath().getParent());
 
-                //we're overwriting; make a version
+                //we're overwriting; make an entry in the history folder
                 if (fs.exists(pathInfo.getPath())) {
+                    Path historyFolder = pathInfo.getHistoryFolder();
 
+                    // first, we'll create a snapshot of the meta folder to a sibling folder. We can't copy it to it's final destination
+                    // because that is a subfolder of the folder we're copying.
+                    Path tempMetaFolderCopy = new Path(pathInfo.getMetaFolder().getParent(), pathInfo.getMetaFolder().getName()+Constants.METADATA_TEMP_META_FOLDER_SNAPSHOT_SUFFIX);
+                    FileUtil.copy(fs, pathInfo.getMetaFolder(), fs, tempMetaFolderCopy, false, fs.getConf());
+
+                    // Note: it makes sense to use the now timestamp because we're about to create a snapshot of the situation _now_
+                    // we can't really rely on other timestamps because which one should we take?
+                    Path newHistoryEntryFolder = new Path(historyFolder, Constants.FOLDER_TIMESTAMP_FORMAT.print(stamp));
+                    if (fs.exists(newHistoryEntryFolder)) {
+                        throw new IOException("Error while creating the history folder because it already existed; "+newHistoryEntryFolder);
+                    }
+                    else if (!fs.mkdirs(newHistoryEntryFolder)) {
+                        throw new IOException("Error while creating the history folder; "+newHistoryEntryFolder);
+                    }
+
+                    Path historyOriginal = new Path(newHistoryEntryFolder, pathInfo.getPath().getName());
+                    Path historyMetaFolder = new Path(newHistoryEntryFolder, pathInfo.getMetaFolder().getName());
+                    FileUtil.copy(fs, pathInfo.getPath(), fs, historyOriginal, false, fs.getConf());
+                    fs.rename(tempMetaFolderCopy, historyMetaFolder);
                 }
 
                 try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(fs.create(pathInfo.getPath())))) {

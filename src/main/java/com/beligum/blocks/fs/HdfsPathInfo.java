@@ -4,7 +4,6 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.ifaces.Constants;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
@@ -47,20 +46,20 @@ public class HdfsPathInfo extends AbstractPathInfo<Path>
     {
         //only needs to be done once
         if (this.metaFolder == null) {
-            this.metaFolder = new Path(this.path.getParent(), this.getMetaFolderName());
+            this.metaFolder = new Path(this.path.getParent(), Constants.METADATA_FOLDER_PREFIX + this.path.getName().toString());
         }
 
         return this.metaFolder;
     }
     @Override
-    public String getMetaFolderName()
-    {
-        return Constants.METADATA_FOLDER_PREFIX + this.path.getName().toString();
-    }
-    @Override
     public Path getMetaHashFile()
     {
         return new Path(this.getMetaFolder(), Constants.METADATA_SUBFILE_HASH);
+    }
+    @Override
+    public Path getHistoryFolder()
+    {
+        return new Path(this.getMetaFolder(), Constants.METADATA_SUBFOLDER_HISTORY);
     }
     @Override
     public Path getMonitorFolder()
@@ -177,22 +176,5 @@ public class HdfsPathInfo extends AbstractPathInfo<Path>
     public static Path createLockPath(Path path)
     {
         return new Path(path.getParent(), LOCK_FILE_PREFIX + path.getName() + Settings.instance().getPagesLockFileExtension());
-    }
-    public static void recursiveDeleteLocks(FileSystem fs, Path path) throws IOException
-    {
-        FileStatus[] status = fs.listStatus(path);
-
-        for (int i = 0; i < status.length; i++) {
-            FileStatus fileStatus = status[i];
-
-            Path lockFile = HdfsPathInfo.createLockPath(fileStatus.getPath());
-            if (fs.exists(lockFile)) {
-                fs.delete(lockFile, false);
-            }
-
-            if (fileStatus.isDirectory()) {
-                recursiveDeleteLocks(fs, fileStatus.getPath());
-            }
-        }
     }
 }

@@ -23,9 +23,9 @@ public interface PathInfo<T>
 
     T getMetaFolder();
 
-    String getMetaFolderName();
-
     T getMetaHashFile();
+
+    T getHistoryFolder();
 
     T getMonitorFolder();
 

@@ -40,20 +40,20 @@ public class JavaNioPathInfo extends AbstractPathInfo<Path>
     {
         //only needs to be done once
         if (this.metaFolder == null) {
-            this.metaFolder = this.path.getParent().resolve(this.getMetaFolderName());
+            this.metaFolder = this.path.getParent().resolve(Constants.METADATA_FOLDER_PREFIX + this.path.getFileName().toString());
         }
 
         return this.metaFolder;
     }
     @Override
-    public String getMetaFolderName()
-    {
-        return Constants.METADATA_FOLDER_PREFIX + this.path.getFileName().toString();
-    }
-    @Override
     public Path getMetaHashFile()
     {
         return this.getMetaFolder().resolve(Constants.METADATA_SUBFILE_HASH);
+    }
+    @Override
+    public Path getHistoryFolder()
+    {
+        return this.getMetaFolder().resolve(Constants.METADATA_SUBFOLDER_HISTORY);
     }
     @Override
     public Path getMonitorFolder()
