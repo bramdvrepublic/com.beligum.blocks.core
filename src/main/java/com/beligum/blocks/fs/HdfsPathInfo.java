@@ -46,7 +46,7 @@ public class HdfsPathInfo extends AbstractPathInfo<Path>
     {
         //only needs to be done once
         if (this.metaFolder == null) {
-            this.metaFolder = new Path(this.path.getParent(), Constants.METADATA_FOLDER_PREFIX + this.path.getName().toString());
+            this.metaFolder = new Path(this.path.getParent(), Constants.META_FOLDER_PREFIX + this.path.getName().toString());
         }
 
         return this.metaFolder;
@@ -54,17 +54,27 @@ public class HdfsPathInfo extends AbstractPathInfo<Path>
     @Override
     public Path getMetaHashFile()
     {
-        return new Path(this.getMetaFolder(), Constants.METADATA_SUBFILE_HASH);
+        return new Path(this.getMetaFolder(), Constants.META_SUBFILE_HASH);
     }
     @Override
-    public Path getHistoryFolder()
+    public Path getMetaHistoryFolder()
     {
-        return new Path(this.getMetaFolder(), Constants.METADATA_SUBFOLDER_HISTORY);
+        return new Path(this.getMetaFolder(), Constants.META_SUBFOLDER_HISTORY);
     }
     @Override
-    public Path getMonitorFolder()
+    public Path getMetaMonitorFolder()
     {
-        return new Path(this.getMetaFolder(), Constants.METADATA_SUBFOLDER_MONITOR);
+        return new Path(this.getMetaFolder(), Constants.META_SUBFOLDER_MONITOR);
+    }
+    @Override
+    public Path getMetaProxyFolder()
+    {
+        return new Path(this.getMetaFolder(), Constants.META_SUBFOLDER_PROXY);
+    }
+    @Override
+    public Path getMetaMetadataFolder()
+    {
+        return new Path(this.getMetaFolder(), Constants.META_SUBFOLDER_METADATA);
     }
     /**
      * Reads the stored checksum from the HASH file in the meta folder for the provided path (doesn't calculate anything)

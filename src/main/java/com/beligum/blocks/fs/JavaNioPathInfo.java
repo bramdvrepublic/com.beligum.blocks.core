@@ -40,7 +40,7 @@ public class JavaNioPathInfo extends AbstractPathInfo<Path>
     {
         //only needs to be done once
         if (this.metaFolder == null) {
-            this.metaFolder = this.path.getParent().resolve(Constants.METADATA_FOLDER_PREFIX + this.path.getFileName().toString());
+            this.metaFolder = this.path.getParent().resolve(Constants.META_FOLDER_PREFIX + this.path.getFileName().toString());
         }
 
         return this.metaFolder;
@@ -48,17 +48,27 @@ public class JavaNioPathInfo extends AbstractPathInfo<Path>
     @Override
     public Path getMetaHashFile()
     {
-        return this.getMetaFolder().resolve(Constants.METADATA_SUBFILE_HASH);
+        return this.getMetaFolder().resolve(Constants.META_SUBFILE_HASH);
     }
     @Override
-    public Path getHistoryFolder()
+    public Path getMetaHistoryFolder()
     {
-        return this.getMetaFolder().resolve(Constants.METADATA_SUBFOLDER_HISTORY);
+        return this.getMetaFolder().resolve(Constants.META_SUBFOLDER_HISTORY);
     }
     @Override
-    public Path getMonitorFolder()
+    public Path getMetaMonitorFolder()
     {
-        return this.getMetaFolder().resolve(Constants.METADATA_SUBFOLDER_MONITOR);
+        return this.getMetaFolder().resolve(Constants.META_SUBFOLDER_MONITOR);
+    }
+    @Override
+    public Path getMetaProxyFolder()
+    {
+        return this.getMetaFolder().resolve(Constants.META_SUBFOLDER_PROXY);
+    }
+    @Override
+    public Path getMetaMetadataFolder()
+    {
+        return this.getMetaFolder().resolve(Constants.META_SUBFOLDER_METADATA);
     }
     /**
      * Reads the stored checksum from the HASH file in the meta folder for the provided path (doesn't calculate anything)

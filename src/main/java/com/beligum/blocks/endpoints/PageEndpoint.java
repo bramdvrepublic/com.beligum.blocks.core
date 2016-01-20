@@ -4,6 +4,7 @@ package com.beligum.blocks.endpoints;
  * Created by bas on 07.10.14.
  */
 
+import com.beligum.base.security.Authentication;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
@@ -14,8 +15,8 @@ import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.pages.HdfsPageStore;
-import com.beligum.blocks.pages.ifaces.PageStore;
 import com.beligum.blocks.pages.WebPageParser;
+import com.beligum.blocks.pages.ifaces.PageStore;
 import com.beligum.blocks.routing.Route;
 import com.beligum.blocks.search.ElasticSearch;
 import com.beligum.blocks.security.Permissions;
@@ -73,7 +74,7 @@ public class PageEndpoint
     @Consumes(MediaType.APPLICATION_JSON)
     public Response savePageNew(@PathParam("url") URI url, String content) throws Exception
     {
-        this.getHdfsPageStore().save(url, content);
+        this.getHdfsPageStore().save(url, content, Authentication.getCurrentPrincipal());
 
         return Response.ok().build();
     }

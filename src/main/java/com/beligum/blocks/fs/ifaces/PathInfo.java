@@ -25,9 +25,13 @@ public interface PathInfo<T>
 
     T getMetaHashFile();
 
-    T getHistoryFolder();
+    T getMetaHistoryFolder();
 
-    T getMonitorFolder();
+    T getMetaMonitorFolder();
+
+    T getMetaProxyFolder();
+
+    T getMetaMetadataFolder();
 
     String getMetaHashChecksum();
 
