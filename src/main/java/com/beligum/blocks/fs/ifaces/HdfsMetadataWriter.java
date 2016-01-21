@@ -5,7 +5,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
-
+import java.util.Properties;
 
 /**
  * Created by bram on 1/20/16.
@@ -28,6 +28,12 @@ public interface HdfsMetadataWriter extends MetadataWriter
      * @throws IOException
      */
     void open(PathInfo<Path> pathInfo) throws IOException;
+
+    void updateSchemaData() throws IOException;
+
+    void updateSoftwareData(Properties properties) throws IOException;
+
+    void updateFileData() throws IOException;
 
     void updateCreator(Person creator) throws IOException;
 

@@ -14,7 +14,7 @@ public interface Constants
 
     String META_SUBFOLDER_METADATA = "meta";
     String META_METADATA_FILE_BASE_XML = "base.xml";
-    String META_METADATA_FILE_BASE_XSD = "base.xsd";
+    String META_METADATA_FILE_BASE_XSD = "base.xsd.gz";
 
     String META_SUBFOLDER_HISTORY = "HISTORY";
 

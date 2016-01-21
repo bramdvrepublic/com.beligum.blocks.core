@@ -84,6 +84,7 @@ public class HdfsPageStore implements PageStore
                 fs.mkdirs(pathInfo.getPath().getParent());
 
                 //we're overwriting; make an entry in the history folder
+                //TODO maybe we want to make this asynchronous?
                 if (fs.exists(pathInfo.getPath())) {
                     Path historyFolder = pathInfo.getMetaHistoryFolder();
 
@@ -137,6 +138,9 @@ public class HdfsPageStore implements PageStore
                 metadataWriter.init(fs);
                 metadataWriter.open(pathInfo);
                 //update or fill the ebucore structure with all possible metadata
+                metadataWriter.updateSchemaData();
+                metadataWriter.updateSoftwareData(R.configuration().getCurrentProjectProperties());
+                metadataWriter.updateFileData();
                 metadataWriter.updateCreator(creator);
                 metadataWriter.updateTimestamps();
                 metadataWriter.write();

@@ -1,6 +1,7 @@
 package com.beligum.blocks.fs;
 
 import com.beligum.base.auth.models.Person;
+import com.beligum.base.utils.MetaUtils;
 import com.beligum.blocks.fs.ifaces.PathInfo;
 import com.beligum.blocks.schema.ebucore.v1_6.jaxb.*;
 import com.beligum.blocks.utils.RdfTools;
@@ -17,6 +18,7 @@ import java.io.*;
 import java.lang.String;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
 
 /**
  * Created by bram on 1/20/16.
@@ -24,7 +26,16 @@ import java.util.Locale;
 public class EBUCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
 {
     //-----CONSTANTS-----
-    private static final String EBUCORE_XSD_RESOURCE_PATH = "/com/beligum/blocks/schema/ebucore/v1_6/ebucore.xsd";
+    public static final String CREATOR_ROLE_SOFTWARE_LABEL = "software";
+    public static class EBUCoreVersionInfo
+    {
+        public static final String NAME = "EBU Core Metadata Set";
+        public static final String VERSION = "1.6";
+        public static final String WEBSITE = "https://tech.ebu.ch/publications/tech3293";
+        public static final String SCHEMA_URI = "https://www.ebu.ch/metadata/schemas/EBUCore/20150630/ebucore.xsd";
+        public static final String SCHEMA_RESOURCE_PATH = "/com/beligum/blocks/schema/ebucore/v1_6/ebucore.xsd";
+        public static final String SCHEMA_RESOURCE_PATH_GZ = "/com/beligum/blocks/schema/ebucore/v1_6/ebucore.xsd.gz";
+    }
 
     //-----VARIABLES-----
     //valid during an entire session (after a successful init())
@@ -68,6 +79,63 @@ public class EBUCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
         }
     }
     @Override
+    public void updateSchemaData() throws IOException
+    {
+        super.updateSchemaData();
+
+        this.root.setVersion(EBUCoreVersionInfo.VERSION);
+        this.root.setSchema(EBUCoreVersionInfo.SCHEMA_URI);
+    }
+    @Override
+    public void updateSoftwareData(Properties properties) throws IOException
+    {
+        super.updateSoftwareData(properties);
+
+        //this is the creator role we're looking for
+        EntityType.Role creatorEntityRole = this.factory.createEntityTypeRole();
+        creatorEntityRole.setTypeLabel(CREATOR_ROLE_SOFTWARE_LABEL);
+
+        EntityType creatorEntity = null;
+        //if we're the first, set us as creator
+        if (this.root.getCoreMetadata().getCreator().isEmpty()) {
+            this.root.getCoreMetadata().getCreator().add(creatorEntity = this.factory.createEntityType());
+            creatorEntity.getRole().add(creatorEntityRole);
+        }
+        //otherwise we're a contributor
+        else {
+            List<EntityType> creators = this.root.getCoreMetadata().getCreator();
+            //let's search if the creator with the correct role already exists before we add it again
+            for (EntityType c : creators) {
+                if (!c.getRole().isEmpty() && c.getRole().get(0).getTypeLabel().equals(creatorEntityRole.getTypeLabel())) {
+                    creatorEntity = c;
+                    break;
+                }
+            }
+            if (creatorEntity==null) {
+                this.root.getCoreMetadata().getCreator().add(creatorEntity = this.factory.createEntityType());
+                creatorEntity.getRole().add(creatorEntityRole);
+            }
+        }
+
+        //this will return the maven package of the current module writing this metadata -> very useful
+        String artifactId = properties.getProperty(MetaUtils.PROJECT_ARTIFACTID_KEY);
+        String version = properties.getProperty(MetaUtils.PROJECT_VERSION_KEY);
+        if (!StringUtils.isEmpty(artifactId) && !StringUtils.isEmpty(version)) {
+            creatorEntity.setEntityId(artifactId+"-"+version);
+        }
+        //that's not good, let's crash
+        else {
+            throw new IOException("Encountered an empty mvn artifactId as well as an empty version; that shouldn't happen; "+this.baseMetadataFile);
+        }
+    }
+    @Override
+    public void updateFileData() throws IOException
+    {
+        super.updateFileData();
+
+
+    }
+    @Override
     public void updateCreator(Person creator) throws IOException
     {
         super.updateCreator(creator);
@@ -81,12 +149,29 @@ public class EBUCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
         }
         //otherwise we're a contributor
         else {
-            List<EntityType> contributors = this.root.getCoreMetadata().getContributor();
-            //let's search if this contributor already exists before we add it again
-            for (EntityType c : contributors) {
-                if (c.getEntityId().equals(creatorId)) {
+
+            //before switching to contributors, let's first check if the current creator is not the dummy software creator
+            for (EntityType c : this.root.getCoreMetadata().getCreator()) {
+                if (c.getRole().isEmpty() || !c.getRole().get(0).getTypeLabel().equals(CREATOR_ROLE_SOFTWARE_LABEL)) {
                     creatorEntity = c;
                     break;
+                }
+            }
+            //this means there's no creator after all
+            if (creatorEntity==null) {
+                this.root.getCoreMetadata().getCreator().add(creatorEntity = this.factory.createEntityType());
+            }
+            else {
+                //start off by resetting it to null cause we'll check that later on
+                creatorEntity = null;
+
+                List<EntityType> contributors = this.root.getCoreMetadata().getContributor();
+                //let's search if this contributor already exists before we add it again
+                for (EntityType c : contributors) {
+                    if (c.getEntityId().equals(creatorId)) {
+                        creatorEntity = c;
+                        break;
+                    }
                 }
             }
             if (creatorEntity==null) {
@@ -111,26 +196,32 @@ public class EBUCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
     {
         super.updateTimestamps();
 
+        XMLGregorianCalendar now = this.getCalendar();
+
+        this.root.setDateLastModified(now);
+        this.root.setTimeLastModified(now);
+
         DateType dateEntity = null;
         if (this.root.getCoreMetadata().getDate().isEmpty()) {
             this.root.getCoreMetadata().getDate().add(dateEntity = this.factory.createDateType());
         }
         else {
-            this.root.getCoreMetadata().getDate().get(0);
+            dateEntity = this.root.getCoreMetadata().getDate().get(0);
         }
-
-        XMLGregorianCalendar now = this.getCalendar();
 
         DateType.Created created = dateEntity.getCreated();
         if (created==null) {
             dateEntity.setCreated(created = this.factory.createDateTypeCreated());
+            created.setStartDate(now);
+            created.setStartTime(now);
         }
 
-
-        c  reated.setStartDate(now);
-
-
-
+        DateType.Modified modified = dateEntity.getModified();
+        if (modified==null) {
+            dateEntity.setModified(modified = this.factory.createDateTypeModified());
+        }
+        modified.setStartDate(now);
+        modified.setStartTime(now);
     }
     @Override
     public void write() throws IOException
@@ -154,7 +245,7 @@ public class EBUCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
     @Override
     protected String getXsdResourcePath()
     {
-        return EBUCORE_XSD_RESOURCE_PATH;
+        return EBUCoreVersionInfo.SCHEMA_RESOURCE_PATH_GZ;
     }
 
     //-----PRIVATE METHODS-----

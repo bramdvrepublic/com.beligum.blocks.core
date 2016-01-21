@@ -4,6 +4,8 @@ package com.beligum.blocks.endpoints;
  * Created by bas on 07.10.14.
  */
 
+import com.beligum.base.auth.repositories.PersonRepository;
+import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.security.Authentication;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
@@ -28,6 +30,7 @@ import com.beligum.blocks.utils.comparators.MapComparator;
 import com.google.common.base.Functions;
 import com.google.common.collect.Lists;
 import gen.com.beligum.blocks.core.fs.html.views.modals.newblock;
+import gen.com.beligum.blocks.core.messages.blocks.core;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -74,7 +77,9 @@ public class PageEndpoint
     @Consumes(MediaType.APPLICATION_JSON)
     public Response savePageNew(@PathParam("url") URI url, String content) throws Exception
     {
-        this.getHdfsPageStore().save(url, content, Authentication.getCurrentPrincipal());
+        PersonRepository personRepository = new PersonRepository();
+
+        this.getHdfsPageStore().save(url, content, personRepository.get(Authentication.getCurrentPrincipal()));
 
         return Response.ok().build();
     }
@@ -179,24 +184,21 @@ public class PageEndpoint
     {
         TemplateCache cache = HtmlParser.getTemplateCache();
         List<Map<String, String>> templates = new ArrayList<>();
-        Locale lang = Settings.instance().getRequestDefaultLanguage();
+        Locale browserLang = I18nFactory.instance().getOptimalLocale();
         for (HtmlTemplate template : cache.values()) {
             if (!(template instanceof PageTemplate) && template.getDisplayType() != HtmlTemplate.MetaDisplayType.HIDDEN) {
                 HashMap<String, String> pageTemplate = new HashMap();
-                String title = null;
-                String description = null;
-                String icon = null;
 
-                final Locale[] LANGS = { lang, Settings.instance().getDefaultLanguage(), Locale.ROOT };
-
-                // TODO make defaults a translation
+                //the order of locales in which the templates will be searched
+                final Locale[] LANGS = { browserLang, Settings.instance().getDefaultLanguage(), Locale.ROOT };
                 pageTemplate.put("name", template.getTemplateName());
-                pageTemplate.put("title", this.findI18NValue(LANGS, template.getTitles(), "A template"));
-                pageTemplate.put("description", this.findI18NValue(LANGS, template.getDescriptions(), "No description available"));
+                pageTemplate.put("title", this.findI18NValue(LANGS, template.getTitles(), core.Entries.emptyTemplateTitle.getI18nValue()));
+                pageTemplate.put("description", this.findI18NValue(LANGS, template.getDescriptions(), core.Entries.emptyTemplateDescription.getI18nValue()));
                 pageTemplate.put("icon", this.findI18NValue(LANGS, template.getIcons(), null));
                 templates.add(pageTemplate);
             }
         }
+
 
         //sort the blocks by title
         Collections.sort(templates, new MapComparator("title"));

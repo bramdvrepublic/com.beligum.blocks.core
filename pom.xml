@@ -372,15 +372,4 @@
 
     </dependencies>
 
-    <build>
-        <!-- This will parse all properties files in the resources folder and fill them with the appropriate maven values from pom.xml -->
-        <!-- See http://maven.apache.org/plugins/maven-resources-plugin/examples/filter.html -->
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
-    </build>
-
 </project>

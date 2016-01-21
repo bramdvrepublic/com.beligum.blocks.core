@@ -6,10 +6,14 @@ import com.beligum.blocks.fs.ifaces.HdfsMetadataWriter;
 import com.beligum.blocks.fs.ifaces.PathInfo;
 import org.apache.hadoop.fs.FileChecksum;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URL;
+import java.util.Properties;
 
 /**
  * Created by bram on 1/20/16.
@@ -21,7 +25,7 @@ public abstract class AbstractHdfsMetadataWriter implements HdfsMetadataWriter
     //-----VARIABLES-----
     //valid during an entire session (after a successful init())
     protected FileSystem fileSystem;
-    protected Path schemaResource;
+    protected URL schemaResource;
     protected FileChecksum schemaResourceChecksum;
 
     //valid during an open/write session, nulled after close()
@@ -47,11 +51,11 @@ public abstract class AbstractHdfsMetadataWriter implements HdfsMetadataWriter
 
         //save the URI, calc the hash (and test it's valid at the same time)
         try {
-            this.schemaResource = new Path(this.getClass().getResource(this.getXsdResourcePath()).toURI());
-            this.schemaResourceChecksum = this.fileSystem.getFileChecksum(this.schemaResource);
+            this.schemaResource = this.getClass().getResource(this.getXsdResourcePath());
+            this.schemaResourceChecksum = this.fileSystem.getFileChecksum(new Path(this.schemaResource.toURI()));
         }
         catch (Exception e) {
-            throw new IOException("Error while validating the XSD schema location; "+this.getXsdResourcePath(), e);
+            throw new IOException("Error while validating the XSD schema location; " + this.getXsdResourcePath(), e);
         }
 
         this.inited = true;
@@ -68,19 +72,47 @@ public abstract class AbstractHdfsMetadataWriter implements HdfsMetadataWriter
                 // If the schema file exists, calculate it's hash and make sure it equals the schema file of the data we're about to write.
                 // If it doesn't, we can't reliably proceed cause we currently don't have a means to evolve the schemata
                 FileChecksum existingChecksum = this.fileSystem.getFileChecksum(this.baseMetadataSchema);
-                if (!existingChecksum.equals(this.schemaResourceChecksum)) {
+                //TODO the first check actually means no checksumming is available for this filesystem; fix that (it even exists for local file system!)
+                if (existingChecksum!=this.schemaResourceChecksum && !existingChecksum.equals(this.schemaResourceChecksum)) {
                     throw new IOException(
                                     "Checksum of metadata schemas didn't correspond. You're probably trying to write metadata with a newer schema than the one stored on disk, but I don't know how to do that; " +
                                     baseMetadataSchema);
                 }
             }
             else {
-                FileUtil.copy(this.fileSystem, this.schemaResource, this.fileSystem, baseMetadataSchema, false, this.fileSystem.getConf());
+                //copy the schema resource file to the destination
+                try (
+                                InputStream is = this.schemaResource.openStream();
+                                OutputStream os = this.fileSystem.create(baseMetadataSchema);
+                ) {
+                    IOUtils.copyBytes(is, os, this.fileSystem.getConf());
+                }
             }
 
             this.baseMetadataFile = new Path(pathInfo.getMetaMetadataFolder(), Constants.META_METADATA_FILE_BASE_XML);
 
             this.opened = true;
+        }
+    }
+    @Override
+    public void updateSchemaData() throws IOException
+    {
+        if (!this.opened) {
+            throw new IOException("Please open this reader first");
+        }
+    }
+    @Override
+    public void updateSoftwareData(Properties properties) throws IOException
+    {
+        if (!this.opened) {
+            throw new IOException("Please open this reader first");
+        }
+    }
+    @Override
+    public void updateFileData() throws IOException
+    {
+        if (!this.opened) {
+            throw new IOException("Please open this reader first");
         }
     }
     @Override

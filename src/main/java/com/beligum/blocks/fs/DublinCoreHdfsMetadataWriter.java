@@ -9,6 +9,7 @@ import org.apache.hadoop.fs.Path;
 
 import javax.xml.bind.JAXB;
 import java.io.*;
+import java.util.Properties;
 
 /**
  * Created by bram on 1/20/16.
@@ -16,7 +17,7 @@ import java.io.*;
 public class DublinCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
 {
     //-----CONSTANTS-----
-    private static final String DC_XSD_RESOURCE_PATH = "/com/beligum/blocks/schema/dublincore/simple/v20021212/simpledc20021212.xsd";
+    private static final String DC_XSD_RESOURCE_PATH = "/com/beligum/blocks/schema/dublincore/simple/v20021212/simpledc20021212.xsd.gz";
 
     //-----VARIABLES-----
     //valid during an entire session (after a successful init())
@@ -56,6 +57,20 @@ public class DublinCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
         if (this.root == null) {
             this.root = this.factory.createElementContainer();
         }
+    }
+    @Override
+    public void updateSchemaData() throws IOException
+    {
+        super.updateSchemaData();
+
+        throw new RuntimeException("NOT IMPLEMENTED YET");
+    }
+    @Override
+    public void updateSoftwareData(Properties properties) throws IOException
+    {
+        super.updateSoftwareData(properties);
+
+        throw new RuntimeException("NOT IMPLEMENTED YET");
     }
     @Override
     public void updateCreator(Person creator) throws IOException

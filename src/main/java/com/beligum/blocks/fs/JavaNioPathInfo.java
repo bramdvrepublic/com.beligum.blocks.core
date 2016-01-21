@@ -187,4 +187,12 @@ public class JavaNioPathInfo extends AbstractPathInfo<Path>
     {
         return path.getParent().resolve(LOCK_FILE_PREFIX + path.getFileName() + Settings.instance().getPagesLockFileExtension());
     }
+    @Override
+    public String toString()
+    {
+        return "JavaNioPathInfo{" +
+               "path=" + path +
+               ", metaFolder=" + metaFolder +
+               '}';
+    }
 }

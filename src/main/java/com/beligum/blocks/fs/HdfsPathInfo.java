@@ -187,4 +187,12 @@ public class HdfsPathInfo extends AbstractPathInfo<Path>
     {
         return new Path(path.getParent(), LOCK_FILE_PREFIX + path.getName() + Settings.instance().getPagesLockFileExtension());
     }
+    @Override
+    public String toString()
+    {
+        return "HdfsPathInfo{" +
+               "path=" + path +
+               ", metaFolder=" + metaFolder +
+               '}';
+    }
 }
