@@ -140,7 +140,6 @@ public class WebPageParser
     * Parse the html, retain all elements that have a template tag or property attribute
     * For new resources (elements with typeof attribute but without resource attriubute), add a resource id
     * Put all property values in resource objects to save for the database
-    *
     * */
     private Element parse(Element element, int textPos, Resource resource, boolean addContent) throws Exception
     {
@@ -300,6 +299,7 @@ public class WebPageParser
                 // full text
                 this.pageTemplate = retVal.getAttributeValue("template");
                 if (this.pageTemplate == null) {
+                    //TODO where is this else used??
                     this.pageTemplate = "blocks-page-template";
                 }
             }
@@ -338,7 +338,7 @@ public class WebPageParser
                 HashMap<String, URI> prefix = RdfTools.parsePrefixes(retVal.getAttributeValue("prefixes"));
                 for (String p : prefix.keySet()) {
                     if (this.prefixes.containsKey(p) && !(this.prefixes.get(p).equals(prefix.get(p)))) {
-                        throw new RdfException("Prefix is used twice in page with different URI's");
+                        throw new RdfException("Prefix is used twice in page with different URI's; "+p);
                     }
                     else {
                         this.prefixes.put(p, prefix.get(p));
@@ -492,7 +492,8 @@ public class WebPageParser
         return UriBuilder.fromUri("").scheme(uri.getScheme()).host(uri.getHost()).path(uri.getPath()).build();
     }
 
-    /*Adds a property to a map that sorts all properties / resource
+    /*
+    * Adds a property to a map that sorts all properties / resource
     * this just collects the properties and determines the order.
     * When all properties for a resource are read, we can analyse them
     * and change the resource in the DB -> see setResourceProperties

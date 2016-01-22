@@ -67,7 +67,7 @@ public abstract class AbstractHdfsMetadataWriter implements HdfsMetadataWriter
             throw new IOException("Please init this reader first");
         }
         else {
-            this.baseMetadataSchema = new Path(pathInfo.getMetaMetadataFolder(), Constants.META_METADATA_FILE_BASE_XSD);
+            this.baseMetadataSchema = new Path(pathInfo.getMetaMetadataFolder(), Constants.META_METADATA_FILE_METADATA_XSD);
             if (fileSystem.exists(this.baseMetadataSchema)) {
                 // If the schema file exists, calculate it's hash and make sure it equals the schema file of the data we're about to write.
                 // If it doesn't, we can't reliably proceed cause we currently don't have a means to evolve the schemata
@@ -89,7 +89,7 @@ public abstract class AbstractHdfsMetadataWriter implements HdfsMetadataWriter
                 }
             }
 
-            this.baseMetadataFile = new Path(pathInfo.getMetaMetadataFolder(), Constants.META_METADATA_FILE_BASE_XML);
+            this.baseMetadataFile = new Path(pathInfo.getMetaMetadataFolder(), Constants.META_METADATA_FILE_METADATA_XML);
 
             this.opened = true;
         }

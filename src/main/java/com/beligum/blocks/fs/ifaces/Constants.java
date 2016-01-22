@@ -13,8 +13,8 @@ public interface Constants
     String META_SUBFOLDER_PROXY = "proxy";
 
     String META_SUBFOLDER_METADATA = "meta";
-    String META_METADATA_FILE_BASE_XML = "base.xml";
-    String META_METADATA_FILE_BASE_XSD = "base.xsd.gz";
+    String META_METADATA_FILE_METADATA_XML = "metadata.xml";
+    String META_METADATA_FILE_METADATA_XSD = "metadata.xsd";
 
     String META_SUBFOLDER_HISTORY = "HISTORY";
 
