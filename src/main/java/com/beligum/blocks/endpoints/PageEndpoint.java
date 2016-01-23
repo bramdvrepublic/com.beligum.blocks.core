@@ -16,14 +16,14 @@ import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.pages.HdfsPageStore;
+import com.beligum.blocks.pages.NewPageParser;
 import com.beligum.blocks.pages.WebPageParser;
 import com.beligum.blocks.pages.ifaces.PageStore;
-import com.beligum.blocks.rdf.Any23Importer;
 import com.beligum.blocks.rdf.HtmlSource;
 import com.beligum.blocks.rdf.JenaExporter;
+import com.beligum.blocks.rdf.SemarglImporter;
 import com.beligum.blocks.rdf.ifaces.Exporter;
 import com.beligum.blocks.rdf.ifaces.Importer;
-import com.beligum.blocks.rdf.ifaces.Source;
 import com.beligum.blocks.routing.Route;
 import com.beligum.blocks.search.ElasticSearch;
 import com.beligum.blocks.security.Permissions;
@@ -37,6 +37,8 @@ import com.google.common.collect.Lists;
 import com.hp.hpl.jena.rdf.model.Model;
 import gen.com.beligum.blocks.core.fs.html.views.modals.newblock;
 import gen.com.beligum.blocks.core.messages.blocks.core;
+import net.htmlparser.jericho.Source;
+import net.htmlparser.jericho.SourceFormatter;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -98,38 +100,47 @@ public class PageEndpoint
 
         String finalHtml = "<" + pageParser.getPageTemplate() + ">" + pageParser.getParsedHtml() + "</" + pageParser.getPageTemplate() + ">";
 
-//        Source source = new Source(finalHtml);
-//        SourceFormatter formatter = new SourceFormatter(source);
-//        formatter.setCollapseWhiteSpace(true);
-//        formatter.setIndentString("");
-//        formatter.setNewLine("");
-//        String finalHtmlFormatted = formatter.toString();
-        //Logger.info(finalHtmlFormatted);
+        new NewPageParser().parse(content, uri);
 
+        //this.getHdfsPageStore().save(uri, content, personRepository.get(Authentication.getCurrentPrincipal()));
+
+        //this.testRdfaParsing();
+
+        return Response.ok().build();
+    }
+    private void testRdfaParsing() throws Exception
+    {
         String testFile = "/home/bram/Projects/Workspace/idea/com.beligum.mot.site/src/test/resources/belgium-aalst-nieuwerkerken-blauwenbergstraat-61.html";
+        String outFile = "/home/bram/Projects/Workspace/idea/com.beligum.mot.site/src/test/resources/testsave_raw.json";
         String baseUrl = "http://mot.beligum.com/v1/resource/waterwell/belgium-aalst-nieuwerkerken-blauwenbergstraat-61";
         //String baseUrl = "http://mot.beligum.com/nl/v1/resource/waterwell/belgium-aalst-nieuwerkerken-blauwenbergstraat-61";
 
         Model model = null;
-        try (Source source = new HtmlSource(new File(testFile).toURI(), URI.create(baseUrl))) {
-            model = new Any23Importer().importDocument(source, Importer.Format.RDFA);
+        try (HtmlSource source = new HtmlSource(new File(testFile).toURI(), URI.create(baseUrl))) {
+            model = new SemarglImporter().importDocument(source, Importer.Format.RDFA);
         }
-
-        File jsonLdFile = new File("/home/bram/Projects/Workspace/idea/com.beligum.mot.site/src/test/resources/testsave_raw.json");
-        try (OutputStream out = new FileOutputStream(jsonLdFile)) {
+        try (OutputStream out = new FileOutputStream(new File(outFile))) {
             new JenaExporter().exportModel(model, Exporter.Format.JSONLD, out);
         }
-
-        //this.getHdfsPageStore().save(uri, content, personRepository.get(Authentication.getCurrentPrincipal()));
-
-        return Response.ok().build();
+    }
+    private void preparseHtml(String html)
+    {
+        Source source = new Source(html);
+        SourceFormatter formatter = new SourceFormatter(source);
+        formatter.setCollapseWhiteSpace(true);
+        //removes all indentation
+        formatter.setIndentString("");
+        //removes all newlines
+        formatter.setNewLine("");
+        //result is a very compact format
+        String finalHtmlFormatted = formatter.toString();
     }
 
     @POST
     @Path("/saveold/{url:.*}")
     @Consumes(MediaType.APPLICATION_JSON)
     // @bulk:  if true, we have to flush the bulk upload to ElasticSearch (used during import)
-    public Response savePage(@PathParam("url") String url, @QueryParam("bulk") @DefaultValue("false") boolean bulk, String content) throws Exception
+    public Response savePageOld(@PathParam("url") String url, @QueryParam("bulk") @DefaultValue("false") boolean bulk, String content) throws Exception
     {
         URI uri = new URI(url);
         // Analyze the url to find the correct Route
@@ -264,13 +275,12 @@ public class PageEndpoint
             }
         }
 
-        //TODO change these to constants
         Template block = R.templateEngine().getNewStringTemplate(htmlTemplate.createNewHtmlInstance());
-        retVal.put("html", block.render());
-        retVal.put("inlineStyles", Lists.transform(Lists.newArrayList(htmlTemplate.getInlineStyleElementsForCurrentScope()), Functions.toStringFunction()));
-        retVal.put("externalStyles", Lists.transform(Lists.newArrayList(htmlTemplate.getExternalStyleElementsForCurrentScope()), Functions.toStringFunction()));
-        retVal.put("inlineScripts", Lists.transform(Lists.newArrayList(htmlTemplate.getInlineScriptElementsForCurrentScope()), Functions.toStringFunction()));
-        retVal.put("externalScripts", Lists.transform(Lists.newArrayList(htmlTemplate.getExternalScriptElementsForCurrentScope()), Functions.toStringFunction()));
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_HTML.getValue(), block.render());
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_INLINE_STYLES.getValue(), Lists.transform(Lists.newArrayList(htmlTemplate.getInlineStyleElementsForCurrentScope()), Functions.toStringFunction()));
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES.getValue(), Lists.transform(Lists.newArrayList(htmlTemplate.getExternalStyleElementsForCurrentScope()), Functions.toStringFunction()));
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS.getValue(), Lists.transform(Lists.newArrayList(htmlTemplate.getInlineScriptElementsForCurrentScope()), Functions.toStringFunction()));
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS.getValue(), Lists.transform(Lists.newArrayList(htmlTemplate.getExternalScriptElementsForCurrentScope()), Functions.toStringFunction()));
 
         return Response.ok(retVal).build();
     }

@@ -37,12 +37,12 @@ public class TagTemplate extends HtmlTemplate
     @Override
     protected OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate parent) throws IOException
     {
-        List<Element> templateElements = document.getSegment().getAllElements("template");
+        List<Element> templateElements = document.getSegment().getAllElements(HtmlParser.WEBCOMPONENTS_TEMPLATE_ELEM);
 
         // Note that there always needs to be a <template> tag to indicate this is a template
         if (templateElements != null && !templateElements.isEmpty()) {
             if (templateElements.size() > 1) {
-                throw new IOException("Encountered tag template with more than one <template> tags (" + templateElements.size() + "); " + absolutePath);
+                throw new IOException("Encountered tag template with more than one <" + HtmlParser.WEBCOMPONENTS_TEMPLATE_ELEM + "> tags (" + templateElements.size() + "); " + absolutePath);
             }
 
             Element templateTag = templateElements.get(0);
@@ -60,7 +60,8 @@ public class TagTemplate extends HtmlTemplate
             this.setAttributes(attrs);
         }
         else {
-            throw new IOException("Encountered tag template with an invalid <template> tag config (found " + (templateElements == null ? null : templateElements.size()) + " tags); " + absolutePath);
+            throw new IOException("Encountered tag template with an invalid <" + HtmlParser.WEBCOMPONENTS_TEMPLATE_ELEM + "> tag config (found " +
+                                  (templateElements == null ? null : templateElements.size()) + " tags); " + absolutePath);
         }
 
         return document;
@@ -75,7 +76,7 @@ public class TagTemplate extends HtmlTemplate
         Segment documentSource = new Source(document.toString());
 
         //note that we already checked there's exactly one <template> tag
-        Element templateTag = documentSource.getFirstElement("template");
+        Element templateTag = documentSource.getFirstElement(HtmlParser.WEBCOMPONENTS_TEMPLATE_ELEM);
 
         //now we want to unwrap the <template> tag
         // note that it's not enough to return the content of that tag,

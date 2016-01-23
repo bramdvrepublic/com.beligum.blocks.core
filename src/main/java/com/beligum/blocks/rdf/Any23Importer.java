@@ -51,6 +51,7 @@ public class Any23Importer extends AbstractImporter
         Model model = ModelFactory.createDefaultModel();
         this.readToJenaModel(runner, source, documentSource, inputFormat, model);
 
+        //Note: this doesn't seem to do anything for this importer (Any23 doesn't return an expanded @graph form)
         model = this.filterRelevantNodes(model, source.getBaseUri());
 
         return model;

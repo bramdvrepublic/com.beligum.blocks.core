@@ -121,16 +121,16 @@ public abstract class HtmlTemplate
     }
     private static boolean representsTagTemplate(Source source)
     {
-        return !source.getAllElements("template").isEmpty();
+        return !source.getAllElements(HtmlParser.WEBCOMPONENTS_TEMPLATE_ELEM).isEmpty();
     }
     private static boolean representsPageTemplate(Source source)
     {
         boolean retVal = false;
 
-        List<Element> html = source.getAllElements("html");
+        List<Element> html = source.getAllElements(HtmlParser.HTML_ROOT_ELEM);
         if (html != null && html.size() == 1) {
             Attributes htmlAttr = html.get(0).getAttributes();
-            if (htmlAttr.get("template") != null) {
+            if (htmlAttr.get(HtmlParser.WEBCOMPONENTS_TEMPLATE_ELEM) != null) {
                 retVal = true;
             }
         }
@@ -279,10 +279,10 @@ public abstract class HtmlTemplate
         //note: this should take the parent into account
         OutputDocument tempHtml = this.doInitHtmlPreparsing(new OutputDocument(source), parent);
 
-        this.vocab = HtmlParser.parseRdfVocabAttribute(this, this.attributes.get("vocab"));
+        this.vocab = HtmlParser.parseRdfVocabAttribute(this, this.attributes.get(HtmlParser.RDF_VOCAB_ATTR));
 
         this.prefixes = new LinkedHashMap<>();
-        HtmlParser.parseRdfPrefixAttribute(this, this.attributes.get("prefix"), this.prefixes);
+        HtmlParser.parseRdfPrefixAttribute(this, this.attributes.get(HtmlParser.RDF_PREFIX_ATTR), this.prefixes);
 
         //Note that we need to eat these values for PageTemplates because we don't want them to end up at the client side (no problem for TagTemplates)
         this.titles = parent != null ? parent.getTitles() : new HashMap<Locale, String>();

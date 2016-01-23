@@ -244,25 +244,25 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                         $.getJSON("/blocks/admin/page/block/" + name)
                             .done(function (data)
                             {
-                                addHeadResource(data.inlineStyles, name + "-in-style");
-                                addHeadResource(data.externalStyles, name + "-ex-style");
+                                addHeadResource(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_STYLES], name + "-in-style");
+                                addHeadResource(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES], name + "-ex-style");
 
-                                if (data.html && data.html!=="") {
+                                if (data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML] && data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML]!=="") {
                                     // whow, this is weird stuff!
                                     // Originally just $(data.html), but docs say the current version is safer.
                                     // Problem was it failed with certains custom elements:
                                     // th-search didn't work, where div-search did work.
                                     // Seems to be a bug in JQuery: https://github.com/jquery/jquery/issues/1987
                                     // Fixed with a patched version (see pom.xml)
-                                    var block = $($.parseHTML($.trim(data.html)));
+                                    var block = $($.parseHTML($.trim(data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML])));
 
                                     Hover.removeHoverOverlays();
                                     resetDragDrop();
                                     cancelled = false;
                                     Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side, function onComplete()
                                     {
-                                        addHeadResource(data.inlineScripts, name + "-in-script", true);
-                                        addHeadResource(data.externalScripts, name + "-ex-script", true);
+                                        addHeadResource(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS], name + "-in-script", true);
+                                        addHeadResource(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS], name + "-ex-script", true);
                                     });
                                 }
                                 else {

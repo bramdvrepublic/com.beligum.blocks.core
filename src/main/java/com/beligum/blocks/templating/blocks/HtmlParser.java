@@ -48,6 +48,12 @@ public class HtmlParser extends AbstractAssetParser
     //this is the name of the property attribute that can be used in the template system, but doesn't 'mean' anything RDFa-wise
     public static final String NON_RDF_PROPERTY_ATTR = "data-property";
 
+    public static final String RDF_VOCAB_ATTR = "vocab";
+    public static final String RDF_PREFIX_ATTR = "prefix";
+    public static final String HTML_ROOT_ELEM = "html";
+    public static final String WEBCOMPONENTS_TEMPLATE_ELEM = "template";
+    public static final String HTML_ROOT_TEMPLATE_ATTR = "template";
+
     //-----CONSTRUCTORS-----
     public HtmlParser()
     {
@@ -156,7 +162,7 @@ public class HtmlParser extends AbstractAssetParser
         String sourceStr = eatVelocityComments(rawSource);
         Source source = new Source(sourceStr);
 
-        boolean htmlPage = source.getFirstElement("html") != null;
+        boolean htmlPage = source.getFirstElement(HTML_ROOT_ELEM) != null;
         HtmlTemplate sourceTemplate = null;
         // if we're dealing with a template (eg. the file is a template, not an instance of a template), replace the source with the html in the template
         TemplateCache templateCache = this.getTemplateCache();
@@ -197,7 +203,7 @@ public class HtmlParser extends AbstractAssetParser
                     Attributes attributes = tag.getAttributes();
                     if (attributes != null) {
 
-                        Attribute vocabAttr = attributes.get("vocab");
+                        Attribute vocabAttr = attributes.get(RDF_VOCAB_ATTR);
                         if (vocabAttr != null) {
                             currentVocab = parseRdfVocabAttribute(sourceTemplate, vocabAttr.getValue());
                             //if the tag is not stand-alone, push it on the stack and save it's end tag for popping
@@ -216,7 +222,7 @@ public class HtmlParser extends AbstractAssetParser
                             }
                         }
 
-                        Attribute prefixAttr = attributes.get("prefix");
+                        Attribute prefixAttr = attributes.get(RDF_PREFIX_ATTR);
                         if (prefixAttr != null) {
                             if (currentPrefixes == null) {
                                 currentPrefixes = new LinkedHashMap<>();
@@ -596,7 +602,7 @@ public class HtmlParser extends AbstractAssetParser
     }
     private int getAbsoluteTemplateTagLineNumber(Source source, int relativeBegin)
     {
-        return source.getRow(source.getFirstElement("template").getBegin()) + source.getRow(relativeBegin);
+        return source.getRow(source.getFirstElement(WEBCOMPONENTS_TEMPLATE_ELEM).getBegin()) + source.getRow(relativeBegin);
     }
     public static URI parseRdfVocabAttribute(HtmlTemplate sourceTemplate, String vocabAttrValue) throws Exception
     {

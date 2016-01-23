@@ -16,8 +16,10 @@ import gen.com.beligum.blocks.core.messages.blocks.core;
 import net.htmlparser.jericho.Element;
 import net.htmlparser.jericho.Source;
 import net.htmlparser.jericho.TextExtractor;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.ws.rs.core.UriBuilder;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -189,16 +191,14 @@ public class WebPageParser
         }
 
         // Set property value of current resource when property is content-editable
-        //TODO (b) Wouter, what about data-property here?
         if (isProperty(element)) {
             URI property = getAbsoluteRdfName(getPropertyName(element));
             Locale propertyLocale = locale;
+            //TODO this is not right?
             if (element.getAttributeValue("lang") != null) {
                 propertyLocale = Locale.ROOT;
             }
-            else {
-                int x = 0;
-            }
+
             Node content;
             if (newResource != null && !(resource instanceof WebPage)) {
                 content = newResource;
@@ -277,7 +277,7 @@ public class WebPageParser
     * Get the next special element that has to be saved
     * Used while parsing the html
     * */
-    private Element findNextElement() throws RdfException, URISyntaxException
+    private Element findNextElement() throws RdfException, URISyntaxException, IOException
     {
         Element retVal = null;
         boolean found = false;
@@ -296,11 +296,9 @@ public class WebPageParser
             }
 
             if (retVal.getName().equals("html")) {
-                // full text
                 this.pageTemplate = retVal.getAttributeValue("template");
-                if (this.pageTemplate == null) {
-                    //TODO where is this else used??
-                    this.pageTemplate = "blocks-page-template";
+                if (StringUtils.isEmpty(this.pageTemplate)) {
+                    throw new IOException("Encountered an attempt to save html without a page template; this shouldn't happen; "+retVal);
                 }
             }
 
