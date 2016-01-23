@@ -18,6 +18,12 @@ import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.pages.HdfsPageStore;
 import com.beligum.blocks.pages.WebPageParser;
 import com.beligum.blocks.pages.ifaces.PageStore;
+import com.beligum.blocks.rdf.Any23Importer;
+import com.beligum.blocks.rdf.HtmlSource;
+import com.beligum.blocks.rdf.JenaExporter;
+import com.beligum.blocks.rdf.ifaces.Exporter;
+import com.beligum.blocks.rdf.ifaces.Importer;
+import com.beligum.blocks.rdf.ifaces.Source;
 import com.beligum.blocks.routing.Route;
 import com.beligum.blocks.search.ElasticSearch;
 import com.beligum.blocks.security.Permissions;
@@ -28,23 +34,19 @@ import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.beligum.blocks.utils.comparators.MapComparator;
 import com.google.common.base.Functions;
 import com.google.common.collect.Lists;
-import com.hp.hpl.jena.rdf.model.*;
+import com.hp.hpl.jena.rdf.model.Model;
 import gen.com.beligum.blocks.core.fs.html.views.modals.newblock;
 import gen.com.beligum.blocks.core.messages.blocks.core;
-import net.htmlparser.jericho.Source;
-import net.htmlparser.jericho.SourceFormatter;
-import org.apache.jena.riot.RDFDataMgr;
-import org.apache.jena.riot.out.JsonLDWriter;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.hibernate.validator.constraints.NotBlank;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.semarglproject.jena.rdf.rdfa.JenaRdfaReader;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.util.*;
 
@@ -96,102 +98,27 @@ public class PageEndpoint
 
         String finalHtml = "<" + pageParser.getPageTemplate() + ">" + pageParser.getParsedHtml() + "</" + pageParser.getPageTemplate() + ">";
 
-        Source source = new Source(finalHtml);
-        SourceFormatter formatter = new SourceFormatter(source);
-        formatter.setCollapseWhiteSpace(true);
-        formatter.setIndentString("");
-        formatter.setNewLine("");
-        String finalHtmlFormatted = formatter.toString();
+//        Source source = new Source(finalHtml);
+//        SourceFormatter formatter = new SourceFormatter(source);
+//        formatter.setCollapseWhiteSpace(true);
+//        formatter.setIndentString("");
+//        formatter.setNewLine("");
+//        String finalHtmlFormatted = formatter.toString();
         //Logger.info(finalHtmlFormatted);
 
-        String testFile = "/home/bram/Projects/Workspace/idea/com.beligum.mot.site/src/test/resources/testsave_raw.html";
-        String parsedHtml = "";
-        String baseUrl = "http://www.example.com";
+        String testFile = "/home/bram/Projects/Workspace/idea/com.beligum.mot.site/src/test/resources/belgium-aalst-nieuwerkerken-blauwenbergstraat-61.html";
+        String baseUrl = "http://mot.beligum.com/v1/resource/waterwell/belgium-aalst-nieuwerkerken-blauwenbergstraat-61";
+        //String baseUrl = "http://mot.beligum.com/nl/v1/resource/waterwell/belgium-aalst-nieuwerkerken-blauwenbergstraat-61";
 
-        //        //Clean (HTML to XHTML)
-        //        ContentHandler handler = new ToHTMLContentHandler();
-        ////        ContentHandler handler = new ToXMLContentHandler();
-        //        org.apache.tika.parser.html.HtmlParser parser = new org.apache.tika.parser.html.HtmlParser();
-        //        Metadata metadata = new Metadata();
-        //        try (InputStream stream = new FileInputStream(new File(testFile))) {
-        //            parser.parse(stream, handler, metadata);
-        //            if (!(handler instanceof ToHTMLContentHandler)) {
-        //                xhtml += "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-        //                        "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML+RDFa 1.1//EN\" \"http://www.w3.org/MarkUp/DTD/xhtml-rdfa-2.dtd\">\n";
-        //            }
-        //            xhtml += handler.toString();
-        //        }
-
-        // Parse str into a Document
-        Document doc = Jsoup.parse(new File(testFile), null, baseUrl);
-        // Clean the document (doesn't work because it strips the head out)
-        //Whitelist whitelist = Whitelist.relaxed();
-        //doc = new Cleaner(whitelist).clean(doc);
-        // Adjust escape mode
-        //doc.outputSettings().escapeMode(Entities.EscapeMode.base);
-        //note: this is required! (doesn't work with html)
-        doc.outputSettings().syntax(Document.OutputSettings.Syntax.xml);
-        // Get back the string of the body.
-        parsedHtml = doc.body().html();
-
-        //semargl TEST
-        //        Model model = ModelFactory.createDefaultModel();
-        //        StreamProcessor streamProcessor = new StreamProcessor(RdfaParser.connect(JenaSink.connect(model)));
-        //        streamProcessor.setProperty(RdfaParser.RDFA_VERSION_PROPERTY, RDFa.VERSION_11);
-        //        //streamProcessor.setProperty(RdfaParser.ENABLE_VOCAB_EXPANSION, true);
-        //        try (Reader reader = new StringReader(parsedHtml)) {
-        //            streamProcessor.process(reader, baseUrl);
-        //        }
-
-        //'pure' Jena TEST
-        Model model = ModelFactory.createDefaultModel();
-        //net.rootdev.javardfa.jena.RDFaReader.XHTMLRDFaReader rdfaReader = new net.rootdev.javardfa.jena.RDFaReader.XHTMLRDFaReader();
-        //Class.forName("net.rootdev.javardfa.jena.RDFaReader");
-        JenaRdfaReader.inject();
-        //JenaRdfaReader rdfaReader = new JenaRdfaReader();
-        try (Reader reader = new StringReader(parsedHtml)) {
-            model.read(reader, baseUrl, "RDFA");
-            //rdfaReader.read(model, reader, baseUrl);
+        Model model = null;
+        try (Source source = new HtmlSource(new File(testFile).toURI(), URI.create(baseUrl))) {
+            model = new Any23Importer().importDocument(source, Importer.Format.RDFA);
         }
 
-        //TODO this is probably not the way...
-        Model filteredModel = ModelFactory.createDefaultModel();
-        StmtIterator selection = model.listStatements(new SimpleSelector(model.createProperty("http://mot.beligum.com/v1/resource/waterwell/belgium-aalst-nieuwerkerken-blauwenbergstraat-61"), null, (RDFNode)null));
-        while (selection.hasNext()) {
-            Statement stmt = selection.nextStatement();
-            filteredModel.add(stmt.getSubject(), stmt.getPredicate(), stmt.getObject());
-        }
-//        filteredModel.add(selection);
-
-        JsonLDWriter jsonLdWriter;
         File jsonLdFile = new File("/home/bram/Projects/Workspace/idea/com.beligum.mot.site/src/test/resources/testsave_raw.json");
         try (OutputStream out = new FileOutputStream(jsonLdFile)) {
-            RDFDataMgr.write(out, filteredModel, org.apache.jena.riot.RDFFormat.JSONLD);
+            new JenaExporter().exportModel(model, Exporter.Format.JSONLD, out);
         }
-
-
-
-//        model.listObjects();
-//        //see https://github.com/jsonld-java/jsonld-java/issues/101
-//        final JsonLdOptions options = new JsonLdOptions();
-//        options.format = "application/jsonld";
-//        String json = FileUtils.readFileToString(jsonLdFile);
-//        Object compact = JsonLdProcessor.compact(new ByteArrayInputStream(json.getBytes("UTF-8")), json, options);
-//        Logger.info(Json.write(compact));
-
-        //        //Any23 TEST
-        //        RDFaExtractor extractor = RDFaExtractor();
-
-        //String testFileXHtml = "/home/bram/Projects/Workspace/idea/com.beligum.mot.site/src/test/resources/testsave_raw.xhtml";
-        //        FileUtils.write(new File(testFileXHtml), xhtml);
-
-        //        Model c = FileManager.get().loadModel("file://" + testFileXHtml);
-        //        Model m = ModelFactory.createDefaultModel();
-        //        StatementSink sink = new JenaStatementSink(m);
-        //        XMLReader parser2 = ParserFactory.createReaderForFormat(sink, ParserFactory.Format.XHTML, Setting.OnePointOne);
-        //        parser2.parse(testFileXHtml);
-        //        boolean result = c.isIsomorphicWith(m);
-        //        if (!result) m.write(System.err, "TTL");
 
         //this.getHdfsPageStore().save(uri, content, personRepository.get(Authentication.getCurrentPrincipal()));
 
