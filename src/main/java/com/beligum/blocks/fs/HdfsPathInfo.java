@@ -3,6 +3,7 @@ package com.beligum.blocks.fs;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.ifaces.Constants;
+import com.google.common.net.MediaType;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -70,6 +71,11 @@ public class HdfsPathInfo extends AbstractPathInfo<Path>
     public Path getMetaProxyFolder()
     {
         return new Path(this.getMetaFolder(), Constants.META_SUBFOLDER_PROXY);
+    }
+    @Override
+    public Path getMetaProxyFolder(MediaType mimeType)
+    {
+        return new Path(new Path(this.getMetaProxyFolder(), mimeType.type()), mimeType.subtype());
     }
     @Override
     public Path getMetaMetadataFolder()

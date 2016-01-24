@@ -1,22 +1,21 @@
 package com.beligum.blocks.utils;
 
-/**
- * Created by wouter on 2/05/15.
- * <p/>
- * copied from: https://github.com/emidln/simpleflake-java/blob/master/src/main/java/com/outjected/simpleflake/SimpleFlake.java
- * <p/>
- * See: http://engineering.custommade.com/simpleflake-distributed-id-generation-for-the-lazy/
- */
-
 import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * Created by wouter on 2/05/15.
+ * <p/>
+ * copied from: https://github.com/jschwartz73/simpleflake-java/blob/master/src/main/java/com/outjected/simpleflake/SimpleFlake.java
+ * <p/>
+ * See: http://engineering.custommade.com/simpleflake-distributed-id-generation-for-the-lazy/
+ */
+
 public class SimpleFlake
 {
-
     private static final long EPOCH = 1288834974657L;
     private static final long MAX_SIGNED_LONG = 2199023255551L;
 
@@ -34,6 +33,7 @@ public class SimpleFlake
      */
     public long generate()
     {
+
         long currentTimestamp = System.currentTimeMillis();
 
         while (lastTimestamp > currentTimestamp) {

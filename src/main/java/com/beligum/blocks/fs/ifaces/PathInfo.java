@@ -1,6 +1,7 @@
 package com.beligum.blocks.fs.ifaces;
 
 import com.beligum.blocks.fs.LockFile;
+import com.google.common.net.MediaType;
 
 import java.io.IOException;
 
@@ -30,6 +31,8 @@ public interface PathInfo<T>
     T getMetaMonitorFolder();
 
     T getMetaProxyFolder();
+
+    T getMetaProxyFolder(MediaType mimeType);
 
     T getMetaMetadataFolder();
 

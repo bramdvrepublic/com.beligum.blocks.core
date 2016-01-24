@@ -14,6 +14,7 @@ import com.beligum.blocks.fs.ifaces.HdfsMetadataWriter;
 import com.beligum.blocks.fs.ifaces.PathInfo;
 import com.beligum.blocks.pages.ifaces.Page;
 import com.beligum.blocks.pages.ifaces.PageStore;
+import com.beligum.blocks.rdf.ifaces.Source;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
@@ -22,10 +23,7 @@ import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.joda.time.DateTime;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.io.*;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
@@ -64,9 +62,9 @@ public class HdfsPageStore implements PageStore
         }
     }
     @Override
-    public void save(URI uri, String content, Person creator) throws IOException
+    public void save(Source source, Person creator) throws IOException
     {
-        Page page = new PageImpl(uri);
+        Page page = new PageImpl(source.getBaseUri());
 
         //now execute the FS changes
         try (FileSystem fs = this.getFileSystem()) {
@@ -85,9 +83,21 @@ public class HdfsPageStore implements PageStore
                     this.createVersion(fs, pathInfo);
                 }
 
-                //save the page html
+                //we'll read everything into a string for ease of use
+                String sourceHtml;
+                try (InputStream is = source.openNewInputStream()) {
+                    sourceHtml = org.apache.commons.io.IOUtils.toString(is);
+                }
+
+                //save the original page html
                 try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(pathInfo.getPath())))) {
-                    writer.write(content);
+                    writer.write(sourceHtml);
+                }
+
+                //save the normalized page html
+                Path normalizedHtml = new Path(pathInfo.getMetaProxyFolder(PAGE_PROXY_NORMALIZED_MIME_TYPE), PAGE_PROXY_NORMALIZED_FILE_NAME);
+                try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(normalizedHtml)))) {
+                    writer.write(new PageHtmlParser().parse(sourceHtml, source.getBaseUri(), true));
                 }
 
                 //save the HASH of the file

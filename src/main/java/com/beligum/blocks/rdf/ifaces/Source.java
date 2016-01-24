@@ -1,12 +1,13 @@
 package com.beligum.blocks.rdf.ifaces;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 
 /**
  * Created by bram on 1/23/16.
  */
-public interface Source extends AutoCloseable
+public interface Source
 {
     //-----CONSTANTS-----
 
@@ -15,9 +16,8 @@ public interface Source extends AutoCloseable
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    URI getUri();
     URI getBaseUri();
-    InputStream getInputStream();
+    InputStream openNewInputStream() throws IOException;
 
     //-----PROTECTED METHODS-----
 

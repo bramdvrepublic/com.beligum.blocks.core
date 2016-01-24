@@ -5,15 +5,16 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import org.apache.any23.Any23;
 import org.apache.any23.extractor.ExtractionException;
+import org.apache.any23.source.ByteArrayDocumentSource;
 import org.apache.any23.source.DocumentSource;
-import org.apache.any23.source.FileDocumentSource;
-import org.apache.any23.source.HTTPDocumentSource;
 import org.apache.any23.writer.NTriplesWriter;
 import org.apache.any23.writer.TripleHandler;
 import org.apache.any23.writer.TripleHandlerException;
 
-import java.io.*;
-import java.net.URI;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 
 /**
@@ -34,22 +35,8 @@ public class Any23Importer extends AbstractImporter
     @Override
     public Model importDocument(Source source, Format inputFormat) throws IOException, URISyntaxException
     {
-        Any23 runner = new Any23(inputFormat.getAny23Type());
-
-        URI document = source.getUri();
-        DocumentSource documentSource = null;
-        if (document.getScheme().equals("file")) {
-            documentSource = new FileDocumentSource(new File(document), source.getBaseUri().normalize().toString());
-        }
-        else if (document.getScheme().equals("http") || document.getScheme().equals("https")) {
-            documentSource = new HTTPDocumentSource(runner.getHTTPClient(), document.toString());
-        }
-        else {
-            throw new IOException("Unsupported URI scheme; "+document.getScheme());
-        }
-
         Model model = ModelFactory.createDefaultModel();
-        this.readToJenaModel(runner, source, documentSource, inputFormat, model);
+        this.readToJenaModel(source, inputFormat, model);
 
         //Note: this doesn't seem to do anything for this importer (Any23 doesn't return an expanded @graph form)
         model = this.filterRelevantNodes(model, source.getBaseUri());
@@ -63,9 +50,17 @@ public class Any23Importer extends AbstractImporter
     /*
      * See http://stackoverflow.com/questions/15140531/how-to-add-apache-any23-rdf-statements-to-apache-jena
      */
-    private void readToJenaModel(Any23 runner, Source source, DocumentSource documentSource, Format inputFormat, Model model) throws IOException
+    private void readToJenaModel(Source source, Format inputFormat, Model model) throws IOException
     {
+        Any23 runner = new Any23(inputFormat.getAny23Type());
+
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+
+            DocumentSource documentSource;
+            try (InputStream is = source.openNewInputStream()) {
+                documentSource = new ByteArrayDocumentSource(is, source.getBaseUri().normalize().toString(), null);
+            }
+
             TripleHandler handler = new NTriplesWriter(os);
             try {
                 runner.extract(documentSource, handler);

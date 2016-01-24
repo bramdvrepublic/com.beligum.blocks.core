@@ -6,6 +6,7 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.auth.repositories.PersonRepository;
 import com.beligum.base.i18n.I18nFactory;
+import com.beligum.base.security.Authentication;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
@@ -16,12 +17,9 @@ import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.pages.HdfsPageStore;
-import com.beligum.blocks.pages.NewPageParser;
 import com.beligum.blocks.pages.WebPageParser;
 import com.beligum.blocks.pages.ifaces.PageStore;
-import com.beligum.blocks.rdf.HtmlSource;
-import com.beligum.blocks.rdf.JenaExporter;
-import com.beligum.blocks.rdf.SemarglImporter;
+import com.beligum.blocks.rdf.*;
 import com.beligum.blocks.rdf.ifaces.Exporter;
 import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.routing.Route;
@@ -98,13 +96,20 @@ public class PageEndpoint
         WebPage localizedWebpage = ResourceFactoryImpl.instance().createWebPage(blockId, route.getLocale());
         WebPageParser pageParser = new WebPageParser(uri, localizedWebpage.getLanguage(), content, PersistenceControllerImpl.instance());
 
-        String finalHtml = "<" + pageParser.getPageTemplate() + ">" + pageParser.getParsedHtml() + "</" + pageParser.getPageTemplate() + ">";
+//        String wouter = "<" + pageParser.getPageTemplate() + " class=\"\">" + pageParser.getParsedHtml() + "</" + pageParser.getPageTemplate() + ">";
+//
+//        SourceFormatter formatter = new SourceFormatter(new Source(wouter));
+//        formatter.setCollapseWhiteSpace(true);
+//        formatter.setIndentString("    ");
+//        formatter.setNewLine("\n");
+//        wouter = formatter.toString();
 
-        new NewPageParser().parse(content, uri);
+        //TODO use this?
+        //SourceCompactor sourceCompactor = new SourceCompactor(new Source(content));
+        HtmlSource source = new HtmlStringSource(content, uri);
+        this.getHdfsPageStore().save(source, personRepository.get(Authentication.getCurrentPrincipal()));
 
-        //this.getHdfsPageStore().save(uri, content, personRepository.get(Authentication.getCurrentPrincipal()));
-
-        //this.testRdfaParsing();
+        this.testRdfaParsing();
 
         return Response.ok().build();
     }
@@ -116,9 +121,10 @@ public class PageEndpoint
         //String baseUrl = "http://mot.beligum.com/nl/v1/resource/waterwell/belgium-aalst-nieuwerkerken-blauwenbergstraat-61";
 
         Model model = null;
-        try (HtmlSource source = new HtmlSource(new File(testFile).toURI(), URI.create(baseUrl))) {
-            model = new SemarglImporter().importDocument(source, Importer.Format.RDFA);
-        }
+
+        HtmlSource source = new HtmlStreamSource(new File(testFile).toURI(), URI.create(baseUrl));
+        model = new Any23Importer().importDocument(source, Importer.Format.RDFA);
+
         try (OutputStream out = new FileOutputStream(new File(outFile))) {
             new JenaExporter().exportModel(model, Exporter.Format.JSONLD, out);
         }

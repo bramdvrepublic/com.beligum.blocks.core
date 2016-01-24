@@ -31,7 +31,7 @@ public class SemarglImporter extends AbstractImporter
         }
 
         Model model = ModelFactory.createDefaultModel();
-        try (InputStream is = source.getInputStream()) {
+        try (InputStream is = source.openNewInputStream()) {
             model.read(is, source.getBaseUri().toString(), inputFormat.getSemarglType());
         }
 
