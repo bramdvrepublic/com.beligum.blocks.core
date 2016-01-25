@@ -3,10 +3,10 @@ package com.beligum.blocks.fs;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.ifaces.Constants;
-import com.google.common.net.MediaType;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tika.mime.MediaType;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -60,6 +60,7 @@ public class HdfsPathInfo extends AbstractPathInfo<Path>
     @Override
     public Path getMetaHistoryFolder()
     {
+        //Note: if you change something here, also check the code where we delete the history folder from the snapshots (in HdfsPageStore)
         return new Path(this.getMetaFolder(), Constants.META_SUBFOLDER_HISTORY);
     }
     @Override
@@ -75,7 +76,7 @@ public class HdfsPathInfo extends AbstractPathInfo<Path>
     @Override
     public Path getMetaProxyFolder(MediaType mimeType)
     {
-        return new Path(new Path(this.getMetaProxyFolder(), mimeType.type()), mimeType.subtype());
+        return new Path(new Path(this.getMetaProxyFolder(), mimeType.getType()), mimeType.getSubtype());
     }
     @Override
     public Path getMetaMetadataFolder()

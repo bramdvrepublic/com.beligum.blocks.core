@@ -1,4 +1,4 @@
-package com.beligum.blocks.rdf;
+package com.beligum.blocks.rdf.importers;
 
 import com.beligum.blocks.rdf.ifaces.Importer;
 import com.hp.hpl.jena.rdf.model.*;

@@ -1,4 +1,4 @@
-package com.beligum.blocks.rdf;
+package com.beligum.blocks.rdf.sources;
 
 import org.jsoup.Jsoup;
 
@@ -18,11 +18,15 @@ public class HtmlStringSource extends HtmlSource
     //-----CONSTRUCTORS-----
     public HtmlStringSource(String html, URI baseUri) throws IOException, URISyntaxException
     {
+        this(html, baseUri, false);
+    }
+    public HtmlStringSource(String html, URI baseUri, boolean compact) throws IOException, URISyntaxException
+    {
         super(baseUri);
 
         this.document = Jsoup.parse(html, this.getBaseUri().toString());
 
-        this.initJSoupDocument();
+        this.initJSoupDocument(compact);
     }
 
     //-----PUBLIC METHODS-----

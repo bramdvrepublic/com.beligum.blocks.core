@@ -14,7 +14,12 @@ import com.beligum.blocks.fs.ifaces.HdfsMetadataWriter;
 import com.beligum.blocks.fs.ifaces.PathInfo;
 import com.beligum.blocks.pages.ifaces.Page;
 import com.beligum.blocks.pages.ifaces.PageStore;
+import com.beligum.blocks.rdf.exporters.JenaExporter;
+import com.beligum.blocks.rdf.ifaces.Exporter;
+import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.rdf.ifaces.Source;
+import com.beligum.blocks.rdf.importers.SesameImporter;
+import com.hp.hpl.jena.rdf.model.Model;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
@@ -100,6 +105,14 @@ public class HdfsPageStore implements PageStore
                     writer.write(new PageHtmlParser().parse(sourceHtml, source.getBaseUri(), true));
                 }
 
+                //parse to jsonld and save it
+                Path jsonld = new Path(pathInfo.getMetaProxyFolder(PAGE_PROXY_RDF_JSONLD_MIME_TYPE), PAGE_PROXY_RDF_JSONLD_FILE_NAME);
+                Model model = new SesameImporter().importDocument(source, Importer.Format.RDFA);
+                try (OutputStream os = fs.create(jsonld)) {
+                    new JenaExporter().exportModel(model, Exporter.Format.JSONLD, os);
+                    //JsonNode jsonLD = Json.read(os.toString(), JsonNode.class);
+                }
+
                 //save the HASH of the file
                 //TODO make this uniform with the watch code
                 try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(pathInfo.getMetaHashFile())))) {
@@ -137,6 +150,10 @@ public class HdfsPageStore implements PageStore
         boolean versioningSuccess = false;
         try {
             FileUtil.copy(fs, pathInfo.getMetaFolder(), fs, tempMetaFolderCopy, false, fs.getConf());
+
+            //we're not copying the history folder into the snapshot folder; that would be recursion
+            Path tempMetaFolderCopyHistory = new Path(tempMetaFolderCopy, Constants.META_SUBFOLDER_HISTORY);
+            fs.delete(tempMetaFolderCopyHistory, true);
 
             if (fs.exists(newHistoryEntryFolder)) {
                 throw new IOException("Error while creating the history folder because it already existed; " + newHistoryEntryFolder);

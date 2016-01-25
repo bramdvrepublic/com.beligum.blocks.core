@@ -1,4 +1,4 @@
-package com.beligum.blocks.rdf;
+package com.beligum.blocks.rdf.sources;
 
 import org.jsoup.Jsoup;
 
@@ -20,6 +20,10 @@ public class HtmlStreamSource extends HtmlSource
 
     //-----CONSTRUCTORS-----
     public HtmlStreamSource(URI stream, URI baseUri) throws IOException, URISyntaxException
+    {
+        this(stream, baseUri, false);
+    }
+    public HtmlStreamSource(URI stream, URI baseUri, boolean compact) throws IOException, URISyntaxException
     {
         super(baseUri);
 
@@ -43,7 +47,7 @@ public class HtmlStreamSource extends HtmlSource
             }
         }
 
-        this.initJSoupDocument();
+        this.initJSoupDocument(compact);
     }
 
     //-----PUBLIC METHODS-----

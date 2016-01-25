@@ -1,10 +1,11 @@
-package com.beligum.blocks.rdf;
+package com.beligum.blocks.rdf.importers;
 
 import com.beligum.blocks.rdf.ifaces.Source;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import org.apache.any23.Any23;
 import org.apache.any23.extractor.ExtractionException;
+import org.apache.any23.extractor.rdfa.RDFa11ExtractorFactory;
 import org.apache.any23.source.ByteArrayDocumentSource;
 import org.apache.any23.source.DocumentSource;
 import org.apache.any23.writer.NTriplesWriter;
@@ -15,7 +16,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 
 /**
  * Created by bram on 1/23/16.
@@ -33,13 +33,13 @@ public class Any23Importer extends AbstractImporter
 
     //-----PUBLIC METHODS-----
     @Override
-    public Model importDocument(Source source, Format inputFormat) throws IOException, URISyntaxException
+    public Model importDocument(Source source, Format inputFormat) throws IOException
     {
         Model model = ModelFactory.createDefaultModel();
         this.readToJenaModel(source, inputFormat, model);
 
         //Note: this doesn't seem to do anything for this importer (Any23 doesn't return an expanded @graph form)
-        model = this.filterRelevantNodes(model, source.getBaseUri());
+        //model = this.filterRelevantNodes(model, source.getBaseUri());
 
         return model;
     }
@@ -52,7 +52,7 @@ public class Any23Importer extends AbstractImporter
      */
     private void readToJenaModel(Source source, Format inputFormat, Model model) throws IOException
     {
-        Any23 runner = new Any23(inputFormat.getAny23Type());
+        Any23 runner = new Any23(this.translateFormat(inputFormat));
 
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
 
@@ -80,6 +80,15 @@ public class Any23Importer extends AbstractImporter
             try (InputStream decodedInput = new ByteArrayInputStream(os.toByteArray());) {
                 model.read(decodedInput, source.getBaseUri().toString(), "N-TRIPLE");
             }
+        }
+    }
+    private String translateFormat(Format inputFormat) throws IOException
+    {
+        switch (inputFormat) {
+            case RDFA:
+                return RDFa11ExtractorFactory.NAME;
+            default:
+                throw new IOException("Unsupported importer format detected; "+inputFormat);
         }
     }
 }

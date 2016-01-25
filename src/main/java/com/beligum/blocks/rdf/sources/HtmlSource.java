@@ -1,4 +1,4 @@
-package com.beligum.blocks.rdf;
+package com.beligum.blocks.rdf.sources;
 
 import com.beligum.blocks.rdf.ifaces.Source;
 import org.jsoup.nodes.Document;
@@ -36,11 +36,11 @@ public abstract class HtmlSource implements Source
     @Override
     public InputStream openNewInputStream() throws IOException
     {
-        return new ByteArrayInputStream(this.document.html().getBytes(this.document.charset()));
+        return new ByteArrayInputStream(this.document.outerHtml().getBytes(this.document.charset()));
     }
 
     //-----PROTECTED METHODS-----
-    protected void initJSoupDocument()
+    protected void initJSoupDocument(boolean compact)
     {
         // Clean the document (doesn't work because it strips the head out)
         //Whitelist whitelist = Whitelist.relaxed();
@@ -48,6 +48,10 @@ public abstract class HtmlSource implements Source
 
         // Adjust escape mode
         //doc.outputSettings().escapeMode(Entities.EscapeMode.base);
+
+        if (compact) {
+            this.document.outputSettings().prettyPrint(false);
+        }
 
         //we'll normalize everything to XHTML
         this.document.outputSettings().syntax(Document.OutputSettings.Syntax.xml);

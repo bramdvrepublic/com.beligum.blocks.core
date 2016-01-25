@@ -3,8 +3,8 @@ package com.beligum.blocks.fs;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.ifaces.Constants;
-import com.google.common.net.MediaType;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.tika.mime.MediaType;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -69,7 +69,7 @@ public class JavaNioPathInfo extends AbstractPathInfo<Path>
     @Override
     public Path getMetaProxyFolder(MediaType mimeType)
     {
-        return this.getMetaProxyFolder().resolve(mimeType.type()).resolve(mimeType.subtype());
+        return this.getMetaProxyFolder().resolve(mimeType.getType()).resolve(mimeType.getSubtype());
     }
     @Override
     public Path getMetaMetadataFolder()

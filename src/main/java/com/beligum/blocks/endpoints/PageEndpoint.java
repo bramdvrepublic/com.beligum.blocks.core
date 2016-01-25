@@ -19,9 +19,13 @@ import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.pages.HdfsPageStore;
 import com.beligum.blocks.pages.WebPageParser;
 import com.beligum.blocks.pages.ifaces.PageStore;
-import com.beligum.blocks.rdf.*;
+import com.beligum.blocks.rdf.exporters.JenaExporter;
 import com.beligum.blocks.rdf.ifaces.Exporter;
 import com.beligum.blocks.rdf.ifaces.Importer;
+import com.beligum.blocks.rdf.importers.SesameImporter;
+import com.beligum.blocks.rdf.sources.HtmlSource;
+import com.beligum.blocks.rdf.sources.HtmlStreamSource;
+import com.beligum.blocks.rdf.sources.HtmlStringSource;
 import com.beligum.blocks.routing.Route;
 import com.beligum.blocks.search.ElasticSearch;
 import com.beligum.blocks.security.Permissions;
@@ -88,6 +92,18 @@ public class PageEndpoint
     {
         PersonRepository personRepository = new PersonRepository();
 
+        //        String old = this.useOldProcessor(uri, content);
+
+        //Note: the compacting helps minimizing the whitespace of the JSONLD properties
+        HtmlSource source = new HtmlStringSource(content, uri, true);
+        this.getHdfsPageStore().save(source, personRepository.get(Authentication.getCurrentPrincipal()));
+
+        //this.testRdfaParsing();
+
+        return Response.ok().build();
+    }
+    private String useOldProcessor(URI uri, String content) throws Exception
+    {
         Route route = new Route(uri, PersistenceControllerImpl.instance());
         if (!route.exists()) {
             route.create();
@@ -96,22 +112,16 @@ public class PageEndpoint
         WebPage localizedWebpage = ResourceFactoryImpl.instance().createWebPage(blockId, route.getLocale());
         WebPageParser pageParser = new WebPageParser(uri, localizedWebpage.getLanguage(), content, PersistenceControllerImpl.instance());
 
-//        String wouter = "<" + pageParser.getPageTemplate() + " class=\"\">" + pageParser.getParsedHtml() + "</" + pageParser.getPageTemplate() + ">";
-//
-//        SourceFormatter formatter = new SourceFormatter(new Source(wouter));
-//        formatter.setCollapseWhiteSpace(true);
-//        formatter.setIndentString("    ");
-//        formatter.setNewLine("\n");
-//        wouter = formatter.toString();
+        String wouter = "<" + pageParser.getPageTemplate() + " class=\"\">" + pageParser.getParsedHtml() + "</" + pageParser.getPageTemplate() + ">";
 
-        //TODO use this?
-        //SourceCompactor sourceCompactor = new SourceCompactor(new Source(content));
-        HtmlSource source = new HtmlStringSource(content, uri);
-        this.getHdfsPageStore().save(source, personRepository.get(Authentication.getCurrentPrincipal()));
+        //
+        //        SourceFormatter formatter = new SourceFormatter(new Source(wouter));
+        //        formatter.setCollapseWhiteSpace(true);
+        //        formatter.setIndentString("    ");
+        //        formatter.setNewLine("\n");
+        //        wouter = formatter.toString();
 
-        this.testRdfaParsing();
-
-        return Response.ok().build();
+        return wouter;
     }
     private void testRdfaParsing() throws Exception
     {
@@ -120,10 +130,8 @@ public class PageEndpoint
         String baseUrl = "http://mot.beligum.com/v1/resource/waterwell/belgium-aalst-nieuwerkerken-blauwenbergstraat-61";
         //String baseUrl = "http://mot.beligum.com/nl/v1/resource/waterwell/belgium-aalst-nieuwerkerken-blauwenbergstraat-61";
 
-        Model model = null;
-
         HtmlSource source = new HtmlStreamSource(new File(testFile).toURI(), URI.create(baseUrl));
-        model = new Any23Importer().importDocument(source, Importer.Format.RDFA);
+        Model model = new SesameImporter().importDocument(source, Importer.Format.RDFA);
 
         try (OutputStream out = new FileOutputStream(new File(outFile))) {
             new JenaExporter().exportModel(model, Exporter.Format.JSONLD, out);
@@ -283,10 +291,14 @@ public class PageEndpoint
 
         Template block = R.templateEngine().getNewStringTemplate(htmlTemplate.createNewHtmlInstance());
         retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_HTML.getValue(), block.render());
-        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_INLINE_STYLES.getValue(), Lists.transform(Lists.newArrayList(htmlTemplate.getInlineStyleElementsForCurrentScope()), Functions.toStringFunction()));
-        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES.getValue(), Lists.transform(Lists.newArrayList(htmlTemplate.getExternalStyleElementsForCurrentScope()), Functions.toStringFunction()));
-        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS.getValue(), Lists.transform(Lists.newArrayList(htmlTemplate.getInlineScriptElementsForCurrentScope()), Functions.toStringFunction()));
-        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS.getValue(), Lists.transform(Lists.newArrayList(htmlTemplate.getExternalScriptElementsForCurrentScope()), Functions.toStringFunction()));
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_INLINE_STYLES.getValue(),
+                   Lists.transform(Lists.newArrayList(htmlTemplate.getInlineStyleElementsForCurrentScope()), Functions.toStringFunction()));
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES.getValue(),
+                   Lists.transform(Lists.newArrayList(htmlTemplate.getExternalStyleElementsForCurrentScope()), Functions.toStringFunction()));
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS.getValue(),
+                   Lists.transform(Lists.newArrayList(htmlTemplate.getInlineScriptElementsForCurrentScope()), Functions.toStringFunction()));
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS.getValue(),
+                   Lists.transform(Lists.newArrayList(htmlTemplate.getExternalScriptElementsForCurrentScope()), Functions.toStringFunction()));
 
         return Response.ok(retVal).build();
     }

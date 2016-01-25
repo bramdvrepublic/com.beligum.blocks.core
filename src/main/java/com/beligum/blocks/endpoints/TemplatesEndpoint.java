@@ -33,7 +33,7 @@ public class TemplatesEndpoint extends AssetsEndpoint
     @Path("/styles/imports/reset.css")
     public Response getResources()
     {
-        return Response.ok(HtmlParser.getTemplateCache().getCssReset(), Asset.MimeType.CSS.getMimeType()).build();
+        return Response.ok(HtmlParser.getTemplateCache().getCssReset(), Asset.MimeType.CSS.getMimeType().toString()).build();
     }
 
     @GET
@@ -41,7 +41,7 @@ public class TemplatesEndpoint extends AssetsEndpoint
     @Path("/scripts/imports/all.js")
     public Response getImportsArray()
     {
-        return Response.ok(HtmlParser.getTemplateCache().getJsArray(), Asset.MimeType.JAVASCRIPT.getMimeType()).build();
+        return Response.ok(HtmlParser.getTemplateCache().getJsArray(), Asset.MimeType.JAVASCRIPT.getMimeType().toString()).build();
     }
 
     @GET

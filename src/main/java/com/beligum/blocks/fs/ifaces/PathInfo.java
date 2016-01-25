@@ -1,7 +1,7 @@
 package com.beligum.blocks.fs.ifaces;
 
 import com.beligum.blocks.fs.LockFile;
-import com.google.common.net.MediaType;
+import org.apache.tika.mime.MediaType;
 
 import java.io.IOException;
 
