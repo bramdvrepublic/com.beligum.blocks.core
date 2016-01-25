@@ -1,11 +1,11 @@
 package com.beligum.blocks.fs.ifaces;
 
 import com.beligum.base.auth.models.Person;
+import com.beligum.base.config.CoreConfiguration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
-import java.util.Properties;
 
 /**
  * Created by bram on 1/20/16.
@@ -31,7 +31,7 @@ public interface HdfsMetadataWriter extends MetadataWriter
 
     void updateSchemaData() throws IOException;
 
-    void updateSoftwareData(Properties properties) throws IOException;
+    void updateSoftwareData(CoreConfiguration.ProjectProperties properties) throws IOException;
 
     void updateFileData() throws IOException;
 

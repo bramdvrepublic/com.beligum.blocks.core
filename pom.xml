@@ -5,12 +5,10 @@
 
     <groupId>com.beligum.blocks</groupId>
     <artifactId>blocks-core</artifactId>
-    <version>0.1.25-SNAPSHOT</version>
+    <version>0.1.24</version>
     <packaging>jar</packaging>
 
     <url>http://www.beligum.com</url>
-
-
 
     <parent>
         <groupId>com.beligum</groupId>
@@ -120,11 +118,6 @@
             <version>18.0</version>
         </dependency>
 
-        <!--<dependency>-->
-            <!--<groupId>org.apache.any23</groupId>-->
-            <!--<artifactId>apache-any23-api</artifactId>-->
-            <!--<version>1.1</version>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>org.apache.any23</groupId>
             <artifactId>apache-any23-core</artifactId>

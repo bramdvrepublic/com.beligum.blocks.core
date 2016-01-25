@@ -1,6 +1,7 @@
 package com.beligum.blocks.fs;
 
 import com.beligum.base.auth.models.Person;
+import com.beligum.base.config.CoreConfiguration;
 import com.beligum.blocks.fs.ifaces.PathInfo;
 import com.beligum.blocks.schema.dublincore.simple.v20021212.jaxb.ElementContainer;
 import com.beligum.blocks.schema.dublincore.simple.v20021212.jaxb.ObjectFactory;
@@ -9,7 +10,6 @@ import org.apache.hadoop.fs.Path;
 
 import javax.xml.bind.JAXB;
 import java.io.*;
-import java.util.Properties;
 
 /**
  * Created by bram on 1/20/16.
@@ -66,7 +66,7 @@ public class DublinCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
         throw new RuntimeException("NOT IMPLEMENTED YET");
     }
     @Override
-    public void updateSoftwareData(Properties properties) throws IOException
+    public void updateSoftwareData(CoreConfiguration.ProjectProperties properties) throws IOException
     {
         super.updateSoftwareData(properties);
 

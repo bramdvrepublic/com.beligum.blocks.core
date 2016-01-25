@@ -1,6 +1,7 @@
 package com.beligum.blocks.fs;
 
 import com.beligum.base.auth.models.Person;
+import com.beligum.base.config.CoreConfiguration;
 import com.beligum.blocks.fs.ifaces.Constants;
 import com.beligum.blocks.fs.ifaces.HdfsMetadataWriter;
 import com.beligum.blocks.fs.ifaces.PathInfo;
@@ -13,7 +14,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
-import java.util.Properties;
 
 /**
  * Created by bram on 1/20/16.
@@ -102,7 +102,7 @@ public abstract class AbstractHdfsMetadataWriter implements HdfsMetadataWriter
         }
     }
     @Override
-    public void updateSoftwareData(Properties properties) throws IOException
+    public void updateSoftwareData(CoreConfiguration.ProjectProperties properties) throws IOException
     {
         if (!this.opened) {
             throw new IOException("Please open this reader first");

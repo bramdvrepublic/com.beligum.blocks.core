@@ -1,7 +1,7 @@
 package com.beligum.blocks.fs;
 
 import com.beligum.base.auth.models.Person;
-import com.beligum.base.utils.MetaUtils;
+import com.beligum.base.config.CoreConfiguration;
 import com.beligum.blocks.fs.ifaces.PathInfo;
 import com.beligum.blocks.schema.ebucore.v1_6.jaxb.*;
 import com.beligum.blocks.utils.RdfTools;
@@ -18,7 +18,6 @@ import java.io.*;
 import java.lang.String;
 import java.util.List;
 import java.util.Locale;
-import java.util.Properties;
 
 /**
  * Created by bram on 1/20/16.
@@ -87,7 +86,7 @@ public class EBUCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
         this.root.setSchema(EBUCoreVersionInfo.SCHEMA_URI);
     }
     @Override
-    public void updateSoftwareData(Properties properties) throws IOException
+    public void updateSoftwareData(CoreConfiguration.ProjectProperties properties) throws IOException
     {
         super.updateSoftwareData(properties);
 
@@ -118,8 +117,8 @@ public class EBUCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
         }
 
         //this will return the maven package of the current module writing this metadata -> very useful
-        String artifactId = properties.getProperty(MetaUtils.PROJECT_ARTIFACTID_KEY);
-        String version = properties.getProperty(MetaUtils.PROJECT_VERSION_KEY);
+        String artifactId = properties.getProperty(CoreConfiguration.ProjectProperties.Property.MAVEN_PROJECT_ARTIFACT_ID_KEY);
+        String version = properties.getProperty(CoreConfiguration.ProjectProperties.Property.MAVEN_PROJECT_VERSION_KEY);
         if (!StringUtils.isEmpty(artifactId) && !StringUtils.isEmpty(version)) {
             creatorEntity.setEntityId(artifactId+"-"+version);
         }
