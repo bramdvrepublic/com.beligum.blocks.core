@@ -4,16 +4,16 @@
     <div class="row">
         <div class="col-sm-12">
 
-            <h1>$I18N.blocks.core.newPageTitle</h1>
+            <h1>$MESSAGES.blocks.core.newPageTitle</h1>
 
-            <h3>$I18N.blocks.core.newPageSubTitle</h3>
+            <h3>$MESSAGES.blocks.core.newPageSubTitle</h3>
 
             <div class="form-group sub-container">
-                <label>$I18N.blocks.core.selectFromTheListBelow</label>
+                <label>$MESSAGES.blocks.core.selectFromTheListBelow</label>
 
                 <div class="list-group">
                     #if($templates.isEmpty())
-                        <i>$I18N.blocks.core.noPageTemplatesAvailable</i>
+                        <i>$MESSAGES.blocks.core.noPageTemplatesAvailable</i>
                     #end
                     #foreach($template in $templates)
                         <a href="/blocks/admin/page/template?page_url=$TOOLKIT.esc.url($url)&page_class_name=$TOOLKIT.esc.url($template.get("name"))" class="list-group-item">

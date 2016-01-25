@@ -8,7 +8,7 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
     var Editor = null;
     //default values, overridable
     var toolbarButtons = [Extensions.StylesPicker.NAME, 'bold', 'italic', 'underline', 'strike-through', 'superscript', Extensions.LinkInput.NAME, 'orderedlist', 'unorderedlist', 'justifyLeft', 'justifyCenter', 'justifyRight', 'removeFormat'];
-    var toolbarButtonsInline = ['bold', 'italic', 'underline', 'strike-through', 'superscript', 'removeFormat'];
+    var toolbarButtonsInline = ['bold', 'italic', 'underline', 'superscript', 'removeFormat'];
 
     var stylePickerStyles = [];
     var toolbarOptions = {};
@@ -52,7 +52,6 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
             }
             toolbarOptions.align = 'left';
 
-            options.disableReturn = inline;
             options.toolbar = toolbarOptions;
         }
         else {
@@ -60,6 +59,8 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
             //hmmm, this doesn't seem to work very well...
             options.keyboardCommands = false;
         }
+
+        options.disableReturn = inline;
 
         Editor = new MediumEditor(element[0], options);
 
@@ -78,6 +79,7 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
     {
         toolbarOptions = buttonArray;
     };
+
     this.setStylePickerStyles = function (newStyles)
     {
         stylePickerStyles = newStyles;

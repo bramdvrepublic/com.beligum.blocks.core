@@ -86,7 +86,7 @@ public class PageEndpoint
     }
 
     @POST
-    @javax.ws.rs.Path("/save/{url:.*}")
+    @javax.ws.rs.Path("/save-new/{url:.*}")
     @Consumes(MediaType.APPLICATION_JSON)
     public Response savePageNew(@PathParam("url") URI uri, String content) throws Exception
     {
@@ -151,7 +151,7 @@ public class PageEndpoint
     }
 
     @POST
-    @Path("/saveold/{url:.*}")
+    @Path("/save/{url:.*}")
     @Consumes(MediaType.APPLICATION_JSON)
     // @bulk:  if true, we have to flush the bulk upload to ElasticSearch (used during import)
     public Response savePageOld(@PathParam("url") String url, @QueryParam("bulk") @DefaultValue("false") boolean bulk, String content) throws Exception

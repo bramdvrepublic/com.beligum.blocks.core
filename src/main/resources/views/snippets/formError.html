@@ -2,13 +2,13 @@
 <ul class="errors">
     #if($varname && !$varnames)
         #foreach($error in $ERRORS[$varname])
-            <li>$I18N.getMessage($error.messageTemplate, $error.message)</li>
+            <li>$MESSAGES.getMessage($error.messageTemplate, $error.message)</li>
         #end
     #end
     #if($varnames)
         #foreach($varname in $varnames)
             #foreach($error in $ERRORS[$varname])
-                <li>$I18N.getMessage($error.messageTemplate, $error.message)</li>
+                <li>$MESSAGES.getMessage($error.messageTemplate, $error.message)</li>
             #end
         #end
     #end
