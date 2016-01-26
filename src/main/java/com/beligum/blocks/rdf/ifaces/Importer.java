@@ -3,7 +3,6 @@ package com.beligum.blocks.rdf.ifaces;
 import com.hp.hpl.jena.rdf.model.Model;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 
 /**
  * Created by bram on 1/23/16.
@@ -21,7 +20,7 @@ public interface Importer
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    Model importDocument(Source source, Format inputFormat) throws IOException, URISyntaxException;
+    Model importDocument(Source source) throws IOException;
 
     //-----PROTECTED METHODS-----
 

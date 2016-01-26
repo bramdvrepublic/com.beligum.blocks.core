@@ -306,7 +306,6 @@ public class PersistenceControllerImpl implements PersistenceController
 
     private void addPathToLucene(String id, String json)
     {
-
         String name = PersistenceController.PATH_CLASS;
         String index = "routing";
         ElasticSearch.instance().getBulk().add(ElasticSearch.instance().getClient().prepareIndex(index, name)

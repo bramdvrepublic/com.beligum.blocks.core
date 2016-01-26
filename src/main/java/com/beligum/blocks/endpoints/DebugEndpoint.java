@@ -1,20 +1,9 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.base.server.RequestContext;
-import com.beligum.base.utils.Logger;
-import com.beligum.blocks.controllers.interfaces.PersistenceController;
-import com.beligum.blocks.search.ElasticSearch;
 import com.beligum.blocks.security.Permissions;
-import org.apache.commons.io.IOUtils;
-import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.client.IndicesAdminClient;
-import org.joda.time.LocalDateTime;
 
-import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.core.Response;
 
 /**
  * Created by bas on 27.01.15.
@@ -23,48 +12,57 @@ import javax.ws.rs.core.Response;
 @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
 public class DebugEndpoint
 {
-    @GET
-    @Path("/flush")
-    public Response flushEntities() throws Exception
-    {
-        Logger.warn("Database has been flushed by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
+    // THIS DELETES EVERYTHING, DON'T ENABLE BY DEFAULT!!!!
 
-        Logger.warn("Url-id mapping has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
+//    @GET
+//    @Path("/flush")
+//    public Response flushEntities() throws Exception
+//    {
+//        Logger.warn("Database has been flushed by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
+//        Logger.warn("Url-id mapping has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
+//
+//        ElasticSearch.instance().getClient().admin().indices().delete(new DeleteIndexRequest("*")).actionGet();
+//
+//        ClassLoader classLoader = getClass().getClassLoader();
+//        String resourceMapping = null;
+//        String pageMapping = null;
+//        String pathMapping = null;
+//        String settings = null;
+//        try {
+//            resourceMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/resource.json"));
+//            pageMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/page.json"));
+//            pathMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/path.json"));
+//            settings = IOUtils.toString(classLoader.getResourceAsStream("elastic/settings.json"));
+//        }
+//        catch (Exception e) {
+//            Logger.error("Could not read mappings for elastic search", e);
+//        }
+//
+//        RequestContext.getEntityManager().createNativeQuery("delete from page where id > 0").executeUpdate();
+//        RequestContext.getEntityManager().createNativeQuery("delete from resource_language").executeUpdate();
+//        RequestContext.getEntityManager().createNativeQuery("delete from resource where id > 0").executeUpdate();
+//        RequestContext.getEntityManager().createNativeQuery("delete from path where id > 0").executeUpdate();
+//
+//        IndicesAdminClient esIndicesClient = ElasticSearch.instance().getClient().admin().indices();
+//        //there used to be an index for every language, but not anymore
+//        //for (Locale locale : Settings.instance().getLanguages().values()) {
+//        esIndicesClient.prepareCreate(ElasticSearch.instance().getPageIndexName(null)).setSettings(settings).addMapping(PersistenceController.WEB_PAGE_CLASS,pageMapping).execute().actionGet();
+//        esIndicesClient.prepareCreate(ElasticSearch.instance().getResourceIndexName(null)).setSettings(settings).addMapping("_default_",resourceMapping).execute().actionGet();
+//        //}
+//
+//        esIndicesClient.prepareCreate(PersistenceController.PATH_CLASS).setSettings(settings).addMapping(PersistenceController.PATH_CLASS, pathMapping).execute().actionGet();
+//
+//        return Response.ok("<ul><li>Database emptied</li><li>Cache reset</li></ul>").build();
+//    }
 
-        ElasticSearch.instance().getClient().admin().indices().delete(new DeleteIndexRequest("*")).actionGet();
 
-        ClassLoader classLoader = getClass().getClassLoader();
-        String resourceMapping = null;
-        String pageMapping = null;
-        String pathMapping = null;
-        String settings = null;
-        try {
-            resourceMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/resource.json"));
-            pageMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/page.json"));
-            pathMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/path.json"));
-            settings = IOUtils.toString(classLoader.getResourceAsStream("elastic/settings.json"));
-        }
-        catch (Exception e) {
-            Logger.error("Could not read mappings for elastic search", e);
-        }
 
-        RequestContext.getEntityManager().createNativeQuery("delete from page where id > 0").executeUpdate();
-        RequestContext.getEntityManager().createNativeQuery("delete from resource_language").executeUpdate();
-        RequestContext.getEntityManager().createNativeQuery("delete from resource where id > 0").executeUpdate();
-        RequestContext.getEntityManager().createNativeQuery("delete from path where id > 0").executeUpdate();
 
-        IndicesAdminClient esIndicesClient = ElasticSearch.instance().getClient().admin().indices();
-        //there used to be an index for every language, but not anymore
-        //for (Locale locale : Settings.instance().getLanguages().values()) {
-        esIndicesClient.prepareCreate(ElasticSearch.instance().getPageIndexName(null)).setSettings(settings).addMapping(PersistenceController.WEB_PAGE_CLASS,pageMapping).execute().actionGet();
-        esIndicesClient.prepareCreate(ElasticSearch.instance().getResourceIndexName(null)).setSettings(settings).addMapping("_default_",resourceMapping).execute().actionGet();
-        //}
 
-        esIndicesClient.prepareCreate(PersistenceController.PATH_CLASS).setSettings(settings).addMapping(PersistenceController.PATH_CLASS, pathMapping).execute().actionGet();
 
-        return Response.ok("<ul><li>Database emptied</li><li>Cache reset</li></ul>").build();
-    }
-    //
+
+
+
     //    @GET
     //    @Path("/pagetemplates/{pageTemplateName}")
     //    public Response getPageTemplatePage(

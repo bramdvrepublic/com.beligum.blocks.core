@@ -25,16 +25,17 @@ public class SesameImporter extends AbstractImporter
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    public SesameImporter()
+    public SesameImporter(Format inputFormat)
     {
+        super(inputFormat);
     }
 
     //-----PUBLIC METHODS-----
     @Override
-    public Model importDocument(Source source, Format inputFormat) throws IOException
+    public Model importDocument(Source source) throws IOException
     {
-        RDFParser parser = Rio.createParser(this.translateFormat(inputFormat));
-        configureParser(parser, inputFormat);
+        RDFParser parser = Rio.createParser(this.translateFormat(this.inputFormat));
+        configureParser(parser, this.inputFormat);
 
         org.openrdf.model.Model sesameModel = new org.openrdf.model.impl.LinkedHashModel();
         parser.setRDFHandler(new StatementCollector(sesameModel));

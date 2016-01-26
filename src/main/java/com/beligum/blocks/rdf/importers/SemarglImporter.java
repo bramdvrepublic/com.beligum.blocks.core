@@ -18,21 +18,22 @@ public class SemarglImporter extends AbstractImporter
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    public SemarglImporter()
+    public SemarglImporter(Format inputFormat)
     {
+        super(inputFormat);
+
+        if (this.inputFormat.equals(Format.RDFA)) {
+            JenaRdfaReader.inject();
+        }
     }
 
     //-----PUBLIC METHODS-----
     @Override
-    public Model importDocument(Source source, Format inputFormat) throws IOException
+    public Model importDocument(Source source) throws IOException
     {
-        if (inputFormat.equals(Format.RDFA)) {
-            JenaRdfaReader.inject();
-        }
-
         Model model = ModelFactory.createDefaultModel();
         try (InputStream is = source.openNewInputStream()) {
-            model.read(is, source.getBaseUri().toString(), this.translateFormat(inputFormat));
+            model.read(is, source.getBaseUri().toString(), this.translateFormat(this.inputFormat));
         }
 
         model = this.filterRelevantNodes(model, source.getBaseUri());

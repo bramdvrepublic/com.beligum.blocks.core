@@ -17,7 +17,32 @@ import java.net.URI;
  */
 public class HdfsPathInfo extends AbstractPathInfo<Path>
 {
+    //-----INTERFACES-----
+    private static class HdfsPathFactory implements PathFactory<Path>
+    {
+        public HdfsPathFactory()
+        {
+        }
+
+        @Override
+        public Path create(URI uri)
+        {
+            return new Path(uri);
+        }
+        @Override
+        public Path create(Path parent, Path child)
+        {
+            return new Path(parent, child);
+        }
+        @Override
+        public Path create(Path parent, String childName)
+        {
+            return new Path(parent, childName);
+        }
+    }
+
     //-----CONSTANTS-----
+    public static final PathFactory<Path> PATH_PATH_FACTORY = new HdfsPathFactory();
 
     //-----VARIABLES-----
     private FileSystem fileSystem;
@@ -38,9 +63,19 @@ public class HdfsPathInfo extends AbstractPathInfo<Path>
 
     //-----PUBLIC METHODS-----
     @Override
+    public PathFactory<Path> getPathFactory()
+    {
+        return PATH_PATH_FACTORY;
+    }
+    @Override
     public Path getPath()
     {
         return this.path;
+    }
+    @Override
+    public Object getPathFileSystem()
+    {
+        return this.fileSystem;
     }
     @Override
     public Path getMetaFolder()
@@ -157,6 +192,11 @@ public class HdfsPathInfo extends AbstractPathInfo<Path>
         }
 
         return new LockFile(this, lock);
+    }
+    @Override
+    public boolean isLocked() throws IOException
+    {
+        return this.fileSystem.exists(this.getLockFile());
     }
     @Override
     public void releaseLockFile(LockFile<Path> lock) throws IOException

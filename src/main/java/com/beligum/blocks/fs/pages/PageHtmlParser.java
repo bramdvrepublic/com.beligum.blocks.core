@@ -1,4 +1,4 @@
-package com.beligum.blocks.pages;
+package com.beligum.blocks.fs.pages;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.templating.blocks.HtmlParser;

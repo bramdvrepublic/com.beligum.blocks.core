@@ -1,0 +1,72 @@
+package com.beligum.blocks.fs.pages;
+
+import com.beligum.base.resources.Asset;
+import com.beligum.blocks.fs.ifaces.PathInfo;
+import com.beligum.blocks.fs.metadata.EBUCoreHdfsMetadataWriter;
+import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
+import com.beligum.blocks.rdf.exporters.JenaExporter;
+import com.beligum.blocks.rdf.ifaces.Exporter;
+import com.beligum.blocks.rdf.ifaces.Importer;
+import com.beligum.blocks.rdf.importers.SesameImporter;
+import gen.com.beligum.blocks.core.maven;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.tika.mime.MediaType;
+
+import java.io.IOException;
+
+/**
+ * Created by bram on 1/14/16.
+ */
+public class DefaultPageImpl<T> extends AbstractPage<T>
+{
+    //-----CONSTANTS-----
+    MediaType PAGE_PROXY_NORMALIZED_MIME_TYPE = Asset.MimeType.HTML.getMimeType();
+    //Note: makes sense to prefix with the mvn artifact, so we know what we wrote it with
+    String PAGE_PROXY_NORMALIZED_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_normalized." + Asset.MimeType.HTML.getExtension();
+
+    MediaType PAGE_PROXY_RDF_JSONLD_MIME_TYPE = Asset.MimeType.JSONLD.getMimeType();
+    // Note: makes sense to prefix with the mvn artifact, so we know what we wrote it with
+    // also note that the reason it's suffixed 'rdf' is that JSONLD is a Resource Description Framework serialization format:
+    // https://en.wikipedia.org/wiki/Linked_data
+    String PAGE_PROXY_RDF_JSONLD_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_rdf." + Asset.MimeType.JSONLD.getExtension();
+
+    //-----VARIABLES-----
+
+    //-----CONSTRUCTORS-----
+    public DefaultPageImpl(PathInfo<T> pathInfo)
+    {
+        super(pathInfo);
+    }
+
+    //-----PUBLIC METHODS-----
+    @Override
+    public Importer createImporter() throws IOException
+    {
+        return new SesameImporter(Importer.Format.RDFA);
+    }
+    @Override
+    public Exporter createExporter() throws IOException
+    {
+        return new JenaExporter(Exporter.Format.JSONLD);
+    }
+    @Override
+    public MetadataWriter createMetadataWriter() throws IOException
+    {
+        //TODO this is the only parameterized piece left in here
+        return new EBUCoreHdfsMetadataWriter((FileSystem) this.pathInfo.getPathFileSystem());
+    }
+    //    @Override
+    public T getNormalizedPageProxyPath()
+    {
+        return this.pathInfo.getPathFactory().create(this.pathInfo.getMetaProxyFolder(PAGE_PROXY_NORMALIZED_MIME_TYPE), PAGE_PROXY_NORMALIZED_FILE_NAME);
+    }
+    @Override
+    public T getJsonLDProxyPath()
+    {
+        return this.pathInfo.getPathFactory().create(this.pathInfo.getMetaProxyFolder(PAGE_PROXY_RDF_JSONLD_MIME_TYPE), PAGE_PROXY_RDF_JSONLD_FILE_NAME);
+    }
+
+    //-----PROTECTED METHODS-----
+
+    //-----PRIVATE METHODS-----
+}

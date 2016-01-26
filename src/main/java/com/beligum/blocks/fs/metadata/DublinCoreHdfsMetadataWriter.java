@@ -1,4 +1,4 @@
-package com.beligum.blocks.fs;
+package com.beligum.blocks.fs.metadata;
 
 import com.beligum.base.auth.models.Person;
 import com.beligum.base.config.CoreConfiguration;
@@ -27,21 +27,16 @@ public class DublinCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
     private ElementContainer root;
 
     //-----CONSTRUCTORS-----
-    public DublinCoreHdfsMetadataWriter() throws IOException
+    public DublinCoreHdfsMetadataWriter(FileSystem fileSystem) throws IOException
     {
-        super();
-    }
-
-    //-----PUBLIC METHODS-----
-    @Override
-    public void init(FileSystem fileSystem) throws IOException
-    {
-        super.init(fileSystem);
+        super(fileSystem);
 
         this.factory = new ObjectFactory();
 
         throw new RuntimeException("UNTESTED");
     }
+
+    //-----PUBLIC METHODS-----
     @Override
     public void open(PathInfo<Path> pathInfo) throws IOException
     {

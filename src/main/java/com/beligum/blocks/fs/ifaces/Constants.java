@@ -32,8 +32,7 @@ public interface Constants
     DateTimeFormatter FOLDER_TIMESTAMP_FORMAT = ISODateTimeFormat.basicDateTime();
 
     //when the meta folder is versioned, it is copied to a temp location (in the same folder als the original meta dot folder); this is it's suffix
-    String TEMP_META_FOLDER_SNAPSHOT_SUFFIX = ".snapshot";
-
+    String TEMP_SNAPSHOT_SUFFIX = ".snapshot";
 
     String RDF_RESOURCE_CLASS_PERSON = "person";
 }

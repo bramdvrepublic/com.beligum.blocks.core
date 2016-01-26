@@ -13,12 +13,15 @@ import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.caching.PageCache;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.controllers.PersistenceControllerImpl;
+import com.beligum.blocks.fs.indexes.ElasticPageIndex;
+import com.beligum.blocks.fs.indexes.ifaces.PageIndex;
+import com.beligum.blocks.fs.pages.HdfsPageStore;
+import com.beligum.blocks.fs.pages.WebPageParser;
+import com.beligum.blocks.fs.pages.ifaces.Page;
+import com.beligum.blocks.fs.pages.ifaces.PageStore;
 import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.models.interfaces.WebPage;
-import com.beligum.blocks.pages.HdfsPageStore;
-import com.beligum.blocks.pages.WebPageParser;
-import com.beligum.blocks.pages.ifaces.PageStore;
 import com.beligum.blocks.rdf.exporters.JenaExporter;
 import com.beligum.blocks.rdf.ifaces.Exporter;
 import com.beligum.blocks.rdf.ifaces.Importer;
@@ -92,13 +95,14 @@ public class PageEndpoint
     {
         PersonRepository personRepository = new PersonRepository();
 
-        //        String old = this.useOldProcessor(uri, content);
-
-        //Note: the compacting helps minimizing the whitespace of the JSONLD properties
+        //Note: the true flag: compacting helps minimizing the whitespace of the JSONLD properties
         HtmlSource source = new HtmlStringSource(content, uri, true);
-        this.getHdfsPageStore().save(source, personRepository.get(Authentication.getCurrentPrincipal()));
 
-        //this.testRdfaParsing();
+        //save the file to disk and pull all the proxies etc
+        //TODO this should probably honour our watch system and just write the HTML, no?
+        Page savedPage = this.getHdfsPageStore().save(source, personRepository.get(Authentication.getCurrentPrincipal()));
+
+        this.getElasticPageIndex().indexPage(savedPage);
 
         return Response.ok().build();
     }
@@ -131,10 +135,10 @@ public class PageEndpoint
         //String baseUrl = "http://mot.beligum.com/nl/v1/resource/waterwell/belgium-aalst-nieuwerkerken-blauwenbergstraat-61";
 
         HtmlSource source = new HtmlStreamSource(new File(testFile).toURI(), URI.create(baseUrl));
-        Model model = new SesameImporter().importDocument(source, Importer.Format.RDFA);
+        Model model = new SesameImporter(Importer.Format.RDFA).importDocument(source);
 
         try (OutputStream out = new FileOutputStream(new File(outFile))) {
-            new JenaExporter().exportModel(model, Exporter.Format.JSONLD, out);
+            new JenaExporter(Exporter.Format.JSONLD).exportModel(model, out);
         }
     }
     private void preparseHtml(String html)
@@ -353,5 +357,13 @@ public class PageEndpoint
         }
 
         return (PageStore) R.cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGE_STORE);
+    }
+    public PageIndex getElasticPageIndex() throws IOException
+    {
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.ELASTIC_PAGE_INDEX)) {
+            R.cacheManager().getApplicationCache().put(CacheKeys.ELASTIC_PAGE_INDEX, new ElasticPageIndex());
+        }
+
+        return (PageIndex) R.cacheManager().getApplicationCache().get(CacheKeys.ELASTIC_PAGE_INDEX);
     }
 }

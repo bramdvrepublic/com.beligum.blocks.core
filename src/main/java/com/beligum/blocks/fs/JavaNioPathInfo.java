@@ -8,16 +8,43 @@ import org.apache.tika.mime.MediaType;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Created by bram on 1/19/16.
  */
 public class JavaNioPathInfo extends AbstractPathInfo<Path>
 {
+    //-----INTERFACES-----
+    private static class JavaNioPathFactory implements PathFactory<Path>
+    {
+        public JavaNioPathFactory()
+        {
+        }
+
+        @Override
+        public Path create(URI uri)
+        {
+            return Paths.get(uri);
+        }
+        @Override
+        public Path create(Path parent, Path child)
+        {
+            return parent.resolve(child);
+        }
+        @Override
+        public Path create(Path parent, String childName)
+        {
+            return parent.resolve(childName);
+        }
+    }
+
     //-----CONSTANTS-----
+    public static final PathFactory<Path> PATH_FACTORY = new JavaNioPathFactory();
 
     //-----VARIABLES-----
     private Path path;
@@ -32,9 +59,19 @@ public class JavaNioPathInfo extends AbstractPathInfo<Path>
 
     //-----PUBLIC METHODS-----
     @Override
+    public PathFactory<Path> getPathFactory()
+    {
+        return PATH_FACTORY;
+    }
+    @Override
     public Path getPath()
     {
         return this.path;
+    }
+    @Override
+    public Object getPathFileSystem()
+    {
+        return this.path.getFileSystem();
     }
     @Override
     public Path getMetaFolder()
@@ -153,6 +190,11 @@ public class JavaNioPathInfo extends AbstractPathInfo<Path>
         }
 
         return new LockFile(this, lock);
+    }
+    @Override
+    public boolean isLocked() throws IOException
+    {
+        return Files.exists(this.getLockFile());
     }
     @Override
     public void releaseLockFile(LockFile<Path> lock) throws IOException

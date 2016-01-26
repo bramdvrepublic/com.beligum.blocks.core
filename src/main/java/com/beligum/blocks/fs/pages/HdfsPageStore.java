@@ -1,24 +1,21 @@
-package com.beligum.blocks.pages;
+package com.beligum.blocks.fs.pages;
 
 import com.beligum.base.auth.models.Person;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
+import com.beligum.base.utils.json.Json;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.fs.EBUCoreHdfsMetadataWriter;
 import com.beligum.blocks.fs.HdfsPathInfo;
 import com.beligum.blocks.fs.HdfsUtils;
 import com.beligum.blocks.fs.LockFile;
 import com.beligum.blocks.fs.ifaces.Constants;
-import com.beligum.blocks.fs.ifaces.HdfsMetadataWriter;
 import com.beligum.blocks.fs.ifaces.PathInfo;
-import com.beligum.blocks.pages.ifaces.Page;
-import com.beligum.blocks.pages.ifaces.PageStore;
-import com.beligum.blocks.rdf.exporters.JenaExporter;
-import com.beligum.blocks.rdf.ifaces.Exporter;
-import com.beligum.blocks.rdf.ifaces.Importer;
+import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
+import com.beligum.blocks.fs.pages.ifaces.Page;
+import com.beligum.blocks.fs.pages.ifaces.PageStore;
 import com.beligum.blocks.rdf.ifaces.Source;
-import com.beligum.blocks.rdf.importers.SesameImporter;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.hp.hpl.jena.rdf.model.Model;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -67,14 +64,20 @@ public class HdfsPageStore implements PageStore
         }
     }
     @Override
-    public void save(Source source, Person creator) throws IOException
+    public Page save(Source source, Person creator) throws IOException
     {
-        Page page = new PageImpl(source.getBaseUri());
+        Page retVal = null;
 
+        //create this here, so we don't boot the filesystem on validation error
+        URI validUri = DefaultPageImpl.create(source.getBaseUri());
+
+        //TODO: BIG ONE, make this transactional with a good rollback (history entry might be a good starting point)
         //now execute the FS changes
         try (FileSystem fs = this.getFileSystem()) {
 
-            PathInfo<Path> pathInfo = new HdfsPathInfo(fs, page.getSaveFile());
+            PathInfo<Path> pathInfo = new HdfsPathInfo(fs, validUri);
+            //we need to use the abstract type here to have access to the package private setters
+            AbstractPage<Path> page = new DefaultPageImpl(pathInfo);
 
             try (LockFile lock = pathInfo.acquireLock()) {
 
@@ -84,8 +87,9 @@ public class HdfsPageStore implements PageStore
 
                 //we're overwriting; make an entry in the history folder
                 //TODO maybe we want to make this asynchronous?
+                PathInfo<Path> historyEntry = null;
                 if (fs.exists(pathInfo.getPath())) {
-                    this.createVersion(fs, pathInfo);
+                    historyEntry = this.addHistoryEntry(fs, pathInfo);
                 }
 
                 //we'll read everything into a string for ease of use
@@ -100,17 +104,22 @@ public class HdfsPageStore implements PageStore
                 }
 
                 //save the normalized page html
-                Path normalizedHtml = new Path(pathInfo.getMetaProxyFolder(PAGE_PROXY_NORMALIZED_MIME_TYPE), PAGE_PROXY_NORMALIZED_FILE_NAME);
+                Path normalizedHtml = page.getNormalizedPageProxyPath();
                 try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(normalizedHtml)))) {
                     writer.write(new PageHtmlParser().parse(sourceHtml, source.getBaseUri(), true));
                 }
 
                 //parse to jsonld and save it
-                Path jsonld = new Path(pathInfo.getMetaProxyFolder(PAGE_PROXY_RDF_JSONLD_MIME_TYPE), PAGE_PROXY_RDF_JSONLD_FILE_NAME);
-                Model model = new SesameImporter().importDocument(source, Importer.Format.RDFA);
-                try (OutputStream os = fs.create(jsonld)) {
-                    new JenaExporter().exportModel(model, Exporter.Format.JSONLD, os);
-                    //JsonNode jsonLD = Json.read(os.toString(), JsonNode.class);
+                Path jsonldFile = page.getJsonLDProxyPath();
+                Model model = page.createImporter().importDocument(source);
+                try (OutputStream os = fs.create(jsonldFile)) {
+                    page.createExporter().exportModel(model, os);
+                }
+
+                // read it back in and parse it because it's the link between this (where we have HDFS access)
+                // and the page indexer (where we work with generic json objects)
+                try (InputStream is = fs.open(jsonldFile)) {
+                    page.setJsonLDNode(Json.read(is, JsonNode.class));
                 }
 
                 //save the HASH of the file
@@ -120,68 +129,100 @@ public class HdfsPageStore implements PageStore
                 }
 
                 //save the page metadata (read it in if it exists)
-                this.writeMetadata(fs, pathInfo, creator, new EBUCoreHdfsMetadataWriter());
+                this.writeMetadata(fs, pathInfo, creator, page.createMetadataWriter());
+
+                retVal = page;
             }
         }
+
+        return retVal;
     }
 
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private void createVersion(FileSystem fs, PathInfo<Path> pathInfo) throws IOException
+    /**
+     * Very first simple try at creating a snapshot of the current pathInfo on disk, backed by the HDFS atomic rules.
+     * Both the file and the meta directory are copied to a .snapshot sibling.
+     * The wrapper around the resulting snapshot is returned.
+     *
+     * @param fs
+     * @param pathInfo
+     * @return the successfully created history entry or null of something went wrong
+     * @throws IOException
+     */
+    private PathInfo<Path> addHistoryEntry(FileSystem fs, PathInfo<Path> pathInfo) throws IOException
     {
         // Note: it makes sense to use the now timestamp because we're about to create a snapshot of the situation _now_
         // we can't really rely on other timestamps because which one should we take?
         DateTime stamp = DateTime.now();
 
-        Path historyFolder = pathInfo.getMetaHistoryFolder();
-
         // first, we'll create a snapshot of the meta folder to a sibling folder. We can't copy it to it's final destination
-        // because that is a subfolder of the folder we're copying.
-        Path tempMetaFolderCopy = new Path(pathInfo.getMetaFolder().getParent(), pathInfo.getMetaFolder().getName() + Constants.TEMP_META_FOLDER_SNAPSHOT_SUFFIX);
+        // because that is a subfolder of the folder we're copying and we'll encounter odd recursion.
+        Path snapshotMetaFolder = new Path(pathInfo.getMetaFolder().getParent(), pathInfo.getMetaFolder().getName() + Constants.TEMP_SNAPSHOT_SUFFIX);
 
-        //this is the root folder for the snapshot
-        Path newHistoryEntryFolder = new Path(historyFolder, Constants.FOLDER_TIMESTAMP_FORMAT.print(stamp));
+        //this is the new history entry folder
+        Path newHistoryEntryFolder = new Path(pathInfo.getMetaHistoryFolder(), Constants.FOLDER_TIMESTAMP_FORMAT.print(stamp));
 
-        //the two version destinations
-        Path historyOriginal = new Path(newHistoryEntryFolder, pathInfo.getPath().getName());
-        Path historyMetaFolder = new Path(newHistoryEntryFolder, pathInfo.getMetaFolder().getName());
+        //the history entry destination
+        PathInfo<Path> historyEntry = new HdfsPathInfo(fs, new Path(newHistoryEntryFolder, pathInfo.getPath().getName()));
 
-        boolean versioningSuccess = false;
+        boolean success = false;
         try {
-            FileUtil.copy(fs, pathInfo.getMetaFolder(), fs, tempMetaFolderCopy, false, fs.getConf());
+            if (!FileUtil.copy(fs, pathInfo.getMetaFolder(), fs, snapshotMetaFolder, false, fs.getConf())) {
+                throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't create a snapshot of the meta folder; " + snapshotMetaFolder);
+            }
 
             //we're not copying the history folder into the snapshot folder; that would be recursion
-            Path tempMetaFolderCopyHistory = new Path(tempMetaFolderCopy, Constants.META_SUBFOLDER_HISTORY);
-            fs.delete(tempMetaFolderCopyHistory, true);
+            if (!fs.delete(new Path(snapshotMetaFolder, Constants.META_SUBFOLDER_HISTORY), true)) {
+                throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't delete the history folder of the temp meta snapshot folder; " + snapshotMetaFolder);
+            }
 
             if (fs.exists(newHistoryEntryFolder)) {
-                throw new IOException("Error while creating the history folder because it already existed; " + newHistoryEntryFolder);
+                throw new IOException("Error while adding a history entry for " + pathInfo + ": history folder already existed; " + newHistoryEntryFolder);
             }
             else if (!fs.mkdirs(newHistoryEntryFolder)) {
-                throw new IOException("Error while creating the history folder; " + newHistoryEntryFolder);
+                throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't make the history entry folder " + newHistoryEntryFolder);
             }
 
-            FileUtil.copy(fs, pathInfo.getPath(), fs, historyOriginal, false, fs.getConf());
-            fs.rename(tempMetaFolderCopy, historyMetaFolder);
+            //if we get here without problems, we start copying the original file to it's history destination
+            if (!FileUtil.copy(fs, pathInfo.getPath(), fs, historyEntry.getPath(), false, fs.getConf())) {
+                throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't copy the original file to it's final destination " + historyEntry.getPath());
+            }
 
-            versioningSuccess = true;
+            //move the snapshot in it's place
+            if (!fs.rename(snapshotMetaFolder, historyEntry.getMetaFolder())) {
+                throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't move the snapshot meta folder to it's final destination " + historyEntry.getMetaFolder());
+            }
+
+            success = true;
         }
         finally {
             //cleanup on error
-            if (!versioningSuccess) {
-                fs.delete(tempMetaFolderCopy, true);
-                fs.delete(newHistoryEntryFolder, true);
-                fs.delete(historyOriginal, true);
-                fs.delete(historyMetaFolder, true);
+            if (!success) {
+                //Note: this isn't fail-safe, but a good try. (all we can do is log the error if for some reason we couldn't do a clean rollback)
+                try {
+                    fs.delete(snapshotMetaFolder, true);
+                }
+                catch (IOException e) {
+                    Logger.error("Error while cleaning up the temp snapshot meta folder of a failed history attempt for " + pathInfo.getPath() + "; " + snapshotMetaFolder);
+                }
 
-                throw new IOException("Error happened while versioning (tried to clean up as good as possible) "+pathInfo.getPath()+" to "+newHistoryEntryFolder);
+                try {
+                    fs.delete(newHistoryEntryFolder, true);
+                }
+                catch (IOException e) {
+                    Logger.error("Error while cleaning up the history entry folder of a failed history attempt for " + pathInfo.getPath() + "; " + newHistoryEntryFolder);
+                }
+
+                throw new IOException("Error happened while creating history entry for (tried to clean up as good as possible) " + pathInfo.getPath() + " to " + newHistoryEntryFolder);
             }
         }
+
+        return success ? historyEntry : null;
     }
-    private void writeMetadata(FileSystem fs, PathInfo<Path> pathInfo, Person creator, HdfsMetadataWriter metadataWriter) throws IOException
+    private void writeMetadata(FileSystem fs, PathInfo<Path> pathInfo, Person creator, MetadataWriter metadataWriter) throws IOException
     {
-        metadataWriter.init(fs);
         metadataWriter.open(pathInfo);
         //update or fill the ebucore structure with all possible metadata
         metadataWriter.updateSchemaData();

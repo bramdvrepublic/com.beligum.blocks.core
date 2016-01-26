@@ -1,10 +1,10 @@
-package com.beligum.blocks.fs;
+package com.beligum.blocks.fs.metadata;
 
 import com.beligum.base.auth.models.Person;
 import com.beligum.base.config.CoreConfiguration;
 import com.beligum.blocks.fs.ifaces.Constants;
-import com.beligum.blocks.fs.ifaces.HdfsMetadataWriter;
 import com.beligum.blocks.fs.ifaces.PathInfo;
+import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
 import org.apache.hadoop.fs.FileChecksum;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -18,7 +18,7 @@ import java.net.URL;
 /**
  * Created by bram on 1/20/16.
  */
-public abstract class AbstractHdfsMetadataWriter implements HdfsMetadataWriter
+public abstract class AbstractHdfsMetadataWriter implements MetadataWriter<Path>
 {
     //-----CONSTANTS-----
 
@@ -37,16 +37,11 @@ public abstract class AbstractHdfsMetadataWriter implements HdfsMetadataWriter
     protected boolean opened;
 
     //-----CONSTRUCTORS-----
-    protected AbstractHdfsMetadataWriter() throws IOException
+    protected AbstractHdfsMetadataWriter(FileSystem fileSystem) throws IOException
     {
         this.inited = false;
         this.opened = false;
-    }
 
-    //-----PUBLIC METHODS-----
-    @Override
-    public void init(FileSystem fileSystem) throws IOException
-    {
         this.fileSystem = fileSystem;
 
         //save the URI, calc the hash (and test it's valid at the same time)
@@ -60,6 +55,8 @@ public abstract class AbstractHdfsMetadataWriter implements HdfsMetadataWriter
 
         this.inited = true;
     }
+
+    //-----PUBLIC METHODS-----
     @Override
     public void open(PathInfo<Path> pathInfo) throws IOException
     {
@@ -72,7 +69,7 @@ public abstract class AbstractHdfsMetadataWriter implements HdfsMetadataWriter
                 // If the schema file exists, calculate it's hash and make sure it equals the schema file of the data we're about to write.
                 // If it doesn't, we can't reliably proceed cause we currently don't have a means to evolve the schemata
                 FileChecksum existingChecksum = this.fileSystem.getFileChecksum(this.baseMetadataSchema);
-                //TODO the first check actually means no checksumming is available for this filesystem; fix that (it even exists for local file system!)
+                //TODO the first check actually means no checksumming is available for this filesystem; fix that (it seems to exist for local file system!)
                 if (existingChecksum!=this.schemaResourceChecksum && !existingChecksum.equals(this.schemaResourceChecksum)) {
                     throw new IOException(
                                     "Checksum of metadata schemas didn't correspond. You're probably trying to write metadata with a newer schema than the one stored on disk, but I don't know how to do that; " +

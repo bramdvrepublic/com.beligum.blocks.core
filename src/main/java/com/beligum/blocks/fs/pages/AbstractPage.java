@@ -1,8 +1,10 @@
-package com.beligum.blocks.pages;
+package com.beligum.blocks.fs.pages;
 
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.pages.ifaces.Page;
-import org.apache.commons.lang.StringUtils;
+import com.beligum.blocks.fs.ifaces.PathInfo;
+import com.beligum.blocks.fs.pages.ifaces.Page;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -10,9 +12,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * Created by bram on 1/14/16.
+ * Created by bram on 1/27/16.
  */
-public class PageImpl implements Page
+public abstract class AbstractPage<T> implements Page<T>
 {
     //-----CONSTANTS-----
     private static final URI ROOT = URI.create("/");
@@ -20,11 +22,12 @@ public class PageImpl implements Page
     private static final String DIR_PAGE_NAME = "index";
 
     //-----VARIABLES-----
-    private final boolean isDir;
-    private final URI saveFile;
+    protected final PathInfo<T> pathInfo;
+
+    private JsonNode jsonLdNode;
 
     //-----CONSTRUCTORS-----
-    public PageImpl(URI uri) throws IOException
+    public static URI create(URI uri) throws IOException
     {
         Settings settings = Settings.instance();
 
@@ -45,8 +48,8 @@ public class PageImpl implements Page
 
         //this is important: if the url ends with a slash, we're actually saving a 'directory', so it doesn't have a name (will become 'index' later on)
         String pageName = null;
-        this.isDir = relativeUrlStr.endsWith("/");
-        if (!this.isDir) {
+        boolean isDir = relativeUrlStr.endsWith("/");
+        if (!isDir) {
             pageName = tempPagePath.getFileName().toString();
         }
 
@@ -64,21 +67,30 @@ public class PageImpl implements Page
         }
 
         //re-map to the final filename
-        if (!this.isDir) {
+        if (!isDir) {
             tempPagePath = tempPagePath.getParent();
         }
 
-        this.saveFile = tempPagePath.resolve(pageName).toUri();
+        return tempPagePath.resolve(pageName).toUri();
+    }
+    protected AbstractPage(PathInfo<T> pathInfo)
+    {
+        this.pathInfo = pathInfo;
     }
 
     //-----PUBLIC METHODS-----
-    @Override
-    public URI getSaveFile()
+    public JsonNode getJsonLDNode()
     {
-        return saveFile;
+        return this.jsonLdNode;
     }
 
     //-----PROTECTED METHODS-----
+    //this should be set from a package private class
+    protected void setJsonLDNode(JsonNode jsonLdNode)
+    {
+        this.jsonLdNode = jsonLdNode;
+    }
 
     //-----PRIVATE METHODS-----
+
 }

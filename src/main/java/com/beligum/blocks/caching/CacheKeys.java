@@ -32,5 +32,7 @@ public enum CacheKeys implements CacheKey
     //application cache key to store the configuration of the HDFS page store
     HDFS_PAGE_FS_CONFIG,
     //application cache key to store the HDFS page store
-    HDFS_PAGE_STORE
+    HDFS_PAGE_STORE,
+    //application cache key to store the Elastic Search page indexer
+    ELASTIC_PAGE_INDEX
 }

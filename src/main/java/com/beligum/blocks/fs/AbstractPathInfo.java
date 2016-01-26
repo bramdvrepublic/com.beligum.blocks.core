@@ -24,4 +24,11 @@ abstract class AbstractPathInfo<T> implements PathInfo<T>
 
     //-----PRIVATE METHODS-----
 
+    //-----MANAGEMENT METHODS-----
+    //force a toString because it's important for our loggings
+    @Override
+    public String toString()
+    {
+        return ""+this.getPath();
+    }
 }

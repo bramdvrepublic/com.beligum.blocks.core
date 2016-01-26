@@ -4,6 +4,7 @@ import com.beligum.blocks.fs.LockFile;
 import org.apache.tika.mime.MediaType;
 
 import java.io.IOException;
+import java.net.URI;
 
 /**
  * <p>
@@ -13,6 +14,14 @@ import java.io.IOException;
  */
 public interface PathInfo<T>
 {
+    //-----INTERFACES-----
+    interface PathFactory<T>
+    {
+        T create(URI uri);
+        T create(T parent, T child);
+        T create(T parent, String childName);
+    }
+
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
@@ -20,7 +29,11 @@ public interface PathInfo<T>
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
+    PathFactory<T> getPathFactory();
+
     T getPath();
+
+    Object getPathFileSystem();
 
     T getMetaFolder();
 
@@ -41,6 +54,8 @@ public interface PathInfo<T>
     String calcHashChecksum() throws IOException;
 
     LockFile<T> acquireLock() throws IOException;
+
+    boolean isLocked() throws IOException;
 
     void releaseLockFile(LockFile<T> lock) throws IOException;
 

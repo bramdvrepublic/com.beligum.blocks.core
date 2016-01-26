@@ -13,8 +13,13 @@ public abstract class AbstractImporter implements Importer
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    protected final Format inputFormat;
 
     //-----CONSTRUCTORS-----
+    protected AbstractImporter(Format inputFormat)
+    {
+        this.inputFormat = inputFormat;
+    }
 
     //-----PUBLIC METHODS-----
 

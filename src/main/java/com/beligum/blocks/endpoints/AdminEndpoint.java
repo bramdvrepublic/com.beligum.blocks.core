@@ -41,6 +41,7 @@ public class AdminEndpoint
                 }
 
                 break;
+
             default:
                 throw new NotFoundException("Supplied action '" + type + "' not found");
         }

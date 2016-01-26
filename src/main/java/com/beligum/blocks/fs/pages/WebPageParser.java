@@ -1,4 +1,4 @@
-package com.beligum.blocks.pages;
+package com.beligum.blocks.fs.pages;
 
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.utils.Logger;
