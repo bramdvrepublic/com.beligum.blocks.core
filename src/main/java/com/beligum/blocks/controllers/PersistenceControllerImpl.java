@@ -54,7 +54,10 @@ public class PersistenceControllerImpl implements PersistenceController
         // Because ES only updates every second, we have to take the page from the real DB
         // when user can modify the page
         if (!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
-            QueryBuilder query = QueryBuilders.boolQuery().must(QueryBuilders.matchQuery("master_page", blockId.toString())).must(QueryBuilders.matchQuery(ParserConstants.JSONLD_LANGUAGE, locale.getLanguage()));
+            QueryBuilder
+                            query =
+                            QueryBuilders.boolQuery().must(QueryBuilders.matchQuery("master_page", blockId.toString()))
+                                         .must(QueryBuilders.matchQuery(ParserConstants.JSONLD_LANGUAGE, locale.getLanguage()));
             SearchResponse searchResponse = ElasticSearch.instance().getClient().prepareSearch(ElasticSearch.instance().getPageIndexName(locale)).setQuery(query).execute().actionGet();
 
             if (searchResponse.getHits().getHits().length > 0) {
@@ -116,9 +119,11 @@ public class PersistenceControllerImpl implements PersistenceController
         // find the path for this language
         DBPath webpath = null;
         try {
-            webpath = RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.url = :path and p.language = :language", DBPath.class)
-                                    .setParameter("language", locale.getLanguage()).setParameter(
-                                            "path", path.toString()).getSingleResult();
+            webpath = RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.url = :path and p.language = :language ORDER BY p.createdAt DESC", DBPath.class)
+                                    .setParameter("language", locale.getLanguage())
+                                    .setParameter("path", path.toString())
+                                    .setMaxResults(1)
+                                    .getSingleResult();
         }
         catch (NoResultException e) {
             Logger.debug("Searching for path but path not found");
@@ -255,7 +260,9 @@ public class PersistenceControllerImpl implements PersistenceController
     {
         DBResource retVal = null;
         try {
-            retVal = RequestContext.getEntityManager().createQuery("select r FROM DBResource r where r.blockId = :id", DBResource.class).setParameter("id", id.toString()).getSingleResult();
+            retVal = RequestContext.getEntityManager().createQuery("select r FROM DBResource r where r.blockId = :id", DBResource.class)
+                                   .setParameter("id", id.toString())
+                                   .getSingleResult();
         }
         catch (NoResultException e) {
             Logger.debug("Searching for resource but resource not found");
@@ -263,20 +270,25 @@ public class PersistenceControllerImpl implements PersistenceController
         catch (StackOverflowError e) {
             Logger.debug("StackOverflow error !");
         }
+
         return retVal;
     }
 
     private DBPage findPageInDB(URI id)
     {
         DBPage retVal = null;
+
         try {
-            retVal = RequestContext.getEntityManager().createQuery("select p FROM DBPage p where p.blockId = :id", DBPage.class)
-                                   .setParameter("id", id.toString()).getSingleResult();
+            retVal = RequestContext.getEntityManager().createQuery("select p FROM DBPage p where p.blockId = :id ORDER BY p.createdAt DESC", DBPage.class)
+                                   .setParameter("id", id.toString())
+                                   .setMaxResults(1)
+                                   .getSingleResult();
 
         }
         catch (NoResultException e) {
             Logger.debug("Searching for resource but resource not found");
         }
+
         return retVal;
     }
 

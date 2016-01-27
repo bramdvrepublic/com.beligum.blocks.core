@@ -174,8 +174,11 @@ public class HdfsPageStore implements PageStore
             }
 
             //we're not copying the history folder into the snapshot folder; that would be recursion
-            if (!fs.delete(new Path(snapshotMetaFolder, Constants.META_SUBFOLDER_HISTORY), true)) {
-                throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't delete the history folder of the temp meta snapshot folder; " + snapshotMetaFolder);
+            Path snapshotHistoryFolder = new Path(snapshotMetaFolder, Constants.META_SUBFOLDER_HISTORY);
+            if (fs.exists(snapshotHistoryFolder)) {
+                if (!fs.delete(snapshotHistoryFolder, true)) {
+                    throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't delete the history folder of the temp meta snapshot folder; " + snapshotMetaFolder);
+                }
             }
 
             if (fs.exists(newHistoryEntryFolder)) {
@@ -205,17 +208,15 @@ public class HdfsPageStore implements PageStore
                     fs.delete(snapshotMetaFolder, true);
                 }
                 catch (IOException e) {
-                    Logger.error("Error while cleaning up the temp snapshot meta folder of a failed history attempt for " + pathInfo.getPath() + "; " + snapshotMetaFolder);
+                    Logger.error("Error while cleaning up the temp snapshot meta folder of a failed history attempt for " + pathInfo.getPath() + "; " + snapshotMetaFolder, e);
                 }
 
                 try {
                     fs.delete(newHistoryEntryFolder, true);
                 }
                 catch (IOException e) {
-                    Logger.error("Error while cleaning up the history entry folder of a failed history attempt for " + pathInfo.getPath() + "; " + newHistoryEntryFolder);
+                    Logger.error("Error while cleaning up the history entry folder of a failed history attempt for " + pathInfo.getPath() + "; " + newHistoryEntryFolder, e);
                 }
-
-                throw new IOException("Error happened while creating history entry for (tried to clean up as good as possible) " + pathInfo.getPath() + " to " + newHistoryEntryFolder);
             }
         }
 
