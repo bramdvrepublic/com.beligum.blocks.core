@@ -25,4 +25,11 @@
 ## Files
 * layout.js: handles everything of the DnD and moving of the blocks
 * dragdrop.js: handles the visual indicators for the logic in layout.js
-* 
+
+
+# FS transaction notes
+* good, simple start: http://archive.oreilly.com/pub/a/onjava/2001/11/07/atomic.html?page=2
+ * for source code, better see https://github.com/khaliqgaffar/pci_dss_ext_usb/tree/master/cryptoService/src/main/java/com/astrel/io/atomic
+* http://matthewneale.net/2008/11/27/an-xa-filesystem/
+* https://xadisk.java.net/
+* http://commons.apache.org/proper/commons-transaction/

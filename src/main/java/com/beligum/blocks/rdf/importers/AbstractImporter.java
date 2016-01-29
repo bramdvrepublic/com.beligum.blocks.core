@@ -32,8 +32,9 @@ public abstract class AbstractImporter implements Importer
         //Note: check the property (document.toString); it should correspond with the @id in JSON-LD (unverified code)
         StmtIterator selection = model.listStatements(new SimpleSelector(model.createProperty(documentBaseUri.toString()), null, (RDFNode) null));
         while (selection.hasNext()) {
-            Statement stmt = selection.nextStatement();
-            filteredModel.add(stmt.getSubject(), stmt.getPredicate(), stmt.getObject());
+//            Statement stmt = selection.nextStatement();
+//            filteredModel.add(stmt.getSubject(), stmt.getPredicate(), stmt.getObject());
+            filteredModel.add(selection.nextStatement());
         }
 
         return filteredModel;
