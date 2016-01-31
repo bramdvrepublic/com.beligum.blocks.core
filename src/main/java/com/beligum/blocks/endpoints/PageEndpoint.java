@@ -15,7 +15,7 @@ import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.fs.indexes.ElasticPageIndex;
 import com.beligum.blocks.fs.indexes.ifaces.PageIndex;
-import com.beligum.blocks.fs.pages.HdfsPageStore;
+import com.beligum.blocks.fs.pages.SimplePageStore;
 import com.beligum.blocks.fs.pages.WebPageParser;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.fs.pages.ifaces.PageStore;
@@ -350,7 +350,7 @@ public class PageEndpoint
     public PageStore getHdfsPageStore() throws IOException
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGE_STORE)) {
-            PageStore pageStore = new HdfsPageStore();
+            PageStore pageStore = new SimplePageStore();
             pageStore.init();
 
             R.cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGE_STORE, pageStore);

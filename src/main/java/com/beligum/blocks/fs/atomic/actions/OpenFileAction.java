@@ -1,25 +1,30 @@
-package com.beligum.blocks.fs.atomic.v2;
+package com.beligum.blocks.fs.atomic.actions;
 
-import java.io.File;
+import com.beligum.blocks.fs.atomic.Action;
+import org.apache.hadoop.fs.FileContext;
+import org.apache.hadoop.fs.Path;
+
 import java.io.IOException;
 
-abstract class OpenFileAction extends Action
+public abstract class OpenFileAction extends Action
 {
-    protected File original;
-    private File backup;
+    protected Path original;
+    private Path backup;
     private boolean exist;                // did the file exist prior to being opened?
     private transient boolean truncate;
 
-    OpenFileAction(File original, boolean truncate)
+    public OpenFileAction(FileContext fileContext, Path original, boolean truncate)
     {
+        super(fileContext);
+
         this.original = original;
         this.truncate = truncate;
     }
 
-    protected void prepare()
+    protected void prepare() throws IOException
     {
         backup = generateBackupFilename(original);
-        exist = original.exists();
+        exist = this.fileContext.util().exists(original);
     }
 
     protected void createBackup() throws IOException

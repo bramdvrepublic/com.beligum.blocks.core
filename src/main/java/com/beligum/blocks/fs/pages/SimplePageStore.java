@@ -33,7 +33,7 @@ import java.util.Map;
 /**
  * Created by bram on 1/14/16.
  */
-public class HdfsPageStore implements PageStore
+public class SimplePageStore implements PageStore
 {
     //-----CONSTANTS-----
 
@@ -41,7 +41,7 @@ public class HdfsPageStore implements PageStore
     private Settings settings;
 
     //-----CONSTRUCTORS-----
-    public HdfsPageStore()
+    public SimplePageStore()
     {
         this.settings = Settings.instance();
     }
@@ -75,9 +75,9 @@ public class HdfsPageStore implements PageStore
         //now execute the FS changes
         try (FileSystem fs = this.getFileSystem()) {
 
-            PathInfo<Path> pathInfo = new HdfsPathInfo(fs, validUri);
+            PathInfo pathInfo = new HdfsPathInfo(fs, validUri);
             //we need to use the abstract type here to have access to the package private setters
-            AbstractPage<Path> page = new DefaultPageImpl(pathInfo);
+            AbstractPage page = new DefaultPageImpl(pathInfo);
 
             try (LockFile lock = pathInfo.acquireLock()) {
 
@@ -87,7 +87,7 @@ public class HdfsPageStore implements PageStore
 
                 //we're overwriting; make an entry in the history folder
                 //TODO maybe we want to make this asynchronous?
-                PathInfo<Path> historyEntry = null;
+                PathInfo historyEntry = null;
                 if (fs.exists(pathInfo.getPath())) {
                     historyEntry = this.addHistoryEntry(fs, pathInfo);
                 }
@@ -151,7 +151,7 @@ public class HdfsPageStore implements PageStore
      * @return the successfully created history entry or null of something went wrong
      * @throws IOException
      */
-    private PathInfo<Path> addHistoryEntry(FileSystem fs, PathInfo<Path> pathInfo) throws IOException
+    private PathInfo addHistoryEntry(FileSystem fs, PathInfo pathInfo) throws IOException
     {
         // Note: it makes sense to use the now timestamp because we're about to create a snapshot of the situation _now_
         // we can't really rely on other timestamps because which one should we take?
@@ -165,7 +165,7 @@ public class HdfsPageStore implements PageStore
         Path newHistoryEntryFolder = new Path(pathInfo.getMetaHistoryFolder(), Constants.FOLDER_TIMESTAMP_FORMAT.print(stamp));
 
         //the history entry destination
-        PathInfo<Path> historyEntry = new HdfsPathInfo(fs, new Path(newHistoryEntryFolder, pathInfo.getPath().getName()));
+        PathInfo historyEntry = new HdfsPathInfo(fs, new Path(newHistoryEntryFolder, pathInfo.getPath().getName()));
 
         boolean success = false;
         try {
@@ -222,7 +222,7 @@ public class HdfsPageStore implements PageStore
 
         return success ? historyEntry : null;
     }
-    private void writeMetadata(FileSystem fs, PathInfo<Path> pathInfo, Person creator, MetadataWriter metadataWriter) throws IOException
+    private void writeMetadata(FileSystem fs, PathInfo pathInfo, Person creator, MetadataWriter metadataWriter) throws IOException
     {
         metadataWriter.open(pathInfo);
         //update or fill the ebucore structure with all possible metadata

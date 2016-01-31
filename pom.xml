@@ -20,6 +20,7 @@
         <git.url.repo.name>${git.url.repo.prefix}blocks.core</git.url.repo.name>
 
         <hadoop.hdfs.version>2.7.1</hadoop.hdfs.version>
+        <avro.version>1.7.7</avro.version>
         <semargl.version>0.6.1</semargl.version>
         <jena.version>2.13.0</jena.version>
         <!--<jena.version>3.0.1</jena.version>-->
@@ -377,6 +378,32 @@
             <groupId>com.beligum.blocks</groupId>
             <artifactId>blocks-schema-ebucore</artifactId>
             <version>1.0.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro</artifactId>
+            <version>${avro.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro-maven-plugin</artifactId>
+            <version>${avro.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro-compiler</artifactId>
+            <version>${avro.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro-ipc</artifactId>
+            <version>${avro.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro-mapred</artifactId>
+            <version>${avro.version}</version>
         </dependency>
 
     </dependencies>

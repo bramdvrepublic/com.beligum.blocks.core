@@ -6,7 +6,6 @@ import com.beligum.blocks.fs.ifaces.PathInfo;
 import com.beligum.blocks.schema.dublincore.simple.v20021212.jaxb.ElementContainer;
 import com.beligum.blocks.schema.dublincore.simple.v20021212.jaxb.ObjectFactory;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 
 import javax.xml.bind.JAXB;
 import java.io.*;
@@ -38,7 +37,7 @@ public class DublinCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
 
     //-----PUBLIC METHODS-----
     @Override
-    public void open(PathInfo<Path> pathInfo) throws IOException
+    public void open(PathInfo pathInfo) throws IOException
     {
         super.open(pathInfo);
 

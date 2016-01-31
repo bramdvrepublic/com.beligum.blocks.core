@@ -1,11 +1,4 @@
-package com.beligum.blocks.fs.atomic.v2;
-
-import java.io.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-
+package com.beligum.blocks.fs.atomic;
 /* Assumptions:
      delete is atomic
 	 rename is atomic
@@ -17,6 +10,21 @@ import java.util.List;
 /* TODO:
 
 */
+
+import com.beligum.base.utils.Logger;
+import com.beligum.blocks.fs.atomic.actions.DeleteAction;
+import com.beligum.blocks.fs.atomic.actions.WriteAction;
+import com.beligum.blocks.fs.atomic.exceptions.InconsistentStateException;
+import com.beligum.blocks.fs.atomic.exceptions.TransactionException;
+import org.apache.hadoop.fs.Path;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 public class Transaction
 {
@@ -33,9 +41,9 @@ public class Transaction
     {
         try {
             this.tm = tm;
-            File journalFile = new File(tm.getJournalDir(), "journal-" + num);
+            Path journalFile = new Path(tm.getJournalDir(), "journal-" + num);
             number = num;
-            journal = new Journal(journalFile, number);
+            journal = new Journal(tm.getFileContext(), journalFile, number);
             active = true;
             shouldCommit = false;
         }
@@ -120,64 +128,58 @@ public class Transaction
     ////////////////////////////////////////////////////////////////
     /// Specific actions.
 
-    public FileInputStream openInputStream(File f)
-                    throws FileNotFoundException
+    public InputStream openInputStream(Path f) throws IOException
     {
         checkActive();
-        FileInputStream in = new FileInputStream(f);
+        InputStream in = this.tm.getFileContext().open(f);
         // Add an action so that the file will be automatically closed.
         journal.addAction(new OpenFileInputAction(in));
         return in;
     }
 
-    private static class OpenFileInputAction extends Action
+    private class OpenFileInputAction extends Action
     {
         // Exists just to close the file.
-        private FileInputStream in;
-
-        OpenFileInputAction(FileInputStream in)
+        private InputStream in;
+        OpenFileInputAction(InputStream in)
         {
+            super(tm.getFileContext());
+
             this.in = in;
         }
-
         protected void prepare()
         {
         }
-
         protected void close() throws IOException
         {
             in.close();
         }
-
         protected Object execute()
         {
             return null;
         }
-
         protected void undo()
         {
         }
     }
 
-    public FileInputStream openInputStream(String s)
-                    throws FileNotFoundException
+    public InputStream openInputStream(String s) throws IOException
     {
-        return openInputStream(new File(s));
+        return openInputStream(new Path(s));
     }
 
     ////////////////////////////////////////////////////////////////
     // Open for writing.
 
-    public FileOutputStream openOutputStream(File f, boolean append)
-                    throws IOException, TransactionException, InconsistentStateException
+    public FileOutputStream openOutputStream(Path f, boolean append) throws IOException, TransactionException, InconsistentStateException
     {
-        return (FileOutputStream) run(new WriteAction(f, append));
+        return (FileOutputStream) run(new WriteAction(tm.getFileContext(), f, append));
     }
 
     /**
      * Convenience method for openOutputStream(File, boolean)
      */
-    public FileOutputStream openOutputStream(File f)
+    public FileOutputStream openOutputStream(Path f)
                     throws IOException, TransactionException, InconsistentStateException
     {
         return openOutputStream(f, false);
@@ -189,7 +191,7 @@ public class Transaction
     public FileOutputStream openOutputStream(String s, boolean append)
                     throws IOException, TransactionException, InconsistentStateException
     {
-        return openOutputStream(new File(s), append);
+        return openOutputStream(new Path(s), append);
     }
 
     /**
@@ -198,74 +200,53 @@ public class Transaction
     public FileOutputStream openOutputStream(String s)
                     throws IOException, TransactionException, InconsistentStateException
     {
-        return openOutputStream(new File(s), false);
-    }
-
-    public boolean mkdir(File f)
-                    throws IOException, TransactionException, InconsistentStateException
-    {
-        return ((Boolean) run(new MakeDirectoryAction(f))).booleanValue();
-    }
-
-    public boolean mkdir(String s)
-                    throws IOException, TransactionException, InconsistentStateException
-    {
-        return mkdir(new File(s));
+        return openOutputStream(new Path(s), false);
     }
 
     ////////////////////////////////////////////////////////////////
     // Open a RandomAccessFile.
-
-    public RandomAccessFile openRandomAccess(File f, String mode)
-                    throws IOException, TransactionException,
-                           InconsistentStateException
-    {
-        checkActive();
-        if (!mode.equals("rw")) {
-            RandomAccessFile in = new RandomAccessFile(f, mode);
-            // Add an action so that the file will be automatically closed.
-            journal.addAction(new OpenRandomReadOnlyAction(in));
-            return in;
-        }
-        else
-            return (RandomAccessFile) run(new OpenRandomAccessAction(f));
-    }
-
-    public RandomAccessFile openRandomAccess(String s, String mode)
-                    throws IOException, TransactionException,
-                           InconsistentStateException
-    {
-        return openRandomAccess(new File(s), mode);
-    }
-
-    private static class OpenRandomReadOnlyAction extends Action
-    {
-        // Exists just to close the file.
-        private RandomAccessFile in;
-
-        OpenRandomReadOnlyAction(RandomAccessFile in)
-        {
-            this.in = in;
-        }
-
-        protected void close() throws IOException
-        {
-            in.close();
-        }
-
-        protected void prepare()
-        {
-        }
-
-        protected Object execute()
-        {
-            return null;
-        }
-
-        protected void undo()
-        {
-        }
-    }
+//
+//    public RandomAccessFile openRandomAccess(Path f, String mode) throws IOException, TransactionException, InconsistentStateException
+//    {
+//        checkActive();
+//        if (!mode.equals("rw")) {
+//            RandomAccessFile in = new RandomAccessFile(f, mode);
+//            // Add an action so that the file will be automatically closed.
+//            journal.addAction(new OpenRandomReadOnlyAction(in));
+//            return in;
+//        }
+//        else
+//            return (RandomAccessFile) run(new OpenRandomAccessAction(f));
+//    }
+//
+//    public RandomAccessFile openRandomAccess(String s, String mode) throws IOException, TransactionException, InconsistentStateException
+//    {
+//        return openRandomAccess(new File(s), mode);
+//    }
+//
+//    private static class OpenRandomReadOnlyAction extends Action
+//    {
+//        // Exists just to close the file.
+//        private RandomAccessFile in;
+//        OpenRandomReadOnlyAction(RandomAccessFile in)
+//        {
+//            this.in = in;
+//        }
+//        protected void close() throws IOException
+//        {
+//            in.close();
+//        }
+//        protected void prepare()
+//        {
+//        }
+//        protected Object execute()
+//        {
+//            return null;
+//        }
+//        protected void undo()
+//        {
+//        }
+//    }
 
     ////////////////////////////////////////////////////////////////
     // Deletion.
@@ -284,11 +265,11 @@ public class Transaction
      * of atomicity
      */
 
-    public void delete(File f)
+    public void delete(Path f)
                     throws IllegalStateException, IOException, TransactionException,
                            InconsistentStateException
     {
-        run(new DeleteAction(f));
+        run(new DeleteAction(this.tm.getFileContext(), f));
     }
 
     /**
@@ -298,28 +279,31 @@ public class Transaction
                     throws IllegalStateException, IOException, TransactionException,
                            InconsistentStateException
     {
-        delete(new File(s));
+        delete(new Path(s));
     }
 
     ////////////////////////////////////////////////////////////////
     // Renaming.
 
-    //	public void rename(File f1, File f2)
-    //				throws IllegalStateException, IOException, TransactionException,
-    //							 InconsistentStateException {
-    //		run(new RenameAction(f1, f2));
-    //	}
-
-    /**
-     * Convenience method for rename(File, File)
-     */
-    //	public void rename(String s1, String s2)
-    //				throws IllegalStateException, IOException, TransactionException,
-    //							 InconsistentStateException {
-    //		rename(new File(s1), new File(s2));
-    //	}
+//    public void rename(Path f1, Path f2)
+//                    throws IllegalStateException, IOException, TransactionException,
+//                           InconsistentStateException
+//    {
+//        run(new RenameAction(f1, f2));
+//    }
+//
+//    /**
+//     * Convenience method for rename(File, File)
+//     */
+//    public void rename(String s1, String s2)
+//                    throws IllegalStateException, IOException, TransactionException,
+//                           InconsistentStateException
+//    {
+//        rename(new File(s1), new File(s2));
+//    }
 
     ////////////////////////////////////////////////////////////////
+
     private void checkActive() throws IllegalStateException
     {
         if (!active)
@@ -425,9 +409,9 @@ public class Transaction
 
     private void crashPoint(String s)
     {
-        //		System.out.println("crashPoint: s = " + s + ", crashHere = " + crashHere);
+        Logger.info("crashPoint: s = " + s + ", crashHere = " + crashHere);
         if (s == crashHere) { // OK because of intern
-            System.out.println("CRASH *** " + crashHere + " ***");
+            Logger.info("CRASH *** " + crashHere + " ***");
             Runtime.getRuntime().halt(-1);
         }
     }

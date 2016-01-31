@@ -1,16 +1,28 @@
-package com.beligum.blocks.fs.atomic.orig;
+package com.beligum.blocks.fs.atomic;
 
-import org.apache.commons.io.FileExistsException;
+import com.beligum.blocks.fs.HdfsUtils;
+import com.beligum.blocks.fs.atomic.exceptions.DeleteException;
+import com.beligum.blocks.fs.atomic.exceptions.FileExistsException;
+import com.beligum.blocks.fs.atomic.exceptions.RenameException;
+import org.apache.hadoop.fs.FileContext;
+import org.apache.hadoop.fs.Path;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.Serializable;
 
 public abstract class Action implements Serializable
 {
     private transient Transaction txn;
+    protected transient FileContext fileContext;
 
-    void setTransaction(Transaction t)
+    public void setTransaction(Transaction t)
     {
         txn = t;
+    }
+
+    protected Action(FileContext fileContext)
+    {
+        this.fileContext = fileContext;
     }
 
     ////////////////////////////////////////////////////////////////
@@ -63,8 +75,6 @@ public abstract class Action implements Serializable
      * Exceptions thrown during cleanup do not prevent commit or rollback
      * from succeeding.  They are not thrown out of Transaction methods;
      * instead, you can get them by calling Transaction.getCleanupExceptions.
-     *
-     * @see Transaction#getCleanupExceptions
      */
     protected void cleanup() throws IOException
     {
@@ -75,81 +85,68 @@ public abstract class Action implements Serializable
 
     private static int uniqueFileNum = 0;
 
-    protected File generateBackupFilename(File f)
+    protected Path generateBackupFilename(Path f) throws IOException
     {
         int n;
-        File result;
+        Path result;
         do {
             synchronized (Action.class) {
                 n = uniqueFileNum++;
             }
-            result = new File(f.getAbsolutePath() + n +
-                              txn.getTransactionManager().getFileExtension());
-        } while (result.exists());
+            result = new Path(f.toUri().toString() + n + txn.getTransactionManager().getFileExtension());
+        } while (this.fileContext.util().exists(result));
+
         return result;
     }
 
     ////////////////////////////////////////////////////////////////
 
-    protected void restoreBackup(File backup, File original)
-                    throws RenameException, DeleteException
+    protected void restoreBackup(Path backup, Path original)
+                    throws IOException
     {
-        if (backup.exists())
+        if (this.fileContext.util().exists(backup)) {
             renameDeleting(backup, original);
+        }
     }
 
     ////////////////////////////////////////////////////////////////
-    /// File utilities.
+    /// Path utilities.
 
     /**
      * Delete the file.  Uses Java's semantics for delete.
      *
      * @throws DeleteException where File.delete would return false
      */
-    protected static void delete(File f) throws DeleteException
+    protected void delete(Path f) throws DeleteException
     {
-        if (!f.delete())
-            throw new DeleteException(f);
+        try {
+            this.fileContext.delete(f, false);
+        }
+        catch (IOException e) {
+            throw new DeleteException(f, e);
+        }
     }
 
     /**
      * Delete the file only if it exists.
      */
-    protected static synchronized void deleteIfExists(File f)
-                    throws DeleteException
+    protected synchronized void deleteIfExists(Path f) throws IOException
     {
-        if (f.exists())
+        if (this.fileContext.util().exists(f))
             delete(f);
     }
 
     /**
      * Copy source to dest, overwriting dest.
      */
-    protected static void copyDeleting(File source, File dest)
-                    throws IOException
+    protected void copyDeleting(Path source, Path dest) throws IOException
     {
-        byte[] buf = new byte[8 * 1024];
-        FileInputStream in = new FileInputStream(source);
-        try {
-            FileOutputStream out = new FileOutputStream(dest);
-            try {
-                int count;
-                while ((count = in.read(buf)) >= 0)
-                    out.write(buf, 0, count);
-            }
-            finally {
-                out.close();
-            }
-        }
-        finally {
-            in.close();
-        }
+        this.fileContext.util().copy(source, dest, false, true);
     }
 
-    protected static void copyNotDeleting(File source, File dest)
-                    throws IOException, FileExistsException
+    protected void copyNotDeleting(Path source, Path dest) throws IOException, FileExistsException
     {
-        if (dest.createNewFile())
+        if (HdfsUtils.createNewFile(this.fileContext, dest))
             copyDeleting(source, dest);
         else
             throw new FileExistsException(dest);
@@ -163,8 +160,7 @@ public abstract class Action implements Serializable
      * @throws DeleteException if the existing file could not be deleted
      * @throws RenameException if the renaming failed
      */
-    protected synchronized void renameDeleting(File source, File dest)
-                    throws RenameException, DeleteException
+    protected synchronized void renameDeleting(Path source, Path dest) throws IOException
     {
         if (!txn.getTransactionManager().renameCanDelete())
             deleteIfExists(dest);
@@ -178,21 +174,23 @@ public abstract class Action implements Serializable
      * @throws RenameException     if there is an error in File.renameTo
      * @throws FileExistsException if dest exists
      */
-    protected synchronized void renameNotDeleting(File source, File dest)
-                    throws IOException
+    protected synchronized void renameNotDeleting(Path source, Path dest) throws IOException
     {
         if (!txn.getTransactionManager().renameCanDelete())
             rename(source, dest);
-        else if (dest.createNewFile())
+        else if (HdfsUtils.createNewFile(this.fileContext, dest))
             rename(source, dest);
         else
             throw new FileExistsException(dest.toString());
     }
 
-    protected static void rename(File source, File dest)
-                    throws RenameException
+    protected void rename(Path source, Path dest) throws RenameException
     {
-        if (!source.renameTo(dest))
-            throw new RenameException(source, dest);
+        try {
+            this.fileContext.rename(source, dest);
+        }
+        catch (IOException e) {
+            throw new RenameException(source, dest, e);
+        }
     }
 }

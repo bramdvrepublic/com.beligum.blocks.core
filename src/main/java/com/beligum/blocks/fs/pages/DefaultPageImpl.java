@@ -10,6 +10,7 @@ import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.rdf.importers.SesameImporter;
 import gen.com.beligum.blocks.core.maven;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.tika.mime.MediaType;
 
 import java.io.IOException;
@@ -17,7 +18,7 @@ import java.io.IOException;
 /**
  * Created by bram on 1/14/16.
  */
-public class DefaultPageImpl<T> extends AbstractPage<T>
+public class DefaultPageImpl extends AbstractPage
 {
     //-----CONSTANTS-----
     MediaType PAGE_PROXY_NORMALIZED_MIME_TYPE = Asset.MimeType.HTML.getMimeType();
@@ -33,7 +34,7 @@ public class DefaultPageImpl<T> extends AbstractPage<T>
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    public DefaultPageImpl(PathInfo<T> pathInfo)
+    public DefaultPageImpl(PathInfo pathInfo)
     {
         super(pathInfo);
     }
@@ -56,14 +57,14 @@ public class DefaultPageImpl<T> extends AbstractPage<T>
         return new EBUCoreHdfsMetadataWriter((FileSystem) this.pathInfo.getPathFileSystem());
     }
     //    @Override
-    public T getNormalizedPageProxyPath()
+    public Path getNormalizedPageProxyPath()
     {
-        return this.pathInfo.getPathFactory().create(this.pathInfo.getMetaProxyFolder(PAGE_PROXY_NORMALIZED_MIME_TYPE), PAGE_PROXY_NORMALIZED_FILE_NAME);
+        return new Path(this.pathInfo.getMetaProxyFolder(PAGE_PROXY_NORMALIZED_MIME_TYPE), PAGE_PROXY_NORMALIZED_FILE_NAME);
     }
     @Override
-    public T getJsonLDProxyPath()
+    public Path getJsonLDProxyPath()
     {
-        return this.pathInfo.getPathFactory().create(this.pathInfo.getMetaProxyFolder(PAGE_PROXY_RDF_JSONLD_MIME_TYPE), PAGE_PROXY_RDF_JSONLD_FILE_NAME);
+        return new Path(this.pathInfo.getMetaProxyFolder(PAGE_PROXY_RDF_JSONLD_MIME_TYPE), PAGE_PROXY_RDF_JSONLD_FILE_NAME);
     }
 
     //-----PROTECTED METHODS-----

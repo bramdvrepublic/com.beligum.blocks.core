@@ -2,11 +2,11 @@
 //
 //import java.io.*;
 //
-//class RenameAction extends Action
+//public class RenameAction extends Action
 //{
 //    private File source, dest;
 //
-//    RenameAction(File s, File d) throws IOException
+//    public RenameAction(File s, File d) throws IOException
 //    {
 //        source = s;
 //        if (!source.exists())

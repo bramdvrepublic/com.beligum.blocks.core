@@ -1,7 +1,14 @@
-package com.beligum.blocks.fs.atomic.orig;
+package com.beligum.blocks.fs.atomic;
 
-import java.util.*;
+import com.beligum.base.utils.Logger;
+import com.beligum.blocks.fs.atomic.exceptions.InconsistentStateException;
+import com.beligum.blocks.fs.atomic.exceptions.TransactionException;
+import org.apache.hadoop.fs.FileContext;
+import org.apache.hadoop.fs.Path;
+
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /* TODO: 
   Change rep to textual, for ease of reconstruction after bad crash.
@@ -13,7 +20,7 @@ import java.io.*;
 
         delete A
         create A
-				delete A
+		delete A
 
 	 If delete looks at the file and determines that the action failed
 	 if the file exists, then:
@@ -71,15 +78,18 @@ class Journal
     private static final int COMMIT = -1;
     private static final int UNDO = -2;
 
-    private File journalFile;
+    private FileContext fileContext;
+    private Path journalFile;
     private RandomAccessFile raf;
+//    private org.apache.avro.mapred.FsInput raf;
     private boolean closed;
     private int transactionNumber;
     private ArrayList actions;        // actions that ran successfully
     // null -> actions not read/...
 
-    Journal(File f, int tn) throws IOException
+    Journal(FileContext fileContext, Path f, int tn) throws IOException
     {
+        this.fileContext = fileContext;
         journalFile = f;
         transactionNumber = tn;
         actions = new ArrayList();
@@ -89,21 +99,24 @@ class Journal
     /**
      * Used for recovery only.
      */
-    private Journal(File f) throws IOException
+    private Journal(FileContext fileContext, Path f) throws IOException
     {
-        this(f,
-             Integer.parseInt(f.getName().substring(f.getName().indexOf('-') + 1)));
+        this(fileContext, f, Integer.parseInt(f.getName().substring(f.getName().indexOf('-') + 1)));
     }
 
     private void open() throws IOException
     {
-        raf = new RandomAccessFile(journalFile, "rw");
+        //raf = new this.fileContext.create(journalFile, EnumSet.of(CreateFlag.CREATE, CreateFlag.APPEND, CreateFlag.SYNC_BLOCK));
+        //raf = new FsInput(journalFile, HdfsUtils.getConf());
+//        raf = new RandomAccessFile(journalFile, "rw");
+        raf = new RandomAccessFile("TODO-implement this", "rw");
+
         closed = false;
     }
 
     private void close() throws IOException
     {
-        if (!closed) {                            // make close idempotent
+        if (!closed) { // make close idempotent
             raf.close();
             closed = true;
         }
@@ -159,6 +172,7 @@ class Journal
 
     private void flush() throws IOException
     {
+        //raf.hflush();
         raf.getFD().sync();
     }
 
@@ -178,6 +192,7 @@ class Journal
     private void writeMarker(int marker) throws IOException
     {
         raf.writeInt(marker);
+
         flush();
     }
 
@@ -264,10 +279,10 @@ class Journal
     /* Truncates the journal to eliminate the last record if it's partial.
          Returns a list of cleanup exceptions.
     */
-    static List recover(File journalFile) throws InconsistentStateException
+    static List recover(FileContext fileContext, Path journalFile) throws InconsistentStateException
     {
         try {
-            Journal j = new Journal(journalFile);
+            Journal j = new Journal(fileContext, journalFile);
             return j.recover();
         }
         catch (Exception e) {
@@ -379,7 +394,7 @@ class Journal
             exceptions.add(e);
         }
         try {
-            Action.delete(journalFile);
+            this.fileContext.delete(journalFile, false);
         }
         catch (IOException e) {
             exceptions.add(e);
@@ -390,14 +405,14 @@ class Journal
     /**
      * Display file in readable form on System.out
      */
-    public static void display(File journalFile)
-                    throws IOException, ClassNotFoundException
+    public static void display(FileContext fileContext, Path journalFile) throws IOException, ClassNotFoundException
     {
-        Journal j = new Journal(journalFile);
+        Journal j = new Journal(fileContext, journalFile);
         j.read();
-        for (int i = 0; i < j.actions.size(); i++)
-            System.out.println(j.actions.get(i));
-        System.out.println("file length  = " + journalFile.length());
+        for (int i = 0; i < j.actions.size(); i++) {
+            Logger.info(j.actions.get(i));
+        }
+        Logger.info("file length  = " + fileContext.util().getContentSummary(journalFile).getLength());
     }
 }
 	

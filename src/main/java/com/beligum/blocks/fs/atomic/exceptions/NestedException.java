@@ -1,22 +1,18 @@
-package com.beligum.blocks.fs.atomic.v2;
+package com.beligum.blocks.fs.atomic.exceptions;
 
-import java.io.PrintStream;
-import java.io.PrintWriter;
+import java.io.*;
 
-class NestedException extends Exception
+public class NestedException extends Exception
 {
     Exception nestedException;
-
-    NestedException()
+    public NestedException()
     {
     }
-
-    NestedException(String message)
+    public NestedException(String message)
     {
         super(message);
     }
-
-    NestedException(Exception e)
+    public NestedException(Exception e)
     {
         nestedException = e;
     }

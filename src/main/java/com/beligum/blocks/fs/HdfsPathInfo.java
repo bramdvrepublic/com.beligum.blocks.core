@@ -3,6 +3,7 @@ package com.beligum.blocks.fs;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.ifaces.Constants;
+import com.beligum.blocks.fs.ifaces.PathInfo;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -15,34 +16,15 @@ import java.net.URI;
 /**
  * Created by bram on 1/19/16.
  */
-public class HdfsPathInfo extends AbstractPathInfo<Path>
+public class HdfsPathInfo implements PathInfo
 {
     //-----INTERFACES-----
-    private static class HdfsPathFactory implements PathFactory<Path>
-    {
-        public HdfsPathFactory()
-        {
-        }
-
-        @Override
-        public Path create(URI uri)
-        {
-            return new Path(uri);
-        }
-        @Override
-        public Path create(Path parent, Path child)
-        {
-            return new Path(parent, child);
-        }
-        @Override
-        public Path create(Path parent, String childName)
-        {
-            return new Path(parent, childName);
-        }
-    }
 
     //-----CONSTANTS-----
-    public static final PathFactory<Path> PATH_PATH_FACTORY = new HdfsPathFactory();
+    //sync with eg. HDFS meta files (eg. hidden .crc files) (and also less chance on conflicts)
+    protected static final String LOCK_FILE_PREFIX = ".";
+    protected static final long DEFAULT_LOCK_BACK_OFF = 100;
+    protected static final long DEFAULT_LOCK_TIMEOUT = 5000;
 
     //-----VARIABLES-----
     private FileSystem fileSystem;
@@ -62,11 +44,6 @@ public class HdfsPathInfo extends AbstractPathInfo<Path>
     }
 
     //-----PUBLIC METHODS-----
-    @Override
-    public PathFactory<Path> getPathFactory()
-    {
-        return PATH_PATH_FACTORY;
-    }
     @Override
     public Path getPath()
     {
@@ -166,7 +143,7 @@ public class HdfsPathInfo extends AbstractPathInfo<Path>
      * @return the lock file
      */
     @Override
-    public LockFile<Path> acquireLock() throws IOException
+    public LockFile acquireLock() throws IOException
     {
         long timer = 0;
 
@@ -199,7 +176,7 @@ public class HdfsPathInfo extends AbstractPathInfo<Path>
         return this.fileSystem.exists(this.getLockFile());
     }
     @Override
-    public void releaseLockFile(LockFile<Path> lock) throws IOException
+    public void releaseLockFile(LockFile lock) throws IOException
     {
         if (lock != null) {
             synchronized (lock) {
@@ -216,7 +193,6 @@ public class HdfsPathInfo extends AbstractPathInfo<Path>
     }
 
     //-----PROTECTED METHODS-----
-    @Override
     protected Path getLockFile()
     {
         //only needs to be done once

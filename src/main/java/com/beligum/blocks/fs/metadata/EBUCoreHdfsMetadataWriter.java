@@ -7,7 +7,6 @@ import com.beligum.blocks.schema.ebucore.v1_6.jaxb.*;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.joda.time.DateTime;
 
 import javax.xml.bind.JAXB;
@@ -53,7 +52,7 @@ public class EBUCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
 
     //-----PUBLIC METHODS-----
     @Override
-    public void open(PathInfo<Path> pathInfo) throws IOException
+    public void open(PathInfo pathInfo) throws IOException
     {
         super.open(pathInfo);
 

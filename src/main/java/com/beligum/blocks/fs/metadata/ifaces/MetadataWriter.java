@@ -17,7 +17,7 @@ public interface MetadataWriter<T>
      * @param pathInfo
      * @throws IOException
      */
-    void open(PathInfo<T> pathInfo) throws IOException;
+    void open(PathInfo pathInfo) throws IOException;
 
     void updateSchemaData() throws IOException;
 

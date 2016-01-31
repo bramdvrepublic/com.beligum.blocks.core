@@ -1,20 +1,27 @@
-package com.beligum.blocks.fs.atomic.orig;
+package com.beligum.blocks.fs.atomic.actions;
 
-import java.io.*;
+import com.beligum.blocks.fs.atomic.Action;
+import org.apache.hadoop.fs.FileContext;
+import org.apache.hadoop.fs.Path;
 
-class DeleteAction extends Action
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
+public class DeleteAction extends Action
 {
-    private File original;
-    private File backup;
+    private Path original;
+    private Path backup;
 
-    DeleteAction(File f) throws IOException
+    public DeleteAction(FileContext fileContext, Path f) throws IOException
     {
+        super(fileContext);
+
         original = f;
-        if (!original.exists())
+        if (!this.fileContext.util().exists(original))
             throw new FileNotFoundException(original.toString());
     }
 
-    protected void prepare()
+    protected void prepare() throws IOException
     {
         backup = generateBackupFilename(original);
     }
@@ -31,7 +38,7 @@ class DeleteAction extends Action
 
     protected void undo() throws IOException
     {
-        if (!original.exists())
+        if (!this.fileContext.util().exists(original))
             restoreBackup(backup, original);
     }
 

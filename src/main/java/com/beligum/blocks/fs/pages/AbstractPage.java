@@ -14,7 +14,7 @@ import java.nio.file.Paths;
 /**
  * Created by bram on 1/27/16.
  */
-public abstract class AbstractPage<T> implements Page<T>
+public abstract class AbstractPage implements Page
 {
     //-----CONSTANTS-----
     private static final URI ROOT = URI.create("/");
@@ -22,7 +22,7 @@ public abstract class AbstractPage<T> implements Page<T>
     private static final String DIR_PAGE_NAME = "index";
 
     //-----VARIABLES-----
-    protected final PathInfo<T> pathInfo;
+    protected final PathInfo pathInfo;
 
     private JsonNode jsonLdNode;
 
@@ -73,7 +73,7 @@ public abstract class AbstractPage<T> implements Page<T>
 
         return tempPagePath.resolve(pageName).toUri();
     }
-    protected AbstractPage(PathInfo<T> pathInfo)
+    protected AbstractPage(PathInfo pathInfo)
     {
         this.pathInfo = pathInfo;
     }

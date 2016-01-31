@@ -1,10 +1,10 @@
 package com.beligum.blocks.fs.ifaces;
 
 import com.beligum.blocks.fs.LockFile;
+import org.apache.hadoop.fs.Path;
 import org.apache.tika.mime.MediaType;
 
 import java.io.IOException;
-import java.net.URI;
 
 /**
  * <p>
@@ -12,15 +12,9 @@ import java.net.URI;
  * </p>
  * Created by bram on 9/17/15.
  */
-public interface PathInfo<T>
+public interface PathInfo
 {
     //-----INTERFACES-----
-    interface PathFactory<T>
-    {
-        T create(URI uri);
-        T create(T parent, T child);
-        T create(T parent, String childName);
-    }
 
     //-----CONSTANTS-----
 
@@ -29,35 +23,33 @@ public interface PathInfo<T>
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    PathFactory<T> getPathFactory();
-
-    T getPath();
+    Path getPath();
 
     Object getPathFileSystem();
 
-    T getMetaFolder();
+    Path getMetaFolder();
 
-    T getMetaHashFile();
+    Path getMetaHashFile();
 
-    T getMetaHistoryFolder();
+    Path getMetaHistoryFolder();
 
-    T getMetaMonitorFolder();
+    Path getMetaMonitorFolder();
 
-    T getMetaProxyFolder();
+    Path getMetaProxyFolder();
 
-    T getMetaProxyFolder(MediaType mimeType);
+    Path getMetaProxyFolder(MediaType mimeType);
 
-    T getMetaMetadataFolder();
+    Path getMetaMetadataFolder();
 
     String getMetaHashChecksum();
 
     String calcHashChecksum() throws IOException;
 
-    LockFile<T> acquireLock() throws IOException;
+    LockFile acquireLock() throws IOException;
 
     boolean isLocked() throws IOException;
 
-    void releaseLockFile(LockFile<T> lock) throws IOException;
+    void releaseLockFile(LockFile lock) throws IOException;
 
     //-----PROTECTED METHODS-----
 

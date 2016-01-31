@@ -58,7 +58,7 @@ public abstract class AbstractHdfsMetadataWriter implements MetadataWriter<Path>
 
     //-----PUBLIC METHODS-----
     @Override
-    public void open(PathInfo<Path> pathInfo) throws IOException
+    public void open(PathInfo pathInfo) throws IOException
     {
         if (!this.inited) {
             throw new IOException("Please init this reader first");
