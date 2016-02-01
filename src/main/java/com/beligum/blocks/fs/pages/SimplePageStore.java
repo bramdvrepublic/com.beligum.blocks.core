@@ -4,7 +4,6 @@ import com.beligum.base.auth.models.Person;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.json.Json;
-import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.HdfsPathInfo;
 import com.beligum.blocks.fs.HdfsUtils;
@@ -17,9 +16,6 @@ import com.beligum.blocks.fs.pages.ifaces.PageStore;
 import com.beligum.blocks.rdf.ifaces.Source;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hp.hpl.jena.rdf.model.Model;
-import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
@@ -27,8 +23,6 @@ import org.joda.time.DateTime;
 
 import java.io.*;
 import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Created by bram on 1/14/16.
@@ -57,7 +51,7 @@ public class SimplePageStore implements PageStore
     public void init() throws IOException
     {
         Path pagesRoot = new Path(settings.getPagesStorePath());
-        try (FileSystem fs = this.getFileSystem()) {
+        try (FileSystem fs = Settings.instance().getPageStoreFileSystem()) {
             if (fs.exists(pagesRoot)) {
                 HdfsUtils.recursiveDeleteLockFiles(fs, pagesRoot);
             }
@@ -73,7 +67,7 @@ public class SimplePageStore implements PageStore
 
         //TODO: BIG ONE, make this transactional with a good rollback (history entry might be a good starting point)
         //now execute the FS changes
-        try (FileSystem fs = this.getFileSystem()) {
+        try (FileSystem fs = Settings.instance().getPageStoreFileSystem()) {
 
             PathInfo pathInfo = new HdfsPathInfo(fs, validUri);
             //we need to use the abstract type here to have access to the package private setters
@@ -234,36 +228,5 @@ public class SimplePageStore implements PageStore
         metadataWriter.updateTimestamps();
         metadataWriter.write();
         metadataWriter.close();
-    }
-    /**
-     * @return this returns a NEW filesystem, that needs to be (auto) closed
-     */
-    private FileSystem getFileSystem() throws IOException
-    {
-        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGE_FS_CONFIG)) {
-            Configuration conf = new Configuration();
-            URI pageStorePath = Settings.instance().getPagesStorePath();
-            if (StringUtils.isEmpty(pageStorePath.getScheme())) {
-                //make sure we have a com.beligum.blocks.schema.schema
-                pageStorePath = URI.create("file://" + pageStorePath.toString());
-                Logger.warn("The page store path doesn't have a com.beligum.blocks.schema.schema, adding the HDFS 'file://' prefix to use the local file system; " + pageStorePath.toString());
-            }
-            conf.set(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, pageStorePath.toString());
-
-            //note: if fs.defaultFS is set here, this might overwirte the path above
-            HashMap<String, String> extraProperties = Settings.instance().getElasticSearchProperties();
-            if (extraProperties != null) {
-                for (Map.Entry<String, String> entry : extraProperties.entrySet()) {
-                    if (entry.getKey().equals(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY)) {
-                        Logger.warn("Watch out, your HDFS settings overwrite the pages store path; " + entry.getValue());
-                    }
-                    conf.set(entry.getKey(), entry.getValue());
-                }
-            }
-
-            R.cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGE_FS_CONFIG, conf);
-        }
-
-        return FileSystem.get((Configuration) R.cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGE_FS_CONFIG));
     }
 }

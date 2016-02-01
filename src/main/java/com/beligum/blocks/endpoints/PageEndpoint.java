@@ -46,7 +46,14 @@ import net.htmlparser.jericho.Source;
 import net.htmlparser.jericho.SourceFormatter;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.hibernate.validator.constraints.NotBlank;
+import org.xadisk.bridge.proxies.interfaces.Session;
+import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
+import org.xadisk.bridge.proxies.interfaces.XAFileSystemProxy;
+import org.xadisk.bridge.proxies.interfaces.XASession;
+import org.xadisk.filesystem.exceptions.XAApplicationException;
+import org.xadisk.filesystem.standalone.StandaloneFileSystemConfiguration;
 
+import javax.transaction.xa.XAResource;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -100,7 +107,7 @@ public class PageEndpoint
 
         //save the file to disk and pull all the proxies etc
         //TODO this should probably honour our watch system and just write the HTML, no?
-        Page savedPage = this.getHdfsPageStore().save(source, personRepository.get(Authentication.getCurrentPrincipal()));
+        Page savedPage = this.getPageStore().save(source, personRepository.get(Authentication.getCurrentPrincipal()));
 
         this.getElasticPageIndex().indexPage(savedPage);
 
@@ -152,6 +159,56 @@ public class PageEndpoint
         formatter.setNewLine("");
         //result is a very compact format
         String finalHtmlFormatted = formatter.toString();
+    }
+
+    private void testTransaction()
+    {
+        String xadiskSystemDirectory = "C:\\xadisk";
+        File sampleDataDir1 = new File("C:\\data1");
+        XAFileSystem xafs = null;
+
+        try {
+            StandaloneFileSystemConfiguration configuration = new StandaloneFileSystemConfiguration(xadiskSystemDirectory, "id-1");
+
+            xafs = XAFileSystemProxy.bootNativeXAFileSystem(configuration);
+
+            System.out.println("\nBooting XADisk...\n");
+
+            xafs.waitForBootup(-1);
+
+            System.out.println("\nXADisk is now available for use.\n");
+
+            Session session = xafs.createSessionForLocalTransaction();
+
+            XASession sessionXA = xafs.createSessionForXATransaction();
+
+            XAResource res = sessionXA.getXAResource();
+
+            sessionXA.deleteFile(null);
+
+            try {
+                session.createFile(sampleDataDir1, true);
+                session.createFile(new File(sampleDataDir1, "a.txt"), false);
+
+                session.commit();
+
+                System.out.println("\nCongratulations! You have successfully run the XADisk-Hello-World.\n");
+            } catch (XAApplicationException xaae) {
+                session.rollback();
+                throw xaae;
+            }
+
+        } catch (Throwable t) {
+            t.printStackTrace();
+        } finally {
+            if (xafs != null) {
+                try {
+                    xafs.shutdown();
+                } catch (IOException ioe) {
+                    ioe.printStackTrace();
+                }
+            }
+        }
     }
 
     @POST
@@ -347,7 +404,7 @@ public class PageEndpoint
 
         return retVal;
     }
-    public PageStore getHdfsPageStore() throws IOException
+    public PageStore getPageStore() throws IOException
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGE_STORE)) {
             PageStore pageStore = new SimplePageStore();

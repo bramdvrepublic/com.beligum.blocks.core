@@ -1,8 +1,20 @@
 package com.beligum.blocks.config;
 
 import com.beligum.base.server.R;
+import com.beligum.base.utils.Logger;
+import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.fs.hdfs.TransactionalRawLocalFileSystem;
 import org.apache.commons.configuration.HierarchicalConfiguration;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
+import org.apache.hadoop.fs.FileSystem;
+import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
+import org.xadisk.bridge.proxies.interfaces.XAFileSystemProxy;
+import org.xadisk.filesystem.standalone.StandaloneFileSystemConfiguration;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
@@ -17,6 +29,9 @@ public class Settings
     private static final String DEFAULT_FILE_EXT = ".html";
     private static final String DEFAULT_LOCK_FILE_EXT = ".lock";
 
+    private static final String DEFAULT_XADISK_INSTANCE_ID = "xa-1";
+    private static final long DEFAULT_XADISK_BOOT_TIMEOUT = 60 * 1000; //1 minute
+
     private static Settings instance;
     /**
      * the languages this site can work with, ordered from most preferred languages, to less preferred
@@ -26,6 +41,7 @@ public class Settings
     private URI cachedSiteDomain;
     private URI defaultRdfSchema;
     private URI cachedPagesStorePath;
+    private File cachedPagesStoreJournalDir;
     protected HashMap<String, String> cachedHdfsProperties = null;
     protected HashMap<String, String> cachedEsProperties = null;
 
@@ -110,6 +126,22 @@ public class Settings
 
         return this.cachedPagesStorePath;
     }
+    public File getPagesStoreJournalDir()
+    {
+        if (this.cachedPagesStoreJournalDir == null) {
+            this.cachedPagesStoreJournalDir = new File(R.configuration().getString("blocks.core.pages.journal-dir"));
+        }
+
+        return this.cachedPagesStoreJournalDir;
+    }
+    public String getPagesStoreJournalId()
+    {
+        return R.configuration().getString("blocks.core.pages.journal-id", DEFAULT_XADISK_INSTANCE_ID);
+    }
+    public long getPagesStoreJournalBootTimeout()
+    {
+        return R.configuration().getLong("blocks.core.pages.journal-boot-timeout", DEFAULT_XADISK_BOOT_TIMEOUT);
+    }
     public Map<String, String> getPagesHdfsProperties()
     {
         if (this.cachedHdfsProperties == null) {
@@ -162,6 +194,59 @@ public class Settings
 
         return this.cachedEsProperties;
     }
+    /**
+     * @return this returns a NEW filesystem, that needs to be (auto) closed
+     */
+    public FileSystem getPageStoreFileSystem() throws IOException
+    {
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGE_FS_CONFIG)) {
+            Configuration conf = new Configuration();
+            URI pageStorePath = Settings.instance().getPagesStorePath();
+            if (StringUtils.isEmpty(pageStorePath.getScheme())) {
+                //make sure we have a com.beligum.blocks.schema.schema
+                pageStorePath = URI.create(TransactionalRawLocalFileSystem.SCHEME+"://" + pageStorePath.toString());
+                Logger.warn("The page store path doesn't have a com.beligum.blocks.schema.schema, adding the HDFS "+TransactionalRawLocalFileSystem.SCHEME+"'://' prefix to use the local transactional file system; " + pageStorePath.toString());
+            }
+            conf.set(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, pageStorePath.toString());
+
+            //note: if fs.defaultFS is set here, this might overwrite the path above
+            HashMap<String, String> extraProperties = Settings.instance().getElasticSearchProperties();
+            if (extraProperties != null) {
+                for (Map.Entry<String, String> entry : extraProperties.entrySet()) {
+                    if (entry.getKey().equals(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY)) {
+                        Logger.warn("Watch out, your HDFS settings overwrite the pages store path; " + entry.getValue());
+                    }
+                    conf.set(entry.getKey(), entry.getValue());
+                }
+            }
+
+            R.cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGE_FS_CONFIG, conf);
+
+            //boot the XADisk instance too (probably still null here, good place to test them together)
+            this.getPageStoreTransactionManager();
+        }
+
+        return FileSystem.get((Configuration) R.cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGE_FS_CONFIG));
+    }
+    public XAFileSystem getPageStoreTransactionManager() throws IOException
+    {
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
+            Settings settings = Settings.instance();
+            XAFileSystem xafs = XAFileSystemProxy.bootNativeXAFileSystem(new StandaloneFileSystemConfiguration(settings.getPagesStoreJournalDir().getAbsolutePath(), settings.getPagesStoreJournalId()));
+            try {
+                xafs.waitForBootup(settings.getPagesStoreJournalBootTimeout());
+                R.cacheManager().getApplicationCache().put(CacheKeys.XADISK_FILE_SYSTEM, xafs);
+            }
+            catch (InterruptedException e) {
+                throw new IOException("Error occurred whlie booting transactional XADisk file system (timeout="+settings.getPagesStoreJournalBootTimeout(), e);
+            }
+        }
+
+        return (XAFileSystem) R.cacheManager().getApplicationCache().get(CacheKeys.XADISK_FILE_SYSTEM);
+    }
+
+
+
 
 
 
