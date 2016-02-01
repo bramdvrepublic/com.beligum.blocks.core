@@ -1,4 +1,4 @@
-package com.beligum.blocks.fs.atomic;
+package com.beligum.blocks.fs.atomic.manual;
 /* Assumptions:
      delete is atomic
 	 rename is atomic
@@ -12,10 +12,10 @@ package com.beligum.blocks.fs.atomic;
 */
 
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.fs.atomic.actions.DeleteAction;
-import com.beligum.blocks.fs.atomic.actions.WriteAction;
-import com.beligum.blocks.fs.atomic.exceptions.InconsistentStateException;
-import com.beligum.blocks.fs.atomic.exceptions.TransactionException;
+import com.beligum.blocks.fs.atomic.manual.actions.DeleteAction;
+import com.beligum.blocks.fs.atomic.manual.actions.WriteAction;
+import com.beligum.blocks.fs.atomic.manual.exceptions.InconsistentStateException;
+import com.beligum.blocks.fs.atomic.manual.exceptions.TransactionException;
 import org.apache.hadoop.fs.Path;
 
 import java.io.FileOutputStream;

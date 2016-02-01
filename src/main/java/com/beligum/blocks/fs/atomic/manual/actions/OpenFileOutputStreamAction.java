@@ -1,4 +1,4 @@
-package com.beligum.blocks.fs.atomic.actions;
+package com.beligum.blocks.fs.atomic.manual.actions;
 
 import org.apache.hadoop.fs.CreateFlag;
 import org.apache.hadoop.fs.FileContext;

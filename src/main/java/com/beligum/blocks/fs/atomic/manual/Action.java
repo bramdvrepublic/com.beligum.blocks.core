@@ -1,9 +1,9 @@
-package com.beligum.blocks.fs.atomic;
+package com.beligum.blocks.fs.atomic.manual;
 
 import com.beligum.blocks.fs.HdfsUtils;
-import com.beligum.blocks.fs.atomic.exceptions.DeleteException;
-import com.beligum.blocks.fs.atomic.exceptions.FileExistsException;
-import com.beligum.blocks.fs.atomic.exceptions.RenameException;
+import com.beligum.blocks.fs.atomic.manual.exceptions.DeleteException;
+import com.beligum.blocks.fs.atomic.manual.exceptions.FileExistsException;
+import com.beligum.blocks.fs.atomic.manual.exceptions.RenameException;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
 

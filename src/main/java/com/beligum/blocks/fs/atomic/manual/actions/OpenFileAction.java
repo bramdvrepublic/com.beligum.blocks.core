@@ -1,6 +1,6 @@
-package com.beligum.blocks.fs.atomic.actions;
+package com.beligum.blocks.fs.atomic.manual.actions;
 
-import com.beligum.blocks.fs.atomic.Action;
+import com.beligum.blocks.fs.atomic.manual.Action;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
 

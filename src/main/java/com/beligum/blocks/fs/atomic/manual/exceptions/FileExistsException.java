@@ -1,4 +1,4 @@
-package com.beligum.blocks.fs.atomic.exceptions;
+package com.beligum.blocks.fs.atomic.manual.exceptions;
 
 import org.apache.hadoop.fs.Path;
 

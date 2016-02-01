@@ -1,8 +1,8 @@
-package com.beligum.blocks.fs.atomic;
+package com.beligum.blocks.fs.atomic.manual;
 
 import com.beligum.blocks.fs.HdfsUtils;
-import com.beligum.blocks.fs.atomic.exceptions.InconsistentStateException;
-import com.beligum.blocks.fs.atomic.exceptions.TransactionException;
+import com.beligum.blocks.fs.atomic.manual.exceptions.InconsistentStateException;
+import com.beligum.blocks.fs.atomic.manual.exceptions.TransactionException;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
@@ -23,6 +23,7 @@ import java.util.List;
  *
  * Don't know how good it it, but it seems to do the job reasonably well...
  *
+ * -----------------------------------------------------------------------------------
  * This does atomicity, but not isolation: it will generally be wrong
  * if two overlapping transactions work on the same file.
  *
@@ -128,8 +129,7 @@ public class TransactionManager
     ////////////////////////////////////////////////////////////////
     /// Transactions.
 
-    public synchronized Transaction beginTransaction()
-                    throws TransactionException
+    public synchronized Transaction beginTransaction() throws TransactionException
     {
         Transaction t = new Transaction(this, nextTxnNumber);
         nextTxnNumber++;
@@ -156,7 +156,7 @@ public class TransactionManager
         while (files.hasNext()) {
             Path file = files.next().getPath();
             if (file.getName().startsWith("journal-")) {
-                Journal.recover(file);
+                Journal.recover(this.fileContext, file);
             }
         }
     }

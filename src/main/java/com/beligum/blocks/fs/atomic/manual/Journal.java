@@ -1,8 +1,8 @@
-package com.beligum.blocks.fs.atomic;
+package com.beligum.blocks.fs.atomic.manual;
 
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.fs.atomic.exceptions.InconsistentStateException;
-import com.beligum.blocks.fs.atomic.exceptions.TransactionException;
+import com.beligum.blocks.fs.atomic.manual.exceptions.InconsistentStateException;
+import com.beligum.blocks.fs.atomic.manual.exceptions.TransactionException;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
 
@@ -81,7 +81,6 @@ class Journal
     private FileContext fileContext;
     private Path journalFile;
     private RandomAccessFile raf;
-//    private org.apache.avro.mapred.FsInput raf;
     private boolean closed;
     private int transactionNumber;
     private ArrayList actions;        // actions that ran successfully
@@ -106,9 +105,7 @@ class Journal
 
     private void open() throws IOException
     {
-        //raf = new this.fileContext.create(journalFile, EnumSet.of(CreateFlag.CREATE, CreateFlag.APPEND, CreateFlag.SYNC_BLOCK));
-        //raf = new FsInput(journalFile, HdfsUtils.getConf());
-//        raf = new RandomAccessFile(journalFile, "rw");
+        //raf = new RandomAccessFile(journalFile, "rw");
         raf = new RandomAccessFile("TODO-implement this", "rw");
 
         closed = false;
