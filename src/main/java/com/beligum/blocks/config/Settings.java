@@ -3,13 +3,14 @@ package com.beligum.blocks.config;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.fs.hdfs.TransactionalRawLocalFS;
 import com.beligum.blocks.fs.hdfs.TransactionalRawLocalFileSystem;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.AbstractFileSystem;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileContext;
-import org.apache.hadoop.fs.FileSystem;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystemProxy;
 import org.xadisk.filesystem.standalone.StandaloneFileSystemConfiguration;
@@ -30,7 +31,7 @@ public class Settings
     private static final String DEFAULT_FILE_EXT = ".html";
     private static final String DEFAULT_LOCK_FILE_EXT = ".lock";
 
-    private static final Class<? extends FileSystem> DEFAULT_TX_FILESYSTEM = TransactionalRawLocalFileSystem.class;
+    private static final Class<? extends AbstractFileSystem> DEFAULT_TX_FILESYSTEM = TransactionalRawLocalFS.class;
     private static final String DEFAULT_TX_FILESYSTEM_SCHEMA = TransactionalRawLocalFileSystem.SCHEME;
 
     private static final String DEFAULT_XADISK_INSTANCE_ID = "xa-1";
@@ -221,7 +222,7 @@ public class Settings
 
             // don't forget to register our custom FS so it can be found by HDFS
             // Note: below we have a change to override this again with the conf
-            conf.set("fs." + DEFAULT_TX_FILESYSTEM_SCHEMA + ".impl", DEFAULT_TX_FILESYSTEM.getCanonicalName());
+            conf.set("fs.AbstractFileSystem." + DEFAULT_TX_FILESYSTEM_SCHEMA + ".impl", DEFAULT_TX_FILESYSTEM.getCanonicalName());
 
             //note: if fs.defaultFS is set here, this might overwrite the path above
             HashMap<String, String> extraProperties = Settings.instance().getElasticSearchProperties();

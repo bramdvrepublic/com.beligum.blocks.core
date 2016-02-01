@@ -164,7 +164,7 @@ public class HdfsPathInfo implements PathInfo
         }
 
         //note: not possible another process 'gets between' the loop above and this, because this will throw an exception if the file already exists.
-        if (!HdfsUtils.createNewFile(this.fileContext, lock)) {
+        if (!HdfsUtils.createNewFile(this.fileContext, lock, true)) {
             throw new IOException("Unable to create lock file because of an error or because (in the mean time) it already existed; " + lock);
         }
 

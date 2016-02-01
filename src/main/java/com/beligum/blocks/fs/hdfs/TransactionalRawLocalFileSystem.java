@@ -60,6 +60,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     public void initialize(URI uri, Configuration conf) throws IOException
     {
         super.initialize(uri, conf);
+        this.setConf(conf);
 
         this.xafs = Settings.instance().getPageStoreTransactionManager();
     }

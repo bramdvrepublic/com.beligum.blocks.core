@@ -62,12 +62,17 @@ public class HdfsUtils
      * Copy/pasted from
      * @see org.apache.hadoop.fs.FileSystem#createNewFile(Path)
      */
-    public static boolean createNewFile(FileContext context, Path f) throws IOException
+    public static boolean createNewFile(FileContext context, Path f, boolean createParents) throws IOException
     {
         if (context.util().exists(f)) {
             return false;
         } else {
-            context.create(f, EnumSet.of(CreateFlag.CREATE), Options.CreateOpts.bufferSize(getConf().getInt("io.file.buffer.size", 4096))).close();
+            if (createParents) {
+                context.create(f, EnumSet.of(CreateFlag.CREATE), Options.CreateOpts.bufferSize(getConf().getInt("io.file.buffer.size", 4096)), Options.CreateOpts.createParent()).close();
+            }
+            else {
+                context.create(f, EnumSet.of(CreateFlag.CREATE), Options.CreateOpts.bufferSize(getConf().getInt("io.file.buffer.size", 4096))).close();
+            }
             return true;
         }
     }
@@ -91,7 +96,7 @@ public class HdfsUtils
             f = generateFile(prefix, suffix, tmpdir);
         } while (context.util().exists(f));
 
-        if (!createNewFile(context, f)) {
+        if (!createNewFile(context, f, true)) {
             throw new IOException("Unable to create temporary file");
         }
 
