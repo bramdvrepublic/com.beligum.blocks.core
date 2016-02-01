@@ -9,7 +9,6 @@ import com.beligum.blocks.rdf.ifaces.Exporter;
 import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.rdf.importers.SesameImporter;
 import gen.com.beligum.blocks.core.maven;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tika.mime.MediaType;
 
@@ -53,8 +52,7 @@ public class DefaultPageImpl extends AbstractPage
     @Override
     public MetadataWriter createMetadataWriter() throws IOException
     {
-        //TODO this is the only parameterized piece left in here
-        return new EBUCoreHdfsMetadataWriter((FileSystem) this.pathInfo.getPathFileSystem());
+        return new EBUCoreHdfsMetadataWriter(this.pathInfo.getFileContext());
     }
     //    @Override
     public Path getNormalizedPageProxyPath()

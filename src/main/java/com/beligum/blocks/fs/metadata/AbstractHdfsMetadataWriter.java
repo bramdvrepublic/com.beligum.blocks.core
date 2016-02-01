@@ -6,14 +6,11 @@ import com.beligum.blocks.fs.ifaces.Constants;
 import com.beligum.blocks.fs.ifaces.PathInfo;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
 import org.apache.hadoop.fs.FileChecksum;
-import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IOUtils;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URL;
+import java.net.URI;
 
 /**
  * Created by bram on 1/20/16.
@@ -24,8 +21,8 @@ public abstract class AbstractHdfsMetadataWriter implements MetadataWriter<Path>
 
     //-----VARIABLES-----
     //valid during an entire session (after a successful init())
-    protected FileSystem fileSystem;
-    protected URL schemaResource;
+    protected FileContext fileSystem;
+    protected URI schemaResource;
     protected FileChecksum schemaResourceChecksum;
 
     //valid during an open/write session, nulled after close()
@@ -37,7 +34,7 @@ public abstract class AbstractHdfsMetadataWriter implements MetadataWriter<Path>
     protected boolean opened;
 
     //-----CONSTRUCTORS-----
-    protected AbstractHdfsMetadataWriter(FileSystem fileSystem) throws IOException
+    protected AbstractHdfsMetadataWriter(FileContext fileSystem) throws IOException
     {
         this.inited = false;
         this.opened = false;
@@ -46,8 +43,8 @@ public abstract class AbstractHdfsMetadataWriter implements MetadataWriter<Path>
 
         //save the URI, calc the hash (and test it's valid at the same time)
         try {
-            this.schemaResource = this.getClass().getResource(this.getXsdResourcePath());
-            this.schemaResourceChecksum = this.fileSystem.getFileChecksum(new Path(this.schemaResource.toURI()));
+            this.schemaResource = this.getClass().getResource(this.getXsdResourcePath()).toURI();
+            this.schemaResourceChecksum = this.fileSystem.getFileChecksum(new Path(this.schemaResource));
         }
         catch (Exception e) {
             throw new IOException("Error while validating the XSD schema location; " + this.getXsdResourcePath(), e);
@@ -65,7 +62,7 @@ public abstract class AbstractHdfsMetadataWriter implements MetadataWriter<Path>
         }
         else {
             this.baseMetadataSchema = new Path(pathInfo.getMetaMetadataFolder(), Constants.META_METADATA_FILE_METADATA_XSD);
-            if (fileSystem.exists(this.baseMetadataSchema)) {
+            if (fileSystem.util().exists(this.baseMetadataSchema)) {
                 // If the schema file exists, calculate it's hash and make sure it equals the schema file of the data we're about to write.
                 // If it doesn't, we can't reliably proceed cause we currently don't have a means to evolve the schemata
                 FileChecksum existingChecksum = this.fileSystem.getFileChecksum(this.baseMetadataSchema);
@@ -78,12 +75,7 @@ public abstract class AbstractHdfsMetadataWriter implements MetadataWriter<Path>
             }
             else {
                 //copy the schema resource file to the destination
-                try (
-                                InputStream is = this.schemaResource.openStream();
-                                OutputStream os = this.fileSystem.create(baseMetadataSchema);
-                ) {
-                    IOUtils.copyBytes(is, os, this.fileSystem.getConf());
-                }
+                this.fileSystem.util().copy(new Path(this.schemaResource), baseMetadataSchema);
             }
 
             this.baseMetadataFile = new Path(pathInfo.getMetaMetadataFolder(), Constants.META_METADATA_FILE_METADATA_XML);

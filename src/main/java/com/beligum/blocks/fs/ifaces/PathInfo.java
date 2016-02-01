@@ -1,6 +1,7 @@
 package com.beligum.blocks.fs.ifaces;
 
 import com.beligum.blocks.fs.LockFile;
+import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
 import org.apache.tika.mime.MediaType;
 
@@ -25,7 +26,7 @@ public interface PathInfo
     //-----PUBLIC METHODS-----
     Path getPath();
 
-    Object getPathFileSystem();
+    FileContext getFileContext();
 
     Path getMetaFolder();
 

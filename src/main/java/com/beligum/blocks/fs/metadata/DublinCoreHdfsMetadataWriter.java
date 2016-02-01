@@ -5,10 +5,12 @@ import com.beligum.base.config.CoreConfiguration;
 import com.beligum.blocks.fs.ifaces.PathInfo;
 import com.beligum.blocks.schema.dublincore.simple.v20021212.jaxb.ElementContainer;
 import com.beligum.blocks.schema.dublincore.simple.v20021212.jaxb.ObjectFactory;
-import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.CreateFlag;
+import org.apache.hadoop.fs.FileContext;
 
 import javax.xml.bind.JAXB;
 import java.io.*;
+import java.util.EnumSet;
 
 /**
  * Created by bram on 1/20/16.
@@ -26,7 +28,7 @@ public class DublinCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
     private ElementContainer root;
 
     //-----CONSTRUCTORS-----
-    public DublinCoreHdfsMetadataWriter(FileSystem fileSystem) throws IOException
+    public DublinCoreHdfsMetadataWriter(FileContext fileSystem) throws IOException
     {
         super(fileSystem);
 
@@ -42,7 +44,7 @@ public class DublinCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
         super.open(pathInfo);
 
         //read in the existing metadata if it exists, or create a new instance if it doesn't
-        if (fileSystem.exists(this.baseMetadataFile)) {
+        if (fileSystem.util().exists(this.baseMetadataFile)) {
             try (Reader reader = new BufferedReader(new InputStreamReader(fileSystem.open(this.baseMetadataFile)))) {
                 this.root = JAXB.unmarshal(reader, ElementContainer.class);
             }
@@ -86,7 +88,7 @@ public class DublinCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
         super.write();
 
         //write the metadata to disk (overwriting the possibly existing metadata; that's ok since we read it in first)
-        try (Writer writer = new BufferedWriter(new OutputStreamWriter(this.fileSystem.create(this.baseMetadataFile, true)))) {
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(this.fileSystem.create(this.baseMetadataFile, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE))))) {
             JAXB.marshal(root, writer);
         }
     }

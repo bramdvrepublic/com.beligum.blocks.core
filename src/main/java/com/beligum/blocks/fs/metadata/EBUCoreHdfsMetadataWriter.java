@@ -6,7 +6,8 @@ import com.beligum.blocks.fs.ifaces.PathInfo;
 import com.beligum.blocks.schema.ebucore.v1_6.jaxb.*;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.CreateFlag;
+import org.apache.hadoop.fs.FileContext;
 import org.joda.time.DateTime;
 
 import javax.xml.bind.JAXB;
@@ -15,6 +16,7 @@ import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 import java.io.*;
 import java.lang.String;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 
@@ -43,7 +45,7 @@ public class EBUCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
     private EbuCoreMainType root;
 
     //-----CONSTRUCTORS-----
-    public EBUCoreHdfsMetadataWriter(FileSystem fileSystem) throws IOException
+    public EBUCoreHdfsMetadataWriter(FileContext fileSystem) throws IOException
     {
         super(fileSystem);
 
@@ -57,7 +59,7 @@ public class EBUCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
         super.open(pathInfo);
 
         //read in the existing metadata if it exists, or create a new instance if it doesn't
-        if (fileSystem.exists(this.baseMetadataFile)) {
+        if (fileSystem.util().exists(this.baseMetadataFile)) {
             try (Reader reader = new BufferedReader(new InputStreamReader(fileSystem.open(this.baseMetadataFile)))) {
                 this.root = JAXB.unmarshal(reader, EbuCoreMainType.class);
             }
@@ -222,7 +224,7 @@ public class EBUCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
         super.write();
 
         //write the metadata to disk (overwriting the possibly existing metadata; that's ok since we read it in first)
-        try (Writer writer = new BufferedWriter(new OutputStreamWriter(this.fileSystem.create(this.baseMetadataFile, true)))) {
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(this.fileSystem.create(this.baseMetadataFile, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE))))) {
             JAXB.marshal(root, writer);
         }
     }

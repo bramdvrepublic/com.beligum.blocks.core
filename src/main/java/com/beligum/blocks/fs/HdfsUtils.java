@@ -33,7 +33,7 @@ public class HdfsUtils
     {
         return new Configuration();
     }
-    public static String readFile(FileSystem fs, Path path) throws IOException
+    public static String readFile(FileContext fs, Path path) throws IOException
     {
         String retVal = null;
 
@@ -43,15 +43,13 @@ public class HdfsUtils
 
         return retVal;
     }
-    public static void recursiveDeleteLockFiles(FileSystem fs, Path path) throws IOException
+    public static void recursiveDeleteLockFiles(FileContext fs, Path path) throws IOException
     {
-        FileStatus[] status = fs.listStatus(path);
-
-        for (int i = 0; i < status.length; i++) {
-            FileStatus fileStatus = status[i];
-
+        RemoteIterator<FileStatus> status = fs.listStatus(path);
+        while (status.hasNext()) {
+            FileStatus fileStatus = status.next();
             Path lockFile = HdfsPathInfo.createLockPath(fileStatus.getPath());
-            if (fs.exists(lockFile)) {
+            if (fs.util().exists(lockFile)) {
                 fs.delete(lockFile, false);
             }
 

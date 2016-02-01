@@ -51,6 +51,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     //-----CONSTRUCTORS-----
     public TransactionalRawLocalFileSystem()
     {
+        //TODO this defaults to the current classpath dir
         this.workingDir = getInitialWorkingDirectory();
     }
 

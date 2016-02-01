@@ -8,6 +8,7 @@ import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
+import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.FileSystem;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystemProxy;
@@ -28,6 +29,9 @@ public class Settings
 
     private static final String DEFAULT_FILE_EXT = ".html";
     private static final String DEFAULT_LOCK_FILE_EXT = ".lock";
+
+    private static final Class<? extends FileSystem> DEFAULT_TX_FILESYSTEM = TransactionalRawLocalFileSystem.class;
+    private static final String DEFAULT_TX_FILESYSTEM_SCHEMA = TransactionalRawLocalFileSystem.SCHEME;
 
     private static final String DEFAULT_XADISK_INSTANCE_ID = "xa-1";
     private static final long DEFAULT_XADISK_BOOT_TIMEOUT = 60 * 1000; //1 minute
@@ -122,6 +126,12 @@ public class Settings
                 path += "/";
             }
             this.cachedPagesStorePath = URI.create(path);
+
+            if (StringUtils.isEmpty(this.cachedPagesStorePath.getScheme())) {
+                //make sure we have a schema
+                this.cachedPagesStorePath = URI.create(DEFAULT_TX_FILESYSTEM_SCHEMA+"://" + this.cachedPagesStorePath.toString());
+                Logger.warn("The page store path doesn't have a schema, adding the HDFS '"+DEFAULT_TX_FILESYSTEM_SCHEMA+"://' prefix to use the local transactional file system; " + this.cachedPagesStorePath.toString());
+            }
         }
 
         return this.cachedPagesStorePath;
@@ -197,17 +207,21 @@ public class Settings
     /**
      * @return this returns a NEW filesystem, that needs to be (auto) closed
      */
-    public FileSystem getPageStoreFileSystem() throws IOException
+    public FileContext getPageStoreFileSystem() throws IOException
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGE_FS_CONFIG)) {
             Configuration conf = new Configuration();
             URI pageStorePath = Settings.instance().getPagesStorePath();
             if (StringUtils.isEmpty(pageStorePath.getScheme())) {
-                //make sure we have a com.beligum.blocks.schema.schema
-                pageStorePath = URI.create(TransactionalRawLocalFileSystem.SCHEME+"://" + pageStorePath.toString());
-                Logger.warn("The page store path doesn't have a com.beligum.blocks.schema.schema, adding the HDFS "+TransactionalRawLocalFileSystem.SCHEME+"'://' prefix to use the local transactional file system; " + pageStorePath.toString());
+                //make sure we have a schema
+                pageStorePath = URI.create(DEFAULT_TX_FILESYSTEM_SCHEMA+"://" + pageStorePath.toString());
+                Logger.warn("The page store path doesn't have a schema, adding the HDFS "+DEFAULT_TX_FILESYSTEM_SCHEMA+"'://' prefix to use the local transactional file system; " + pageStorePath.toString());
             }
             conf.set(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, pageStorePath.toString());
+
+            // don't forget to register our custom FS so it can be found by HDFS
+            // Note: below we have a change to override this again with the conf
+            conf.set("fs." + DEFAULT_TX_FILESYSTEM_SCHEMA + ".impl", DEFAULT_TX_FILESYSTEM.getCanonicalName());
 
             //note: if fs.defaultFS is set here, this might overwrite the path above
             HashMap<String, String> extraProperties = Settings.instance().getElasticSearchProperties();
@@ -226,7 +240,7 @@ public class Settings
             this.getPageStoreTransactionManager();
         }
 
-        return FileSystem.get((Configuration) R.cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGE_FS_CONFIG));
+        return FileContext.getFileContext((Configuration) R.cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGE_FS_CONFIG));
     }
     public XAFileSystem getPageStoreTransactionManager() throws IOException
     {

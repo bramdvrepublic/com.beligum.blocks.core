@@ -2,7 +2,6 @@ package com.beligum.blocks.fs.hdfs;
 
 import com.beligum.base.server.R;
 import com.beligum.blocks.caching.CacheKeys;
-import org.xadisk.bridge.proxies.interfaces.Session;
 
 import javax.annotation.Priority;
 import javax.ws.rs.Priorities;
@@ -31,18 +30,24 @@ public class XADiskTransactionFilter implements ContainerResponseFilter
     @Override
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) throws IOException
     {
-        Session tx = (Session) R.cacheManager().getRequestCache().get(CacheKeys.XADISK_REQUEST_TRANSACTION);
+        XADiskRequestCacheEntry tx = (XADiskRequestCacheEntry) R.cacheManager().getRequestCache().get(CacheKeys.XADISK_REQUEST_TRANSACTION);
         if (tx != null) {
             try {
-                if (responseContext.getStatus() >= Response.Status.BAD_REQUEST.getStatusCode()) {
-                    tx.rollback();
-                }
-                else {
-                    tx.commit();
+                if (tx.xaSession!=null) {
+                    if (responseContext.getStatus() >= Response.Status.BAD_REQUEST.getStatusCode()) {
+                        tx.xaSession.rollback();
+                    }
+                    else {
+                        tx.xaSession.commit();
+                    }
                 }
             }
             catch (Exception e) {
-                throw new IOException("Exception caught while processing the file system transaction; this is bad", e);
+                throw new IOException("Exception caught while processing the file system transaction; this is probably bad", e);
+            }
+            finally {
+                //make sure we only do this once
+                R.cacheManager().getRequestCache().remove(CacheKeys.XADISK_REQUEST_TRANSACTION);
             }
         }
     }

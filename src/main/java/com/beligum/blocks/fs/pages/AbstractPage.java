@@ -4,12 +4,11 @@ import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.ifaces.PathInfo;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Created by bram on 1/27/16.
@@ -43,14 +42,13 @@ public abstract class AbstractPage implements Page
         }
 
         //note: we normalize before resolving for safety
-        //.toString() is needed because we don't have a schema
-        Path tempPagePath = Paths.get(settings.getPagesStorePath().resolve(relativeUrl.normalize()).toString());
+        URI tempPagePath = settings.getPagesStorePath().resolve(relativeUrl.normalize());
 
         //this is important: if the url ends with a slash, we're actually saving a 'directory', so it doesn't have a name (will become 'index' later on)
         String pageName = null;
         boolean isDir = relativeUrlStr.endsWith("/");
         if (!isDir) {
-            pageName = tempPagePath.getFileName().toString();
+            pageName = FilenameUtils.getName(relativeUrlStr);
         }
 
         //this means we're dealing with a directory, not a file
@@ -68,10 +66,11 @@ public abstract class AbstractPage implements Page
 
         //re-map to the final filename
         if (!isDir) {
-            tempPagePath = tempPagePath.getParent();
+            //this creates the 'parent' uri, so we have uniform code in the return statement using the pageName variable
+            tempPagePath = tempPagePath.resolve(".").normalize();
         }
 
-        return tempPagePath.resolve(pageName).toUri();
+        return tempPagePath.resolve(pageName).normalize();
     }
     protected AbstractPage(PathInfo pathInfo)
     {

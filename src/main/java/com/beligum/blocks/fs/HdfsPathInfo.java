@@ -5,7 +5,7 @@ import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.ifaces.Constants;
 import com.beligum.blocks.fs.ifaces.PathInfo;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
 import org.apache.tika.mime.MediaType;
 
@@ -27,19 +27,19 @@ public class HdfsPathInfo implements PathInfo
     protected static final long DEFAULT_LOCK_TIMEOUT = 5000;
 
     //-----VARIABLES-----
-    private FileSystem fileSystem;
+    private FileContext fileContext;
     private org.apache.hadoop.fs.Path path;
     private org.apache.hadoop.fs.Path lockFile;
     private org.apache.hadoop.fs.Path metaFolder;
 
     //-----CONSTRUCTORS-----
-    public HdfsPathInfo(FileSystem fileSystem, URI uri) throws IOException
+    public HdfsPathInfo(FileContext fileContext, URI uri) throws IOException
     {
-        this(fileSystem, new Path(uri));
+        this(fileContext, new Path(uri));
     }
-    public HdfsPathInfo(FileSystem fileSystem, Path path) throws IOException
+    public HdfsPathInfo(FileContext fileContext, Path path) throws IOException
     {
-        this.fileSystem = fileSystem;
+        this.fileContext = fileContext;
         this.path = path;
     }
 
@@ -50,9 +50,9 @@ public class HdfsPathInfo implements PathInfo
         return this.path;
     }
     @Override
-    public Object getPathFileSystem()
+    public FileContext getFileContext()
     {
-        return this.fileSystem;
+        return this.fileContext;
     }
     @Override
     public Path getMetaFolder()
@@ -108,8 +108,8 @@ public class HdfsPathInfo implements PathInfo
         Path storedHashFile = this.getMetaHashFile();
 
         try {
-            if (this.fileSystem.exists(storedHashFile)) {
-                retVal = HdfsUtils.readFile(this.fileSystem, storedHashFile);
+            if (this.fileContext.util().exists(storedHashFile)) {
+                retVal = HdfsUtils.readFile(this.fileContext, storedHashFile);
             }
         }
         catch (IOException e) {
@@ -129,7 +129,7 @@ public class HdfsPathInfo implements PathInfo
     {
         String retVal = null;
 
-        try (InputStream is = this.fileSystem.open(this.getPath())) {
+        try (InputStream is = this.fileContext.open(this.getPath())) {
             retVal = DigestUtils.sha1Hex(is);
         }
 
@@ -149,7 +149,7 @@ public class HdfsPathInfo implements PathInfo
 
         Path lock = this.getLockFile();
 
-        while (this.fileSystem.exists(lock)) {
+        while (this.fileContext.util().exists(lock)) {
             try {
                 Thread.sleep(DEFAULT_LOCK_BACK_OFF);
             }
@@ -164,7 +164,7 @@ public class HdfsPathInfo implements PathInfo
         }
 
         //note: not possible another process 'gets between' the loop above and this, because this will throw an exception if the file already exists.
-        if (!this.fileSystem.createNewFile(lock)) {
+        if (!HdfsUtils.createNewFile(this.fileContext, lock)) {
             throw new IOException("Unable to create lock file because of an error or because (in the mean time) it already existed; " + lock);
         }
 
@@ -173,7 +173,7 @@ public class HdfsPathInfo implements PathInfo
     @Override
     public boolean isLocked() throws IOException
     {
-        return this.fileSystem.exists(this.getLockFile());
+        return this.fileContext.util().exists(this.getLockFile());
     }
     @Override
     public void releaseLockFile(LockFile lock) throws IOException
@@ -181,11 +181,11 @@ public class HdfsPathInfo implements PathInfo
         if (lock != null) {
             synchronized (lock) {
 
-                if (!this.fileSystem.exists(lock.getLockFile())) {
+                if (!this.fileContext.util().exists(lock.getLockFile())) {
                     throw new IOException("Trying to release a lock file that doesn't exist; something's wrong...; " + lock.getLockFile());
                 }
 
-                if (!this.fileSystem.delete(lock.getLockFile(), false)) {
+                if (!this.fileContext.delete(lock.getLockFile(), false)) {
                     throw new IOException("Error happened while releasing a lock file; " + lock.getLockFile());
                 }
             }

@@ -16,13 +16,15 @@ import com.beligum.blocks.fs.pages.ifaces.PageStore;
 import com.beligum.blocks.rdf.ifaces.Source;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hp.hpl.jena.rdf.model.Model;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.FileUtil;
+import org.apache.hadoop.fs.CreateFlag;
+import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.permission.FsPermission;
 import org.joda.time.DateTime;
 
 import java.io.*;
 import java.net.URI;
+import java.util.EnumSet;
 
 /**
  * Created by bram on 1/14/16.
@@ -51,10 +53,9 @@ public class SimplePageStore implements PageStore
     public void init() throws IOException
     {
         Path pagesRoot = new Path(settings.getPagesStorePath());
-        try (FileSystem fs = Settings.instance().getPageStoreFileSystem()) {
-            if (fs.exists(pagesRoot)) {
-                HdfsUtils.recursiveDeleteLockFiles(fs, pagesRoot);
-            }
+        FileContext fs = Settings.instance().getPageStoreFileSystem();
+        if (fs.util().exists(pagesRoot)) {
+            HdfsUtils.recursiveDeleteLockFiles(fs, pagesRoot);
         }
     }
     @Override
@@ -67,66 +68,65 @@ public class SimplePageStore implements PageStore
 
         //TODO: BIG ONE, make this transactional with a good rollback (history entry might be a good starting point)
         //now execute the FS changes
-        try (FileSystem fs = Settings.instance().getPageStoreFileSystem()) {
+        FileContext fs = Settings.instance().getPageStoreFileSystem();
 
-            PathInfo pathInfo = new HdfsPathInfo(fs, validUri);
-            //we need to use the abstract type here to have access to the package private setters
-            AbstractPage page = new DefaultPageImpl(pathInfo);
+        PathInfo pathInfo = new HdfsPathInfo(fs, validUri);
+        //we need to use the abstract type here to have access to the package private setters
+        AbstractPage page = new DefaultPageImpl(pathInfo);
 
-            try (LockFile lock = pathInfo.acquireLock()) {
+        try (LockFile lock = pathInfo.acquireLock()) {
 
-                //make sure the path dirs exist
-                //Note: this also works for dirs, since they're special files inside the actual dir
-                fs.mkdirs(pathInfo.getPath().getParent());
+            //make sure the path dirs exist
+            //Note: this also works for dirs, since they're special files inside the actual dir
+            fs.mkdir(pathInfo.getPath().getParent(), FsPermission.getDirDefault(), true);
 
-                //we're overwriting; make an entry in the history folder
-                //TODO maybe we want to make this asynchronous?
-                PathInfo historyEntry = null;
-                if (fs.exists(pathInfo.getPath())) {
-                    historyEntry = this.addHistoryEntry(fs, pathInfo);
-                }
-
-                //we'll read everything into a string for ease of use
-                String sourceHtml;
-                try (InputStream is = source.openNewInputStream()) {
-                    sourceHtml = org.apache.commons.io.IOUtils.toString(is);
-                }
-
-                //save the original page html
-                try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(pathInfo.getPath())))) {
-                    writer.write(sourceHtml);
-                }
-
-                //save the normalized page html
-                Path normalizedHtml = page.getNormalizedPageProxyPath();
-                try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(normalizedHtml)))) {
-                    writer.write(new PageHtmlParser().parse(sourceHtml, source.getBaseUri(), true));
-                }
-
-                //parse to jsonld and save it
-                Path jsonldFile = page.getJsonLDProxyPath();
-                Model model = page.createImporter().importDocument(source);
-                try (OutputStream os = fs.create(jsonldFile)) {
-                    page.createExporter().exportModel(model, os);
-                }
-
-                // read it back in and parse it because it's the link between this (where we have HDFS access)
-                // and the page indexer (where we work with generic json objects)
-                try (InputStream is = fs.open(jsonldFile)) {
-                    page.setJsonLDNode(Json.read(is, JsonNode.class));
-                }
-
-                //save the HASH of the file
-                //TODO make this uniform with the watch code
-                try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(pathInfo.getMetaHashFile())))) {
-                    writer.write(pathInfo.calcHashChecksum());
-                }
-
-                //save the page metadata (read it in if it exists)
-                this.writeMetadata(fs, pathInfo, creator, page.createMetadataWriter());
-
-                retVal = page;
+            //we're overwriting; make an entry in the history folder
+            //TODO maybe we want to make this asynchronous?
+            PathInfo historyEntry = null;
+            if (fs.util().exists(pathInfo.getPath())) {
+                historyEntry = this.addHistoryEntry(fs, pathInfo);
             }
+
+            //we'll read everything into a string for ease of use
+            String sourceHtml;
+            try (InputStream is = source.openNewInputStream()) {
+                sourceHtml = org.apache.commons.io.IOUtils.toString(is);
+            }
+
+            //save the original page html
+            try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(pathInfo.getPath(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE))))) {
+                writer.write(sourceHtml);
+            }
+
+            //save the normalized page html
+            Path normalizedHtml = page.getNormalizedPageProxyPath();
+            try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(normalizedHtml, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE))))) {
+                writer.write(new PageHtmlParser().parse(sourceHtml, source.getBaseUri(), true));
+            }
+
+            //parse to jsonld and save it
+            Path jsonldFile = page.getJsonLDProxyPath();
+            Model model = page.createImporter().importDocument(source);
+            try (OutputStream os = fs.create(jsonldFile, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE))) {
+                page.createExporter().exportModel(model, os);
+            }
+
+            // read it back in and parse it because it's the link between this (where we have HDFS access)
+            // and the page indexer (where we work with generic json objects)
+            try (InputStream is = fs.open(jsonldFile)) {
+                page.setJsonLDNode(Json.read(is, JsonNode.class));
+            }
+
+            //save the HASH of the file
+            //TODO make this uniform with the watch code
+            try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(pathInfo.getMetaHashFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE))))) {
+                writer.write(pathInfo.calcHashChecksum());
+            }
+
+            //save the page metadata (read it in if it exists)
+            this.writeMetadata(fs, pathInfo, creator, page.createMetadataWriter());
+
+            retVal = page;
         }
 
         return retVal;
@@ -145,7 +145,7 @@ public class SimplePageStore implements PageStore
      * @return the successfully created history entry or null of something went wrong
      * @throws IOException
      */
-    private PathInfo addHistoryEntry(FileSystem fs, PathInfo pathInfo) throws IOException
+    private PathInfo addHistoryEntry(FileContext fs, PathInfo pathInfo) throws IOException
     {
         // Note: it makes sense to use the now timestamp because we're about to create a snapshot of the situation _now_
         // we can't really rely on other timestamps because which one should we take?
@@ -163,34 +163,32 @@ public class SimplePageStore implements PageStore
 
         boolean success = false;
         try {
-            if (!FileUtil.copy(fs, pathInfo.getMetaFolder(), fs, snapshotMetaFolder, false, fs.getConf())) {
+            if (!fs.util().copy(pathInfo.getMetaFolder(), snapshotMetaFolder)) {
                 throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't create a snapshot of the meta folder; " + snapshotMetaFolder);
             }
 
             //we're not copying the history folder into the snapshot folder; that would be recursion
             Path snapshotHistoryFolder = new Path(snapshotMetaFolder, Constants.META_SUBFOLDER_HISTORY);
-            if (fs.exists(snapshotHistoryFolder)) {
+            if (fs.util().exists(snapshotHistoryFolder)) {
                 if (!fs.delete(snapshotHistoryFolder, true)) {
                     throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't delete the history folder of the temp meta snapshot folder; " + snapshotMetaFolder);
                 }
             }
 
-            if (fs.exists(newHistoryEntryFolder)) {
+            if (fs.util().exists(newHistoryEntryFolder)) {
                 throw new IOException("Error while adding a history entry for " + pathInfo + ": history folder already existed; " + newHistoryEntryFolder);
             }
-            else if (!fs.mkdirs(newHistoryEntryFolder)) {
-                throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't make the history entry folder " + newHistoryEntryFolder);
+            else {
+                fs.mkdir(newHistoryEntryFolder, FsPermission.getDirDefault(), true);
             }
 
             //if we get here without problems, we start copying the original file to it's history destination
-            if (!FileUtil.copy(fs, pathInfo.getPath(), fs, historyEntry.getPath(), false, fs.getConf())) {
+            if (!fs.util().copy(pathInfo.getPath(), historyEntry.getPath())) {
                 throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't copy the original file to it's final destination " + historyEntry.getPath());
             }
 
             //move the snapshot in it's place
-            if (!fs.rename(snapshotMetaFolder, historyEntry.getMetaFolder())) {
-                throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't move the snapshot meta folder to it's final destination " + historyEntry.getMetaFolder());
-            }
+            fs.rename(snapshotMetaFolder, historyEntry.getMetaFolder());
 
             success = true;
         }
@@ -216,7 +214,7 @@ public class SimplePageStore implements PageStore
 
         return success ? historyEntry : null;
     }
-    private void writeMetadata(FileSystem fs, PathInfo pathInfo, Person creator, MetadataWriter metadataWriter) throws IOException
+    private void writeMetadata(FileContext fs, PathInfo pathInfo, Person creator, MetadataWriter metadataWriter) throws IOException
     {
         metadataWriter.open(pathInfo);
         //update or fill the ebucore structure with all possible metadata
