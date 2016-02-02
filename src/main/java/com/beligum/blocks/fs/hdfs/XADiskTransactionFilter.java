@@ -28,7 +28,6 @@ public class XADiskTransactionFilter implements ContainerResponseFilter
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    //TODO check if this works in case of exceptions
     @Override
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) throws IOException
     {
@@ -50,6 +49,7 @@ public class XADiskTransactionFilter implements ContainerResponseFilter
                                 tx.xaSession.rollback();
                             }
                             catch (Exception e1) {
+                                //don't wait for the next reboot before trying to revert to a clean state; try it now
                                 //note that the reboot method is implemented so that it doesn't throw (another) exception, so we can rely on it's return value quite safely
                                 if (!Settings.instance().rebootPageStoreTransactionManager()) {
                                     throw new IOException("Exception caught while processing a file system transaction and the reboot because of a faulty rollback failed too; this is VERY bad and I don't really know what to do. You should investigate this!", e1);

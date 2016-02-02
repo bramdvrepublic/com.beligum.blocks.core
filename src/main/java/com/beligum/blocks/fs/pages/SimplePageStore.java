@@ -8,6 +8,7 @@ import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.HdfsPathInfo;
 import com.beligum.blocks.fs.HdfsUtils;
 import com.beligum.blocks.fs.LockFile;
+import com.beligum.blocks.fs.hdfs.HdfsZipUtils;
 import com.beligum.blocks.fs.ifaces.Constants;
 import com.beligum.blocks.fs.ifaces.PathInfo;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
@@ -16,10 +17,7 @@ import com.beligum.blocks.fs.pages.ifaces.PageStore;
 import com.beligum.blocks.rdf.ifaces.Source;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hp.hpl.jena.rdf.model.Model;
-import org.apache.hadoop.fs.CreateFlag;
-import org.apache.hadoop.fs.FileContext;
-import org.apache.hadoop.fs.Options;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.joda.time.DateTime;
 
@@ -190,6 +188,12 @@ public class SimplePageStore implements PageStore
 
             //move the snapshot in it's place
             fs.rename(snapshotMetaFolder, historyEntry.getMetaFolder());
+
+            //zip it
+            HdfsZipUtils.gzipTarFolder(fs, newHistoryEntryFolder, new Path(newHistoryEntryFolder.toUri().toString()+".tgz"));
+
+            //and remove the original
+            fs.delete(newHistoryEntryFolder, true);
 
             success = true;
         }
