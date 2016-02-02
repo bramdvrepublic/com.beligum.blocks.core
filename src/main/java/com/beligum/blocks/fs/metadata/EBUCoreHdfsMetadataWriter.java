@@ -8,6 +8,7 @@ import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.CreateFlag;
 import org.apache.hadoop.fs.FileContext;
+import org.apache.hadoop.fs.Options;
 import org.joda.time.DateTime;
 
 import javax.xml.bind.JAXB;
@@ -224,7 +225,7 @@ public class EBUCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
         super.write();
 
         //write the metadata to disk (overwriting the possibly existing metadata; that's ok since we read it in first)
-        try (Writer writer = new BufferedWriter(new OutputStreamWriter(this.fileSystem.create(this.baseMetadataFile, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE))))) {
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(this.fileSystem.create(this.baseMetadataFile, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
             JAXB.marshal(root, writer);
         }
     }

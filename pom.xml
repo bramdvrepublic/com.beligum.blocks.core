@@ -407,9 +407,14 @@
         <!--</dependency>-->
 
         <dependency>
-            <groupId>net.java.xadisk</groupId>
+            <!--
+              Main reason for this fork:
+              https://groups.google.com/forum/#!topic/xadisk/hlj0YlO5qDg
+              https://java.net/jira/browse/XADISK-149
+            -->
+            <groupId>com.beligum.xadisk</groupId>
             <artifactId>xadisk</artifactId>
-            <version>1.2.2</version>
+            <version>1.2.3-020215</version>
         </dependency>
         <dependency>
             <groupId>javax.resource</groupId>

@@ -140,6 +140,7 @@ public class Settings
     public File getPagesStoreJournalDir()
     {
         if (this.cachedPagesStoreJournalDir == null) {
+            //Note: the journal dir resides on the local, naked file system, watch out you don't point to a dir in the distributed or transactional fs
             this.cachedPagesStoreJournalDir = new File(R.configuration().getString("blocks.core.pages.journal-dir"));
         }
 
@@ -212,7 +213,7 @@ public class Settings
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGE_FS_CONFIG)) {
             Configuration conf = new Configuration();
-            URI pageStorePath = Settings.instance().getPagesStorePath();
+            URI pageStorePath = this.getPagesStorePath();
             if (StringUtils.isEmpty(pageStorePath.getScheme())) {
                 //make sure we have a schema
                 pageStorePath = URI.create(DEFAULT_TX_FILESYSTEM_SCHEMA+"://" + pageStorePath.toString());
@@ -225,7 +226,7 @@ public class Settings
             conf.set("fs.AbstractFileSystem." + DEFAULT_TX_FILESYSTEM_SCHEMA + ".impl", DEFAULT_TX_FILESYSTEM.getCanonicalName());
 
             //note: if fs.defaultFS is set here, this might overwrite the path above
-            HashMap<String, String> extraProperties = Settings.instance().getElasticSearchProperties();
+            HashMap<String, String> extraProperties = this.getElasticSearchProperties();
             if (extraProperties != null) {
                 for (Map.Entry<String, String> entry : extraProperties.entrySet()) {
                     if (entry.getKey().equals(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY)) {
@@ -246,20 +247,41 @@ public class Settings
     public XAFileSystem getPageStoreTransactionManager() throws IOException
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
-            Settings settings = Settings.instance();
-            XAFileSystem xafs = XAFileSystemProxy.bootNativeXAFileSystem(new StandaloneFileSystemConfiguration(settings.getPagesStoreJournalDir().getAbsolutePath(), settings.getPagesStoreJournalId()));
+            XAFileSystem xafs = XAFileSystemProxy.bootNativeXAFileSystem(new StandaloneFileSystemConfiguration(this.getPagesStoreJournalDir().getAbsolutePath(), this.getPagesStoreJournalId()));
             try {
-                xafs.waitForBootup(settings.getPagesStoreJournalBootTimeout());
+                xafs.waitForBootup(this.getPagesStoreJournalBootTimeout());
                 R.cacheManager().getApplicationCache().put(CacheKeys.XADISK_FILE_SYSTEM, xafs);
             }
             catch (InterruptedException e) {
-                throw new IOException("Error occurred whlie booting transactional XADisk file system (timeout="+settings.getPagesStoreJournalBootTimeout(), e);
+                throw new IOException("Error occurred whlie booting transactional XADisk file system (timeout="+this.getPagesStoreJournalBootTimeout(), e);
             }
         }
 
         return (XAFileSystem) R.cacheManager().getApplicationCache().get(CacheKeys.XADISK_FILE_SYSTEM);
     }
+    public boolean rebootPageStoreTransactionManager()
+    {
+        boolean retVal = false;
 
+        if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
+            XAFileSystem xafs = (XAFileSystem) R.cacheManager().getApplicationCache().get(CacheKeys.XADISK_FILE_SYSTEM);
+            //setting it here will ensure it's null internally, even if the next shutdown fails
+            R.cacheManager().getApplicationCache().remove(CacheKeys.XADISK_FILE_SYSTEM);
+            try {
+                xafs.shutdown();
+
+                //uniform reboot
+                this.getPageStoreTransactionManager();
+
+                retVal = true;
+            }
+            catch (IOException e) {
+                Logger.error("Exception caught while rebooting a transactional XADisk file system", e);
+            }
+        }
+
+        return retVal;
+    }
 
 
 

@@ -9,10 +9,10 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.server.namenode.UnsupportedActionException;
 import org.apache.hadoop.util.Progressable;
-import org.xadisk.bridge.proxies.interfaces.Session;
-import org.xadisk.bridge.proxies.interfaces.XAFileInputStream;
-import org.xadisk.bridge.proxies.interfaces.XAFileOutputStream;
-import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
+import org.xadisk.bridge.proxies.interfaces.*;
+import org.xadisk.filesystem.exceptions.InsufficientPermissionOnFileException;
+import org.xadisk.filesystem.exceptions.LockingFailedException;
+import org.xadisk.filesystem.exceptions.NoTransactionAssociatedException;
 
 import java.io.*;
 import java.net.URI;
@@ -32,10 +32,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
 {
     //-----CONSTANTS-----
     public static final String SCHEME = "fileXA";
-    public static final URI NAME = URI.create(SCHEME+":///");
-
-    private static final String XADISK_SYSTEM_DIR = "/home/bram/test/xadisk";
-
+    public static final URI NAME = URI.create(SCHEME + ":///");
 
     // Temporary workaround for HADOOP-9652.
     // Note: changed to false because it pulled in too much clutter dependencies and the consequences are acceptable to us;
@@ -51,7 +48,6 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     //-----CONSTRUCTORS-----
     public TransactionalRawLocalFileSystem()
     {
-        //TODO this defaults to the current classpath dir
         this.workingDir = getInitialWorkingDirectory();
     }
 
@@ -61,6 +57,8 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     {
         super.initialize(uri, conf);
         this.setConf(conf);
+
+        //TODO set the working dir to something else than user.dir ?
 
         this.xafs = Settings.instance().getPageStoreTransactionManager();
     }
@@ -154,8 +152,8 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
         File f = pathToFile(p);
 
         try {
-            if (tx.fileExists(f)) {
-                if (f.isFile()) {
+            if (this.txExists(tx, f)) {
+                if (!this.txExistsAndIsDirectory(tx, f)) {
                     tx.deleteFile(f);
                     retVal = true;
                 }
@@ -183,7 +181,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
         FileStatus[] results;
 
         try {
-            if (!tx.fileExists(f)) {
+            if (!this.txExists(tx, f)) {
                 throw new FileNotFoundException("File " + p + " does not exist");
             }
         }
@@ -191,45 +189,52 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
             throw new IOException(e);
         }
 
-        if (f.isFile()) {
-            if (!useDeprecatedFileStatus) {
-                return new FileStatus[] { getFileStatus(p) };
+        try {
+            if (!this.txExistsAndIsDirectory(tx, f)) {
+                if (!useDeprecatedFileStatus) {
+                    return new FileStatus[] { getFileStatus(p) };
+                }
+                else {
+                    throw new UnsupportedActionException(
+                                    "Only non-deprecated file status implemented and by consequence, there are currently no OSs supported that don't support the UNIX stat(1) command (like Windows); " +
+                                    f);
+                    //return new FileStatus[] { new DeprecatedRawLocalFileStatus(f, getDefaultBlockSize(p), this) };
+                }
             }
             else {
-                throw new UnsupportedActionException("Only non-deprecated file status implemented and by consequence, there are currently no OSs supported that don't support the UNIX stat(1) command (like Windows); " + f);
-                //return new FileStatus[] { new DeprecatedRawLocalFileStatus(f, getDefaultBlockSize(p), this) };
+                String[] names = null;
+                try {
+                    names = tx.listFiles(f);
+                    if (names == null) {
+                        return null;
+                    }
+                }
+                catch (Exception e) {
+                    throw new IOException("Exception caught while listing the children of directory; " + f, e);
+                }
+
+                results = new FileStatus[names.length];
+                int j = 0;
+                for (int i = 0; i < names.length; i++) {
+                    try {
+                        // Assemble the path using the Path 3 arg constructor to make sure
+                        // paths with colon are properly resolved on Linux
+                        results[j] = getFileStatus(new Path(p, new Path(null, null, names[i])));
+                        j++;
+                    }
+                    catch (FileNotFoundException e) {
+                        // ignore the files not found since the dir list may have have changed
+                        // since the names[] list was generated.
+                    }
+                }
+                if (j == names.length) {
+                    return results;
+                }
+                return Arrays.copyOf(results, j);
             }
         }
-        else {
-            String[] names = null;
-            try {
-                names = tx.listFiles(f);
-                if (names == null) {
-                    return null;
-                }
-            }
-            catch (Exception e) {
-                throw new IOException("Exception caught while listing the children of directory; " + f, e);
-            }
-
-            results = new FileStatus[names.length];
-            int j = 0;
-            for (int i = 0; i < names.length; i++) {
-                try {
-                    // Assemble the path using the Path 3 arg constructor to make sure
-                    // paths with colon are properly resolved on Linux
-                    results[j] = getFileStatus(new Path(p, new Path(null, null, names[i])));
-                    j++;
-                }
-                catch (FileNotFoundException e) {
-                    // ignore the files not found since the dir list may have have changed
-                    // since the names[] list was generated.
-                }
-            }
-            if (j == names.length) {
-                return results;
-            }
-            return Arrays.copyOf(results, j);
+        catch (Exception e) {
+            throw new IOException(e);
         }
     }
     @Override
@@ -257,10 +262,9 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
         if (parent != null) {
             parent2f = pathToFile(parent);
             try {
-                parent2fExists = tx.fileExists(parent2f);
-                if (parent2f != null && parent2fExists && !parent2f.isDirectory()) {
-                    throw new ParentNotDirectoryException("Parent path is not a directory: "
-                                                          + parent);
+                parent2fExists = parent2f != null && this.txExists(tx, parent2f);
+                if (parent2fExists && !txExistsAndIsDirectory(tx, parent2f)) {
+                    throw new ParentNotDirectoryException("Parent path is not a directory: " + parent);
                 }
             }
             catch (Exception e) {
@@ -268,17 +272,17 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
             }
         }
         try {
-            if (tx.fileExists(p2f) && !p2f.isDirectory()) {
+            if (this.txExists(tx, p2f) && !txExistsAndIsDirectory(tx, p2f)) {
                 throw new FileNotFoundException("Destination exists" +
                                                 " and is not a directory: " + p2f.getCanonicalPath());
             }
+
+            return (parent == null || parent2fExists || mkdirs(parent)) &&
+                   (mkOneDirWithMode(tx, f, p2f, permission) || txExistsAndIsDirectory(tx, p2f));
         }
         catch (Exception e) {
             throw new IOException(e);
         }
-
-        return (parent == null || parent2fExists || mkdirs(parent)) &&
-               (mkOneDirWithMode(tx, f, p2f, permission) || p2f.isDirectory());
     }
     @Override
     public FileStatus getFileStatus(Path f) throws IOException
@@ -340,9 +344,18 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     {
         boolean retVal = false;
 
+        // little work around to never throw the exception below (because it's not supported by XADisk
+        // see eg. https://groups.google.com/forum/#!topic/xadisk/0zbUGCIzNpI
+        if (permission != null) {
+            permission = null;
+        }
+
         if (permission == null) {
             try {
-                tx.createFile(p2f, true);
+                //XADisk crashes if the file already exists
+                if (!this.txExists(tx, p2f)) {
+                    tx.createFile(p2f, true);
+                }
                 retVal = true;
             }
             catch (Exception e) {
@@ -382,24 +395,56 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
      * either call the new {@link Stat} based implementation or the deprecated
      * methods based on platform support.
      *
-     * @param f           Path to stat
+     * @param p           Path to stat
      * @param dereference whether to dereference the final path component if a
      *                    symlink
      * @return FileStatus of f
      * @throws IOException
      */
-    private FileStatus getFileLinkStatusInternal(Session tx, final Path f, boolean dereference) throws IOException
+    private FileStatus getFileLinkStatusInternal(Session tx, final Path p, boolean dereference) throws IOException
     {
         if (!useDeprecatedFileStatus) {
             // Not really sure about this code and it not using the TX anywhere...
             // uses the native the Unix stat(1) command, so for one, it won't work on Windows...
-            checkPath(f);
-            Stat stat = new Stat(f, getDefaultBlockSize(f), dereference, this);
-            FileStatus status = stat.getFileStatus();
-            return status;
+            checkPath(p);
+
+            //we can't use this original code (from rawLocalFs) because XADisk doesn't support permissions, owner or group
+            //            Stat stat = new Stat(f, getDefaultBlockSize(f), dereference, this);
+            //            FileStatus status = stat.getFileStatus();
+            //            return status;
+
+            File f = pathToFile(p);
+
+            try {
+                if (!this.txExists(tx, f)) {
+                    throw new FileNotFoundException("Can't get file status from an unexisting file/folder; "+f);
+                }
+
+                //taken from DeprecatedRawLocalFileStatus
+                Path path = new Path(f.getPath()).makeQualified(this.getUri(), this.getWorkingDirectory());
+                boolean isDir = this.txExistsAndIsDirectory(tx, f);
+                // XADisk crashes on folder lengths (always checks file permission, even if directory)
+                // but that's ok, since HDFS reports zero length for folders,
+                // see https://hadoop.apache.org/docs/r1.0.4/webhdfs.html#GETFILESTATUS
+                long length = isDir ? 0 : tx.getFileLength(f);
+                int blockReplication = 1;
+                long blockSize = this.getDefaultBlockSize(p);
+                //don't really know what to return here
+                long modificationTime = 0;
+
+                return new FileStatus(length, isDir, blockReplication, blockSize, modificationTime, path);
+            }
+            //special case; eg. see FileContext.exists()
+            catch (FileNotFoundException e) {
+                throw e;
+            }
+            catch (Exception e) {
+                throw new IOException(e);
+            }
         }
         else {
-            throw new UnsupportedActionException("Only non-deprecated file status implemented and by consequence, there are currently no OSs supported that don't support the UNIX stat(1) command (like Windows); " + f);
+            throw new UnsupportedActionException(
+                            "Only non-deprecated file status implemented and by consequence, there are currently no OSs supported that don't support the UNIX stat(1) command (like Windows); " + p);
             //            if (dereference) {
             //                return deprecatedGetFileStatus(f);
             //            }
@@ -412,11 +457,49 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     {
         return getRequestScopedXADiskEntry().xaSession;
     }
+    /**
+     * Special wrapper around XDisk Session.fileExists() method to solve issue XADISK-120
+     * See https://java.net/jira/browse/XADISK-120
+     * and also https://java.net/jira/browse/XADISK-157
+     */
+    private boolean txExists(Session tx, File f) throws InterruptedException, LockingFailedException, NoTransactionAssociatedException
+    {
+        boolean retVal = false;
+
+        try {
+            retVal = tx.fileExists(f);
+        }
+        catch (InsufficientPermissionOnFileException e) {
+            retVal = false;
+        }
+
+        return retVal;
+    }
+    /**
+     * Same as this#txExists be for the fileExistsAndIsDirectory() method
+     */
+    private boolean txExistsAndIsDirectory(Session tx, File f) throws InterruptedException, LockingFailedException, NoTransactionAssociatedException
+    {
+        boolean retVal = false;
+
+        try {
+            retVal = tx.fileExistsAndIsDirectory(f);
+        }
+        catch (InsufficientPermissionOnFileException e) {
+            retVal = false;
+        }
+
+        return retVal;
+    }
     private XADiskRequestCacheEntry getRequestScopedXADiskEntry()
     {
         //Sync this with the release filter code
         if (!R.cacheManager().getRequestCache().containsKey(CacheKeys.XADISK_REQUEST_TRANSACTION)) {
-            R.cacheManager().getRequestCache().put(CacheKeys.XADISK_REQUEST_TRANSACTION, new XADiskRequestCacheEntry(this, this.xafs, this.xafs.createSessionForLocalTransaction()));
+            Session tx = this.xafs.createSessionForLocalTransaction();
+            //XASession tx = this.xafs.createSessionForXATransaction();
+            //NOTE ACTIVATE FOR DEBUG ONLY!!!!!
+            //tx.setTransactionTimeout(60 * 10);
+            R.cacheManager().getRequestCache().put(CacheKeys.XADISK_REQUEST_TRANSACTION, new XADiskRequestCacheEntry(this, tx));
         }
 
         return (XADiskRequestCacheEntry) R.cacheManager().getRequestCache().get(CacheKeys.XADISK_REQUEST_TRANSACTION);
@@ -575,14 +658,28 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
         private LocalFSFileOutputStream(Session tx, Path f, boolean append, FsPermission permission) throws IOException
         {
             File file = pathToFile(f);
+
+            // little work around to never throw the exception below (because it's not supported by XADisk
+            // see eg. https://groups.google.com/forum/#!topic/xadisk/0zbUGCIzNpI
+            if (permission != null) {
+                permission = null;
+            }
+
             if (permission == null) {
                 try {
                     //Note: that createXAFileOutputStream() always appends to the file
-                    if (!append) {
+                    if (!append && txExists(tx, file)) {
                         tx.truncateFile(file, 0l);
                     }
 
-                    this.fos = tx.createXAFileOutputStream(file, false);
+                    //method below needs the file to exist before we can write to it
+                    if (!txExists(tx, file)) {
+                        //we assume we won't be writing to a directory
+                        tx.createFile(file, false);
+                    }
+
+                    //Note: with the last flag set to true, I encountered buffer underrun exceptions!
+                    this.fos = tx.createXAFileOutputStream(file, true);
                 }
                 catch (Exception e) {
                     throw new IOException("Exception caught while opening transactional file output stream; " + f, e);

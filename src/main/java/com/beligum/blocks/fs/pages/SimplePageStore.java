@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.hp.hpl.jena.rdf.model.Model;
 import org.apache.hadoop.fs.CreateFlag;
 import org.apache.hadoop.fs.FileContext;
+import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.joda.time.DateTime;
@@ -94,20 +95,20 @@ public class SimplePageStore implements PageStore
             }
 
             //save the original page html
-            try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(pathInfo.getPath(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE))))) {
+            try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(pathInfo.getPath(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
                 writer.write(sourceHtml);
             }
 
             //save the normalized page html
             Path normalizedHtml = page.getNormalizedPageProxyPath();
-            try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(normalizedHtml, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE))))) {
+            try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(normalizedHtml, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
                 writer.write(new PageHtmlParser().parse(sourceHtml, source.getBaseUri(), true));
             }
 
             //parse to jsonld and save it
             Path jsonldFile = page.getJsonLDProxyPath();
             Model model = page.createImporter().importDocument(source);
-            try (OutputStream os = fs.create(jsonldFile, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE))) {
+            try (OutputStream os = fs.create(jsonldFile, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
                 page.createExporter().exportModel(model, os);
             }
 
@@ -119,7 +120,7 @@ public class SimplePageStore implements PageStore
 
             //save the HASH of the file
             //TODO make this uniform with the watch code
-            try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(pathInfo.getMetaHashFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE))))) {
+            try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(pathInfo.getMetaHashFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
                 writer.write(pathInfo.calcHashChecksum());
             }
 

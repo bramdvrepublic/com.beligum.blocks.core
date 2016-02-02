@@ -27,7 +27,9 @@ public class ElasticPageIndex implements PageIndex
     @Override
     public void indexPage(Page page) throws IOException
     {
-        Logger.info(page.getJsonLDNode().toString());
+        if (page.getJsonLDNode()!=null) {
+            Logger.info(page.getJsonLDNode().toString());
+        }
     }
 
     //-----PROTECTED METHODS-----

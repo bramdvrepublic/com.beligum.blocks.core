@@ -182,7 +182,7 @@ public class HdfsPathInfo implements PathInfo
             synchronized (lock) {
 
                 if (!this.fileContext.util().exists(lock.getLockFile())) {
-                    throw new IOException("Trying to release a lock file that doesn't exist; something's wrong...; " + lock.getLockFile());
+                    throw new IOException("Trying to release a lock file that doesn't exist; something's wrong; " + lock.getLockFile());
                 }
 
                 if (!this.fileContext.delete(lock.getLockFile(), false)) {

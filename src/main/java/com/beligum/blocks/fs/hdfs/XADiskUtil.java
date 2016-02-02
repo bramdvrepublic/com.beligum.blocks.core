@@ -47,11 +47,16 @@ public class XADiskUtil
         }
         boolean wasDeleted = false;
         try {
-            tx.deleteFile(f);
-            wasDeleted = true;
+            //XADisk can't delete a non existing file (throws error)
+            if (tx.fileExists(f)) {
+                tx.deleteFile(f);
+                wasDeleted = true;
+            }
         }
         catch (Exception e) {
-            Logger.error("Exception caught while deleting file or dir; " + f.getAbsolutePath(), e);
+            if (doLog) {
+                Logger.error("Exception caught while deleting file or dir; " + f.getAbsolutePath(), e);
+            }
         }
 
         if (wasDeleted) {
@@ -64,7 +69,9 @@ public class XADiskUtil
                 ex = tx.fileExists(f);
             }
             catch (Exception e) {
-                Logger.error("Exception caught while checking for a deleted file or dir; " + f.getAbsolutePath(), e);
+                if (doLog) {
+                    Logger.error("Exception caught while checking for a deleted file or dir; " + f.getAbsolutePath(), e);
+                }
             }
             if (doLog && ex) {
                 Logger.warn("Failed to delete file or dir [" + f.getAbsolutePath() + "]: it still exists.");
@@ -88,8 +95,8 @@ public class XADiskUtil
             contents = tx.listFiles(dir);
             if (contents != null) {
                 for (int i = 0; i < contents.length; i++) {
-                    File file = new File(contents[i]);
-                    if (file.isFile()) {
+                    File file = new File(dir, contents[i]);
+                    if (!tx.fileExistsAndIsDirectory(file)) {
                         if (!deleteImpl(tx, file, true)) {// normal file or symlink to another file
                             deletionSucceeded = false;
                             continue; // continue deletion of other files/dirs under dir

@@ -7,6 +7,7 @@ import com.beligum.blocks.schema.dublincore.simple.v20021212.jaxb.ElementContain
 import com.beligum.blocks.schema.dublincore.simple.v20021212.jaxb.ObjectFactory;
 import org.apache.hadoop.fs.CreateFlag;
 import org.apache.hadoop.fs.FileContext;
+import org.apache.hadoop.fs.Options;
 
 import javax.xml.bind.JAXB;
 import java.io.*;
@@ -88,7 +89,7 @@ public class DublinCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
         super.write();
 
         //write the metadata to disk (overwriting the possibly existing metadata; that's ok since we read it in first)
-        try (Writer writer = new BufferedWriter(new OutputStreamWriter(this.fileSystem.create(this.baseMetadataFile, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE))))) {
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(this.fileSystem.create(this.baseMetadataFile, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
             JAXB.marshal(root, writer);
         }
     }
