@@ -1,5 +1,14 @@
 package com.beligum.blocks.rdf.importers;
 
+import org.apache.jena.graph.Node;
+import org.apache.jena.graph.Triple;
+import org.apache.jena.graph.BlankNodeId;
+import org.apache.jena.rdf.model.AnonId;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.graph.NodeFactory;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Property;
+
 import org.openrdf.model.BNode;
 import org.openrdf.model.Literal;
 import org.openrdf.model.Resource;
@@ -8,12 +17,6 @@ import org.openrdf.model.URI;
 import org.openrdf.model.Value;
 import org.openrdf.model.ValueFactory;
 
-import com.hp.hpl.jena.graph.Node;
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.rdf.model.AnonId;
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.Property;
-import com.hp.hpl.jena.rdf.model.RDFNode;
 
 /**
  * Copied from https://searchcode.com/codesearch/view/47062473/
@@ -35,21 +38,21 @@ public class Convert
     //-----PUBLIC METHODS-----
     public static Node bnodeToNode(final BNode value)
     {
-        return Node.createAnon(new AnonId(value.getID()));
+        return NodeFactory.createBlankNode(new BlankNodeId(value.getID()));
     }
 
     public static Node literalToNode(final Literal value)
     {
         if(value.getLanguage() != null)
         {
-            return Node.createLiteral(value.getLabel(), value.getLanguage(), false);
+            return NodeFactory.createLiteral(value.getLabel(), value.getLanguage(), false);
         }
         if(value.getDatatype() != null)
         {
-            return Node.createLiteral(value.getLabel(), null, Node.getType(value.getDatatype().stringValue()));
+            return NodeFactory.createLiteral(value.getLabel(), null, NodeFactory.getType(value.getDatatype().stringValue()));
         }
         // Plain literal
-        return Node.createLiteral(value.getLabel());
+        return NodeFactory.createLiteral(value.getLabel());
     }
 
     public static RDFNode literalToRDFNode(final Model nextModel, final Literal value)
@@ -128,7 +131,7 @@ public class Convert
         return Convert.valueToNode(resource);
     }
 
-    public static com.hp.hpl.jena.rdf.model.Resource resourceToResource(final Model nextModel, final Resource resource)
+    public static org.apache.jena.rdf.model.Resource resourceToResource(final Model nextModel, final Resource resource)
     {
         if(resource instanceof URI)
         {
@@ -140,10 +143,10 @@ public class Convert
         }
     }
 
-    public static com.hp.hpl.jena.rdf.model.Statement statementToJenaStatement(final Model nextModel,
+    public static org.apache.jena.rdf.model.Statement statementToJenaStatement(final Model nextModel,
                                                                                final Statement stmt)
     {
-        final com.hp.hpl.jena.rdf.model.Resource s = Convert.resourceToResource(nextModel, stmt.getSubject());
+        final org.apache.jena.rdf.model.Resource s = Convert.resourceToResource(nextModel, stmt.getSubject());
         final Property p = Convert.uriToProperty(nextModel, stmt.getPredicate());
         final RDFNode o = Convert.valueToRDFNode(nextModel, stmt.getObject());
 
@@ -153,14 +156,14 @@ public class Convert
     /* BEGIN ADDED BY THOMAS FRANCART */
     public static org.openrdf.model.URI propertyToURI(
                     final ValueFactory factory,
-                    final com.hp.hpl.jena.rdf.model.Property p
+                    final org.apache.jena.rdf.model.Property p
     ) {
         return factory.createURI(p.getURI());
     }
 
     public static org.openrdf.model.Statement statementToSesameStatement(
                     final ValueFactory factory,
-                    final com.hp.hpl.jena.rdf.model.Statement stmt
+                    final org.apache.jena.rdf.model.Statement stmt
     ) {
         final org.openrdf.model.Resource subject = Convert.nodeToValueResource(factory, stmt.getSubject().asNode());
         final org.openrdf.model.URI predicate = Convert.propertyToURI(factory, stmt.getPredicate());
@@ -190,10 +193,10 @@ public class Convert
 
     public static Node uriToNode(final URI value)
     {
-        return Node.createURI(value.stringValue());
+        return NodeFactory.createURI(value.stringValue());
     }
 
-    public static com.hp.hpl.jena.rdf.model.Property uriToProperty(final Model nextModel, final URI resource)
+    public static org.apache.jena.rdf.model.Property uriToProperty(final Model nextModel, final URI resource)
     {
         return nextModel.createProperty(resource.stringValue());
     }

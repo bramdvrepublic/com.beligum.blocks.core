@@ -2,7 +2,6 @@ package com.beligum.blocks.fs.pages;
 
 import com.beligum.base.auth.models.Person;
 import com.beligum.base.server.R;
-import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.json.Json;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.HdfsPathInfo;
@@ -11,14 +10,19 @@ import com.beligum.blocks.fs.LockFile;
 import com.beligum.blocks.fs.hdfs.HdfsZipUtils;
 import com.beligum.blocks.fs.ifaces.Constants;
 import com.beligum.blocks.fs.ifaces.PathInfo;
+import com.beligum.blocks.fs.indexes.JenaPageIndex;
+import com.beligum.blocks.fs.indexes.ifaces.PageIndex;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.fs.pages.ifaces.PageStore;
 import com.beligum.blocks.rdf.ifaces.Source;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.hp.hpl.jena.rdf.model.Model;
-import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.CreateFlag;
+import org.apache.hadoop.fs.FileContext;
+import org.apache.hadoop.fs.Options;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.jena.rdf.model.Model;
 import org.joda.time.DateTime;
 
 import java.io.*;
@@ -125,6 +129,12 @@ public class SimplePageStore implements PageStore
             //save the page metadata (read it in if it exists)
             this.writeMetadata(fs, pathInfo, creator, page.createMetadataWriter());
 
+
+            //TODO move this out of the page store to the endpoint?
+            PageIndex pageIndex = new JenaPageIndex();
+            pageIndex.indexPage(page);
+
+
             retVal = page;
         }
 
@@ -138,6 +148,10 @@ public class SimplePageStore implements PageStore
      * Very first simple try at creating a snapshot of the current pathInfo on disk, backed by the HDFS atomic rules.
      * Both the file and the meta directory are copied to a .snapshot sibling.
      * The wrapper around the resulting snapshot is returned.
+     *
+     * NOTE: this is not optimized in the light of:
+     * - the new transactional-ness of the filesystem
+     * - the fact we're gzipping the entire folder at the end
      *
      * @param fs
      * @param pathInfo
@@ -157,65 +171,48 @@ public class SimplePageStore implements PageStore
         //this is the new history entry folder
         Path newHistoryEntryFolder = new Path(pathInfo.getMetaHistoryFolder(), Constants.FOLDER_TIMESTAMP_FORMAT.print(stamp));
 
-        //the history entry destination
+        //the history entry destination (eg. the original file in the history entry folder)
         PathInfo historyEntry = new HdfsPathInfo(fs, new Path(newHistoryEntryFolder, pathInfo.getPath().getName()));
 
         boolean success = false;
-        try {
-            if (!fs.util().copy(pathInfo.getMetaFolder(), snapshotMetaFolder)) {
-                throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't create a snapshot of the meta folder; " + snapshotMetaFolder);
-            }
 
-            //we're not copying the history folder into the snapshot folder; that would be recursion
-            Path snapshotHistoryFolder = new Path(snapshotMetaFolder, Constants.META_SUBFOLDER_HISTORY);
-            if (fs.util().exists(snapshotHistoryFolder)) {
-                if (!fs.delete(snapshotHistoryFolder, true)) {
-                    throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't delete the history folder of the temp meta snapshot folder; " + snapshotMetaFolder);
-                }
-            }
-
-            if (fs.util().exists(newHistoryEntryFolder)) {
-                throw new IOException("Error while adding a history entry for " + pathInfo + ": history folder already existed; " + newHistoryEntryFolder);
-            }
-            else {
-                fs.mkdir(newHistoryEntryFolder, FsPermission.getDirDefault(), true);
-            }
-
-            //if we get here without problems, we start copying the original file to it's history destination
-            if (!fs.util().copy(pathInfo.getPath(), historyEntry.getPath())) {
-                throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't copy the original file to it's final destination " + historyEntry.getPath());
-            }
-
-            //move the snapshot in it's place
-            fs.rename(snapshotMetaFolder, historyEntry.getMetaFolder());
-
-            //zip it
-            HdfsZipUtils.gzipTarFolder(fs, newHistoryEntryFolder, new Path(newHistoryEntryFolder.toUri().toString()+".tgz"));
-
-            //and remove the original
-            fs.delete(newHistoryEntryFolder, true);
-
-            success = true;
+        //copy the meta folder to the temp history entry folder
+        if (!fs.util().copy(pathInfo.getMetaFolder(), snapshotMetaFolder)) {
+            throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't create a snapshot of the meta folder; " + snapshotMetaFolder);
         }
-        finally {
-            //cleanup on error
-            if (!success) {
-                //Note: this isn't fail-safe, but a good try. (all we can do is log the error if for some reason we couldn't do a clean rollback)
-                try {
-                    fs.delete(snapshotMetaFolder, true);
-                }
-                catch (IOException e) {
-                    Logger.error("Error while cleaning up the temp snapshot meta folder of a failed history attempt for " + pathInfo.getPath() + "; " + snapshotMetaFolder, e);
-                }
 
-                try {
-                    fs.delete(newHistoryEntryFolder, true);
-                }
-                catch (IOException e) {
-                    Logger.error("Error while cleaning up the history entry folder of a failed history attempt for " + pathInfo.getPath() + "; " + newHistoryEntryFolder, e);
-                }
+        //we're not copying the history folder into the snapshot folder; that would be recursion, so delete it
+        Path snapshotHistoryFolder = new Path(snapshotMetaFolder, Constants.META_SUBFOLDER_HISTORY);
+        if (fs.util().exists(snapshotHistoryFolder)) {
+            if (!fs.delete(snapshotHistoryFolder, true)) {
+                throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't delete the history folder of the temp meta snapshot folder; " + snapshotMetaFolder);
             }
         }
+
+        if (fs.util().exists(newHistoryEntryFolder)) {
+            throw new IOException("Error while adding a history entry for " + pathInfo + ": history folder already existed; " + newHistoryEntryFolder);
+        }
+        else {
+            fs.mkdir(newHistoryEntryFolder, FsPermission.getDirDefault(), true);
+        }
+
+        //if we get here without problems, we start copying the original file to it's history destination
+        if (!fs.util().copy(pathInfo.getPath(), historyEntry.getPath())) {
+            throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't copy the original file to it's final destination " + historyEntry.getPath());
+        }
+
+        //move the snapshot in it's place
+        fs.rename(snapshotMetaFolder, historyEntry.getMetaFolder());
+
+        //zip it
+        HdfsZipUtils.gzipTarFolder(fs, newHistoryEntryFolder, new Path(newHistoryEntryFolder.toUri().toString() + ".tgz"));
+
+        //and remove the original
+        fs.delete(newHistoryEntryFolder, true);
+
+        success = true;
+
+        //Note: no need to cleanup, the XA filesystem will do that for us
 
         return success ? historyEntry : null;
     }

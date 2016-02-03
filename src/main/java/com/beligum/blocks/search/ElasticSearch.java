@@ -126,7 +126,7 @@ public class ElasticSearch
                 nodeBuilder.settings().put("http.enabled", true);
             }
 
-            HashMap<String, String> extraProperties = Settings.instance().getElasticSearchProperties();
+            Map<String, String> extraProperties = Settings.instance().getElasticSearchProperties();
             if (extraProperties!=null) {
                 for (Map.Entry<String, String> entry : extraProperties.entrySet()) {
                     nodeBuilder.settings().put(entry.getKey(), entry.getValue());
@@ -144,7 +144,7 @@ public class ElasticSearch
         Map params = new HashMap();
         params.put("cluster.name", Settings.instance().getElasticSearchClusterName());
 
-        HashMap<String, String> extraProperties = Settings.instance().getElasticSearchProperties();
+        Map<String, String> extraProperties = Settings.instance().getElasticSearchProperties();
         if (extraProperties!=null) {
             for (Map.Entry<String, String> entry : extraProperties.entrySet()) {
                 params.put(entry.getKey(), entry.getValue());

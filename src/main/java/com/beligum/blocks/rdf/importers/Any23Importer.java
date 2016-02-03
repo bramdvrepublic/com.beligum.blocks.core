@@ -1,8 +1,6 @@
 package com.beligum.blocks.rdf.importers;
 
 import com.beligum.blocks.rdf.ifaces.Source;
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
 import org.apache.any23.Any23;
 import org.apache.any23.extractor.ExtractionException;
 import org.apache.any23.extractor.rdfa.RDFa11ExtractorFactory;
@@ -11,6 +9,8 @@ import org.apache.any23.source.DocumentSource;
 import org.apache.any23.writer.NTriplesWriter;
 import org.apache.any23.writer.TripleHandler;
 import org.apache.any23.writer.TripleHandlerException;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

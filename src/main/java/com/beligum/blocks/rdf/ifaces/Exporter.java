@@ -1,6 +1,6 @@
 package com.beligum.blocks.rdf.ifaces;
 
-import com.hp.hpl.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Model;
 
 import java.io.IOException;
 import java.io.OutputStream;

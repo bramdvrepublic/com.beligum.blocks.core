@@ -2,8 +2,8 @@ package com.beligum.blocks.rdf.importers;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.rdf.ifaces.Source;
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
 import org.openrdf.OpenRDFException;
 import org.openrdf.model.Statement;
 import org.openrdf.rio.*;

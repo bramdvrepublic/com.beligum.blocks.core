@@ -49,6 +49,8 @@ public class Settings
     private File cachedPagesStoreJournalDir;
     protected HashMap<String, String> cachedHdfsProperties = null;
     protected HashMap<String, String> cachedEsProperties = null;
+    protected Object txManagerLock = new Object();
+    private File cachedPagesTripleStoreDir;
 
     private Settings()
     {
@@ -79,7 +81,7 @@ public class Settings
     /**
      * @return The languages this site can work with, ordered from most preferred getLanguage, to less preferred. If no such languages are specified in the configuration xml, an array with a default getLanguage is returned.
      */
-    public LinkedHashMap<String, Locale> getLanguages()
+    public Map<String, Locale> getLanguages()
     {
         if (cachedLanguages == null) {
             cachedLanguages = new LinkedHashMap<>();
@@ -130,8 +132,9 @@ public class Settings
 
             if (StringUtils.isEmpty(this.cachedPagesStorePath.getScheme())) {
                 //make sure we have a schema
-                this.cachedPagesStorePath = URI.create(DEFAULT_TX_FILESYSTEM_SCHEMA+"://" + this.cachedPagesStorePath.toString());
-                Logger.warn("The page store path doesn't have a schema, adding the HDFS '"+DEFAULT_TX_FILESYSTEM_SCHEMA+"://' prefix to use the local transactional file system; " + this.cachedPagesStorePath.toString());
+                this.cachedPagesStorePath = URI.create(DEFAULT_TX_FILESYSTEM_SCHEMA + "://" + this.cachedPagesStorePath.toString());
+                Logger.warn("The page store path doesn't have a schema, adding the HDFS '" + DEFAULT_TX_FILESYSTEM_SCHEMA + "://' prefix to use the local transactional file system; " +
+                            this.cachedPagesStorePath.toString());
             }
         }
 
@@ -192,10 +195,10 @@ public class Settings
     {
         return R.configuration().getInt("blocks.core.elastic-search.port", 9000);
     }
-    public HashMap<String, String> getElasticSearchProperties()
+    public Map<String, String> getElasticSearchProperties()
     {
         if (this.cachedEsProperties == null) {
-            this.cachedEsProperties = new HashMap<String, String>();
+            this.cachedEsProperties = new HashMap<>();
             List<HierarchicalConfiguration> properties = R.configuration().configurationsAt(ELASTIC_SEARCH_PROPERTIES_KEY);
             for (HierarchicalConfiguration property : properties) {
                 String propertyKey = property.getString("name");
@@ -216,8 +219,9 @@ public class Settings
             URI pageStorePath = this.getPagesStorePath();
             if (StringUtils.isEmpty(pageStorePath.getScheme())) {
                 //make sure we have a schema
-                pageStorePath = URI.create(DEFAULT_TX_FILESYSTEM_SCHEMA+"://" + pageStorePath.toString());
-                Logger.warn("The page store path doesn't have a schema, adding the HDFS "+DEFAULT_TX_FILESYSTEM_SCHEMA+"'://' prefix to use the local transactional file system; " + pageStorePath.toString());
+                pageStorePath = URI.create(DEFAULT_TX_FILESYSTEM_SCHEMA + "://" + pageStorePath.toString());
+                Logger.warn("The page store path doesn't have a schema, adding the HDFS " + DEFAULT_TX_FILESYSTEM_SCHEMA + "'://' prefix to use the local transactional file system; " +
+                            pageStorePath.toString());
             }
             conf.set(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, pageStorePath.toString());
 
@@ -226,7 +230,7 @@ public class Settings
             conf.set("fs.AbstractFileSystem." + DEFAULT_TX_FILESYSTEM_SCHEMA + ".impl", DEFAULT_TX_FILESYSTEM.getCanonicalName());
 
             //note: if fs.defaultFS is set here, this might overwrite the path above
-            HashMap<String, String> extraProperties = this.getElasticSearchProperties();
+            Map<String, String> extraProperties = this.getPagesHdfsProperties();
             if (extraProperties != null) {
                 for (Map.Entry<String, String> entry : extraProperties.entrySet()) {
                     if (entry.getKey().equals(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY)) {
@@ -246,47 +250,64 @@ public class Settings
     }
     public XAFileSystem getPageStoreTransactionManager() throws IOException
     {
-        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
-            XAFileSystem xafs = XAFileSystemProxy.bootNativeXAFileSystem(new StandaloneFileSystemConfiguration(this.getPagesStoreJournalDir().getAbsolutePath(), this.getPagesStoreJournalId()));
-            try {
-                xafs.waitForBootup(this.getPagesStoreJournalBootTimeout());
-                R.cacheManager().getApplicationCache().put(CacheKeys.XADISK_FILE_SYSTEM, xafs);
+        synchronized (this.txManagerLock) {
+            if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
+                XAFileSystem xafs = XAFileSystemProxy.bootNativeXAFileSystem(new StandaloneFileSystemConfiguration(this.getPagesStoreJournalDir().getAbsolutePath(), this.getPagesStoreJournalId()));
+                try {
+                    xafs.waitForBootup(this.getPagesStoreJournalBootTimeout());
+                    R.cacheManager().getApplicationCache().put(CacheKeys.XADISK_FILE_SYSTEM, xafs);
+                }
+                catch (InterruptedException e) {
+                    throw new IOException("Error occurred whlie booting transactional XADisk file system (timeout=" + this.getPagesStoreJournalBootTimeout(), e);
+                }
             }
-            catch (InterruptedException e) {
-                throw new IOException("Error occurred whlie booting transactional XADisk file system (timeout="+this.getPagesStoreJournalBootTimeout(), e);
-            }
-        }
 
-        return (XAFileSystem) R.cacheManager().getApplicationCache().get(CacheKeys.XADISK_FILE_SYSTEM);
+            return (XAFileSystem) R.cacheManager().getApplicationCache().get(CacheKeys.XADISK_FILE_SYSTEM);
+        }
     }
     public boolean rebootPageStoreTransactionManager()
     {
-        boolean retVal = false;
+        synchronized (this.txManagerLock) {
+            boolean retVal = false;
 
-        if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
-            XAFileSystem xafs = (XAFileSystem) R.cacheManager().getApplicationCache().get(CacheKeys.XADISK_FILE_SYSTEM);
-            //setting it here will ensure it's null internally, even if the next shutdown fails
-            R.cacheManager().getApplicationCache().remove(CacheKeys.XADISK_FILE_SYSTEM);
-            try {
-                xafs.shutdown();
+            if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
+                XAFileSystem xafs = (XAFileSystem) R.cacheManager().getApplicationCache().get(CacheKeys.XADISK_FILE_SYSTEM);
+                //setting it here will ensure it's null internally, even if the next shutdown fails
+                R.cacheManager().getApplicationCache().remove(CacheKeys.XADISK_FILE_SYSTEM);
+                try {
+                    xafs.shutdown();
 
-                //uniform reboot
-                this.getPageStoreTransactionManager();
+                    //uniform reboot
+                    this.getPageStoreTransactionManager();
 
-                retVal = true;
+                    retVal = true;
+                }
+                catch (IOException e) {
+                    Logger.error("Exception caught while rebooting a transactional XADisk file system", e);
+                }
             }
-            catch (IOException e) {
-                Logger.error("Exception caught while rebooting a transactional XADisk file system", e);
-            }
+
+            return retVal;
+        }
+    }
+    public File getPageTripleStoreFolder()
+    {
+        if (this.cachedPagesTripleStoreDir == null) {
+            //Note: the journal dir resides on the local, naked file system, watch out you don't point to a dir in the distributed or transactional fs
+            this.cachedPagesTripleStoreDir = new File(R.configuration().getString("blocks.core.pages.triple-store.dir"));
         }
 
-        return retVal;
+        return this.cachedPagesTripleStoreDir;
     }
 
 
 
 
 
+
+
+
+    //TODO revise these below:
     public URI getDefaultRdfSchema()
     {
         if (this.defaultRdfSchema == null) {
@@ -295,7 +316,7 @@ public class Settings
                 this.defaultRdfSchema = URI.create(schema);
             }
             catch (Exception e) {
-                throw new RuntimeException("Wrong default RDF blocks.core.rdf.schema.url configured; "+schema, e);
+                throw new RuntimeException("Wrong default RDF blocks.core.rdf.schema.url configured; " + schema, e);
             }
         }
         return this.defaultRdfSchema;

@@ -1,7 +1,7 @@
 package com.beligum.blocks.rdf.importers;
 
 import com.beligum.blocks.rdf.ifaces.Importer;
-import com.hp.hpl.jena.rdf.model.*;
+import org.apache.jena.rdf.model.*;
 
 import java.net.URI;
 
