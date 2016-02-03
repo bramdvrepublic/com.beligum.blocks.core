@@ -11,7 +11,6 @@ import com.beligum.blocks.fs.hdfs.HdfsZipUtils;
 import com.beligum.blocks.fs.ifaces.Constants;
 import com.beligum.blocks.fs.ifaces.PathInfo;
 import com.beligum.blocks.fs.indexes.JenaPageIndex;
-import com.beligum.blocks.fs.indexes.ifaces.PageIndex;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.fs.pages.ifaces.PageStore;
@@ -131,8 +130,9 @@ public class SimplePageStore implements PageStore
 
 
             //TODO move this out of the page store to the endpoint?
-            PageIndex pageIndex = new JenaPageIndex();
-            pageIndex.indexPage(page);
+            JenaPageIndex pageIndex = new JenaPageIndex();
+            pageIndex.writeModel(source.getBaseUri(), model);
+            //pageIndex.indexPage(page);
 
 
             retVal = page;
