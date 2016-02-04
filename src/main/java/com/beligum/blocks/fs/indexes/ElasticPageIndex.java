@@ -1,10 +1,12 @@
 package com.beligum.blocks.fs.indexes;
 
-import com.beligum.base.utils.Logger;
+import com.beligum.base.utils.json.Json;
 import com.beligum.blocks.fs.indexes.ifaces.PageIndex;
 import com.beligum.blocks.fs.pages.ifaces.Page;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Created by bram on 1/26/16.
@@ -27,9 +29,15 @@ public class ElasticPageIndex implements PageIndex
     @Override
     public void indexPage(Page page) throws IOException
     {
-        if (page.getJsonLDNode()!=null) {
-            Logger.info(page.getJsonLDNode().toString());
+        // read it back in and parse it because it's the link between this (where we have HDFS access)
+        // and the page indexer (where we work with generic json objects)
+        JsonNode jsonLd = null;
+        try (InputStream is = page.getPathInfo().getFileContext().open(page.getExportFile())) {
+            jsonLd = Json.read(is, JsonNode.class);
         }
+
+        //TODO: do something with it ;-)
+        //Logger.info(Json.getObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(jsonLd));
     }
 
     //-----PROTECTED METHODS-----

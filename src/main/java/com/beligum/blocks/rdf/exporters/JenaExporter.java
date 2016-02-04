@@ -52,8 +52,8 @@ public class JenaExporter extends AbstractExporter
                 JsonLdOptions options = new JsonLdOptions();
 
                 Map<String, Object> compact = JsonLdProcessor.compact(jsonObject, context, options);
-
-                Object compactFlat = JsonLdProcessor.flatten(compact, options);
+                //works
+                //Object compactFlat = JsonLdProcessor.flatten(compact, options);
 
                 Json.getObjectMapper().writeValue(outputStream, compact);
             }

@@ -3,9 +3,9 @@ package com.beligum.blocks.fs.pages;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.ifaces.PathInfo;
 import com.beligum.blocks.fs.pages.ifaces.Page;
-import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.jena.rdf.model.Model;
 
 import java.io.IOException;
 import java.net.URI;
@@ -23,7 +23,7 @@ public abstract class AbstractPage implements Page
     //-----VARIABLES-----
     protected final PathInfo pathInfo;
 
-    private JsonNode jsonLdNode;
+    private Model rdfModel;
 
     //-----CONSTRUCTORS-----
     public static URI create(URI uri) throws IOException
@@ -78,16 +78,21 @@ public abstract class AbstractPage implements Page
     }
 
     //-----PUBLIC METHODS-----
-    public JsonNode getJsonLDNode()
+    @Override
+    public Model getRDFModel()
     {
-        return this.jsonLdNode;
+        return this.rdfModel;
     }
-
+    @Override
+    public PathInfo getPathInfo()
+    {
+        return pathInfo;
+    }
     //-----PROTECTED METHODS-----
     //this should be set from a package private class
-    protected void setJsonLDNode(JsonNode jsonLdNode)
+    protected void setRDFModel(Model rdfModel)
     {
-        this.jsonLdNode = jsonLdNode;
+        this.rdfModel = rdfModel;
     }
 
     //-----PRIVATE METHODS-----

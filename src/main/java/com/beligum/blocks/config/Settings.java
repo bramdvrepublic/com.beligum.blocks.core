@@ -11,6 +11,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.AbstractFileSystem;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileContext;
+import org.apache.jena.query.Dataset;
+import org.apache.jena.tdb.TDBFactory;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystemProxy;
 import org.xadisk.filesystem.standalone.StandaloneFileSystemConfiguration;
@@ -51,6 +53,7 @@ public class Settings
     protected HashMap<String, String> cachedEsProperties = null;
     protected Object txManagerLock = new Object();
     private File cachedPagesTripleStoreDir;
+    private Object rdfDatasetLock = new Object();
 
     private Settings()
     {
@@ -299,7 +302,17 @@ public class Settings
 
         return this.cachedPagesTripleStoreDir;
     }
+    public Dataset getRDFDataset()
+    {
+        synchronized (this.rdfDatasetLock) {
+            if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.RDF_DATASET)) {
+                Dataset dataset = TDBFactory.createDataset(Settings.instance().getPageTripleStoreFolder().getAbsolutePath());
+                R.cacheManager().getApplicationCache().put(CacheKeys.RDF_DATASET, dataset);
+            }
 
+            return (Dataset) R.cacheManager().getApplicationCache().get(CacheKeys.RDF_DATASET);
+        }
+    }
 
 
 

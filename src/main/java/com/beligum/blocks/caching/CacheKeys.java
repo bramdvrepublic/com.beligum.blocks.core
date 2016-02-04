@@ -35,8 +35,12 @@ public enum CacheKeys implements CacheKey
     HDFS_PAGE_STORE,
     //application cache key to store the Elastic Search page indexer
     ELASTIC_PAGE_INDEX,
+    //application cache key to store the triplestore page indexer
+    TRIPLESTORE_PAGE_INDEX,
     //application cache key to store the XAFileSystem
     XADISK_FILE_SYSTEM,
     //request cache key to store the current file system transaction
-    XADISK_REQUEST_TRANSACTION
+    XADISK_REQUEST_TRANSACTION,
+    //application cache key to store the Jena dataset
+    RDF_DATASET
 }

@@ -2,7 +2,6 @@ package com.beligum.blocks.fs.pages;
 
 import com.beligum.base.auth.models.Person;
 import com.beligum.base.server.R;
-import com.beligum.base.utils.json.Json;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.HdfsPathInfo;
 import com.beligum.blocks.fs.HdfsUtils;
@@ -10,18 +9,15 @@ import com.beligum.blocks.fs.LockFile;
 import com.beligum.blocks.fs.hdfs.HdfsZipUtils;
 import com.beligum.blocks.fs.ifaces.Constants;
 import com.beligum.blocks.fs.ifaces.PathInfo;
-import com.beligum.blocks.fs.indexes.JenaPageIndex;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.fs.pages.ifaces.PageStore;
 import com.beligum.blocks.rdf.ifaces.Source;
-import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.hadoop.fs.CreateFlag;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.jena.rdf.model.Model;
 import org.joda.time.DateTime;
 
 import java.io.*;
@@ -106,17 +102,12 @@ public class SimplePageStore implements PageStore
                 writer.write(new PageHtmlParser().parse(sourceHtml, source.getBaseUri(), true));
             }
 
-            //parse to jsonld and save it
-            Path jsonldFile = page.getJsonLDProxyPath();
-            Model model = page.createImporter().importDocument(source);
-            try (OutputStream os = fs.create(jsonldFile, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
-                page.createExporter().exportModel(model, os);
-            }
+            //parse and set the RDF model
+            page.setRDFModel(page.createImporter().importDocument(source));
 
-            // read it back in and parse it because it's the link between this (where we have HDFS access)
-            // and the page indexer (where we work with generic json objects)
-            try (InputStream is = fs.open(jsonldFile)) {
-                page.setJsonLDNode(Json.read(is, JsonNode.class));
+            //export the RDF model to the storage file (JSON-LD)
+            try (OutputStream os = fs.create(page.getExportFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
+                page.createExporter().exportModel(page.getRDFModel(), os);
             }
 
             //save the HASH of the file
@@ -127,13 +118,6 @@ public class SimplePageStore implements PageStore
 
             //save the page metadata (read it in if it exists)
             this.writeMetadata(fs, pathInfo, creator, page.createMetadataWriter());
-
-
-            //TODO move this out of the page store to the endpoint?
-            JenaPageIndex pageIndex = new JenaPageIndex();
-            pageIndex.writeModel(source.getBaseUri(), model);
-            //pageIndex.indexPage(page);
-
 
             retVal = page;
         }

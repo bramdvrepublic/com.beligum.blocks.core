@@ -7,6 +7,7 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.search.ElasticSearch;
 import com.beligum.blocks.templating.blocks.HtmlParser;
+import org.apache.jena.query.Dataset;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Server;
 import org.elasticsearch.client.Client;
@@ -55,6 +56,11 @@ public class ServerStartStopListener implements ServerLifecycleListener
             catch (IOException e) {
                 Logger.error("Exception caught while shutting down XADisk", e);
             }
+        }
+
+        if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.RDF_DATASET)) {
+            Dataset dataset = Settings.instance().getRDFDataset();
+            dataset.close();
         }
 
         ElasticSearch.instance().getClient().close();

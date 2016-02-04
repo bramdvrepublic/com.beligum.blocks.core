@@ -14,6 +14,7 @@ import com.beligum.blocks.caching.PageCache;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.fs.indexes.ElasticPageIndex;
+import com.beligum.blocks.fs.indexes.JenaPageIndex;
 import com.beligum.blocks.fs.indexes.ifaces.PageIndex;
 import com.beligum.blocks.fs.pages.SimplePageStore;
 import com.beligum.blocks.fs.pages.WebPageParser;
@@ -109,7 +110,7 @@ public class PageEndpoint
         //TODO this should probably honour our watch system and just write the HTML, no?
         Page savedPage = this.getPageStore().save(source, personRepository.get(Authentication.getCurrentPrincipal()));
 
-        this.getElasticPageIndex().indexPage(savedPage);
+        this.getTriplestorePageIndex().indexPage(savedPage);
 
         return Response.ok().build();
     }
@@ -414,6 +415,14 @@ public class PageEndpoint
         }
 
         return (PageStore) R.cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGE_STORE);
+    }
+    public PageIndex getTriplestorePageIndex() throws IOException
+    {
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRIPLESTORE_PAGE_INDEX)) {
+            R.cacheManager().getApplicationCache().put(CacheKeys.TRIPLESTORE_PAGE_INDEX, new JenaPageIndex());
+        }
+
+        return (PageIndex) R.cacheManager().getApplicationCache().get(CacheKeys.TRIPLESTORE_PAGE_INDEX);
     }
     public PageIndex getElasticPageIndex() throws IOException
     {
