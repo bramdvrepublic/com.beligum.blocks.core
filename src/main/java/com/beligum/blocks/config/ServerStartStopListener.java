@@ -1,6 +1,6 @@
 package com.beligum.blocks.config;
 
-import com.beligum.base.resources.Asset;
+import com.beligum.base.templating.ifaces.Resource;
 import com.beligum.base.server.R;
 import com.beligum.base.server.ifaces.ServerLifecycleListener;
 import com.beligum.base.utils.Logger;
@@ -31,7 +31,8 @@ public class ServerStartStopListener implements ServerLifecycleListener
     @Override
     public void onServerStarted(Server server, Container container)
     {
-        R.resourceLoader().registerAssetParser(Asset.MimeType.HTML, new HtmlParser());
+        //let all .html files pass through our HtmlParser
+        R.resourceFactory().registerParser(Resource.MimeType.HTML, new HtmlParser());
 
         //this will boot the transaction manager (and possibly do a restore)
         try {

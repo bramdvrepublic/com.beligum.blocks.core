@@ -45,7 +45,7 @@ public class PageHtmlParser
             throw new IOException("Encountered an attempt to save html without a page template; this shouldn't happen; " + htmlElement);
         }
         else {
-            currentTemplate = this.allTagTemplates.get(pageTemplateName);
+            currentTemplate = this.allTagTemplates.getByTagName(pageTemplateName);
             if (currentTemplate == null) {
                 throw new IOException("Encountered an attempt to save html, but I can't find a page template with name " + pageTemplateName);
             }
@@ -183,7 +183,7 @@ public class PageHtmlParser
     }
     private boolean isTemplate(StartTag tag)
     {
-        return this.allTagTemplates.containsKey(tag.getName());
+        return this.allTagTemplates.containsKeyByTagName(tag.getName());
     }
     private String instantiateTemplateStartTag(Element element, HtmlTemplate template, Set<String> excludeAttributes)
     {

@@ -2,7 +2,6 @@ package com.beligum.blocks.templating.blocks;
 
 import com.google.common.base.Joiner;
 
-import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -14,7 +13,7 @@ public class TemplateCache
 
     //-----VARIABLES-----
     private Map<String, HtmlTemplate> nameMapping;
-    private Map<Path, HtmlTemplate> pathMapping;
+    private Map<String, HtmlTemplate> relativePathMapping;
     private List<HtmlTemplate> pageTemplates;
 
     //NOTE see resetCache() if you add variables here
@@ -27,29 +26,34 @@ public class TemplateCache
     public TemplateCache()
     {
         this.nameMapping = new HashMap<>();
-        this.pathMapping = new HashMap<>();
+        this.relativePathMapping = new HashMap<>();
         this.pageTemplates = new ArrayList<>();
 
         this.resetCache();
     }
 
     //-----PUBLIC METHODS-----
-    public HtmlTemplate get(String templateTagName)
+    public HtmlTemplate getByTagName(String templateTagName)
     {
         return this.nameMapping.get(templateTagName);
     }
-    public HtmlTemplate get(Path templateAbsolutePath)
+    public HtmlTemplate getByRelativePath(String templateRelativePath)
     {
-        return this.pathMapping.get(templateAbsolutePath);
+        return this.relativePathMapping.get(templateRelativePath);
     }
     public List<HtmlTemplate> getPageTemplates()
     {
         return this.pageTemplates;
     }
-    public HtmlTemplate put(Path templateAbsolutePath, HtmlTemplate template)
+    /**
+     * Inserts an entry by supplying the relative classpath. Note that it still should start with a slash though;
+     * eg. /imports/blocks/blah.html
+     * But make sure it doesn't have any schema.
+     */
+    public HtmlTemplate putByRelativePath(String templateRelativePath, HtmlTemplate template)
     {
         //both should be synched, so one retval = other retval
-        HtmlTemplate retVal = this.pathMapping.put(templateAbsolutePath, template);
+        HtmlTemplate retVal = this.relativePathMapping.put(templateRelativePath, template);
         this.nameMapping.put(template.getTemplateName(), template);
 
         if (template instanceof PageTemplate) {
@@ -64,18 +68,18 @@ public class TemplateCache
     {
         return this.nameMapping.values();
     }
-    public boolean containsKey(String key)
+    public boolean containsKeyByTagName(String key)
     {
         return this.nameMapping.containsKey(key);
     }
-    public boolean containsKey(Path key)
+    public boolean containsKeyByRelativePath(String key)
     {
-        return this.pathMapping.containsKey(key);
+        return this.relativePathMapping.containsKey(key);
     }
     public void clear()
     {
         this.nameMapping.clear();
-        this.pathMapping.clear();
+        this.relativePathMapping.clear();
         this.pageTemplates.clear();
     }
 

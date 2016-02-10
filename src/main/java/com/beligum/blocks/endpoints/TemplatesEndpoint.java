@@ -2,9 +2,8 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.annotations.JavascriptPackage;
 import com.beligum.base.endpoints.AssetsEndpoint;
-import com.beligum.base.resources.Asset;
-import com.beligum.base.resources.ResourceDescriptor;
 import com.beligum.base.server.R;
+import com.beligum.base.templating.ifaces.Resource;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import gen.com.beligum.blocks.core.fs.html.views.snippets.side;
 import org.apache.commons.io.FilenameUtils;
@@ -12,7 +11,11 @@ import org.apache.commons.io.FilenameUtils;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
+import javax.ws.rs.core.UriInfo;
+import java.net.URI;
 
 /**
  * Created by bas on 21.10.14.
@@ -25,7 +28,7 @@ public class TemplatesEndpoint extends AssetsEndpoint
     @Path("/sidebar")
     public Response getSidebar()
     {
-        return Response.ok(side.get().getNewTemplate().render()).build();
+        return Response.ok(side.get()).build();
     }
 
     @GET
@@ -33,7 +36,7 @@ public class TemplatesEndpoint extends AssetsEndpoint
     @Path("/styles/imports/reset.css")
     public Response getResources()
     {
-        return Response.ok(HtmlParser.getTemplateCache().getCssReset(), Asset.MimeType.CSS.getMimeType().toString()).build();
+        return Response.ok(HtmlParser.getTemplateCache().getCssReset(), Resource.MimeType.CSS.getMimeType().toString()).build();
     }
 
     @GET
@@ -41,21 +44,26 @@ public class TemplatesEndpoint extends AssetsEndpoint
     @Path("/scripts/imports/all.js")
     public Response getImportsArray()
     {
-        return Response.ok(HtmlParser.getTemplateCache().getJsArray(), Asset.MimeType.JAVASCRIPT.getMimeType().toString()).build();
+        return Response.ok(HtmlParser.getTemplateCache().getJsArray(), Resource.MimeType.JAVASCRIPT.getMimeType().toString()).build();
     }
 
+    /**
+     * Enables us to eg. load the main template without using the GeneratedFile interface by loading "/templates/main.html" in a universal (change-proof) way
+     *
+     * @param name
+     * @return
+     * @throws Exception
+     */
     @GET
     @Path("/{name: .*}")
     @JavascriptPackage
-    public Response getTemplate(
-                    @PathParam("name")
-                    String name) throws Exception
+    public Response getTemplate(@Context final UriInfo uriInfo,
+                                @PathParam("name") String name) throws Exception
     {
         //SECURITY (both the prefix and the normalize)
-        String resourcePath = "/templates/" + FilenameUtils.normalize(name);
+        final String resourcePath = "/templates/" + FilenameUtils.normalize(name);
+        URI requestUri = UriBuilder.fromUri(uriInfo.getRequestUri()).replacePath(resourcePath).build();
 
-        ResourceDescriptor resource = R.resourceLoader().getResource(resourcePath, true);
-
-        return loadResource(resource);
+        return streamResource(R.resourceFactory().get(requestUri));
     }
 }

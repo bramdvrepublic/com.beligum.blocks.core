@@ -1,13 +1,27 @@
 package com.beligum.blocks.endpoints;
 
+import com.beligum.base.resources.ResourceRequest;
+import com.beligum.base.server.R;
 import com.beligum.base.server.RequestContext;
+import com.beligum.base.templating.ifaces.Template;
+import com.beligum.base.templating.ifaces.TemplateContext;
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.controllers.PersistenceControllerImpl;
+import com.beligum.blocks.fs.HdfsPathInfo;
+import com.beligum.blocks.fs.HdfsResource;
+import com.beligum.blocks.fs.ifaces.PathInfo;
+import com.beligum.blocks.fs.pages.DefaultPageImpl;
+import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.routing.HtmlRouter;
 import com.beligum.blocks.routing.Route;
 import com.beligum.blocks.routing.ifaces.Router;
+import com.beligum.blocks.security.Permissions;
+import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.google.common.net.HttpHeaders;
+import org.apache.hadoop.fs.FileContext;
+import org.apache.shiro.SecurityUtils;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
@@ -51,8 +65,7 @@ public class ApplicationEndpoint
 
     @Path("/{randomPage:.*}")
     @GET
-    public Response getPageWithId(@PathParam("randomPage") String randomURLPath)
-                    throws Exception
+    public Response getPageWithId(@PathParam("randomPage") String randomURLPath) throws Exception
     {
         Response retVal;
         URI currentURI = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
@@ -91,6 +104,27 @@ public class ApplicationEndpoint
         }
 
         return retVal;
+    }
+    @Path("/new/{randomPage:.*}")
+    @GET
+    public Response getPageNew(@PathParam("randomPage") String randomURLPath) throws Exception
+    {
+        URI requestedURI = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
+        URI validUri = DefaultPageImpl.create(requestedURI);
+
+        FileContext fs = Settings.instance().getPageStoreFileSystem();
+        PathInfo pathInfo = new HdfsPathInfo(fs, validUri);
+
+        final Page page = new DefaultPageImpl(pathInfo);
+
+        Template template = R.templateEngine().getNewTemplate(R.resourceFactory().wrap(new HdfsResource(new ResourceRequest(validUri), fs, page.getNormalizedPageProxyPath())));
+
+        //this will allow the blocks javascript/css to be included if we're logged in and have permission
+        if (SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
+            this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template.getContext());
+        }
+
+        return Response.ok(template).build();
     }
 
     //    @GET
@@ -154,5 +188,12 @@ public class ApplicationEndpoint
     //        }
     //
     //    }
+
+    //-----PRIVATE METHODS-----
+    private void setBlocksMode(HtmlTemplate.ResourceScopeMode mode, TemplateContext context)
+    {
+        R.cacheManager().getRequestCache().put(CacheKeys.BLOCKS_MODE, mode);
+        context.set(CacheKeys.BLOCKS_MODE.name(), mode.name());
+    }
 
 }

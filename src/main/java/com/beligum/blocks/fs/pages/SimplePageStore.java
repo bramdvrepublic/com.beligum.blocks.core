@@ -64,7 +64,6 @@ public class SimplePageStore implements PageStore
         //create this here, so we don't boot the filesystem on validation error
         URI validUri = DefaultPageImpl.create(source.getBaseUri());
 
-        //TODO: BIG ONE, make this transactional with a good rollback (history entry might be a good starting point)
         //now execute the FS changes
         FileContext fs = Settings.instance().getPageStoreFileSystem();
 

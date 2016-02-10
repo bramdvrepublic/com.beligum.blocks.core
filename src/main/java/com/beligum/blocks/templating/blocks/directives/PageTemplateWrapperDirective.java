@@ -72,42 +72,63 @@ public class PageTemplateWrapperDirective extends Directive
                           Node node) throws IOException, ResourceNotFoundException,
                                             ParseErrorException, MethodInvocationException
     {
-        boolean retVal = node.jjtGetChild(0).render(context, writer);
+        boolean retVal = false;
 
-        List<WriterBufferReference> inserts = (List<WriterBufferReference>) context.get(TemplateResourcesDirective.RESOURCES_INSERTS);
-        if (inserts != null) {
-            StringBuffer buffer = ((StringWriter) writer).getBuffer();
-            TemplateResources resources = TemplateResourcesDirective.getContextResources(context);
+        Writer originalWriter = null;
+        try {
+            // if the supplied writer is not a stringwriter,
+            // we'll write to a temp stringwriter because we need to be able to
+            // hack into the buffer when the normal Velocity parsing is done
+            if (!(writer instanceof StringWriter)) {
+                originalWriter = writer;
+                writer = new StringWriter();
+            }
 
-            //note: we need to move along with the previously inserted char count
-            int insertedChars = 0;
-            for (WriterBufferReference ref : inserts) {
+            //this renders out the entire page directive
+            retVal = node.jjtGetChild(0).render(context, writer);
 
-                switch (ref.getType()) {
-                    case inlineStyles:
-                        insertedChars += this.writeResources(resources.getInlineStyles(), buffer, ref.getWriterBufferPosition() + insertedChars);
-                        break;
-                    case externalStyles:
-                        insertedChars += this.writeResources(resources.getExternalStyles(), buffer, ref.getWriterBufferPosition() + insertedChars);
-                        break;
-                    case styles:
-                        insertedChars += this.writeResources(resources.getStyles(), buffer, ref.getWriterBufferPosition() + insertedChars);
-                        break;
-                    case inlineScripts:
-                        insertedChars += this.writeResources(resources.getInlineScripts(), buffer, ref.getWriterBufferPosition() + insertedChars);
-                        break;
-                    case externalScripts:
-                        insertedChars += this.writeResources(resources.getExternalScripts(), buffer, ref.getWriterBufferPosition() + insertedChars);
-                        break;
-                    case scripts:
-                        insertedChars += this.writeResources(resources.getScripts(), buffer, ref.getWriterBufferPosition() + insertedChars);
-                        break;
-                    default:
-                        // default is to write everything out
-                        insertedChars += this.writeResources(resources.getStyles(), buffer, ref.getWriterBufferPosition() + insertedChars);
-                        insertedChars += this.writeResources(resources.getScripts(), buffer, ref.getWriterBufferPosition() + insertedChars);
-                        break;
+            List<WriterBufferReference> inserts = (List<WriterBufferReference>) context.get(TemplateResourcesDirective.RESOURCES_INSERTS);
+            if (inserts != null) {
+                StringBuffer buffer = ((StringWriter) writer).getBuffer();
+                TemplateResources resources = TemplateResourcesDirective.getContextResources(context);
+
+                //note: we need to move along with the previously inserted char count
+                int insertedChars = 0;
+                for (WriterBufferReference ref : inserts) {
+
+                    switch (ref.getType()) {
+                        case inlineStyles:
+                            insertedChars += this.writeResources(resources.getInlineStyles(), buffer, ref.getWriterBufferPosition() + insertedChars);
+                            break;
+                        case externalStyles:
+                            insertedChars += this.writeResources(resources.getExternalStyles(), buffer, ref.getWriterBufferPosition() + insertedChars);
+                            break;
+                        case styles:
+                            insertedChars += this.writeResources(resources.getStyles(), buffer, ref.getWriterBufferPosition() + insertedChars);
+                            break;
+                        case inlineScripts:
+                            insertedChars += this.writeResources(resources.getInlineScripts(), buffer, ref.getWriterBufferPosition() + insertedChars);
+                            break;
+                        case externalScripts:
+                            insertedChars += this.writeResources(resources.getExternalScripts(), buffer, ref.getWriterBufferPosition() + insertedChars);
+                            break;
+                        case scripts:
+                            insertedChars += this.writeResources(resources.getScripts(), buffer, ref.getWriterBufferPosition() + insertedChars);
+                            break;
+                        default:
+                            // default is to write everything out
+                            insertedChars += this.writeResources(resources.getStyles(), buffer, ref.getWriterBufferPosition() + insertedChars);
+                            insertedChars += this.writeResources(resources.getScripts(), buffer, ref.getWriterBufferPosition() + insertedChars);
+                            break;
+                    }
                 }
+            }
+        }
+        finally {
+            if (originalWriter!=null) {
+                originalWriter.write(((StringWriter)writer).toString());
+                //don't know if this is needed, but it's nice to finish where we started
+                writer = originalWriter;
             }
         }
 

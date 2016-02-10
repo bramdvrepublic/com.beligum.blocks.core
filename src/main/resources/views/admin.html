@@ -1,0 +1,22 @@
+#define($body-html)
+    #constantsBlock("blocks.core")
+<div class="container $ADMIN_PAGE_CLASS">
+    <div class="row">
+        <div class="col-sm-12">
+
+            <h1>$MESSAGES.blocks.core.adminPageTitle</h1>
+
+            <div>
+                <p>$MESSAGES.blocks.core.selectFromTheListBelow</p>
+                <ul>
+                    <li><a href="/admin/reset/templates">$MESSAGES.blocks.core.adminActionResetTemplates"</a></li>
+                    <li><a href="/admin/evolution/pagestore">$MESSAGES.blocks.core.adminActionEvolutionPagestore"</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+#end
+#end
+
+#parse("/templates/main.html")

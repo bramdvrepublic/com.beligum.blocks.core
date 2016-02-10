@@ -1,6 +1,6 @@
 package com.beligum.blocks.fs.pages;
 
-import com.beligum.base.resources.Asset;
+import com.beligum.base.templating.ifaces.Resource;
 import com.beligum.blocks.fs.ifaces.PathInfo;
 import com.beligum.blocks.fs.metadata.EBUCoreHdfsMetadataWriter;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
@@ -20,15 +20,15 @@ import java.io.IOException;
 public class DefaultPageImpl extends AbstractPage
 {
     //-----CONSTANTS-----
-    MediaType PAGE_PROXY_NORMALIZED_MIME_TYPE = Asset.MimeType.HTML.getMimeType();
+    MediaType PAGE_PROXY_NORMALIZED_MIME_TYPE = Resource.MimeType.HTML.getMimeType();
     //Note: makes sense to prefix with the mvn artifact, so we know what we wrote it with
-    String PAGE_PROXY_NORMALIZED_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_normalized." + Asset.MimeType.HTML.getExtension();
+    String PAGE_PROXY_NORMALIZED_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_normalized." + Resource.MimeType.HTML.getExtension();
 
-    MediaType PAGE_PROXY_RDF_JSONLD_MIME_TYPE = Asset.MimeType.JSONLD.getMimeType();
+    MediaType PAGE_PROXY_RDF_JSONLD_MIME_TYPE = Resource.MimeType.JSONLD.getMimeType();
     // Note: makes sense to prefix with the mvn artifact, so we know what we wrote it with
     // also note that the reason it's suffixed 'rdf' is that JSONLD is a Resource Description Framework serialization format:
     // https://en.wikipedia.org/wiki/Linked_data
-    String PAGE_PROXY_RDF_JSONLD_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_rdf." + Asset.MimeType.JSONLD.getExtension();
+    String PAGE_PROXY_RDF_JSONLD_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_rdf." + Resource.MimeType.JSONLD.getExtension();
 
     //-----VARIABLES-----
 

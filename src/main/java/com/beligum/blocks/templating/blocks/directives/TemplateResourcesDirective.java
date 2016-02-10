@@ -109,13 +109,13 @@ public class TemplateResourcesDirective extends Directive
             }
 
             /**
-             * Instead of writing the resource tags to the writer, we save the position of th buffer to insert them at this position later on.
+             * Instead of writing the resource tags to the writer, we save the position of the buffer to insert them at this position later on.
              * This is because I couldn't find a way to run through the entire Velocity file, saving all resource references and then building the uniques list
              * any other way.
              */
             List<WriterBufferReference> inserts = (List<WriterBufferReference>) context.get(RESOURCES_INSERTS);
             if (inserts == null) {
-                context.put(RESOURCES_INSERTS, inserts = new ArrayList<WriterBufferReference>());
+                context.put(RESOURCES_INSERTS, inserts = new ArrayList<>());
             }
             if (writer instanceof StringWriter) {
                 inserts.add(new WriterBufferReference(arg, (StringWriter) writer));

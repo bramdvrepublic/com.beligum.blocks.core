@@ -131,7 +131,8 @@ public class HtmlRouter extends AbstractRouter
     public Response showCreatedPage(final String pageTemplateName)
     {
         //by returning an empty tag (eg. <main-page></main-page>) the template engine will render a default page
-        Template template = this.buildTemplateInstance(pageTemplateName, "");
+        //TODO don't know if that null is right...
+        Template template = this.buildTemplateInstance(null, pageTemplateName, "");
 
         //this will allow the blocks javascript/css to be included
         this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template.getContext());
@@ -166,7 +167,7 @@ public class HtmlRouter extends AbstractRouter
                 throw new IOException("Unable to fetch or find a default page template, can't continue");
             }
 
-            Template template = this.buildTemplateInstance(templateStr, page.getParsedHtml(true));
+            Template template = this.buildTemplateInstance(this.route.getURI(), templateStr, page.getParsedHtml(true));
 
             //this will allow the blocks javascript/css to be included
             this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template.getContext());
@@ -188,9 +189,9 @@ public class HtmlRouter extends AbstractRouter
      * If you ever want to use this method for TagTempaltes, don't, cause it won't include the attributes.
      * for that, use HtmlTemplate.createNewHtmlInstance() instead
      */
-    private Template buildTemplateInstance(String templateName, String propertiesHtml)
+    private Template buildTemplateInstance(URI uri, String templateName, String propertiesHtml)
     {
-        return R.templateEngine().getNewStringTemplate(new StringBuilder().append("<" + templateName + ">").append(propertiesHtml).append("</" + templateName + ">").toString());
+        return R.templateEngine().getNewTemplate(uri, new StringBuilder().append("<" + templateName + ">").append(propertiesHtml).append("</" + templateName + ">").toString());
     }
     private void setBlocksMode(HtmlTemplate.ResourceScopeMode mode, TemplateContext context)
     {

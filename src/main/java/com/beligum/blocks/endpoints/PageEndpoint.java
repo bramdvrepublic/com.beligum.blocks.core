@@ -91,7 +91,7 @@ public class PageEndpoint
                     throws Exception
 
     {
-        PageTemplate pageTemplate = (PageTemplate) HtmlParser.getTemplateCache().get(pageTemplateName);
+        PageTemplate pageTemplate = (PageTemplate) HtmlParser.getTemplateCache().getByTagName(pageTemplateName);
         R.cacheManager().getFlashCache().put(PAGE_TEMPLATE_NAME, pageTemplateName);
         return Response.seeOther(new URI(pageUrl)).build();
     }
@@ -333,7 +333,7 @@ public class PageEndpoint
         Template template = newblock.get().getNewTemplate();
         template.set("templates", templates);
 
-        return Response.ok(template.render()).build();
+        return Response.ok(template).build();
     }
 
     @GET
@@ -351,8 +351,8 @@ public class PageEndpoint
             }
         }
 
-        Template block = R.templateEngine().getNewStringTemplate(htmlTemplate.createNewHtmlInstance());
-        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_HTML.getValue(), block.render());
+        Template block = R.templateEngine().getNewTemplate(htmlTemplate.getRelativePath().toUri(), htmlTemplate.createNewHtmlInstance());
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_HTML.getValue(), block);
         retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_INLINE_STYLES.getValue(),
                    Lists.transform(Lists.newArrayList(htmlTemplate.getInlineStyleElementsForCurrentScope()), Functions.toStringFunction()));
         retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES.getValue(),
