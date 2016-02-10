@@ -1,8 +1,8 @@
 package com.beligum.blocks.config;
 
-import com.beligum.base.templating.ifaces.Resource;
 import com.beligum.base.server.R;
 import com.beligum.base.server.ifaces.ServerLifecycleListener;
+import com.beligum.base.templating.ifaces.Resource;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.search.ElasticSearch;
@@ -33,6 +33,9 @@ public class ServerStartStopListener implements ServerLifecycleListener
     {
         //let all .html files pass through our HtmlParser
         R.resourceFactory().registerParser(Resource.MimeType.HTML, new HtmlParser());
+
+        //we might as well pre-load the templates here
+        HtmlParser.getTemplateCache();
 
         //this will boot the transaction manager (and possibly do a restore)
         try {

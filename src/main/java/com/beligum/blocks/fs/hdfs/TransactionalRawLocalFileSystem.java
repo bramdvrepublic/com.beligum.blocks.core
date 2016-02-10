@@ -496,7 +496,6 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
         //Sync this with the release filter code
         if (!R.cacheManager().getRequestCache().containsKey(CacheKeys.XADISK_REQUEST_TRANSACTION)) {
             Session tx = this.xafs.createSessionForLocalTransaction();
-            //XASession tx = this.xafs.createSessionForXATransaction();
             //NOTE ACTIVATE FOR DEBUG ONLY!!!!!
             //tx.setTransactionTimeout(60 * 10);
             R.cacheManager().getRequestCache().put(CacheKeys.XADISK_REQUEST_TRANSACTION, new XADiskRequestCacheEntry(this, tx));

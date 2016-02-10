@@ -15,16 +15,16 @@
                     #if($templates.isEmpty())
                         <i>$MESSAGES.blocks.core.noPageTemplatesAvailable</i>
                     #end
-                    #foreach($template in $templates)
-                        <a href="/blocks/admin/page/template?page_url=$TOOLKIT.esc.url($url)&page_class_name=$TOOLKIT.esc.url($template.get("name"))" class="list-group-item">
+
+                    #foreach($template in $CONTEXT[$NEW_PAGE_TEMPLATE_TEMPLATES])
+                        <a href="/blocks/admin/page/template?page_url=$TOOLKIT.esc.url($CONTEXT[$NEW_PAGE_TEMPLATE_URL]))&page_class_name=$TOOLKIT.esc.url($template[$NEW_PAGE_TEMPLATE_NAME])" class="list-group-item">
                             <div class="preview">
                                 <i class="fa fa-fw #if($template.icon)$template.icon#{else}fa-list-alt#end"></i>
                             </div>
                             <div class="caption">
-                                <h4>$template.title</h4>
-
+                                <h4>$template[$NEW_PAGE_TEMPLATE_TITLE]</h4>
                                 <p>
-                                    $template.description
+                                    $template[$NEW_PAGE_TEMPLATE_DESCRIPTION]
                                 </p>
                             </div>
                         </a>

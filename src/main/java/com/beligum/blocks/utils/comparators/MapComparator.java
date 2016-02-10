@@ -15,12 +15,23 @@ public class MapComparator implements Comparator<Map<String, String>>
         this.key = key;
     }
 
-    public int compare(Map<String, String> first,
-                       Map<String, String> second)
+    public int compare(Map<String, String> first, Map<String, String> second)
     {
-        // TODO: Null checking, both for maps and values
-        String firstValue = first.get(key);
-        String secondValue = second.get(key);
-        return firstValue.compareTo(secondValue);
+        String l = "";
+        String r = "";
+        if (first != null) {
+            String val = first.get(key);
+            if (val != null) {
+                l = val;
+            }
+        }
+        if (second != null) {
+            String val = second.get(key);
+            if (val != null) {
+                r = val;
+            }
+        }
+
+        return l.compareTo(r);
     }
 }

@@ -37,6 +37,11 @@ public class HdfsResource extends AbstractResource
         return this.fileContext.open(this.hdfsPath);
     }
     @Override
+    public boolean exists() throws IOException
+    {
+        return this.fileContext.util().exists(this.hdfsPath);
+    }
+    @Override
     public long getLastModifiedTime() throws IOException
     {
         return Math.max((this.fileContext == null ? 0 : this.fileContext.getFileStatus(this.hdfsPath).getModificationTime()), this.getChildrenLastModificationTime());

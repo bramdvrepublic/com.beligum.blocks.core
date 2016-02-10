@@ -137,7 +137,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
             //don't add an empty panel
             if (addedOptions) {
-                this.appendWindowToSidebar(Constants.CONTEXT, windowID);
+                this.appendWindowToSidebar(Constants.SIDEBAR_CONTEXT_ID, windowID);
                 title = windowTitle;
             }
         }
@@ -276,10 +276,10 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
     {
         var div = this.getWindowForId(id);
 
-        if (type == Constants.CONTEXT) {
+        if (type == Constants.SIDEBAR_CONTEXT_ID) {
             $("#" + Constants.SIDEBAR_CONTEXT_ID).append(div);
         }
-        else if (type == Constants.FINDER) {
+        else if (type == Constants.SIDEBAR_FILES_ID) {
             $("#" + Constants.SIDEBAR_FILES_ID).append(div);
         }
 
@@ -301,7 +301,7 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
         //now create and add a new frame
         var windowID = SideBar.createWindow(null, "Files on server");
-        SideBar.appendWindowToSidebar(Constants.FINDER, windowID);
+        SideBar.appendWindowToSidebar(Constants.SIDEBAR_FILES_ID, windowID);
         //let's us do perform some css tweaks
         var frame = SideBar.getWindowForId(windowID);
         frame.addClass(Constants.SIDEBAR_FINDER_PANEL_CLASS);
