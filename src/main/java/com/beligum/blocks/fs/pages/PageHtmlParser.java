@@ -36,8 +36,6 @@ public class PageHtmlParser
     {
         Source source = new Source(html);
 
-        OutputDocument outputDocument = new OutputDocument(new Source(""));
-
         HtmlTemplate currentTemplate = null;
         Element htmlElement = source.getFirstElement(HtmlParser.HTML_ROOT_ELEM);
         String pageTemplateName = htmlElement.getAttributeValue(HtmlParser.HTML_ROOT_TEMPLATE_ATTR);

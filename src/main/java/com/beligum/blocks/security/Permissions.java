@@ -20,9 +20,12 @@ public class Permissions implements PermissionsConfigurator
     //-----ROLES-----
 
     //-----PERMISSIONS-----
-    public enum Action {
-        PAGE_CREATE("page:create"),
-        PAGE_MODIFY("page:modify"),
+    public enum Action
+    {
+        PAGE_CREATE(PAGE_CREATE_PERMISSION_STRING),
+        PAGE_MODIFY(PAGE_MODIFY_PERMISSION_STRING),
+        PAGE_DELETE(PAGE_DELETE_PERMISSION_STRING),
+
         ;
 
         Permission permission;
@@ -40,13 +43,27 @@ public class Permissions implements PermissionsConfigurator
             return this.permission.toString();
         }
     }
+    //to use in annotations
+    /**
+     * Note: only use this if you can't use the above enum (eg. only in @RequiresPermissions annotations)
+     */
+    public static final String PAGE_CREATE_PERMISSION_STRING = "page:create";
+    /**
+     * Note: only use this if you can't use the above enum (eg. only in @RequiresPermissions annotations)
+     */
+    public static final String PAGE_MODIFY_PERMISSION_STRING = "page:modify";
+    /**
+     * Note: only use this if you can't use the above enum (eg. only in @RequiresPermissions annotations)
+     */
+    public static final String PAGE_DELETE_PERMISSION_STRING = "page:delete";
 
     //-----ROLE/PERMISSION MAPPINGS-----
     private static final Map<PermissionRole, ImmutableSet<Permission>> PERMISSIONS =
                     ImmutableMap.of(
                                     PermissionsConfigurator.ROLE_ADMIN, ImmutableSet.of(
                                                     Action.PAGE_CREATE.getPermission(),
-                                                    Action.PAGE_MODIFY.getPermission()
+                                                    Action.PAGE_MODIFY.getPermission(),
+                                                    Action.PAGE_DELETE.getPermission()
                                     )
                     );
 

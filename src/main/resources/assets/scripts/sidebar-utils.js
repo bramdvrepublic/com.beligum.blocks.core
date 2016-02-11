@@ -113,7 +113,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "messages.bloc
         }
 
         var inputGroup = $('<div class="input-group"></div>').appendTo(formGroup);
-        var input = $('<input ' + id + ' type="range" class="form-control" min="0" max="' + (values.length - 1) + '" step="1" value="' + initValue + '">').appendTo(inputGroup);
+        var input = $('<input id="' + id + '" type="range" class="form-control" min="0" max="' + (values.length - 1) + '" step="1" value="' + initValue + '">').appendTo(inputGroup);
 
         //init the bootstrap-slider (see https://github.com/seiyria/bootstrap-slider)
         input.slider({
@@ -281,7 +281,7 @@ base.plugin("blocks.core.SidebarUtils", ["constants.blocks.core", "messages.bloc
             var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
         }
         var inputGroup = $('<div class="input-group ' + BlocksConstants.INPUT_WITH_BUTTONS_CLASS + '"></div>').appendTo(formGroup);
-        var input = $('<input ' + id + ' type="text" class="form-control" placeholder="' + placeholderText + '">').appendTo(inputGroup);
+        var input = $('<input id="' + id + '" type="text" class="form-control" placeholder="' + placeholderText + '">').appendTo(inputGroup);
 
         var oldVal = '';
         if (getterFunction) {

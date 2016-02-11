@@ -128,8 +128,6 @@ public class EBUCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
     public void updateFileData() throws IOException
     {
         super.updateFileData();
-
-
     }
     @Override
     public void updateCreator(Person creator) throws IOException

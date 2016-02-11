@@ -105,7 +105,7 @@ public class PageEndpointOld
         PersonRepository personRepository = new PersonRepository();
 
         //Note: the true flag: compacting helps minimizing the whitespace of the JSONLD properties
-        HtmlSource source = new HtmlStringSource(content, uri, true);
+        HtmlSource source = new HtmlStringSource(content, uri);
 
         //save the file to disk and pull all the proxies etc
         //TODO this should probably honour our watch system and just write the HTML, no?

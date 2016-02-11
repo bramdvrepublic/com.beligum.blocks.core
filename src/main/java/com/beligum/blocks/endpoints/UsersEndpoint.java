@@ -35,17 +35,17 @@ public class UsersEndpoint extends AbstractUsersEndpoint
     @Override
     protected ReverseRoute getLoginRedirect()
     {
-        return ApplicationEndpointRoutes.getPageWithId("");
+        return ApplicationEndpointRoutes.getPage("");
     }
     @Override
     protected ReverseRoute getLogoutRedirect()
     {
-        return ApplicationEndpointRoutes.getPageWithId("");
+        return ApplicationEndpointRoutes.getPage("");
     }
     @Override
     protected ReverseRoute getEmailCallbackRedirect()
     {
-        return ApplicationEndpointRoutes.getPageWithId("");
+        return ApplicationEndpointRoutes.getPage("");
     }
 
     //-----PROTECTED METHODS-----

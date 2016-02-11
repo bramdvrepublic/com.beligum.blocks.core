@@ -13,10 +13,8 @@ import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.fs.pages.ifaces.PageStore;
 import com.beligum.blocks.rdf.ifaces.Source;
-import org.apache.hadoop.fs.CreateFlag;
-import org.apache.hadoop.fs.FileContext;
-import org.apache.hadoop.fs.Options;
-import org.apache.hadoop.fs.Path;
+import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.joda.time.DateTime;
 
@@ -62,7 +60,93 @@ public class SimplePageStore implements PageStore
         Page retVal = null;
 
         //create this here, so we don't boot the filesystem on validation error
-        URI validUri = DefaultPageImpl.create(source.getBaseUri());
+        URI validUri = DefaultPageImpl.create(source.getBaseUri(), false);
+
+        //now execute the FS changes
+        FileContext fs = Settings.instance().getPageStoreFileSystem();
+
+        PathInfo pathInfo = new HdfsPathInfo(fs, validUri);
+        //we need to use the abstract type here to have access to the package private setters
+        AbstractPage page = new DefaultPageImpl(pathInfo);
+
+        try (LockFile lock = pathInfo.acquireLock()) {
+
+            //prepare the HTML for saving
+            source.prepareForSaving(true, true);
+
+            //we'll read everything into a string for ease of use
+            String sourceHtml;
+            try (InputStream is = source.openNewInputStream()) {
+                sourceHtml = IOUtils.toString(is);
+            }
+
+            //pre-calculate the hash based on the incoming string and compare it with the stored version to abort early if nothing changed
+            String newHash = HdfsPathInfo.calcHashChecksumFor(new ByteArrayInputStream(sourceHtml.getBytes()));
+            Path hashFile = pathInfo.getMetaHashFile();
+            boolean nothingChanged = false;
+            if (fs.util().exists(hashFile)) {
+                try (FSDataInputStream is = fs.open(hashFile)) {
+                    String existingHash = IOUtils.toString(is);
+                    nothingChanged = existingHash!=null && existingHash.equals(newHash);
+                }
+            }
+
+            //for now, we'll return null if nothing changed
+            if (nothingChanged) {
+                retVal = null;
+            }
+            else {
+                //make sure the path dirs exist
+                //Note: this also works for dirs, since they're special files inside the actual dir
+                fs.mkdir(pathInfo.getPath().getParent(), FsPermission.getDirDefault(), true);
+
+                //we're overwriting; make an entry in the history folder
+                //TODO maybe we want to make this asynchronous?
+                if (fs.util().exists(pathInfo.getPath())) {
+                    this.addHistoryEntry(fs, pathInfo);
+                }
+
+                //save the HASH of the file
+                //TODO make this uniform with the watch code
+                try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(hashFile, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
+                    writer.write(newHash);
+                }
+
+                //save the original page html
+                try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(pathInfo.getPath(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
+                    writer.write(sourceHtml);
+                }
+
+                //save the normalized page html
+                Path normalizedHtml = page.getNormalizedPageProxyPath();
+                try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(normalizedHtml, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
+                    writer.write(new PageHtmlParser().parse(sourceHtml, source.getBaseUri(), true));
+                }
+
+                //parse and set the RDF model
+                page.setRDFModel(page.createImporter().importDocument(source));
+
+                //export the RDF model to the storage file (JSON-LD)
+                try (OutputStream os = fs.create(page.getExportFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
+                    page.createExporter().exportModel(page.getRDFModel(), os);
+                }
+
+                //save the page metadata (read it in if it exists)
+                this.writeMetadata(fs, pathInfo, creator, page.createMetadataWriter());
+
+                retVal = page;
+            }
+        }
+
+        return retVal;
+    }
+    @Override
+    public Page delete(URI uri, Person deleter) throws IOException
+    {
+        Page retVal = null;
+
+        //create this here, so we don't boot the filesystem on validation error
+        URI validUri = DefaultPageImpl.create(uri, false);
 
         //now execute the FS changes
         FileContext fs = Settings.instance().getPageStoreFileSystem();
@@ -77,46 +161,26 @@ public class SimplePageStore implements PageStore
             //Note: this also works for dirs, since they're special files inside the actual dir
             fs.mkdir(pathInfo.getPath().getParent(), FsPermission.getDirDefault(), true);
 
+            //save the page metadata BEFORE we create the history entry (to make sure we save who deleted it)
+            this.writeMetadata(fs, pathInfo, deleter, page.createMetadataWriter());
+
             //we're overwriting; make an entry in the history folder
             //TODO maybe we want to make this asynchronous?
-            PathInfo historyEntry = null;
             if (fs.util().exists(pathInfo.getPath())) {
-                historyEntry = this.addHistoryEntry(fs, pathInfo);
+                this.addHistoryEntry(fs, pathInfo);
             }
 
-            //we'll read everything into a string for ease of use
-            String sourceHtml;
-            try (InputStream is = source.openNewInputStream()) {
-                sourceHtml = org.apache.commons.io.IOUtils.toString(is);
+            //delete the original page html and leave the rest alone
+            fs.delete(pathInfo.getPath(), false);
+
+            //list everything under meta folder and delete it, except for the HISTORY folder
+            RemoteIterator<FileStatus> metaEntries = fs.listStatus(pathInfo.getMetaFolder());
+            while (metaEntries.hasNext()) {
+                FileStatus child = metaEntries.next();
+                if (!child.getPath().equals(pathInfo.getMetaHistoryFolder())) {
+                    fs.delete(child.getPath(), true);
+                }
             }
-
-            //save the original page html
-            try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(pathInfo.getPath(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
-                writer.write(sourceHtml);
-            }
-
-            //save the normalized page html
-            Path normalizedHtml = page.getNormalizedPageProxyPath();
-            try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(normalizedHtml, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
-                writer.write(new PageHtmlParser().parse(sourceHtml, source.getBaseUri(), true));
-            }
-
-            //parse and set the RDF model
-            page.setRDFModel(page.createImporter().importDocument(source));
-
-            //export the RDF model to the storage file (JSON-LD)
-            try (OutputStream os = fs.create(page.getExportFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
-                page.createExporter().exportModel(page.getRDFModel(), os);
-            }
-
-            //save the HASH of the file
-            //TODO make this uniform with the watch code
-            try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(pathInfo.getMetaHashFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
-                writer.write(pathInfo.calcHashChecksum());
-            }
-
-            //save the page metadata (read it in if it exists)
-            this.writeMetadata(fs, pathInfo, creator, page.createMetadataWriter());
 
             retVal = page;
         }

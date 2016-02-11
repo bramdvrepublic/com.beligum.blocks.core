@@ -100,9 +100,9 @@ public class ApplicationEndpointOld
     public Response getPageNew(@PathParam("randomPage") String randomURLPath) throws Exception
     {
         URI requestedURI = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
-        URI validUri = DefaultPageImpl.create(requestedURI);
+        URI validUri = DefaultPageImpl.create(requestedURI, true);
 
-        FileContext fs = Settings.instance().getPageStoreFileSystem();
+        FileContext fs = Settings.instance().getPageViewFileSystem();
         PathInfo pathInfo = new HdfsPathInfo(fs, validUri);
 
         final Page page = new DefaultPageImpl(pathInfo);

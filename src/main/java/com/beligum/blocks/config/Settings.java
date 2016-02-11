@@ -11,6 +11,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.AbstractFileSystem;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileContext;
+import org.apache.hadoop.fs.FsConstants;
+import org.apache.hadoop.fs.local.RawLocalFs;
 import org.apache.jena.query.Dataset;
 import org.apache.jena.tdb.TDBFactory;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
@@ -34,7 +36,10 @@ public class Settings
     private static final String DEFAULT_LOCK_FILE_EXT = ".lock";
 
     private static final Class<? extends AbstractFileSystem> DEFAULT_TX_FILESYSTEM = TransactionalRawLocalFS.class;
-    private static final String DEFAULT_TX_FILESYSTEM_SCHEMA = TransactionalRawLocalFileSystem.SCHEME;
+    private static final String DEFAULT_TX_FILESYSTEM_SCHEME = TransactionalRawLocalFileSystem.SCHEME;
+
+    private static final Class<? extends AbstractFileSystem> DEFAULT_PAGES_VIEW_FS = RawLocalFs.class;
+    private static final String DEFAULT_PAGES_VIEW_FS_SCHEME = FsConstants.LOCAL_FS_URI.getScheme();
 
     private static final String DEFAULT_XADISK_INSTANCE_ID = "xa-1";
     private static final long DEFAULT_XADISK_BOOT_TIMEOUT = 60 * 1000; //1 minute
@@ -48,6 +53,7 @@ public class Settings
     private URI cachedSiteDomain;
     private URI defaultRdfSchema;
     private URI cachedPagesStorePath;
+    private URI cachedPagesViewPath;
     private File cachedPagesStoreJournalDir;
     protected HashMap<String, String> cachedHdfsProperties = null;
     protected HashMap<String, String> cachedEsProperties = null;
@@ -135,13 +141,38 @@ public class Settings
 
             if (StringUtils.isEmpty(this.cachedPagesStorePath.getScheme())) {
                 //make sure we have a schema
-                this.cachedPagesStorePath = URI.create(DEFAULT_TX_FILESYSTEM_SCHEMA + "://" + this.cachedPagesStorePath.toString());
-                Logger.warn("The page store path doesn't have a schema, adding the HDFS '" + DEFAULT_TX_FILESYSTEM_SCHEMA + "://' prefix to use the local transactional file system; " +
+                this.cachedPagesStorePath = URI.create(DEFAULT_TX_FILESYSTEM_SCHEME + "://" + this.cachedPagesStorePath.toString());
+                Logger.warn("The page store path doesn't have a schema, adding the HDFS '" + DEFAULT_TX_FILESYSTEM_SCHEME + "://' prefix to use the local transactional file system; " +
                             this.cachedPagesStorePath.toString());
             }
         }
 
         return this.cachedPagesStorePath;
+    }
+    public URI getPagesViewPath()
+    {
+        if (this.cachedPagesViewPath == null) {
+            String path = R.configuration().getString("blocks.core.pages.view-path", null);
+            if (path == null) {
+                this.cachedPagesViewPath = URI.create(DEFAULT_PAGES_VIEW_FS_SCHEME + ":" + this.getPagesStorePath().getSchemeSpecificPart());
+                Logger.info("No pages view store path configured, trying to build a local view path based on the pages store path; " + this.cachedPagesViewPath);
+            }
+            else {
+                //this is used to resolve files on, so make sure it's always a formal directory
+                if (!path.endsWith("/")) {
+                    path += "/";
+                }
+                this.cachedPagesViewPath = URI.create(path);
+            }
+
+            if (StringUtils.isEmpty(this.cachedPagesViewPath.getScheme())) {
+                //make sure we have a schema
+                this.cachedPagesViewPath = URI.create(DEFAULT_PAGES_VIEW_FS_SCHEME + "://" + this.cachedPagesViewPath.toString());
+                Logger.warn("The page store path doesn't have a schema, adding the HDFS '" + DEFAULT_PAGES_VIEW_FS_SCHEME + "://' prefix to use the local file system; " + this.cachedPagesViewPath.toString());
+            }
+        }
+
+        return this.cachedPagesViewPath;
     }
     public File getPagesStoreJournalDir()
     {
@@ -217,20 +248,22 @@ public class Settings
      */
     public FileContext getPageStoreFileSystem() throws IOException
     {
-        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGE_FS_CONFIG)) {
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGESTORE_FS_CONFIG)) {
             Configuration conf = new Configuration();
             URI pageStorePath = this.getPagesStorePath();
             if (StringUtils.isEmpty(pageStorePath.getScheme())) {
                 //make sure we have a schema
-                pageStorePath = URI.create(DEFAULT_TX_FILESYSTEM_SCHEMA + "://" + pageStorePath.toString());
-                Logger.warn("The page store path doesn't have a schema, adding the HDFS " + DEFAULT_TX_FILESYSTEM_SCHEMA + "'://' prefix to use the local transactional file system; " +
+                pageStorePath = URI.create(DEFAULT_TX_FILESYSTEM_SCHEME + "://" + pageStorePath.toString());
+                Logger.warn("The page store path doesn't have a schema, adding the HDFS " + DEFAULT_TX_FILESYSTEM_SCHEME + "'://' prefix to use the local transactional file system; " +
                             pageStorePath.toString());
             }
             conf.set(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, pageStorePath.toString());
 
-            // don't forget to register our custom FS so it can be found by HDFS
-            // Note: below we have a change to override this again with the conf
-            conf.set("fs.AbstractFileSystem." + DEFAULT_TX_FILESYSTEM_SCHEMA + ".impl", DEFAULT_TX_FILESYSTEM.getCanonicalName());
+            if (pageStorePath.getScheme().equals(DEFAULT_TX_FILESYSTEM_SCHEME)) {
+                // don't forget to register our custom FS so it can be found by HDFS
+                // Note: below we have a chance to override this again with the conf
+                conf.set("fs.AbstractFileSystem." + DEFAULT_TX_FILESYSTEM_SCHEME + ".impl", DEFAULT_TX_FILESYSTEM.getCanonicalName());
+            }
 
             //note: if fs.defaultFS is set here, this might overwrite the path above
             Map<String, String> extraProperties = this.getPagesHdfsProperties();
@@ -243,13 +276,52 @@ public class Settings
                 }
             }
 
-            R.cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGE_FS_CONFIG, conf);
+            R.cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGESTORE_FS_CONFIG, conf);
 
             //boot the XADisk instance too (probably still null here, good place to test them together)
             this.getPageStoreTransactionManager();
         }
 
-        return FileContext.getFileContext((Configuration) R.cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGE_FS_CONFIG));
+        return FileContext.getFileContext((Configuration) R.cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGESTORE_FS_CONFIG));
+    }
+    /**
+     * @return this returns a NEW filesystem, that needs to be (auto) closed
+     */
+    public FileContext getPageViewFileSystem() throws IOException
+    {
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG)) {
+            Configuration conf = new Configuration();
+            URI pageViewPath = this.getPagesViewPath();
+            if (StringUtils.isEmpty(pageViewPath.getScheme())) {
+                //make sure we have a schema
+                pageViewPath = URI.create(DEFAULT_PAGES_VIEW_FS_SCHEME + "://" + pageViewPath.toString());
+                Logger.warn("The page store path doesn't have a schema, adding the HDFS " + DEFAULT_PAGES_VIEW_FS_SCHEME + "'://' prefix to use the local file system; " +
+                            pageViewPath.toString());
+            }
+            conf.set(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, pageViewPath.toString());
+
+            if (pageViewPath.getScheme().equals(DEFAULT_PAGES_VIEW_FS_SCHEME)) {
+                // don't forget to register our custom FS so it can be found by HDFS
+                // Note: below we have a chance to override this again with the conf
+                conf.set("fs.AbstractFileSystem." + DEFAULT_PAGES_VIEW_FS_SCHEME + ".impl", DEFAULT_PAGES_VIEW_FS.getCanonicalName());
+            }
+
+            //note: if fs.defaultFS is set here, this might overwrite the path above
+            //Hmm, maybe this should be splitted in store/view properties, but let's keep it like this, for now
+            Map<String, String> extraProperties = this.getPagesHdfsProperties();
+            if (extraProperties != null) {
+                for (Map.Entry<String, String> entry : extraProperties.entrySet()) {
+                    if (entry.getKey().equals(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY)) {
+                        Logger.warn("Watch out, your HDFS settings overwrite the pages view path; " + entry.getValue());
+                    }
+                    conf.set(entry.getKey(), entry.getValue());
+                }
+            }
+
+            R.cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG, conf);
+        }
+
+        return FileContext.getFileContext((Configuration) R.cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGEVIEW_FS_CONFIG));
     }
     public XAFileSystem getPageStoreTransactionManager() throws IOException
     {
@@ -313,12 +385,6 @@ public class Settings
             return (Dataset) R.cacheManager().getApplicationCache().get(CacheKeys.RDF_DATASET);
         }
     }
-
-
-
-
-
-
 
     //TODO revise these below:
     public URI getDefaultRdfSchema()

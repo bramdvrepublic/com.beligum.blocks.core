@@ -279,7 +279,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     $(document).on("click", "." + BlocksConstants.SAVE_PAGE_BUTTON, function (event)
     {
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
-        //Sidebar.resetOld();
+        //the idea is to send the entire page to the server and let it only save the correct tags (eg. with property and data-property attributes)
         // remove the widths from the containers
         $(".container").removeAttr("style");
         var page = $("html")[0].outerHTML;

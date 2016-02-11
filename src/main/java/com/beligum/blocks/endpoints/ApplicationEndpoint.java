@@ -5,7 +5,6 @@ import com.beligum.base.resources.ResourceRequestImpl;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
-import com.beligum.base.templating.ifaces.TemplateContext;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.HdfsPathInfo;
@@ -50,13 +49,13 @@ public class ApplicationEndpoint
     }
     @Path("/{randomPage:.*}")
     @GET
-    public Response getPageNew(@PathParam("randomPage") String randomURLPath) throws Exception
+    public Response getPage(@PathParam("randomPage") String randomURLPath) throws Exception
     {
         //security; rebuild the url instead of blindly accepting what comes in
         URI requestedUri = Settings.instance().getSiteDomain().resolve("/"+randomURLPath).normalize();
 
-        FileContext fs = Settings.instance().getPageStoreFileSystem();
-        URI fsPageUri = DefaultPageImpl.create(requestedUri);
+        FileContext fs = Settings.instance().getPageViewFileSystem();
+        URI fsPageUri = DefaultPageImpl.create(requestedUri, true);
         Page page = new DefaultPageImpl(new HdfsPathInfo(fs, fsPageUri));
         // Since we allow the user to create pretty url's, it's mime type will not always be clear.
         // But not this endpoint only accepts HTML requests, so force the mime type
@@ -68,7 +67,7 @@ public class ApplicationEndpoint
 
             //this will allow the blocks javascript/css to be included if we're logged in and have permission
             if (SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
-                this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template.getContext());
+                this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template);
             }
 
             retVal = Response.ok(template);
@@ -89,6 +88,7 @@ public class ApplicationEndpoint
                     newPageTemplateName = (String) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_TEMPLATE_NAME.name());
                 }
 
+                //by using the flash cache, we keep the final URL clean and simulate a little session
                 if (!StringUtils.isEmpty(newPageTemplateName)) {
                     //check if the name exists and is all right
                     HtmlTemplate pageTemplate = HtmlParser.getTemplateCache().getByTagName(newPageTemplateName);
@@ -96,7 +96,7 @@ public class ApplicationEndpoint
                         Template newPageInstance = R.templateEngine().getNewTemplate(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), pageTemplate.createNewHtmlInstance());
 
                         //this will allow the blocks javascript/css to be included
-                        this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, newPageInstance.getContext());
+                        this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, newPageInstance);
 
                         retVal = Response.ok(newPageInstance);
                     }
@@ -120,13 +120,13 @@ public class ApplicationEndpoint
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private void setBlocksMode(HtmlTemplate.ResourceScopeMode mode, TemplateContext context)
+    private void setBlocksMode(HtmlTemplate.ResourceScopeMode mode, Template template)
     {
         //this one is used by HtmlParser to test if we need to include certain tags
         R.cacheManager().getRequestCache().put(CacheKeys.BLOCKS_MODE, mode);
 
         //for velocity templates
-        context.set(CacheKeys.BLOCKS_MODE.name(), mode.name());
+        template.getContext().set(CacheKeys.BLOCKS_MODE.name(), mode.name());
     }
     private List<Map<String, String>> buildLocalizedPageTemplateMap()
     {

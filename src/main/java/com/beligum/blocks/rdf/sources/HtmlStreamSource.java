@@ -21,10 +21,6 @@ public class HtmlStreamSource extends HtmlSource
     //-----CONSTRUCTORS-----
     public HtmlStreamSource(URI stream, URI baseUri) throws IOException, URISyntaxException
     {
-        this(stream, baseUri, false);
-    }
-    public HtmlStreamSource(URI stream, URI baseUri, boolean compact) throws IOException, URISyntaxException
-    {
         super(baseUri);
 
         InputStream is = null;
@@ -47,7 +43,7 @@ public class HtmlStreamSource extends HtmlSource
             }
         }
 
-        this.initJSoupDocument(compact);
+        this.init();
     }
 
     //-----PUBLIC METHODS-----

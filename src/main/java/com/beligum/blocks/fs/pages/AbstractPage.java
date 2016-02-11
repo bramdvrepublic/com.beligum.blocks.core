@@ -26,7 +26,7 @@ public abstract class AbstractPage implements Page
     private Model rdfModel;
 
     //-----CONSTRUCTORS-----
-    public static URI create(URI uri) throws IOException
+    public static URI create(URI uri, boolean readOnly) throws IOException
     {
         Settings settings = Settings.instance();
 
@@ -42,7 +42,8 @@ public abstract class AbstractPage implements Page
         }
 
         //note: we normalize before resolving for safety
-        URI tempPagePath = settings.getPagesStorePath().resolve(relativeUrl.normalize());
+        URI base = readOnly ? settings.getPagesViewPath() : settings.getPagesStorePath();
+        URI tempPagePath = base.resolve(relativeUrl.normalize());
 
         //this is important: if the url ends with a slash, we're actually saving a 'directory', so it doesn't have a name (will become 'index' later on)
         String pageName = null;

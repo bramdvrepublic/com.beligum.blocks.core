@@ -44,7 +44,8 @@ public class SesameImporter extends AbstractImporter
             parser.parse(is, source.getBaseUri().toString());
         }
         catch (OpenRDFException e) {
-            throw new IOException(e);
+            //when an exception is thrown, it's very handy to have the html source code, so add it to the exception
+            throw new IOException(source.toString(), e);
         }
 
         //convert sesame to jena model

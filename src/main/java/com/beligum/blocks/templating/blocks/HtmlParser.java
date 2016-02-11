@@ -47,6 +47,7 @@ public class HtmlParser implements Parser
     public static final String HTML_ROOT_ELEM = "html";
     public static final String WEBCOMPONENTS_TEMPLATE_ELEM = "template";
     public static final String HTML_ROOT_TEMPLATE_ATTR = "template";
+    public static final String HTML_ROOT_ARGS_VARIABLE_NAME = "HTML_TAG_ARGS";
 
     //-----CONSTRUCTORS-----
     public HtmlParser()
@@ -69,10 +70,8 @@ public class HtmlParser implements Parser
     public InputStream parse(Resource resource) throws IOException
     {
         try {
-            Source source = new Source(this.eatVelocityComments(resource));
-
             //the solves a lot of issues with inactive lines
-            //String sourceStr = eatVelocityComments(rawSource);
+            Source source = new Source(this.eatVelocityComments(resource));
 
             boolean htmlPage = source.getFirstElement(HTML_ROOT_ELEM) != null;
             HtmlTemplate sourceTemplate = null;
@@ -240,8 +239,7 @@ public class HtmlParser implements Parser
                             // but watch out: an <img> element doens't have and end tag, so check for null
                             if (!isVoidTag) {
                                 if (immediateChild.getEndTag() != null) {
-                                    while (iter.hasNext() && !iter.next().equals(immediateChild.getEndTag()))
-                                        ;
+                                    while (iter.hasNext() && !iter.next().equals(immediateChild.getEndTag()));
                                 }
                             }
 
@@ -315,6 +313,26 @@ public class HtmlParser implements Parser
                         }
                         //close the start tag
                         builder.append(">").append("\n");
+                    }
+                    // page templates are never rendered out (because their 'instance' is actually the <html> element)
+                    // but we use a little trick to render the arguments of their instance tag: we set a special velocity variable
+                    // that is added to the <html> tag (eg. <html $!HTML_TAG_ARGS>)
+                    else if (htmlTemplate instanceof PageTemplate) {
+                        if (!attributes.isEmpty()) {
+                            //quick loop to remove empty attributes (we want as little as possible in the <html> tag)
+                            Iterator<Map.Entry<String, String>> attIter = attributes.entrySet().iterator();
+                            while (attIter.hasNext()) {
+                                if (StringUtils.isEmpty(attIter.next().getValue())) {
+                                    attIter.remove();
+                                }
+                            }
+
+                            //we use a regular #define because we don't have a stack context yet (no very problematic because we only have one page template per page)
+                            if (!attributes.isEmpty()) {
+                                //note: don't worry about a leading space that separates the value of the variable with the "html" word in the <html> tag, because generateHTML generates it
+                                builder.append("#define($").append(HTML_ROOT_ARGS_VARIABLE_NAME).append(")").append(Attributes.generateHTML(attributes)).append("#end").append("\n");
+                            }
+                        }
                     }
 
                     // push the controller with the tag-attributes as arguments

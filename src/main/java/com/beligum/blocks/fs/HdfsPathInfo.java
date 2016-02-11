@@ -129,8 +129,8 @@ public class HdfsPathInfo implements PathInfo
     {
         String retVal = null;
 
-        try (InputStream is = this.fileContext.open(this.getPath())) {
-            retVal = DigestUtils.sha1Hex(is);
+        try (InputStream is = fileContext.open(path)) {
+            retVal = calcHashChecksumFor(is);
         }
 
         return retVal;
@@ -190,6 +190,12 @@ public class HdfsPathInfo implements PathInfo
                 }
             }
         }
+    }
+
+    //-----UTILITY METHODS-----
+    public static String calcHashChecksumFor(InputStream is) throws IOException
+    {
+        return DigestUtils.sha1Hex(is);
     }
 
     //-----PROTECTED METHODS-----

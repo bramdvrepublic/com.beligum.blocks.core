@@ -42,6 +42,7 @@ public class XADiskTransactionFilter implements ContainerResponseFilter
                         //this is the general case: try to commit and (try to) rollback on error
                         try {
                             tx.xaSession.commit();
+                            tx.xaSession = null;
                         }
                         catch (Exception xaae) {
                             try {

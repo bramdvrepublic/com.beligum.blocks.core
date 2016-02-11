@@ -321,8 +321,6 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     private FSDataOutputStream create(Path f, boolean overwrite, boolean createParent, int bufferSize, short replication, long blockSize, Progressable progress, FsPermission permission)
                     throws IOException
     {
-        Session tx = this.getRequestScopedTransaction();
-
         if (exists(f) && !overwrite) {
             throw new FileAlreadyExistsException("File already exists: " + f);
         }
@@ -336,9 +334,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     }
     protected OutputStream createOutputStreamWithMode(Path f, boolean append, FsPermission permission) throws IOException
     {
-        Session tx = this.getRequestScopedTransaction();
-
-        return new LocalFSFileOutputStream(tx, f, append, permission);
+        return new LocalFSFileOutputStream(this.getRequestScopedTransaction(), f, append, permission);
     }
     protected boolean mkOneDirWithMode(Session tx, Path p, File p2f, FsPermission permission) throws IOException
     {
@@ -429,10 +425,14 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
                 long length = isDir ? 0 : tx.getFileLength(f);
                 int blockReplication = 1;
                 long blockSize = this.getDefaultBlockSize(p);
-                //don't really know what to return here
-                long modificationTime = 0;
+                // same error for dirs as folders, don't really know what to do
+                long modificationTime = isDir ? 0 : tx.getFileLastModified(f);
+                long accessTime = 0;
+                FsPermission permission = null;
+                String owner = "";
+                String group = "";
 
-                return new FileStatus(length, isDir, blockReplication, blockSize, modificationTime, path);
+                return new FileStatus(length, isDir, blockReplication, blockSize, modificationTime, accessTime, permission, owner, group, path);
             }
             //special case; eg. see FileContext.exists()
             catch (FileNotFoundException e) {

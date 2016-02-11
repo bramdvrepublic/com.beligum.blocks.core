@@ -54,7 +54,7 @@ public class DefaultPageImpl extends AbstractPage
     {
         return new EBUCoreHdfsMetadataWriter(this.pathInfo.getFileContext());
     }
-    //    @Override
+    @Override
     public Path getNormalizedPageProxyPath()
     {
         return new Path(this.pathInfo.getMetaProxyFolder(PAGE_PROXY_NORMALIZED_MIME_TYPE), PAGE_PROXY_NORMALIZED_FILE_NAME);

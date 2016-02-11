@@ -38,7 +38,7 @@ public class PageTemplate extends HtmlTemplate
         // the html of a page always needs to be there and I don't know a reason why we would use the html of a possible parent
 
         // some extra preprocessing is fill in the template attribute with the name of the template
-        // so we know what template was used when the code comes back from the client
+        // so we know which template was used when the code comes back from the client
         Element html = document.getSegment().getFirstElement(HtmlParser.WEBCOMPONENTS_TEMPLATE_ELEM, null);
         if (!html.getName().equalsIgnoreCase(HtmlParser.HTML_ROOT_ELEM)) {
             throw new IOException("Found a template attribute on a non-html element, this shouldn't happen since it's been checked before; " + relativePath);
@@ -50,7 +50,13 @@ public class PageTemplate extends HtmlTemplate
         Map<String, String> attrs = new LinkedHashMap<>();
         templateAttr.populateMap(attrs, true);
         attrs.put(HtmlParser.HTML_ROOT_TEMPLATE_ATTR, this.getTemplateName());
-        document.replace(templateAttr, Attributes.generateHTML(attrs));
+
+        //we updated the approach: instead of copying one single argument to the <html> tag,
+        // we will translate the "<html template>" tag (with it's 'template' placeholder, indicating it's a template)
+        // to this: <html$!{HTML_TAG_ARGS}>
+        // and set the HTML_TAG_ARGS variable while instantiating a page template, so we support all the arguments of the page template instance
+        //document.replace(templateAttr, Attributes.generateHTML(attrs));
+        document.replace(templateAttr, "$!{"+HtmlParser.HTML_ROOT_ARGS_VARIABLE_NAME+"}");
 
         this.setAttributes(attrs);
 

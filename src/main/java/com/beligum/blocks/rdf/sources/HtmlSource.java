@@ -1,7 +1,10 @@
 package com.beligum.blocks.rdf.sources;
 
+import com.beligum.base.i18n.I18nFactory;
 import com.beligum.blocks.rdf.ifaces.Source;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -19,6 +22,7 @@ public abstract class HtmlSource implements Source
     //-----VARIABLES-----
     protected URI baseUri;
     protected Document document;
+    protected Element htmlTag;
 
     //-----CONSTRUCTORS-----
     protected HtmlSource(URI baseUri) throws IOException, URISyntaxException
@@ -33,6 +37,27 @@ public abstract class HtmlSource implements Source
     {
         return baseUri;
     }
+    /**
+     * This does the required (html-universal) processing before writing it to disk.
+     *
+     * @param adjustLanguage flag to modify the "lang" attribute of the <html> tag to the current request language
+     * @param compact enable or disable compacting (non-pretty printing) of the code
+     */
+    @Override
+    public void prepareForSaving(boolean adjustLanguage, boolean compact)
+    {
+        // actually, the html tag can have both the @lang and the @xml:lang attribute.
+        // See https://www.w3.org/TR/html-rdfa/#specifying-the-language-for-a-literal
+        // We'll be a little opportunistic here and adjust all "lang" attributes (ignoring namespaces)
+        if (adjustLanguage) {
+            //see http://tools.ietf.org/html/rfc4646 for ISO guidelines -> "shortest ISO 639 code"
+            this.htmlTag.attr("lang", I18nFactory.instance().getOptimalLocale(this.baseUri).getLanguage());
+        }
+
+        if (compact) {
+            this.document.outputSettings().prettyPrint(false);
+        }
+    }
     @Override
     public InputStream openNewInputStream() throws IOException
     {
@@ -40,7 +65,10 @@ public abstract class HtmlSource implements Source
     }
 
     //-----PROTECTED METHODS-----
-    protected void initJSoupDocument(boolean compact)
+    /**
+     * Initializes the jsoup document.
+     */
+    protected void init() throws IOException
     {
         // Clean the document (doesn't work because it strips the head out)
         //Whitelist whitelist = Whitelist.relaxed();
@@ -49,15 +77,33 @@ public abstract class HtmlSource implements Source
         // Adjust escape mode
         //doc.outputSettings().escapeMode(Entities.EscapeMode.base);
 
-        if (compact) {
-            this.document.outputSettings().prettyPrint(false);
+        //some basic validation and preparsing to make sure we can apply all features later on.
+        // - the document must contain a <html> tag
+        Elements htmlTags = this.document.getElementsByTag("html");
+        if (htmlTags.isEmpty()) {
+            throw new IOException("The supplied HTML value to a HtmlSource wrapper must contain a <html> tag; "+this.getBaseUri());
+        }
+        else {
+            this.htmlTag = htmlTags.first();
         }
 
         //we'll normalize everything to XHTML
         this.document.outputSettings().syntax(Document.OutputSettings.Syntax.xml);
 
+        //make sure the
+
         //no serialization yet, we might have to apply tweaks later on..
     }
 
     //-----PRIVATE METHODS-----
+
+    //-----MANAGEMENT METHODS-----
+    @Override
+    public String toString()
+    {
+        return "HtmlSource{" +
+               "baseUri=" + baseUri +
+               ", document=" + document +
+               '}';
+    }
 }

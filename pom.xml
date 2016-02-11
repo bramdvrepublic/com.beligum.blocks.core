@@ -181,10 +181,12 @@
         </dependency>
 
 
-        <!--
-            Next to the source unpack later on, we need these dependencies too
-            Note that this is a piece out of the pom.xml of the hadoop-hdfs-httpfs project
-        -->
+        <dependency>
+            <groupId>com.beligum.blocks</groupId>
+            <artifactId>blocks-media-commons</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-auth</artifactId>
@@ -425,7 +427,7 @@
             -->
             <groupId>com.beligum.xadisk</groupId>
             <artifactId>xadisk</artifactId>
-            <version>1.2.3-020215</version>
+            <version>1.2.3-020215_PATCHED</version>
         </dependency>
         <dependency>
             <groupId>javax.resource</groupId>
