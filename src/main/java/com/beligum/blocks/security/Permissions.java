@@ -57,6 +57,7 @@ public class Permissions implements PermissionsConfigurator
      */
     public static final String PAGE_DELETE_PERMISSION_STRING = "page:delete";
 
+
     //-----ROLE/PERMISSION MAPPINGS-----
     private static final Map<PermissionRole, ImmutableSet<Permission>> PERMISSIONS =
                     ImmutableMap.of(

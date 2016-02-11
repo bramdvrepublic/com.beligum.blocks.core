@@ -1,9 +1,14 @@
 package com.beligum.blocks.endpoints;
 
 import com.beligum.base.auth.repositories.PersonRepository;
+import com.beligum.base.i18n.I18nFactory;
+import com.beligum.base.resources.ResourceRequestImpl;
+import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.security.Authentication;
 import com.beligum.base.server.R;
+import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.indexes.JenaPageIndex;
 import com.beligum.blocks.fs.indexes.ifaces.PageIndex;
 import com.beligum.blocks.fs.pages.SimplePageStore;
@@ -13,7 +18,13 @@ import com.beligum.blocks.rdf.sources.HtmlSource;
 import com.beligum.blocks.rdf.sources.HtmlStringSource;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlParser;
+import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
+import com.beligum.blocks.templating.blocks.TemplateCache;
+import com.beligum.blocks.utils.comparators.MapComparator;
+import com.google.common.base.Functions;
+import com.google.common.collect.Lists;
+import gen.com.beligum.blocks.core.fs.html.views.modals.newblock;
 import gen.com.beligum.blocks.core.messages.blocks.core;
 import org.apache.commons.lang.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -23,8 +34,10 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.*;
 
 /**
  * Created by bram on 2/10/16.
@@ -70,6 +83,83 @@ public class PageEndpoint
 
         //redirect to the requested page with the flash cache filled in
         return Response.seeOther(new URI(pageUrl)).build();
+    }
+
+    /**
+     * When a new block is created, this is the modal panel that is shown on drop:
+     * a list of currently registered block-types in the system.
+     */
+    @GET
+    @Path("/blocks")
+    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
+    public Response getBlocks()
+    {
+        TemplateCache cache = HtmlParser.getTemplateCache();
+        List<Map<String, String>> templates = new ArrayList<>();
+        Locale browserLang = I18nFactory.instance().getOptimalLocale();
+        for (HtmlTemplate template : cache.values()) {
+            if (!(template instanceof PageTemplate) && template.getDisplayType() != HtmlTemplate.MetaDisplayType.HIDDEN) {
+                HashMap<String, String> pageTemplate = new HashMap();
+
+                //the order of locales in which the templates will be searched
+                final Locale[] LANGS = { browserLang, Settings.instance().getDefaultLanguage(), Locale.ROOT };
+                pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_NAME.getValue(), template.getTemplateName());
+                pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_TITLE.getValue(), this.findI18NValue(LANGS, template.getTitles(), core.Entries.emptyTemplateTitle.getI18nValue()));
+                pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_DESCRIPTION.getValue(), this.findI18NValue(LANGS, template.getDescriptions(), core.Entries.emptyTemplateDescription.getI18nValue()));
+                pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_ICON.getValue(), this.findI18NValue(LANGS, template.getIcons(), null));
+                templates.add(pageTemplate);
+            }
+        }
+
+        //sort the blocks by title
+        Collections.sort(templates, new MapComparator(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_TITLE.getValue()));
+
+        Template template = newblock.get().getNewTemplate();
+        template.set(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_TEMPLATES.getValue(), templates);
+
+        return Response.ok(template).build();
+    }
+
+    /**
+     * When a user clicks on a block from the above list (getBlocks()), this endpoint is called.
+     *
+     * @param name the name of the block template to instantiate
+     */
+    @GET
+    @Path("/block/{name:.*}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
+    public Response getBlock(@PathParam("name") String name) throws IOException
+    {
+        HashMap<String, Object> retVal = new HashMap<>();
+
+        HtmlTemplate htmlTemplate = null;
+        for (HtmlTemplate t : HtmlParser.getTemplateCache().values()) {
+            if (t.getTemplateName().equals(name)) {
+                htmlTemplate = t;
+                break;
+            }
+        }
+
+        //we'll render out a block template to a temp buffer (note: you never have to close a stringwriter)
+        StringWriter blockHtml = new StringWriter();
+        // Warning: tag templates are stored/searched in the cache by their relative path (eg. see TemplateCache.putByRelativePath()),
+        // so make sure you don't use that key to create this resource or you'll re-create the template, instead of an instance.
+        // To avoid any clashes, we'll use the name of the instance as resource URI
+        Template block = R.templateEngine().getNewTemplate(new ResourceRequestImpl(URI.create(htmlTemplate.getTemplateName()), Resource.MimeType.HTML), htmlTemplate.createNewHtmlInstance());
+        block.render(blockHtml);
+
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_HTML.getValue(), blockHtml.toString());
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_INLINE_STYLES.getValue(),
+                   Lists.transform(Lists.newArrayList(htmlTemplate.getInlineStyleElementsForCurrentScope()), Functions.toStringFunction()));
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES.getValue(),
+                   Lists.transform(Lists.newArrayList(htmlTemplate.getExternalStyleElementsForCurrentScope()), Functions.toStringFunction()));
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS.getValue(),
+                   Lists.transform(Lists.newArrayList(htmlTemplate.getInlineScriptElementsForCurrentScope()), Functions.toStringFunction()));
+        retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS.getValue(),
+                   Lists.transform(Lists.newArrayList(htmlTemplate.getExternalScriptElementsForCurrentScope()), Functions.toStringFunction()));
+
+        return Response.ok(retVal).build();
     }
 
     @POST
@@ -130,5 +220,29 @@ public class PageEndpoint
         }
 
         return (PageIndex) R.cacheManager().getApplicationCache().get(CacheKeys.TRIPLESTORE_PAGE_INDEX);
+    }
+    private String findI18NValue(Locale[] langs, Map<Locale, String> values, String defaultValue)
+    {
+        String retVal = null;
+
+        if (!values.isEmpty()) {
+            for (Locale l : langs) {
+                retVal = values.get(l);
+
+                if (retVal != null) {
+                    break;
+                }
+            }
+
+            if (retVal == null) {
+                retVal = values.values().iterator().next();
+            }
+        }
+
+        if (retVal == null) {
+            retVal = defaultValue;
+        }
+
+        return retVal;
     }
 }

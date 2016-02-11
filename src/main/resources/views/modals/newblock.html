@@ -1,22 +1,21 @@
-#constants("blocks.core")
-
+#constantsBlock("blocks.core")
 <div class="form-group">
     <div class="list-group">
-        #foreach($block in $templates)
+        #foreach($block in $CONTEXT[$NEW_BLOCK_TEMPLATES])
         ## Note: constant will pierce through the click-blocker
-            <a href="javascript:void(0)" class="list-group-item" data-value="$block.name" $CONSTANTS.blocks.core.FORCE_CLICK_ATTR>
+            <a href="javascript:void(0)" class="list-group-item" data-value="$block[$NEW_BLOCK_NAME]" $FORCE_CLICK_ATTR>
                 <div class="preview">
-                    <i class="fa fa-fw #if($block.icon)$block.icon#{else}fa-square-o#end"></i>
+                    <i class="fa fa-fw #if($block[$NEW_BLOCK_ICON])$block[$NEW_BLOCK_ICON]#{else}fa-square-o#end"></i>
                 </div>
                 <div class="caption">
-                    <h4>$block.title</h4>
+                    <h4>$block[$NEW_BLOCK_TITLE]</h4>
 
                     <p>
-                        $block.description
+                        $block[$NEW_BLOCK_DESCRIPTION]
                     </p>
                 </div>
             </a>
         #end
     </div>
 </div>
-
+#end
