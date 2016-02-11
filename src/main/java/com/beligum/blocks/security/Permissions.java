@@ -20,13 +20,33 @@ public class Permissions implements PermissionsConfigurator
     //-----ROLES-----
 
     //-----PERMISSIONS-----
-    public static final String ENTITY_MODIFY = "entity:modify";
+    public enum Action {
+        PAGE_CREATE("page:create"),
+        PAGE_MODIFY("page:modify"),
+        ;
+
+        Permission permission;
+        Action(String action)
+        {
+            this.permission = new WildcardPermission(action);
+        }
+        public Permission getPermission()
+        {
+            return permission;
+        }
+        @Override
+        public String toString()
+        {
+            return this.permission.toString();
+        }
+    }
 
     //-----ROLE/PERMISSION MAPPINGS-----
     private static final Map<PermissionRole, ImmutableSet<Permission>> PERMISSIONS =
                     ImmutableMap.of(
                                     PermissionsConfigurator.ROLE_ADMIN, ImmutableSet.of(
-                                                    (Permission) new WildcardPermission(ENTITY_MODIFY)
+                                                    Action.PAGE_CREATE.getPermission(),
+                                                    Action.PAGE_MODIFY.getPermission()
                                     )
                     );
 

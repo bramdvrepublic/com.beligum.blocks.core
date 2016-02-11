@@ -1,6 +1,6 @@
 package com.beligum.blocks.fs.pages;
 
-import com.beligum.base.templating.ifaces.Resource;
+import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.blocks.fs.ifaces.PathInfo;
 import com.beligum.blocks.fs.metadata.EBUCoreHdfsMetadataWriter;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;

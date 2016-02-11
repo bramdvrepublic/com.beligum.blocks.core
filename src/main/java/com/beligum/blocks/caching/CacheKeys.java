@@ -42,5 +42,7 @@ public enum CacheKeys implements CacheKey
     //request cache key to store the current file system transaction
     XADISK_REQUEST_TRANSACTION,
     //application cache key to store the Jena dataset
-    RDF_DATASET
+    RDF_DATASET,
+    //flash cache key that holds the temporarily selected new page tempalte
+    NEW_PAGE_TEMPLATE_NAME
 }

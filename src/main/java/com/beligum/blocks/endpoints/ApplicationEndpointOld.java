@@ -1,6 +1,6 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.base.resources.ResourceRequest;
+import com.beligum.base.resources.ResourceRequestImpl;
 import com.beligum.base.server.R;
 import com.beligum.base.server.RequestContext;
 import com.beligum.base.templating.ifaces.Template;
@@ -107,10 +107,10 @@ public class ApplicationEndpointOld
 
         final Page page = new DefaultPageImpl(pathInfo);
 
-        Template template = R.templateEngine().getNewTemplate(R.resourceFactory().wrap(new HdfsResource(new ResourceRequest(validUri), fs, page.getNormalizedPageProxyPath())));
+        Template template = R.templateEngine().getNewTemplate(R.resourceFactory().wrap(new HdfsResource(new ResourceRequestImpl(validUri), fs, page.getNormalizedPageProxyPath())));
 
         //this will allow the blocks javascript/css to be included if we're logged in and have permission
-        if (SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
+        if (SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
             this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template.getContext());
         }
 

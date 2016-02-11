@@ -6,6 +6,7 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.auth.repositories.PersonRepository;
 import com.beligum.base.i18n.I18nFactory;
+import com.beligum.base.resources.ResourceRequestImpl;
 import com.beligum.base.security.Authentication;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
@@ -339,7 +340,7 @@ public class PageEndpointOld
     @GET
     @Path("/block/{name:.*}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getBlock(@PathParam("name") String name)
+    public Response getBlock(@PathParam("name") String name) throws IOException
     {
         HashMap<String, Object> retVal = new HashMap<>();
 
@@ -351,7 +352,7 @@ public class PageEndpointOld
             }
         }
 
-        Template block = R.templateEngine().getNewTemplate(htmlTemplate.getRelativePath().toUri(), htmlTemplate.createNewHtmlInstance());
+        Template block = R.templateEngine().getNewTemplate(new ResourceRequestImpl(htmlTemplate.getRelativePath().toUri()), htmlTemplate.createNewHtmlInstance());
         retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_HTML.getValue(), block);
         retVal.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.BLOCK_DATA_PROPERTY_INLINE_STYLES.getValue(),
                    Lists.transform(Lists.newArrayList(htmlTemplate.getInlineStyleElementsForCurrentScope()), Functions.toStringFunction()));

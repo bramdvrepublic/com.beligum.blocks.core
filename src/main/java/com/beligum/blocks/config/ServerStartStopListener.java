@@ -2,7 +2,7 @@ package com.beligum.blocks.config;
 
 import com.beligum.base.server.R;
 import com.beligum.base.server.ifaces.ServerLifecycleListener;
-import com.beligum.base.templating.ifaces.Resource;
+import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.search.ElasticSearch;

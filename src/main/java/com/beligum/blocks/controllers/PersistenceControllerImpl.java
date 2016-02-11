@@ -53,7 +53,7 @@ public class PersistenceControllerImpl implements PersistenceController
         // When user can not modify a page we get the page from our ES cluster
         // Because ES only updates every second, we have to take the page from the real DB
         // when user can modify the page
-        if (!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
+        if (!SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
             QueryBuilder
                             query =
                             QueryBuilders.boolQuery().must(QueryBuilders.matchQuery("master_page", blockId.toString()))

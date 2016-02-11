@@ -1,8 +1,8 @@
 package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.resources.ClasspathSearchResult;
-import com.beligum.base.templating.ifaces.Resource;
-import com.beligum.base.templating.ifaces.Parser;
+import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.resources.ifaces.Parser;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;

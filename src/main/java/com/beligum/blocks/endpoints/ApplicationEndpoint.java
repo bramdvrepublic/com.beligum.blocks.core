@@ -1,10 +1,9 @@
 package com.beligum.blocks.endpoints;
 
 import com.beligum.base.i18n.I18nFactory;
-import com.beligum.base.resources.ResourceRequest;
+import com.beligum.base.resources.ResourceRequestImpl;
+import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.server.R;
-import com.beligum.base.server.RequestContext;
-import com.beligum.base.templating.ifaces.Resource;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.templating.ifaces.TemplateContext;
 import com.beligum.blocks.caching.CacheKeys;
@@ -25,10 +24,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.shiro.SecurityUtils;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.*;
@@ -56,33 +52,65 @@ public class ApplicationEndpoint
     @GET
     public Response getPageNew(@PathParam("randomPage") String randomURLPath) throws Exception
     {
-        URI validatedUri = DefaultPageImpl.create(RequestContext.getJaxRsRequest().getUriInfo().getRequestUri());
+        //security; rebuild the url instead of blindly accepting what comes in
+        URI requestedUri = Settings.instance().getSiteDomain().resolve("/"+randomURLPath).normalize();
+
         FileContext fs = Settings.instance().getPageStoreFileSystem();
-        Page page = new DefaultPageImpl(new HdfsPathInfo(fs, validatedUri));
-        Resource resource = R.resourceFactory().wrap(new HdfsResource(new ResourceRequest(validatedUri), fs, page.getNormalizedPageProxyPath()));
+        URI fsPageUri = DefaultPageImpl.create(requestedUri);
+        Page page = new DefaultPageImpl(new HdfsPathInfo(fs, fsPageUri));
+        // Since we allow the user to create pretty url's, it's mime type will not always be clear.
+        // But not this endpoint only accepts HTML requests, so force the mime type
+        Resource resource = R.resourceFactory().wrap(new HdfsResource(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), fs, page.getNormalizedPageProxyPath()));
 
         Response.ResponseBuilder retVal = null;
         if (resource.exists()) {
             Template template = R.templateEngine().getNewTemplate(resource);
 
             //this will allow the blocks javascript/css to be included if we're logged in and have permission
-            if (SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
+            if (SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
                 this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template.getContext());
             }
 
             retVal = Response.ok(template);
         }
+        // here, we have three possibilities:
+        // - the page doesn't exist & the user has no rights -> 404
+        // - the page doesn't exist & the user has create rights & nothing in flash cache -> show new page selection list
+        // - the page doesn't exist & the user has create rights & page template in flash cache -> render a page template instance (not yet persisted)
         else {
             //if we have permission to create a new page, do it, otherwise, the page doesn't exist
-            if (!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
+            if (!SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
                 throw new NotFoundException();
             }
             else {
-                Template newPageTemplate = new_page.get().getNewTemplate();
-                newPageTemplate.set(core.Entries.NEW_PAGE_TEMPLATE_URL.getValue(), validatedUri.toString());
-                newPageTemplate.set(core.Entries.NEW_PAGE_TEMPLATE_TEMPLATES.getValue(), this.buildLocalizedPageTemplateMap());
+                //this means we redirected from the new-template-selection page
+                String newPageTemplateName = null;
+                if (R.cacheManager().getFlashCache().getTransferredEntries() != null) {
+                    newPageTemplateName = (String) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_TEMPLATE_NAME.name());
+                }
 
-                retVal = Response.ok(newPageTemplate);
+                if (!StringUtils.isEmpty(newPageTemplateName)) {
+                    //check if the name exists and is all right
+                    HtmlTemplate pageTemplate = HtmlParser.getTemplateCache().getByTagName(newPageTemplateName);
+                    if (pageTemplate!=null && pageTemplate instanceof PageTemplate) {
+                        Template newPageInstance = R.templateEngine().getNewTemplate(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), pageTemplate.createNewHtmlInstance());
+
+                        //this will allow the blocks javascript/css to be included
+                        this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, newPageInstance.getContext());
+
+                        retVal = Response.ok(newPageInstance);
+                    }
+                    else {
+                        throw new InternalServerErrorException("Requested to create a new page with an invalid page template name; "+newPageTemplateName);
+                    }
+                }
+                else {
+                    Template newPageTemplateList = new_page.get().getNewTemplate();
+                    newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_URL.getValue(), requestedUri.toString());
+                    newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TEMPLATES.getValue(), this.buildLocalizedPageTemplateMap());
+
+                    retVal = Response.ok(newPageTemplateList);
+                }
             }
         }
 

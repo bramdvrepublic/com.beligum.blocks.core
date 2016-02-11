@@ -3,7 +3,7 @@ package com.beligum.blocks.endpoints;
 import com.beligum.base.annotations.JavascriptPackage;
 import com.beligum.base.endpoints.AssetsEndpoint;
 import com.beligum.base.server.R;
-import com.beligum.base.templating.ifaces.Resource;
+import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import gen.com.beligum.blocks.core.fs.html.views.snippets.side;
 import org.apache.commons.io.FilenameUtils;

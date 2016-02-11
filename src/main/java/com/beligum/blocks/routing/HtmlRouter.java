@@ -1,6 +1,8 @@
 package com.beligum.blocks.routing;
 
 import com.beligum.base.i18n.I18nFactory;
+import com.beligum.base.resources.ResourceRequestImpl;
+import com.beligum.base.resources.ifaces.ResourceRequest;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.templating.ifaces.TemplateContext;
@@ -8,7 +10,6 @@ import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.caching.PageCache;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
-import com.beligum.blocks.endpoints.PageEndpoint;
 import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.models.interfaces.WebPath;
 import com.beligum.blocks.security.Permissions;
@@ -50,7 +51,7 @@ public class HtmlRouter extends AbstractRouter
     *
     * We try to find the title and description for all pagetemplates in the best getLanguage possible
     * */
-    public Response newPage()
+    public Response newPage() throws IOException
     {
         Response retVal = null;
 
@@ -58,12 +59,12 @@ public class HtmlRouter extends AbstractRouter
 
         //this means we redirected from the new-template-selection page
         if (R.cacheManager().getFlashCache().getTransferredEntries() != null) {
-            newTemplate = (String) R.cacheManager().getFlashCache().getTransferredEntries().get(PageEndpoint.PAGE_TEMPLATE_NAME);
+            newTemplate = (String) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_TEMPLATE_NAME.name());
         }
 
         // Check if we just selected a template for this new page
         if (newTemplate == null) {
-            if (!SecurityUtils.getSubject().isPermitted(Permissions.ENTITY_MODIFY)) {
+            if (!SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
                 throw new NotFoundException();
             }
             else {
@@ -128,11 +129,11 @@ public class HtmlRouter extends AbstractRouter
     * This is the template the user can build a page from. Only when the user presses save,
     * the template is also save to the DB
     * */
-    public Response showCreatedPage(final String pageTemplateName)
+    public Response showCreatedPage(final String pageTemplateName) throws IOException
     {
         //by returning an empty tag (eg. <main-page></main-page>) the template engine will render a default page
         //TODO don't know if that null is right...
-        Template template = this.buildTemplateInstance(null, pageTemplateName, "");
+        Template template = this.buildTemplateInstance(new ResourceRequestImpl(null), pageTemplateName, "");
 
         //this will allow the blocks javascript/css to be included
         this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template.getContext());
@@ -167,7 +168,7 @@ public class HtmlRouter extends AbstractRouter
                 throw new IOException("Unable to fetch or find a default page template, can't continue");
             }
 
-            Template template = this.buildTemplateInstance(this.route.getURI(), templateStr, page.getParsedHtml(true));
+            Template template = this.buildTemplateInstance(new ResourceRequestImpl(this.route.getURI()), templateStr, page.getParsedHtml(true));
 
             //this will allow the blocks javascript/css to be included
             this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template.getContext());
@@ -189,9 +190,9 @@ public class HtmlRouter extends AbstractRouter
      * If you ever want to use this method for TagTempaltes, don't, cause it won't include the attributes.
      * for that, use HtmlTemplate.createNewHtmlInstance() instead
      */
-    private Template buildTemplateInstance(URI uri, String templateName, String propertiesHtml)
+    private Template buildTemplateInstance(ResourceRequest request, String templateName, String propertiesHtml) throws IOException
     {
-        return R.templateEngine().getNewTemplate(uri, new StringBuilder().append("<" + templateName + ">").append(propertiesHtml).append("</" + templateName + ">").toString());
+        return R.templateEngine().getNewTemplate(new ResourceRequestImpl(request==null?null:request.getUri()), new StringBuilder().append("<" + templateName + ">").append(propertiesHtml).append("</" + templateName + ">").toString());
     }
     private void setBlocksMode(HtmlTemplate.ResourceScopeMode mode, TemplateContext context)
     {

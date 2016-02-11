@@ -17,7 +17,7 @@
                     #end
 
                     #foreach($template in $CONTEXT[$NEW_PAGE_TEMPLATE_TEMPLATES])
-                        <a href="/blocks/admin/page/template?page_url=$TOOLKIT.esc.url($CONTEXT[$NEW_PAGE_TEMPLATE_URL]))&page_class_name=$TOOLKIT.esc.url($template[$NEW_PAGE_TEMPLATE_NAME])" class="list-group-item">
+                        <a href="/blocks/admin/page/template?page_url=$TOOLKIT.esc.url($CONTEXT[$NEW_PAGE_TEMPLATE_URL])&page_class_name=$TOOLKIT.esc.url($template[$NEW_PAGE_TEMPLATE_NAME])" class="list-group-item">
                             <div class="preview">
                                 <i class="fa fa-fw #if($template.icon)$template.icon#{else}fa-list-alt#end"></i>
                             </div>

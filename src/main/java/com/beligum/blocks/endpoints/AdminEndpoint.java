@@ -1,7 +1,7 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.base.templating.ifaces.Resource;
-import com.beligum.base.templating.ifaces.Parser;
+import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.resources.ifaces.Parser;
 import com.beligum.base.security.PermissionsConfigurator;
 import com.beligum.base.server.R;
 import com.beligum.base.server.RequestContext;

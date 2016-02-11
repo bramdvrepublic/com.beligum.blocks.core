@@ -33,7 +33,6 @@ import java.net.URISyntaxException;
 public class PageEndpoint
 {
     //-----CONSTANTS-----
-    public static final String PAGE_TEMPLATE_NAME = "pageTemplateName";
 
     //-----VARIABLES-----
 
@@ -44,7 +43,8 @@ public class PageEndpoint
      * When a new page (a non-existing page) is requested, the (logged-in) user is presented with a list of page templates.
      * This endpoint is called when a page template is selected from that list.
      * Basically, we redirect back to the url where the page has to be created and put the name of the pagetemplate in the flashcache,
-     * TODO where is it picked up?
+     * so the root endpoint (ApplicationEndpoint.getPageNew()) can detect what to do.
+     *
      * @param pageUrl the url of the new page to be created
      * @param pageTemplateName the name of the page template to use for the new page
      */
@@ -59,13 +59,12 @@ public class PageEndpoint
         if (StringUtils.isEmpty(pageTemplateName)) {
             throw new InternalServerErrorException(core.Entries.newPageNoTemplatenameError.getI18nValue());
         }
-
         PageTemplate pageTemplate = (PageTemplate) HtmlParser.getTemplateCache().getByTagName(pageTemplateName);
         if (pageTemplate==null) {
             throw new InternalServerErrorException(core.Entries.newPageUnknownTemplateError.getI18nValue());
         }
 
-        R.cacheManager().getFlashCache().put(PAGE_TEMPLATE_NAME, pageTemplateName);
+        R.cacheManager().getFlashCache().put(CacheKeys.NEW_PAGE_TEMPLATE_NAME.name(), pageTemplateName);
 
         //redirect to the requested page with the flash cache filled in
         return Response.seeOther(new URI(pageUrl)).build();

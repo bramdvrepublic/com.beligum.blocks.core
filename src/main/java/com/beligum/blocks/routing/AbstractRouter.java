@@ -46,7 +46,7 @@ public abstract class AbstractRouter implements Router
 
     }
 
-    public abstract Response newPage();
+    public abstract Response newPage() throws IOException;
 
     public abstract Response showPage() throws IOException;
 

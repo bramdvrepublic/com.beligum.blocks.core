@@ -1,6 +1,6 @@
 package com.beligum.blocks.fs;
 
-import com.beligum.base.resources.ResourceRequest;
+import com.beligum.base.resources.ifaces.ResourceRequest;
 import com.beligum.base.resources.mappers.AbstractResource;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
