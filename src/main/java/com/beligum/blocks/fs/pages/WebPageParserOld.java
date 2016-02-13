@@ -36,7 +36,7 @@ import java.util.*;
  * We save used templates, resources, links and linked pages, a short html version for the renderer and
  * a text version of the body element
  */
-public class WebPageParser
+public class WebPageParserOld
 {
     private URI uri;
     private Locale locale;
@@ -65,7 +65,7 @@ public class WebPageParser
     // Resource that contains all properties that are attached to the page
     private Resource pageResource;
 
-    public WebPageParser(URI uri, Locale locale, String source, PersistenceController database) throws Exception
+    public WebPageParserOld(URI uri, Locale locale, String source, PersistenceController database) throws Exception
     {
         this.uri = uri;
         this.locale = locale;

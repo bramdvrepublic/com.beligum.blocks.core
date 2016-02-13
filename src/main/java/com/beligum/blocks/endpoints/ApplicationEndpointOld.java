@@ -100,14 +100,14 @@ public class ApplicationEndpointOld
     public Response getPageNew(@PathParam("randomPage") String randomURLPath) throws Exception
     {
         URI requestedURI = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
-        URI validUri = DefaultPageImpl.create(requestedURI, true);
+        URI validUri = DefaultPageImpl.create(requestedURI, Settings.instance().getPagesViewPath());
 
         FileContext fs = Settings.instance().getPageViewFileSystem();
         PathInfo pathInfo = new HdfsPathInfo(fs, validUri);
 
         final Page page = new DefaultPageImpl(pathInfo);
 
-        Template template = R.templateEngine().getNewTemplate(R.resourceFactory().wrap(new HdfsResource(new ResourceRequestImpl(validUri), fs, page.getNormalizedPageProxyPath())));
+        Template template = R.templateEngine().getNewTemplate(R.resourceFactory().lookup(new HdfsResource(new ResourceRequestImpl(validUri), fs, page.getNormalizedPageProxyPath())));
 
         //this will allow the blocks javascript/css to be included if we're logged in and have permission
         if (SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {

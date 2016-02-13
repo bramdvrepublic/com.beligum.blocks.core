@@ -1,8 +1,8 @@
 package com.beligum.blocks.config;
 
+import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.server.R;
 import com.beligum.base.server.ifaces.ServerLifecycleListener;
-import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.search.ElasticSearch;
@@ -10,7 +10,6 @@ import com.beligum.blocks.templating.blocks.HtmlParser;
 import org.apache.jena.query.Dataset;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Server;
-import org.elasticsearch.client.Client;
 import org.glassfish.jersey.server.spi.Container;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
 
@@ -46,7 +45,9 @@ public class ServerStartStopListener implements ServerLifecycleListener
         }
 
         //this will launch/connect to the ES server
-        Client esClient = ElasticSearch.instance().getClient();
+        if (Settings.instance().hasElasticSearchConfigured()) {
+            ElasticSearch.instance().getClient();
+        }
     }
     @Override
     public void onServerStopped(Server server, Container container)
@@ -67,7 +68,9 @@ public class ServerStartStopListener implements ServerLifecycleListener
             dataset.close();
         }
 
-        ElasticSearch.instance().getClient().close();
+        if (Settings.instance().hasElasticSearchConfigured()) {
+            ElasticSearch.instance().getClient().close();
+        }
     }
 
     //-----PROTECTED METHODS-----

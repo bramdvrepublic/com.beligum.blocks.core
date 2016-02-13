@@ -1,7 +1,7 @@
 package com.beligum.blocks.fs.pages.ifaces;
 
 import com.beligum.base.auth.models.Person;
-import com.beligum.blocks.rdf.ifaces.Source;
+import com.beligum.blocks.rdf.sources.HtmlSource;
 
 import java.io.IOException;
 import java.net.URI;
@@ -25,12 +25,12 @@ public interface PageStore
      * This method is fully transactional and rolls back automatically if an error happens.
      * Note that the entire page is stored, including all proxies and metadata, so it can take a while to complete (depending on the size/complexity).
      *
-     * @param source the source of the page to store
+     * @param source the html of the page to store
      * @param creator the logged-in user that is creating this page
      * @return the newly created page or null if the page already existed, but nothing changed
      * @throws IOException
      */
-    Page save(Source source, Person creator) throws IOException;
+    Page save(HtmlSource source, Person creator) throws IOException;
 
     /**
      * Deletes the page with the supplied address.

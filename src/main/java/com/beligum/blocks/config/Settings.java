@@ -51,6 +51,7 @@ public class Settings
     private LinkedHashMap<String, Locale> cachedLanguages;
     private Locale cachedDefaultLanguage;
     private URI cachedSiteDomain;
+    private URI[] cachedSiteAliases;
     private URI defaultRdfSchema;
     private URI cachedPagesStorePath;
     private URI cachedPagesViewPath;
@@ -58,6 +59,7 @@ public class Settings
     protected HashMap<String, String> cachedHdfsProperties = null;
     protected HashMap<String, String> cachedEsProperties = null;
     protected Object txManagerLock = new Object();
+    private File cachedPagesMainIndexDir;
     private File cachedPagesTripleStoreDir;
     private Object rdfDatasetLock = new Object();
 
@@ -76,16 +78,46 @@ public class Settings
     public URI getSiteDomain()
     {
         if (this.cachedSiteDomain == null) {
-            String schema = R.configuration().getString("blocks.core.domain");
+            String schema = R.configuration().getString("blocks.core.domain.main");
             try {
                 this.cachedSiteDomain = URI.create(schema);
             }
             catch (Exception e) {
-                throw new RuntimeException("Site domain in blocks config is not valid. This setting is vital, can't proceed.");
+                throw new RuntimeException("Site main domain in blocks config is not valid. This setting is vital, can't proceed.", e);
             }
         }
 
         return this.cachedSiteDomain;
+    }
+    /**
+     * The aliases for the domain above (eg. like Apache ServerName vs. ServerAlias settings)
+     * @return
+     */
+    public URI[] getSiteAliases()
+    {
+        if (this.cachedSiteAliases == null) {
+            try {
+                String[] aliases = R.configuration().getStringArray("blocks.core.domain.alias");
+                if (aliases!=null && aliases.length>0) {
+                    List<URI> tmpList = new ArrayList<>();
+                    for (int i=0;i<aliases.length;i++) {
+                        if (!StringUtils.isEmpty(aliases[i])) {
+                            tmpList.add(URI.create(aliases[i]));
+                        }
+                    }
+                    this.cachedSiteAliases = tmpList.toArray(new URI[tmpList.size()]);
+                }
+                else {
+                    this.cachedSiteAliases = new URI[0];
+                }
+            }
+            catch (Exception e) {
+                Logger.error("Error while getting site domain alias in blocks config. Proceeding without aliases", e);
+                this.cachedSiteAliases = new URI[0];
+            }
+        }
+
+        return this.cachedSiteAliases;
     }
     /**
      * @return The languages this site can work with, ordered from most preferred getLanguage, to less preferred. If no such languages are specified in the configuration xml, an array with a default getLanguage is returned.
@@ -212,6 +244,10 @@ public class Settings
     public String getPagesLockFileExtension()
     {
         return R.configuration().getString("blocks.core.pages.lock-file-ext", DEFAULT_LOCK_FILE_EXT);
+    }
+    public boolean hasElasticSearchConfigured()
+    {
+        return !StringUtils.isEmpty(Settings.instance().getElasticSearchClusterName());
     }
     public boolean getElasticSearchLaunchEmbedded()
     {
@@ -364,6 +400,15 @@ public class Settings
 
             return retVal;
         }
+    }
+    public File getPageMainIndexFolder()
+    {
+        if (this.cachedPagesMainIndexDir == null) {
+            //Note: the journal dir resides on the local, naked file system, watch out you don't point to a dir in the distributed or transactional fs
+            this.cachedPagesMainIndexDir = new File(R.configuration().getString("blocks.core.pages.main-index.dir"));
+        }
+
+        return this.cachedPagesMainIndexDir;
     }
     public File getPageTripleStoreFolder()
     {

@@ -10,6 +10,7 @@ import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.indexes.JenaPageIndex;
+import com.beligum.blocks.fs.indexes.LucenePageIndex;
 import com.beligum.blocks.fs.indexes.ifaces.PageIndex;
 import com.beligum.blocks.fs.pages.SimplePageStore;
 import com.beligum.blocks.fs.pages.ifaces.Page;
@@ -179,6 +180,7 @@ public class PageEndpoint
         //above method returns null if nothing changed (so nothing to re-index)
         if (savedPage != null) {
             //store the resulting page in the indexes you want
+            this.getMainPageIndex().indexPage(savedPage);
             this.getTriplestorePageIndex().indexPage(savedPage);
         }
 
@@ -212,6 +214,14 @@ public class PageEndpoint
         }
 
         return (PageStore) R.cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGE_STORE);
+    }
+    private PageIndex getMainPageIndex() throws IOException
+    {
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.MAIN_PAGE_INDEX)) {
+            R.cacheManager().getApplicationCache().put(CacheKeys.MAIN_PAGE_INDEX, new LucenePageIndex());
+        }
+
+        return (PageIndex) R.cacheManager().getApplicationCache().get(CacheKeys.MAIN_PAGE_INDEX);
     }
     private PageIndex getTriplestorePageIndex() throws IOException
     {

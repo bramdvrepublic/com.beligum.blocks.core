@@ -1,43 +1,74 @@
-package com.beligum.blocks.fs.pages;
+package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.templating.blocks.HtmlParser;
-import com.beligum.blocks.templating.blocks.HtmlTemplate;
-import com.beligum.blocks.templating.blocks.TemplateCache;
+import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.rdf.sources.HtmlSource;
 import net.htmlparser.jericho.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.jena.ext.com.google.common.collect.ImmutableSet;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.*;
 
 /**
  * Convert incoming html to a normalized form, based on the current page and tag templates.
  * TODO would be nice if unmodified properties and/or template-instances would be reverted to their 'collapsed' form
- *
+ * <p/>
  * Created by bram on 1/23/16.
  */
-public class PageHtmlParser
+public class HtmlAnalyzer
 {
     //-----CONSTANTS-----
+    private static final Set ALWAYS_INCLUDE_TAGS = new HashSet(Arrays.asList(new String[] {}));
+    private static final Set<String> REFERENCE_ATTRS = ImmutableSet.of("src", "href", "content");
+
+    private static Set<String> SITE_DOMAINS = new HashSet<>();
+    static {
+        SITE_DOMAINS.add(Settings.instance().getSiteDomain().getAuthority());
+        for (URI alias : Settings.instance().getSiteAliases()) {
+            if (alias!=null && !StringUtils.isEmpty(alias.getAuthority())) {
+                SITE_DOMAINS.add(alias.getAuthority());
+            }
+        }
+    }
 
     //-----VARIABLES-----
     private final TemplateCache allTagTemplates;
-    private static final Set ALWAYS_INCLUDE_TAGS = new HashSet(Arrays.asList(new String[] {  }));
+    private Source htmlDocument;
+    private String normalizedHtml;
+    private Locale htmlLocale;
+    private Map<URI, Attribute> internalRefs;
+    private Map<URI, Attribute> externalRefs;
 
     //-----CONSTRUCTORS-----
-    public PageHtmlParser()
+    public HtmlAnalyzer()
     {
         this.allTagTemplates = HtmlParser.getTemplateCache();
+
+        this.internalRefs = new HashMap<>();
+        this.externalRefs = new HashMap<>();
     }
 
     //-----PUBLIC METHODS-----
-    public String parse(String html, URI baseContext, boolean format) throws IOException
+    /**
+     * Parses the incoming html string and stores all relevant structures in class variables,
+     * to be retrieved later on by the getters below.
+     *
+     * @param htmlSource
+     * @param baseContext
+     * @param prettyPrint
+     * @throws IOException
+     */
+    public void analyze(HtmlSource htmlSource, boolean prettyPrint) throws IOException
     {
-        Source source = new Source(html);
+        try (InputStream is = htmlSource.openNewInputStream()) {
+            this.htmlDocument = new Source(is);
+        }
 
         HtmlTemplate currentTemplate = null;
-        Element htmlElement = source.getFirstElement(HtmlParser.HTML_ROOT_ELEM);
+        Element htmlElement = this.htmlDocument.getFirstElement(HtmlParser.HTML_ROOT_ELEM);
         String pageTemplateName = htmlElement.getAttributeValue(HtmlParser.HTML_ROOT_TEMPLATE_ATTR);
         if (StringUtils.isEmpty(pageTemplateName)) {
             throw new IOException("Encountered an attempt to save html without a page template; this shouldn't happen; " + htmlElement);
@@ -49,8 +80,10 @@ public class PageHtmlParser
             }
         }
 
-        StringBuilder outputHtml = new StringBuilder();
+        //extract and store the locale
+        this.htmlLocale = Locale.forLanguageTag(htmlElement.getAttributeValue(HtmlSource.HTML_ROOT_LANG_ATTR));
 
+        StringBuilder outputHtml = new StringBuilder();
         outputHtml.append(this.instantiateTemplateStartTag(htmlElement, currentTemplate, new HashSet(Arrays.asList(new String[] { HtmlParser.HTML_ROOT_TEMPLATE_ATTR }))));
         int depth = 0;
         Stack<Element> templateStack = new Stack<>();
@@ -61,21 +94,26 @@ public class PageHtmlParser
         }
         outputHtml.append(this.instantiateTemplateEndTag(currentTemplate));
 
-        String retVal = outputHtml.toString();
-        if (format) {
-            SourceFormatter formatter = new SourceFormatter(new Source(retVal));
+        this.normalizedHtml = outputHtml.toString();
+        if (prettyPrint) {
+            SourceFormatter formatter = new SourceFormatter(new Source(this.normalizedHtml));
             formatter.setCollapseWhiteSpace(true);
             formatter.setIndentString("    ");
             formatter.setNewLine("\n");
-            retVal = formatter.toString();
+            this.normalizedHtml = formatter.toString();
         }
-
-        return retVal;
+    }
+    public String getNormalizedHtml()
+    {
+        return this.normalizedHtml;
     }
 
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+    /**
+     * Analyzes a Jericho node
+     */
     private int processNode(Segment node, int depth, Stack<Element> templateStack, Stack<Element> propertyStack, StringBuilder outputDocument)
     {
         if (node != null) {
@@ -97,6 +135,9 @@ public class PageHtmlParser
 
             if (node instanceof StartTag) {
                 StartTag startTag = (StartTag) node;
+
+                //check if we need to pull out this tag as a reference
+                this.extractReference(startTag);
 
                 boolean isProperty = this.isProperty(startTag);
                 boolean isTemplateTag = this.isTemplate(startTag);
@@ -142,7 +183,7 @@ public class PageHtmlParser
 
                     // we don't always write the template, but if the previous (after above pop) property context (before resetting it and entering the template) was not empty,
                     // it needs to be written out
-                    if (!propertyStack.isEmpty() && propertyStack.peek()!=null) {
+                    if (!propertyStack.isEmpty() && propertyStack.peek() != null) {
                         writeTag = true;
                     }
                 }
@@ -166,6 +207,36 @@ public class PageHtmlParser
         }
 
         return depth;
+    }
+    private void extractReference(StartTag startTag)
+    {
+        Attributes startTagAttrs = startTag.getAttributes();
+
+        if (startTagAttrs!=null) {
+            for (Attribute attr : startTagAttrs) {
+                if (REFERENCE_ATTRS.contains(attr.getName())) {
+                    if (!StringUtils.isEmpty(attr.getValue())) {
+                        try {
+                            //validate the reference
+                            URI uri = URI.create(attr.getValue());
+                            //if the url is relative to this domain or is abolute and inside this domain, store as internal ref
+                            //note that we need to include the port in the check (authority instead of host)
+                            //TODO: note that, for now, this will also contain garbage URI's that passed the create() test above like "IE=edge"
+                            if (StringUtils.isEmpty(uri.getAuthority()) || SITE_DOMAINS.contains(uri.getAuthority())) {
+                                this.internalRefs.put(uri, attr);
+                            }
+                            //otherwise it's an external ref
+                            else {
+                                this.externalRefs.put(uri, attr);
+                            }
+                        }
+                        catch (IllegalArgumentException e) {
+                            Logger.debug("Encountered illegal URI as an attribtue value of " + attr + " in " + startTag, e);
+                        }
+                    }
+                }
+            }
+        }
     }
     private boolean isAlwaysIncludeTag(Tag tag)
     {

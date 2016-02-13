@@ -55,11 +55,11 @@ public class ApplicationEndpoint
         URI requestedUri = Settings.instance().getSiteDomain().resolve("/"+randomURLPath).normalize();
 
         FileContext fs = Settings.instance().getPageViewFileSystem();
-        URI fsPageUri = DefaultPageImpl.create(requestedUri, true);
+        URI fsPageUri = DefaultPageImpl.create(requestedUri, Settings.instance().getPagesViewPath());
         Page page = new DefaultPageImpl(new HdfsPathInfo(fs, fsPageUri));
         // Since we allow the user to create pretty url's, it's mime type will not always be clear.
         // But not this endpoint only accepts HTML requests, so force the mime type
-        Resource resource = R.resourceFactory().wrap(new HdfsResource(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), fs, page.getNormalizedPageProxyPath()));
+        Resource resource = R.resourceFactory().lookup(new HdfsResource(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), fs, page.getNormalizedPageProxyPath()));
 
         Response.ResponseBuilder retVal = null;
         if (resource.exists()) {

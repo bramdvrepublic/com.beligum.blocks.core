@@ -60,7 +60,7 @@ public class DefaultPageImpl extends AbstractPage
         return new Path(this.pathInfo.getMetaProxyFolder(PAGE_PROXY_NORMALIZED_MIME_TYPE), PAGE_PROXY_NORMALIZED_FILE_NAME);
     }
     @Override
-    public Path getExportFile()
+    public Path getRdfExportFile()
     {
         return new Path(this.pathInfo.getMetaProxyFolder(PAGE_PROXY_RDF_JSONLD_MIME_TYPE), PAGE_PROXY_RDF_JSONLD_FILE_NAME);
     }

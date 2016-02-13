@@ -2,6 +2,7 @@ package com.beligum.blocks.rdf.sources;
 
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.blocks.rdf.ifaces.Source;
+import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -18,11 +19,13 @@ import java.net.URISyntaxException;
 public abstract class HtmlSource implements Source
 {
     //-----CONSTANTS-----
+    public static final String HTML_ROOT_LANG_ATTR = "lang";
 
     //-----VARIABLES-----
     protected URI baseUri;
     protected Document document;
     protected Element htmlTag;
+    protected HtmlAnalyzer htmlAnalyzer;
 
     //-----CONSTRUCTORS-----
     protected HtmlSource(URI baseUri) throws IOException, URISyntaxException
@@ -51,7 +54,7 @@ public abstract class HtmlSource implements Source
         // We'll be a little opportunistic here and adjust all "lang" attributes (ignoring namespaces)
         if (adjustLanguage) {
             //see http://tools.ietf.org/html/rfc4646 for ISO guidelines -> "shortest ISO 639 code"
-            this.htmlTag.attr("lang", I18nFactory.instance().getOptimalLocale(this.baseUri).getLanguage());
+            this.htmlTag.attr(HTML_ROOT_LANG_ATTR, I18nFactory.instance().getOptimalLocale(this.baseUri).getLanguage());
         }
 
         if (compact) {
@@ -62,6 +65,12 @@ public abstract class HtmlSource implements Source
     public InputStream openNewInputStream() throws IOException
     {
         return new ByteArrayInputStream(this.document.outerHtml().getBytes(this.document.charset()));
+    }
+
+    //-----HTMl-ONLY PUBLIC METHODS-----
+    public String getNormalizedHtml() throws IOException
+    {
+        return this.getHtmlAnalyzer().getNormalizedHtml();
     }
 
     //-----PROTECTED METHODS-----
@@ -96,6 +105,19 @@ public abstract class HtmlSource implements Source
     }
 
     //-----PRIVATE METHODS-----
+    /**
+     * Lazy loaded html analyzer (that analyzes on first load)
+     * @return
+     */
+    private HtmlAnalyzer getHtmlAnalyzer() throws IOException
+    {
+        if (this.htmlAnalyzer==null) {
+            this.htmlAnalyzer = new HtmlAnalyzer();
+            this.htmlAnalyzer.analyze(this, true);
+        }
+
+        return this.htmlAnalyzer;
+    }
 
     //-----MANAGEMENT METHODS-----
     @Override

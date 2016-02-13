@@ -1,67 +1,246 @@
 package com.beligum.blocks.endpoints;
 
+import com.beligum.base.utils.Logger;
+import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.fs.indexes.LuceneSearchConfiguration;
+import com.beligum.blocks.fs.indexes.stubs.PageStub;
 import com.beligum.blocks.security.Permissions;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.*;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.*;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.shiro.authz.annotation.RequiresRoles;
+import org.hibernate.annotations.common.reflection.ReflectionManager;
+import org.hibernate.annotations.common.reflection.XClass;
+import org.hibernate.search.bridge.util.impl.ContextualExceptionBridgeHelper;
+import org.hibernate.search.cfg.spi.SearchConfiguration;
+import org.hibernate.search.engine.integration.impl.ExtendedSearchIntegrator;
+import org.hibernate.search.engine.spi.DocumentBuilderIndexedEntity;
+import org.hibernate.search.spi.SearchIntegratorBuilder;
 
 import javax.ws.rs.Path;
+import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.io.Serializable;
+import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
-/**
- * Created by bas on 27.01.15.
- */
 @Path("debug")
 @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
 public class DebugEndpoint
 {
+    @Path("lucene")
+    public Response testLucene() throws IOException
+    {
+        final java.nio.file.Path docDir = Settings.instance().getPageMainIndexFolder().toPath();
+        if (!Files.exists(docDir)) {
+            Files.createDirectories(docDir);
+        }
+        if (!Files.isWritable(docDir)) {
+            throw new IOException("Lucene index directory is not writable, please check the path; " + docDir);
+        }
+
+        //TODO check .close()
+        Directory dir = FSDirectory.open(docDir);
+        Analyzer analyzer = new StandardAnalyzer();
+        IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
+
+        final boolean create = false;
+        if (create) {
+            // Create a new index in the directory, removing any
+            // previously indexed documents:
+            iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+        }
+        else {
+            // Add new documents to an existing index:
+            iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+        }
+
+        try {
+            SearchIntegratorBuilder searchIntegratorBuilder = new SearchIntegratorBuilder();
+            SearchConfiguration config = new LuceneSearchConfiguration();
+            searchIntegratorBuilder.configuration(config);
+            ExtendedSearchIntegrator searchIntegrator = (ExtendedSearchIntegrator) searchIntegratorBuilder.buildSearchIntegrator();
+
+            PageStub entity = new PageStub();
+            //DocumentId idAnn = entity.getClass().getAnnotation(DocumentId.class);
+            Serializable id = entity.getId();
+
+            //See MoreLikeThisBuilder
+            //TODO should we keep the fieldToAnalyzerMap around to pass to the analyzer?
+            Map<String, String> fieldToAnalyzerMap = new HashMap<String, String>();
+            //FIXME by calling documentBuilder we don't honor .comparingField("foo").ignoreFieldBridge(): probably not a problem in practice though
+            DocumentBuilderIndexedEntity docBuilder = searchIntegrator.getIndexBinding(PageStub.class).getDocumentBuilder();
+            Document doc = docBuilder.getDocument(null, entity, id, fieldToAnalyzerMap, null, new ContextualExceptionBridgeHelper(), null);
+
+            try (IndexWriter writer = new IndexWriter(dir, iwc)) {
+                writer.updateDocument(new Term("id", id.toString()), doc);
+                //writer.addDocument(doc);
+            }
+
+
+            try (IndexReader reader = DirectoryReader.open(dir)) {
+                IndexSearcher searcher = new IndexSearcher(reader);
+
+                int numDocs = reader.numDocs();
+                for ( int i = 0; i < numDocs; i++) {
+                    Document d = reader.document(i);
+                    System.out.println( "d=" +d);
+                }
+
+                Query q = new QueryParser("firstName", analyzer).parse("TEST");
+                int hitsPerPage = 10;
+                TopDocs docs = searcher.search(q, hitsPerPage);
+                TopDocs docs2 = searcher.search(new FieldValueQuery("firstName"), hitsPerPage);
+                ScoreDoc[] hits = docs.scoreDocs;
+                ScoreDoc[] hits2 = docs2.scoreDocs;
+                System.out.println("Found " + hits.length + " hits.");
+                for (int i = 0; i < hits.length; ++i) {
+                    int docId = hits[i].doc;
+                    Document d = searcher.doc(docId);
+                    System.out.println((i + 1) + ". " + d.get("id") + "\t" + d.get("firstName"));
+                }
+            }
+        }
+        catch (Exception e) {
+            Logger.error("Error ", e);
+        }
+
+        return Response.ok().build();
+    }
+    //See org.hibernate.search.spi.SearchFactoryBuilder.initDocumentBuilders()
+    private Document getDocumentBuilderFor(ExtendedSearchIntegrator searchIntegrator, Class<?> clazz)
+    {
+
+
+//        TypeMetadata typeMetadata = metadataProvider.getTypeMetadataFor(mappedClass);
+//        final DocumentBuilderIndexedEntity<?> documentBuilder =
+//                        new DocumentBuilderIndexedEntity(
+//                                        mappedXClass,
+//                                        typeMetadata,
+//                                        configContext,
+//                                        searchConfiguration.getReflectionManager(),
+//                                        optimizationBlackListedTypes,
+//                                        searchConfiguration.getInstanceInitializer()
+//                        );
+
+        return null;
+    }
+    /**
+     * prepares XClasses from configuration
+     */
+    private static Map<XClass, Class<?>> initializeClassMappings(SearchConfiguration cfg, ReflectionManager reflectionManager) {
+        Iterator<Class<?>> iter = cfg.getClassMappings();
+        Map<XClass, Class<?>> map = new HashMap<XClass, Class<?>>();
+        while ( iter.hasNext() ) {
+            Class<?> mappedClass = iter.next();
+            if ( mappedClass == null ) {
+                continue;
+            }
+
+            XClass mappedXClass = reflectionManager.toXClass( mappedClass );
+            if ( mappedXClass == null ) {
+                continue;
+            }
+            map.put( mappedXClass, mappedClass );
+        }
+        return map;
+    }
+
+
+    //    @Path("infinispan")
+    //    public Response testInfinispan()
+    //    {
+    //        Cache<String, PageStub> m_cache = MyObjectCacheFactory.getMyObjectCache();
+    //
+    //        int searchNumber = 7;
+    //        SearchManager searchManager = Search.getSearchManager(m_cache );
+    //        QueryBuilder queryBuilder = searchManager.buildQueryBuilderForClass(PageStub.class).get();
+    //        Query luceneQuery = queryBuilder.keyword().onField("searchNumber").matching(searchNumber).createQuery();
+    //        CacheQuery cacheQuery = searchManager.getQuery(luceneQuery, PageStub.class );
+    //
+    //        //noinspection unchecked
+    //        List result = (List)cacheQuery.list();
+    //
+    //
+    //        return Response.ok().build();
+    //    }
+    //    @Path("hibernate-search")
+    //    public Response testHibernateSearch()
+    //    {
+    //        EntityManager entityManager = new BlocksEntityManager();
+    //        FullTextEntityManager fullTextEntityManager = org.hibernate.search.jpa.Search.getFullTextEntityManager(entityManager);
+    //
+    //        fullTextEntityManager.getTransaction().begin();
+    //
+    //        fullTextEntityManager.index(new PageStub());
+    //
+    //        fullTextEntityManager.getTransaction().commit();
+    //        fullTextEntityManager.close();
+    //
+    //
+    ////        Configuration cfg = new Configuration();
+    ////        cfg.setProperty("hibernate.dialect", "com.beligum.blocks.fs.indexes.hibernate.BlocksDialect");
+    ////        cfg.setProperty("hibernate.search.default.directory_provider", "filesystem");
+    ////        cfg.setProperty("hibernate.search.default.indexBase", Settings.instance().getPageMainIndexFolder().getAbsolutePath());
+    ////
+    ////        List classes = Collections.singletonList(PageStub.class);
+    ////        SessionFactory sessionFactory = cfg.buildSessionFactory();
+    ////        Session session = sessionFactory.openSession();
+    ////
+    ////        session.close();
+    //
+    //        return Response.ok().build();
+    //    }
+
     // THIS DELETES EVERYTHING, DON'T ENABLE BY DEFAULT!!!!
 
-//    @GET
-//    @Path("/flush")
-//    public Response flushEntities() throws Exception
-//    {
-//        Logger.warn("Database has been flushed by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
-//        Logger.warn("Url-id mapping has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
-//
-//        ElasticSearch.instance().getClient().admin().indices().delete(new DeleteIndexRequest("*")).actionGet();
-//
-//        ClassLoader classLoader = getClass().getClassLoader();
-//        String resourceMapping = null;
-//        String pageMapping = null;
-//        String pathMapping = null;
-//        String settings = null;
-//        try {
-//            resourceMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/resource.json"));
-//            pageMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/page.json"));
-//            pathMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/path.json"));
-//            settings = IOUtils.toString(classLoader.getResourceAsStream("elastic/settings.json"));
-//        }
-//        catch (Exception e) {
-//            Logger.error("Could not read mappings for elastic search", e);
-//        }
-//
-//        RequestContext.getEntityManager().createNativeQuery("delete from page where id > 0").executeUpdate();
-//        RequestContext.getEntityManager().createNativeQuery("delete from resource_language").executeUpdate();
-//        RequestContext.getEntityManager().createNativeQuery("delete from resource where id > 0").executeUpdate();
-//        RequestContext.getEntityManager().createNativeQuery("delete from path where id > 0").executeUpdate();
-//
-//        IndicesAdminClient esIndicesClient = ElasticSearch.instance().getClient().admin().indices();
-//        //there used to be an index for every language, but not anymore
-//        //for (Locale locale : Settings.instance().getLanguages().values()) {
-//        esIndicesClient.prepareCreate(ElasticSearch.instance().getPageIndexName(null)).setSettings(settings).addMapping(PersistenceController.WEB_PAGE_CLASS,pageMapping).execute().actionGet();
-//        esIndicesClient.prepareCreate(ElasticSearch.instance().getResourceIndexName(null)).setSettings(settings).addMapping("_default_",resourceMapping).execute().actionGet();
-//        //}
-//
-//        esIndicesClient.prepareCreate(PersistenceController.PATH_CLASS).setSettings(settings).addMapping(PersistenceController.PATH_CLASS, pathMapping).execute().actionGet();
-//
-//        return Response.ok("<ul><li>Database emptied</li><li>Cache reset</li></ul>").build();
-//    }
-
-
-
-
-
-
-
-
+    //    @GET
+    //    @Path("/flush")
+    //    public Response flushEntities() throws Exception
+    //    {
+    //        Logger.warn("Database has been flushed by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
+    //        Logger.warn("Url-id mapping has been reset by user '" + SecurityUtils.getSubject().getPrincipal() + "' at " + LocalDateTime.now().toString() + " .");
+    //
+    //        ElasticSearch.instance().getClient().admin().indices().delete(new DeleteIndexRequest("*")).actionGet();
+    //
+    //        ClassLoader classLoader = getClass().getClassLoader();
+    //        String resourceMapping = null;
+    //        String pageMapping = null;
+    //        String pathMapping = null;
+    //        String settings = null;
+    //        try {
+    //            resourceMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/resource.json"));
+    //            pageMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/page.json"));
+    //            pathMapping = IOUtils.toString(classLoader.getResourceAsStream("elastic/path.json"));
+    //            settings = IOUtils.toString(classLoader.getResourceAsStream("elastic/settings.json"));
+    //        }
+    //        catch (Exception e) {
+    //            Logger.error("Could not read mappings for elastic search", e);
+    //        }
+    //
+    //        RequestContext.getEntityManager().createNativeQuery("delete from page where id > 0").executeUpdate();
+    //        RequestContext.getEntityManager().createNativeQuery("delete from resource_language").executeUpdate();
+    //        RequestContext.getEntityManager().createNativeQuery("delete from resource where id > 0").executeUpdate();
+    //        RequestContext.getEntityManager().createNativeQuery("delete from path where id > 0").executeUpdate();
+    //
+    //        IndicesAdminClient esIndicesClient = ElasticSearch.instance().getClient().admin().indices();
+    //        //there used to be an index for every language, but not anymore
+    //        //for (Locale locale : Settings.instance().getLanguages().values()) {
+    //        esIndicesClient.prepareCreate(ElasticSearch.instance().getPageIndexName(null)).setSettings(settings).addMapping(PersistenceController.WEB_PAGE_CLASS,pageMapping).execute().actionGet();
+    //        esIndicesClient.prepareCreate(ElasticSearch.instance().getResourceIndexName(null)).setSettings(settings).addMapping("_default_",resourceMapping).execute().actionGet();
+    //        //}
+    //
+    //        esIndicesClient.prepareCreate(PersistenceController.PATH_CLASS).setSettings(settings).addMapping(PersistenceController.PATH_CLASS, pathMapping).execute().actionGet();
+    //
+    //        return Response.ok("<ul><li>Database emptied</li><li>Cache reset</li></ul>").build();
+    //    }
 
     //    @GET
     //    @Path("/pagetemplates/{pageTemplateName}")

@@ -12,7 +12,7 @@ import com.beligum.blocks.fs.ifaces.PathInfo;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.fs.pages.ifaces.PageStore;
-import com.beligum.blocks.rdf.ifaces.Source;
+import com.beligum.blocks.rdf.sources.HtmlSource;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -55,12 +55,12 @@ public class SimplePageStore implements PageStore
         }
     }
     @Override
-    public Page save(Source source, Person creator) throws IOException
+    public Page save(HtmlSource source, Person creator) throws IOException
     {
         Page retVal = null;
 
         //create this here, so we don't boot the filesystem on validation error
-        URI validUri = DefaultPageImpl.create(source.getBaseUri(), false);
+        URI validUri = DefaultPageImpl.create(source.getBaseUri(), Settings.instance().getPagesStorePath());
 
         //now execute the FS changes
         FileContext fs = Settings.instance().getPageStoreFileSystem();
@@ -81,9 +81,12 @@ public class SimplePageStore implements PageStore
             }
 
             //pre-calculate the hash based on the incoming string and compare it with the stored version to abort early if nothing changed
-            String newHash = HdfsPathInfo.calcHashChecksumFor(new ByteArrayInputStream(sourceHtml.getBytes()));
             Path hashFile = pathInfo.getMetaHashFile();
             boolean nothingChanged = false;
+            String newHash = null;
+            try (InputStream is = new ByteArrayInputStream(sourceHtml.getBytes())) {
+                newHash = HdfsPathInfo.calcHashChecksumFor(is);
+            }
             if (fs.util().exists(hashFile)) {
                 try (FSDataInputStream is = fs.open(hashFile)) {
                     String existingHash = IOUtils.toString(is);
@@ -120,14 +123,17 @@ public class SimplePageStore implements PageStore
                 //save the normalized page html
                 Path normalizedHtml = page.getNormalizedPageProxyPath();
                 try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(normalizedHtml, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
-                    writer.write(new PageHtmlParser().parse(sourceHtml, source.getBaseUri(), true));
+                    writer.write(source.getNormalizedHtml());
                 }
 
-                //parse and set the RDF model
+                //save the source for later use (eg. in indexer)
+                page.setSource(source);
+
+                //parse and store the RDF model in the page
                 page.setRDFModel(page.createImporter().importDocument(source));
 
                 //export the RDF model to the storage file (JSON-LD)
-                try (OutputStream os = fs.create(page.getExportFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
+                try (OutputStream os = fs.create(page.getRdfExportFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
                     page.createExporter().exportModel(page.getRDFModel(), os);
                 }
 
@@ -146,7 +152,7 @@ public class SimplePageStore implements PageStore
         Page retVal = null;
 
         //create this here, so we don't boot the filesystem on validation error
-        URI validUri = DefaultPageImpl.create(uri, false);
+        URI validUri = DefaultPageImpl.create(uri, Settings.instance().getPagesStorePath());
 
         //now execute the FS changes
         FileContext fs = Settings.instance().getPageStoreFileSystem();

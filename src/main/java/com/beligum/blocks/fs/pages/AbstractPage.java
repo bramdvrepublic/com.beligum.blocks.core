@@ -3,6 +3,7 @@ package com.beligum.blocks.fs.pages;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.ifaces.PathInfo;
 import com.beligum.blocks.fs.pages.ifaces.Page;
+import com.beligum.blocks.rdf.ifaces.Source;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.rdf.model.Model;
@@ -22,11 +23,11 @@ public abstract class AbstractPage implements Page
 
     //-----VARIABLES-----
     protected final PathInfo pathInfo;
-
     private Model rdfModel;
+    private Source source;
 
     //-----CONSTRUCTORS-----
-    public static URI create(URI uri, boolean readOnly) throws IOException
+    public static URI create(URI uri, URI baseUri) throws IOException
     {
         Settings settings = Settings.instance();
 
@@ -42,8 +43,7 @@ public abstract class AbstractPage implements Page
         }
 
         //note: we normalize before resolving for safety
-        URI base = readOnly ? settings.getPagesViewPath() : settings.getPagesStorePath();
-        URI tempPagePath = base.resolve(relativeUrl.normalize());
+        URI tempPagePath = baseUri.resolve(relativeUrl.normalize());
 
         //this is important: if the url ends with a slash, we're actually saving a 'directory', so it doesn't have a name (will become 'index' later on)
         String pageName = null;
@@ -85,15 +85,26 @@ public abstract class AbstractPage implements Page
         return this.rdfModel;
     }
     @Override
+    public Source getSource()
+    {
+        return this.source;
+    }
+    @Override
     public PathInfo getPathInfo()
     {
         return pathInfo;
     }
+
     //-----PROTECTED METHODS-----
     //this should be set from a package private class
     protected void setRDFModel(Model rdfModel)
     {
         this.rdfModel = rdfModel;
+    }
+    //this should be set from a package private class
+    protected void setSource(Source source)
+    {
+        this.source = source;
     }
 
     //-----PRIVATE METHODS-----

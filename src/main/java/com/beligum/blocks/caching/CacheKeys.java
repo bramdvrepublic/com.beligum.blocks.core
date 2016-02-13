@@ -37,6 +37,8 @@ public enum CacheKeys implements CacheKey
     HDFS_PAGE_STORE,
     //application cache key to store the Elastic Search page indexer
     ELASTIC_PAGE_INDEX,
+    //application cache key to store the main page indexer
+    MAIN_PAGE_INDEX,
     //application cache key to store the triplestore page indexer
     TRIPLESTORE_PAGE_INDEX,
     //application cache key to store the XAFileSystem
