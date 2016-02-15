@@ -1,7 +1,7 @@
 package com.beligum.blocks.fs.indexes;
 
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.fs.indexes.ifaces.PageIndex;
+import com.beligum.blocks.fs.indexes.ifaces.PageIndexer;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import org.apache.jena.query.*;
 
@@ -14,7 +14,7 @@ import java.io.IOException;
  * <p/>
  * https://jena.apache.org/documentation/tdb/java_api.html
  */
-public class JenaPageIndex implements PageIndex
+public class JenaPageIndexer implements PageIndexer
 {
     //-----CONSTANTS-----
 
@@ -22,7 +22,7 @@ public class JenaPageIndex implements PageIndex
     private Dataset dataset;
 
     //-----CONSTRUCTORS-----
-    public JenaPageIndex()
+    public JenaPageIndexer()
     {
         //note: it's closed on onServerStopped(), this is just a reference
         this.dataset = Settings.instance().getRDFDataset();

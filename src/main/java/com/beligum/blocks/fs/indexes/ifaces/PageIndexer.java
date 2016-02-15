@@ -7,7 +7,7 @@ import java.io.IOException;
 /**
  * Created by bram on 1/26/16.
  */
-public interface PageIndex extends Index
+public interface PageIndexer extends Indexer
 {
     //-----CONSTANTS-----
 

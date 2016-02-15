@@ -1,7 +1,7 @@
 package com.beligum.blocks.fs.indexes;
 
 import com.beligum.base.utils.json.Json;
-import com.beligum.blocks.fs.indexes.ifaces.PageIndex;
+import com.beligum.blocks.fs.indexes.ifaces.PageIndexer;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -17,7 +17,7 @@ import java.io.InputStream;
  *
  *
  */
-public class ElasticPageIndex implements PageIndex
+public class ElasticPageIndexer implements PageIndexer
 {
     //-----CONSTANTS-----
 

@@ -16,10 +16,10 @@ import com.beligum.blocks.rdf.sources.HtmlSource;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.joda.time.DateTime;
 
 import java.io.*;
 import java.net.URI;
+import java.time.ZonedDateTime;
 import java.util.EnumSet;
 
 /**
@@ -215,14 +215,14 @@ public class SimplePageStore implements PageStore
     {
         // Note: it makes sense to use the now timestamp because we're about to create a snapshot of the situation _now_
         // we can't really rely on other timestamps because which one should we take?
-        DateTime stamp = DateTime.now();
+        ZonedDateTime stamp = ZonedDateTime.now();
 
         // first, we'll create a snapshot of the meta folder to a sibling folder. We can't copy it to it's final destination
         // because that is a subfolder of the folder we're copying and we'll encounter odd recursion.
         Path snapshotMetaFolder = new Path(pathInfo.getMetaFolder().getParent(), pathInfo.getMetaFolder().getName() + Constants.TEMP_SNAPSHOT_SUFFIX);
 
         //this is the new history entry folder
-        Path newHistoryEntryFolder = new Path(pathInfo.getMetaHistoryFolder(), Constants.FOLDER_TIMESTAMP_FORMAT.print(stamp));
+        Path newHistoryEntryFolder = new Path(pathInfo.getMetaHistoryFolder(), Constants.FOLDER_TIMESTAMP_FORMAT.format(stamp));
 
         //the history entry destination (eg. the original file in the history entry folder)
         PathInfo historyEntry = new HdfsPathInfo(fs, new Path(newHistoryEntryFolder, pathInfo.getPath().getName()));

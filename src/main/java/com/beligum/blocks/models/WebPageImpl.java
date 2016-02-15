@@ -2,9 +2,9 @@ package com.beligum.blocks.models;
 
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.models.interfaces.WebPage;
-import org.joda.time.LocalDateTime;
 
 import java.net.URI;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**

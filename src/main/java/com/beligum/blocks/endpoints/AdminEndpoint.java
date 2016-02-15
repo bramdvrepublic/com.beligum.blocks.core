@@ -120,7 +120,7 @@ public class AdminEndpoint
                             String parsedHtml = response.getEntity().toString();
                             Logger.info(parsedHtml);
 
-                            new PageEndpointOld().savePageNew(uri, parsedHtml);
+                            new PageEndpoint().savePage(uri, parsedHtml);
 
                             R.cacheManager().getFlashCache().addMessage(new DefaultFeedbackMessage(FeedbackMessage.Level.SUCCESS, "All done."));
 

@@ -6,10 +6,10 @@ import com.beligum.base.models.ifaces.Subject;
 import com.beligum.base.security.Authentication;
 import com.beligum.base.security.Principal;
 import org.hibernate.annotations.Type;
-import org.joda.time.LocalDateTime;
 
 import javax.persistence.*;
 import javax.xml.bind.annotation.XmlTransient;
+import java.time.LocalDateTime;
 
 /**
  * Created by wouter on 1/07/15.
@@ -23,12 +23,13 @@ public class DBDocumentInfo implements BasicModel
     protected Long id;
 
     @Column(name = "created_at")
-    @Type(type = "org.jadira.usertype.dateandtime.joda.PersistentLocalDateTime")
-    protected LocalDateTime createdAt;
+    @Type(type="org.hibernate.type.LocalDateTimeType")
+    protected java.time.LocalDateTime createdAt;
 
     @Column(name = "updated_at")
-    @Type(type = "org.jadira.usertype.dateandtime.joda.PersistentLocalDateTime")
-    protected LocalDateTime updatedAt;
+    @Type(type="org.hibernate.type.LocalDateTimeType")
+    protected java.time.LocalDateTime updatedAt;
+
     @Column(name = "deleted", nullable = false)
     protected boolean deleted = false;
     @ManyToOne(fetch = FetchType.LAZY, targetEntity = AbstractSubject.class, cascade = {})

@@ -6,10 +6,10 @@ import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.models.jackson.NodeSerializer;
 import com.fasterxml.jackson.core.JsonGenerator;
-import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDateTime;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Locale;
 import java.util.Map;
 
@@ -57,14 +57,14 @@ public class PageSerializer<T extends WebPage> extends NodeSerializer
                 writeLocalValues(jgen, ParserConstants.PAGE_PROPERTY_UPDATED_BY, webPage);
 
                 jgen.writeFieldName(ParserConstants.PAGE_PROPERTY_UPDATED_AT);
-                jgen.writeNumber(webPage.getUpdatedAt(Locale.ROOT).toDateTime(DateTimeZone.UTC).getMillis());
+                jgen.writeNumber(webPage.getUpdatedAt(Locale.ROOT).toInstant(ZoneOffset.UTC).toEpochMilli());
                 jgen.writeFieldName(ParserConstants.PAGE_PROPERTY_UPDATED_AT + ParserConstants.LOCALIZED_PROPERTY);
                 jgen.writeStartObject();
                 for (Locale locale : webPage.getLanguages()) {
                     jgen.writeFieldName(locale.getLanguage());
                     LocalDateTime value = webPage.getUpdatedAt(locale);
                     if (value != null) {
-                        jgen.writeNumber(value.toDateTime(DateTimeZone.UTC).getMillis());
+                        jgen.writeNumber(value.toInstant(ZoneOffset.UTC).toEpochMilli());
                     }
                 }
                 jgen.writeEndObject();
@@ -76,14 +76,14 @@ public class PageSerializer<T extends WebPage> extends NodeSerializer
                 writeLocalValues(jgen, ParserConstants.PAGE_PROPERTY_CREATED_BY, webPage);
 
                 jgen.writeFieldName(ParserConstants.PAGE_PROPERTY_CREATED_AT);
-                jgen.writeNumber(webPage.getCreatedAt().toDateTime(DateTimeZone.UTC).getMillis());
+                jgen.writeNumber(webPage.getCreatedAt().toInstant(ZoneOffset.UTC).toEpochMilli());
                 jgen.writeFieldName(ParserConstants.PAGE_PROPERTY_UPDATED_AT + ParserConstants.LOCALIZED_PROPERTY);
                 jgen.writeStartObject();
                 for (Locale locale : webPage.getLanguages()) {
                     jgen.writeFieldName(locale.getLanguage());
                     LocalDateTime value = webPage.getCreatedAt(locale);
                     if (value != null) {
-                        jgen.writeNumber(value.toDateTime(DateTimeZone.UTC).getMillis());
+                        jgen.writeNumber(value.toInstant(ZoneOffset.UTC).toEpochMilli());
                     }
                 }
                 jgen.writeEndObject();

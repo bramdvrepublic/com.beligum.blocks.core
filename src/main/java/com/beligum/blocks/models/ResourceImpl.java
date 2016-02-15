@@ -5,10 +5,10 @@ import com.beligum.blocks.models.interfaces.Node;
 import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.models.interfaces.ResourceFactory;
 import com.beligum.blocks.utils.RdfTools;
-import org.joda.time.LocalDateTime;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**

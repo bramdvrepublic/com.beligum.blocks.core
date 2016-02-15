@@ -48,5 +48,9 @@ public enum CacheKeys implements CacheKey
     //application cache key to store the Jena dataset
     RDF_DATASET,
     //flash cache key that holds the temporarily selected new page tempalte
-    NEW_PAGE_TEMPLATE_NAME
+    NEW_PAGE_TEMPLATE_NAME,
+    //Application cache key that hold the lucene index writer
+    LUCENE_INDEX_WRITER,
+    //Application cache key that holds the Hibernate search integrator instance
+    HIBERNATE_SEARCH_SEARCH_INTEGRATOR
 }

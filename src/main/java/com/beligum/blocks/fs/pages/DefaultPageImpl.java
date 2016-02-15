@@ -13,6 +13,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tika.mime.MediaType;
 
 import java.io.IOException;
+import java.net.URI;
 
 /**
  * Created by bram on 1/14/16.

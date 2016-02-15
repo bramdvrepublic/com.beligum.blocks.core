@@ -45,6 +45,11 @@ public class HdfsPathInfo implements PathInfo
 
     //-----PUBLIC METHODS-----
     @Override
+    public URI getUri()
+    {
+        return this.path == null ? null : this.path.toUri();
+    }
+    @Override
     public Path getPath()
     {
         return this.path;

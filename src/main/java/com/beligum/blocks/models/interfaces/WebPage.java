@@ -1,7 +1,6 @@
 package com.beligum.blocks.models.interfaces;
 
-import org.joda.time.LocalDateTime;
-
+import java.time.LocalDateTime;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;

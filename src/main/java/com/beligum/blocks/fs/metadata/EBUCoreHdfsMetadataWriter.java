@@ -9,7 +9,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.CreateFlag;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Options;
-import org.joda.time.DateTime;
 
 import javax.xml.bind.JAXB;
 import javax.xml.datatype.DatatypeConfigurationException;
@@ -18,6 +17,7 @@ import javax.xml.datatype.XMLGregorianCalendar;
 import java.io.*;
 import java.lang.String;
 import java.util.EnumSet;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 
@@ -265,19 +265,13 @@ public class EBUCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
     }
     private XMLGregorianCalendar getCalendar() throws IOException
     {
-        return this.getCalendar(DateTime.now());
-    }
-    private XMLGregorianCalendar getCalendar(DateTime jodaTime) throws IOException
-    {
         XMLGregorianCalendar retVal = null;
 
-        if (jodaTime!=null) {
-            try {
-                retVal = DatatypeFactory.newInstance().newXMLGregorianCalendar(jodaTime.toGregorianCalendar());
-            }
-            catch (DatatypeConfigurationException e) {
-                throw new IOException("Error while creating instance of XMLGregorianCalendar", e);
-            }
+        try {
+            retVal = DatatypeFactory.newInstance().newXMLGregorianCalendar(new GregorianCalendar());
+        }
+        catch (DatatypeConfigurationException e) {
+            throw new IOException("Error while creating instance of XMLGregorianCalendar", e);
         }
 
         return retVal;

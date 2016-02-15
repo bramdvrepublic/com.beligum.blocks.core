@@ -24,9 +24,7 @@
         <semargl.version>0.6.1</semargl.version>
         <jena.version>3.0.1</jena.version>
 
-        <hibernate-search.version>5.5.0.Final</hibernate-search.version>
         <!--sync this with hibernate search -->
-        <!--<lucene.version>4.10.2</lucene.version>-->
         <lucene.version>5.3.0</lucene.version>
     </properties>
 
@@ -43,7 +41,7 @@
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-auth</artifactId>
-            <version>0.1.4</version>
+            <version>0.1.5-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
@@ -182,13 +180,6 @@
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
             <version>1.5.2</version>
-        </dependency>
-
-
-        <dependency>
-            <groupId>com.beligum.blocks</groupId>
-            <artifactId>blocks-media-commons</artifactId>
-            <version>0.0.3-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -440,12 +431,6 @@
             <version>1.5</version>
         </dependency>
 
-
-        <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-search</artifactId>
-            <version>${hibernate-search.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>

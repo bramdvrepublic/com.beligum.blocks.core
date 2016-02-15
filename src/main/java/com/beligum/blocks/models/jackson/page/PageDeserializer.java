@@ -1,14 +1,16 @@
 package com.beligum.blocks.models.jackson.page;
 
-import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.ParserConstants;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.models.WebPageImpl;
 import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.models.jackson.NodeDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.joda.time.LocalDateTime;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 /**
@@ -108,7 +110,7 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
             }
 
             if (node.has(ParserConstants.PAGE_PROPERTY_UPDATED_AT)) {
-                LocalDateTime date = new LocalDateTime(node.get(ParserConstants.PAGE_PROPERTY_UPDATED_AT).asLong());
+                LocalDateTime date = LocalDateTime.ofInstant(Instant.ofEpochMilli(node.get(ParserConstants.PAGE_PROPERTY_UPDATED_AT).asLong()), ZoneId.systemDefault());
                 webPage.setUpdatedAt(date, Locale.ROOT);
             }
 
@@ -119,13 +121,13 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
                     String lang = fieldnames.next();
                     Locale locale = Settings.instance().getLocaleForLanguage(lang);
                     if (locale != null) {
-                        webPage.setUpdatedAt(new LocalDateTime(o.get(lang).asLong()), locale);
+                        webPage.setUpdatedAt(LocalDateTime.ofInstant(Instant.ofEpochMilli((o.get(lang).asLong())), ZoneId.systemDefault()));
                     }
                 }
             }
 
             if (node.has(ParserConstants.PAGE_PROPERTY_CREATED_AT)) {
-                LocalDateTime date = new LocalDateTime(node.get(ParserConstants.PAGE_PROPERTY_CREATED_AT).asLong());
+                LocalDateTime date = LocalDateTime.ofInstant(Instant.ofEpochMilli(node.get(ParserConstants.PAGE_PROPERTY_CREATED_AT).asLong()), ZoneId.systemDefault());
                 webPage.setCreatedAt(date, Locale.ROOT);
             }
 
@@ -136,7 +138,7 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
                     String lang = fieldnames.next();
                     Locale locale = Settings.instance().getLocaleForLanguage(lang);
                     if (locale != null) {
-                        webPage.setCreatedAt(new LocalDateTime(o.get(lang).asLong()), locale);
+                        webPage.setCreatedAt(LocalDateTime.ofInstant(Instant.ofEpochMilli((o.get(lang).asLong())), ZoneId.systemDefault()));
                     }
                 }
             }

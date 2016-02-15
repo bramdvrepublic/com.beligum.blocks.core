@@ -9,9 +9,9 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.fs.indexes.JenaPageIndex;
-import com.beligum.blocks.fs.indexes.LucenePageIndex;
-import com.beligum.blocks.fs.indexes.ifaces.PageIndex;
+import com.beligum.blocks.fs.indexes.JenaPageIndexer;
+import com.beligum.blocks.fs.indexes.LucenePageIndexer;
+import com.beligum.blocks.fs.indexes.ifaces.PageIndexer;
 import com.beligum.blocks.fs.pages.SimplePageStore;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.fs.pages.ifaces.PageStore;
@@ -215,21 +215,21 @@ public class PageEndpoint
 
         return (PageStore) R.cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGE_STORE);
     }
-    private PageIndex getMainPageIndex() throws IOException
+    private PageIndexer getMainPageIndex() throws IOException
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.MAIN_PAGE_INDEX)) {
-            R.cacheManager().getApplicationCache().put(CacheKeys.MAIN_PAGE_INDEX, new LucenePageIndex());
+            R.cacheManager().getApplicationCache().put(CacheKeys.MAIN_PAGE_INDEX, new LucenePageIndexer());
         }
 
-        return (PageIndex) R.cacheManager().getApplicationCache().get(CacheKeys.MAIN_PAGE_INDEX);
+        return (PageIndexer) R.cacheManager().getApplicationCache().get(CacheKeys.MAIN_PAGE_INDEX);
     }
-    private PageIndex getTriplestorePageIndex() throws IOException
+    private PageIndexer getTriplestorePageIndex() throws IOException
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRIPLESTORE_PAGE_INDEX)) {
-            R.cacheManager().getApplicationCache().put(CacheKeys.TRIPLESTORE_PAGE_INDEX, new JenaPageIndex());
+            R.cacheManager().getApplicationCache().put(CacheKeys.TRIPLESTORE_PAGE_INDEX, new JenaPageIndexer());
         }
 
-        return (PageIndex) R.cacheManager().getApplicationCache().get(CacheKeys.TRIPLESTORE_PAGE_INDEX);
+        return (PageIndexer) R.cacheManager().getApplicationCache().get(CacheKeys.TRIPLESTORE_PAGE_INDEX);
     }
     private String findI18NValue(Locale[] langs, Map<Locale, String> values, String defaultValue)
     {

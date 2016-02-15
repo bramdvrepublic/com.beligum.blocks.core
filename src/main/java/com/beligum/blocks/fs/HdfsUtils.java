@@ -1,5 +1,6 @@
 package com.beligum.blocks.fs;
 
+import com.beligum.blocks.fs.hdfs.HadoopBasicFileAttributes;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -8,6 +9,7 @@ import org.apache.hadoop.fs.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileVisitor;
 import java.security.SecureRandom;
 import java.util.EnumSet;
 
@@ -24,21 +26,12 @@ public class HdfsUtils
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    /**
-     * Returns the current config.
-     * TODO: hope this is ok!
-     * @return
-     */
-    public static Configuration getConf()
-    {
-        return new Configuration();
-    }
     public static String readFile(FileContext fs, Path path) throws IOException
     {
         String retVal = null;
 
         try (InputStream is = fs.open(path)) {
-            IOUtils.toString(is, Charsets.UTF_8);
+            retVal = IOUtils.toString(is, Charsets.UTF_8);
         }
 
         return retVal;
@@ -55,6 +48,39 @@ public class HdfsUtils
 
             if (fileStatus.isDirectory()) {
                 recursiveDeleteLockFiles(fs, fileStatus.getPath());
+            }
+        }
+    }
+    /**
+     * Basic implementation of a recursive, depth-first file visitor for HDFS paths,
+     * mimicing the Files.walkFileTree() of Java NIO
+     * @param fs the filesystem
+     * @param folder the folder where to start
+     * @param visitor the visitor implementation
+     * @throws IOException
+     */
+    public static void walkFileTree(FileContext fs, Path folder, FileVisitor<Path> visitor) throws IOException
+    {
+        RemoteIterator<FileStatus> status = fs.listStatus(folder);
+        while (status.hasNext()) {
+            FileStatus childStatus = status.next();
+            Path child = childStatus.getPath();
+            if (childStatus.isDirectory()) {
+
+                visitor.preVisitDirectory(child, new HadoopBasicFileAttributes(childStatus));
+
+                IOException exception = null;
+                try {
+                    walkFileTree(fs, child, visitor);
+                }
+                catch (IOException e) {
+                    exception = e;
+                }
+
+                visitor.postVisitDirectory(child, exception);
+            }
+            else {
+                visitor.visitFile(child, new HadoopBasicFileAttributes(childStatus));
             }
         }
     }
@@ -130,4 +156,16 @@ public class HdfsUtils
         }
         return f;
     }
+    /**
+     * Returns the current config.
+     * TODO: hope this is ok!
+     * @return
+     */
+    private static Configuration getConf()
+    {
+        return new Configuration();
+    }
+
+    //-----INNER CLASSES------
+
 }

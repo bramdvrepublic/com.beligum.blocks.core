@@ -6,6 +6,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tika.mime.MediaType;
 
 import java.io.IOException;
+import java.net.URI;
 
 /**
  * <p>
@@ -24,6 +25,8 @@ public interface PathInfo
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
+    URI getUri();
+
     Path getPath();
 
     FileContext getFileContext();

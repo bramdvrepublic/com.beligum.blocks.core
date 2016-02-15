@@ -9,12 +9,14 @@ import org.apache.hadoop.fs.Path;
 import org.apache.jena.rdf.model.Model;
 
 import java.io.IOException;
+import java.net.URI;
 
 /**
  * Created by bram on 1/14/16.
  */
 public interface Page
 {
+    URI getUri();
     Importer createImporter() throws IOException;
     Exporter createExporter() throws IOException;
     MetadataWriter createMetadataWriter() throws IOException;

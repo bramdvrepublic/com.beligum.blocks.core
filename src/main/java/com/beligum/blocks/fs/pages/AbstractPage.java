@@ -39,7 +39,7 @@ public abstract class AbstractPage implements Page
         relativeUrl = ROOT.relativize(relativeUrl);
         URI relativeUrlTest = settings.getSiteDomain().relativize(uri);
         if (!relativeUrl.equals(relativeUrlTest)) {
-            throw new SecurityException("Trying to create a page path from outside the domain ("+settings.getSiteDomain()+"), can't proceed; "+uri);
+            throw new SecurityException("Trying to create a page path from outside the domain (" + settings.getSiteDomain() + "), can't proceed; " + uri);
         }
 
         //note: we normalize before resolving for safety
@@ -53,7 +53,7 @@ public abstract class AbstractPage implements Page
         }
 
         //this means we're dealing with a directory, not a file
-        if (pageName==null) {
+        if (pageName == null) {
             pageName = DIR_PAGE_NAME;
         }
         else if (pageName.equals(DIR_PAGE_NAME)) {
@@ -79,6 +79,11 @@ public abstract class AbstractPage implements Page
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public URI getUri()
+    {
+        return this.pathInfo == null ? null : this.pathInfo.getUri();
+    }
     @Override
     public Model getRDFModel()
     {
