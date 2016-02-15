@@ -1,7 +1,7 @@
 package com.beligum.blocks.controllers;
 
 import com.beligum.base.i18n.I18nFactory;
-import com.beligum.base.server.RequestContext;
+import com.beligum.base.server.R;
 import com.beligum.blocks.models.interfaces.WebPage;
 import com.beligum.blocks.routing.Route;
 import com.beligum.blocks.templating.blocks.DefaultTemplateController;
@@ -28,7 +28,7 @@ public class BreadcrumbController extends DefaultTemplateController
     {
         List<HashMap<String, String>> retVal = new ArrayList<>();
         // get URI
-        URI originalUri = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
+        URI originalUri = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
         Route originalRoute = new Route(originalUri, PersistenceControllerImpl.instance());
 
         for (int i = 0; i <= originalRoute.getPath().getNameCount(); i++) {

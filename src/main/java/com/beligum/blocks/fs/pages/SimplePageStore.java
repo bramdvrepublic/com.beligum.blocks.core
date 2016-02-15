@@ -2,6 +2,7 @@ package com.beligum.blocks.fs.pages;
 
 import com.beligum.base.auth.models.Person;
 import com.beligum.base.server.R;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.HdfsPathInfo;
 import com.beligum.blocks.fs.HdfsUtils;
@@ -17,10 +18,14 @@ import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 
+import javax.ws.rs.core.UriBuilder;
 import java.io.*;
 import java.net.URI;
 import java.time.ZonedDateTime;
 import java.util.EnumSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by bram on 1/14/16.
@@ -60,21 +65,38 @@ public class SimplePageStore implements PageStore
         Page retVal = null;
 
         //create this here, so we don't boot the filesystem on validation error
-        URI validUri = DefaultPageImpl.create(source.getBaseUri(), Settings.instance().getPagesStorePath());
+        URI localResourceUri = DefaultPageImpl.create(source.getBaseUri(), Settings.instance().getPagesStorePath());
 
         //now execute the FS changes
         FileContext fs = Settings.instance().getPageStoreFileSystem();
 
-        PathInfo pathInfo = new HdfsPathInfo(fs, validUri);
+        PathInfo pathInfo = new HdfsPathInfo(fs, localResourceUri);
         //we need to use the abstract type here to have access to the package private setters
         AbstractPage page = new DefaultPageImpl(pathInfo);
 
+        //will synchronize the metadata directory by creating/releasing a lock file
         try (LockFile lock = pathInfo.acquireLock()) {
 
             //prepare the HTML for saving
             source.prepareForSaving(true, true);
 
-            //we'll read everything into a string for ease of use
+            //find translations on disk
+            Set<URI> translations = source.getTranslations();
+            Map<String, Locale> siteLanguages = Settings.instance().getLanguages();
+            for (Map.Entry<String, Locale> l : siteLanguages.entrySet()) {
+                if (!l.getValue().equals(source.getHtmlLocale())) {
+                    UriBuilder translatedUri = UriBuilder.fromUri(source.getBaseUri());
+                    Locale detectedLang = R.i18nFactory().getUrlLocale(source.getBaseUri(), translatedUri, l.getValue());
+                    if (detectedLang != null) {
+                        Logger.error(translatedUri.build());
+                    }
+                    else {
+                        throw new IOException("No language detected in the page url; can't pull a translated url and can't proceed; " + localResourceUri);
+                    }
+                }
+            }
+
+            //we'll read everything into a string for performance and ease of use
             String sourceHtml;
             try (InputStream is = source.openNewInputStream()) {
                 sourceHtml = IOUtils.toString(is);
@@ -134,7 +156,8 @@ public class SimplePageStore implements PageStore
 
                 //export the RDF model to the storage file (JSON-LD)
                 try (OutputStream os = fs.create(page.getRdfExportFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
-                    page.createExporter().exportModel(page.getRDFModel(), os);
+                    //TODO enable this again!!
+                    //page.createExporter().exportModel(page.getRDFModel(), os);
                 }
 
                 //save the page metadata (read it in if it exists)

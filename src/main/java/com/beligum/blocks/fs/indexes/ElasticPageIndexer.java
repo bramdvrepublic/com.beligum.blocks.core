@@ -39,6 +39,26 @@ public class ElasticPageIndexer implements PageIndexer
         //TODO: do something with it ;-)
         //Logger.info(Json.getObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(jsonLd));
     }
+    @Override
+    public void beginTransaction() throws IOException
+    {
+        //TODO
+    }
+    @Override
+    public void commitTransaction() throws IOException
+    {
+        //TODO
+    }
+    @Override
+    public void rollbackTransaction() throws IOException
+    {
+        //TODO
+    }
+    @Override
+    public void shutdown()
+    {
+        //TODO
+    }
 
     //-----PROTECTED METHODS-----
 

@@ -4,16 +4,16 @@ import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.fs.HdfsPathInfo;
 import com.beligum.blocks.fs.indexes.ifaces.PageIndexer;
 import com.beligum.blocks.fs.indexes.stubs.PageStub;
 import com.beligum.blocks.fs.indexes.stubs.Stub;
+import com.beligum.blocks.fs.pages.DefaultPageImpl;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.index.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.hibernate.search.bridge.util.impl.ContextualExceptionBridgeHelper;
@@ -23,6 +23,7 @@ import org.hibernate.search.engine.spi.DocumentBuilderIndexedEntity;
 import org.hibernate.search.spi.SearchIntegratorBuilder;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
@@ -59,31 +60,46 @@ public class LucenePageIndexer implements PageIndexer
     @Override
     public void indexPage(Page page) throws IOException
     {
+        PageStub stub = new PageStub(page);
+        PageStub stub2 = new PageStub(new DefaultPageImpl(new HdfsPathInfo(page.getPathInfo().getFileContext(), URI.create("http://tweakers.net"))));
+        stub.addChild(stub2);
+
         IndexWriter luceneWriter = this.getLuceneIndexWriter();
-        Stub stub = new PageStub(page);
         Document doc = this.toDoc(stub);
         Term idTerm = new Term(Stub.ID_FIELD_NAME, stub.getId().toString());
 
         //let's not mix-and-mingle writes (even though the IndexWriter is thread-safe),
         // so we can do a clean commit/rollback on our own
+        //TODO this should probably be synchronized with the transaction methods in some way
         synchronized (this.indexLock) {
-            boolean success = false;
-            try {
-                //note: there's not such thing as a .begin(); the begin is just where the last .commit() left off
-                luceneWriter.updateDocument(idTerm, doc);
-                success = true;
-            }
-            finally {
-                if (success) {
-                    luceneWriter.commit();
-                }
-                else {
-                    luceneWriter.rollback();
-                }
-            }
+            //note: there's not such thing as a .begin(); the begin is just where the last .commit() left off
+            luceneWriter.updateDocument(idTerm, doc);
+            this.printLuceneIndex();
         }
     }
-    public void close() throws IOException
+    @Override
+    public void beginTransaction() throws IOException
+    {
+        //note: there's not such thing as a .begin(); the begin is just where the last .commit() left off
+    }
+    @Override
+    public void commitTransaction() throws IOException
+    {
+        IndexWriter luceneWriter = this.getLuceneIndexWriter();
+        if (luceneWriter.isOpen()) {
+            luceneWriter.commit();
+        }
+    }
+    @Override
+    public void rollbackTransaction() throws IOException
+    {
+        IndexWriter luceneWriter = this.getLuceneIndexWriter();
+        if (luceneWriter.isOpen()) {
+            luceneWriter.rollback();
+        }
+    }
+    @Override
+    public void shutdown()
     {
         if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_WRITER)) {
             try {
@@ -106,6 +122,19 @@ public class LucenePageIndexer implements PageIndexer
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+    private void printLuceneIndex() throws IOException
+    {
+        final java.nio.file.Path docDir = Settings.instance().getPageMainIndexFolder().toPath();
+        Directory dir = FSDirectory.open(docDir);
+
+        try (IndexReader reader = DirectoryReader.open(dir)) {
+            int numDocs = reader.numDocs();
+            for (int i = 0; i < numDocs; i++) {
+                Document d = reader.document(i);
+                System.out.println(i+") " + d);
+            }
+        }
+    }
     /**
      * Good start: org.hibernate.search.query.dsl.impl.MoreLikeThisBuilder
      * This method uses the handy Hibernate Search annotations to convert a POJO to a Lucene document.

@@ -66,7 +66,7 @@ public class TemplateContextMap implements com.beligum.base.templating.ifaces.Te
         public TemplateController get(Object key)
         {
             TemplateController retVal = null;
-            if (!RequestContext.getRequestCache().containsKey(key)) {
+            if (!R.requestContext().getRequestCache().containsKey(key)) {
                 if (key != null) {
                     Class<TemplateController> controllerClass = (Class<TemplateController>) this.mapping.get(key);
                     if (controllerClass != null) {
@@ -79,10 +79,10 @@ public class TemplateContextMap implements com.beligum.base.templating.ifaces.Te
                     }
                 }
 
-                RequestContext.getRequestCache().put(key, retVal);
+                R.requestContext().getRequestCache().put(key, retVal);
             }
             else {
-                retVal = (TemplateController) RequestContext.getRequestCache().get(key);
+                retVal = (TemplateController) R.requestContext().getRequestCache().get(key);
             }
 
             return retVal;

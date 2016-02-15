@@ -88,7 +88,7 @@ public class AdminEndpoint
                 int pageIdx = 0;
                 boolean endReached = false;
                 while (!endReached) {
-                    List<DBPath> allPages = RequestContext.getEntityManager().createQuery("select p FROM DBPath p ORDER BY p.updatedAt DESC", DBPath.class)
+                    List<DBPath> allPages = R.requestContext().getEntityManager().createQuery("select p FROM DBPath p ORDER BY p.updatedAt DESC", DBPath.class)
                                                           .setFirstResult(pageIdx)
                                                           .setMaxResults(PAGE_SIZE)
                                                           .getResultList();

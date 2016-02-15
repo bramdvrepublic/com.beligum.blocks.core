@@ -1,8 +1,9 @@
 package com.beligum.blocks.fs.indexes;
 
-import com.beligum.blocks.fs.indexes.stubs.PageStub;
+import com.beligum.base.utils.toolkit.ReflectionFunctions;
 import org.hibernate.annotations.common.reflection.ReflectionManager;
 import org.hibernate.annotations.common.reflection.java.JavaReflectionManager;
+import org.hibernate.search.annotations.Indexed;
 import org.hibernate.search.cfg.SearchMapping;
 import org.hibernate.search.cfg.spi.SearchConfigurationBase;
 import org.hibernate.search.engine.service.classloading.impl.DefaultClassLoaderService;
@@ -35,7 +36,11 @@ public class LuceneSearchConfiguration extends SearchConfigurationBase
         // we don't want hibernate to create any directories for us, so use the ram-only provider
         this.properties.setProperty("hibernate.search.default.directory_provider", "ram");
 
-        this.entities.put(PageStub.class.getCanonicalName(), PageStub.class);
+        //TODO maybe sync these two?
+        Set<Class<?>> indexedClasses = ReflectionFunctions.searchAllAnnotatedClasses(Indexed.class);
+        for (Class<?> c : indexedClasses) {
+            this.entities.put(c.getCanonicalName(), c);
+        }
         this.reflectionManager = new JavaReflectionManager();
 
         //this.classLoaderService = serviceRegistry.getService( ClassLoaderService.class );

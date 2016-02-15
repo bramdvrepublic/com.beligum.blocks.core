@@ -5,6 +5,7 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.fs.hdfs.TransactionalRawLocalFS;
 import com.beligum.blocks.fs.hdfs.TransactionalRawLocalFileSystem;
+import com.beligum.blocks.fs.indexes.ifaces.Indexer;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -13,8 +14,6 @@ import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.FsConstants;
 import org.apache.hadoop.fs.local.RawLocalFs;
-import org.apache.jena.query.Dataset;
-import org.apache.jena.tdb.TDBFactory;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystemProxy;
 import org.xadisk.filesystem.standalone.StandaloneFileSystemConfiguration;
@@ -61,7 +60,6 @@ public class Settings
     protected Object txManagerLock = new Object();
     private File cachedPagesMainIndexDir;
     private File cachedPagesTripleStoreDir;
-    private Object rdfDatasetLock = new Object();
 
     private Settings()
     {
@@ -419,16 +417,13 @@ public class Settings
 
         return this.cachedPagesTripleStoreDir;
     }
-    public Dataset getRDFDataset()
+    public Set<Indexer> getIndexerRegistry()
     {
-        synchronized (this.rdfDatasetLock) {
-            if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.RDF_DATASET)) {
-                Dataset dataset = TDBFactory.createDataset(Settings.instance().getPageTripleStoreFolder().getAbsolutePath());
-                R.cacheManager().getApplicationCache().put(CacheKeys.RDF_DATASET, dataset);
-            }
-
-            return (Dataset) R.cacheManager().getApplicationCache().get(CacheKeys.RDF_DATASET);
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.REGISTERED_INDEXERS)) {
+            R.cacheManager().getApplicationCache().put(CacheKeys.REGISTERED_INDEXERS, new HashSet<>());
         }
+
+        return (Set<Indexer>) R.cacheManager().getApplicationCache().get(CacheKeys.REGISTERED_INDEXERS);
     }
 
     //TODO revise these below:

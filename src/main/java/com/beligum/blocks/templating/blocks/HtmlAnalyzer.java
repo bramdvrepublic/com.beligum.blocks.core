@@ -39,6 +39,7 @@ public class HtmlAnalyzer
     private Source htmlDocument;
     private String normalizedHtml;
     private Locale htmlLocale;
+    private Map<URI, StartTag> translations;
     private Map<URI, Attribute> internalRefs;
     private Map<URI, Attribute> externalRefs;
 
@@ -47,6 +48,7 @@ public class HtmlAnalyzer
     {
         this.allTagTemplates = HtmlParser.getTemplateCache();
 
+        this.translations = new HashMap<>();
         this.internalRefs = new HashMap<>();
         this.externalRefs = new HashMap<>();
     }
@@ -57,7 +59,6 @@ public class HtmlAnalyzer
      * to be retrieved later on by the getters below.
      *
      * @param htmlSource
-     * @param baseContext
      * @param prettyPrint
      * @throws IOException
      */
@@ -105,7 +106,23 @@ public class HtmlAnalyzer
     }
     public String getNormalizedHtml()
     {
-        return this.normalizedHtml;
+        return normalizedHtml;
+    }
+    public Locale getHtmlLocale()
+    {
+        return htmlLocale;
+    }
+    public Map<URI, Attribute> getInternalRefs()
+    {
+        return internalRefs;
+    }
+    public Map<URI, Attribute> getExternalRefs()
+    {
+        return externalRefs;
+    }
+    public Map<URI, StartTag> getTranslations()
+    {
+        return translations;
     }
 
     //-----PROTECTED METHODS-----
@@ -136,15 +153,21 @@ public class HtmlAnalyzer
             if (node instanceof StartTag) {
                 StartTag startTag = (StartTag) node;
 
-                //check if we need to pull out this tag as a reference
-                this.extractReference(startTag);
-
                 boolean isProperty = this.isProperty(startTag);
                 boolean isTemplateTag = this.isTemplate(startTag);
 
                 //*also* write the tag out in these cases
                 if (/*isTemplateTag || */isProperty) {
                     writeTag = true;
+                }
+
+                this.extractTranslation(startTag);
+
+                // check if we need to pull out this tag as a reference
+                // note it doesn't make sense to store the references of tags that are not included in the normalized html,
+                // because they're not really 'part' of this document.
+                if (writeTag) {
+                    this.extractReference(startTag);
                 }
 
                 //this means we won't encounter an end tag for this start tag
@@ -208,6 +231,10 @@ public class HtmlAnalyzer
 
         return depth;
     }
+    /**
+     * Extract and save the internal (internal pages to this site) and external (http/https/ftp/...) references
+     * in this tag.
+     */
     private void extractReference(StartTag startTag)
     {
         Attributes startTagAttrs = startTag.getAttributes();
@@ -231,13 +258,46 @@ public class HtmlAnalyzer
                             }
                         }
                         catch (IllegalArgumentException e) {
-                            Logger.debug("Encountered illegal URI as an attribtue value of " + attr + " in " + startTag, e);
+                            Logger.debug("Encountered illegal URI as an attribute value of " + attr + " in " + startTag, e);
                         }
                     }
                 }
             }
         }
     }
+    /**
+     * Extract and save the translation (if this start tag is a <link rel="alternate"> tag)
+     * Example: <link rel="alternate" type="text/html" hreflang="fr" href="/fr/other/page/index.html">
+     * The "alternate" keyword creates a hyperlink referencing an alternate representation of the current document.
+     * For details, see https://www.w3.org/TR/html5/links.html
+     */
+    private void extractTranslation(StartTag startTag)
+    {
+        if (startTag.getName().equalsIgnoreCase("link")) {
+            String relAttr = startTag.getAttributeValue("rel");
+            if (!StringUtils.isEmpty(relAttr) && relAttr.equalsIgnoreCase("alternate")) {
+                String typeAttr = startTag.getAttributeValue("type");
+                if (!StringUtils.isEmpty(typeAttr) && typeAttr.equalsIgnoreCase(com.beligum.base.resources.ifaces.Resource.MimeType.HTML.getMimeType().toString())) {
+                    String hrefLangAttr = startTag.getAttributeValue("hreflang");
+                    String hrefAttr = startTag.getAttributeValue("href");
+                    if (!StringUtils.isEmpty(hrefLangAttr) && !StringUtils.isEmpty(hrefAttr)) {
+                        try {
+                            //validate the reference
+                            URI uri = URI.create(hrefAttr);
+
+                            this.translations.put(uri, startTag);
+                        }
+                        catch (IllegalArgumentException e) {
+                            Logger.debug("Encountered illegal translation URI as an attribute value of 'href' in " + startTag, e);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    /**
+     * @return true if this tag is special and should always be included in the normalized form
+     */
     private boolean isAlwaysIncludeTag(Tag tag)
     {
         return tag.getElement() != null && this.ALWAYS_INCLUDE_TAGS.contains(tag.getElement().getName());

@@ -52,5 +52,9 @@ public enum CacheKeys implements CacheKey
     //Application cache key that hold the lucene index writer
     LUCENE_INDEX_WRITER,
     //Application cache key that holds the Hibernate search integrator instance
-    HIBERNATE_SEARCH_SEARCH_INTEGRATOR
+    HIBERNATE_SEARCH_SEARCH_INTEGRATOR,
+    //Application cache key that hold the Infinispan cache manager
+    INFINISPAN_CACHE_MANAGER,
+    //Application cache key that keeps a reference to the active indexers
+    REGISTERED_INDEXERS
 }

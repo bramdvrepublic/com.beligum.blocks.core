@@ -1,11 +1,12 @@
 package com.beligum.blocks.fs.indexes.stubs;
 
+import java.io.Serializable;
 import java.net.URI;
 
 /**
  * Created by bram on 2/14/16.
  */
-public interface Stub
+public interface Stub extends Serializable
 {
     //-----CONSTANTS-----
     /**

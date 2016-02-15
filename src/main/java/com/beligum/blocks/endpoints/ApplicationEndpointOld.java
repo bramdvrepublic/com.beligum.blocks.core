@@ -58,7 +58,7 @@ public class ApplicationEndpointOld
 //    public Response getPageWithId(@PathParam("randomPage") String randomURLPath) throws Exception
 //    {
 //        Response retVal;
-//        URI currentURI = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
+//        URI currentURI = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
 //
 //        Route route = new Route(currentURI, PersistenceControllerImpl.instance());
 //        if (!route.getLocale().equals(Locale.ROOT)) {
@@ -71,7 +71,7 @@ public class ApplicationEndpointOld
 //            // We have to redirect the user to a url containing a language
 //            // We use the language of the referrer if there is one in that url
 //            // otherwise redirect to default language
-//            String referrer = RequestContext.getJaxRsRequest().getHeaderString(HttpHeaders.REFERER);
+//            String referrer = R.requestContext().getJaxRsRequest().getHeaderString(HttpHeaders.REFERER);
 //            if (referrer != null) {
 //                try {
 //                    URI ref = new URI(referrer);
@@ -99,7 +99,7 @@ public class ApplicationEndpointOld
     @GET
     public Response getPageNew(@PathParam("randomPage") String randomURLPath) throws Exception
     {
-        URI requestedURI = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
+        URI requestedURI = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
         URI validUri = DefaultPageImpl.create(requestedURI, Settings.instance().getPagesViewPath());
 
         FileContext fs = Settings.instance().getPageViewFileSystem();
@@ -125,7 +125,7 @@ public class ApplicationEndpointOld
     //        Locale locale = Settings.instance().getLocaleForLanguage(getLanguage);
     //        java.nio.file.Path path = Paths.get(name);
     //        if (path.getNameCount() > 1 || !locale.getLanguage().equals(getLanguage)) {
-    //            return getPageWithId(RequestContext.getJaxRsRequest().getUriInfo().getRequestUri().getPath().toString());
+    //            return getPageWithId(R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri().getPath().toString());
     //        }
     //
     //

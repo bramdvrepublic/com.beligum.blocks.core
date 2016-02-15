@@ -9,8 +9,9 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.fs.indexes.InfinispanPageIndexer;
 import com.beligum.blocks.fs.indexes.JenaPageIndexer;
-import com.beligum.blocks.fs.indexes.LucenePageIndexer;
+import com.beligum.blocks.fs.indexes.ifaces.Indexer;
 import com.beligum.blocks.fs.indexes.ifaces.PageIndexer;
 import com.beligum.blocks.fs.pages.SimplePageStore;
 import com.beligum.blocks.fs.pages.ifaces.Page;
@@ -179,9 +180,27 @@ public class PageEndpoint
 
         //above method returns null if nothing changed (so nothing to re-index)
         if (savedPage != null) {
-            //store the resulting page in the indexes you want
-            this.getMainPageIndex().indexPage(savedPage);
-            this.getTriplestorePageIndex().indexPage(savedPage);
+            PageIndexer mainIndex = this.getMainPageIndex();
+            PageIndexer tripleStore = this.getTriplestorePageIndex();
+
+            boolean success = false;
+            try {
+                //store the resulting page in the indexes you want
+                mainIndex.indexPage(savedPage);
+                tripleStore.indexPage(savedPage);
+
+                success = true;
+            }
+            finally {
+                if (success) {
+                    mainIndex.commitTransaction();
+                    tripleStore.commitTransaction();
+                }
+                else {
+                    mainIndex.rollbackTransaction();
+                    tripleStore.rollbackTransaction();
+                }
+            }
         }
 
         return Response.ok().build();
@@ -218,7 +237,9 @@ public class PageEndpoint
     private PageIndexer getMainPageIndex() throws IOException
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.MAIN_PAGE_INDEX)) {
-            R.cacheManager().getApplicationCache().put(CacheKeys.MAIN_PAGE_INDEX, new LucenePageIndexer());
+            Indexer indexer = new InfinispanPageIndexer();
+            Settings.instance().getIndexerRegistry().add(indexer);
+            R.cacheManager().getApplicationCache().put(CacheKeys.MAIN_PAGE_INDEX, indexer);
         }
 
         return (PageIndexer) R.cacheManager().getApplicationCache().get(CacheKeys.MAIN_PAGE_INDEX);
@@ -226,7 +247,9 @@ public class PageEndpoint
     private PageIndexer getTriplestorePageIndex() throws IOException
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRIPLESTORE_PAGE_INDEX)) {
-            R.cacheManager().getApplicationCache().put(CacheKeys.TRIPLESTORE_PAGE_INDEX, new JenaPageIndexer());
+            Indexer indexer = new JenaPageIndexer();
+            Settings.instance().getIndexerRegistry().add(indexer);
+            R.cacheManager().getApplicationCache().put(CacheKeys.TRIPLESTORE_PAGE_INDEX, indexer);
         }
 
         return (PageIndexer) R.cacheManager().getApplicationCache().get(CacheKeys.TRIPLESTORE_PAGE_INDEX);

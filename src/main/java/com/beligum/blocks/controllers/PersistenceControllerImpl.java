@@ -1,9 +1,9 @@
 package com.beligum.blocks.controllers;
 
-import com.beligum.base.server.RequestContext;
+import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.ParserConstants;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.Resource;
@@ -91,7 +91,7 @@ public class PersistenceControllerImpl implements PersistenceController
         else {
             dbPage.setWebPage(webPage);
         }
-        RequestContext.getEntityManager().persist(dbPage);
+        R.requestContext().getEntityManager().persist(dbPage);
 
         addPageToLucene(dbPage.getId().toString(), ResourceFactoryImpl.instance().serializeWebpage(webPage, false), Locale.ROOT);
         return webPage;
@@ -100,10 +100,10 @@ public class PersistenceControllerImpl implements PersistenceController
     public void deleteWebPage(URI blockId)
     {
         // Do not remove the page but mark the path as not found
-        List<DBPath> paths = RequestContext.getEntityManager().createQuery("select p FROM DBPath p where p.blockId = :id", DBPath.class).setParameter("id", blockId.toString()).getResultList();
-        RequestContext.getEntityManager().createQuery("update DBPath p SET p.statusCode = 404 where p.blockId = :id").setParameter("id", blockId.toString())
+        List<DBPath> paths = R.requestContext().getEntityManager().createQuery("select p FROM DBPath p where p.blockId = :id", DBPath.class).setParameter("id", blockId.toString()).getResultList();
+        R.requestContext().getEntityManager().createQuery("update DBPath p SET p.statusCode = 404 where p.blockId = :id").setParameter("id", blockId.toString())
                       .executeUpdate();
-        List<Long> pages = RequestContext.getEntityManager().createQuery("select p.id FROM DBPage p where p.blockId = :id", Long.class).setParameter("id", blockId.toString()).getResultList();
+        List<Long> pages = R.requestContext().getEntityManager().createQuery("select p.id FROM DBPage p where p.blockId = :id", Long.class).setParameter("id", blockId.toString()).getResultList();
 
         for (DBPath path : paths) {
             removePathFromLucene(path.getId().toString());
@@ -119,7 +119,7 @@ public class PersistenceControllerImpl implements PersistenceController
         // find the path for this language
         DBPath webpath = null;
         try {
-            webpath = RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.url = :path and p.language = :language ORDER BY p.createdAt DESC", DBPath.class)
+            webpath = R.requestContext().getEntityManager().createQuery("Select p from DBPath p where p.url = :path and p.language = :language ORDER BY p.createdAt DESC", DBPath.class)
                                     .setParameter("language", locale.getLanguage())
                                     .setParameter("path", path.toString())
                                     .setMaxResults(1)
@@ -142,7 +142,7 @@ public class PersistenceControllerImpl implements PersistenceController
         // use this masterpageid
         Map<String, WebPath> retVal = new HashMap<>();
         try {
-            List<DBPath> paths = RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.blockId = :id", DBPath.class).setParameter("id", masterPage.toString()).getResultList();
+            List<DBPath> paths = R.requestContext().getEntityManager().createQuery("Select p from DBPath p where p.blockId = :id", DBPath.class).setParameter("id", masterPage.toString()).getResultList();
             for (DBPath path : paths) {
                 retVal.put(path.getLanguage().getLanguage(), path);
             }
@@ -167,7 +167,7 @@ public class PersistenceControllerImpl implements PersistenceController
         try {
             List<DBPath>
                             paths =
-                            RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.localizedUrl = :pathName", DBPath.class).setParameter("pathName", pathName).getResultList();
+                            R.requestContext().getEntityManager().createQuery("Select p from DBPath p where p.localizedUrl = :pathName", DBPath.class).setParameter("pathName", pathName).getResultList();
             for (DBPath path : paths) {
                 retVal.put(path.getLanguage().getLanguage(), path);
             }
@@ -190,7 +190,7 @@ public class PersistenceControllerImpl implements PersistenceController
 
         List<DBPath>
                         paths =
-                        RequestContext.getEntityManager().createQuery("Select p from DBPath p where p.url = :path and p.statusCode = 200", DBPath.class).setParameter("path", path.toString())
+                        R.requestContext().getEntityManager().createQuery("Select p from DBPath p where p.url = :path and p.statusCode = 200", DBPath.class).setParameter("path", path.toString())
                                       .getResultList();
         Map<String, DBPath> pathMap = new HashMap<String, DBPath>();
         for (DBPath p : paths) {
@@ -209,7 +209,7 @@ public class PersistenceControllerImpl implements PersistenceController
 
     public WebPath savePath(WebPath path) throws Exception
     {
-        RequestContext.getEntityManager().persist(path);
+        R.requestContext().getEntityManager().persist(path);
         addPathToLucene(path.getDBid(), path.toJson());
         return path;
     }
@@ -237,7 +237,7 @@ public class PersistenceControllerImpl implements PersistenceController
             dbResource.setResource(resource);
         }
 
-        RequestContext.getEntityManager().persist(dbResource);
+        R.requestContext().getEntityManager().persist(dbResource);
         Set<URI> types = resource.getRdfType();
         String type = "resource";
         if (types.iterator().hasNext())
@@ -260,7 +260,7 @@ public class PersistenceControllerImpl implements PersistenceController
     {
         DBResource retVal = null;
         try {
-            retVal = RequestContext.getEntityManager().createQuery("select r FROM DBResource r where r.blockId = :id", DBResource.class)
+            retVal = R.requestContext().getEntityManager().createQuery("select r FROM DBResource r where r.blockId = :id", DBResource.class)
                                    .setParameter("id", id.toString())
                                    .getSingleResult();
         }
@@ -279,7 +279,7 @@ public class PersistenceControllerImpl implements PersistenceController
         DBPage retVal = null;
 
         try {
-            retVal = RequestContext.getEntityManager().createQuery("select p FROM DBPage p where p.blockId = :id ORDER BY p.createdAt DESC", DBPage.class)
+            retVal = R.requestContext().getEntityManager().createQuery("select p FROM DBPage p where p.blockId = :id ORDER BY p.createdAt DESC", DBPage.class)
                                    .setParameter("id", id.toString())
                                    .setMaxResults(1)
                                    .getSingleResult();

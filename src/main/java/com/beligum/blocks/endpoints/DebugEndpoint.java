@@ -225,10 +225,10 @@ public class DebugEndpoint
     //            Logger.error("Could not read mappings for elastic search", e);
     //        }
     //
-    //        RequestContext.getEntityManager().createNativeQuery("delete from page where id > 0").executeUpdate();
-    //        RequestContext.getEntityManager().createNativeQuery("delete from resource_language").executeUpdate();
-    //        RequestContext.getEntityManager().createNativeQuery("delete from resource where id > 0").executeUpdate();
-    //        RequestContext.getEntityManager().createNativeQuery("delete from path where id > 0").executeUpdate();
+    //        R.requestContext().getEntityManager().createNativeQuery("delete from page where id > 0").executeUpdate();
+    //        R.requestContext().getEntityManager().createNativeQuery("delete from resource_language").executeUpdate();
+    //        R.requestContext().getEntityManager().createNativeQuery("delete from resource where id > 0").executeUpdate();
+    //        R.requestContext().getEntityManager().createNativeQuery("delete from path where id > 0").executeUpdate();
     //
     //        IndicesAdminClient esIndicesClient = ElasticSearch.instance().getClient().admin().indices();
     //        //there used to be an index for every language, but not anymore

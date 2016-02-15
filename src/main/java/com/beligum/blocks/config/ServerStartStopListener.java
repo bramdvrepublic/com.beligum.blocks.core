@@ -5,15 +5,16 @@ import com.beligum.base.server.R;
 import com.beligum.base.server.ifaces.ServerLifecycleListener;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.fs.indexes.ifaces.Indexer;
 import com.beligum.blocks.search.ElasticSearch;
 import com.beligum.blocks.templating.blocks.HtmlParser;
-import org.apache.jena.query.Dataset;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Server;
 import org.glassfish.jersey.server.spi.Container;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 /**
  * Created by bram on 11/10/14.
@@ -63,9 +64,10 @@ public class ServerStartStopListener implements ServerLifecycleListener
             }
         }
 
-        if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.RDF_DATASET)) {
-            Dataset dataset = Settings.instance().getRDFDataset();
-            dataset.close();
+        Iterator<Indexer> indexIter = Settings.instance().getIndexerRegistry().iterator();
+        while (indexIter.hasNext()) {
+            indexIter.next().shutdown();
+            indexIter.remove();
         }
 
         if (Settings.instance().hasElasticSearchConfigured()) {

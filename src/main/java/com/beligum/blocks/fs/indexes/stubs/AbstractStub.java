@@ -21,6 +21,7 @@ public abstract class AbstractStub implements Stub
     }
 
     //-----PUBLIC METHODS-----
+    //Note that eg. infinispan doesn't use this annotation (but does use the method as the key in the cache)
     @DocumentId
     public URI getId()
     {
@@ -31,4 +32,23 @@ public abstract class AbstractStub implements Stub
 
     //-----PRIVATE METHODS-----
 
+    //-----MANAGEMENT METHODS-----
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o)
+            return true;
+        if (!(o instanceof AbstractStub))
+            return false;
+
+        AbstractStub that = (AbstractStub) o;
+
+        return getId() != null ? getId().equals(that.getId()) : that.getId() == null;
+
+    }
+    @Override
+    public int hashCode()
+    {
+        return getId() != null ? getId().hashCode() : 0;
+    }
 }

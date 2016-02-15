@@ -1,6 +1,6 @@
 package com.beligum.blocks.templating.blocks;
 
-import com.beligum.base.server.RequestContext;
+import com.beligum.base.server.R;
 import com.beligum.blocks.config.Settings;
 
 import java.net.URI;
@@ -39,7 +39,7 @@ public abstract class DefaultTemplateController implements TemplateController
     // Find the getLanguage of this url.
     protected Locale getCurrentLocale()
     {
-        URI currentURI = RequestContext.getJaxRsRequest().getUriInfo().getRequestUri();
+        URI currentURI = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
         Locale retVal = null;
         java.nio.file.Path path = Paths.get(currentURI.getPath());
         if (path.getNameCount() > 0) {
