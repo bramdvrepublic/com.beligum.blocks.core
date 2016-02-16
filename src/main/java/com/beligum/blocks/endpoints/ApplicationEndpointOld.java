@@ -6,8 +6,9 @@ import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.templating.ifaces.TemplateContext;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.fs.HdfsResourcePath;
+import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.HdfsResource;
+import com.beligum.blocks.fs.HdfsResourcePath;
 import com.beligum.blocks.fs.ifaces.ResourcePath;
 import com.beligum.blocks.fs.pages.DefaultPageImpl;
 import com.beligum.blocks.fs.pages.ifaces.Page;
@@ -101,7 +102,7 @@ public class ApplicationEndpointOld
         URI requestedURI = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
         URI validUri = DefaultPageImpl.toResourceUri(requestedURI, Settings.instance().getPagesViewPath());
 
-        FileContext fs = Settings.instance().getPageViewFileSystem();
+        FileContext fs = StorageFactory.getPageViewFileSystem();
         ResourcePath resourcePath = new HdfsResourcePath(fs, validUri);
 
         final Page page = new DefaultPageImpl(resourcePath);

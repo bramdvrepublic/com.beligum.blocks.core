@@ -1,17 +1,21 @@
 package com.beligum.blocks.controllers;
 
-import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.server.R;
-import com.beligum.blocks.models.interfaces.WebPage;
-import com.beligum.blocks.routing.Route;
+import com.beligum.blocks.config.StorageFactory;
+import com.beligum.blocks.fs.indexes.entries.PageIndexEntry;
+import com.beligum.blocks.fs.indexes.ifaces.PageIndexer;
 import com.beligum.blocks.templating.blocks.DefaultTemplateController;
+import com.google.common.collect.Lists;
+import org.apache.lucene.search.Query;
+import org.hibernate.search.query.dsl.QueryBuilder;
+import org.infinispan.query.CacheQuery;
 
-import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by wouter on 11/08/15.
@@ -24,39 +28,25 @@ public class BreadcrumbController extends DefaultTemplateController
 
     }
 
-    public List<HashMap<String, String>> breadcrumbs() throws IOException
+    /**
+     * @return a breadcrumb map.entry list containing <url, title> entries.
+     */
+    public List<Map.Entry<URI, String>> breadcrumbs() throws IOException
     {
-        List<HashMap<String, String>> retVal = new ArrayList<>();
+        Map<URI, String> retVal = new LinkedHashMap<>();
+
         // get URI
         URI originalUri = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
-        Route originalRoute = new Route(originalUri, PersistenceControllerImpl.instance());
 
-        for (int i = 0; i <= originalRoute.getPath().getNameCount(); i++) {
-            String path = i > 0 ? originalRoute.getPath().subpath(0, i).toString() : "/";
-            URI uri = UriBuilder.fromUri(originalUri).replacePath(path).build();
-            Route route = new Route(uri, PersistenceControllerImpl.instance());
+        PageIndexer<QueryBuilder, Query, CacheQuery> mainPageIndexer = StorageFactory.getMainPageIndexer();
 
-            // Find another path in the most relevant language
-            if (!route.exists()) {
-                route.getAlternateLocalPath();
-            }
-
-            if (route.exists()) {
-                WebPage webPage = PersistenceControllerImpl.instance().getWebPage(route.getWebPath().getBlockId(), route.getLocale());
-                String title = webPage.getPageTitle(true);
-                if (title == null) {
-                    title = I18nFactory.instance().getResourceBundle(route.getLocale()).get(gen.com.beligum.blocks.core.messages.blocks.core.Entries.defaultPageTitle);
-                }
-                String url = route.getLanguagedPath().toString();
-                HashMap<String, String> map = new HashMap<String, String>();
-                map.put("url", url);
-                map.put("title", title);
-                retVal.add(map);
-            }
-
+        PageIndexEntry p = mainPageIndexer.get(originalUri.toString());
+        while (p!=null) {
+            retVal.put(p.getId(), p.getTitle());
+            p = p.getParent()!=null ? mainPageIndexer.get(p.getParent().toString()) : null;
         }
 
-        return retVal;
+        return Lists.reverse(new ArrayList<>(retVal.entrySet()));
     }
 
 }

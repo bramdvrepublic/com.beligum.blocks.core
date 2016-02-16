@@ -3,6 +3,7 @@ package com.beligum.blocks.fs.pages;
 import com.beligum.base.auth.models.Person;
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.HdfsResourcePath;
 import com.beligum.blocks.fs.HdfsUtils;
 import com.beligum.blocks.fs.LockFile;
@@ -50,7 +51,7 @@ public class SimplePageStore implements PageStore
     public void init() throws IOException
     {
         Path pagesRoot = new Path(settings.getPagesStorePath());
-        FileContext fs = Settings.instance().getPageStoreFileSystem();
+        FileContext fs = StorageFactory.getPageStoreFileSystem();
         if (fs.util().exists(pagesRoot)) {
             HdfsUtils.recursiveDeleteLockFiles(fs, pagesRoot);
         }
@@ -64,7 +65,7 @@ public class SimplePageStore implements PageStore
         URI resourceUri = DefaultPageImpl.toResourceUri(source.getSourceAddress(), Settings.instance().getPagesStorePath());
 
         //now execute the FS changes
-        FileContext fs = Settings.instance().getPageStoreFileSystem();
+        FileContext fs = StorageFactory.getPageStoreFileSystem();
 
         ResourcePath resourcePath = new HdfsResourcePath(fs, resourceUri);
         //we need to use the abstract type here to have access to the package private setters
@@ -162,7 +163,7 @@ public class SimplePageStore implements PageStore
         URI resourceUri = DefaultPageImpl.toResourceUri(publicAddress, Settings.instance().getPagesStorePath());
 
         //now execute the FS changes
-        FileContext fs = Settings.instance().getPageStoreFileSystem();
+        FileContext fs = StorageFactory.getPageStoreFileSystem();
 
         ResourcePath resourcePath = new HdfsResourcePath(fs, resourceUri);
         //we need to use the abstract type here to have access to the package private setters

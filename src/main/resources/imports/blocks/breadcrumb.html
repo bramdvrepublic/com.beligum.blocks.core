@@ -12,8 +12,8 @@
 
 <template>
     <ol class="breadcrumb">
-        #foreach($map in $CONTROLLER.breadcrumbs())
-            <li><a href="$map.get("url")">$map.get("title")</a></li>
+        #foreach($entry in $CONTROLLER.breadcrumbs())
+            <li><a href="$entry.key">$entry.value</a></li>
         #end
     </ol>
 </template>

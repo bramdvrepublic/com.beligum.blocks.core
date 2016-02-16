@@ -1,13 +1,20 @@
 package com.beligum.blocks.fs.indexes.ifaces;
 
+import com.beligum.blocks.fs.indexes.entries.PageIndexEntry;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 
 import java.io.IOException;
 
 /**
+ * Generic superclass for the page indexer
+ *
+ * B = QueryBuilder
+ * Q = Query
+ * R = QueryResult
+ *
  * Created by bram on 1/26/16.
  */
-public interface PageIndexer extends Indexer
+public interface PageIndexer<B, Q, R> extends Indexer
 {
     //-----CONSTANTS-----
 
@@ -16,7 +23,10 @@ public interface PageIndexer extends Indexer
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
+    PageIndexEntry get(String key) throws IOException;
     void indexPage(Page page) throws IOException;
+    B getNewQueryBuilder() throws IOException;
+    R executeQuery(Q query) throws IOException;
 
     //-----PROTECTED METHODS-----
 

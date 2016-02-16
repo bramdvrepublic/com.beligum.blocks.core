@@ -39,7 +39,7 @@ public class ServerStartStopListener implements ServerLifecycleListener
 
         //this will boot the transaction manager (and possibly do a restore)
         try {
-            Settings.instance().getPageStoreTransactionManager();
+            StorageFactory.getPageStoreTransactionManager();
         }
         catch (IOException e) {
             throw new RuntimeIOException("Unable to boot the page store transaction manager during starup, this is bad and I can't proceed", e);
@@ -56,7 +56,7 @@ public class ServerStartStopListener implements ServerLifecycleListener
         //don't boot it up if it's not there
         if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
             try {
-                XAFileSystem xafs = Settings.instance().getPageStoreTransactionManager();
+                XAFileSystem xafs = StorageFactory.getPageStoreTransactionManager();
                 xafs.shutdown();
             }
             catch (IOException e) {
@@ -64,7 +64,7 @@ public class ServerStartStopListener implements ServerLifecycleListener
             }
         }
 
-        Iterator<Indexer> indexIter = Settings.instance().getIndexerRegistry().iterator();
+        Iterator<Indexer> indexIter = StorageFactory.getIndexerRegistry().iterator();
         while (indexIter.hasNext()) {
             indexIter.next().shutdown();
             indexIter.remove();

@@ -3,13 +3,16 @@ package com.beligum.blocks.fs.hdfs;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.config.StorageFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.server.namenode.UnsupportedActionException;
 import org.apache.hadoop.util.Progressable;
-import org.xadisk.bridge.proxies.interfaces.*;
+import org.xadisk.bridge.proxies.interfaces.Session;
+import org.xadisk.bridge.proxies.interfaces.XAFileInputStream;
+import org.xadisk.bridge.proxies.interfaces.XAFileOutputStream;
+import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
 import org.xadisk.filesystem.exceptions.InsufficientPermissionOnFileException;
 import org.xadisk.filesystem.exceptions.LockingFailedException;
 import org.xadisk.filesystem.exceptions.NoTransactionAssociatedException;
@@ -60,7 +63,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
 
         //TODO set the working dir to something else than user.dir ?
 
-        this.xafs = Settings.instance().getPageStoreTransactionManager();
+        this.xafs = StorageFactory.getPageStoreTransactionManager();
     }
     @Override
     public String getScheme()

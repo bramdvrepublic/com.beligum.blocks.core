@@ -3,10 +3,11 @@ package com.beligum.blocks.fs.indexes;
 import com.beligum.base.server.R;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.fs.indexes.entries.PageIndexEntry;
 import com.beligum.blocks.fs.indexes.ifaces.PageIndexer;
 import com.beligum.blocks.fs.pages.ifaces.Page;
-import org.apache.jena.query.Dataset;
-import org.apache.jena.query.ReadWrite;
+import org.apache.jena.arq.querybuilder.SelectBuilder;
+import org.apache.jena.query.*;
 import org.apache.jena.tdb.TDBFactory;
 
 import java.io.IOException;
@@ -18,7 +19,7 @@ import java.io.IOException;
  * <p/>
  * https://jena.apache.org/documentation/tdb/java_api.html
  */
-public class JenaPageIndexer implements PageIndexer
+public class JenaPageIndexer implements PageIndexer<SelectBuilder, Query, QueryExecution>
 {
     //-----CONSTANTS-----
 
@@ -33,6 +34,11 @@ public class JenaPageIndexer implements PageIndexer
 
     //-----PUBLIC METHODS-----
     @Override
+    public PageIndexEntry get(String key) throws IOException
+    {
+        return null;
+    }
+    @Override
     public void indexPage(Page page) throws IOException
     {
         Dataset dataset = this.getRDFDataset();
@@ -46,6 +52,22 @@ public class JenaPageIndexer implements PageIndexer
         //                ResultSet rs = qExec.execSelect() ;
         //                ResultSetFormatter.out(rs) ;
         //            }
+    }
+    @Override
+    public SelectBuilder getNewQueryBuilder() throws IOException
+    {
+        return new SelectBuilder();
+    }
+    /**
+     * Note that this returns an autoclosable!!!
+     * @param query
+     * @return
+     * @throws IOException
+     */
+    @Override
+    public QueryExecution executeQuery(Query query) throws IOException
+    {
+        return QueryExecutionFactory.create(query, this.getRDFDataset());
     }
     @Override
     public void beginTransaction() throws IOException

@@ -7,8 +7,9 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.fs.HdfsResourcePath;
+import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.HdfsResource;
+import com.beligum.blocks.fs.HdfsResourcePath;
 import com.beligum.blocks.fs.pages.DefaultPageImpl;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.security.Permissions;
@@ -56,7 +57,7 @@ public class ApplicationEndpoint
         //security; rebuild the url instead of blindly accepting what comes in
         URI requestedUri = Settings.instance().getSiteDomain().resolve("/"+randomURLPath).normalize();
 
-        FileContext fs = Settings.instance().getPageViewFileSystem();
+        FileContext fs = StorageFactory.getPageViewFileSystem();
         URI fsPageUri = DefaultPageImpl.toResourceUri(requestedUri, Settings.instance().getPagesViewPath());
         Page page = new DefaultPageImpl(new HdfsResourcePath(fs, fsPageUri));
         // Since we allow the user to create pretty url's, it's mime type will not always be clear.

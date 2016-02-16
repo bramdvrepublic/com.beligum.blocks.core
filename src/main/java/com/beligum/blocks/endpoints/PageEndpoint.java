@@ -9,13 +9,9 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.fs.indexes.InfinispanPageIndexer;
-import com.beligum.blocks.fs.indexes.JenaPageIndexer;
-import com.beligum.blocks.fs.indexes.ifaces.Indexer;
+import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.indexes.ifaces.PageIndexer;
-import com.beligum.blocks.fs.pages.SimplePageStore;
 import com.beligum.blocks.fs.pages.ifaces.Page;
-import com.beligum.blocks.fs.pages.ifaces.PageStore;
 import com.beligum.blocks.rdf.sources.HtmlSource;
 import com.beligum.blocks.rdf.sources.HtmlStringSource;
 import com.beligum.blocks.security.Permissions;
@@ -177,12 +173,12 @@ public class PageEndpoint
         HtmlSource source = new HtmlStringSource(uri, content);
 
         //save the file to disk and pull all the proxies etc
-        Page savedPage = this.getPageStore().save(source, new PersonRepository().get(Authentication.getCurrentPrincipal()));
+        Page savedPage = StorageFactory.getPageStore().save(source, new PersonRepository().get(Authentication.getCurrentPrincipal()));
 
         //above method returns null if nothing changed (so nothing to re-index)
         if (savedPage != null) {
-            PageIndexer mainIndex = this.getMainPageIndex();
-            PageIndexer tripleStore = this.getTriplestorePageIndex();
+            PageIndexer mainIndex = StorageFactory.getMainPageIndexer();
+            PageIndexer tripleStore = StorageFactory.getTriplestorePageIndexer();
 
             //link both indexers together so that both commit or both fail
             boolean success = false;
@@ -220,7 +216,7 @@ public class PageEndpoint
     public Response deletePage(String uri) throws Exception
     {
         //save the file to disk and pull all the proxies etc
-        Page deletedPage = this.getPageStore().delete(URI.create(uri), new PersonRepository().get(Authentication.getCurrentPrincipal()));
+        Page deletedPage = StorageFactory.getPageStore().delete(URI.create(uri), new PersonRepository().get(Authentication.getCurrentPrincipal()));
 
         return Response.ok().build();
     }
@@ -228,37 +224,6 @@ public class PageEndpoint
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private PageStore getPageStore() throws IOException
-    {
-        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.HDFS_PAGE_STORE)) {
-            PageStore pageStore = new SimplePageStore();
-            pageStore.init();
-
-            R.cacheManager().getApplicationCache().put(CacheKeys.HDFS_PAGE_STORE, pageStore);
-        }
-
-        return (PageStore) R.cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGE_STORE);
-    }
-    private PageIndexer getMainPageIndex() throws IOException
-    {
-        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.MAIN_PAGE_INDEX)) {
-            Indexer indexer = new InfinispanPageIndexer();
-            Settings.instance().getIndexerRegistry().add(indexer);
-            R.cacheManager().getApplicationCache().put(CacheKeys.MAIN_PAGE_INDEX, indexer);
-        }
-
-        return (PageIndexer) R.cacheManager().getApplicationCache().get(CacheKeys.MAIN_PAGE_INDEX);
-    }
-    private PageIndexer getTriplestorePageIndex() throws IOException
-    {
-        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRIPLESTORE_PAGE_INDEX)) {
-            Indexer indexer = new JenaPageIndexer();
-            Settings.instance().getIndexerRegistry().add(indexer);
-            R.cacheManager().getApplicationCache().put(CacheKeys.TRIPLESTORE_PAGE_INDEX, indexer);
-        }
-
-        return (PageIndexer) R.cacheManager().getApplicationCache().get(CacheKeys.TRIPLESTORE_PAGE_INDEX);
-    }
     private String findI18NValue(Locale[] langs, Map<Locale, String> values, String defaultValue)
     {
         String retVal = null;

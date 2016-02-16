@@ -3,7 +3,7 @@ package com.beligum.blocks.fs.hdfs;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.config.StorageFactory;
 
 import javax.annotation.Priority;
 import javax.ws.rs.Priorities;
@@ -52,7 +52,7 @@ public class XADiskTransactionFilter implements ContainerResponseFilter
                             catch (Exception e1) {
                                 //don't wait for the next reboot before trying to revert to a clean state; try it now
                                 //note that the reboot method is implemented so that it doesn't throw (another) exception, so we can rely on it's return value quite safely
-                                if (!Settings.instance().rebootPageStoreTransactionManager()) {
+                                if (!StorageFactory.rebootPageStoreTransactionManager()) {
                                     throw new IOException("Exception caught while processing a file system transaction and the reboot because of a faulty rollback failed too; this is VERY bad and I don't really know what to do. You should investigate this!", e1);
                                 }
                                 else {

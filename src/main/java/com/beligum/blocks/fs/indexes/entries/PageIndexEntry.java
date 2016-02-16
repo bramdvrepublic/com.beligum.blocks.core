@@ -51,6 +51,22 @@ public class PageIndexEntry extends AbstractIndexEntry
     }
 
     //-----PUBLIC METHODS-----
+    public String getTitle()
+    {
+        return title;
+    }
+    public String getLanguage()
+    {
+        return language;
+    }
+    public URI getParent()
+    {
+        return parent;
+    }
+    public Map<String, URI> getTranslations()
+    {
+        return translations;
+    }
 
     //-----PROTECTED METHODS-----
 

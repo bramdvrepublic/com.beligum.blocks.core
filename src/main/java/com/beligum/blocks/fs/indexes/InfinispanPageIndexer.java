@@ -4,9 +4,11 @@ import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.fs.indexes.entries.IndexEntry;
 import com.beligum.blocks.fs.indexes.entries.PageIndexEntry;
 import com.beligum.blocks.fs.indexes.ifaces.PageIndexer;
 import com.beligum.blocks.fs.pages.ifaces.Page;
+import org.apache.lucene.search.Query;
 import org.hibernate.search.query.dsl.QueryBuilder;
 import org.infinispan.Cache;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
@@ -21,7 +23,6 @@ import javax.transaction.TransactionManager;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
 /**
  * See this:
@@ -31,11 +32,13 @@ import java.util.List;
  * <p/>
  * Created by bram on 1/26/16.
  */
-public class InfinispanPageIndexer implements PageIndexer
+public class InfinispanPageIndexer implements PageIndexer<QueryBuilder, Query, CacheQuery>
 {
     //-----CONSTANTS-----
     private static final String SUBFOLDR_STORE = "store";
     private static final String SUBFOLDR_INDEX = "index";
+
+    private static final Class<? extends IndexEntry> INDEX_ENTRY_CLASS = PageIndexEntry.class;
 
     //-----VARIABLES-----
 
@@ -46,29 +49,32 @@ public class InfinispanPageIndexer implements PageIndexer
 
     //-----PUBLIC METHODS-----
     @Override
+    public PageIndexEntry get(String key) throws IOException
+    {
+        Cache<String, PageIndexEntry> cache = this.getCacheManager().getCache();
+        return cache.get(key);
+    }
+    @Override
     public void indexPage(Page page) throws IOException
     {
         Cache<String, PageIndexEntry> cache = this.getCacheManager().getCache();
 
         PageIndexEntry stub = new PageIndexEntry(page);
         cache.put(stub.getId().toString(), stub);
-
+    }
+    @Override
+    public QueryBuilder getNewQueryBuilder() throws IOException
+    {
+        Cache<String, PageIndexEntry> cache = this.getCacheManager().getCache();
         SearchManager searchManager = org.infinispan.query.Search.getSearchManager(cache);
-        QueryBuilder queryBuilder = searchManager.buildQueryBuilderForClass(PageIndexEntry.class).get();
-//        org.apache.lucene.search.Query luceneQuery = queryBuilder.phrase()
-//                                                                 .onField("title")
-//                                                                 .sentence("please")
-//                                                                 .createQuery();
-
-        org.apache.lucene.search.Query luceneQuery = queryBuilder.all()
-                                                                 .createQuery();
-
-        CacheQuery query = searchManager.getQuery(luceneQuery, PageIndexEntry.class);
-        List objectList = query.list();
-        for (Object p : objectList) {
-            Logger.info(p);
-        }
-
+        return searchManager.buildQueryBuilderForClass(INDEX_ENTRY_CLASS).get();
+    }
+    @Override
+    public CacheQuery executeQuery(Query luceneQuery) throws IOException
+    {
+        Cache<String, PageIndexEntry> cache = this.getCacheManager().getCache();
+        SearchManager searchManager = org.infinispan.query.Search.getSearchManager(cache);
+        return searchManager.getQuery(luceneQuery, INDEX_ENTRY_CLASS);
     }
     @Override
     public void beginTransaction() throws IOException
