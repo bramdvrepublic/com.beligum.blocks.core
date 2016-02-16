@@ -151,6 +151,15 @@ public class Settings
         }
         return cachedDefaultLanguage;
     }
+    /**
+     * Flag that indicates if we should redirect to the default locale of the site on creating a language-less new page.
+     * If true, a redirect to the /def-lang/... is forced, otherwise, the language of the browser is first tried to see
+     * if it's supported by this site's languages.
+     */
+    public boolean getForceRedirectToDefaultLocale()
+    {
+        return R.configuration().getBoolean("blocks.core.pages.force-default-locale", false);
+    }
     public Locale getLocaleForLanguage(String language)
     {
         Locale retVal = this.getDefaultLanguage();

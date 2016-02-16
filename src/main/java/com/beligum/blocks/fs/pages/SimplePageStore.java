@@ -2,7 +2,6 @@ package com.beligum.blocks.fs.pages;
 
 import com.beligum.base.auth.models.Person;
 import com.beligum.base.server.R;
-import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.HdfsPathInfo;
 import com.beligum.blocks.fs.HdfsUtils;
@@ -18,14 +17,10 @@ import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 
-import javax.ws.rs.core.UriBuilder;
 import java.io.*;
 import java.net.URI;
 import java.time.ZonedDateTime;
 import java.util.EnumSet;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by bram on 1/14/16.
@@ -65,36 +60,25 @@ public class SimplePageStore implements PageStore
         Page retVal = null;
 
         //create this here, so we don't boot the filesystem on validation error
-        URI localResourceUri = DefaultPageImpl.create(source.getBaseUri(), Settings.instance().getPagesStorePath());
+        URI resourceUri = DefaultPageImpl.toResourceUri(source.getBaseUri(), Settings.instance().getPagesStorePath());
 
         //now execute the FS changes
         FileContext fs = Settings.instance().getPageStoreFileSystem();
 
-        PathInfo pathInfo = new HdfsPathInfo(fs, localResourceUri);
+        PathInfo pathInfo = new HdfsPathInfo(fs, resourceUri);
         //we need to use the abstract type here to have access to the package private setters
         AbstractPage page = new DefaultPageImpl(pathInfo);
 
         //will synchronize the metadata directory by creating/releasing a lock file
         try (LockFile lock = pathInfo.acquireLock()) {
 
-            //prepare the HTML for saving
+            //prepare the HTML for saving; this is the only place we can modify the source
+            // because later on, the analyzer will have run (eg. after calling source.processTranslations())
             source.prepareForSaving(true, true);
 
-            //find translations on disk
-            Set<URI> translations = source.getTranslations();
-            Map<String, Locale> siteLanguages = Settings.instance().getLanguages();
-            for (Map.Entry<String, Locale> l : siteLanguages.entrySet()) {
-                if (!l.getValue().equals(source.getHtmlLocale())) {
-                    UriBuilder translatedUri = UriBuilder.fromUri(source.getBaseUri());
-                    Locale detectedLang = R.i18nFactory().getUrlLocale(source.getBaseUri(), translatedUri, l.getValue());
-                    if (detectedLang != null) {
-                        Logger.error(translatedUri.build());
-                    }
-                    else {
-                        throw new IOException("No language detected in the page url; can't pull a translated url and can't proceed; " + localResourceUri);
-                    }
-                }
-            }
+            //analyze the source and update and fetch it's translations
+            //Note: this needs to be done before serializing because it might introduce tags
+            source.processTranslations(fs);
 
             //we'll read everything into a string for performance and ease of use
             String sourceHtml;
@@ -175,7 +159,7 @@ public class SimplePageStore implements PageStore
         Page retVal = null;
 
         //create this here, so we don't boot the filesystem on validation error
-        URI validUri = DefaultPageImpl.create(uri, Settings.instance().getPagesStorePath());
+        URI validUri = DefaultPageImpl.toResourceUri(uri, Settings.instance().getPagesStorePath());
 
         //now execute the FS changes
         FileContext fs = Settings.instance().getPageStoreFileSystem();

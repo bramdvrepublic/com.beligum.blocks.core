@@ -10,6 +10,9 @@ import org.apache.jena.rdf.model.Model;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by bram on 1/27/16.
@@ -25,9 +28,21 @@ public abstract class AbstractPage implements Page
     protected final PathInfo pathInfo;
     private Model rdfModel;
     private Source source;
+    private Map<URI, Locale> translations;
+    private String title;
+    private Locale htmlLocale;
+    private Set<URI> internalRefs;
+    private Set<URI> externalRefs;
 
     //-----CONSTRUCTORS-----
-    public static URI create(URI uri, URI baseUri) throws IOException
+    /**
+     * This converts a public page URI to it's local resource counterpart.
+     * @param uri the public uri for a page
+     * @param baseUri the base uri of the page store, usually one of Settings.instance().getPagesStorePath() or Settings.instance().getPagesViewPath()
+     * @return the URI of the resource that holds the data for that page in our configured server filesystem
+     * @throws IOException
+     */
+    public static URI toResourceUri(URI uri, URI baseUri) throws IOException
     {
         Settings settings = Settings.instance();
 
@@ -101,12 +116,11 @@ public abstract class AbstractPage implements Page
     }
 
     //-----PROTECTED METHODS-----
-    //this should be set from a package private class
+    //these should be set from a package private class
     protected void setRDFModel(Model rdfModel)
     {
         this.rdfModel = rdfModel;
     }
-    //this should be set from a package private class
     protected void setSource(Source source)
     {
         this.source = source;

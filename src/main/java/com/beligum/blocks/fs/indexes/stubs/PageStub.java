@@ -15,7 +15,8 @@ public class PageStub extends AbstractStub
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private Set<PageStub> children;
+    //think about this: should we create stubs for all the references? And internal/external? Auto-updating is nice...
+    private Set<PageStub> childre n;
 
     //-----CONSTRUCTORS-----
     public PageStub()

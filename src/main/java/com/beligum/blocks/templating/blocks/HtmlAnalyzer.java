@@ -39,9 +39,10 @@ public class HtmlAnalyzer
     private Source htmlDocument;
     private String normalizedHtml;
     private Locale htmlLocale;
-    private Map<URI, StartTag> translations;
-    private Map<URI, Attribute> internalRefs;
-    private Map<URI, Attribute> externalRefs;
+    private Map<URI, TranslationRef> translations;
+    private Map<URI, ReferenceRef> internalRefs;
+    private Map<URI, ReferenceRef> externalRefs;
+    private String title;
 
     //-----CONSTRUCTORS-----
     public HtmlAnalyzer()
@@ -51,6 +52,7 @@ public class HtmlAnalyzer
         this.translations = new HashMap<>();
         this.internalRefs = new HashMap<>();
         this.externalRefs = new HashMap<>();
+        this.title = null;
     }
 
     //-----PUBLIC METHODS-----
@@ -82,7 +84,14 @@ public class HtmlAnalyzer
         }
 
         //extract and store the locale
-        this.htmlLocale = Locale.forLanguageTag(htmlElement.getAttributeValue(HtmlSource.HTML_ROOT_LANG_ATTR));
+        String langAttr = htmlElement.getAttributeValue(HtmlSource.HTML_ROOT_LANG_ATTR);
+        if (!StringUtils.isEmpty(langAttr)) {
+            this.htmlLocale = Locale.forLanguageTag(langAttr);
+        }
+        else {
+            //this is a nice practice and allows us to skip a lot of null tests (reason why ROOT was added in the first place)
+            this.htmlLocale = Locale.ROOT;
+        }
 
         StringBuilder outputHtml = new StringBuilder();
         outputHtml.append(this.instantiateTemplateStartTag(htmlElement, currentTemplate, new HashSet(Arrays.asList(new String[] { HtmlParser.HTML_ROOT_TEMPLATE_ATTR }))));
@@ -104,25 +113,30 @@ public class HtmlAnalyzer
             this.normalizedHtml = formatter.toString();
         }
     }
+
     public String getNormalizedHtml()
     {
         return normalizedHtml;
     }
-    public Locale getHtmlLocale()
+    public Locale getHtmlLanguage()
     {
         return htmlLocale;
     }
-    public Map<URI, Attribute> getInternalRefs()
+    public Map<URI, ReferenceRef> getInternalRefs()
     {
         return internalRefs;
     }
-    public Map<URI, Attribute> getExternalRefs()
+    public Map<URI, ReferenceRef> getExternalRefs()
     {
         return externalRefs;
     }
-    public Map<URI, StartTag> getTranslations()
+    public Map<URI, TranslationRef> getTranslations()
     {
         return translations;
+    }
+    public String getTitle()
+    {
+        return title;
     }
 
     //-----PROTECTED METHODS-----
@@ -162,13 +176,8 @@ public class HtmlAnalyzer
                 }
 
                 this.extractTranslation(startTag);
-
-                // check if we need to pull out this tag as a reference
-                // note it doesn't make sense to store the references of tags that are not included in the normalized html,
-                // because they're not really 'part' of this document.
-                if (writeTag) {
-                    this.extractReference(startTag);
-                }
+                this.extractTitle(startTag);
+                this.extractReference(startTag, writeTag);
 
                 //this means we won't encounter an end tag for this start tag
                 if (this.isStandAlone(startTag)) {
@@ -234,8 +243,9 @@ public class HtmlAnalyzer
     /**
      * Extract and save the internal (internal pages to this site) and external (http/https/ftp/...) references
      * in this tag.
+     * @param isNormalizedTag indicates if this reference (actually the startTag) will end up in the normalized version
      */
-    private void extractReference(StartTag startTag)
+    private void extractReference(StartTag startTag, boolean isNormalizedTag)
     {
         Attributes startTagAttrs = startTag.getAttributes();
 
@@ -250,11 +260,11 @@ public class HtmlAnalyzer
                             //note that we need to include the port in the check (authority instead of host)
                             //TODO: note that, for now, this will also contain garbage URI's that passed the create() test above like "IE=edge"
                             if (StringUtils.isEmpty(uri.getAuthority()) || SITE_DOMAINS.contains(uri.getAuthority())) {
-                                this.internalRefs.put(uri, attr);
+                                this.internalRefs.put(uri, new ReferenceRef(attr, isNormalizedTag));
                             }
                             //otherwise it's an external ref
                             else {
-                                this.externalRefs.put(uri, attr);
+                                this.externalRefs.put(uri, new ReferenceRef(attr, isNormalizedTag));
                             }
                         }
                         catch (IllegalArgumentException e) {
@@ -273,19 +283,19 @@ public class HtmlAnalyzer
      */
     private void extractTranslation(StartTag startTag)
     {
-        if (startTag.getName().equalsIgnoreCase("link")) {
-            String relAttr = startTag.getAttributeValue("rel");
-            if (!StringUtils.isEmpty(relAttr) && relAttr.equalsIgnoreCase("alternate")) {
-                String typeAttr = startTag.getAttributeValue("type");
+        if (startTag.getName().equalsIgnoreCase(HtmlSource.HTML_TRANSLATION_ELEMENT)) {
+            String relAttr = startTag.getAttributeValue(HtmlSource.HTML_TRANSLATION_ATTR_REL);
+            if (!StringUtils.isEmpty(relAttr) && relAttr.equalsIgnoreCase(HtmlSource.HTML_TRANSLATION_ATTR_REL_VALUE)) {
+                String typeAttr = startTag.getAttributeValue(HtmlSource.HTML_TRANSLATION_ATTR_TYPE);
                 if (!StringUtils.isEmpty(typeAttr) && typeAttr.equalsIgnoreCase(com.beligum.base.resources.ifaces.Resource.MimeType.HTML.getMimeType().toString())) {
-                    String hrefLangAttr = startTag.getAttributeValue("hreflang");
-                    String hrefAttr = startTag.getAttributeValue("href");
+                    String hrefLangAttr = startTag.getAttributeValue(HtmlSource.HTML_TRANSLATION_ATTR_HREFLANG);
+                    String hrefAttr = startTag.getAttributeValue(HtmlSource.HTML_TRANSLATION_ATTR_HREF);
                     if (!StringUtils.isEmpty(hrefLangAttr) && !StringUtils.isEmpty(hrefAttr)) {
                         try {
                             //validate the reference
                             URI uri = URI.create(hrefAttr);
 
-                            this.translations.put(uri, startTag);
+                            this.translations.put(uri, new TranslationRef(startTag, Locale.forLanguageTag(hrefLangAttr)));
                         }
                         catch (IllegalArgumentException e) {
                             Logger.debug("Encountered illegal translation URI as an attribute value of 'href' in " + startTag, e);
@@ -294,6 +304,18 @@ public class HtmlAnalyzer
                 }
             }
         }
+    }
+    /**
+     * Check if the tag is a title tag and extract and save it's value if it is.
+     */
+    private void extractTitle(StartTag startTag)
+    {
+         if (startTag.getName().equalsIgnoreCase(HtmlSource.HTML_TITLE_ELEMENT)) {
+             this.title = startTag.getElement().getContent().toString();
+             if (!StringUtils.isEmpty(this.title)) {
+                 this.title = this.title.trim();
+             }
+         }
     }
     /**
      * @return true if this tag is special and should always be included in the normalized form
@@ -348,5 +370,29 @@ public class HtmlAnalyzer
     private String instantiateTemplateEndTag(HtmlTemplate template)
     {
         return new StringBuilder().append("</").append(template.getTemplateName()).append(">").toString();
+    }
+
+    //-----INNER CLASSES-----
+    public class TranslationRef
+    {
+        public final StartTag tag;
+        public final Locale locale;
+
+        protected TranslationRef(StartTag tag, Locale locale)
+        {
+            this.tag = tag;
+            this.locale = locale;
+        }
+    }
+    public class ReferenceRef
+    {
+        public final Attribute attribute;
+        public final boolean isNormalizedTag;
+
+        protected ReferenceRef(Attribute attribute, boolean isNormalizedTag)
+        {
+            this.attribute = attribute;
+            this.isNormalizedTag = isNormalizedTag;
+        }
     }
 }

@@ -43,7 +43,7 @@ public class HtmlStreamSource extends HtmlSource
             }
         }
 
-        this.init();
+        this.initDocument();
     }
 
     //-----PUBLIC METHODS-----

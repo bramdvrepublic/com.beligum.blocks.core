@@ -2,7 +2,6 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.resources.ResourceRequestImpl;
 import com.beligum.base.server.R;
-import com.beligum.base.server.RequestContext;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.templating.ifaces.TemplateContext;
 import com.beligum.blocks.caching.CacheKeys;
@@ -100,7 +99,7 @@ public class ApplicationEndpointOld
     public Response getPageNew(@PathParam("randomPage") String randomURLPath) throws Exception
     {
         URI requestedURI = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
-        URI validUri = DefaultPageImpl.create(requestedURI, Settings.instance().getPagesViewPath());
+        URI validUri = DefaultPageImpl.toResourceUri(requestedURI, Settings.instance().getPagesViewPath());
 
         FileContext fs = Settings.instance().getPageViewFileSystem();
         PathInfo pathInfo = new HdfsPathInfo(fs, validUri);

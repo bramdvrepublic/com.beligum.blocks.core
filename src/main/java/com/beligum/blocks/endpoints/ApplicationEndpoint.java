@@ -25,6 +25,8 @@ import org.apache.shiro.SecurityUtils;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
+import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
@@ -55,7 +57,7 @@ public class ApplicationEndpoint
         URI requestedUri = Settings.instance().getSiteDomain().resolve("/"+randomURLPath).normalize();
 
         FileContext fs = Settings.instance().getPageViewFileSystem();
-        URI fsPageUri = DefaultPageImpl.create(requestedUri, Settings.instance().getPagesViewPath());
+        URI fsPageUri = DefaultPageImpl.toResourceUri(requestedUri, Settings.instance().getPagesViewPath());
         Page page = new DefaultPageImpl(new HdfsPathInfo(fs, fsPageUri));
         // Since we allow the user to create pretty url's, it's mime type will not always be clear.
         // But not this endpoint only accepts HTML requests, so force the mime type
@@ -72,44 +74,76 @@ public class ApplicationEndpoint
 
             retVal = Response.ok(template);
         }
-        // here, we have three possibilities:
-        // - the page doesn't exist & the user has no rights -> 404
-        // - the page doesn't exist & the user has create rights & nothing in flash cache -> show new page selection list
-        // - the page doesn't exist & the user has create rights & page template in flash cache -> render a page template instance (not yet persisted)
+
+        // General remark: we force the page to be created to have a language using redirects. It's not strictly necessary,
+        // but it helps us a lot while linking translations together during page persist; by supplying a part in the URL-path
+        // that identifies the language of the page, it's far easier to auto-generate translation URLs, and as a plus,
+        // it introduces some structure to the site.
+        //
+        // We have four, ordered possibilities:
+        // - OPTION 1: the page doesn't exist & the user has no rights -> 404
+        // - OPTION 2: the page doesn't exist & the user has create rights & no language present -> redirect to URL with language prefix
+        // - OPTION 3: the page doesn't exist & the user has create rights & language is present & page template in flash cache -> render a page template instance (not yet persisted)
+        // - OPTION 4: the page doesn't exist & the user has create rights & language is present & nothing in flash cache -> show new page selection list
         else {
-            //if we have permission to create a new page, do it, otherwise, the page doesn't exist
+            //OPTION 1: if we have permission to create a new page, do it, otherwise, the page doesn't exist
             if (!SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
                 throw new NotFoundException();
             }
             else {
-                //this means we redirected from the new-template-selection page
-                String newPageTemplateName = null;
-                if (R.cacheManager().getFlashCache().getTransferredEntries() != null) {
-                    newPageTemplateName = (String) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_TEMPLATE_NAME.name());
-                }
+                // Note that, as a general language-selection mechanism, we only support URI locales,
+                // but when there's no such locale found, we try to redirect to the one requested by the browser
+                // and if all fails, we redirect to the default, configured locale
+                Locale requestedUriLocale = R.i18nFactory().getUrlLocale(requestedUri);
 
-                //by using the flash cache, we keep the final URL clean and simulate a little session
-                if (!StringUtils.isEmpty(newPageTemplateName)) {
-                    //check if the name exists and is all right
-                    HtmlTemplate pageTemplate = HtmlParser.getTemplateCache().getByTagName(newPageTemplateName);
-                    if (pageTemplate!=null && pageTemplate instanceof PageTemplate) {
-                        Template newPageInstance = R.templateEngine().getNewTemplate(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), pageTemplate.createNewHtmlInstance());
+                //OPTION 2: no URL-language available: redirect to a good guess
+                if (requestedUriLocale==null) {
+                    Locale redirectLocale = R.i18nFactory().getBrowserLocale();
+                    //if the requested locale is supported by the site, use it, otherwise use the default locale
+                    //if the default is forced, use it no matter what
+                    if (Settings.instance().getForceRedirectToDefaultLocale() || !Settings.instance().getLanguages().containsKey(redirectLocale.getLanguage())) {
+                        redirectLocale = Settings.instance().getDefaultLanguage();
+                    }
 
-                        //this will allow the blocks javascript/css to be included
-                        this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, newPageInstance);
-
-                        retVal = Response.ok(newPageInstance);
+                    if (redirectLocale==null) {
+                        throw new IOException("Encountered null-valued default language; this shouldn't happen; "+requestedUri);
                     }
                     else {
-                        throw new InternalServerErrorException("Requested to create a new page with an invalid page template name; "+newPageTemplateName);
+                        retVal = Response.seeOther(UriBuilder.fromUri(requestedUri).replacePath("/"+redirectLocale.getLanguage()+requestedUri.getPath()).build());
                     }
                 }
                 else {
-                    Template newPageTemplateList = new_page.get().getNewTemplate();
-                    newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_URL.getValue(), requestedUri.toString());
-                    newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TEMPLATES.getValue(), this.buildLocalizedPageTemplateMap());
+                    //this means we redirected from the new-template-selection page
+                    String newPageTemplateName = null;
+                    if (R.cacheManager().getFlashCache().getTransferredEntries() != null) {
+                        newPageTemplateName = (String) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_TEMPLATE_NAME.name());
+                    }
 
-                    retVal = Response.ok(newPageTemplateList);
+                    //OPTION 3: there's a template-selection in the flash cache (we came from the page-selection page)
+                    // Note that we use the flash cache as a template-selection mechanism to keep the final URL clean
+                    if (!StringUtils.isEmpty(newPageTemplateName)) {
+                        //check if the name exists and is all right
+                        HtmlTemplate pageTemplate = HtmlParser.getTemplateCache().getByTagName(newPageTemplateName);
+                        if (pageTemplate != null && pageTemplate instanceof PageTemplate) {
+                            Template newPageInstance = R.templateEngine().getNewTemplate(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), pageTemplate.createNewHtmlInstance());
+
+                            //this will allow the blocks javascript/css to be included
+                            this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, newPageInstance);
+
+                            retVal = Response.ok(newPageInstance);
+                        }
+                        else {
+                            throw new InternalServerErrorException("Requested to create a new page with an invalid page template name; " + newPageTemplateName);
+                        }
+                    }
+                    //OPTION 4: empty flash cache; show the page templates list
+                    else {
+                        Template newPageTemplateList = new_page.get().getNewTemplate();
+                        newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_URL.getValue(), requestedUri.toString());
+                        newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TEMPLATES.getValue(), this.buildLocalizedPageTemplateMap());
+
+                        retVal = Response.ok(newPageTemplateList);
+                    }
                 }
             }
         }
