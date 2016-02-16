@@ -73,12 +73,15 @@ public class SimplePageStore implements PageStore
         try (LockFile lock = pathInfo.acquireLock()) {
 
             //prepare the HTML for saving; this is the only place we can modify the source
-            // because later on, the analyzer will have run (eg. after calling source.processTranslations())
+            // because later on, the analyzer will have run (eg. after calling source.updateTranslations())
             source.prepareForSaving(true, true);
 
-            //analyze the source and update and fetch it's translations
+            //update the link to the parent for the current state of the server
+            source.updateParent(fs);
+
+            //analyze the source and update and update it's translations based on the current context
             //Note: this needs to be done before serializing because it might introduce tags
-            source.processTranslations(fs);
+            source.updateTranslations(fs);
 
             //we'll read everything into a string for performance and ease of use
             String sourceHtml;

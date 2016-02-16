@@ -1,10 +1,9 @@
 package com.beligum.blocks.fs.indexes.stubs;
 
 import com.beligum.blocks.fs.pages.ifaces.Page;
-import org.hibernate.search.annotations.*;
+import org.hibernate.search.annotations.Indexed;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.io.IOException;
 
 /**
  * Created by bram on 2/13/16.
@@ -15,40 +14,53 @@ public class PageStub extends AbstractStub
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    //think about this: should we create stubs for all the references? And internal/external? Auto-updating is nice...
-    private Set<PageStub> childre n;
+//    @Field(index = Index.YES, analyze = Analyze.YES, store = Store.YES)
+//    private final String title;
+//    @Field(index = Index.YES, analyze = Analyze.YES, store = Store.YES)
+//    private final String language;
+//    @Field(index = Index.YES, analyze = Analyze.YES, store = Store.YES)
+//    private final URI parent;
+//    @Field(index = Index.YES, analyze = Analyze.YES, store = Store.YES)
+//    private final Map<String, URI> translations;
 
     //-----CONSTRUCTORS-----
-    public PageStub()
+    public PageStub() throws IOException
     {
         this(null);
     }
-    public PageStub(Page page)
+    public PageStub(Page page) throws IOException
     {
+        //the ID of th stub in the public URI
         super(page.getPathInfo().getUri());
 
-        this.children = new HashSet<>();
+//        if (page.getSource()==null) {
+//            throw new IOException("We can't create a page indexer stub without an attached source; this code should only be called during saving of the page; "+page);
+//        }
+//
+//        this.title = page.getSource().getTitle();
+//        this.language = page.getSource().getHtmlLocale().getLanguage();
+//        this.parent = null;
+//        this.translations = new LinkedHashMap<>();
+//        if (page.getSource().getTranslations()!=null) {
+//            for (Map.Entry<URI, Locale> e : page.getSource().getTranslations().entrySet()) {
+//                this.translations.put(e.getValue().getLanguage(), e.getKey());
+//            }
+//        }
     }
 
     //-----PUBLIC METHODS-----
-    @Field(index = Index.YES, analyze = Analyze.YES, store = Store.YES)
-    public String getFirstName()
-    {
-        return "TESTJE: "+this.getId();
-    }
-    @IndexedEmbedded(depth = 1, includeEmbeddedObjectId = true)
-    public Set<PageStub> getChildren()
-    {
-        return children;
-    }
-    public void addChild(PageStub child)
-    {
-        this.children.add(child);
-    }
+
 
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
 
     //-----MANAGEMENT METHODS-----
+    @Override
+    public String toString()
+    {
+        return "PageStub{" +
+               "id='" + getId() + '\'' +
+               '}';
+    }
 }

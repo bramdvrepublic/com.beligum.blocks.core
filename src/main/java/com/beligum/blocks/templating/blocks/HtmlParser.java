@@ -1,8 +1,8 @@
 package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.resources.ClasspathSearchResult;
-import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.Parser;
+import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
@@ -30,6 +30,8 @@ import java.util.regex.Pattern;
  * keep a refernece to prefixes or the default vocab. (e.g. property="pagetitle" and
  * property="http://www.mot.be/ontology/pagetitle" and property="mot:pagetitle" could all reference the same
  * property.
+ *
+ * Note: the reverse of this class is com.beligum.blocks.templating.blocks.HtmlAnalyzer
  */
 public class HtmlParser implements Parser
 {
@@ -81,7 +83,7 @@ public class HtmlParser implements Parser
             if (templateCache.containsKeyByRelativePath(resourceRelativePath)) {
                 //first of all, since this method is only called when something changed, update the cache value
                 HtmlTemplate oldTemplate = templateCache.getByRelativePath(resourceRelativePath);//fetch the old value for the paths
-                sourceTemplate = HtmlTemplate.create(oldTemplate.getTemplateName(), source, oldTemplate.getAbsolutePath(), oldTemplate.getRelativePath(), oldTemplate.getParent());
+                sourceTemplate = HtmlTemplate.create(oldTemplate.getTemplateName(), source, oldTemplate.getAbsolutePath(), oldTemplate.getRelativePath(), oldTemplate.getSuperTemplate());
                 templateCache.putByRelativePath(resourceRelativePath, sourceTemplate);
 
                 //this is the base for all coming preprocessing
@@ -362,17 +364,29 @@ public class HtmlParser implements Parser
                         }
                     }
 
-                    // embedding the code chunk in the file (instead of linking to it) is a lot faster, but messes up the auto-cache-reload in dev mode
-                    if (R.configuration().getProduction()) {
-                        //by passing along the resourceloader (and enabling postprocessing and using the parsed path), we implement recursion
-                        try (InputStream is = R.resourceFactory().get(htmlTemplate.getRelativePath().toUri()).newInputStream()) {
-                            builder.append(IOUtils.toString(is));
-                        }
+                    //Note: this is the new and improved version of the code below, but it's still not optimal:
+                    // we should refactor the way the HtmlTemplates are handled, especially, this is probably not the place to look up
+                    // the resource here...
+                    Resource htmlTemplateResource = R.resourceFactory().get(URI.create(htmlTemplate.getRelativePath().toString()));
+                    if (htmlTemplateResource==null) {
+                        throw new IOException("Encountered a html template that doesn't seem to exist. This shouldn't happen. "+htmlTemplate.getRelativePath());
                     }
-                    else {
-                        //use a classic parse to parse the defines from above
-                        builder.append("#parse('").append(htmlTemplate.getRelativePath()).append("')").append("\n");
+                    resource.addChild(htmlTemplateResource);
+                    try (InputStream is = R.resourceFactory().get(htmlTemplate.getRelativePath().toUri()).newInputStream()) {
+                        builder.append(IOUtils.toString(is));
                     }
+
+//                    // embedding the code chunk in the file (instead of linking to it) is a lot faster, but messes up the auto-cache-reload in dev mode
+//                    if (R.configuration().getProduction()) {
+//                        //by passing along the resourceloader (and enabling postprocessing and using the parsed path), we implement recursion
+//                        try (InputStream is = R.resourceFactory().get(htmlTemplate.getRelativePath().toUri()).newInputStream()) {
+//                            builder.append(IOUtils.toString(is));
+//                        }
+//                    }
+//                    else {
+//                        //use a classic parse to parse the defines from above
+//                        builder.append("#parse('").append(htmlTemplate.getRelativePath()).append("')").append("\n");
+//                    }
 
                     //pop the controller
                     builder.append("#end").append("\n");

@@ -32,7 +32,7 @@ public class PageTemplate extends HtmlTemplate
 
     //-----PROTECTED METHODS-----
     @Override
-    protected OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate parent) throws IOException
+    protected OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate superTemplate) throws IOException
     {
         // note that it doesn't really make sense to do something with the parent here;
         // the html of a page always needs to be there and I don't know a reason why we would use the html of a possible parent
@@ -64,7 +64,7 @@ public class PageTemplate extends HtmlTemplate
         return document;
     }
     @Override
-    protected void saveHtml(OutputDocument document, HtmlTemplate parent)
+    protected void saveHtml(OutputDocument document, HtmlTemplate superTemplate)
     {
         this.prefixHtml = new Source("");
         this.innerHtml = new Source(document.toString());

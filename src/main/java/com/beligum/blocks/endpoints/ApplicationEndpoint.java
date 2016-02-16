@@ -72,6 +72,8 @@ public class ApplicationEndpoint
                 this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template);
             }
 
+
+
             retVal = Response.ok(template);
         }
 

@@ -4,9 +4,7 @@ import com.beligum.blocks.fs.ifaces.PathInfo;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
 import com.beligum.blocks.rdf.ifaces.Exporter;
 import com.beligum.blocks.rdf.ifaces.Importer;
-import com.beligum.blocks.rdf.ifaces.Source;
 import org.apache.hadoop.fs.Path;
-import org.apache.jena.rdf.model.Model;
 
 import java.io.IOException;
 import java.net.URI;
@@ -22,7 +20,7 @@ public interface Page
     MetadataWriter createMetadataWriter() throws IOException;
     Path getNormalizedPageProxyPath();
     Path getRdfExportFile();
-    Model getRDFModel();
-    Source getSource();
+//    Model getRDFModel();
+//    HtmlSource getSource();
     PathInfo getPathInfo();
 }

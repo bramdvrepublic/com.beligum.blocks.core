@@ -92,7 +92,7 @@ public abstract class HtmlTemplate
     protected Map<String, URI> prefixes;
 
     //this will enable us to save the 'inheritance tree'
-    protected HtmlTemplate parent;
+    protected HtmlTemplate superTemplate;
 
     // This will hold the html before the <template> tags
     protected Segment prefixHtml;
@@ -106,15 +106,15 @@ public abstract class HtmlTemplate
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    public static HtmlTemplate create(String templateName, Source source, Path absolutePath, Path relativePath, HtmlTemplate parent) throws Exception
+    public static HtmlTemplate create(String templateName, Source source, Path absolutePath, Path relativePath, HtmlTemplate superTemplate) throws Exception
     {
         HtmlTemplate retVal = null;
 
         if (representsTagTemplate(source)) {
-            retVal = new TagTemplate(templateName, source, absolutePath, relativePath, parent);
+            retVal = new TagTemplate(templateName, source, absolutePath, relativePath, superTemplate);
         }
         else if (representsPageTemplate(source)) {
-            retVal = new PageTemplate(templateName, source, absolutePath, relativePath, parent);
+            retVal = new PageTemplate(templateName, source, absolutePath, relativePath, superTemplate);
         }
 
         return retVal;
@@ -200,9 +200,9 @@ public abstract class HtmlTemplate
     {
         return controllerClass;
     }
-    public HtmlTemplate getParent()
+    public HtmlTemplate getSuperTemplate()
     {
-        return parent;
+        return superTemplate;
     }
     public Iterable<Element> getAllInlineScriptElements()
     {
@@ -264,7 +264,7 @@ public abstract class HtmlTemplate
     }
 
     //-----PROTECTED METHODS-----
-    protected void init(String templateName, Source source, Path absolutePath, Path relativePath, HtmlTemplate parent) throws Exception
+    protected void init(String templateName, Source source, Path absolutePath, Path relativePath, HtmlTemplate superTemplate) throws Exception
     {
         //INIT THE PATHS
         this.absolutePath = absolutePath;
@@ -273,11 +273,11 @@ public abstract class HtmlTemplate
         //INIT THE NAMES
         this.templateName = templateName;
         this.velocityName = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, this.templateName);
-        this.parent = parent;
+        this.superTemplate = superTemplate;
 
         //INIT THE HTML
         //note: this should take the parent into account
-        OutputDocument tempHtml = this.doInitHtmlPreparsing(new OutputDocument(source), parent);
+        OutputDocument tempHtml = this.doInitHtmlPreparsing(new OutputDocument(source), superTemplate);
 
         this.vocab = HtmlParser.parseRdfVocabAttribute(this, this.attributes.get(HtmlParser.RDF_VOCAB_ATTR));
 
@@ -285,13 +285,13 @@ public abstract class HtmlTemplate
         HtmlParser.parseRdfPrefixAttribute(this, this.attributes.get(HtmlParser.RDF_PREFIX_ATTR), this.prefixes);
 
         //Note that we need to eat these values for PageTemplates because we don't want them to end up at the client side (no problem for TagTemplates)
-        this.titles = parent != null ? parent.getTitles() : new HashMap<Locale, String>();
+        this.titles = superTemplate != null ? superTemplate.getTitles() : new HashMap<Locale, String>();
         this.fillMetaValues(tempHtml, this.titles, MetaProperty.title, true);
 
-        this.descriptions = parent != null ? parent.getDescriptions() : new HashMap<Locale, String>();
+        this.descriptions = superTemplate != null ? superTemplate.getDescriptions() : new HashMap<Locale, String>();
         this.fillMetaValues(tempHtml, this.descriptions, MetaProperty.description, true);
 
-        this.icons = parent != null ? parent.getIcons() : new HashMap<Locale, String>();
+        this.icons = superTemplate != null ? superTemplate.getIcons() : new HashMap<Locale, String>();
         this.fillMetaValues(tempHtml, this.icons, MetaProperty.icon, true);
 
         String controllerClassStr = this.getMetaValue(tempHtml, MetaProperty.controller, true);
@@ -305,11 +305,11 @@ public abstract class HtmlTemplate
             }
         }
         //parent controller is the backup if this child doesn't have one
-        if (this.controllerClass == null && parent != null) {
-            this.controllerClass = parent.getControllerClass();
+        if (this.controllerClass == null && superTemplate != null) {
+            this.controllerClass = superTemplate.getControllerClass();
         }
 
-        this.displayType = parent != null ? parent.getDisplayType() : MetaDisplayType.DEFAULT;
+        this.displayType = superTemplate != null ? superTemplate.getDisplayType() : MetaDisplayType.DEFAULT;
         String displayType = this.getMetaValue(tempHtml, MetaProperty.display, true);
         if (!StringUtils.isEmpty(displayType)) {
             this.displayType = MetaDisplayType.valueOf(displayType.toUpperCase());
@@ -321,24 +321,24 @@ public abstract class HtmlTemplate
         this.externalScriptElements = getExternalScripts(tempHtml);
 
         //prepend the html with the parent resources if it's there
-        if (parent != null) {
-            StringBuilder parentResourceHtml = new StringBuilder();
-            this.inlineStyleElements = addParentResources(TemplateResourcesDirective.Argument.inlineStyles, parentResourceHtml, this.inlineStyleElements, parent.getAllInlineStyleElements(), null);
+        if (superTemplate != null) {
+            StringBuilder superTemplateResourceHtml = new StringBuilder();
+            this.inlineStyleElements = addSuperTemplateResources(TemplateResourcesDirective.Argument.inlineStyles, superTemplateResourceHtml, this.inlineStyleElements, superTemplate.getAllInlineStyleElements(), null);
             this.externalStyleElements =
-                            addParentResources(TemplateResourcesDirective.Argument.externalStyles, parentResourceHtml, this.externalStyleElements, parent.getAllExternalStyleElements(), "href");
-            this.inlineScriptElements = addParentResources(TemplateResourcesDirective.Argument.inlineScripts, parentResourceHtml, this.inlineScriptElements, parent.getAllInlineScriptElements(), null);
+                            addSuperTemplateResources(TemplateResourcesDirective.Argument.externalStyles, superTemplateResourceHtml, this.externalStyleElements, superTemplate.getAllExternalStyleElements(), "href");
+            this.inlineScriptElements = addSuperTemplateResources(TemplateResourcesDirective.Argument.inlineScripts, superTemplateResourceHtml, this.inlineScriptElements, superTemplate.getAllInlineScriptElements(), null);
             this.externalScriptElements =
-                            addParentResources(TemplateResourcesDirective.Argument.externalScripts, parentResourceHtml, this.externalScriptElements, parent.getAllExternalScriptElements(), "src");
-            tempHtml.insert(0, parentResourceHtml);
+                            addSuperTemplateResources(TemplateResourcesDirective.Argument.externalScripts, superTemplateResourceHtml, this.externalScriptElements, superTemplate.getAllExternalScriptElements(), "src");
+            tempHtml.insert(0, superTemplateResourceHtml);
         }
 
         //now save the (possibly altered) html source (and unwrap it in case of a tag template)
-        this.saveHtml(tempHtml, parent);
+        this.saveHtml(tempHtml, superTemplate);
     }
-    protected abstract void saveHtml(OutputDocument document, HtmlTemplate parent);
+    protected abstract void saveHtml(OutputDocument document, HtmlTemplate superTemplate);
 
     //-----PROTECTED METHODS-----
-    protected abstract OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate parent) throws IOException;
+    protected abstract OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate superTemplate) throws IOException;
     protected void setAttributes(Map<String, String> attributes)
     {
         this.attributes = attributes;
@@ -500,15 +500,15 @@ public abstract class HtmlTemplate
 
         return builder.toString();
     }
-    private Iterable<Element> addParentResources(TemplateResourcesDirective.Argument type, StringBuilder html, Iterable<Element> templateElements, Iterable<Element> parentElements, String attribute)
+    private Iterable<Element> addSuperTemplateResources(TemplateResourcesDirective.Argument type, StringBuilder html, Iterable<Element> templateElements, Iterable<Element> superTemplateElements, String attribute)
     {
         Iterable<Element> retVal = templateElements;
 
-        if (parentElements != null && parentElements.iterator().hasNext()) {
-            for (Element element : parentElements) {
+        if (superTemplateElements != null && superTemplateElements.iterator().hasNext()) {
+            for (Element element : superTemplateElements) {
                 html.append(buildResourceHtml(type, element, attribute == null ? null : element.getAttributeValue(attribute)));
             }
-            retVal = Iterables.concat(parentElements, templateElements);
+            retVal = Iterables.concat(superTemplateElements, templateElements);
         }
 
         return retVal;

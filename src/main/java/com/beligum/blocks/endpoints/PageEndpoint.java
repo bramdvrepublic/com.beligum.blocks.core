@@ -183,10 +183,14 @@ public class PageEndpoint
             PageIndexer mainIndex = this.getMainPageIndex();
             PageIndexer tripleStore = this.getTriplestorePageIndex();
 
+            //link both indexers together so that both commit or both fail
             boolean success = false;
             try {
                 //store the resulting page in the indexes you want
+                mainIndex.beginTransaction();
                 mainIndex.indexPage(savedPage);
+
+                tripleStore.beginTransaction();
                 tripleStore.indexPage(savedPage);
 
                 success = true;

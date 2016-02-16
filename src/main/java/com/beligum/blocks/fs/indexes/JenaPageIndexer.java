@@ -38,7 +38,7 @@ public class JenaPageIndexer implements PageIndexer
         Dataset dataset = this.getRDFDataset();
 
         //dataset.addNamedModel(modelName.toString(), model);
-        dataset.getDefaultModel().add(page.getRDFModel());
+//        dataset.getDefaultModel().add(page.getRDFModel());
 
         //just testing...
         //            String qs1 = "SELECT * {?s ?p ?o} LIMIT 10" ;

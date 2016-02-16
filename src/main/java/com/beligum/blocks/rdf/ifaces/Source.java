@@ -30,9 +30,14 @@ public interface Source
     void prepareForSaving(boolean adjustLanguage, boolean compact) throws IOException;
 
     /**
+     * Search and update the parent page of this source (using the given filesystem) and save the result.
+     */
+    void updateParent(FileContext fs) throws IOException;
+
+    /**
      * Process all translations of this source (using the given filesystem) and save the resulting translation mapping.
      */
-    void processTranslations(FileContext fs) throws IOException;
+    void updateTranslations(FileContext fs) throws IOException;
 
     /**
      * @return a newly created stream for reading the contents of this source

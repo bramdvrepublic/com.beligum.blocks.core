@@ -35,7 +35,7 @@ public class TagTemplate extends HtmlTemplate
 
     //-----PROTECTED METHODS-----
     @Override
-    protected OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate parent) throws IOException
+    protected OutputDocument doInitHtmlPreparsing(OutputDocument document, HtmlTemplate superTemplate) throws IOException
     {
         List<Element> templateElements = document.getSegment().getAllElements(HtmlParser.WEBCOMPONENTS_TEMPLATE_ELEM);
 
@@ -50,8 +50,8 @@ public class TagTemplate extends HtmlTemplate
             //FIRST, parse the attributes
             //we'll merge the attributes of the <template> tag from the parent, but let them be overridden by this child template
             Map<String, String> attrs = new LinkedHashMap<>();
-            if (parent != null && parent.getAttributes() != null) {
-                attrs = parent.getAttributes();
+            if (superTemplate != null && superTemplate.getAttributes() != null) {
+                attrs = superTemplate.getAttributes();
             }
             if (templateTag.getAttributes() != null) {
                 //note that populate just does a put() so this works well to override the parent properties
@@ -67,7 +67,7 @@ public class TagTemplate extends HtmlTemplate
         return document;
     }
     @Override
-    protected void saveHtml(OutputDocument document, HtmlTemplate parent)
+    protected void saveHtml(OutputDocument document, HtmlTemplate superTemplate)
     {
         Segment retVal = null;
 
@@ -85,8 +85,8 @@ public class TagTemplate extends HtmlTemplate
 
         //the prefix equals the prefix of the parent, plus the prefix of us
         StringBuilder prefix = new StringBuilder();
-        if (parent != null) {
-            prefix.append(parent.getPrefixHtml());
+        if (superTemplate != null) {
+            prefix.append(superTemplate.getPrefixHtml());
         }
         prefix.append(documentSource.subSequence(0, templateTag.getBegin()));
         this.prefixHtml = new Source(prefix);
@@ -94,8 +94,8 @@ public class TagTemplate extends HtmlTemplate
         //same for the suffix but in reverse order
         StringBuilder suffix = new StringBuilder();
         suffix.append(documentSource.subSequence(templateTag.getEnd(), documentSource.length()));
-        if (parent != null) {
-            suffix.append(parent.getSuffixHtml());
+        if (superTemplate != null) {
+            suffix.append(superTemplate.getSuffixHtml());
         }
         this.suffixHtml = new Source(suffix);
 
@@ -103,8 +103,8 @@ public class TagTemplate extends HtmlTemplate
         //if the <template> tag is empty and we have a parent, inherit the content from the parent <template> tag
         //this allows us to really overload the <template> tag and start over
         //note that .isEmpty() also returns true when the element has attributes
-        if (templateTag.isEmpty() && parent != null) {
-            this.innerHtml = parent.getInnerHtml();
+        if (templateTag.isEmpty() && superTemplate != null) {
+            this.innerHtml = superTemplate.getInnerHtml();
         }
         else {
             //we unwrap the template tag (already saved the attributes)

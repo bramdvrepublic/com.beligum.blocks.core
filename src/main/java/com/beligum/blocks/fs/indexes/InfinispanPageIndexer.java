@@ -7,17 +7,21 @@ import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.indexes.ifaces.PageIndexer;
 import com.beligum.blocks.fs.indexes.stubs.PageStub;
 import com.beligum.blocks.fs.pages.ifaces.Page;
+import org.hibernate.search.query.dsl.QueryBuilder;
 import org.infinispan.Cache;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.cache.Index;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
+import org.infinispan.query.CacheQuery;
+import org.infinispan.query.SearchManager;
 import org.infinispan.transaction.TransactionMode;
 
 import javax.transaction.TransactionManager;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  * See this:
@@ -44,14 +48,22 @@ public class InfinispanPageIndexer implements PageIndexer
     @Override
     public void indexPage(Page page) throws IOException
     {
-        try {
-            Cache<String, PageStub> cache = this.getCacheManager().getCache();
+        Cache<String, PageStub> cache = this.getCacheManager().getCache();
 
-            PageStub stub = new PageStub(page);
-            cache.put(stub.getId().toString(), stub);
-        }
-        catch (Exception e) {
-            throw new IOException("Exception caught while indexing page in Infinispan cache; " + page, e);
+        PageStub stub = new PageStub(page);
+        cache.put(stub.getId().toString(), stub);
+
+        SearchManager searchManager = org.infinispan.query.Search.getSearchManager(cache);
+        QueryBuilder queryBuilder = searchManager.buildQueryBuilderForClass(PageStub.class).get();
+        org.apache.lucene.search.Query luceneQuery = queryBuilder.phrase()
+                                                                 .onField("title")
+                                                                 .sentence("please")
+                                                                 .createQuery();
+
+        CacheQuery query = searchManager.getQuery(luceneQuery, PageStub.class);
+        List objectList = query.list();
+        for (Object p : objectList) {
+            Logger.info(p);
         }
     }
     @Override
@@ -153,8 +165,9 @@ public class InfinispanPageIndexer implements PageIndexer
 
             //configure the transaction manager
             builder.transaction()
-                   .transactionManagerLookup(new org.infinispan.transaction.lookup.JBossStandaloneJTAManagerLookup())
-                   .transactionMode(TransactionMode.TRANSACTIONAL);
+                   .autoCommit(false)
+                   .transactionMode(TransactionMode.TRANSACTIONAL)
+                   .transactionManagerLookup(new org.infinispan.transaction.lookup.JBossStandaloneJTAManagerLookup());
 
             R.cacheManager().getApplicationCache().put(CacheKeys.INFINISPAN_CACHE_MANAGER, new DefaultCacheManager(builder.build()));
         }

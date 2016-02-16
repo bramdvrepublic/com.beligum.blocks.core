@@ -39,6 +39,7 @@ public class HtmlAnalyzer
     private Source htmlDocument;
     private String normalizedHtml;
     private Locale htmlLocale;
+    private ParentRef parent;
     private Map<URI, TranslationRef> translations;
     private Map<URI, ReferenceRef> internalRefs;
     private Map<URI, ReferenceRef> externalRefs;
@@ -130,6 +131,10 @@ public class HtmlAnalyzer
     {
         return externalRefs;
     }
+    public ParentRef getParent()
+    {
+        return parent;
+    }
     public Map<URI, TranslationRef> getTranslations()
     {
         return translations;
@@ -175,6 +180,7 @@ public class HtmlAnalyzer
                     writeTag = true;
                 }
 
+                this.extractParent(startTag);
                 this.extractTranslation(startTag);
                 this.extractTitle(startTag);
                 this.extractReference(startTag, writeTag);
@@ -270,6 +276,32 @@ public class HtmlAnalyzer
                         catch (IllegalArgumentException e) {
                             Logger.debug("Encountered illegal URI as an attribute value of " + attr + " in " + startTag, e);
                         }
+                    }
+                }
+            }
+        }
+    }
+    /**
+     * Extract and save the translation (if this start tag is a <link rel="up"> tag)
+     * Example: <link rel="up" href="/fr/other/page/index.html">
+     * According to Mozilla, the "up" keyword "Indicates that the page is part of a hierarchical
+     * structure and that the hyperlink leads to the higher level resource of that structure."
+     * For details, see https://developer.mozilla.org/en-US/docs/Web/HTML/Link_types
+     */
+    private void extractParent(StartTag startTag)
+    {
+        if (startTag.getName().equalsIgnoreCase(HtmlSource.HTML_PARENT_ELEMENT)) {
+            String relAttr = startTag.getAttributeValue(HtmlSource.HTML_PARENT_ATTR_REL);
+            if (!StringUtils.isEmpty(relAttr) && relAttr.equalsIgnoreCase(HtmlSource.HTML_PARENT_ATTR_REL_VALUE)) {
+                String hrefAttr = startTag.getAttributeValue(HtmlSource.HTML_PARENT_ATTR_HREF);
+                if (!StringUtils.isEmpty(hrefAttr)) {
+                    try {
+                        //validate the reference
+                        URI uri = URI.create(hrefAttr);
+                        this.parent = new ParentRef(startTag, uri);
+                    }
+                    catch (IllegalArgumentException e) {
+                        Logger.debug("Encountered illegal parent URI as an attribute value of 'href' in " + startTag, e);
                     }
                 }
             }
@@ -373,6 +405,17 @@ public class HtmlAnalyzer
     }
 
     //-----INNER CLASSES-----
+    public class ParentRef
+    {
+        public final StartTag tag;
+        public final URI parentUri;
+
+        protected ParentRef(StartTag tag, URI parentUri)
+        {
+            this.tag = tag;
+            this.parentUri = parentUri;
+        }
+    }
     public class TranslationRef
     {
         public final StartTag tag;
