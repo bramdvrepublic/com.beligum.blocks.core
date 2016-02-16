@@ -1,18 +1,14 @@
 package com.beligum.blocks.fs.pages;
 
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.fs.ifaces.PathInfo;
+import com.beligum.blocks.fs.ifaces.ResourcePath;
 import com.beligum.blocks.fs.pages.ifaces.Page;
-import com.beligum.blocks.rdf.sources.HtmlSource;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.jena.rdf.model.Model;
 
+import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by bram on 1/27/16.
@@ -25,19 +21,15 @@ public abstract class AbstractPage implements Page
     private static final String DIR_PAGE_NAME = "index";
 
     //-----VARIABLES-----
-    protected final PathInfo pathInfo;
-    private Model rdfModel;
-    private HtmlSource source;
-    private Map<URI, Locale> translations;
-    private String title;
-    private Locale htmlLocale;
-    private Set<URI> internalRefs;
-    private Set<URI> externalRefs;
+    protected final ResourcePath resourcePath;
+    protected URI publicAddress;
+    private boolean checkedAddress;
 
     //-----CONSTRUCTORS-----
     /**
      * This converts a public page URI to it's local resource counterpart.
-     * @param uri the public uri for a page
+     *
+     * @param uri     the public uri for a page
      * @param baseUri the base uri of the page store, usually one of Settings.instance().getPagesStorePath() or Settings.instance().getPagesViewPath()
      * @return the URI of the resource that holds the data for that page in our configured server filesystem
      * @throws IOException
@@ -46,7 +38,7 @@ public abstract class AbstractPage implements Page
     {
         URI retVal = null;
 
-        if (uri!=null) {
+        if (uri != null) {
             Settings settings = Settings.instance();
 
             //note: the toString is mandatory, otherwise the Path creation fails because there's no scheme
@@ -94,43 +86,57 @@ public abstract class AbstractPage implements Page
 
         return retVal;
     }
-    protected AbstractPage(PathInfo pathInfo)
+    protected AbstractPage(ResourcePath resourcePath)
     {
-        this.pathInfo = pathInfo;
+        this.resourcePath = resourcePath;
     }
 
     //-----PUBLIC METHODS-----
     @Override
-    public URI getUri()
+    public URI buildAddress() throws IOException
     {
-        return this.pathInfo == null ? null : this.pathInfo.getUri();
+        if (!this.checkedAddress) {
+            URI resourceUri = this.getResourcePath().getLocalPath().toUri();
+
+            Settings settings = Settings.instance();
+            URI fsUri = null;
+            if (resourceUri.getScheme().equals(settings.getPagesViewPath().getScheme())) {
+                fsUri = settings.getPagesViewPath();
+            }
+            else if (resourceUri.getScheme().equals(settings.getPagesStorePath().getScheme())) {
+                fsUri = settings.getPagesStorePath();
+            }
+            else {
+                throw new IOException("Unknown filesystem schema found in local page resource URI; " + resourceUri);
+            }
+            this.publicAddress = settings.getSiteDomain().resolve(fsUri.relativize(resourceUri));
+
+            boolean changed = false;
+            String path = this.publicAddress.getPath();
+            if (path.endsWith(settings.getPagesFileExtension())) {
+                path = path.substring(0, path.length() - settings.getPagesFileExtension().length());
+                changed = true;
+            }
+            if (path.endsWith(DIR_PAGE_NAME)) {
+                path = path.substring(0, path.length() - DIR_PAGE_NAME.length());
+                changed = true;
+            }
+            if (changed) {
+                this.publicAddress = UriBuilder.fromUri(this.publicAddress).replacePath(path).build();
+            }
+
+            this.checkedAddress = true;
+        }
+
+        return this.publicAddress;
     }
-//    @Override
-//    public Model getRDFModel()
-//    {
-//        return this.rdfModel;
-//    }
-//    @Override
-//    public HtmlSource getSource()
-//    {
-//        return this.source;
-//    }
     @Override
-    public PathInfo getPathInfo()
+    public ResourcePath getResourcePath()
     {
-        return pathInfo;
+        return resourcePath;
     }
 
     //-----PROTECTED METHODS-----
-    //these should be set from a package private class
-    protected void setRDFModel(Model rdfModel)
-    {
-        this.rdfModel = rdfModel;
-    }
-    protected void setSource(HtmlSource source)
-    {
-        this.source = source;
-    }
 
     //-----PRIVATE METHODS-----
 

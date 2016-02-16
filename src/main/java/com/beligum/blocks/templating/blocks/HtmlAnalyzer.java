@@ -46,7 +46,7 @@ public class HtmlAnalyzer
     private String title;
 
     //-----CONSTRUCTORS-----
-    public HtmlAnalyzer()
+    public HtmlAnalyzer(HtmlSource htmlSource, boolean prettyPrint) throws IOException
     {
         this.allTagTemplates = HtmlParser.getTemplateCache();
 
@@ -54,9 +54,43 @@ public class HtmlAnalyzer
         this.internalRefs = new HashMap<>();
         this.externalRefs = new HashMap<>();
         this.title = null;
+
+        this.analyze(htmlSource, prettyPrint);
     }
 
     //-----PUBLIC METHODS-----
+    public String getNormalizedHtml()
+    {
+        return normalizedHtml;
+    }
+    public Locale getHtmlLanguage()
+    {
+        return htmlLocale;
+    }
+    public Map<URI, ReferenceRef> getInternalRefs()
+    {
+        return internalRefs;
+    }
+    public Map<URI, ReferenceRef> getExternalRefs()
+    {
+        return externalRefs;
+    }
+    public ParentRef getParent()
+    {
+        return parent;
+    }
+    public Map<URI, TranslationRef> getTranslations()
+    {
+        return translations;
+    }
+    public String getTitle()
+    {
+        return title;
+    }
+
+    //-----PROTECTED METHODS-----
+
+    //-----PRIVATE METHODS-----
     /**
      * Parses the incoming html string and stores all relevant structures in class variables,
      * to be retrieved later on by the getters below.
@@ -65,7 +99,7 @@ public class HtmlAnalyzer
      * @param prettyPrint
      * @throws IOException
      */
-    public void analyze(HtmlSource htmlSource, boolean prettyPrint) throws IOException
+    private void analyze(HtmlSource htmlSource, boolean prettyPrint) throws IOException
     {
         try (InputStream is = htmlSource.openNewInputStream()) {
             this.htmlDocument = new Source(is);
@@ -114,39 +148,6 @@ public class HtmlAnalyzer
             this.normalizedHtml = formatter.toString();
         }
     }
-
-    public String getNormalizedHtml()
-    {
-        return normalizedHtml;
-    }
-    public Locale getHtmlLanguage()
-    {
-        return htmlLocale;
-    }
-    public Map<URI, ReferenceRef> getInternalRefs()
-    {
-        return internalRefs;
-    }
-    public Map<URI, ReferenceRef> getExternalRefs()
-    {
-        return externalRefs;
-    }
-    public ParentRef getParent()
-    {
-        return parent;
-    }
-    public Map<URI, TranslationRef> getTranslations()
-    {
-        return translations;
-    }
-    public String getTitle()
-    {
-        return title;
-    }
-
-    //-----PROTECTED METHODS-----
-
-    //-----PRIVATE METHODS-----
     /**
      * Analyzes a Jericho node
      */

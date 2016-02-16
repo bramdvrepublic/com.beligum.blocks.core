@@ -6,9 +6,9 @@ import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.templating.ifaces.TemplateContext;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.fs.HdfsPathInfo;
+import com.beligum.blocks.fs.HdfsResourcePath;
 import com.beligum.blocks.fs.HdfsResource;
-import com.beligum.blocks.fs.ifaces.PathInfo;
+import com.beligum.blocks.fs.ifaces.ResourcePath;
 import com.beligum.blocks.fs.pages.DefaultPageImpl;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.security.Permissions;
@@ -102,9 +102,9 @@ public class ApplicationEndpointOld
         URI validUri = DefaultPageImpl.toResourceUri(requestedURI, Settings.instance().getPagesViewPath());
 
         FileContext fs = Settings.instance().getPageViewFileSystem();
-        PathInfo pathInfo = new HdfsPathInfo(fs, validUri);
+        ResourcePath resourcePath = new HdfsResourcePath(fs, validUri);
 
-        final Page page = new DefaultPageImpl(pathInfo);
+        final Page page = new DefaultPageImpl(resourcePath);
 
         Template template = R.templateEngine().getNewTemplate(R.resourceFactory().lookup(new HdfsResource(new ResourceRequestImpl(validUri), fs, page.getNormalizedPageProxyPath())));
 

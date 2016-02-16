@@ -4,8 +4,8 @@ import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.fs.indexes.entries.PageIndexEntry;
 import com.beligum.blocks.fs.indexes.ifaces.PageIndexer;
-import com.beligum.blocks.fs.indexes.stubs.PageStub;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import org.hibernate.search.query.dsl.QueryBuilder;
 import org.infinispan.Cache;
@@ -48,23 +48,27 @@ public class InfinispanPageIndexer implements PageIndexer
     @Override
     public void indexPage(Page page) throws IOException
     {
-        Cache<String, PageStub> cache = this.getCacheManager().getCache();
+        Cache<String, PageIndexEntry> cache = this.getCacheManager().getCache();
 
-        PageStub stub = new PageStub(page);
+        PageIndexEntry stub = new PageIndexEntry(page);
         cache.put(stub.getId().toString(), stub);
 
         SearchManager searchManager = org.infinispan.query.Search.getSearchManager(cache);
-        QueryBuilder queryBuilder = searchManager.buildQueryBuilderForClass(PageStub.class).get();
-        org.apache.lucene.search.Query luceneQuery = queryBuilder.phrase()
-                                                                 .onField("title")
-                                                                 .sentence("please")
+        QueryBuilder queryBuilder = searchManager.buildQueryBuilderForClass(PageIndexEntry.class).get();
+//        org.apache.lucene.search.Query luceneQuery = queryBuilder.phrase()
+//                                                                 .onField("title")
+//                                                                 .sentence("please")
+//                                                                 .createQuery();
+
+        org.apache.lucene.search.Query luceneQuery = queryBuilder.all()
                                                                  .createQuery();
 
-        CacheQuery query = searchManager.getQuery(luceneQuery, PageStub.class);
+        CacheQuery query = searchManager.getQuery(luceneQuery, PageIndexEntry.class);
         List objectList = query.list();
         for (Object p : objectList) {
             Logger.info(p);
         }
+
     }
     @Override
     public void beginTransaction() throws IOException
@@ -121,7 +125,11 @@ public class InfinispanPageIndexer implements PageIndexer
     //-----PRIVATE METHODS-----
     private EmbeddedCacheManager getCacheManager() throws IOException
     {
+        boolean skippedInit = true;
+
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.INFINISPAN_CACHE_MANAGER)) {
+
+            skippedInit = false;
 
             final java.nio.file.Path docDir = Settings.instance().getPageMainIndexFolder().toPath();
             if (!Files.exists(docDir)) {

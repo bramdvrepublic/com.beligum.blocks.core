@@ -1,4 +1,4 @@
-package com.beligum.blocks.fs.indexes.stubs;
+package com.beligum.blocks.fs.indexes.entries;
 
 import org.hibernate.search.annotations.DocumentId;
 
@@ -7,15 +7,15 @@ import java.net.URI;
 /**
  * Created by bram on 2/14/16.
  */
-public abstract class AbstractStub implements Stub
+public abstract class AbstractIndexEntry implements IndexEntry
 {
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private URI id;
+    protected URI id;
 
     //-----CONSTRUCTORS-----
-    protected AbstractStub(URI id)
+    protected AbstractIndexEntry(URI id)
     {
         this.id = id;
     }
@@ -38,10 +38,10 @@ public abstract class AbstractStub implements Stub
     {
         if (this == o)
             return true;
-        if (!(o instanceof AbstractStub))
+        if (!(o instanceof AbstractIndexEntry))
             return false;
 
-        AbstractStub that = (AbstractStub) o;
+        AbstractIndexEntry that = (AbstractIndexEntry) o;
 
         return getId() != null ? getId().equals(that.getId()) : that.getId() == null;
 

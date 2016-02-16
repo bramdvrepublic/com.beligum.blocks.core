@@ -244,10 +244,16 @@ public class Settings
 
         return this.cachedHdfsProperties;
     }
+    /**
+     * @return returns the file extension of the local page resources INCLUDING the dot
+     */
     public String getPagesFileExtension()
     {
         return R.configuration().getString("blocks.core.pages.file-ext", DEFAULT_FILE_EXT);
     }
+    /**
+     * @return returns the file extension of the local page resource lock file INCLUDING the dot
+     */
     public String getPagesLockFileExtension()
     {
         return R.configuration().getString("blocks.core.pages.lock-file-ext", DEFAULT_LOCK_FILE_EXT);

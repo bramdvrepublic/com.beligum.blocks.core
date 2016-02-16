@@ -7,7 +7,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 
 /**
  * Created by bram on 1/24/16.
@@ -19,9 +18,9 @@ public class HtmlStreamSource extends HtmlSource
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    public HtmlStreamSource(URI stream, URI baseUri) throws IOException, URISyntaxException
+    public HtmlStreamSource(URI sourceAddress, URI stream) throws IOException
     {
-        super(baseUri);
+        super(sourceAddress);
 
         InputStream is = null;
         try {
@@ -35,7 +34,7 @@ public class HtmlStreamSource extends HtmlSource
                 throw new IOException("Unsupported URI scheme; " + stream.getScheme());
             }
 
-            this.document = Jsoup.parse(is, null, this.getBaseUri().toString());
+            this.construct(sourceAddress, is);
         }
         finally {
             if (is!=null) {
@@ -45,10 +44,20 @@ public class HtmlStreamSource extends HtmlSource
 
         this.initDocument();
     }
+    public HtmlStreamSource(URI sourceAddress, InputStream stream) throws IOException
+    {
+        super(sourceAddress);
+
+        this.construct(sourceAddress, stream);
+    }
 
     //-----PUBLIC METHODS-----
 
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+    private void construct(URI sourceAddress, InputStream stream) throws IOException
+    {
+        this.document = Jsoup.parse(stream, null, this.getSourceAddress().toString());
+    }
 }

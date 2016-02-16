@@ -2,7 +2,7 @@ package com.beligum.blocks.fs.metadata;
 
 import com.beligum.base.auth.models.Person;
 import com.beligum.base.config.CoreConfiguration;
-import com.beligum.blocks.fs.ifaces.PathInfo;
+import com.beligum.blocks.fs.ifaces.ResourcePath;
 import com.beligum.blocks.schema.ebucore.v1_6.jaxb.*;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang3.StringUtils;
@@ -55,9 +55,9 @@ public class EBUCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
 
     //-----PUBLIC METHODS-----
     @Override
-    public void open(PathInfo pathInfo) throws IOException
+    public void open(ResourcePath resourcePath) throws IOException
     {
-        super.open(pathInfo);
+        super.open(resourcePath);
 
         //read in the existing metadata if it exists, or create a new instance if it doesn't
         if (fileSystem.util().exists(this.baseMetadataFile)) {

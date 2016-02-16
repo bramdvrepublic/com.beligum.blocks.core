@@ -7,7 +7,7 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.fs.HdfsPathInfo;
+import com.beligum.blocks.fs.HdfsResourcePath;
 import com.beligum.blocks.fs.HdfsResource;
 import com.beligum.blocks.fs.pages.DefaultPageImpl;
 import com.beligum.blocks.fs.pages.ifaces.Page;
@@ -58,7 +58,7 @@ public class ApplicationEndpoint
 
         FileContext fs = Settings.instance().getPageViewFileSystem();
         URI fsPageUri = DefaultPageImpl.toResourceUri(requestedUri, Settings.instance().getPagesViewPath());
-        Page page = new DefaultPageImpl(new HdfsPathInfo(fs, fsPageUri));
+        Page page = new DefaultPageImpl(new HdfsResourcePath(fs, fsPageUri));
         // Since we allow the user to create pretty url's, it's mime type will not always be clear.
         // But not this endpoint only accepts HTML requests, so force the mime type
         Resource resource = R.resourceFactory().lookup(new HdfsResource(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), fs, page.getNormalizedPageProxyPath()));

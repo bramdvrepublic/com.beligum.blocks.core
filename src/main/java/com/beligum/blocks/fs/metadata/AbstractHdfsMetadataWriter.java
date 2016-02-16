@@ -3,7 +3,7 @@ package com.beligum.blocks.fs.metadata;
 import com.beligum.base.auth.models.Person;
 import com.beligum.base.config.CoreConfiguration;
 import com.beligum.blocks.fs.ifaces.Constants;
-import com.beligum.blocks.fs.ifaces.PathInfo;
+import com.beligum.blocks.fs.ifaces.ResourcePath;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
@@ -41,13 +41,13 @@ public abstract class AbstractHdfsMetadataWriter implements MetadataWriter<Path>
 
     //-----PUBLIC METHODS-----
     @Override
-    public void open(PathInfo pathInfo) throws IOException
+    public void open(ResourcePath resourcePath) throws IOException
     {
         if (!this.inited) {
             throw new IOException("Please init this reader first");
         }
         else {
-            this.baseMetadataFile = new Path(pathInfo.getMetaMetadataFolder(), Constants.META_METADATA_FILE_METADATA_XML);
+            this.baseMetadataFile = new Path(resourcePath.getMetaMetadataFolder(), Constants.META_METADATA_FILE_METADATA_XML);
             this.opened = true;
         }
     }

@@ -6,7 +6,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tika.mime.MediaType;
 
 import java.io.IOException;
-import java.net.URI;
 
 /**
  * <p>
@@ -14,7 +13,7 @@ import java.net.URI;
  * </p>
  * Created by bram on 9/17/15.
  */
-public interface PathInfo
+public interface ResourcePath
 {
     //-----INTERFACES-----
 
@@ -25,9 +24,7 @@ public interface PathInfo
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    URI getUri();
-
-    Path getPath();
+    Path getLocalPath();
 
     FileContext getFileContext();
 

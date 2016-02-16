@@ -2,7 +2,7 @@ package com.beligum.blocks.fs.metadata.ifaces;
 
 import com.beligum.base.auth.models.Person;
 import com.beligum.base.config.CoreConfiguration;
-import com.beligum.blocks.fs.ifaces.PathInfo;
+import com.beligum.blocks.fs.ifaces.ResourcePath;
 
 import java.io.IOException;
 
@@ -14,10 +14,10 @@ public interface MetadataWriter<T>
     /**
      * Read the medatadata file; create it if it doesn't exist or read in the existing metadata if it does.
      *
-     * @param pathInfo
+     * @param resourcePath
      * @throws IOException
      */
-    void open(PathInfo pathInfo) throws IOException;
+    void open(ResourcePath resourcePath) throws IOException;
 
     void updateSchemaData() throws IOException;
 

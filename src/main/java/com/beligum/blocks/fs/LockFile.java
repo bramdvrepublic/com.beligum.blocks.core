@@ -1,6 +1,6 @@
 package com.beligum.blocks.fs;
 
-import com.beligum.blocks.fs.ifaces.PathInfo;
+import com.beligum.blocks.fs.ifaces.ResourcePath;
 import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
@@ -13,13 +13,13 @@ public class LockFile implements AutoCloseable
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private PathInfo pathInfo;
+    private ResourcePath resourcePath;
     private Path lockFile;
 
     //-----CONSTRUCTORS-----
-    public LockFile(PathInfo pathInfo, Path lockFile)
+    public LockFile(ResourcePath resourcePath, Path lockFile)
     {
-        this.pathInfo = pathInfo;
+        this.resourcePath = resourcePath;
         this.lockFile = lockFile;
     }
 
@@ -31,7 +31,7 @@ public class LockFile implements AutoCloseable
     @Override
     public void close() throws IOException
     {
-        this.pathInfo.releaseLockFile(this);
+        this.resourcePath.releaseLockFile(this);
     }
 
     //-----PROTECTED METHODS-----

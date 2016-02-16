@@ -32,7 +32,7 @@ public class ElasticPageIndexer implements PageIndexer
         // read it back in and parse it because it's the link between this (where we have HDFS access)
         // and the page indexer (where we work with generic json objects)
         JsonNode jsonLd = null;
-        try (InputStream is = page.getPathInfo().getFileContext().open(page.getRdfExportFile())) {
+        try (InputStream is = page.getResourcePath().getFileContext().open(page.getRdfExportFile())) {
             jsonLd = Json.read(is, JsonNode.class);
         }
 

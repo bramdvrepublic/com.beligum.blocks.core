@@ -16,11 +16,11 @@ public class HtmlStringSource extends HtmlSource
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    public HtmlStringSource(String html, URI baseUri) throws IOException, URISyntaxException
+    public HtmlStringSource(URI sourceAddress, String html) throws IOException, URISyntaxException
     {
-        super(baseUri);
+        super(sourceAddress);
 
-        this.document = Jsoup.parse(html, this.getBaseUri().toString());
+        this.document = Jsoup.parse(html, this.getSourceAddress().toString());
 
         this.initDocument();
     }

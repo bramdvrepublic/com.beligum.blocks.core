@@ -3,12 +3,12 @@ package com.beligum.blocks.fs.pages;
 import com.beligum.base.auth.models.Person;
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.fs.HdfsPathInfo;
+import com.beligum.blocks.fs.HdfsResourcePath;
 import com.beligum.blocks.fs.HdfsUtils;
 import com.beligum.blocks.fs.LockFile;
 import com.beligum.blocks.fs.hdfs.HdfsZipUtils;
 import com.beligum.blocks.fs.ifaces.Constants;
-import com.beligum.blocks.fs.ifaces.PathInfo;
+import com.beligum.blocks.fs.ifaces.ResourcePath;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.fs.pages.ifaces.PageStore;
@@ -16,6 +16,7 @@ import com.beligum.blocks.rdf.sources.HtmlSource;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.jena.rdf.model.Model;
 
 import java.io.*;
 import java.net.URI;
@@ -60,17 +61,17 @@ public class SimplePageStore implements PageStore
         Page retVal = null;
 
         //create this here, so we don't boot the filesystem on validation error
-        URI resourceUri = DefaultPageImpl.toResourceUri(source.getBaseUri(), Settings.instance().getPagesStorePath());
+        URI resourceUri = DefaultPageImpl.toResourceUri(source.getSourceAddress(), Settings.instance().getPagesStorePath());
 
         //now execute the FS changes
         FileContext fs = Settings.instance().getPageStoreFileSystem();
 
-        PathInfo pathInfo = new HdfsPathInfo(fs, resourceUri);
+        ResourcePath resourcePath = new HdfsResourcePath(fs, resourceUri);
         //we need to use the abstract type here to have access to the package private setters
-        AbstractPage page = new DefaultPageImpl(pathInfo);
+        AbstractPage page = new DefaultPageImpl(resourcePath);
 
         //will synchronize the metadata directory by creating/releasing a lock file
-        try (LockFile lock = pathInfo.acquireLock()) {
+        try (LockFile lock = resourcePath.acquireLock()) {
 
             //prepare the HTML for saving; this is the only place we can modify the source
             // because later on, the analyzer will have run (eg. after calling source.updateTranslations())
@@ -90,11 +91,11 @@ public class SimplePageStore implements PageStore
             }
 
             //pre-calculate the hash based on the incoming string and compare it with the stored version to abort early if nothing changed
-            Path hashFile = pathInfo.getMetaHashFile();
+            Path hashFile = resourcePath.getMetaHashFile();
             boolean nothingChanged = false;
             String newHash = null;
             try (InputStream is = new ByteArrayInputStream(sourceHtml.getBytes())) {
-                newHash = HdfsPathInfo.calcHashChecksumFor(is);
+                newHash = HdfsResourcePath.calcHashChecksumFor(is);
             }
             if (fs.util().exists(hashFile)) {
                 try (FSDataInputStream is = fs.open(hashFile)) {
@@ -110,12 +111,12 @@ public class SimplePageStore implements PageStore
             else {
                 //make sure the path dirs exist
                 //Note: this also works for dirs, since they're special files inside the actual dir
-                fs.mkdir(pathInfo.getPath().getParent(), FsPermission.getDirDefault(), true);
+                fs.mkdir(resourcePath.getLocalPath().getParent(), FsPermission.getDirDefault(), true);
 
                 //we're overwriting; make an entry in the history folder
                 //TODO maybe we want to make this asynchronous?
-                if (fs.util().exists(pathInfo.getPath())) {
-                    this.addHistoryEntry(fs, pathInfo);
+                if (fs.util().exists(resourcePath.getLocalPath())) {
+                    this.addHistoryEntry(fs, resourcePath);
                 }
 
                 //save the HASH of the file
@@ -125,7 +126,7 @@ public class SimplePageStore implements PageStore
                 }
 
                 //save the original page html
-                try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(pathInfo.getPath(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
+                try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(resourcePath.getLocalPath(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
                     writer.write(sourceHtml);
                 }
 
@@ -135,20 +136,16 @@ public class SimplePageStore implements PageStore
                     writer.write(source.getNormalizedHtml());
                 }
 
-                //save the source for later use (eg. in indexer)
-                page.setSource(source);
-
-                //parse and store the RDF model in the page
-                page.setRDFModel(page.createImporter().importDocument(source));
-
+                //parse and generate the RDF model
+                Model rdfModel = page.createImporter().importDocument(source);
                 //export the RDF model to the storage file (JSON-LD)
                 try (OutputStream os = fs.create(page.getRdfExportFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
                     //TODO enable this again!!
-                    //page.createExporter().exportModel(page.getRDFModel(), os);
+                    //page.createExporter().exportModel(rdfModel, os);
                 }
 
                 //save the page metadata (read it in if it exists)
-                this.writeMetadata(fs, pathInfo, creator, page.createMetadataWriter());
+                this.writeMetadata(fs, resourcePath, creator, page.createMetadataWriter());
 
                 retVal = page;
             }
@@ -157,43 +154,43 @@ public class SimplePageStore implements PageStore
         return retVal;
     }
     @Override
-    public Page delete(URI uri, Person deleter) throws IOException
+    public Page delete(URI publicAddress, Person deleter) throws IOException
     {
         Page retVal = null;
 
         //create this here, so we don't boot the filesystem on validation error
-        URI validUri = DefaultPageImpl.toResourceUri(uri, Settings.instance().getPagesStorePath());
+        URI resourceUri = DefaultPageImpl.toResourceUri(publicAddress, Settings.instance().getPagesStorePath());
 
         //now execute the FS changes
         FileContext fs = Settings.instance().getPageStoreFileSystem();
 
-        PathInfo pathInfo = new HdfsPathInfo(fs, validUri);
+        ResourcePath resourcePath = new HdfsResourcePath(fs, resourceUri);
         //we need to use the abstract type here to have access to the package private setters
-        AbstractPage page = new DefaultPageImpl(pathInfo);
+        AbstractPage page = new DefaultPageImpl(resourcePath);
 
-        try (LockFile lock = pathInfo.acquireLock()) {
+        try (LockFile lock = resourcePath.acquireLock()) {
 
             //make sure the path dirs exist
             //Note: this also works for dirs, since they're special files inside the actual dir
-            fs.mkdir(pathInfo.getPath().getParent(), FsPermission.getDirDefault(), true);
+            fs.mkdir(resourcePath.getLocalPath().getParent(), FsPermission.getDirDefault(), true);
 
             //save the page metadata BEFORE we create the history entry (to make sure we save who deleted it)
-            this.writeMetadata(fs, pathInfo, deleter, page.createMetadataWriter());
+            this.writeMetadata(fs, resourcePath, deleter, page.createMetadataWriter());
 
             //we're overwriting; make an entry in the history folder
             //TODO maybe we want to make this asynchronous?
-            if (fs.util().exists(pathInfo.getPath())) {
-                this.addHistoryEntry(fs, pathInfo);
+            if (fs.util().exists(resourcePath.getLocalPath())) {
+                this.addHistoryEntry(fs, resourcePath);
             }
 
             //delete the original page html and leave the rest alone
-            fs.delete(pathInfo.getPath(), false);
+            fs.delete(resourcePath.getLocalPath(), false);
 
             //list everything under meta folder and delete it, except for the HISTORY folder
-            RemoteIterator<FileStatus> metaEntries = fs.listStatus(pathInfo.getMetaFolder());
+            RemoteIterator<FileStatus> metaEntries = fs.listStatus(resourcePath.getMetaFolder());
             while (metaEntries.hasNext()) {
                 FileStatus child = metaEntries.next();
-                if (!child.getPath().equals(pathInfo.getMetaHistoryFolder())) {
+                if (!child.getPath().equals(resourcePath.getMetaHistoryFolder())) {
                     fs.delete(child.getPath(), true);
                 }
             }
@@ -217,11 +214,11 @@ public class SimplePageStore implements PageStore
      * - the fact we're gzipping the entire folder at the end
      *
      * @param fs
-     * @param pathInfo
+     * @param resourcePath
      * @return the successfully created history entry or null of something went wrong
      * @throws IOException
      */
-    private PathInfo addHistoryEntry(FileContext fs, PathInfo pathInfo) throws IOException
+    private ResourcePath addHistoryEntry(FileContext fs, ResourcePath resourcePath) throws IOException
     {
         // Note: it makes sense to use the now timestamp because we're about to create a snapshot of the situation _now_
         // we can't really rely on other timestamps because which one should we take?
@@ -229,39 +226,39 @@ public class SimplePageStore implements PageStore
 
         // first, we'll create a snapshot of the meta folder to a sibling folder. We can't copy it to it's final destination
         // because that is a subfolder of the folder we're copying and we'll encounter odd recursion.
-        Path snapshotMetaFolder = new Path(pathInfo.getMetaFolder().getParent(), pathInfo.getMetaFolder().getName() + Constants.TEMP_SNAPSHOT_SUFFIX);
+        Path snapshotMetaFolder = new Path(resourcePath.getMetaFolder().getParent(), resourcePath.getMetaFolder().getName() + Constants.TEMP_SNAPSHOT_SUFFIX);
 
         //this is the new history entry folder
-        Path newHistoryEntryFolder = new Path(pathInfo.getMetaHistoryFolder(), Constants.FOLDER_TIMESTAMP_FORMAT.format(stamp));
+        Path newHistoryEntryFolder = new Path(resourcePath.getMetaHistoryFolder(), Constants.FOLDER_TIMESTAMP_FORMAT.format(stamp));
 
         //the history entry destination (eg. the original file in the history entry folder)
-        PathInfo historyEntry = new HdfsPathInfo(fs, new Path(newHistoryEntryFolder, pathInfo.getPath().getName()));
+        ResourcePath historyEntry = new HdfsResourcePath(fs, new Path(newHistoryEntryFolder, resourcePath.getLocalPath().getName()));
 
         boolean success = false;
 
         //copy the meta folder to the temp history entry folder
-        if (!fs.util().copy(pathInfo.getMetaFolder(), snapshotMetaFolder)) {
-            throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't create a snapshot of the meta folder; " + snapshotMetaFolder);
+        if (!fs.util().copy(resourcePath.getMetaFolder(), snapshotMetaFolder)) {
+            throw new IOException("Error while adding a history entry for " + resourcePath + ": couldn't create a snapshot of the meta folder; " + snapshotMetaFolder);
         }
 
         //we're not copying the history folder into the snapshot folder; that would be recursion, so delete it
         Path snapshotHistoryFolder = new Path(snapshotMetaFolder, Constants.META_SUBFOLDER_HISTORY);
         if (fs.util().exists(snapshotHistoryFolder)) {
             if (!fs.delete(snapshotHistoryFolder, true)) {
-                throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't delete the history folder of the temp meta snapshot folder; " + snapshotMetaFolder);
+                throw new IOException("Error while adding a history entry for " + resourcePath + ": couldn't delete the history folder of the temp meta snapshot folder; " + snapshotMetaFolder);
             }
         }
 
         if (fs.util().exists(newHistoryEntryFolder)) {
-            throw new IOException("Error while adding a history entry for " + pathInfo + ": history folder already existed; " + newHistoryEntryFolder);
+            throw new IOException("Error while adding a history entry for " + resourcePath + ": history folder already existed; " + newHistoryEntryFolder);
         }
         else {
             fs.mkdir(newHistoryEntryFolder, FsPermission.getDirDefault(), true);
         }
 
         //if we get here without problems, we start copying the original file to it's history destination
-        if (!fs.util().copy(pathInfo.getPath(), historyEntry.getPath())) {
-            throw new IOException("Error while adding a history entry for " + pathInfo + ": couldn't copy the original file to it's final destination " + historyEntry.getPath());
+        if (!fs.util().copy(resourcePath.getLocalPath(), historyEntry.getLocalPath())) {
+            throw new IOException("Error while adding a history entry for " + resourcePath + ": couldn't copy the original file to it's final destination " + historyEntry.getLocalPath());
         }
 
         //move the snapshot in it's place
@@ -279,9 +276,9 @@ public class SimplePageStore implements PageStore
 
         return success ? historyEntry : null;
     }
-    private void writeMetadata(FileContext fs, PathInfo pathInfo, Person creator, MetadataWriter metadataWriter) throws IOException
+    private void writeMetadata(FileContext fs, ResourcePath resourcePath, Person creator, MetadataWriter metadataWriter) throws IOException
     {
-        metadataWriter.open(pathInfo);
+        metadataWriter.open(resourcePath);
         //update or fill the ebucore structure with all possible metadata
         metadataWriter.updateSchemaData();
         //update the version of this software that writes the metadata

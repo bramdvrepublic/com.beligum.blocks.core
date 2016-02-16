@@ -1,19 +1,21 @@
 package com.beligum.blocks.fs.pages;
 
 import com.beligum.base.resources.ifaces.Resource;
-import com.beligum.blocks.fs.ifaces.PathInfo;
+import com.beligum.blocks.fs.ifaces.ResourcePath;
 import com.beligum.blocks.fs.metadata.EBUCoreHdfsMetadataWriter;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
 import com.beligum.blocks.rdf.exporters.JenaExporter;
 import com.beligum.blocks.rdf.ifaces.Exporter;
 import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.rdf.importers.SesameImporter;
+import com.beligum.blocks.rdf.sources.HtmlStreamSource;
+import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
 import gen.com.beligum.blocks.core.maven;
 import org.apache.hadoop.fs.Path;
 import org.apache.tika.mime.MediaType;
 
 import java.io.IOException;
-import java.net.URI;
+import java.io.InputStream;
 
 /**
  * Created by bram on 1/14/16.
@@ -34,9 +36,9 @@ public class DefaultPageImpl extends AbstractPage
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    public DefaultPageImpl(PathInfo pathInfo)
+    public DefaultPageImpl(ResourcePath resourcePath)
     {
-        super(pathInfo);
+        super(resourcePath);
     }
 
     //-----PUBLIC METHODS-----
@@ -51,19 +53,26 @@ public class DefaultPageImpl extends AbstractPage
         return new JenaExporter(Exporter.Format.JSONLD);
     }
     @Override
+    public HtmlAnalyzer createAnalyzer() throws IOException
+    {
+        try (InputStream is = this.getResourcePath().getFileContext().open(this.getResourcePath().getLocalPath())) {
+            return new HtmlAnalyzer(new HtmlStreamSource(this.buildAddress(), is), true);
+        }
+    }
+    @Override
     public MetadataWriter createMetadataWriter() throws IOException
     {
-        return new EBUCoreHdfsMetadataWriter(this.pathInfo.getFileContext());
+        return new EBUCoreHdfsMetadataWriter(this.resourcePath.getFileContext());
     }
     @Override
     public Path getNormalizedPageProxyPath()
     {
-        return new Path(this.pathInfo.getMetaProxyFolder(PAGE_PROXY_NORMALIZED_MIME_TYPE), PAGE_PROXY_NORMALIZED_FILE_NAME);
+        return new Path(this.resourcePath.getMetaProxyFolder(PAGE_PROXY_NORMALIZED_MIME_TYPE), PAGE_PROXY_NORMALIZED_FILE_NAME);
     }
     @Override
     public Path getRdfExportFile()
     {
-        return new Path(this.pathInfo.getMetaProxyFolder(PAGE_PROXY_RDF_JSONLD_MIME_TYPE), PAGE_PROXY_RDF_JSONLD_FILE_NAME);
+        return new Path(this.resourcePath.getMetaProxyFolder(PAGE_PROXY_RDF_JSONLD_MIME_TYPE), PAGE_PROXY_RDF_JSONLD_FILE_NAME);
     }
 
     //-----PROTECTED METHODS-----

@@ -59,7 +59,7 @@ public class Any23Importer extends AbstractImporter
 
             DocumentSource documentSource;
             try (InputStream is = source.openNewInputStream()) {
-                documentSource = new ByteArrayDocumentSource(is, source.getBaseUri().normalize().toString(), null);
+                documentSource = new ByteArrayDocumentSource(is, source.getSourceAddress().normalize().toString(), null);
             }
 
             TripleHandler handler = new NTriplesWriter(os);
@@ -79,7 +79,7 @@ public class Any23Importer extends AbstractImporter
             }
 
             try (InputStream decodedInput = new ByteArrayInputStream(os.toByteArray());) {
-                model.read(decodedInput, source.getBaseUri().toString(), "N-TRIPLE");
+                model.read(decodedInput, source.getSourceAddress().toString(), "N-TRIPLE");
             }
         }
     }

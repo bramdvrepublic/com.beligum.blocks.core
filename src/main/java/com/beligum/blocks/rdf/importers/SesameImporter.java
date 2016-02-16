@@ -41,7 +41,7 @@ public class SesameImporter extends AbstractImporter
         parser.setRDFHandler(new StatementCollector(sesameModel));
 
         try (InputStream is = source.openNewInputStream()) {
-            parser.parse(is, source.getBaseUri().toString());
+            parser.parse(is, source.getSourceAddress().toString());
         }
         catch (OpenRDFException e) {
             //when an exception is thrown, it's very handy to have the html source code, so add it to the exception
@@ -55,7 +55,7 @@ public class SesameImporter extends AbstractImporter
         }
 
         //Note: this doesn't seem to do anything for this importer (Any23 doesn't return an expanded @graph form)
-        model = this.filterRelevantNodes(model, source.getBaseUri());
+        model = this.filterRelevantNodes(model, source.getSourceAddress());
 
         return model;
     }

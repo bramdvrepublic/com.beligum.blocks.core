@@ -22,7 +22,7 @@ public interface Source
     /**
      * @return the main URI where this source came from. It's also the base context for all semantic operations. Should be as specific as possible.
      */
-    URI getBaseUri();
+    URI getSourceAddress();
 
     /**
      * Prepare this source (perform all required processing) for saving to it's final destination.

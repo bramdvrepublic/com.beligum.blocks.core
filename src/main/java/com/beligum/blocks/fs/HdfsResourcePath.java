@@ -3,7 +3,7 @@ package com.beligum.blocks.fs;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.ifaces.Constants;
-import com.beligum.blocks.fs.ifaces.PathInfo;
+import com.beligum.blocks.fs.ifaces.ResourcePath;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
@@ -16,7 +16,7 @@ import java.net.URI;
 /**
  * Created by bram on 1/19/16.
  */
-public class HdfsPathInfo implements PathInfo
+public class HdfsResourcePath implements ResourcePath
 {
     //-----INTERFACES-----
 
@@ -27,32 +27,28 @@ public class HdfsPathInfo implements PathInfo
     protected static final long DEFAULT_LOCK_TIMEOUT = 5000;
 
     //-----VARIABLES-----
+    private URI publicAddress;
     private FileContext fileContext;
-    private org.apache.hadoop.fs.Path path;
+    private org.apache.hadoop.fs.Path localPath;
     private org.apache.hadoop.fs.Path lockFile;
     private org.apache.hadoop.fs.Path metaFolder;
 
     //-----CONSTRUCTORS-----
-    public HdfsPathInfo(FileContext fileContext, URI uri) throws IOException
+    public HdfsResourcePath(FileContext fileContext, URI localPath) throws IOException
     {
-        this(fileContext, new Path(uri));
+        this(fileContext, new Path(localPath));
     }
-    public HdfsPathInfo(FileContext fileContext, Path path) throws IOException
+    public HdfsResourcePath(FileContext fileContext, Path localPath) throws IOException
     {
         this.fileContext = fileContext;
-        this.path = path;
+        this.localPath = localPath;
     }
 
     //-----PUBLIC METHODS-----
     @Override
-    public URI getUri()
+    public Path getLocalPath()
     {
-        return this.path == null ? null : this.path.toUri();
-    }
-    @Override
-    public Path getPath()
-    {
-        return this.path;
+        return this.localPath;
     }
     @Override
     public FileContext getFileContext()
@@ -64,7 +60,7 @@ public class HdfsPathInfo implements PathInfo
     {
         //only needs to be done once
         if (this.metaFolder == null) {
-            this.metaFolder = new Path(this.path.getParent(), Constants.META_FOLDER_PREFIX + this.path.getName().toString());
+            this.metaFolder = new Path(this.localPath.getParent(), Constants.META_FOLDER_PREFIX + this.localPath.getName().toString());
         }
 
         return this.metaFolder;
@@ -118,7 +114,7 @@ public class HdfsPathInfo implements PathInfo
             }
         }
         catch (IOException e) {
-            Logger.error("Caught exception while reading the stored hash file contents of " + this.getPath(), e);
+            Logger.error("Caught exception while reading the stored hash file contents of " + this.getLocalPath(), e);
         }
 
         return retVal;
@@ -134,7 +130,7 @@ public class HdfsPathInfo implements PathInfo
     {
         String retVal = null;
 
-        try (InputStream is = fileContext.open(path)) {
+        try (InputStream is = fileContext.open(localPath)) {
             retVal = calcHashChecksumFor(is);
         }
 
@@ -208,7 +204,7 @@ public class HdfsPathInfo implements PathInfo
     {
         //only needs to be done once
         if (this.lockFile == null) {
-            this.lockFile = createLockPath(this.path);
+            this.lockFile = createLockPath(this.localPath);
         }
 
         return this.lockFile;
@@ -225,7 +221,7 @@ public class HdfsPathInfo implements PathInfo
     public String toString()
     {
         return "HdfsPathInfo{" +
-               "path=" + path +
+               "path=" + localPath +
                ", metaFolder=" + metaFolder +
                '}';
     }

@@ -173,7 +173,8 @@ public class PageEndpoint
     {
         //Note: the first true flag: compacting helps minimizing the whitespace of the JSONLD properties
         //      the 2nd true flag: save the language (correctly derived from the current context) to the <html> tag (thus, it's also saved to the normalized form)
-        HtmlSource source = new HtmlStringSource(content, uri);
+        //TODO: validate the uri?
+        HtmlSource source = new HtmlStringSource(uri, content);
 
         //save the file to disk and pull all the proxies etc
         Page savedPage = this.getPageStore().save(source, new PersonRepository().get(Authentication.getCurrentPrincipal()));

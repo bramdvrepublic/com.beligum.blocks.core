@@ -16,7 +16,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.*;
 
 /**
@@ -45,24 +44,24 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
     public static final String HTML_TITLE_ELEMENT = "title";
 
     //-----VARIABLES-----
-    protected URI baseUri;
+    protected URI sourceAddress;
     protected Document document;
     protected Element htmlTag;
     protected HtmlAnalyzer htmlAnalyzer;
 
     //-----CONSTRUCTORS-----
-    protected HtmlSource(URI baseUri) throws IOException, URISyntaxException
+    protected HtmlSource(URI sourceAddress) throws IOException
     {
-        this.baseUri = baseUri;
+        this.sourceAddress = sourceAddress;
         this.document = null;
         this.htmlAnalyzer = null;
     }
 
     //-----PUBLIC METHODS-----
     @Override
-    public URI getBaseUri()
+    public URI getSourceAddress()
     {
-        return baseUri;
+        return sourceAddress;
     }
     /**
      * This does the required (html-universal) processing before writing it to disk.
@@ -84,7 +83,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
         // --> "Use the lang attribute for pages served as HTML, and the xml:lang attribute for pages served as XML."
         if (adjustLanguage) {
             //see http://tools.ietf.org/html/rfc4646 for ISO guidelines -> "shortest ISO 639 code"
-            this.htmlTag.attr(HTML_ROOT_LANG_ATTR, R.i18nFactory().getOptimalLocale(this.baseUri).getLanguage());
+            this.htmlTag.attr(HTML_ROOT_LANG_ATTR, R.i18nFactory().getOptimalLocale(this.sourceAddress).getLanguage());
             changed = true;
         }
 
@@ -107,7 +106,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
     public void updateParent(FileContext fs) throws IOException
     {
         URI foundParent = null;
-        URI baseUri = this.getBaseUri();
+        URI baseUri = this.getSourceAddress();
 
         URI parentUri = this.getParent(baseUri);
         while (foundParent == null) {
@@ -148,7 +147,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
                             .toString();
             Elements existingElement = this.document.select(cssQuery);
             if (existingElement.size() != 1) {
-                throw new IOException("Encountered wrong result size (" + existingElement.size() + ") for our css query (" + cssQuery + "), should be 1; " + this.getBaseUri());
+                throw new IOException("Encountered wrong result size (" + existingElement.size() + ") for our css query (" + cssQuery + "), should be 1; " + this.getSourceAddress());
             }
 
             //update the existing link with the new one
@@ -197,8 +196,8 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
             for (Map.Entry<String, Locale> l : siteLanguages.entrySet()) {
                 Locale lang = l.getValue();
                 if (!lang.equals(sourceLang)) {
-                    UriBuilder translatedUri = UriBuilder.fromUri(this.getBaseUri());
-                    Locale detectedLang = R.i18nFactory().getUrlLocale(this.getBaseUri(), translatedUri, lang);
+                    UriBuilder translatedUri = UriBuilder.fromUri(this.getSourceAddress());
+                    Locale detectedLang = R.i18nFactory().getUrlLocale(this.getSourceAddress(), translatedUri, lang);
                     if (detectedLang != null) {
                         URI transPagePublicUri = translatedUri.build();
                         URI transPageResourceUri = DefaultPageImpl.toResourceUri(transPagePublicUri, Settings.instance().getPagesStorePath());
@@ -210,7 +209,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
                             // then clean it up.
                             if (sourceTranslations.containsKey(transPagePublicUri)) {
                                 sourceTranslationsToDelete.add(transPagePublicUri);
-                                Logger.warn("Encountered a translation (" + transPagePublicUri + ") in a html page (" + this.getBaseUri() +
+                                Logger.warn("Encountered a translation (" + transPagePublicUri + ") in a html page (" + this.getSourceAddress() +
                                             ") that doesn't exist (anymore?) on disk, so I'm deleting it while I'm saving the page.");
                             }
                         }
@@ -256,7 +255,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
         // - the document must contain a <html> tag
         Elements htmlTags = this.document.getElementsByTag("html");
         if (htmlTags.isEmpty()) {
-            throw new IOException("The supplied HTML value to a HtmlSource wrapper must contain a <html> tag; " + this.getBaseUri());
+            throw new IOException("The supplied HTML value to a HtmlSource wrapper must contain a <html> tag; " + this.getSourceAddress());
         }
         else {
             this.htmlTag = htmlTags.first();
@@ -275,8 +274,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
     private HtmlAnalyzer getHtmlAnalyzer() throws IOException
     {
         if (this.htmlAnalyzer == null) {
-            this.htmlAnalyzer = new HtmlAnalyzer();
-            this.htmlAnalyzer.analyze(this, true);
+            this.htmlAnalyzer = new HtmlAnalyzer(this, true);
         }
 
         return this.htmlAnalyzer;
@@ -332,7 +330,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
     public String toString()
     {
         return "HtmlSource{" +
-               "baseUri=" + baseUri +
+               "baseUri=" + sourceAddress +
                ", document=" + document +
                '}';
     }

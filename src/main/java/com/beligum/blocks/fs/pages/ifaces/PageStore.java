@@ -37,10 +37,10 @@ public interface PageStore
      * This method is fully transactional and rolls back automatically if an error happens.
      * Note that in the current implementation, the meta folder is kept for future reference (and possible undo)
      *
-     * @param uri the address of the page to delete
+     * @param publicAddress the address of the page to delete
      * @param deleter the logged-in user that is deleting this page
      * @return the page that was deleted
      * @throws IOException
      */
-    Page delete(URI uri, Person deleter) throws IOException;
+    Page delete(URI publicAddress, Person deleter) throws IOException;
 }

@@ -41,7 +41,7 @@ public class HdfsUtils
         RemoteIterator<FileStatus> status = fs.listStatus(path);
         while (status.hasNext()) {
             FileStatus fileStatus = status.next();
-            Path lockFile = HdfsPathInfo.createLockPath(fileStatus.getPath());
+            Path lockFile = HdfsResourcePath.createLockPath(fileStatus.getPath());
             if (fs.util().exists(lockFile)) {
                 fs.delete(lockFile, false);
             }
