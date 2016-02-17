@@ -4,6 +4,7 @@ import com.beligum.blocks.fs.indexes.entries.PageIndexEntry;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 
 import java.io.IOException;
+import java.net.URI;
 
 /**
  * Generic superclass for the page indexer
@@ -23,7 +24,8 @@ public interface PageIndexer<B, Q, R> extends Indexer
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    PageIndexEntry get(String key) throws IOException;
+    PageIndexEntry get(URI key) throws IOException;
+    void delete(Page page) throws IOException;
     void indexPage(Page page) throws IOException;
     B getNewQueryBuilder() throws IOException;
     R executeQuery(Q query) throws IOException;

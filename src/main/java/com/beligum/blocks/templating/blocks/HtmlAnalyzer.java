@@ -39,8 +39,6 @@ public class HtmlAnalyzer
     private Source htmlDocument;
     private String normalizedHtml;
     private Locale htmlLocale;
-    private ParentRef parent;
-    private Map<URI, TranslationRef> translations;
     private Map<URI, ReferenceRef> internalRefs;
     private Map<URI, ReferenceRef> externalRefs;
     private String title;
@@ -50,7 +48,6 @@ public class HtmlAnalyzer
     {
         this.allTagTemplates = HtmlParser.getTemplateCache();
 
-        this.translations = new HashMap<>();
         this.internalRefs = new HashMap<>();
         this.externalRefs = new HashMap<>();
         this.title = null;
@@ -74,14 +71,6 @@ public class HtmlAnalyzer
     public Map<URI, ReferenceRef> getExternalRefs()
     {
         return externalRefs;
-    }
-    public ParentRef getParent()
-    {
-        return parent;
-    }
-    public Map<URI, TranslationRef> getTranslations()
-    {
-        return translations;
     }
     public String getTitle()
     {
@@ -181,8 +170,6 @@ public class HtmlAnalyzer
                     writeTag = true;
                 }
 
-                this.extractParent(startTag);
-                this.extractTranslation(startTag);
                 this.extractTitle(startTag);
                 this.extractReference(startTag, writeTag);
 
@@ -283,62 +270,6 @@ public class HtmlAnalyzer
         }
     }
     /**
-     * Extract and save the translation (if this start tag is a <link rel="up"> tag)
-     * Example: <link rel="up" href="/fr/other/page/index.html">
-     * According to Mozilla, the "up" keyword "Indicates that the page is part of a hierarchical
-     * structure and that the hyperlink leads to the higher level resource of that structure."
-     * For details, see https://developer.mozilla.org/en-US/docs/Web/HTML/Link_types
-     */
-    private void extractParent(StartTag startTag)
-    {
-        if (startTag.getName().equalsIgnoreCase(HtmlSource.HTML_PARENT_ELEMENT)) {
-            String relAttr = startTag.getAttributeValue(HtmlSource.HTML_PARENT_ATTR_REL);
-            if (!StringUtils.isEmpty(relAttr) && relAttr.equalsIgnoreCase(HtmlSource.HTML_PARENT_ATTR_REL_VALUE)) {
-                String hrefAttr = startTag.getAttributeValue(HtmlSource.HTML_PARENT_ATTR_HREF);
-                if (!StringUtils.isEmpty(hrefAttr)) {
-                    try {
-                        //validate the reference
-                        URI uri = URI.create(hrefAttr);
-                        this.parent = new ParentRef(startTag, uri);
-                    }
-                    catch (IllegalArgumentException e) {
-                        Logger.debug("Encountered illegal parent URI as an attribute value of 'href' in " + startTag, e);
-                    }
-                }
-            }
-        }
-    }
-    /**
-     * Extract and save the translation (if this start tag is a <link rel="alternate"> tag)
-     * Example: <link rel="alternate" type="text/html" hreflang="fr" href="/fr/other/page/index.html">
-     * The "alternate" keyword creates a hyperlink referencing an alternate representation of the current document.
-     * For details, see https://www.w3.org/TR/html5/links.html
-     */
-    private void extractTranslation(StartTag startTag)
-    {
-        if (startTag.getName().equalsIgnoreCase(HtmlSource.HTML_TRANSLATION_ELEMENT)) {
-            String relAttr = startTag.getAttributeValue(HtmlSource.HTML_TRANSLATION_ATTR_REL);
-            if (!StringUtils.isEmpty(relAttr) && relAttr.equalsIgnoreCase(HtmlSource.HTML_TRANSLATION_ATTR_REL_VALUE)) {
-                String typeAttr = startTag.getAttributeValue(HtmlSource.HTML_TRANSLATION_ATTR_TYPE);
-                if (!StringUtils.isEmpty(typeAttr) && typeAttr.equalsIgnoreCase(com.beligum.base.resources.ifaces.Resource.MimeType.HTML.getMimeType().toString())) {
-                    String hrefLangAttr = startTag.getAttributeValue(HtmlSource.HTML_TRANSLATION_ATTR_HREFLANG);
-                    String hrefAttr = startTag.getAttributeValue(HtmlSource.HTML_TRANSLATION_ATTR_HREF);
-                    if (!StringUtils.isEmpty(hrefLangAttr) && !StringUtils.isEmpty(hrefAttr)) {
-                        try {
-                            //validate the reference
-                            URI uri = URI.create(hrefAttr);
-
-                            this.translations.put(uri, new TranslationRef(startTag, Locale.forLanguageTag(hrefLangAttr)));
-                        }
-                        catch (IllegalArgumentException e) {
-                            Logger.debug("Encountered illegal translation URI as an attribute value of 'href' in " + startTag, e);
-                        }
-                    }
-                }
-            }
-        }
-    }
-    /**
      * Check if the tag is a title tag and extract and save it's value if it is.
      */
     private void extractTitle(StartTag startTag)
@@ -406,28 +337,6 @@ public class HtmlAnalyzer
     }
 
     //-----INNER CLASSES-----
-    public class ParentRef
-    {
-        public final StartTag tag;
-        public final URI parentUri;
-
-        protected ParentRef(StartTag tag, URI parentUri)
-        {
-            this.tag = tag;
-            this.parentUri = parentUri;
-        }
-    }
-    public class TranslationRef
-    {
-        public final StartTag tag;
-        public final Locale locale;
-
-        protected TranslationRef(StartTag tag, Locale locale)
-        {
-            this.tag = tag;
-            this.locale = locale;
-        }
-    }
     public class ReferenceRef
     {
         public final Attribute attribute;

@@ -1,12 +1,9 @@
 package com.beligum.blocks.fs.indexes.entries;
 
-import com.beligum.blocks.fs.pages.ifaces.Page;
-import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
 import org.hibernate.search.annotations.*;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -19,35 +16,18 @@ public class PageIndexEntry extends AbstractIndexEntry
 
     //-----VARIABLES-----
     @Field(index = Index.YES, analyze = Analyze.YES, store = Store.YES)
-    private final String title;
+    private String title;
     @Field(index = Index.YES, analyze = Analyze.YES, store = Store.YES)
-    private final String language;
-    @Field(index = Index.YES, analyze = Analyze.YES, store = Store.YES)
-    private final URI parent;
+    private String language;
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.YES)
+    private URI parent;
     @IndexedEmbedded()
-    private final Map<String, URI> translations;
+    private Map<String, URI> translations;
 
     //-----CONSTRUCTORS-----
     public PageIndexEntry() throws IOException
     {
-        this(null);
-    }
-    public PageIndexEntry(Page page) throws IOException
-    {
-        //the ID of the stub is the public URI
-        super(page.buildAddress());
-
-        HtmlAnalyzer htmlAnalyzer = page.createAnalyzer();
-
-        this.title = htmlAnalyzer.getTitle();
-        this.language = htmlAnalyzer.getHtmlLanguage().getLanguage();
-        this.parent = htmlAnalyzer.getParent() == null ? null : htmlAnalyzer.getParent().parentUri;
-        this.translations = new LinkedHashMap<>();
-        if (htmlAnalyzer.getTranslations() != null) {
-            for (Map.Entry<URI, HtmlAnalyzer.TranslationRef> e : htmlAnalyzer.getTranslations().entrySet()) {
-                this.translations.put(e.getValue().locale.getLanguage(), e.getKey());
-            }
-        }
+        super(null);
     }
 
     //-----PUBLIC METHODS-----
@@ -55,17 +35,33 @@ public class PageIndexEntry extends AbstractIndexEntry
     {
         return title;
     }
+    public void setTitle(String title)
+    {
+        this.title = title;
+    }
     public String getLanguage()
     {
         return language;
+    }
+    public void setLanguage(String language)
+    {
+        this.language = language;
     }
     public URI getParent()
     {
         return parent;
     }
+    public void setParent(URI parent)
+    {
+        this.parent = parent;
+    }
     public Map<String, URI> getTranslations()
     {
         return translations;
+    }
+    public void setTranslations(Map<String, URI> translations)
+    {
+        this.translations = translations;
     }
 
     //-----PROTECTED METHODS-----

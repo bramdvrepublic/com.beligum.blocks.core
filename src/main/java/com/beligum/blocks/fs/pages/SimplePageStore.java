@@ -78,13 +78,6 @@ public class SimplePageStore implements PageStore
             // because later on, the analyzer will have run (eg. after calling source.updateTranslations())
             source.prepareForSaving(true, true);
 
-            //update the link to the parent for the current state of the server
-            source.updateParent(fs);
-
-            //analyze the source and update and update it's translations based on the current context
-            //Note: this needs to be done before serializing because it might introduce tags
-            source.updateTranslations(fs);
-
             //we'll read everything into a string for performance and ease of use
             String sourceHtml;
             try (InputStream is = source.openNewInputStream()) {

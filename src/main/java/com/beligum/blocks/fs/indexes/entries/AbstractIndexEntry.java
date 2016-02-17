@@ -1,6 +1,9 @@
 package com.beligum.blocks.fs.indexes.entries;
 
-import org.hibernate.search.annotations.DocumentId;
+import org.hibernate.search.annotations.Analyze;
+import org.hibernate.search.annotations.Field;
+import org.hibernate.search.annotations.Index;
+import org.hibernate.search.annotations.Store;
 
 import java.net.URI;
 
@@ -21,11 +24,15 @@ public abstract class AbstractIndexEntry implements IndexEntry
     }
 
     //-----PUBLIC METHODS-----
-    //Note that eg. infinispan doesn't use this annotation (but does use the method as the key in the cache)
-    @DocumentId
+    //Note that eg. infinispan doesn't use the @DocumentId annotation (the id is the key)
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.YES)
     public URI getId()
     {
         return id;
+    }
+    public void setId(URI id)
+    {
+        this.id = id;
     }
 
     //-----PROTECTED METHODS-----

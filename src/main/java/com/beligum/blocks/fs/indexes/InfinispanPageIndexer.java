@@ -2,12 +2,16 @@ package com.beligum.blocks.fs.indexes;
 
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
+import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.indexes.entries.IndexEntry;
 import com.beligum.blocks.fs.indexes.entries.PageIndexEntry;
 import com.beligum.blocks.fs.indexes.ifaces.PageIndexer;
+import com.beligum.blocks.fs.pages.DefaultPageImpl;
 import com.beligum.blocks.fs.pages.ifaces.Page;
+import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
+import org.apache.hadoop.fs.FileContext;
 import org.apache.lucene.search.Query;
 import org.hibernate.search.query.dsl.QueryBuilder;
 import org.infinispan.Cache;
@@ -16,13 +20,19 @@ import org.infinispan.configuration.cache.Index;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
 import org.infinispan.query.CacheQuery;
+import org.infinispan.query.ResultIterator;
 import org.infinispan.query.SearchManager;
 import org.infinispan.transaction.TransactionMode;
 
 import javax.transaction.TransactionManager;
+import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * See this:
@@ -49,18 +59,60 @@ public class InfinispanPageIndexer implements PageIndexer<QueryBuilder, Query, C
 
     //-----PUBLIC METHODS-----
     @Override
-    public PageIndexEntry get(String key) throws IOException
+    public PageIndexEntry get(URI key) throws IOException
     {
         Cache<String, PageIndexEntry> cache = this.getCacheManager().getCache();
-        return cache.get(key);
+        return cache.get(key.toString());
+    }
+    @Override
+    public void delete(Page page) throws IOException
+    {
+        Cache<String, PageIndexEntry> cache = this.getCacheManager().getCache();
+        cache.remove(page.buildAddress().toString());
     }
     @Override
     public void indexPage(Page page) throws IOException
     {
         Cache<String, PageIndexEntry> cache = this.getCacheManager().getCache();
 
-        PageIndexEntry stub = new PageIndexEntry(page);
-        cache.put(stub.getId().toString(), stub);
+        HtmlAnalyzer htmlAnalyzer = page.createAnalyzer();
+
+        FileContext fc = page.getResourcePath().getFileContext();
+        URI pageAddress = page.buildAddress();
+        PageIndexEntry entry = new PageIndexEntry();
+        entry.setId(pageAddress);
+        entry.setLanguage(htmlAnalyzer.getHtmlLanguage() == null ? null : htmlAnalyzer.getHtmlLanguage().getLanguage());
+        entry.setParent(this.getParentUri(pageAddress, fc));
+        entry.setTitle(htmlAnalyzer.getTitle());
+        entry.setTranslations(this.getTranslations(page, htmlAnalyzer.getHtmlLanguage()));
+
+        //PageIndexEntry stub = new PageIndexEntry(page, htmlAnalyzer, this.getParentUri(page));
+        cache.put(entry.getId().toString(), entry);
+
+        //now, we need to update all pages with this page as a parent path (as a wildcard)
+        // and adjust their logical parent because it might have changed
+        SearchManager searchManager = org.infinispan.query.Search.getSearchManager(cache);
+
+//        Query allQuery = searchManager.buildQueryBuilderForClass(INDEX_ENTRY_CLASS).get().all().createQuery();
+//        ResultIterator all = searchManager.getQuery(allQuery, INDEX_ENTRY_CLASS).iterator();
+//        while (all.hasNext()) {
+//            Logger.info(all.next().toString());
+//        }
+
+        Query query = searchManager.buildQueryBuilderForClass(INDEX_ENTRY_CLASS).get()
+                                   .keyword()
+                                   .wildcard()
+                                   .onField("id")
+                                   .matching(pageAddress.toString()+"*")
+                                   .createQuery();
+        ResultIterator resultIter = searchManager.getQuery(query, INDEX_ENTRY_CLASS).iterator();
+        while (resultIter.hasNext()) {
+            PageIndexEntry e = (PageIndexEntry) resultIter.next();
+            //don't index ourself again
+            if (!e.getId().equals(pageAddress)) {
+                e.setParent(this.getParentUri(e.getId(), fc));
+            }
+        }
     }
     @Override
     public QueryBuilder getNewQueryBuilder() throws IOException
@@ -70,11 +122,11 @@ public class InfinispanPageIndexer implements PageIndexer<QueryBuilder, Query, C
         return searchManager.buildQueryBuilderForClass(INDEX_ENTRY_CLASS).get();
     }
     @Override
-    public CacheQuery executeQuery(Query luceneQuery) throws IOException
+    public CacheQuery executeQuery(Query query) throws IOException
     {
         Cache<String, PageIndexEntry> cache = this.getCacheManager().getCache();
         SearchManager searchManager = org.infinispan.query.Search.getSearchManager(cache);
-        return searchManager.getQuery(luceneQuery, INDEX_ENTRY_CLASS);
+        return searchManager.getQuery(query, INDEX_ENTRY_CLASS);
     }
     @Override
     public void beginTransaction() throws IOException
@@ -91,7 +143,7 @@ public class InfinispanPageIndexer implements PageIndexer<QueryBuilder, Query, C
     {
         try {
             TransactionManager tm = this.getCacheManager().getCache().getAdvancedCache().getTransactionManager();
-            if (tm.getTransaction()!=null) {
+            if (tm.getTransaction() != null) {
                 tm.commit();
             }
         }
@@ -104,7 +156,7 @@ public class InfinispanPageIndexer implements PageIndexer<QueryBuilder, Query, C
     {
         try {
             TransactionManager tm = this.getCacheManager().getCache().getAdvancedCache().getTransactionManager();
-            if (tm.getTransaction()!=null) {
+            if (tm.getTransaction() != null) {
                 tm.rollback();
             }
         }
@@ -129,6 +181,62 @@ public class InfinispanPageIndexer implements PageIndexer<QueryBuilder, Query, C
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+    /**
+     * Look in our file system and search for the parent of this document (with the same language).
+     */
+    private URI getParentUri(URI pageUri, FileContext fc) throws IOException
+    {
+        URI retVal = null;
+
+        URI parentUri = StringFunctions.getParent(pageUri);
+        while (retVal == null) {
+            if (parentUri == null) {
+                break;
+            }
+            else {
+                //note: this is null proof
+                URI parentResourceUri = DefaultPageImpl.toResourceUri(parentUri, Settings.instance().getPagesStorePath());
+                if (parentResourceUri != null && fc.util().exists(new org.apache.hadoop.fs.Path(parentResourceUri))) {
+                    retVal = parentUri;
+                }
+                else {
+                    parentUri = StringFunctions.getParent(parentUri);
+                }
+
+            }
+        }
+
+        return retVal;
+    }
+    /**
+     * This will try to find all translations of this source (based on existing file structures)
+     */
+    private Map<String, URI> getTranslations(Page page, Locale htmlLanguage) throws IOException
+    {
+        Map<String, URI> retVal = new HashMap<>();
+
+        //this is the lang attribute in the <html> tag
+        if (htmlLanguage != null) {
+            URI pageAddress = page.buildAddress();
+            Map<String, Locale> siteLanguages = Settings.instance().getLanguages();
+            for (Map.Entry<String, Locale> l : siteLanguages.entrySet()) {
+                Locale lang = l.getValue();
+                if (!lang.equals(htmlLanguage)) {
+                    UriBuilder translatedUri = UriBuilder.fromUri(pageAddress);
+                    Locale detectedLang = R.i18nFactory().getUrlLocale(pageAddress, translatedUri, lang);
+                    if (detectedLang != null) {
+                        URI transPagePublicUri = translatedUri.build();
+                        URI transPageResourceUri = DefaultPageImpl.toResourceUri(transPagePublicUri, Settings.instance().getPagesStorePath());
+                        if (page.getResourcePath().getFileContext().util().exists(new org.apache.hadoop.fs.Path(transPageResourceUri))) {
+                            retVal.put(lang.getLanguage(), transPagePublicUri);
+                        }
+                    }
+                }
+            }
+        }
+
+        return retVal;
+    }
     private EmbeddedCacheManager getCacheManager() throws IOException
     {
         boolean skippedInit = true;

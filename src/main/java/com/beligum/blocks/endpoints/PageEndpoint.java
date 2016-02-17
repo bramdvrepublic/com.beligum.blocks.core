@@ -218,6 +218,34 @@ public class PageEndpoint
         //save the file to disk and pull all the proxies etc
         Page deletedPage = StorageFactory.getPageStore().delete(URI.create(uri), new PersonRepository().get(Authentication.getCurrentPrincipal()));
 
+        if (deletedPage!=null) {
+            PageIndexer mainIndex = StorageFactory.getMainPageIndexer();
+            PageIndexer tripleStore = StorageFactory.getTriplestorePageIndexer();
+
+            //link both indexers together so that both commit or both fail
+            boolean success = false;
+            try {
+                //store the resulting page in the indexes you want
+                mainIndex.beginTransaction();
+                mainIndex.delete(deletedPage);
+
+                tripleStore.beginTransaction();
+                tripleStore.delete(deletedPage);
+
+                success = true;
+            }
+            finally {
+                if (success) {
+                    mainIndex.commitTransaction();
+                    tripleStore.commitTransaction();
+                }
+                else {
+                    mainIndex.rollbackTransaction();
+                    tripleStore.rollbackTransaction();
+                }
+            }
+        }
+
         return Response.ok().build();
     }
 

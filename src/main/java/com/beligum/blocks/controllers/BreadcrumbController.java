@@ -40,10 +40,10 @@ public class BreadcrumbController extends DefaultTemplateController
 
         PageIndexer<QueryBuilder, Query, CacheQuery> mainPageIndexer = StorageFactory.getMainPageIndexer();
 
-        PageIndexEntry p = mainPageIndexer.get(originalUri.toString());
+        PageIndexEntry p = mainPageIndexer.get(originalUri);
         while (p!=null) {
             retVal.put(p.getId(), p.getTitle());
-            p = p.getParent()!=null ? mainPageIndexer.get(p.getParent().toString()) : null;
+            p = p.getParent()!=null ? mainPageIndexer.get(p.getParent()) : null;
         }
 
         return Lists.reverse(new ArrayList<>(retVal.entrySet()));

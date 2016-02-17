@@ -11,6 +11,7 @@ import org.apache.jena.query.*;
 import org.apache.jena.tdb.TDBFactory;
 
 import java.io.IOException;
+import java.net.URI;
 
 /**
  * Created by bram on 1/26/16.
@@ -34,9 +35,14 @@ public class JenaPageIndexer implements PageIndexer<SelectBuilder, Query, QueryE
 
     //-----PUBLIC METHODS-----
     @Override
-    public PageIndexEntry get(String key) throws IOException
+    public PageIndexEntry get(URI key) throws IOException
     {
         return null;
+    }
+    @Override
+    public void delete(Page page) throws IOException
+    {
+        //TODO
     }
     @Override
     public void indexPage(Page page) throws IOException
