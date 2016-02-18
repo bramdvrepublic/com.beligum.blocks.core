@@ -1,4 +1,4 @@
-package com.beligum.blocks.fs.indexes.ifaces;
+package com.beligum.blocks.fs.index.ifaces;
 
 import java.io.IOException;
 

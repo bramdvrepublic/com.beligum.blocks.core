@@ -10,7 +10,7 @@ import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
-import com.beligum.blocks.fs.indexes.ifaces.PageIndexer;
+import com.beligum.blocks.fs.index.ifaces.PageIndexer;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.sources.HtmlSource;
 import com.beligum.blocks.rdf.sources.HtmlStringSource;

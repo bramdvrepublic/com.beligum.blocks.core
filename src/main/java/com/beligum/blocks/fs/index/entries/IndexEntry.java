@@ -1,4 +1,4 @@
-package com.beligum.blocks.fs.indexes.entries;
+package com.beligum.blocks.fs.index.entries;
 
 import java.io.Serializable;
 import java.net.URI;

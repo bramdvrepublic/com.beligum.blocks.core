@@ -18,8 +18,62 @@ import java.util.HashMap;
 public class RdfTools
 {
     // Simpleflake generates a Long id, based on timestamp
-    public static SimpleFlake simpleFlake = new SimpleFlake();
+    public static final SimpleFlake SIMPLE_FLAKE = new SimpleFlake();
     public static HashMap<URI, HashMap<String, URI>> urlcache = new HashMap<URI, HashMap<String, URI>>();
+
+    /**
+     * Create a local, absolute resource based on the resource endpoint and a type.
+     * Generate a new id-value
+     * e.g. http://www.republic.be/v1/resource/address/156465
+     */
+    public static URI createAbsoluteResourceId(String type)
+    {
+        return createAbsoluteResourceId(type, new Long(RdfTools.SIMPLE_FLAKE.generate()).toString());
+    }
+
+    /**
+     * Create a local, relative (to the current root) resource based on the resource endpoint and a type.
+     * Generate a new id-value
+     * e.g. /v1/resource/address/156465
+     */
+    public static URI createRelativeResourceId(String type)
+    {
+        return createRelativeResourceId(type, new Long(RdfTools.SIMPLE_FLAKE.generate()).toString());
+    }
+
+    /**
+     * Create a locale resource id, based on the type and an existing id-value
+     * e.g. http://www.republic.be/v1/resource/address/big-street-in-antwerp
+     */
+    public static URI createAbsoluteResourceId(String type, String id)
+    {
+        return UriBuilder.fromUri(Settings.instance().getSiteDomain()).path(ParserConstants.RESOURCE_ENDPOINT).path(type.toLowerCase()).path(id).build();
+    }
+
+    /**
+     * Create a locale resource id, based on the type and an existing id-value
+     * e.g. /v1/resource/address/big-street-in-antwerp
+     */
+    public static URI createRelativeResourceId(String type, String id)
+    {
+        return UriBuilder.fromUri("/").path(ParserConstants.RESOURCE_ENDPOINT).path(type.toLowerCase()).path(id).build();
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // ----- TO CHECK -----
 
     /*
     * create a local type based on the ontology in the config
@@ -28,24 +82,6 @@ public class RdfTools
     public static URI createLocalType(String type)
     {
         return makeLocalAbsolute(type);
-    }
-
-    /*
-    * create a locale resource id, based on the type and an existing id-value
-    * e.g. http://www.republic.be/v1/resource/address/big-street-in-antwerp
-    * */
-    public static URI createLocalResourceId(String type, String id)
-    {
-        return UriBuilder.fromUri(Settings.instance().getSiteDomain()).path(ParserConstants.RESOURCE_ENDPOINT).path(type.toLowerCase()).path(id).build();
-    }
-
-    /*
-    * create a local resource based on the resource endpoint and a type. Generate an id-value
-    * e.g. http://www.republic.be/v1/resource/address/156465
-    * */
-    public static URI createLocalResourceId(String type)
-    {
-        return createLocalResourceId(type, new Long(RdfTools.simpleFlake.generate()).toString());
     }
 
     /*

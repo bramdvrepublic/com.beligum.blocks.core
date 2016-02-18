@@ -1,6 +1,6 @@
-package com.beligum.blocks.fs.indexes.ifaces;
+package com.beligum.blocks.fs.index.ifaces;
 
-import com.beligum.blocks.fs.indexes.entries.PageIndexEntry;
+import com.beligum.blocks.fs.index.entries.PageIndexEntry;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 
 import java.io.IOException;

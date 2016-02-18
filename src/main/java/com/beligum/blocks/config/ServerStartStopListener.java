@@ -5,7 +5,7 @@ import com.beligum.base.server.R;
 import com.beligum.base.server.ifaces.ServerLifecycleListener;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.fs.indexes.ifaces.Indexer;
+import com.beligum.blocks.fs.index.ifaces.Indexer;
 import com.beligum.blocks.search.ElasticSearch;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import org.eclipse.jetty.io.RuntimeIOException;

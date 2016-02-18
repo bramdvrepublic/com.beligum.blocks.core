@@ -1,13 +1,13 @@
-package com.beligum.blocks.fs.indexes;
+package com.beligum.blocks.fs.index;
 
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.fs.indexes.entries.IndexEntry;
-import com.beligum.blocks.fs.indexes.entries.PageIndexEntry;
-import com.beligum.blocks.fs.indexes.ifaces.PageIndexer;
+import com.beligum.blocks.fs.index.entries.IndexEntry;
+import com.beligum.blocks.fs.index.entries.PageIndexEntry;
+import com.beligum.blocks.fs.index.ifaces.PageIndexer;
 import com.beligum.blocks.fs.pages.DefaultPageImpl;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
@@ -81,6 +81,7 @@ public class InfinispanPageIndexer implements PageIndexer<QueryBuilder, Query, C
         URI pageAddress = page.buildAddress();
         PageIndexEntry entry = new PageIndexEntry();
         entry.setId(pageAddress);
+        entry.setResource(htmlAnalyzer.getHtmlResource() == null ? null : URI.create(htmlAnalyzer.getHtmlResource().value));
         entry.setLanguage(htmlAnalyzer.getHtmlLanguage() == null ? null : htmlAnalyzer.getHtmlLanguage().getLanguage());
         entry.setParent(this.getParentUri(pageAddress, fc));
         entry.setTitle(htmlAnalyzer.getTitle());

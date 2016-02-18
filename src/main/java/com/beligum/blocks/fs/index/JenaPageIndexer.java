@@ -1,10 +1,10 @@
-package com.beligum.blocks.fs.indexes;
+package com.beligum.blocks.fs.index;
 
 import com.beligum.base.server.R;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.fs.indexes.entries.PageIndexEntry;
-import com.beligum.blocks.fs.indexes.ifaces.PageIndexer;
+import com.beligum.blocks.fs.index.entries.PageIndexEntry;
+import com.beligum.blocks.fs.index.ifaces.PageIndexer;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import org.apache.jena.arq.querybuilder.SelectBuilder;
 import org.apache.jena.query.*;

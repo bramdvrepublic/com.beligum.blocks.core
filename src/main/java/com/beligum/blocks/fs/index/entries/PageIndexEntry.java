@@ -1,4 +1,4 @@
-package com.beligum.blocks.fs.indexes.entries;
+package com.beligum.blocks.fs.index.entries;
 
 import org.hibernate.search.annotations.*;
 
@@ -15,6 +15,8 @@ public class PageIndexEntry extends AbstractIndexEntry
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.YES)
+    private URI resource;
     @Field(index = Index.YES, analyze = Analyze.YES, store = Store.YES)
     private String title;
     @Field(index = Index.YES, analyze = Analyze.YES, store = Store.YES)
@@ -31,6 +33,14 @@ public class PageIndexEntry extends AbstractIndexEntry
     }
 
     //-----PUBLIC METHODS-----
+    public URI getResource()
+    {
+        return resource;
+    }
+    public void setResource(URI resource)
+    {
+        this.resource = resource;
+    }
     public String getTitle()
     {
         return title;

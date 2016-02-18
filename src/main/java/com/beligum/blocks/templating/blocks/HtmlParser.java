@@ -48,7 +48,8 @@ public class HtmlParser implements Parser
     public static final String RDF_PREFIX_ATTR = "prefix";
     public static final String HTML_ROOT_ELEM = "html";
     public static final String WEBCOMPONENTS_TEMPLATE_ELEM = "template";
-    public static final String HTML_ROOT_TEMPLATE_ATTR = "template";
+    //the prefix data- makes sure we're W3C compliant
+    public static final String HTML_ROOT_TEMPLATE_ATTR = "data-template";
     public static final String HTML_ROOT_ARGS_VARIABLE_NAME = "HTML_TAG_ARGS";
 
     //-----CONSTRUCTORS-----
@@ -61,8 +62,6 @@ public class HtmlParser implements Parser
      * This method is executed for all *.html files requested by the client (during postprocess phase of the ResourceLoader).
      * It should be optimized for speed but the result is cached by the ResourceManager, so in production mode,
      * the speed-importance of this method is relative.
-     * However; there is currently a MAJOR issue with StringTemplates (see the other parse() method) where every request
-     * is parsed through this method; BAD and a very big TODO
      *
      * @param resource the resource to be parsed
      * @return

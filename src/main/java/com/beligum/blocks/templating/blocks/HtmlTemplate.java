@@ -130,7 +130,7 @@ public abstract class HtmlTemplate
         List<Element> html = source.getAllElements(HtmlParser.HTML_ROOT_ELEM);
         if (html != null && html.size() == 1) {
             Attributes htmlAttr = html.get(0).getAttributes();
-            if (htmlAttr.get(HtmlParser.WEBCOMPONENTS_TEMPLATE_ELEM) != null) {
+            if (htmlAttr.get(HtmlParser.HTML_ROOT_TEMPLATE_ATTR) != null) {
                 retVal = true;
             }
         }

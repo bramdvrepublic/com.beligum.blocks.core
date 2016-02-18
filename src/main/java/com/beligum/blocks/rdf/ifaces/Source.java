@@ -1,5 +1,7 @@
 package com.beligum.blocks.rdf.ifaces;
 
+import org.apache.hadoop.fs.FileContext;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -25,7 +27,7 @@ public interface Source
     /**
      * Prepare this source (perform all required processing) for saving to it's final destination.
      */
-    void prepareForSaving(boolean adjustLanguage, boolean compact) throws IOException;
+    void prepareForSaving(FileContext fileContext) throws IOException;
 
     /**
      * @return a newly created stream for reading the contents of this source

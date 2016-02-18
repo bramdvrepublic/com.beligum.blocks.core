@@ -38,6 +38,8 @@ public class HtmlAnalyzer
     private final TemplateCache allTagTemplates;
     private Source htmlDocument;
     private String normalizedHtml;
+    private AttributeRef htmlResource;
+    private AttributeRef htmlTypeof;
     private Locale htmlLocale;
     private Map<URI, ReferenceRef> internalRefs;
     private Map<URI, ReferenceRef> externalRefs;
@@ -59,6 +61,14 @@ public class HtmlAnalyzer
     public String getNormalizedHtml()
     {
         return normalizedHtml;
+    }
+    public AttributeRef getHtmlResource()
+    {
+        return htmlResource;
+    }
+    public AttributeRef getHtmlTypeof()
+    {
+        return htmlTypeof;
     }
     public Locale getHtmlLanguage()
     {
@@ -107,10 +117,31 @@ public class HtmlAnalyzer
             }
         }
 
+        //extract the base resource id
+        Attributes htmlAttributes = htmlElement.getAttributes();
+        String tempAttrValue;
+        if (htmlAttributes.get(HtmlSource.HTML_ROOT_RESOURCE_ATTR)!=null && !StringUtils.isEmpty(tempAttrValue = htmlAttributes.getValue(HtmlSource.HTML_ROOT_RESOURCE_ATTR))) {
+            //note that the html tag is always part of the normalized html
+            this.htmlResource = new AttributeRef(tempAttrValue, htmlAttributes.get(HtmlSource.HTML_ROOT_RESOURCE_ATTR), true);
+        }
+        else {
+            //makes sense to allow null resources; it allows to use this analyzer more generally
+            this.htmlResource = null;
+        }
+
+        //extract the base typeof
+        if (htmlAttributes.get(HtmlSource.HTML_ROOT_TYPEOF_ATTR)!=null && !StringUtils.isEmpty(tempAttrValue = htmlAttributes.getValue(HtmlSource.HTML_ROOT_TYPEOF_ATTR))) {
+            //note that the html tag is always part of the normalized html
+            this.htmlTypeof = new AttributeRef(tempAttrValue, htmlAttributes.get(HtmlSource.HTML_ROOT_TYPEOF_ATTR), true);
+        }
+        else {
+            //this is a nice practice and allows us to skip a lot of null tests (reason why ROOT was added in the first place)
+            this.htmlTypeof = null;
+        }
+
         //extract and store the locale
-        String langAttr = htmlElement.getAttributeValue(HtmlSource.HTML_ROOT_LANG_ATTR);
-        if (!StringUtils.isEmpty(langAttr)) {
-            this.htmlLocale = Locale.forLanguageTag(langAttr);
+        if (htmlAttributes.get(HtmlSource.HTML_ROOT_LANG_ATTR)!=null && !StringUtils.isEmpty(tempAttrValue = htmlAttributes.getValue(HtmlSource.HTML_ROOT_LANG_ATTR))) {
+            this.htmlLocale = Locale.forLanguageTag(tempAttrValue);
         }
         else {
             //this is a nice practice and allows us to skip a lot of null tests (reason why ROOT was added in the first place)
@@ -171,7 +202,7 @@ public class HtmlAnalyzer
                 }
 
                 this.extractTitle(startTag);
-                this.extractReference(startTag, writeTag);
+                this.extractReferences(startTag, writeTag);
 
                 //this means we won't encounter an end tag for this start tag
                 if (this.isStandAlone(startTag)) {
@@ -239,7 +270,7 @@ public class HtmlAnalyzer
      * in this tag.
      * @param isNormalizedTag indicates if this reference (actually the startTag) will end up in the normalized version
      */
-    private void extractReference(StartTag startTag, boolean isNormalizedTag)
+    private void extractReferences(StartTag startTag, boolean isNormalizedTag)
     {
         Attributes startTagAttrs = startTag.getAttributes();
 
@@ -337,6 +368,19 @@ public class HtmlAnalyzer
     }
 
     //-----INNER CLASSES-----
+    public class AttributeRef
+    {
+        public final String value;
+        public final Attribute attribute;
+        public final boolean isNormalizedTag;
+
+        protected AttributeRef(String value, Attribute attribute, boolean isNormalizedTag)
+        {
+            this.value = value;
+            this.attribute = attribute;
+            this.isNormalizedTag = isNormalizedTag;
+        }
+    }
     public class ReferenceRef
     {
         public final Attribute attribute;

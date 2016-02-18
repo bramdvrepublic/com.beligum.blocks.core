@@ -2,8 +2,8 @@ package com.beligum.blocks.controllers;
 
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.StorageFactory;
-import com.beligum.blocks.fs.indexes.entries.PageIndexEntry;
-import com.beligum.blocks.fs.indexes.ifaces.PageIndexer;
+import com.beligum.blocks.fs.index.entries.PageIndexEntry;
+import com.beligum.blocks.fs.index.ifaces.PageIndexer;
 import com.beligum.blocks.templating.blocks.DefaultTemplateController;
 import com.google.common.collect.Lists;
 import org.apache.lucene.search.Query;

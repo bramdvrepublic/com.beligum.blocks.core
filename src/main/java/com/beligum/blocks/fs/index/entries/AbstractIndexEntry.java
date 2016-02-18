@@ -1,4 +1,4 @@
-package com.beligum.blocks.fs.indexes.entries;
+package com.beligum.blocks.fs.index.entries;
 
 import org.hibernate.search.annotations.Analyze;
 import org.hibernate.search.annotations.Field;

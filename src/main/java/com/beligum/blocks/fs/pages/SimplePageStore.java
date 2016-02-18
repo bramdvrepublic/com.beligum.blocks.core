@@ -65,9 +65,9 @@ public class SimplePageStore implements PageStore
         URI resourceUri = DefaultPageImpl.toResourceUri(source.getSourceAddress(), Settings.instance().getPagesStorePath());
 
         //now execute the FS changes
-        FileContext fs = StorageFactory.getPageStoreFileSystem();
+        FileContext fileContext = StorageFactory.getPageStoreFileSystem();
 
-        ResourcePath resourcePath = new HdfsResourcePath(fs, resourceUri);
+        ResourcePath resourcePath = new HdfsResourcePath(fileContext, resourceUri);
         //we need to use the abstract type here to have access to the package private setters
         AbstractPage page = new DefaultPageImpl(resourcePath);
 
@@ -75,8 +75,8 @@ public class SimplePageStore implements PageStore
         try (LockFile lock = resourcePath.acquireLock()) {
 
             //prepare the HTML for saving; this is the only place we can modify the source
-            // because later on, the analyzer will have run (eg. after calling source.updateTranslations())
-            source.prepareForSaving(true, true);
+            // because later on, the analyzer will have run
+            source.prepareForSaving(fileContext);
 
             //we'll read everything into a string for performance and ease of use
             String sourceHtml;
@@ -91,8 +91,8 @@ public class SimplePageStore implements PageStore
             try (InputStream is = new ByteArrayInputStream(sourceHtml.getBytes())) {
                 newHash = HdfsResourcePath.calcHashChecksumFor(is);
             }
-            if (fs.util().exists(hashFile)) {
-                try (FSDataInputStream is = fs.open(hashFile)) {
+            if (fileContext.util().exists(hashFile)) {
+                try (FSDataInputStream is = fileContext.open(hashFile)) {
                     String existingHash = IOUtils.toString(is);
                     nothingChanged = existingHash!=null && existingHash.equals(newHash);
                 }
@@ -105,41 +105,41 @@ public class SimplePageStore implements PageStore
             else {
                 //make sure the path dirs exist
                 //Note: this also works for dirs, since they're special files inside the actual dir
-                fs.mkdir(resourcePath.getLocalPath().getParent(), FsPermission.getDirDefault(), true);
+                fileContext.mkdir(resourcePath.getLocalPath().getParent(), FsPermission.getDirDefault(), true);
 
                 //we're overwriting; make an entry in the history folder
                 //TODO maybe we want to make this asynchronous?
-                if (fs.util().exists(resourcePath.getLocalPath())) {
-                    this.addHistoryEntry(fs, resourcePath);
+                if (fileContext.util().exists(resourcePath.getLocalPath())) {
+                    this.addHistoryEntry(fileContext, resourcePath);
                 }
 
                 //save the HASH of the file
                 //TODO make this uniform with the watch code
-                try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(hashFile, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
+                try (Writer writer = new BufferedWriter(new OutputStreamWriter(fileContext.create(hashFile, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
                     writer.write(newHash);
                 }
 
                 //save the original page html
-                try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(resourcePath.getLocalPath(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
+                try (Writer writer = new BufferedWriter(new OutputStreamWriter(fileContext.create(resourcePath.getLocalPath(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
                     writer.write(sourceHtml);
                 }
 
                 //save the normalized page html
                 Path normalizedHtml = page.getNormalizedPageProxyPath();
-                try (Writer writer = new BufferedWriter(new OutputStreamWriter(fs.create(normalizedHtml, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
+                try (Writer writer = new BufferedWriter(new OutputStreamWriter(fileContext.create(normalizedHtml, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
                     writer.write(source.getNormalizedHtml());
                 }
 
                 //parse and generate the RDF model
                 Model rdfModel = page.createImporter().importDocument(source);
                 //export the RDF model to the storage file (JSON-LD)
-                try (OutputStream os = fs.create(page.getRdfExportFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
+                try (OutputStream os = fileContext.create(page.getRdfExportFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
                     //TODO enable this again!!
                     //page.createExporter().exportModel(rdfModel, os);
                 }
 
                 //save the page metadata (read it in if it exists)
-                this.writeMetadata(fs, resourcePath, creator, page.createMetadataWriter());
+                this.writeMetadata(fileContext, resourcePath, creator, page.createMetadataWriter());
 
                 retVal = page;
             }

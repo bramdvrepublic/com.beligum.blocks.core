@@ -39,7 +39,7 @@ public class PageTemplate extends HtmlTemplate
 
         // some extra preprocessing is fill in the template attribute with the name of the template
         // so we know which template was used when the code comes back from the client
-        Element html = document.getSegment().getFirstElement(HtmlParser.WEBCOMPONENTS_TEMPLATE_ELEM, null);
+        Element html = document.getSegment().getFirstElement(HtmlParser.HTML_ROOT_TEMPLATE_ATTR, null);
         if (!html.getName().equalsIgnoreCase(HtmlParser.HTML_ROOT_ELEM)) {
             throw new IOException("Found a template attribute on a non-html element, this shouldn't happen since it's been checked before; " + relativePath);
         }

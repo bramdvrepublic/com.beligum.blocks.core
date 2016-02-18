@@ -1,4 +1,4 @@
-package com.beligum.blocks.fs.indexes;
+package com.beligum.blocks.fs.index;
 
 import com.beligum.base.utils.toolkit.ReflectionFunctions;
 import org.hibernate.annotations.common.reflection.ReflectionManager;
