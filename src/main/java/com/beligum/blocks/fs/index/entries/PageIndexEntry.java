@@ -4,7 +4,6 @@ import org.hibernate.search.annotations.*;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Map;
 
 /**
  * Created by bram on 2/13/16.
@@ -23,8 +22,6 @@ public class PageIndexEntry extends AbstractIndexEntry
     private String language;
     @Field(index = Index.YES, analyze = Analyze.NO, store = Store.YES)
     private URI parent;
-    @IndexedEmbedded()
-    private Map<String, URI> translations;
 
     //-----CONSTRUCTORS-----
     public PageIndexEntry() throws IOException
@@ -65,14 +62,6 @@ public class PageIndexEntry extends AbstractIndexEntry
     {
         this.parent = parent;
     }
-    public Map<String, URI> getTranslations()
-    {
-        return translations;
-    }
-    public void setTranslations(Map<String, URI> translations)
-    {
-        this.translations = translations;
-    }
 
     //-----PROTECTED METHODS-----
 
@@ -87,7 +76,6 @@ public class PageIndexEntry extends AbstractIndexEntry
                ", title='" + title + '\'' +
                ", language='" + language + '\'' +
                ", parent=" + parent +
-               ", translations=" + translations +
                '}';
     }
 }

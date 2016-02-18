@@ -25,14 +25,10 @@ import org.infinispan.query.SearchManager;
 import org.infinispan.transaction.TransactionMode;
 
 import javax.transaction.TransactionManager;
-import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
 
 /**
  * See this:
@@ -85,7 +81,6 @@ public class InfinispanPageIndexer implements PageIndexer<QueryBuilder, Query, C
         entry.setLanguage(htmlAnalyzer.getHtmlLanguage() == null ? null : htmlAnalyzer.getHtmlLanguage().getLanguage());
         entry.setParent(this.getParentUri(pageAddress, fc));
         entry.setTitle(htmlAnalyzer.getTitle());
-        entry.setTranslations(this.getTranslations(page, htmlAnalyzer.getHtmlLanguage()));
 
         //PageIndexEntry stub = new PageIndexEntry(page, htmlAnalyzer, this.getParentUri(page));
         cache.put(entry.getId().toString(), entry);
@@ -204,35 +199,6 @@ public class InfinispanPageIndexer implements PageIndexer<QueryBuilder, Query, C
                     parentUri = StringFunctions.getParent(parentUri);
                 }
 
-            }
-        }
-
-        return retVal;
-    }
-    /**
-     * This will try to find all translations of this source (based on existing file structures)
-     */
-    private Map<String, URI> getTranslations(Page page, Locale htmlLanguage) throws IOException
-    {
-        Map<String, URI> retVal = new HashMap<>();
-
-        //this is the lang attribute in the <html> tag
-        if (htmlLanguage != null) {
-            URI pageAddress = page.buildAddress();
-            Map<String, Locale> siteLanguages = Settings.instance().getLanguages();
-            for (Map.Entry<String, Locale> l : siteLanguages.entrySet()) {
-                Locale lang = l.getValue();
-                if (!lang.equals(htmlLanguage)) {
-                    UriBuilder translatedUri = UriBuilder.fromUri(pageAddress);
-                    Locale detectedLang = R.i18nFactory().getUrlLocale(pageAddress, translatedUri, lang);
-                    if (detectedLang != null) {
-                        URI transPagePublicUri = translatedUri.build();
-                        URI transPageResourceUri = DefaultPageImpl.toResourceUri(transPagePublicUri, Settings.instance().getPagesStorePath());
-                        if (page.getResourcePath().getFileContext().util().exists(new org.apache.hadoop.fs.Path(transPageResourceUri))) {
-                            retVal.put(lang.getLanguage(), transPagePublicUri);
-                        }
-                    }
-                }
             }
         }
 
