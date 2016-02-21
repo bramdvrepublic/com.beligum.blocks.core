@@ -4,18 +4,17 @@ import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.blocks.fs.ifaces.ResourcePath;
 import com.beligum.blocks.fs.metadata.EBUCoreHdfsMetadataWriter;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
-import com.beligum.blocks.rdf.exporters.JenaExporter;
+import com.beligum.blocks.rdf.exporters.SesameExporter;
 import com.beligum.blocks.rdf.ifaces.Exporter;
+import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.rdf.importers.SesameImporter;
-import com.beligum.blocks.rdf.sources.HtmlStreamSource;
 import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
 import gen.com.beligum.blocks.core.maven;
 import org.apache.hadoop.fs.Path;
 import org.apache.tika.mime.MediaType;
 
 import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * Created by bram on 1/14/16.
@@ -23,15 +22,19 @@ import java.io.InputStream;
 public class DefaultPageImpl extends AbstractPage
 {
     //-----CONSTANTS-----
-    MediaType PAGE_PROXY_NORMALIZED_MIME_TYPE = Resource.MimeType.HTML.getMimeType();
+    private MediaType PAGE_PROXY_NORMALIZED_MIME_TYPE = Resource.MimeType.HTML.getMimeType();
     //Note: makes sense to prefix with the mvn artifact, so we know what we wrote it with
-    String PAGE_PROXY_NORMALIZED_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_normalized." + Resource.MimeType.HTML.getExtension();
+    private String PAGE_PROXY_NORMALIZED_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_normalized." + Resource.MimeType.HTML.getExtension();
 
-    MediaType PAGE_PROXY_RDF_JSONLD_MIME_TYPE = Resource.MimeType.JSONLD.getMimeType();
+    // See this for why we write in N-Triples:
+    // https://jena.apache.org/documentation/io/rdf-output.html#n-triples-and-n-quads
+    // "These provide the formats that are fastest to write, and data of any size can be output."
+    // "They maximise the interoperability with other systems and are useful for database dumps."
+
+    private Format PAGE_PROXY_RDF_FORMAT = Format.NTRIPLES;
+    private Resource.MimeType PAGE_PROXY_RDF_TYPE = PAGE_PROXY_RDF_FORMAT.getMimeType();
     // Note: makes sense to prefix with the mvn artifact, so we know what we wrote it with
-    // also note that the reason it's suffixed 'rdf' is that JSONLD is a Resource Description Framework serialization format:
-    // https://en.wikipedia.org/wiki/Linked_data
-    String PAGE_PROXY_RDF_JSONLD_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_rdf." + Resource.MimeType.JSONLD.getExtension();
+    private String PAGE_PROXY_RDF_FILE_NAME = maven.Entries.maven_artifactId.getValue() + "_rdf." + PAGE_PROXY_RDF_TYPE.getExtension();
 
     //-----VARIABLES-----
 
@@ -43,21 +46,19 @@ public class DefaultPageImpl extends AbstractPage
 
     //-----PUBLIC METHODS-----
     @Override
-    public Importer createImporter() throws IOException
+    public Importer createImporter(Format importFormat) throws IOException
     {
-        return new SesameImporter(Importer.Format.RDFA);
+        return new SesameImporter(importFormat);
     }
     @Override
-    public Exporter createExporter() throws IOException
+    public Exporter createExporter(Format exportFormat) throws IOException
     {
-        return new JenaExporter(Exporter.Format.JSONLD);
+        return new SesameExporter(exportFormat);
     }
     @Override
     public HtmlAnalyzer createAnalyzer() throws IOException
     {
-        try (InputStream is = this.getResourcePath().getFileContext().open(this.getResourcePath().getLocalPath())) {
-            return new HtmlAnalyzer(new HtmlStreamSource(this.buildAddress(), is), true);
-        }
+        return new HtmlAnalyzer(this.readOriginalHtml());
     }
     @Override
     public MetadataWriter createMetadataWriter() throws IOException
@@ -72,7 +73,12 @@ public class DefaultPageImpl extends AbstractPage
     @Override
     public Path getRdfExportFile()
     {
-        return new Path(this.resourcePath.getMetaProxyFolder(PAGE_PROXY_RDF_JSONLD_MIME_TYPE), PAGE_PROXY_RDF_JSONLD_FILE_NAME);
+        return new Path(this.resourcePath.getMetaProxyFolder(PAGE_PROXY_RDF_TYPE.getMimeType()), PAGE_PROXY_RDF_FILE_NAME);
+    }
+    @Override
+    public Format getRdfExportFileFormat()
+    {
+        return PAGE_PROXY_RDF_FORMAT;
     }
 
     //-----PROTECTED METHODS-----

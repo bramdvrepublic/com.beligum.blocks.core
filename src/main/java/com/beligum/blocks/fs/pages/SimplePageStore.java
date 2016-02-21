@@ -13,11 +13,12 @@ import com.beligum.blocks.fs.ifaces.ResourcePath;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.fs.pages.ifaces.PageStore;
+import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.sources.HtmlSource;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.jena.rdf.model.Model;
+import org.openrdf.model.Model;
 
 import java.io.*;
 import java.net.URI;
@@ -131,11 +132,10 @@ public class SimplePageStore implements PageStore
                 }
 
                 //parse and generate the RDF model
-                Model rdfModel = page.createImporter().importDocument(source);
+                Model rdfModel = page.createImporter(Format.RDFA).importDocument(source);
                 //export the RDF model to the storage file (JSON-LD)
                 try (OutputStream os = fileContext.create(page.getRdfExportFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
-                    //TODO enable this again!!
-                    //page.createExporter().exportModel(rdfModel, os);
+                    page.createExporter(page.getRdfExportFileFormat()).exportModel(rdfModel, os);
                 }
 
                 //save the page metadata (read it in if it exists)

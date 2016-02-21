@@ -3,11 +3,9 @@ package com.beligum.blocks.fs.index.ifaces;
 import java.io.IOException;
 
 /**
- * Generic superclass for the page indexer
- *
- * Created by bram on 1/26/16.
+ * Created by bram on 2/21/16.
  */
-public interface PageIndexer extends Indexer
+public interface IndexConnection extends AutoCloseable
 {
     //-----CONSTANTS-----
 
@@ -16,8 +14,11 @@ public interface PageIndexer extends Indexer
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    @Override
-    PageIndexConnection connect() throws IOException;
+    void commit() throws IOException;
+    void rollback() throws IOException;
+
+//    B getNewQueryBuilder() throws IOException;
+//    R executeQuery(Q query) throws IOException;
 
     //-----PROTECTED METHODS-----
 

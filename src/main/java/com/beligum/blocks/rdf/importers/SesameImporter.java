@@ -1,11 +1,10 @@
 package com.beligum.blocks.rdf.importers;
 
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.Source;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
-import org.openrdf.OpenRDFException;
-import org.openrdf.model.Statement;
+import org.openrdf.model.Model;
+import org.openrdf.model.impl.LinkedHashModel;
 import org.openrdf.rio.*;
 import org.openrdf.rio.helpers.RDFaParserSettings;
 import org.openrdf.rio.helpers.RDFaVersion;
@@ -13,6 +12,7 @@ import org.openrdf.rio.helpers.StatementCollector;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.util.HashSet;
 
 /**
@@ -34,35 +34,42 @@ public class SesameImporter extends AbstractImporter
     @Override
     public Model importDocument(Source source) throws IOException
     {
-        RDFParser parser = Rio.createParser(this.translateFormat(this.inputFormat));
-        configureParser(parser, this.inputFormat);
-
-        org.openrdf.model.Model sesameModel = new org.openrdf.model.impl.LinkedHashModel();
-        parser.setRDFHandler(new StatementCollector(sesameModel));
-
         try (InputStream is = source.openNewInputStream()) {
-            parser.parse(is, source.getSourceAddress().toString());
+            return this.parseInputStream(is, source.getSourceAddress());
         }
-        catch (OpenRDFException e) {
+        catch (Exception e) {
             //when an exception is thrown, it's very handy to have the html source code, so add it to the exception
-            throw new IOException(source.toString(), e);
+            throw new IOException("Exception caught while parsing RDF import source; "+source.toString(), e);
         }
-
-        //convert sesame to jena model
-        Model model = ModelFactory.createDefaultModel();
-        for (Statement stmt : sesameModel) {
-            model.add(Convert.statementToJenaStatement(model, stmt));
+    }
+    @Override
+    public Model importDocument(InputStream inputStream, URI baseUri) throws IOException
+    {
+        try {
+            return this.parseInputStream(inputStream, baseUri);
         }
-
-        //Note: this doesn't seem to do anything for this importer (Any23 doesn't return an expanded @graph form)
-        model = this.filterRelevantNodes(model, source.getSourceAddress());
-
-        return model;
+        catch (Exception e) {
+            throw new IOException("Exception caught while parsing RDF import file; "+baseUri, e);
+        }
     }
 
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+    private Model parseInputStream(InputStream is, URI baseURI) throws IOException, RDFParseException, RDFHandlerException
+    {
+        RDFParser parser = Rio.createParser(this.translateFormat(this.inputFormat));
+        configureParser(parser, this.inputFormat);
+
+        Model model = new LinkedHashModel();
+        parser.setRDFHandler(new StatementCollector(model));
+
+        parser.parse(is, baseURI.toString());
+
+        model = this.filterRelevantNodes(model, baseURI);
+
+        return model;
+    }
     private RDFFormat translateFormat(Format inputFormat) throws IOException
     {
         switch (inputFormat) {
@@ -110,19 +117,19 @@ public class SesameImporter extends AbstractImporter
      */
     private class InternalParseErrorListener implements ParseErrorListener
     {
-        public void warning(String msg, int lineNo, int colNo)
+        public void warning(String msg, long lineNo, long colNo)
         {
             Logger.warn(msg+"\n" +
                         "  line: "+lineNo+"\n" +
                         "  column: "+colNo);
         }
-        public void error(String msg, int lineNo, int colNo)
+        public void error(String msg, long lineNo, long colNo)
         {
             Logger.error(msg+"\n" +
                         "  line: "+lineNo+"\n" +
                         "  column: "+colNo);
         }
-        public void fatalError(String msg, int lineNo, int colNo)
+        public void fatalError(String msg, long lineNo, long colNo)
         {
             //TODO don't know if this is the best approach...
             throw new RuntimeException(msg+"\n" +

@@ -14,11 +14,15 @@ public interface Indexer
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    void beginTransaction() throws IOException;
-    void commitTransaction() throws IOException;
-    void rollbackTransaction() throws IOException;
 
-    void shutdown();
+    /**
+     * This method starts up a new, transactional session
+     * @return
+     * @throws IOException
+     */
+    IndexConnection connect() throws IOException;
+
+    void shutdown() throws IOException;
 
     //-----PROTECTED METHODS-----
 

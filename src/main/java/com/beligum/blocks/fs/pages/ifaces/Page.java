@@ -3,7 +3,9 @@ package com.beligum.blocks.fs.pages.ifaces;
 import com.beligum.blocks.fs.ifaces.ResourcePath;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
 import com.beligum.blocks.rdf.ifaces.Exporter;
+import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.Importer;
+import com.beligum.blocks.rdf.sources.HtmlSource;
 import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
 import org.apache.hadoop.fs.Path;
 
@@ -27,14 +29,14 @@ public interface Page
      * @return
      * @throws IOException
      */
-    Importer createImporter() throws IOException;
+    Importer createImporter(Format importFormat) throws IOException;
 
     /**
      * Creates the semantic exporter for this kind of page, to store to disk (currently a JSON-LD writer).
      * @return
      * @throws IOException
      */
-    Exporter createExporter() throws IOException;
+    Exporter createExporter(Format exportFormat) throws IOException;
 
     /**
      * Creates a new analyzer, based on the currently stored original source for this page, reads it in and parses it.
@@ -43,6 +45,12 @@ public interface Page
      * @throws IOException
      */
     HtmlAnalyzer createAnalyzer() throws IOException;
+
+    /**
+     * Creates a new html (stream) source based on the stored original file on disk.
+     * @return
+     */
+    HtmlSource readOriginalHtml() throws IOException;
 
     /**
      * Create the metadata writer for this page to writer to the "meta" file in the meta dot folder.
@@ -62,6 +70,12 @@ public interface Page
      * @return
      */
     Path getRdfExportFile();
+
+    /**
+     * Returns the type in which the RDF export is saved
+     * @return
+     */
+    Format getRdfExportFileFormat();
 
     /**
      * Returns the path (and all other info) to the local resource file on disk.

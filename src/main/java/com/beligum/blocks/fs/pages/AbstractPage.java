@@ -3,11 +3,14 @@ package com.beligum.blocks.fs.pages;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.ifaces.ResourcePath;
 import com.beligum.blocks.fs.pages.ifaces.Page;
+import com.beligum.blocks.rdf.sources.HtmlSource;
+import com.beligum.blocks.rdf.sources.HtmlStreamSource;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 
 /**
@@ -134,6 +137,13 @@ public abstract class AbstractPage implements Page
     public ResourcePath getResourcePath()
     {
         return resourcePath;
+    }
+    @Override
+    public HtmlSource readOriginalHtml() throws IOException
+    {
+        try (InputStream is = this.getResourcePath().getFileContext().open(this.getResourcePath().getLocalPath())) {
+            return new HtmlStreamSource(this.buildAddress(), is);
+        }
     }
 
     //-----PROTECTED METHODS-----

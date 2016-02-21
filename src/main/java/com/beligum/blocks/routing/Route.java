@@ -78,7 +78,7 @@ public class Route
     public void create() throws Exception
     {
         WebPath retVal = PersistenceControllerImpl.instance().getPath(simplePath, locale);
-        URI blockId = RdfTools.createRelativeResourceId(PersistenceControllerImpl.WEB_PAGE_CLASS);
+        URI blockId = RdfTools.createRelativeResourceId(new com.beligum.blocks.rdf.schema.Page());
         if (retVal == null) {
 
             // Check if other languages are linked to this path

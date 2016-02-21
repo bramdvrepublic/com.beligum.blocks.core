@@ -66,7 +66,13 @@ public class ServerStartStopListener implements ServerLifecycleListener
 
         Iterator<Indexer> indexIter = StorageFactory.getIndexerRegistry().iterator();
         while (indexIter.hasNext()) {
-            indexIter.next().shutdown();
+            Indexer indexer = indexIter.next();
+            try {
+                indexer.shutdown();
+            }
+            catch (IOException e) {
+                Logger.error("Exception caught while shutting down indexer; "+indexer, e);
+            }
             indexIter.remove();
         }
 

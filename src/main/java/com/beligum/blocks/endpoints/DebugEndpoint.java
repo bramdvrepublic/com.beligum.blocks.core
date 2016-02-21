@@ -19,6 +19,37 @@ import java.util.Map;
 @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
 public class DebugEndpoint
 {
+    @Path("sparql")
+    public Response testSparql() throws IOException
+    {
+//        PageIndexer<SelectBuilder, Query, QueryExecution> tripleStore = StorageFactory.getTriplestorePageIndexer();
+//
+//        boolean success = false;
+//        try {
+//            tripleStore.beginTransaction();
+//
+//            SelectBuilder selectBuilder = tripleStore.getNewQueryBuilder();
+//            selectBuilder.addVar("*").addWhere("?s", "?p", "?o");
+//
+//            try (QueryExecution qExec = tripleStore.executeQuery(selectBuilder.build())) {
+//                ResultSet rs = qExec.execSelect();
+//                ResultSetFormatter.out(rs);
+//            }
+//
+//            success = true;
+//        }
+//        finally {
+//            if (success) {
+//                tripleStore.commitTransaction();
+//            }
+//            else {
+//                tripleStore.rollbackTransaction();
+//            }
+//        }
+
+        return Response.ok().build();
+    }
+
     @Path("lucene")
     public Response testLucene() throws IOException
     {

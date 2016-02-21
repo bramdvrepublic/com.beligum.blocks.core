@@ -1,6 +1,6 @@
 package com.beligum.blocks.rdf.ifaces;
 
-import org.apache.jena.rdf.model.Model;
+import org.openrdf.model.Model;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -11,10 +11,6 @@ import java.io.OutputStream;
 public interface Exporter
 {
     //-----CONSTANTS-----
-    enum Format
-    {
-        JSONLD;
-    }
 
     //-----VARIABLES-----
 

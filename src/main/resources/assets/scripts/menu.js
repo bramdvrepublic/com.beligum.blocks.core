@@ -282,8 +282,27 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         //the idea is to send the entire page to the server and let it only save the correct tags (eg. with property and data-property attributes)
         // remove the widths from the containers
         $(".container").removeAttr("style");
-        var page = $("html")[0].outerHTML;
-        //var page = $("body").html();
+
+        //the sidebar is open now. We used to send everything to the server, letting it to handle the sidebar HTML code on its own,
+        // but it's too much hassle and too simple for us to 'close' the sidebar now. So let's just take the html in the wrapper and create
+        // a virtual html page by combining the content of the wrapper with the <head> in the html
+
+        //create a new node out of the full page html
+        var savePage = $("html").clone();
+
+        //this extracts the real body (without the sidebar code) we need to save
+        //see toggle close for more or less the same code
+        //TODO ideally, we should make this uniform (virtually close the sidebar?)
+        var content = $("." + BlocksConstants.PAGE_CONTENT_CLASS).html();
+
+        //copy in the content
+        var saveBody = savePage.find('body');
+        saveBody.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
+        saveBody.empty().append(content);
+
+        //convert from jQuery to html string
+        savePage = savePage[0].outerHTML;
+
         updateContainerWidth();
 
         var dialog = new BootstrapDialog({
@@ -298,7 +317,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         $.ajax({
                 type: 'POST',
                 url: "/blocks/admin/page/save/" + window.location.href,
-                data: page,
+                data: savePage,
                 contentType: 'application/json; charset=UTF-8',
             })
             .done(function (url, textStatus, response)

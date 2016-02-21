@@ -10,6 +10,7 @@ import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
+import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexer;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.sources.HtmlSource;
@@ -182,25 +183,30 @@ public class PageEndpoint
 
             //link both indexers together so that both commit or both fail
             boolean success = false;
+            PageIndexConnection mainIndexConn = null;
+            PageIndexConnection tripleStoreConn = null;
             try {
-                //store the resulting page in the indexes you want
-                mainIndex.beginTransaction();
-                mainIndex.indexPage(savedPage);
+                mainIndexConn = (PageIndexConnection) mainIndex.connect();
+                tripleStoreConn = (PageIndexConnection) tripleStore.connect();
 
-                tripleStore.beginTransaction();
-                tripleStore.indexPage(savedPage);
+                //store the resulting page in the indexes you want
+                mainIndexConn.indexPage(savedPage);
+                tripleStoreConn.indexPage(savedPage);
 
                 success = true;
             }
             finally {
                 if (success) {
-                    mainIndex.commitTransaction();
-                    tripleStore.commitTransaction();
+                    mainIndexConn.commit();
+                    tripleStoreConn.commit();
                 }
                 else {
-                    mainIndex.rollbackTransaction();
-                    tripleStore.rollbackTransaction();
+                    mainIndexConn.rollback();
+                    tripleStoreConn.rollback();
                 }
+
+                mainIndexConn.close();
+                tripleStoreConn.close();
             }
         }
 
@@ -224,25 +230,30 @@ public class PageEndpoint
 
             //link both indexers together so that both commit or both fail
             boolean success = false;
+            PageIndexConnection mainIndexConn = null;
+            PageIndexConnection tripleStoreConn = null;
             try {
-                //store the resulting page in the indexes you want
-                mainIndex.beginTransaction();
-                mainIndex.delete(deletedPage);
+                mainIndexConn = (PageIndexConnection) mainIndex.connect();
+                tripleStoreConn = (PageIndexConnection) tripleStore.connect();
 
-                tripleStore.beginTransaction();
-                tripleStore.delete(deletedPage);
+                //store the resulting page in the indexes you want
+                mainIndexConn.delete(deletedPage);
+                tripleStoreConn.delete(deletedPage);
 
                 success = true;
             }
             finally {
                 if (success) {
-                    mainIndex.commitTransaction();
-                    tripleStore.commitTransaction();
+                    mainIndexConn.commit();
+                    tripleStoreConn.commit();
                 }
                 else {
-                    mainIndex.rollbackTransaction();
-                    tripleStore.rollbackTransaction();
+                    mainIndexConn.rollback();
+                    tripleStoreConn.rollback();
                 }
+
+                mainIndexConn.close();
+                tripleStoreConn.close();
             }
         }
 

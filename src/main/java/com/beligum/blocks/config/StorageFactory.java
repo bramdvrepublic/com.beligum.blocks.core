@@ -6,7 +6,7 @@ import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.fs.hdfs.TransactionalRawLocalFS;
 import com.beligum.blocks.fs.hdfs.TransactionalRawLocalFileSystem;
 import com.beligum.blocks.fs.index.InfinispanPageIndexer;
-import com.beligum.blocks.fs.index.JenaPageIndexer;
+import com.beligum.blocks.fs.index.SesamePageIndexer;
 import com.beligum.blocks.fs.index.ifaces.Indexer;
 import com.beligum.blocks.fs.index.ifaces.PageIndexer;
 import com.beligum.blocks.fs.pages.SimplePageStore;
@@ -57,7 +57,7 @@ public class StorageFactory
 
         return (PageStore) R.cacheManager().getApplicationCache().get(CacheKeys.HDFS_PAGE_STORE);
     }
-    public static PageIndexer<org.hibernate.search.query.dsl.QueryBuilder, org.apache.lucene.search.Query, org.infinispan.query.CacheQuery> getMainPageIndexer() throws IOException
+    public static PageIndexer getMainPageIndexer() throws IOException
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.MAIN_PAGE_INDEX)) {
             Indexer indexer = new InfinispanPageIndexer();
@@ -67,10 +67,10 @@ public class StorageFactory
 
         return (PageIndexer) R.cacheManager().getApplicationCache().get(CacheKeys.MAIN_PAGE_INDEX);
     }
-    public static PageIndexer<org.apache.jena.arq.querybuilder.SelectBuilder, org.apache.jena.query.Query, org.apache.jena.query.QueryExecution> getTriplestorePageIndexer() throws IOException
+    public static PageIndexer getTriplestorePageIndexer() throws IOException
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRIPLESTORE_PAGE_INDEX)) {
-            Indexer indexer = new JenaPageIndexer();
+            Indexer indexer = new SesamePageIndexer();
             getIndexerRegistry().add(indexer);
             R.cacheManager().getApplicationCache().put(CacheKeys.TRIPLESTORE_PAGE_INDEX, indexer);
         }

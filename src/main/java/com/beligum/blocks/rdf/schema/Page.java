@@ -78,7 +78,7 @@ public class Page implements BasicModel
         return false;
     }
     @Override
-    public String getResourceUriClassName()
+    public String  getResourceUriClassName()
     {
         return "page";
     }

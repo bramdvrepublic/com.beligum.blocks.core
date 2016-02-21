@@ -78,7 +78,7 @@ public class WebPageParserOld
         this.pageTitle = I18nFactory.instance().getResourceBundle(locale).get(core.Entries.defaultPageTitle);
         Element base = this.source.getFirstElement("base");
         this.setBase(base, uri);
-        pageResource = ResourceFactoryImpl.instance().createResource(RdfTools.createRelativeResourceId("webpage"), RdfTools.createLocalType("Webpage"), locale);
+        pageResource = ResourceFactoryImpl.instance().createResource(RdfTools.createRelativeResourceId(new com.beligum.blocks.rdf.schema.Page()), RdfTools.createLocalType("Webpage"), locale);
         this.resources.put(pageResource.getBlockId().toString(), pageResource);
         this.elements = this.source.getAllElements();
         for (HtmlTemplate template : HtmlParser.getTemplateCache().values()) {
@@ -161,13 +161,15 @@ public class WebPageParserOld
 
             if (element.getAttributeValue("resource") == null) {
                 // create a new resource
-                URI resourceid = RdfTools.createRelativeResourceId(getShortTypeNamefromUri(typeOf));
-                newResource = ResourceFactoryImpl.instance().createResource(resourceid, typeOf, locale);
+                //commented out
+                //URI resourceid = RdfTools.createRelativeResourceId(getShortTypeNamefromUri(typeOf));
+                //newResource = ResourceFactoryImpl.instance().createResource(resourceid, typeOf, locale);
 
+                //commented out
                 // add new resource id to parsed html
-                parsedHtml.append(source.subSequence(textPos, element.getStartTag().getEnd() - 1));
-                parsedHtml.append("resource=\"").append(resourceid.toString()).append("\" >");
-                textPos = element.getStartTag().getEnd();
+                //parsedHtml.append(source.subSequence(textPos, element.getStartTag().getEnd() - 1));
+                //parsedHtml.append("resource=\"").append(resourceid.toString()).append("\" >");
+                //textPos = element.getStartTag().getEnd();
             }
             else {
                 // Fetch resource from db with id

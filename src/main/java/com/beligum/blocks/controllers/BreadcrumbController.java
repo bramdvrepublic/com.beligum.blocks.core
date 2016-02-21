@@ -1,14 +1,13 @@
 package com.beligum.blocks.controllers;
 
 import com.beligum.base.server.R;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.entries.PageIndexEntry;
+import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexer;
 import com.beligum.blocks.templating.blocks.DefaultTemplateController;
 import com.google.common.collect.Lists;
-import org.apache.lucene.search.Query;
-import org.hibernate.search.query.dsl.QueryBuilder;
-import org.infinispan.query.CacheQuery;
 
 import java.io.IOException;
 import java.net.URI;
@@ -36,14 +35,18 @@ public class BreadcrumbController extends DefaultTemplateController
         Map<URI, String> retVal = new LinkedHashMap<>();
 
         // get URI
-        URI originalUri = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
+        URI requestedUri = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
 
-        PageIndexer<QueryBuilder, Query, CacheQuery> mainPageIndexer = StorageFactory.getMainPageIndexer();
-
-        PageIndexEntry p = mainPageIndexer.get(originalUri);
-        while (p!=null) {
-            retVal.put(p.getId(), p.getTitle());
-            p = p.getParent()!=null ? mainPageIndexer.get(p.getParent()) : null;
+        PageIndexer mainPageIndexer = StorageFactory.getMainPageIndexer();
+        try (PageIndexConnection conn = mainPageIndexer.connect()) {
+            PageIndexEntry p = conn.get(requestedUri);
+            while (p != null) {
+                retVal.put(p.getId(), p.getTitle());
+                p = p.getParent() != null ? conn.get(p.getParent()) : null;
+            }
+        }
+        catch (Exception e) {
+            Logger.error("Exception caught while building breadcrumbs list; "+requestedUri, e);
         }
 
         return Lists.reverse(new ArrayList<>(retVal.entrySet()));

@@ -1,6 +1,7 @@
 package com.beligum.blocks.rdf.exporters;
 
 import com.beligum.blocks.rdf.ifaces.Exporter;
+import com.beligum.blocks.rdf.ifaces.Format;
 
 /**
  * Created by bram on 1/26/16.

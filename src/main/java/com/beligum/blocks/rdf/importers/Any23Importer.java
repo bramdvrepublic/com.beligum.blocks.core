@@ -1,21 +1,26 @@
 package com.beligum.blocks.rdf.importers;
 
+import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.Source;
 import org.apache.any23.Any23;
-import org.apache.any23.extractor.ExtractionException;
+import org.apache.any23.extractor.rdf.JSONLDExtractorFactory;
+import org.apache.any23.extractor.rdf.NTriplesExtractorFactory;
 import org.apache.any23.extractor.rdfa.RDFa11ExtractorFactory;
 import org.apache.any23.source.ByteArrayDocumentSource;
 import org.apache.any23.source.DocumentSource;
-import org.apache.any23.writer.NTriplesWriter;
+import org.apache.any23.writer.ReportingTripleHandler;
+import org.apache.any23.writer.RepositoryWriter;
 import org.apache.any23.writer.TripleHandler;
-import org.apache.any23.writer.TripleHandlerException;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
+import org.openrdf.model.Model;
+import org.openrdf.query.QueryResults;
+import org.openrdf.repository.Repository;
+import org.openrdf.repository.RepositoryConnection;
+import org.openrdf.repository.sail.SailRepository;
+import org.openrdf.sail.memory.MemoryStore;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 
 /**
  * Created by bram on 1/23/16.
@@ -36,13 +41,14 @@ public class Any23Importer extends AbstractImporter
     @Override
     public Model importDocument(Source source) throws IOException
     {
-        Model model = ModelFactory.createDefaultModel();
-        this.readToJenaModel(source, this.inputFormat, model);
-
-        //Note: this doesn't seem to do anything for this importer (Any23 doesn't return an expanded @graph form)
-        //model = this.filterRelevantNodes(model, source.getBaseUri());
-
-        return model;
+        try (InputStream is = source.openNewInputStream()) {
+            return this.readToModel(is, source.getSourceAddress(), this.inputFormat);
+        }
+    }
+    @Override
+    public Model importDocument(InputStream inputStream, URI baseUri) throws IOException
+    {
+        return this.readToModel(inputStream, baseUri, this.inputFormat);
     }
 
     //-----PROTECTED METHODS-----
@@ -51,45 +57,57 @@ public class Any23Importer extends AbstractImporter
     /*
      * See http://stackoverflow.com/questions/15140531/how-to-add-apache-any23-rdf-statements-to-apache-jena
      */
-    private void readToJenaModel(Source source, Format inputFormat, Model model) throws IOException
+    private Model readToModel(InputStream is, URI baseURI, Format inputFormat) throws IOException
     {
-        Any23 runner = new Any23(this.translateFormat(inputFormat));
+        Model retVal = null;
 
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+        try {
+            Any23 runner = new Any23(this.translateFormat(inputFormat));
 
-            DocumentSource documentSource;
-            try (InputStream is = source.openNewInputStream()) {
-                documentSource = new ByteArrayDocumentSource(is, source.getSourceAddress().normalize().toString(), null);
-            }
-
-            TripleHandler handler = new NTriplesWriter(os);
+            RepositoryConnection connection = null;
+            TripleHandler writer = null;
             try {
-                runner.extract(documentSource, handler);
-            }
-            catch (ExtractionException e) {
-                throw new IOException("Error happened while parsing the document; "+documentSource.getDocumentURI(), e);
+                Repository store = new SailRepository(new MemoryStore());
+                store.initialize();
+                connection = store.getConnection();
+
+                DocumentSource reader = new ByteArrayDocumentSource(is, baseURI.toString(), null);
+                writer = new ReportingTripleHandler(new RepositoryWriter(connection));
+
+                runner.extract(reader, writer);
+
+                retVal = QueryResults.asModel(connection.getStatements(null, null, null));
             }
             finally {
-                try {
-                    handler.close();
+                if (connection!=null) {
+                    connection.close();
                 }
-                catch (TripleHandlerException e) {
-                    throw new IOException("Error happened while closing the triple writer", e);
+                if (writer!=null) {
+                    writer.close();
                 }
-            }
-
-            try (InputStream decodedInput = new ByteArrayInputStream(os.toByteArray());) {
-                model.read(decodedInput, source.getSourceAddress().toString(), "N-TRIPLE");
             }
         }
+        catch (Exception e) {
+            throw new IOException("Error happened while parsing the document; " + baseURI, e);
+        }
+
+        if (retVal!=null) {
+            retVal = this.filterRelevantNodes(retVal, baseURI);
+        }
+
+        return retVal;
     }
     private String translateFormat(Format inputFormat) throws IOException
     {
         switch (inputFormat) {
             case RDFA:
                 return RDFa11ExtractorFactory.NAME;
+            case JSONLD:
+                return JSONLDExtractorFactory.NAME;
+            case NTRIPLES:
+                return NTriplesExtractorFactory.NAME;
             default:
-                throw new IOException("Unsupported importer format detected; "+inputFormat);
+                throw new IOException("Unsupported importer format detected; " + inputFormat);
         }
     }
 }

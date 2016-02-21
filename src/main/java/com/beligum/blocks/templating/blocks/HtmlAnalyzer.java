@@ -3,9 +3,9 @@ package com.beligum.blocks.templating.blocks;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.rdf.sources.HtmlSource;
+import com.google.common.collect.ImmutableSet;
 import net.htmlparser.jericho.*;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.jena.ext.com.google.common.collect.ImmutableSet;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,7 +46,7 @@ public class HtmlAnalyzer
     private String title;
 
     //-----CONSTRUCTORS-----
-    public HtmlAnalyzer(HtmlSource htmlSource, boolean prettyPrint) throws IOException
+    public HtmlAnalyzer(HtmlSource htmlSource) throws IOException
     {
         this.allTagTemplates = HtmlParser.getTemplateCache();
 
@@ -54,7 +54,7 @@ public class HtmlAnalyzer
         this.externalRefs = new HashMap<>();
         this.title = null;
 
-        this.analyze(htmlSource, prettyPrint);
+        this.analyze(htmlSource);
     }
 
     //-----PUBLIC METHODS-----
@@ -95,10 +95,9 @@ public class HtmlAnalyzer
      * to be retrieved later on by the getters below.
      *
      * @param htmlSource
-     * @param prettyPrint
      * @throws IOException
      */
-    private void analyze(HtmlSource htmlSource, boolean prettyPrint) throws IOException
+    private void analyze(HtmlSource htmlSource) throws IOException
     {
         try (InputStream is = htmlSource.openNewInputStream()) {
             this.htmlDocument = new Source(is);
@@ -159,14 +158,12 @@ public class HtmlAnalyzer
         }
         outputHtml.append(this.instantiateTemplateEndTag(currentTemplate));
 
-        this.normalizedHtml = outputHtml.toString();
-        if (prettyPrint) {
-            SourceFormatter formatter = new SourceFormatter(new Source(this.normalizedHtml));
-            formatter.setCollapseWhiteSpace(true);
-            formatter.setIndentString("    ");
-            formatter.setNewLine("\n");
-            this.normalizedHtml = formatter.toString();
-        }
+        //we store the normalized html pretty printed
+        SourceFormatter formatter = new SourceFormatter(new Source(outputHtml.toString()));
+        formatter.setCollapseWhiteSpace(true);
+        formatter.setIndentString("    ");
+        formatter.setNewLine("\n");
+        this.normalizedHtml = formatter.toString();
     }
     /**
      * Analyzes a Jericho node

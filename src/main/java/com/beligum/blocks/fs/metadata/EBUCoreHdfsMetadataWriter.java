@@ -135,7 +135,7 @@ public class EBUCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
         super.updateCreator(creator);
 
         //makes sense to use a relative url, right? (is more update-proof?)
-        String creatorId = RdfTools.createRelativeResourceId(creator.getResourceUriClassName(), "" + creator.getId()).toString();
+        String creatorId = RdfTools.createRelativeResourceId(creator, "" + creator.getId()).toString();
 
         EntityType creatorEntity = null;
         //if we're the first, set us as creator
