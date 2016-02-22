@@ -12,12 +12,13 @@ import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -32,14 +33,14 @@ public class ElasticSearch
 
     private ElasticSearch()
     {
-        if (Settings.instance().getElasticSearchLaunchEmbedded()) {
-            this.client = this.getEmbeddedNode().client();
-        }
-        else {
-            this.client = this.buildRemoteClient();
-        }
-
         try {
+            if (Settings.instance().getElasticSearchLaunchEmbedded()) {
+                this.client = this.getEmbeddedNode().client();
+            }
+            else {
+                this.client = this.buildRemoteClient();
+            }
+
             init();
         }
         catch (IOException e) {
@@ -139,7 +140,7 @@ public class ElasticSearch
 
         return esNode;
     }
-    private Client buildRemoteClient()
+    private Client buildRemoteClient() throws IOException
     {
         Map params = new HashMap();
         params.put("cluster.name", Settings.instance().getElasticSearchClusterName());
@@ -151,11 +152,16 @@ public class ElasticSearch
             }
         }
 
-        org.elasticsearch.common.settings.Settings settings = ImmutableSettings.settingsBuilder().put(params).build();
+        org.elasticsearch.common.settings.Settings settings = org.elasticsearch.common.settings.Settings.settingsBuilder().put(params).build();
         String hostname = Settings.instance().getElasticSearchHostName();
         Integer port = Settings.instance().getElasticSearchPort();
 
-        return new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(hostname, port));
+        try {
+            return TransportClient.builder().settings(settings).build().addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(hostname), port));
+        }
+        catch (UnknownHostException e) {
+            throw new IOException(e);
+        }
     }
     private BulkRequestBuilder getBulkFromCache()
     {

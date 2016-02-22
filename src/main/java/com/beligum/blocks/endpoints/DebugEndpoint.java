@@ -1,19 +1,11 @@
 package com.beligum.blocks.endpoints;
 
 import com.beligum.blocks.security.Permissions;
-import org.apache.lucene.document.Document;
 import org.apache.shiro.authz.annotation.RequiresRoles;
-import org.hibernate.annotations.common.reflection.ReflectionManager;
-import org.hibernate.annotations.common.reflection.XClass;
-import org.hibernate.search.cfg.spi.SearchConfiguration;
-import org.hibernate.search.engine.integration.impl.ExtendedSearchIntegrator;
 
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 
 @Path("debug")
 @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
@@ -128,44 +120,6 @@ public class DebugEndpoint
 //        }
 
         return Response.ok().build();
-    }
-    //See org.hibernate.search.spi.SearchFactoryBuilder.initDocumentBuilders()
-    private Document getDocumentBuilderFor(ExtendedSearchIntegrator searchIntegrator, Class<?> clazz)
-    {
-
-
-//        TypeMetadata typeMetadata = metadataProvider.getTypeMetadataFor(mappedClass);
-//        final DocumentBuilderIndexedEntity<?> documentBuilder =
-//                        new DocumentBuilderIndexedEntity(
-//                                        mappedXClass,
-//                                        typeMetadata,
-//                                        configContext,
-//                                        searchConfiguration.getReflectionManager(),
-//                                        optimizationBlackListedTypes,
-//                                        searchConfiguration.getInstanceInitializer()
-//                        );
-
-        return null;
-    }
-    /**
-     * prepares XClasses from configuration
-     */
-    private static Map<XClass, Class<?>> initializeClassMappings(SearchConfiguration cfg, ReflectionManager reflectionManager) {
-        Iterator<Class<?>> iter = cfg.getClassMappings();
-        Map<XClass, Class<?>> map = new HashMap<XClass, Class<?>>();
-        while ( iter.hasNext() ) {
-            Class<?> mappedClass = iter.next();
-            if ( mappedClass == null ) {
-                continue;
-            }
-
-            XClass mappedXClass = reflectionManager.toXClass( mappedClass );
-            if ( mappedXClass == null ) {
-                continue;
-            }
-            map.put( mappedXClass, mappedClass );
-        }
-        return map;
     }
 
 

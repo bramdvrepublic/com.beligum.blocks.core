@@ -1,9 +1,6 @@
 package com.beligum.blocks.fs.index.entries;
 
-import org.hibernate.search.annotations.Analyze;
-import org.hibernate.search.annotations.Field;
-import org.hibernate.search.annotations.Index;
-import org.hibernate.search.annotations.Store;
+import org.apache.lucene.index.Term;
 
 import java.net.URI;
 
@@ -13,6 +10,10 @@ import java.net.URI;
 public abstract class AbstractIndexEntry implements IndexEntry
 {
     //-----CONSTANTS-----
+    public enum Field
+    {
+        id
+    }
 
     //-----VARIABLES-----
     protected URI id;
@@ -23,9 +24,17 @@ public abstract class AbstractIndexEntry implements IndexEntry
         this.id = id;
     }
 
+    //-----STATIC METHODS-----
+    public static Term toLuceneId(URI id)
+    {
+        return new Term(Field.id.name(), id.toString());
+    }
+    public static Term toLuceneId(IndexEntry indexEntry)
+    {
+        return new Term(Field.id.name(), indexEntry.getId().toString());
+    }
+
     //-----PUBLIC METHODS-----
-    //Note that eg. infinispan doesn't use the @DocumentId annotation (the id is the key)
-    @Field(index = Index.YES, analyze = Analyze.NO, store = Store.YES)
     public URI getId()
     {
         return id;

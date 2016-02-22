@@ -3,6 +3,7 @@ package com.beligum.blocks.rdf.importers;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.Source;
+import com.beligum.blocks.rdf.importers.semargl.SesameRDFaParser;
 import org.openrdf.model.Model;
 import org.openrdf.model.impl.LinkedHashModel;
 import org.openrdf.rio.*;
@@ -58,7 +59,17 @@ public class SesameImporter extends AbstractImporter
     //-----PRIVATE METHODS-----
     private Model parseInputStream(InputStream is, URI baseURI) throws IOException, RDFParseException, RDFHandlerException
     {
-        RDFParser parser = Rio.createParser(this.translateFormat(this.inputFormat));
+        // we needed to re-implement the SesameRDFaParser to make it work with Sesame 4;
+        // so make an exception if we're using RDFa (so we don't have to create a service loader)
+        RDFParser parser = null;
+        if (this.inputFormat==Format.RDFA) {
+            parser = new SesameRDFaParser();
+        }
+        else {
+            parser = Rio.createParser(this.translateFormat(this.inputFormat));
+        }
+
+        //give ourself a chance to set custom settings
         configureParser(parser, this.inputFormat);
 
         Model model = new LinkedHashModel();

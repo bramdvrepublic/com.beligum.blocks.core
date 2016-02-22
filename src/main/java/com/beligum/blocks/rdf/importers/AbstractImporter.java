@@ -2,10 +2,8 @@ package com.beligum.blocks.rdf.importers;
 
 import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.Importer;
-import org.apache.any23.vocab.XHTML;
 import org.openrdf.model.Model;
 import org.openrdf.model.Statement;
-import org.openrdf.model.impl.ValueFactoryImpl;
 
 import java.net.URI;
 import java.util.Iterator;
@@ -16,6 +14,11 @@ import java.util.Iterator;
 public abstract class AbstractImporter implements Importer
 {
     //-----CONSTANTS-----
+    //See https://www.w3.org/2011/rdfa-context/xhtml-rdfa-1.1
+    public static final String XHTML_NS = "http://www.w3.org/1999/xhtml/vocab#";
+    public static final String XHTML_NS_ALTERNATE = XHTML_NS+"alternate";
+    public static final String XHTML_NS_ICON = XHTML_NS+"icon";
+    public static final String XHTML_NS_STYLESHEET = XHTML_NS+"stylesheet";
 
     //-----VARIABLES-----
     protected final Format inputFormat;
@@ -48,23 +51,26 @@ public abstract class AbstractImporter implements Importer
         final boolean IGNORE_FAVICON = true;
         final boolean DOCBASE_ONLY = false;
 
-        final org.openrdf.model.URI XHTML_ICON = ValueFactoryImpl.getInstance().createURI(XHTML.getInstance().NS, "icon");;
         String documentBaseUriStr = documentBaseUri.toString();
         Iterator<Statement> iter = model.iterator();
         while (iter.hasNext()) {
             Statement stmt = iter.next();
 
             //remove all the XHTML stylesheets predicates from the model
-            if (IGNORE_STYLESHEETS && stmt.getPredicate().toString().equals(XHTML.getInstance().stylesheet.toString())) {
+            boolean removed = false;
+            if (!removed && IGNORE_STYLESHEETS && stmt.getPredicate().toString().equals(XHTML_NS_STYLESHEET)) {
                 iter.remove();
+                removed = true;
             }
             //removes all favicon statements. Note that this last check isn't waterproof (we can use any name for our favicons), but it works 99% of the time
-            if (IGNORE_FAVICON && stmt.getPredicate().equals(XHTML_ICON) && stmt.getObject().toString().contains("favicon")) {
+            if (!removed && IGNORE_FAVICON && stmt.getPredicate().toString().equals(XHTML_NS_ICON) && stmt.getObject().toString().contains("favicon")) {
                 iter.remove();
+                removed = true;
             }
             //remove all non-documentBaseUri subjects from the model
-            if (DOCBASE_ONLY && !stmt.getSubject().toString().equals(documentBaseUriStr)) {
+            if (!removed && DOCBASE_ONLY && !stmt.getSubject().toString().equals(documentBaseUriStr)) {
                 iter.remove();
+                removed = true;
             }
         }
 

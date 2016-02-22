@@ -42,7 +42,7 @@ public class BreadcrumbController extends DefaultTemplateController
             PageIndexEntry p = conn.get(requestedUri);
             while (p != null) {
                 retVal.put(p.getId(), p.getTitle());
-                p = p.getParent() != null ? conn.get(p.getParent()) : null;
+                p = p.getParent() != null ? conn.get(URI.create(p.getParent())) : null;
             }
         }
         catch (Exception e) {

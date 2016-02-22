@@ -9,10 +9,6 @@ import java.net.URI;
 public interface IndexEntry extends Serializable
 {
     //-----CONSTANTS-----
-    /**
-     * Note: sync this with the name of the getter (getId()) below, if it would ever change
-     */
-    String ID_FIELD_NAME = "id";
 
     //-----VARIABLES-----
 

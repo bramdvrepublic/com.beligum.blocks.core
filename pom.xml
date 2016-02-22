@@ -23,9 +23,10 @@
         <avro.version>1.7.7</avro.version>
         <jena.version>3.0.1</jena.version>
         <sesame.version>4.1.0</sesame.version>
+        <semargl.version>0.6.1</semargl.version>
 
-        <!--sync this with hibernate search -->
-        <lucene.version>5.3.0</lucene.version>
+        <!--sync this with sesame -->
+        <lucene.version>5.1.0</lucene.version>
 
         <!-- Sync these two using https://github.com/infinispan/infinispan/blob/8.1.x/parent/pom.xml -->
         <version.infinispan>8.1.1.Final</version.infinispan>
@@ -125,54 +126,65 @@
             <version>18.0</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-core</artifactId>
+            <version>${lucene.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-analyzers-common</artifactId>
+            <version>${lucene.version}</version>
+        </dependency>
         <!--<dependency>-->
-            <!--<groupId>org.apache.jena</groupId>-->
-            <!--<artifactId>jena-arq</artifactId>-->
-            <!--<version>${jena.version}</version>-->
-            <!--<exclusions>-->
-                <!--<exclusion>-->
-                    <!--<groupId>org.slf4j</groupId>-->
-                    <!--<artifactId>slf4j-log4j12</artifactId>-->
-                <!--</exclusion>-->
-            <!--</exclusions>-->
+            <!--<groupId>org.apache.lucene</groupId>-->
+            <!--<artifactId>lucene-codecs</artifactId>-->
+            <!--<version>${lucene.version}</version>-->
         <!--</dependency>-->
         <!--<dependency>-->
-            <!--<groupId>org.apache.jena</groupId>-->
-            <!--<artifactId>jena-tdb</artifactId>-->
-            <!--<version>${jena.version}</version>-->
-            <!--<exclusions>-->
-                <!--<exclusion>-->
-                    <!--<groupId>org.slf4j</groupId>-->
-                    <!--<artifactId>slf4j-log4j12</artifactId>-->
-                <!--</exclusion>-->
-            <!--</exclusions>-->
+            <!--<groupId>org.apache.lucene</groupId>-->
+            <!--<artifactId>lucene-queries</artifactId>-->
+            <!--<version>${lucene.version}</version>-->
         <!--</dependency>-->
         <!--<dependency>-->
-            <!--<groupId>org.apache.jena</groupId>-->
-            <!--<artifactId>jena-querybuilder</artifactId>-->
-            <!--<version>${jena.version}</version>-->
-            <!--<exclusions>-->
-                <!--<exclusion>-->
-                    <!--<groupId>org.slf4j</groupId>-->
-                    <!--<artifactId>slf4j-log4j12</artifactId>-->
-                <!--</exclusion>-->
-            <!--</exclusions>-->
+            <!--<groupId>org.apache.lucene</groupId>-->
+            <!--<artifactId>lucene-memory</artifactId>-->
+            <!--<version>${lucene.version}</version>-->
         <!--</dependency>-->
         <!--<dependency>-->
-            <!--<groupId>org.apache.jena</groupId>-->
-            <!--<artifactId>jena-text</artifactId>-->
-            <!--<version>${jena.version}</version>-->
-            <!--<exclusions>-->
-                <!--<exclusion>-->
-                    <!--<groupId>org.slf4j</groupId>-->
-                    <!--<artifactId>slf4j-log4j12</artifactId>-->
-                <!--</exclusion>-->
-            <!--</exclusions>-->
+            <!--<groupId>org.apache.lucene</groupId>-->
+            <!--<artifactId>lucene-highlighter</artifactId>-->
+            <!--<version>${lucene.version}</version>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+            <!--<groupId>org.apache.lucene</groupId>-->
+            <!--<artifactId>lucene-queryparser</artifactId>-->
+            <!--<version>${lucene.version}</version>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+            <!--<groupId>org.apache.lucene</groupId>-->
+            <!--<artifactId>lucene-suggest</artifactId>-->
+            <!--<version>${lucene.version}</version>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+            <!--<groupId>org.apache.lucene</groupId>-->
+            <!--<artifactId>lucene-join</artifactId>-->
+            <!--<version>${lucene.version}</version>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+            <!--<groupId>org.apache.lucene</groupId>-->
+            <!--<artifactId>lucene-spatial</artifactId>-->
+            <!--<version>${lucene.version}</version>-->
         <!--</dependency>-->
 
         <dependency>
             <groupId>org.openrdf.sesame</groupId>
             <artifactId>sesame-runtime</artifactId>
+            <version>${sesame.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openrdf.sesame</groupId>
+            <artifactId>sesame-model</artifactId>
             <version>${sesame.version}</version>
         </dependency>
         <dependency>
@@ -183,6 +195,11 @@
         <dependency>
             <groupId>org.openrdf.sesame</groupId>
             <artifactId>sesame-repository-sail</artifactId>
+            <version>${sesame.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openrdf.sesame</groupId>
+            <artifactId>sesame-sail-memory</artifactId>
             <version>${sesame.version}</version>
         </dependency>
         <dependency>
@@ -198,27 +215,89 @@
         </dependency>
         <dependency>
             <groupId>org.openrdf.sesame</groupId>
-            <artifactId>sesame-rio-ntriples</artifactId>
+            <artifactId>sesame-rio-turtle</artifactId>
             <version>${sesame.version}</version>
         </dependency>
         <dependency>
             <groupId>org.openrdf.sesame</groupId>
-            <artifactId>sesame-sail-lucene</artifactId>
+            <artifactId>sesame-rio-rdfxml</artifactId>
             <version>${sesame.version}</version>
         </dependency>
-
         <dependency>
-            <groupId>org.apache.any23</groupId>
-            <artifactId>apache-any23-core</artifactId>
-            <version>1.1</version>
-            <exclusions>
-                <exclusion>
-                    <!-- This one doesn't seem to exist?? -->
-                    <groupId>org.apache.commons</groupId>
-                    <artifactId>commons-csv</artifactId>
-                    <!--<version>1.0-SNAPSHOT-rev1148315</version>-->
-                </exclusion>
-            </exclusions>
+            <groupId>org.openrdf.sesame</groupId>
+            <artifactId>sesame-rio-ntriples</artifactId>
+            <version>${sesame.version}</version>
+        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.openrdf.sesame</groupId>-->
+            <!--<artifactId>sesame-sail-lucene</artifactId>-->
+            <!--<version>${sesame.version}</version>-->
+            <!--&lt;!&ndash;<exclusions>&ndash;&gt;-->
+                <!--&lt;!&ndash;<exclusion>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<groupId>org.apache.lucene</groupId>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<artifactId>lucene-core</artifactId>&ndash;&gt;-->
+                <!--&lt;!&ndash;</exclusion>&ndash;&gt;-->
+                <!--&lt;!&ndash;<exclusion>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<groupId>org.apache.lucene</groupId>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<artifactId>lucene-analyzers-common</artifactId>&ndash;&gt;-->
+                <!--&lt;!&ndash;</exclusion>&ndash;&gt;-->
+                <!--&lt;!&ndash;<exclusion>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<groupId>org.apache.lucene</groupId>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<artifactId>lucene-codecs</artifactId>&ndash;&gt;-->
+                <!--&lt;!&ndash;</exclusion>&ndash;&gt;-->
+                <!--&lt;!&ndash;<exclusion>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<groupId>org.apache.lucene</groupId>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<artifactId>lucene-queries</artifactId>&ndash;&gt;-->
+                <!--&lt;!&ndash;</exclusion>&ndash;&gt;-->
+                <!--&lt;!&ndash;<exclusion>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<groupId>org.apache.lucene</groupId>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<artifactId>lucene-memory</artifactId>&ndash;&gt;-->
+                <!--&lt;!&ndash;</exclusion>&ndash;&gt;-->
+                <!--&lt;!&ndash;<exclusion>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<groupId>org.apache.lucene</groupId>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<artifactId>lucene-highlighter</artifactId>&ndash;&gt;-->
+                <!--&lt;!&ndash;</exclusion>&ndash;&gt;-->
+                <!--&lt;!&ndash;<exclusion>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<groupId>org.apache.lucene</groupId>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<artifactId>lucene-queryparser</artifactId>&ndash;&gt;-->
+                <!--&lt;!&ndash;</exclusion>&ndash;&gt;-->
+                <!--&lt;!&ndash;<exclusion>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<groupId>org.apache.lucene</groupId>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<artifactId>lucene-sandbox</artifactId>&ndash;&gt;-->
+                <!--&lt;!&ndash;</exclusion>&ndash;&gt;-->
+                <!--&lt;!&ndash;&lt;!&ndash; gets pulled in from infinispan query and crashes if not there &ndash;&gt;&ndash;&gt;-->
+                <!--&lt;!&ndash;&lt;!&ndash;<exclusion>&ndash;&gt;&ndash;&gt;-->
+                <!--&lt;!&ndash;&lt;!&ndash;<groupId>org.apache.lucene</groupId>&ndash;&gt;&ndash;&gt;-->
+                <!--&lt;!&ndash;&lt;!&ndash;<artifactId>lucene-suggest</artifactId>&ndash;&gt;&ndash;&gt;-->
+                <!--&lt;!&ndash;&lt;!&ndash;</exclusion>&ndash;&gt;&ndash;&gt;-->
+                <!--&lt;!&ndash;<exclusion>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<groupId>org.apache.lucene</groupId>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<artifactId>lucene-misc</artifactId>&ndash;&gt;-->
+                <!--&lt;!&ndash;</exclusion>&ndash;&gt;-->
+                <!--&lt;!&ndash;<exclusion>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<groupId>org.apache.lucene</groupId>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<artifactId>lucene-join</artifactId>&ndash;&gt;-->
+                <!--&lt;!&ndash;</exclusion>&ndash;&gt;-->
+                <!--&lt;!&ndash;<exclusion>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<groupId>org.apache.lucene</groupId>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<artifactId>lucene-grouping</artifactId>&ndash;&gt;-->
+                <!--&lt;!&ndash;</exclusion>&ndash;&gt;-->
+                <!--&lt;!&ndash;<exclusion>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<groupId>org.apache.lucene</groupId>&ndash;&gt;-->
+                    <!--&lt;!&ndash;<artifactId>lucene-spatial</artifactId>&ndash;&gt;-->
+                <!--&lt;!&ndash;</exclusion>&ndash;&gt;-->
+            <!--&lt;!&ndash;</exclusions>&ndash;&gt;-->
+        <!--</dependency>-->
+        <!-- For rdfa parsing; replaces semargl-sesame (together with code in com.beligum.blocks.rdf.importers.semargl) -->
+        <dependency>
+            <groupId>org.semarglproject</groupId>
+            <artifactId>semargl-core</artifactId>
+            <version>${semargl.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.semarglproject</groupId>
+            <artifactId>semargl-rdfa</artifactId>
+            <version>${semargl.version}</version>
         </dependency>
 
         <dependency>
@@ -432,26 +511,6 @@
             <artifactId>avro</artifactId>
             <version>${avro.version}</version>
         </dependency>
-        <!--<dependency>-->
-        <!--<groupId>org.apache.avro</groupId>-->
-        <!--<artifactId>avro-maven-plugin</artifactId>-->
-        <!--<version>${avro.version}</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.avro</groupId>-->
-        <!--<artifactId>avro-compiler</artifactId>-->
-        <!--<version>${avro.version}</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.avro</groupId>-->
-        <!--<artifactId>avro-ipc</artifactId>-->
-        <!--<version>${avro.version}</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.avro</groupId>-->
-        <!--<artifactId>avro-mapred</artifactId>-->
-        <!--<version>${avro.version}</version>-->
-        <!--</dependency>-->
 
         <dependency>
             <!--
@@ -471,173 +530,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.infinispan</groupId>
-            <artifactId>infinispan-embedded</artifactId>
-            <version>${version.infinispan}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.infinispan</groupId>
-            <artifactId>infinispan-embedded-query</artifactId>
-            <version>${version.infinispan}</version>
-        </dependency>
-
-        <!-- See https://github.com/infinispan/infinispan/blob/8.1.x/parent/pom.xml -->
-        <dependency>
-            <groupId>org.jboss.narayana.jta</groupId>
-            <artifactId>narayana-jta</artifactId>
-            <version>${version.jbossjta}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>commons-httpclient</artifactId>
-                    <groupId>commons-httpclient</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>ironjacamar-spec-api</artifactId>
-                    <groupId>org.jboss.ironjacamar</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jbogging-spi</artifactId>
-                    <groupId>org.jboss.logging</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jboss-logging</artifactId>
-                    <groupId>org.jboss.logging</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jboss-logging-processor</artifactId>
-                    <groupId>org.jboss.logging</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jboss-logging-generator</artifactId>
-                    <groupId>org.jboss.logging</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jbossws-native-core</artifactId>
-                    <groupId>org.jboss.ws.native</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>emma</artifactId>
-                    <groupId>emma</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>emma_ant</artifactId>
-                    <groupId>emma</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>hornetq-core</artifactId>
-                    <groupId>org.hornetq</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>netty</artifactId>
-                    <groupId>io.netty</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>wrapper</artifactId>
-                    <groupId>tanukisoft</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jacorb</artifactId>
-                    <groupId>jacorb</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jfreechart</artifactId>
-                    <groupId>jfree</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jboss-corba-ots-spi</artifactId>
-                    <groupId>org.jboss.integration</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jboss-server-manager</artifactId>
-                    <groupId>org.jboss.jbossas</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jboss-ejb-api_3.1_spec</artifactId>
-                    <groupId>org.jboss.spec.javax.ejb</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jnp-client</artifactId>
-                    <groupId>org.jboss.naming</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jboss-servlet-api_3.0_spec</artifactId>
-                    <groupId>org.jboss.spec.javax.servlet</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jbossws-common</artifactId>
-                    <groupId>org.jboss.ws</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jcl-over-slf4j</artifactId>
-                    <groupId>org.slf4j</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>stax-api</artifactId>
-                    <groupId>stax</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>idl</artifactId>
-                    <groupId>jacorb</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jboss-logging-tools</artifactId>
-                    <groupId>org.jboss.logging</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jboss-connector-api_1.5_spec</artifactId>
-                    <groupId>org.jboss.spec.javax.resource</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jboss-remoting</artifactId>
-                    <groupId>org.jboss.remoting</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>slf4j-api</artifactId>
-                    <groupId>org.slf4j</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>dom4j</artifactId>
-                    <groupId>dom4j</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>commons-codec</artifactId>
-                    <groupId>commons-codec</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jboss-logmanager</artifactId>
-                    <groupId>org.jboss.logmanager</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>hibernate-jpa-2.0-api</artifactId>
-                    <groupId>org.hibernate.javax.persistence</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>commons-logging</artifactId>
-                    <groupId>commons-logging</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jcommon</artifactId>
-                    <groupId>jfree</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jboss-transaction-api_1.1_spec</artifactId>
-                    <groupId>org.jboss.spec.javax.transaction</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>byteman</artifactId>
-                    <groupId>org.jboss.byteman</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>byteman-submit</artifactId>
-                    <groupId>org.jboss.byteman</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
-            <version>1.5.2</version>
+            <version>2.0.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.lucene</groupId>
@@ -646,6 +541,10 @@
                 <exclusion>
                     <groupId>org.apache.lucene</groupId>
                     <artifactId>lucene-analyzers-common</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.lucene</groupId>
+                    <artifactId>lucene-codecs</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.apache.lucene</groupId>

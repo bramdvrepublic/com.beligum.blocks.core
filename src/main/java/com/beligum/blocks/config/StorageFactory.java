@@ -5,7 +5,7 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.fs.hdfs.TransactionalRawLocalFS;
 import com.beligum.blocks.fs.hdfs.TransactionalRawLocalFileSystem;
-import com.beligum.blocks.fs.index.InfinispanPageIndexer;
+import com.beligum.blocks.fs.index.LucenePageIndexer;
 import com.beligum.blocks.fs.index.SesamePageIndexer;
 import com.beligum.blocks.fs.index.ifaces.Indexer;
 import com.beligum.blocks.fs.index.ifaces.PageIndexer;
@@ -60,7 +60,7 @@ public class StorageFactory
     public static PageIndexer getMainPageIndexer() throws IOException
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.MAIN_PAGE_INDEX)) {
-            Indexer indexer = new InfinispanPageIndexer();
+            Indexer indexer = new LucenePageIndexer();
             getIndexerRegistry().add(indexer);
             R.cacheManager().getApplicationCache().put(CacheKeys.MAIN_PAGE_INDEX, indexer);
         }
