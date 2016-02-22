@@ -157,10 +157,12 @@ public class LucenePageIndexer implements PageIndexer, PageIndexConnection
 
         FileContext fc = page.getResourcePath().getFileContext();
         URI pageAddress = page.buildAddress();
+
         PageIndexEntry entry = new PageIndexEntry(pageAddress);
         entry.setResource(htmlAnalyzer.getHtmlResource() == null ? null : htmlAnalyzer.getHtmlResource().value);
         entry.setLanguage(htmlAnalyzer.getHtmlLanguage() == null ? null : htmlAnalyzer.getHtmlLanguage().getLanguage());
-        entry.setParent(this.getParentUri(pageAddress, fc).toString());
+        URI parent = this.getParentUri(pageAddress, fc);
+        entry.setParent(parent == null ? null : parent.toString());
         entry.setTitle(htmlAnalyzer.getTitle());
 
         return entry;
@@ -222,25 +224,25 @@ public class LucenePageIndexer implements PageIndexer, PageIndexConnection
     }
     private IndexReader getLuceneIndexReader() throws IOException
     {
-        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_READER)) {
+        //if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_READER)) {
             //make sure the basic structure to read stuff exists
             try (IndexWriter writer = getNewLuceneIndexWriter()) {}
 
             IndexReader reader = DirectoryReader.open(FSDirectory.open(Settings.instance().getPageMainIndexFolder().toPath()));
+        return reader;
+        //R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_READER, reader);
+        //}
 
-            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_READER, reader);
-        }
-
-        return (IndexReader) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_READER);
+        //return (IndexReader) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_READER);
     }
     private IndexSearcher getLuceneIndexSearcher() throws IOException
     {
-        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_SEARCHER)) {
+        //if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_SEARCHER)) {
             IndexSearcher searcher = new IndexSearcher(getLuceneIndexReader());
+        return searcher;
+            //R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_SEARCHER, searcher);
+        //}
 
-            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_SEARCHER, searcher);
-        }
-
-        return (IndexSearcher) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_SEARCHER);
+        //return (IndexSearcher) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_SEARCHER);
     }
 }

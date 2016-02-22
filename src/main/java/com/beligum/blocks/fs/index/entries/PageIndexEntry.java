@@ -43,13 +43,20 @@ public class PageIndexEntry extends AbstractIndexEntry
         //      TextField = standard analyzed + indexed
         //      StoredField = not indexed at all
 
-        //this is the id of the entry, not a value
-        //retVal.add(new StringField(Field.id.name(), entry.id.toString(), org.apache.lucene.document.Field.Store.YES));
-
-        retVal.add(new StringField(Field.resource.name(), entry.resource, org.apache.lucene.document.Field.Store.YES));
-        retVal.add(new TextField(Field.title.name(), entry.title, org.apache.lucene.document.Field.Store.YES));
-        retVal.add(new StringField(Field.language.name(), entry.language, org.apache.lucene.document.Field.Store.YES));
-        retVal.add(new StringField(Field.parent.name(), entry.parent, org.apache.lucene.document.Field.Store.YES));
+        //Note: we also need to insert the id of the doc even though it's an index
+        retVal.add(new StringField(AbstractIndexEntry.Field.id.name(), entry.id.toString(), org.apache.lucene.document.Field.Store.YES));
+        if (entry.resource != null) {
+            retVal.add(new StringField(Field.resource.name(), entry.resource, org.apache.lucene.document.Field.Store.YES));
+        }
+        if (entry.title != null) {
+            retVal.add(new TextField(Field.title.name(), entry.title, org.apache.lucene.document.Field.Store.YES));
+        }
+        if (entry.language != null) {
+            retVal.add(new StringField(Field.language.name(), entry.language, org.apache.lucene.document.Field.Store.YES));
+        }
+        if (entry.parent != null) {
+            retVal.add(new StringField(Field.parent.name(), entry.parent, org.apache.lucene.document.Field.Store.YES));
+        }
 
         return retVal;
     }

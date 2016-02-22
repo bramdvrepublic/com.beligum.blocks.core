@@ -86,6 +86,8 @@ public class SesameImporter extends AbstractImporter
         switch (inputFormat) {
             case RDFA:
                 return RDFFormat.RDFA;
+            case NTRIPLES:
+                return RDFFormat.NTRIPLES;
             default:
                 throw new IOException("Unsupported importer format detected; "+inputFormat);
         }

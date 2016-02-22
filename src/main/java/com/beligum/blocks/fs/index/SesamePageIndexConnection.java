@@ -1,14 +1,17 @@
 package com.beligum.blocks.fs.index;
 
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.fs.index.entries.PageIndexEntry;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.pages.ifaces.Page;
-import org.apache.hadoop.fs.FileContext;
+import com.beligum.blocks.rdf.ifaces.Importer;
+import org.openrdf.model.Model;
 import org.openrdf.repository.Repository;
 import org.openrdf.repository.RepositoryConnection;
 import org.openrdf.repository.RepositoryException;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 
 /**
@@ -50,7 +53,15 @@ public class SesamePageIndexConnection implements PageIndexConnection
     @Override
     public void indexPage(Page page) throws IOException
     {
-        FileContext fc = page.getResourcePath().getFileContext();
+        Model model = null;
+
+        Importer rdfImporter = page.createImporter(page.getRdfExportFileFormat());
+        try (InputStream is = page.getResourcePath().getFileContext().open(page.getRdfExportFile())) {
+            model = rdfImporter.importDocument(is, page.buildAddress());
+        }
+
+        Logger.info("done");
+
         //
         //        //note: we can't re-use the Sesame-based page importer here, because sesame expects the stored N-Triples
         //        // to be ASCII, while Jena (our default exporter) exports them as UTF-8,
