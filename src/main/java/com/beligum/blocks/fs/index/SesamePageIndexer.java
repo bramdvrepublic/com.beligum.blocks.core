@@ -7,8 +7,10 @@ import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexer;
 import org.openrdf.repository.RepositoryException;
 import org.openrdf.repository.sail.SailRepository;
+import org.openrdf.sail.lucene.LuceneSail;
 import org.openrdf.sail.nativerdf.NativeStore;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -21,6 +23,8 @@ import java.io.IOException;
 public class SesamePageIndexer implements PageIndexer
 {
     //-----CONSTANTS-----
+    private static final String DATA_SUBDIR = "data";
+    private static final String INDEX_SUBDIR = "index";
 
     //-----VARIABLES-----
     private Object repositoryLock;
@@ -59,10 +63,21 @@ public class SesamePageIndexer implements PageIndexer
             if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRIPLESTORE_ENGINE)) {
 
                 try {
-                    SailRepository repo = new SailRepository(new NativeStore(Settings.instance().getPageTripleStoreFolder()));
-                    repo.initialize();
+                    //create the repository for the linked data
+                    NativeStore dataRepo = new NativeStore(new File(Settings.instance().getPageTripleStoreFolder(), DATA_SUBDIR));
 
-                    R.cacheManager().getApplicationCache().put(CacheKeys.TRIPLESTORE_ENGINE, repo);
+                    //create the repository for the lucene index
+                    LuceneSail indexRepo = new LuceneSail();
+                    indexRepo.setParameter(LuceneSail.LUCENE_DIR_KEY, new File(Settings.instance().getPageTripleStoreFolder(), SesamePageIndexer.INDEX_SUBDIR).getAbsolutePath());
+
+                    //link both together
+                    indexRepo.setBaseSail(dataRepo);
+
+                    //build and init the main, wrapped repository
+                    SailRepository mainRepo = new SailRepository(indexRepo);
+                    mainRepo.initialize();
+
+                    R.cacheManager().getApplicationCache().put(CacheKeys.TRIPLESTORE_ENGINE, mainRepo);
                 }
                 catch (RepositoryException e) {
                     throw new IOException("Error while initializing the sesame page indexer", e);
