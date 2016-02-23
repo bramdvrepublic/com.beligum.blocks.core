@@ -24,8 +24,6 @@ import org.xadisk.bridge.proxies.interfaces.XAFileSystemProxy;
 import org.xadisk.bridge.proxies.interfaces.XASession;
 import org.xadisk.filesystem.standalone.StandaloneFileSystemConfiguration;
 
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashSet;
@@ -101,22 +99,18 @@ public class StorageFactory
     public static RequestTX getCurrentRequestTx() throws IOException
     {
         //Sync this with the release filter code
-        if (!R.cacheManager().getRequestCache().containsKey(CacheKeys.XADISK_REQUEST_TRANSACTION)) {
+        if (!R.cacheManager().getRequestCache().containsKey(CacheKeys.REQUEST_TRANSACTION)) {
             try {
-                TransactionManager transactionManager = new com.atomikos.icatch.jta.UserTransactionManager();
-                transactionManager.begin();
-                Transaction transaction = transactionManager.getTransaction();
+                RequestTX cacheEntry = new RequestTX(new com.atomikos.icatch.jta.UserTransactionManager());
 
-                RequestTX cacheEntry = new RequestTX(transaction);
-
-                R.cacheManager().getRequestCache().put(CacheKeys.XADISK_REQUEST_TRANSACTION, cacheEntry);
+                R.cacheManager().getRequestCache().put(CacheKeys.REQUEST_TRANSACTION, cacheEntry);
             }
             catch (Exception e) {
                 throw new IOException("Exception caught while booting up a request transaction; "+R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
             }
         }
 
-        return (RequestTX) R.cacheManager().getRequestCache().get(CacheKeys.XADISK_REQUEST_TRANSACTION);
+        return (RequestTX) R.cacheManager().getRequestCache().get(CacheKeys.REQUEST_TRANSACTION);
     }
     public static XASession getCurrentRequestXDiskTx() throws IOException
     {

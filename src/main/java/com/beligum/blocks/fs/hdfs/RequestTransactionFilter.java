@@ -19,7 +19,7 @@ import java.io.IOException;
  */
 @Provider
 @Priority(Priorities.USER)
-public class XADiskTransactionFilter implements ContainerResponseFilter
+public class RequestTransactionFilter implements ContainerResponseFilter
 {
     //-----CONSTANTS-----
 
@@ -31,7 +31,7 @@ public class XADiskTransactionFilter implements ContainerResponseFilter
     @Override
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) throws IOException
     {
-        RequestTX tx = (RequestTX) R.cacheManager().getRequestCache().get(CacheKeys.XADISK_REQUEST_TRANSACTION);
+        RequestTX tx = (RequestTX) R.cacheManager().getRequestCache().get(CacheKeys.REQUEST_TRANSACTION);
         if (tx != null) {
             try {
                 if (responseContext.getStatus() >= Response.Status.BAD_REQUEST.getStatusCode()) {
@@ -69,8 +69,9 @@ public class XADiskTransactionFilter implements ContainerResponseFilter
                 throw new IOException("Exception caught while processing a file system transaction; this is bad", e);
             }
             finally {
+                tx.close();
                 //make sure we only do this once
-                R.cacheManager().getRequestCache().remove(CacheKeys.XADISK_REQUEST_TRANSACTION);
+                R.cacheManager().getRequestCache().remove(CacheKeys.REQUEST_TRANSACTION);
             }
         }
     }

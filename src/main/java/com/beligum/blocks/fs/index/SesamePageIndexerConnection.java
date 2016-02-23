@@ -10,8 +10,6 @@ import org.openrdf.repository.RepositoryException;
 import org.openrdf.repository.sail.SailRepository;
 import org.openrdf.repository.sail.SailRepositoryConnection;
 
-import javax.transaction.xa.XAException;
-import javax.transaction.xa.Xid;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -25,16 +23,12 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
 
     //-----VARIABLES-----
     private SailRepositoryConnection connection;
-    private Object transactionDummy;
 
     //-----CONSTRUCTORS-----
     public SesamePageIndexerConnection(SailRepository repository) throws IOException
     {
         try {
             this.connection = repository.getConnection();
-            this.connection.begin();
-
-            this.transactionDummy = new Object();
         }
         catch (RepositoryException e) {
             throw new IOException("Error occurred while booting sesame page indexer transaction", e);
@@ -86,62 +80,39 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         //        }
     }
     @Override
-    public void prepareCommit(Xid xid) throws XAException
+    protected void begin() throws IOException
     {
-        if (this.connection != null && this.transactionDummy != null) {
-            try {
-                //Note: see connection.commit() for the nitty-gritty of where I got this from
-                this.connection.getSailConnection().flush();
-                this.connection.getSailConnection().prepare();
-
-                //prevent the transaction from bein used again
-                this.transactionDummy = null;
-            }
-            catch (Exception e) {
-                throw new XAException("Error occurred while preparing a commit for a sesame page indexer transaction; " + (e == null ? null : e.getMessage()));
-            }
+        this.connection.begin();
+    }
+    @Override
+    protected void prepareCommit() throws IOException
+    {
+        if (this.connection != null) {
+            //Note: see connection.commit() for the nitty-gritty of where I got this from
+            this.connection.getSailConnection().flush();
+            this.connection.getSailConnection().prepare();
         }
     }
     @Override
-    public void commit(Xid xid, boolean onePhase) throws XAException
+    protected void commit() throws IOException
     {
-        if (this.connection != null && this.transactionDummy != null) {
-            try {
-                this.connection.getSailConnection().commit();
-                //prevent the transaction from bein used again
-                this.transactionDummy = null;
-            }
-            catch (Exception e) {
-                throw new XAException("Error occurred while committing sesame page indexer transaction; " + (e == null ? null : e.getMessage()));
-            }
+        if (this.connection != null) {
+            this.connection.getSailConnection().commit();
         }
     }
     @Override
-    public void rollback(Xid xid) throws XAException
+    protected void rollback() throws IOException
     {
-        if (this.connection != null && this.transactionDummy != null) {
-            try {
-                this.connection.getSailConnection().rollback();
-                //prevent the transaction from bein used again
-                this.transactionDummy = null;
-            }
-            catch (Exception e) {
-                throw new XAException("Error occurred while rolling back sesame page indexer transaction" + (e == null ? null : e.getMessage()));
-            }
+        if (this.connection != null) {
+            this.connection.getSailConnection().rollback();
         }
     }
     @Override
-    public void close() throws Exception
+    public void close() throws IOException
     {
-        if (this.transactionDummy != null) {
-            this.rollback(null);
-            throw new IOException("Open transaction found while closing infinispan page index connection; rolled back the transaction just to be safe...");
-        }
-        else {
-            if (this.connection != null) {
-                this.connection.close();
-                this.connection = null;
-            }
+        if (this.connection != null) {
+            this.connection.close();
+            this.connection = null;
         }
     }
 

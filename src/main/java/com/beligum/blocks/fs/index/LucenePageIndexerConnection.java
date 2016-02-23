@@ -21,8 +21,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
-import javax.transaction.xa.XAException;
-import javax.transaction.xa.Xid;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -41,7 +39,6 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     //-----CONSTRUCTORS-----
     public LucenePageIndexerConnection() throws IOException
     {
-        this.indexWriter = this.getNewLuceneIndexWriter();
         this.indexLock = new Object();
     }
 
@@ -62,10 +59,13 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     public void delete(Page page) throws IOException
     {
+        this.assertWriter();
     }
     @Override
     public void indexPage(Page page) throws IOException
     {
+        this.assertWriter();
+
         PageIndexEntry indexExtry = this.createEntry(page);
 
         //let's not mix-and-mingle writes (even though the IndexWriter is thread-safe),
@@ -79,37 +79,33 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         }
     }
     @Override
-    public void prepareCommit(Xid xid) throws XAException
+    protected void begin() throws IOException
     {
-        try {
+        //NOOP
+    }
+    @Override
+    protected void prepareCommit() throws IOException
+    {
+        if (this.indexWriter!=null) {
             this.indexWriter.prepareCommit();
         }
-        catch (Exception e) {
-            throw new XAException("Error occurred while preparing a commit for a lucene page indexer transaction; " + (e == null ? null : e.getMessage()));
-        }
     }
     @Override
-    public void commit(Xid xid, boolean onePhase) throws XAException
+    protected void commit() throws IOException
     {
-        try {
+        if (this.indexWriter!=null) {
             this.indexWriter.commit();
         }
-        catch (Exception e) {
-            throw new XAException("Error occurred while committing lucene page indexer transaction; " + (e == null ? null : e.getMessage()));
-        }
     }
     @Override
-    public void rollback(Xid xid) throws XAException
+    protected void rollback() throws IOException
     {
-        try {
+        if (this.indexWriter!=null) {
             this.indexWriter.rollback();
         }
-        catch (Exception e) {
-            throw new XAException("Error occurred while rolling back lucene page indexer transaction" + (e == null ? null : e.getMessage()));
-        }
     }
     @Override
-    public void close() throws Exception
+    public void close() throws IOException
     {
         if (this.indexWriter!=null) {
             this.indexWriter.close();
@@ -227,5 +223,9 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         //}
 
         //return (IndexSearcher) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_SEARCHER);
+    }
+    private void assertWriter() throws IOException
+    {
+        this.indexWriter = this.getNewLuceneIndexWriter();
     }
 }

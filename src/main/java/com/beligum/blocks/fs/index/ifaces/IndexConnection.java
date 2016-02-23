@@ -5,7 +5,7 @@ import javax.transaction.xa.XAResource;
 /**
  * Created by bram on 2/21/16.
  */
-public interface IndexConnection extends AutoCloseable, XAResource
+public interface IndexConnection extends XAResource
 {
     //-----CONSTANTS-----
 

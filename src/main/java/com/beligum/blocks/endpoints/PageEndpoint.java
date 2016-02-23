@@ -10,7 +10,6 @@ import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
-import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.sources.HtmlSource;
 import com.beligum.blocks.rdf.sources.HtmlStringSource;
@@ -178,12 +177,8 @@ public class PageEndpoint
         //above method returns null if nothing changed (so nothing to re-index)
         if (savedPage != null) {
             //Note: transaction handling is done through the global XA transaction
-            try (PageIndexConnection cn = StorageFactory.getMainPageIndexer().connect()) {
-                cn.indexPage(savedPage);
-            }
-            try (PageIndexConnection cn = StorageFactory.getTriplestorePageIndexer().connect()) {
-                cn.indexPage(savedPage);
-            }
+            StorageFactory.getMainPageIndexer().connect().indexPage(savedPage);
+            StorageFactory.getTriplestorePageIndexer().connect().indexPage(savedPage);
         }
 
         return Response.ok().build();
@@ -201,12 +196,8 @@ public class PageEndpoint
         Page deletedPage = StorageFactory.getPageStore().delete(URI.create(uri), new PersonRepository().get(Authentication.getCurrentPrincipal()));
 
         if (deletedPage!=null) {
-            try (PageIndexConnection cn = StorageFactory.getMainPageIndexer().connect()) {
-                cn.delete(deletedPage);
-            }
-            try (PageIndexConnection cn = StorageFactory.getTriplestorePageIndexer().connect()) {
-                cn.delete(deletedPage);
-            }
+            StorageFactory.getMainPageIndexer().connect().delete(deletedPage);
+            StorageFactory.getTriplestorePageIndexer().connect().delete(deletedPage);
         }
 
         return Response.ok().build();
