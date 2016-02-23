@@ -1,6 +1,5 @@
 package com.beligum.blocks.fs.index;
 
-import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexer;
 
@@ -33,9 +32,7 @@ public class LucenePageIndexer implements PageIndexer
     @Override
     public PageIndexConnection connect() throws IOException
     {
-        PageIndexConnection retVal = new LucenePageIndexerConnection();
-        StorageFactory.getCurrentRequestTx().registerResource(retVal);
-        return retVal;
+        return new LucenePageIndexerConnection();
     }
     @Override
     public void shutdown()

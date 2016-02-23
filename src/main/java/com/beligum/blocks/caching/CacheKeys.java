@@ -43,7 +43,9 @@ public enum CacheKeys implements CacheKey
     TRIPLESTORE_PAGE_INDEX,
     //application cache key to store the XAFileSystem
     XADISK_FILE_SYSTEM,
-    //request cache key to store the current request transaction
+    //application cache key to store the TX manager
+    TRANSACTION_MANAGER,
+    //application cache key to store the triplestore engine
     REQUEST_TRANSACTION,
     //application cache key to store the triplestore engine
     TRIPLESTORE_ENGINE,

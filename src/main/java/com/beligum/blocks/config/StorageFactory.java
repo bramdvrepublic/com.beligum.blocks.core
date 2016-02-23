@@ -1,5 +1,6 @@
 package com.beligum.blocks.config;
 
+import com.atomikos.icatch.jta.UserTransactionManager;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
@@ -24,6 +25,7 @@ import org.xadisk.bridge.proxies.interfaces.XAFileSystemProxy;
 import org.xadisk.bridge.proxies.interfaces.XASession;
 import org.xadisk.filesystem.standalone.StandaloneFileSystemConfiguration;
 
+import javax.transaction.Transaction;
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashSet;
@@ -79,29 +81,35 @@ public class StorageFactory
 
         return (PageIndexer) R.cacheManager().getApplicationCache().get(CacheKeys.TRIPLESTORE_PAGE_INDEX);
     }
-    public static XAFileSystem getPageStoreTransactionManager() throws IOException
+    public static UserTransactionManager getTransactionManager() throws IOException
     {
-        synchronized (txManagerLock) {
-            if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
-                XAFileSystem xafs = XAFileSystemProxy.bootNativeXAFileSystem(new StandaloneFileSystemConfiguration(Settings.instance().getPagesStoreJournalDir().getAbsolutePath(), Settings.instance().getPagesStoreJournalId()));
-                try {
-                    xafs.waitForBootup(Settings.instance().getPagesStoreJournalBootTimeout());
-                    R.cacheManager().getApplicationCache().put(CacheKeys.XADISK_FILE_SYSTEM, xafs);
-                }
-                catch (InterruptedException e) {
-                    throw new IOException("Error occurred whlie booting transactional XADisk file system (timeout=" + Settings.instance().getPagesStoreJournalBootTimeout(), e);
-                }
-            }
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRANSACTION_MANAGER)) {
+            try {
+                UserTransactionManager transactionManager = new com.atomikos.icatch.jta.UserTransactionManager();
+                //this.transactionManager.setTransactionTimeout(60);
+                transactionManager.init();
 
-            return (XAFileSystem) R.cacheManager().getApplicationCache().get(CacheKeys.XADISK_FILE_SYSTEM);
+                R.cacheManager().getApplicationCache().put(CacheKeys.TRANSACTION_MANAGER, transactionManager);
+            }
+            catch (Exception e) {
+                throw new IOException("Exception caught while booting up the transaction manager", e);
+            }
         }
+
+        return (UserTransactionManager) R.cacheManager().getApplicationCache().get(CacheKeys.TRANSACTION_MANAGER);
     }
     public static RequestTX getCurrentRequestTx() throws IOException
     {
         //Sync this with the release filter code
         if (!R.cacheManager().getRequestCache().containsKey(CacheKeys.REQUEST_TRANSACTION)) {
             try {
-                RequestTX cacheEntry = new RequestTX(new com.atomikos.icatch.jta.UserTransactionManager());
+                UserTransactionManager transactionManager = getTransactionManager();
+                //start up a new transaction
+                transactionManager.begin();
+                //fetch the transaction attached to the current thread
+                Transaction transaction = transactionManager.getTransaction();
+                //wrap it in a request object
+                RequestTX cacheEntry = new RequestTX(transaction);
 
                 R.cacheManager().getRequestCache().put(CacheKeys.REQUEST_TRANSACTION, cacheEntry);
             }
@@ -131,6 +139,23 @@ public class StorageFactory
         }
 
         return requestTx.getXdiskSession();
+    }
+    public static XAFileSystem getPageStoreTransactionManager() throws IOException
+    {
+        synchronized (txManagerLock) {
+            if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
+                XAFileSystem xafs = XAFileSystemProxy.bootNativeXAFileSystem(new StandaloneFileSystemConfiguration(Settings.instance().getPagesStoreJournalDir().getAbsolutePath(), Settings.instance().getPagesStoreJournalId()));
+                try {
+                    xafs.waitForBootup(Settings.instance().getPagesStoreJournalBootTimeout());
+                    R.cacheManager().getApplicationCache().put(CacheKeys.XADISK_FILE_SYSTEM, xafs);
+                }
+                catch (InterruptedException e) {
+                    throw new IOException("Error occurred whlie booting transactional XADisk file system (timeout=" + Settings.instance().getPagesStoreJournalBootTimeout(), e);
+                }
+            }
+
+            return (XAFileSystem) R.cacheManager().getApplicationCache().get(CacheKeys.XADISK_FILE_SYSTEM);
+        }
     }
     public static boolean rebootPageStoreTransactionManager()
     {

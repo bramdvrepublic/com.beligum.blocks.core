@@ -96,6 +96,7 @@ public abstract class AbstractIndexConnection implements IndexConnection
 
         if (xaResource instanceof AbstractIndexConnection) {
             AbstractIndexConnection other = (AbstractIndexConnection)xaResource;
+            //Doesn't work...
             //retVal = other.equals(this);
             retVal = other.getClass().equals(this.getClass());
         }
@@ -267,31 +268,20 @@ public abstract class AbstractIndexConnection implements IndexConnection
     @Override
     public void end(Xid xid, int flags) throws XAException
     {
-        try {
-            switch (flags) {
-                case TMSUCCESS:
-                    changeState(xid, EnumSet.of(TransactionState.SUSPENDED, TransactionState.ACTIVE), TransactionState.IDLE);
-                    break;
-                case TMSUSPEND:
-                    changeState(xid, EnumSet.of(TransactionState.ACTIVE), TransactionState.SUSPENDED);
-                    break;
-                case TMFAIL:
-                    changeState(xid, EnumSet.of(TransactionState.ACTIVE), TransactionState.ROLLBACK_ONLY);
-                    break;
-                default:
-                    throw new XAException(XAException.XAER_INVAL);
-            }
-        }
-        finally {
-            try {
-                this.close();
-            }
-            catch (IOException e) {
-                throw newXAException(XAException.XAER_RMERR, e);
-            }
+        switch (flags) {
+            case TMSUCCESS:
+                changeState(xid, EnumSet.of(TransactionState.SUSPENDED, TransactionState.ACTIVE), TransactionState.IDLE);
+                break;
+            case TMSUSPEND:
+                changeState(xid, EnumSet.of(TransactionState.ACTIVE), TransactionState.SUSPENDED);
+                break;
+            case TMFAIL:
+                changeState(xid, EnumSet.of(TransactionState.ACTIVE), TransactionState.ROLLBACK_ONLY);
+                break;
+            default:
+                throw new XAException(XAException.XAER_INVAL);
         }
     }
-    protected abstract void close() throws IOException;
 
     /**
      * Return a list of transactions that are in a prepared or heuristically

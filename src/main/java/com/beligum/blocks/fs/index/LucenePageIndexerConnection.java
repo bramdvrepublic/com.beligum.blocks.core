@@ -2,6 +2,7 @@ package com.beligum.blocks.fs.index;
 
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.entries.AbstractIndexEntry;
 import com.beligum.blocks.fs.index.entries.PageIndexEntry;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
@@ -172,34 +173,6 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
 
         return retVal;
     }
-    /**
-     * From the Lucene JavaDoc:
-     * "IndexWriter instances are completely thread safe, meaning multiple threads can call any of its methods, concurrently."
-     * so I hope it's ok to keep this open.
-     * <p/>
-     * Reading here, it seems to be an OK usecase:
-     * http://stackoverflow.com/questions/8878448/lucene-good-practice-and-thread-safety
-     *
-     * @return
-     * @throws IOException
-     */
-    private IndexWriter getNewLuceneIndexWriter() throws IOException
-    {
-        final java.nio.file.Path docDir = Settings.instance().getPageMainIndexFolder().toPath();
-        if (!Files.exists(docDir)) {
-            Files.createDirectories(docDir);
-        }
-        if (!Files.isWritable(docDir)) {
-            throw new IOException("Lucene index directory is not writable, please check the path; " + docDir);
-        }
-
-        IndexWriterConfig iwc = new IndexWriterConfig(new StandardAnalyzer());
-
-        // Add new documents to an existing index:
-        iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-
-        return new IndexWriter(FSDirectory.open(Settings.instance().getPageMainIndexFolder().toPath()), iwc);
-    }
     private IndexReader getLuceneIndexReader() throws IOException
     {
         //if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_READER)) {
@@ -224,8 +197,40 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
 
         //return (IndexSearcher) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_SEARCHER);
     }
+    /**
+     * From the Lucene JavaDoc:
+     * "IndexWriter instances are completely thread safe, meaning multiple threads can call any of its methods, concurrently."
+     * so I hope it's ok to keep this open.
+     * Note: switched to instance-generation because an open writer seemed to block access to the directory with a .lock file?
+     * <p/>
+     * Reading here, it seems to be an OK usecase:
+     * http://stackoverflow.com/questions/8878448/lucene-good-practice-and-thread-safety
+     *
+     * @return
+     * @throws IOException
+     */
+    private IndexWriter getNewLuceneIndexWriter() throws IOException
+    {
+        final java.nio.file.Path docDir = Settings.instance().getPageMainIndexFolder().toPath();
+        if (!Files.exists(docDir)) {
+            Files.createDirectories(docDir);
+        }
+        if (!Files.isWritable(docDir)) {
+            throw new IOException("Lucene index directory is not writable, please check the path; " + docDir);
+        }
+
+        IndexWriterConfig iwc = new IndexWriterConfig(new StandardAnalyzer());
+
+        // Add new documents to an existing index:
+        iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+
+        return new IndexWriter(FSDirectory.open(Settings.instance().getPageMainIndexFolder().toPath()), iwc);
+    }
     private void assertWriter() throws IOException
     {
         this.indexWriter = this.getNewLuceneIndexWriter();
+
+        //attach this connection to the transaction manager
+        StorageFactory.getCurrentRequestTx().registerResource(this);
     }
 }

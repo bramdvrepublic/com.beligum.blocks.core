@@ -1,5 +1,6 @@
 package com.beligum.blocks.config;
 
+import com.atomikos.icatch.jta.UserTransactionManager;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.server.R;
 import com.beligum.base.server.ifaces.ServerLifecycleListener;
@@ -74,6 +75,16 @@ public class ServerStartStopListener implements ServerLifecycleListener
                 Logger.error("Exception caught while shutting down indexer; "+indexer, e);
             }
             indexIter.remove();
+        }
+
+        if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRANSACTION_MANAGER)) {
+            try {
+                UserTransactionManager transactionManager = StorageFactory.getTransactionManager();
+                transactionManager.close();
+            }
+            catch (IOException e) {
+                Logger.error("Error while shutting down transaction manager", e);
+            }
         }
 
         if (Settings.instance().hasElasticSearchConfigured()) {

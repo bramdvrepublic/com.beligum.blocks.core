@@ -1,6 +1,7 @@
 package com.beligum.blocks.fs.index;
 
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.entries.PageIndexEntry;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.pages.ifaces.Page;
@@ -23,6 +24,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
 
     //-----VARIABLES-----
     private SailRepositoryConnection connection;
+    private boolean transactional;
 
     //-----CONSTRUCTORS-----
     public SesamePageIndexerConnection(SailRepository repository) throws IOException
@@ -33,6 +35,8 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         catch (RepositoryException e) {
             throw new IOException("Error occurred while booting sesame page indexer transaction", e);
         }
+
+        this.transactional = false;
     }
 
     //-----PUBLIC METHODS-----
@@ -44,11 +48,13 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     public void delete(Page page) throws IOException
     {
-
+        this.assertTransaction();
     }
     @Override
     public void indexPage(Page page) throws IOException
     {
+        this.assertTransaction();
+
         Model model = null;
 
         Importer rdfImporter = page.createImporter(page.getRdfExportFileFormat());
@@ -82,12 +88,14 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     protected void begin() throws IOException
     {
-        this.connection.begin();
+        if (this.transactional && this.connection != null) {
+            this.connection.begin();
+        }
     }
     @Override
     protected void prepareCommit() throws IOException
     {
-        if (this.connection != null) {
+        if (this.transactional && this.connection != null) {
             //Note: see connection.commit() for the nitty-gritty of where I got this from
             this.connection.getSailConnection().flush();
             this.connection.getSailConnection().prepare();
@@ -96,14 +104,14 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     protected void commit() throws IOException
     {
-        if (this.connection != null) {
+        if (this.transactional && this.connection != null) {
             this.connection.getSailConnection().commit();
         }
     }
     @Override
     protected void rollback() throws IOException
     {
-        if (this.connection != null) {
+        if (this.transactional && this.connection != null) {
             this.connection.getSailConnection().rollback();
         }
     }
@@ -119,5 +127,12 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-
+    private void assertTransaction() throws IOException
+    {
+        if (!this.transactional) {
+            //attach this connection to the transaction manager
+            StorageFactory.getCurrentRequestTx().registerResource(this);
+            this.transactional = true;
+        }
+    }
 }
