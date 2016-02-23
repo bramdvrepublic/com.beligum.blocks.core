@@ -5,7 +5,6 @@ import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexer;
-import org.openrdf.repository.Repository;
 import org.openrdf.repository.RepositoryException;
 import org.openrdf.repository.sail.SailRepository;
 import org.openrdf.sail.nativerdf.NativeStore;
@@ -36,7 +35,7 @@ public class SesamePageIndexer implements PageIndexer
     @Override
     public PageIndexConnection connect() throws IOException
     {
-        return new SesamePageIndexConnection(this.getRDFRepository());
+        return new SesamePageIndexerConnection(this.getRDFRepository());
     }
     @Override
     public void shutdown() throws IOException
@@ -54,13 +53,13 @@ public class SesamePageIndexer implements PageIndexer
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private Repository getRDFRepository() throws IOException
+    private SailRepository getRDFRepository() throws IOException
     {
         synchronized (this.repositoryLock) {
             if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRIPLESTORE_ENGINE)) {
 
                 try {
-                    Repository repo = new SailRepository(new NativeStore(Settings.instance().getPageTripleStoreFolder()));
+                    SailRepository repo = new SailRepository(new NativeStore(Settings.instance().getPageTripleStoreFolder()));
                     repo.initialize();
 
                     R.cacheManager().getApplicationCache().put(CacheKeys.TRIPLESTORE_ENGINE, repo);
@@ -70,7 +69,7 @@ public class SesamePageIndexer implements PageIndexer
                 }
             }
 
-            return (Repository) R.cacheManager().getApplicationCache().get(CacheKeys.TRIPLESTORE_ENGINE);
+            return (SailRepository) R.cacheManager().getApplicationCache().get(CacheKeys.TRIPLESTORE_ENGINE);
         }
     }
 }

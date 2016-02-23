@@ -31,34 +31,35 @@ public class XADiskTransactionFilter implements ContainerResponseFilter
     @Override
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) throws IOException
     {
-        XADiskRequestCacheEntry tx = (XADiskRequestCacheEntry) R.cacheManager().getRequestCache().get(CacheKeys.XADISK_REQUEST_TRANSACTION);
+        RequestTX tx = (RequestTX) R.cacheManager().getRequestCache().get(CacheKeys.XADISK_REQUEST_TRANSACTION);
         if (tx != null) {
             try {
-                if (tx.xaSession!=null) {
-                    if (responseContext.getStatus() >= Response.Status.BAD_REQUEST.getStatusCode()) {
-                        tx.xaSession.rollback();
+                if (responseContext.getStatus() >= Response.Status.BAD_REQUEST.getStatusCode()) {
+                    tx.rollback();
+                }
+                else {
+                    //this is the general case: try to commit and (try to) rollback on error
+                    try {
+                        tx.commit();
                     }
-                    else {
-                        //this is the general case: try to commit and (try to) rollback on error
+                    catch (Exception xaae) {
                         try {
-                            tx.xaSession.commit();
-                            tx.xaSession = null;
+                            Logger.warn("Caught exception while committing a file system transaction, trying to rollback...", xaae);
+                            tx.rollback();
                         }
-                        catch (Exception xaae) {
-                            try {
-                                Logger.warn("Caught exception while committing a file system transaction, trying to rollback...", xaae);
-                                tx.xaSession.rollback();
+                        catch (Exception e1) {
+                            //don't wait for the next reboot before trying to revert to a clean state; try it now
+                            //note that the reboot method is implemented so that it doesn't throw (another) exception, so we can rely on it's return value quite safely
+                            if (!StorageFactory.rebootPageStoreTransactionManager()) {
+                                throw new IOException(
+                                                "Exception caught while processing a file system transaction and the reboot because of a faulty rollback failed too; this is VERY bad and I don't really know what to do. You should investigate this!",
+                                                e1);
                             }
-                            catch (Exception e1) {
-                                //don't wait for the next reboot before trying to revert to a clean state; try it now
-                                //note that the reboot method is implemented so that it doesn't throw (another) exception, so we can rely on it's return value quite safely
-                                if (!StorageFactory.rebootPageStoreTransactionManager()) {
-                                    throw new IOException("Exception caught while processing a file system transaction and the reboot because of a faulty rollback failed too; this is VERY bad and I don't really know what to do. You should investigate this!", e1);
-                                }
-                                else {
-                                    //we can't just swallow the exception; something's wrong and we should report it to the user
-                                    throw new IOException("I was unable to commit a file system transaction and even the resulting rollback failed, but I did manage to reboot the filesystem. I'm adding the exception below;", e1);
-                                }
+                            else {
+                                //we can't just swallow the exception; something's wrong and we should report it to the user
+                                throw new IOException(
+                                                "I was unable to commit a file system transaction and even the resulting rollback failed, but I did manage to reboot the filesystem. I'm adding the exception below;",
+                                                e1);
                             }
                         }
                     }

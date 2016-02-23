@@ -1,11 +1,11 @@
 package com.beligum.blocks.fs.index.ifaces;
 
-import java.io.IOException;
+import javax.transaction.xa.XAResource;
 
 /**
  * Created by bram on 2/21/16.
  */
-public interface IndexConnection extends AutoCloseable
+public interface IndexConnection extends AutoCloseable, XAResource
 {
     //-----CONSTANTS-----
 
@@ -14,9 +14,6 @@ public interface IndexConnection extends AutoCloseable
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    void commit() throws IOException;
-    void rollback() throws IOException;
-
 //    B getNewQueryBuilder() throws IOException;
 //    R executeQuery(Q query) throws IOException;
 

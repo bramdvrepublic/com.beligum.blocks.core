@@ -178,6 +178,7 @@ public class PageEndpoint
 
         //above method returns null if nothing changed (so nothing to re-index)
         if (savedPage != null) {
+
             PageIndexer mainIndex = StorageFactory.getMainPageIndexer();
             PageIndexer tripleStore = StorageFactory.getTriplestorePageIndexer();
 

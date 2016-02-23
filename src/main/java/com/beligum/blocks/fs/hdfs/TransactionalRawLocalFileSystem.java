@@ -1,18 +1,15 @@
 package com.beligum.blocks.fs.hdfs;
 
-import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.StorageFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.server.namenode.UnsupportedActionException;
 import org.apache.hadoop.util.Progressable;
-import org.xadisk.bridge.proxies.interfaces.Session;
 import org.xadisk.bridge.proxies.interfaces.XAFileInputStream;
 import org.xadisk.bridge.proxies.interfaces.XAFileOutputStream;
-import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
+import org.xadisk.bridge.proxies.interfaces.XASession;
 import org.xadisk.filesystem.exceptions.InsufficientPermissionOnFileException;
 import org.xadisk.filesystem.exceptions.LockingFailedException;
 import org.xadisk.filesystem.exceptions.NoTransactionAssociatedException;
@@ -45,7 +42,6 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     private static boolean useDeprecatedFileStatus = false;
 
     //-----VARIABLES-----
-    private XAFileSystem xafs = null;
     private Path workingDir;
 
     //-----CONSTRUCTORS-----
@@ -62,8 +58,6 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
         this.setConf(conf);
 
         //TODO set the working dir to something else than user.dir ?
-
-        this.xafs = StorageFactory.getPageStoreTransactionManager();
     }
     @Override
     public String getScheme()
@@ -108,7 +102,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     {
         boolean retVal = false;
 
-        Session tx = this.getRequestScopedTransaction();
+        XASession tx = this.getRequestScopedTransaction();
 
         // Attempt rename using Java API.
         File srcFile = pathToFile(src);
@@ -151,7 +145,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     {
         boolean retVal = false;
 
-        Session tx = this.getRequestScopedTransaction();
+        XASession tx = this.getRequestScopedTransaction();
         File f = pathToFile(p);
 
         try {
@@ -179,7 +173,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     @Override
     public FileStatus[] listStatus(Path p) throws FileNotFoundException, IOException
     {
-        Session tx = this.getRequestScopedTransaction();
+        XASession tx = this.getRequestScopedTransaction();
         File f = pathToFile(p);
         FileStatus[] results;
 
@@ -257,7 +251,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
         if (f == null) {
             throw new IllegalArgumentException("mkdirs path arg is null");
         }
-        Session tx = this.getRequestScopedTransaction();
+        XASession tx = this.getRequestScopedTransaction();
         Path parent = f.getParent();
         File p2f = pathToFile(f);
         File parent2f = null;
@@ -339,7 +333,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     {
         return new LocalFSFileOutputStream(this.getRequestScopedTransaction(), f, append, permission);
     }
-    protected boolean mkOneDirWithMode(Session tx, Path p, File p2f, FsPermission permission) throws IOException
+    protected boolean mkOneDirWithMode(XASession tx, Path p, File p2f, FsPermission permission) throws IOException
     {
         boolean retVal = false;
 
@@ -400,7 +394,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
      * @return FileStatus of f
      * @throws IOException
      */
-    private FileStatus getFileLinkStatusInternal(Session tx, final Path p, boolean dereference) throws IOException
+    private FileStatus getFileLinkStatusInternal(XASession tx, final Path p, boolean dereference) throws IOException
     {
         if (!useDeprecatedFileStatus) {
             // Not really sure about this code and it not using the TX anywhere...
@@ -456,16 +450,16 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
             //            }
         }
     }
-    private Session getRequestScopedTransaction()
+    private XASession getRequestScopedTransaction() throws IOException
     {
-        return getRequestScopedXADiskEntry().xaSession;
+        return StorageFactory.getCurrentRequestXDiskTx();
     }
     /**
      * Special wrapper around XDisk Session.fileExists() method to solve issue XADISK-120
      * See https://java.net/jira/browse/XADISK-120
      * and also https://java.net/jira/browse/XADISK-157
      */
-    private boolean txExists(Session tx, File f) throws InterruptedException, LockingFailedException, NoTransactionAssociatedException
+    private boolean txExists(XASession tx, File f) throws InterruptedException, LockingFailedException, NoTransactionAssociatedException
     {
         boolean retVal = false;
 
@@ -481,7 +475,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     /**
      * Same as this#txExists be for the fileExistsAndIsDirectory() method
      */
-    private boolean txExistsAndIsDirectory(Session tx, File f) throws InterruptedException, LockingFailedException, NoTransactionAssociatedException
+    private boolean txExistsAndIsDirectory(XASession tx, File f) throws InterruptedException, LockingFailedException, NoTransactionAssociatedException
     {
         boolean retVal = false;
 
@@ -494,18 +488,6 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
 
         return retVal;
     }
-    private XADiskRequestCacheEntry getRequestScopedXADiskEntry()
-    {
-        //Sync this with the release filter code
-        if (!R.cacheManager().getRequestCache().containsKey(CacheKeys.XADISK_REQUEST_TRANSACTION)) {
-            Session tx = this.xafs.createSessionForLocalTransaction();
-            //NOTE ACTIVATE FOR DEBUG ONLY!!!!!
-            //tx.setTransactionTimeout(60 * 10);
-            R.cacheManager().getRequestCache().put(CacheKeys.XADISK_REQUEST_TRANSACTION, new XADiskRequestCacheEntry(this, tx));
-        }
-
-        return (XADiskRequestCacheEntry) R.cacheManager().getRequestCache().get(CacheKeys.XADISK_REQUEST_TRANSACTION);
-    }
 
     //-----INNER CLASSES-----
 
@@ -517,7 +499,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
         private XAFileInputStream fis;
         private long position;
 
-        public LocalFSFileInputStream(Session tx, Path f) throws IOException
+        public LocalFSFileInputStream(XASession tx, Path f) throws IOException
         {
             try {
                 this.fis = tx.createXAFileInputStream(pathToFile(f));
@@ -657,7 +639,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     {
         private XAFileOutputStream fos;
 
-        private LocalFSFileOutputStream(Session tx, Path f, boolean append, FsPermission permission) throws IOException
+        private LocalFSFileOutputStream(XASession tx, Path f, boolean append, FsPermission permission) throws IOException
         {
             File file = pathToFile(f);
 

@@ -3,6 +3,7 @@ package com.beligum.blocks.config;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.fs.hdfs.RequestTX;
 import com.beligum.blocks.fs.hdfs.TransactionalRawLocalFS;
 import com.beligum.blocks.fs.hdfs.TransactionalRawLocalFileSystem;
 import com.beligum.blocks.fs.index.LucenePageIndexer;
@@ -20,8 +21,11 @@ import org.apache.hadoop.fs.FsConstants;
 import org.apache.hadoop.fs.local.RawLocalFs;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystemProxy;
+import org.xadisk.bridge.proxies.interfaces.XASession;
 import org.xadisk.filesystem.standalone.StandaloneFileSystemConfiguration;
 
+import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashSet;
@@ -93,6 +97,46 @@ public class StorageFactory
 
             return (XAFileSystem) R.cacheManager().getApplicationCache().get(CacheKeys.XADISK_FILE_SYSTEM);
         }
+    }
+    public static RequestTX getCurrentRequestTx() throws IOException
+    {
+        //Sync this with the release filter code
+        if (!R.cacheManager().getRequestCache().containsKey(CacheKeys.XADISK_REQUEST_TRANSACTION)) {
+            try {
+                TransactionManager transactionManager = new com.atomikos.icatch.jta.UserTransactionManager();
+                transactionManager.begin();
+                Transaction transaction = transactionManager.getTransaction();
+
+                RequestTX cacheEntry = new RequestTX(transaction);
+
+                R.cacheManager().getRequestCache().put(CacheKeys.XADISK_REQUEST_TRANSACTION, cacheEntry);
+            }
+            catch (Exception e) {
+                throw new IOException("Exception caught while booting up a request transaction; "+R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
+            }
+        }
+
+        return (RequestTX) R.cacheManager().getRequestCache().get(CacheKeys.XADISK_REQUEST_TRANSACTION);
+    }
+    public static XASession getCurrentRequestXDiskTx() throws IOException
+    {
+        RequestTX requestTx = getCurrentRequestTx();
+        //start up a new XDisk session if needed
+        if (requestTx.getXdiskSession()==null) {
+            try {
+                //boot a new xadisk
+                XASession xdiskSession = getPageStoreTransactionManager().createSessionForXATransaction();
+                //hook it into the request tx
+                requestTx.registerResource(xdiskSession.getXAResource());
+                //save it in our wrapper
+                requestTx.setXdiskSession(xdiskSession);
+            }
+            catch (Exception e) {
+                throw new IOException("Exception caught while booting up XADisk transaction during request; "+R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
+            }
+        }
+
+        return requestTx.getXdiskSession();
     }
     public static boolean rebootPageStoreTransactionManager()
     {

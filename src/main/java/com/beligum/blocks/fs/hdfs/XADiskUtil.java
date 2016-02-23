@@ -1,7 +1,7 @@
 package com.beligum.blocks.fs.hdfs;
 
 import com.beligum.base.utils.Logger;
-import org.xadisk.bridge.proxies.interfaces.Session;
+import org.xadisk.bridge.proxies.interfaces.XASession;
 
 import java.io.File;
 
@@ -22,7 +22,7 @@ public class XADiskUtil
      *
      * @see org.apache.hadoop.fs.FileUtil#fullyDelete(File, boolean)
      */
-    public static boolean fullyDelete(Session tx, final File dir)
+    public static boolean fullyDelete(XASession tx, final File dir)
     {
         if (deleteImpl(tx, dir, false)) {
             // dir is (a) normal file, (b) symlink to a file, (c) empty directory or
@@ -40,7 +40,7 @@ public class XADiskUtil
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private static boolean deleteImpl(Session tx, final File f, final boolean doLog)
+    private static boolean deleteImpl(XASession tx, final File f, final boolean doLog)
     {
         if (f == null) {
             Logger.warn("null file argument.");
@@ -87,7 +87,7 @@ public class XADiskUtil
      * If dir is a symlink to a directory, all the contents of the actual
      * directory pointed to by dir will be deleted.
      */
-    public static boolean fullyDeleteContents(Session tx, final File dir)
+    public static boolean fullyDeleteContents(XASession tx, final File dir)
     {
         boolean deletionSucceeded = true;
 

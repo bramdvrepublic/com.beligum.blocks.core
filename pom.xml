@@ -528,6 +528,11 @@
             <artifactId>connector-api</artifactId>
             <version>1.5</version>
         </dependency>
+        <dependency>
+            <groupId>com.atomikos</groupId>
+            <artifactId>transactions-jta</artifactId>
+            <version>3.8.0</version>
+        </dependency>
 
         <dependency>
             <groupId>org.elasticsearch</groupId>
