@@ -177,8 +177,8 @@ public class PageEndpoint
         //above method returns null if nothing changed (so nothing to re-index)
         if (savedPage != null) {
             //Note: transaction handling is done through the global XA transaction
-            StorageFactory.getMainPageIndexer().connect().indexPage(savedPage);
-            StorageFactory.getTriplestorePageIndexer().connect().indexPage(savedPage);
+            StorageFactory.getMainPageIndexer().connect().update(savedPage);
+            StorageFactory.getTriplestorePageIndexer().connect().update(savedPage);
         }
 
         return Response.ok().build();

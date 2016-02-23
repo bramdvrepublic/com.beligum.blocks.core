@@ -27,7 +27,7 @@
 //
 //    //-----PUBLIC METHODS-----
 //    @Override
-//    public void indexPage(Page page) throws IOException
+//    public void update(Page page) throws IOException
 //    {
 //        // read it back in and parse it because it's the link between this (where we have HDFS access)
 //        // and the page indexer (where we work with generic json objects)

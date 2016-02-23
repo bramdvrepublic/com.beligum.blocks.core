@@ -44,8 +44,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     public PageIndexEntry get(URI key) throws IOException
     {
-        //JUST TESTING
-        // search for all resources that mention "person"
+        //TODO
         String queryString = "PREFIX search:   <" + LuceneSailSchema.NAMESPACE + "> \n" +
                              "PREFIX mot:   <http://www.mot.be/ontology/> \n" +
                              "SELECT ?x ?score ?snippet WHERE {?x search:matches [\n" +
@@ -83,7 +82,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         this.assertTransaction();
     }
     @Override
-    public void indexPage(Page page) throws IOException
+    public void update(Page page) throws IOException
     {
         this.assertTransaction();
 
@@ -145,6 +144,39 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
             //attach this connection to the transaction manager
             StorageFactory.getCurrentRequestTx().registerResource(this);
             this.transactional = true;
+        }
+    }
+    private void doTest()
+    {
+        //JUST TESTING
+        // search for all resources that mention "person"
+        String queryString = "PREFIX search:   <" + LuceneSailSchema.NAMESPACE + "> \n" +
+                             "PREFIX mot:   <http://www.mot.be/ontology/> \n" +
+                             "SELECT ?x ?score ?snippet WHERE {?x search:matches [\n" +
+                             "search:query \"aimé\"; \n" +
+                             "search:property mot:comment; \n" +
+                             "search:score ?score; \n" +
+                             "search:snippet ?snippet ] }";
+        System.out.println("Running query: \n"+queryString);
+        TupleQuery query = connection.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
+        TupleQueryResult result = query.evaluate();
+        try {
+            if (!result.hasNext()) {
+                System.out.println("-------- NO MATCHES!! ---------");
+            }
+            else {
+                System.out.println("-------- FOUND MATCHES ---------");
+                // print the results
+                while (result.hasNext()) {
+                    BindingSet bindings = result.next();
+                    System.out.println("found match: ");
+                    for (Binding binding : bindings) {
+                        System.out.println(" " + binding.getName() + ": " + binding.getValue());
+                    }
+                }
+            }
+        } finally {
+            result.close();
         }
     }
 }

@@ -5,6 +5,7 @@ import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.entries.AbstractIndexEntry;
 import com.beligum.blocks.fs.index.entries.PageIndexEntry;
+import com.beligum.blocks.fs.index.entries.SimplePageIndexEntry;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.pages.DefaultPageImpl;
 import com.beligum.blocks.fs.pages.ifaces.Page;
@@ -35,12 +36,10 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
 
     //-----VARIABLES-----
     private IndexWriter indexWriter;
-    private Object indexLock;
 
     //-----CONSTRUCTORS-----
     public LucenePageIndexerConnection() throws IOException
     {
-        this.indexLock = new Object();
     }
 
     //-----PUBLIC METHODS-----
@@ -54,35 +53,37 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
             return null;
         }
         else {
-            return PageIndexEntry.fromLuceneDoc(getLuceneIndexReader().document(topdocs.scoreDocs[0].doc));
+            return SimplePageIndexEntry.fromLuceneDoc(getLuceneIndexReader().document(topdocs.scoreDocs[0].doc));
         }
     }
     @Override
     public void delete(Page page) throws IOException
     {
         this.assertWriter();
+
+        this.indexWriter.deleteDocuments(AbstractIndexEntry.toLuceneId(page.buildAddress()));
+
+        //for debug
+        //this.printLuceneIndex();
     }
     @Override
-    public void indexPage(Page page) throws IOException
+    public void update(Page page) throws IOException
     {
         this.assertWriter();
 
-        PageIndexEntry indexExtry = this.createEntry(page);
+        SimplePageIndexEntry indexExtry = this.createEntry(page);
 
         //let's not mix-and-mingle writes (even though the IndexWriter is thread-safe),
         // so we can do a clean commit/rollback on our own
-        //TODO this should probably be synchronized with the transaction methods in some way
-        synchronized (this.indexLock) {
-            //note: there's not such thing as a .begin(); the begin is just where the last .commit() left off
-            this.indexWriter.updateDocument(AbstractIndexEntry.toLuceneId(indexExtry), PageIndexEntry.toLuceneDoc(indexExtry));
+        this.indexWriter.updateDocument(AbstractIndexEntry.toLuceneId(indexExtry), SimplePageIndexEntry.toLuceneDoc(indexExtry));
 
-            this.printLuceneIndex();
-        }
+        //for debug
+        //this.printLuceneIndex();
     }
     @Override
     protected void begin() throws IOException
     {
-        //NOOP
+        //note: there's not such thing as a .begin(); the begin is just where the last .commit() left off
     }
     @Override
     protected void prepareCommit() throws IOException
@@ -130,14 +131,14 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
             }
         }
     }
-    private PageIndexEntry createEntry(Page page) throws IOException
+    private SimplePageIndexEntry createEntry(Page page) throws IOException
     {
         HtmlAnalyzer htmlAnalyzer = page.createAnalyzer();
 
         FileContext fc = page.getResourcePath().getFileContext();
         URI pageAddress = page.buildAddress();
 
-        PageIndexEntry entry = new PageIndexEntry(pageAddress);
+        SimplePageIndexEntry entry = new SimplePageIndexEntry(pageAddress);
         entry.setResource(htmlAnalyzer.getHtmlResource() == null ? null : htmlAnalyzer.getHtmlResource().value);
         entry.setLanguage(htmlAnalyzer.getHtmlLanguage() == null ? null : htmlAnalyzer.getHtmlLanguage().getLanguage());
         URI parent = this.getParentUri(pageAddress, fc);

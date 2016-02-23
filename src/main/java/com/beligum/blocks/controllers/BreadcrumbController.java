@@ -4,6 +4,7 @@ import com.beligum.base.server.R;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.entries.PageIndexEntry;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
+import com.beligum.blocks.fs.index.ifaces.PageIndexer;
 import com.beligum.blocks.templating.blocks.DefaultTemplateController;
 import com.google.common.collect.Lists;
 
@@ -32,11 +33,14 @@ public class BreadcrumbController extends DefaultTemplateController
     {
         Map<URI, String> retVal = new LinkedHashMap<>();
 
+        //DEBUG
+        PageIndexer ts = StorageFactory.getTriplestorePageIndexer();
+        ts.connect().get(URI.create("http://localhost:8080/en/test1/"));
+
         // get URI
         URI requestedUri = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
 
         PageIndexConnection conn = StorageFactory.getMainPageIndexer().connect();
-
         PageIndexEntry p = conn.get(requestedUri);
         while (p != null) {
             retVal.put(p.getId(), p.getTitle());

@@ -1,12 +1,14 @@
 package com.beligum.blocks.fs.index.ifaces;
 
+import com.beligum.blocks.fs.index.entries.IndexEntry;
+
 import javax.transaction.xa.XAResource;
 import java.io.IOException;
 
 /**
  * Created by bram on 2/21/16.
  */
-public interface IndexConnection extends XAResource
+public interface IndexConnection<T extends IndexEntry> extends XAResource
 {
     //-----CONSTANTS-----
 

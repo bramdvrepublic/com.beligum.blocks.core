@@ -5,6 +5,7 @@ import com.beligum.base.utils.Logger;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.transaction.TransactionManager;
 import java.io.File;
 import java.net.URI;
 import java.util.*;
@@ -14,6 +15,7 @@ import java.util.*;
  */
 public class Settings
 {
+    private static final String TRANSACTIONS_PROPERTIES_KEY = "blocks.core.transactions.properties.property";
     private static final String PAGES_HDFS_PROPERTIES_KEY = "blocks.core.pages.hdfs.properties.property";
     private static final String ELASTIC_SEARCH_PROPERTIES_KEY = "blocks.core.elastic-search.properties.property";
 
@@ -34,6 +36,8 @@ public class Settings
     private URI defaultRdfSchema;
     private URI cachedPagesStorePath;
     private URI cachedPagesViewPath;
+    private Class<? extends TransactionManager> cachedTransactionManagerClass;
+    protected HashMap<String, String> cachedTransactionsProperties = null;
     private File cachedPagesStoreJournalDir;
     protected HashMap<String, String> cachedHdfsProperties = null;
     protected HashMap<String, String> cachedEsProperties = null;
@@ -146,6 +150,34 @@ public class Settings
             retVal = this.cachedLanguages.get(language);
         }
         return retVal;
+    }
+    public Class<? extends TransactionManager> getTransactionManagerClass()
+    {
+        if (this.cachedTransactionManagerClass == null) {
+            String classname = R.configuration().getString("blocks.core.transactions.transaction-manager", "com.atomikos.icatch.jta.UserTransactionManager");
+            try {
+                this.cachedTransactionManagerClass = (Class<? extends TransactionManager>) Class.forName(classname);
+            }
+            catch (ClassNotFoundException e) {
+                throw new RuntimeException("Unable to instantiate configured transaction manager for class "+classname, e);
+            }
+        }
+
+        return this.cachedTransactionManagerClass;
+    }
+    public Map<String, String> getTransactionsProperties()
+    {
+        if (this.cachedTransactionsProperties == null) {
+            this.cachedTransactionsProperties = new HashMap<>();
+            List<HierarchicalConfiguration> properties = R.configuration().configurationsAt(TRANSACTIONS_PROPERTIES_KEY);
+            for (HierarchicalConfiguration property : properties) {
+                String propertyKey = property.getString("name");
+                String propertyValue = property.getString("value");
+                this.cachedTransactionsProperties.put(propertyKey, propertyValue);
+            }
+        }
+
+        return this.cachedTransactionsProperties;
     }
     public URI getPagesStorePath()
     {

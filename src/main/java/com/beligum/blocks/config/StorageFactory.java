@@ -1,6 +1,5 @@
 package com.beligum.blocks.config;
 
-import com.atomikos.icatch.jta.UserTransactionManager;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
@@ -26,6 +25,7 @@ import org.xadisk.bridge.proxies.interfaces.XASession;
 import org.xadisk.filesystem.standalone.StandaloneFileSystemConfiguration;
 
 import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashSet;
@@ -81,13 +81,18 @@ public class StorageFactory
 
         return (PageIndexer) R.cacheManager().getApplicationCache().get(CacheKeys.TRIPLESTORE_PAGE_INDEX);
     }
-    public static UserTransactionManager getTransactionManager() throws IOException
+    public static TransactionManager getTransactionManager() throws IOException
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRANSACTION_MANAGER)) {
             try {
-                UserTransactionManager transactionManager = new com.atomikos.icatch.jta.UserTransactionManager();
-                //this.transactionManager.setTransactionTimeout(60);
-                transactionManager.init();
+                Map<String, String> extraProperties = Settings.instance().getTransactionsProperties();
+                if (extraProperties != null) {
+                    for (Map.Entry<String, String> entry : extraProperties.entrySet()) {
+                        System.setProperty(entry.getKey(), entry.getValue());
+                    }
+                }
+
+                TransactionManager transactionManager = Settings.instance().getTransactionManagerClass().newInstance();
 
                 R.cacheManager().getApplicationCache().put(CacheKeys.TRANSACTION_MANAGER, transactionManager);
             }
@@ -96,14 +101,14 @@ public class StorageFactory
             }
         }
 
-        return (UserTransactionManager) R.cacheManager().getApplicationCache().get(CacheKeys.TRANSACTION_MANAGER);
+        return (TransactionManager) R.cacheManager().getApplicationCache().get(CacheKeys.TRANSACTION_MANAGER);
     }
     public static RequestTX getCurrentRequestTx() throws IOException
     {
         //Sync this with the release filter code
         if (!R.cacheManager().getRequestCache().containsKey(CacheKeys.REQUEST_TRANSACTION)) {
             try {
-                UserTransactionManager transactionManager = getTransactionManager();
+                TransactionManager transactionManager = getTransactionManager();
                 //start up a new transaction
                 transactionManager.begin();
                 //fetch the transaction attached to the current thread

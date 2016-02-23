@@ -14,6 +14,7 @@ import org.eclipse.jetty.server.Server;
 import org.glassfish.jersey.server.spi.Container;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
 
+import javax.transaction.TransactionManager;
 import java.io.IOException;
 import java.util.Iterator;
 
@@ -79,8 +80,13 @@ public class ServerStartStopListener implements ServerLifecycleListener
 
         if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRANSACTION_MANAGER)) {
             try {
-                UserTransactionManager transactionManager = StorageFactory.getTransactionManager();
-                transactionManager.close();
+                TransactionManager transactionManager = StorageFactory.getTransactionManager();
+                if (transactionManager instanceof UserTransactionManager) {
+                    ((UserTransactionManager)transactionManager).close();
+                }
+                else {
+                    //TODO no public close method on a transaction manager??
+                }
             }
             catch (IOException e) {
                 Logger.error("Error while shutting down transaction manager", e);

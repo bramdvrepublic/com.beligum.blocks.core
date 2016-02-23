@@ -9,7 +9,7 @@ import java.net.URI;
 /**
  * Created by bram on 2/21/16.
  */
-public interface PageIndexConnection extends IndexConnection
+public interface PageIndexConnection<T extends PageIndexEntry> extends IndexConnection<T>
 {
     //-----CONSTANTS-----
 
@@ -18,9 +18,9 @@ public interface PageIndexConnection extends IndexConnection
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    PageIndexEntry get(URI key) throws IOException;
+    T get(URI key) throws IOException;
     void delete(Page page) throws IOException;
-    void indexPage(Page page) throws IOException;
+    void update(Page page) throws IOException;
 
     //-----PROTECTED METHODS-----
 

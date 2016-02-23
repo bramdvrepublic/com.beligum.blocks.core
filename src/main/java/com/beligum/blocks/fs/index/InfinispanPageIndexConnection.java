@@ -53,7 +53,7 @@
 //        cache.remove(page.buildAddress().toString());
 //    }
 //    @Override
-//    public void indexPage(Page page) throws IOException
+//    public void update(Page page) throws IOException
 //    {
 //        this.assertWriteTransaction();
 //
