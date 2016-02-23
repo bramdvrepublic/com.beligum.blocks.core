@@ -11,7 +11,6 @@ import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
-import com.beligum.blocks.fs.index.ifaces.PageIndexer;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.sources.HtmlSource;
 import com.beligum.blocks.rdf.sources.HtmlStringSource;
@@ -178,36 +177,12 @@ public class PageEndpoint
 
         //above method returns null if nothing changed (so nothing to re-index)
         if (savedPage != null) {
-
-            PageIndexer mainIndex = StorageFactory.getMainPageIndexer();
-            PageIndexer tripleStore = StorageFactory.getTriplestorePageIndexer();
-
-            //link both indexers together so that both commit or both fail
-            boolean success = false;
-            PageIndexConnection mainIndexConn = null;
-            PageIndexConnection tripleStoreConn = null;
-            try {
-                mainIndexConn = (PageIndexConnection) mainIndex.connect();
-                tripleStoreConn = (PageIndexConnection) tripleStore.connect();
-
-                //store the resulting page in the indexes you want
-                mainIndexConn.indexPage(savedPage);
-                tripleStoreConn.indexPage(savedPage);
-
-                success = true;
+            //Note: transaction handling is done through the global XA transaction
+            try (PageIndexConnection cn = StorageFactory.getMainPageIndexer().connect()) {
+                cn.indexPage(savedPage);
             }
-            finally {
-                if (success) {
-                    mainIndexConn.commit();
-                    tripleStoreConn.commit();
-                }
-                else {
-                    mainIndexConn.rollback();
-                    tripleStoreConn.rollback();
-                }
-
-                mainIndexConn.close();
-                tripleStoreConn.close();
+            try (PageIndexConnection cn = StorageFactory.getTriplestorePageIndexer().connect()) {
+                cn.indexPage(savedPage);
             }
         }
 
@@ -226,35 +201,11 @@ public class PageEndpoint
         Page deletedPage = StorageFactory.getPageStore().delete(URI.create(uri), new PersonRepository().get(Authentication.getCurrentPrincipal()));
 
         if (deletedPage!=null) {
-            PageIndexer mainIndex = StorageFactory.getMainPageIndexer();
-            PageIndexer tripleStore = StorageFactory.getTriplestorePageIndexer();
-
-            //link both indexers together so that both commit or both fail
-            boolean success = false;
-            PageIndexConnection mainIndexConn = null;
-            PageIndexConnection tripleStoreConn = null;
-            try {
-                mainIndexConn = (PageIndexConnection) mainIndex.connect();
-                tripleStoreConn = (PageIndexConnection) tripleStore.connect();
-
-                //store the resulting page in the indexes you want
-                mainIndexConn.delete(deletedPage);
-                tripleStoreConn.delete(deletedPage);
-
-                success = true;
+            try (PageIndexConnection cn = StorageFactory.getMainPageIndexer().connect()) {
+                cn.delete(deletedPage);
             }
-            finally {
-                if (success) {
-                    mainIndexConn.commit();
-                    tripleStoreConn.commit();
-                }
-                else {
-                    mainIndexConn.rollback();
-                    tripleStoreConn.rollback();
-                }
-
-                mainIndexConn.close();
-                tripleStoreConn.close();
+            try (PageIndexConnection cn = StorageFactory.getTriplestorePageIndexer().connect()) {
+                cn.delete(deletedPage);
             }
         }
 
