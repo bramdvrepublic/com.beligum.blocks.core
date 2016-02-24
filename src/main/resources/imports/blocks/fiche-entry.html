@@ -1,0 +1,15 @@
+<meta property="blocks:title" content="Fiche entry" lang="en">
+<meta property="blocks:description" content="A entry in a data fiche" lang="en">
+<meta property="blocks:icon" content="fa-list-alt">
+
+<link href="/assets/styles/imports/blocks-fiche-entry.less" rel="stylesheet"/>
+
+<script src="/assets/scripts/imports/blocks-fiche-entry-text.js" type="application/javascript" data-scope-role="admin"></script>
+
+<template>
+    #constants('blocks.core')
+    ## Note: don't use .label here, it's taken by bootstrap (the pills thing))!
+    ## Also don't use <label> because it messes with the cursor (and is meant for forms, not key/value setups)
+    <div data-property="label" $CONSTANTS.blocks.core.TEXT_EDITOR_OPTIONS_ATTR="$CONSTANTS.blocks.core.TEXT_EDITOR_OPTIONS_NO_TOOLBAR">Nieuwerkerken is een dorp in de Belgische provincie Oost-Vlaanderen en een deelgemeente van de stad Aalst.</div>
+    <div data-property="value" class="value"><p>Value comes here</p></div>
+</template>

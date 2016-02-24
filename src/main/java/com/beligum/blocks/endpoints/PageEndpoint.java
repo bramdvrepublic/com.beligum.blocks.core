@@ -7,6 +7,7 @@ import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.security.Authentication;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
@@ -19,6 +20,7 @@ import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.PageTemplate;
 import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.beligum.blocks.utils.comparators.MapComparator;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Functions;
 import com.google.common.collect.Lists;
 import gen.com.beligum.blocks.core.fs.html.views.modals.newblock;
@@ -199,6 +201,18 @@ public class PageEndpoint
             StorageFactory.getMainPageIndexer().connect().delete(deletedPage);
             StorageFactory.getTriplestorePageIndexer().connect().delete(deletedPage);
         }
+
+        return Response.ok().build();
+    }
+
+    @POST
+    @javax.ws.rs.Path("/import/")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RequiresPermissions(value = { Permissions.PAGE_CREATE_PERMISSION_STRING,
+                                   Permissions.PAGE_MODIFY_PERMISSION_STRING })
+    public Response importPage(@PathParam("url") URI uri, JsonNode json) throws Exception
+    {
+        Logger.info(json.toString());
 
         return Response.ok().build();
     }

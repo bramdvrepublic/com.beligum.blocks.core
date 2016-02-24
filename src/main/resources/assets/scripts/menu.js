@@ -149,8 +149,9 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 $(document).off("click.prevent_click_editing");
                 Broadcaster.send(Broadcaster.EVENTS.STOP_BLOCKS, event);
                 $("body").append(menuStartButton);
-
                 $("body").removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
+
+                clearContainerWidth();
             });
         }
 
@@ -219,8 +220,9 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
     /*
      * in bootstrap the containerwidth is fixed. to prevent the container from bleeding
-     * into our sidebar, we set the width fixed with a new width, smaller than our page content wrapper
-     * */
+     * into our sidebar, we set the width fixed with a new width, smaller than our page content wrapper.
+     * Sync with method below.
+     */
     var updateContainerWidth = function ()
     {
         var wrapper = $("." + BlocksConstants.PAGE_CONTENT_CLASS);
@@ -235,6 +237,11 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 containers.css("width", (wrapperWidth - BlocksConstants.SIDEBAR_MARGIN_LEFT_PX) + "px");
             }
         }
+    };
+    //method to clear the manual container width from above; sync them
+    var clearContainerWidth = function ()
+    {
+        $(".container").css("width", "");
     };
 
     // On Window resize
@@ -279,6 +286,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     $(document).on("click", "." + BlocksConstants.SAVE_PAGE_BUTTON, function (event)
     {
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
+
         //the idea is to send the entire page to the server and let it only save the correct tags (eg. with property and data-property attributes)
         // remove the widths from the containers
         $(".container").removeAttr("style");
@@ -287,22 +295,28 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         // but it's too much hassle and too simple for us to 'close' the sidebar now. So let's just take the html in the wrapper and create
         // a virtual html page by combining the content of the wrapper with the <head> in the html
 
+        //clear the manual container width (we'll re-set it back later)
+        clearContainerWidth();
+
         //create a new node out of the full page html
         var savePage = $("html").clone();
 
         //this extracts the real body (without the sidebar code) we need to save
         //see toggle close for more or less the same code
         //TODO ideally, we should make this uniform (virtually close the sidebar?)
-        var content = $("." + BlocksConstants.PAGE_CONTENT_CLASS).html();
-
-        //copy in the content
-        var saveBody = savePage.find('body');
-        saveBody.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
-        saveBody.empty().append(content);
+        var container = savePage.find("." + BlocksConstants.PAGE_CONTENT_CLASS);
+        //we modify the width property of the body while resizing the sidebar; make sure it doesn't get saved
+        container.css("width", "");
+        var content = container.html();
+        var body = savePage.find("body");
+        body.empty();
+        body.append(content);
+        body.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
 
         //convert from jQuery to html string
         savePage = savePage[0].outerHTML;
 
+        //recalculate the container width because we cleared it above
         updateContainerWidth();
 
         var dialog = new BootstrapDialog({
