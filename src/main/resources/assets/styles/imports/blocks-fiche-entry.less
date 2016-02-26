@@ -2,23 +2,26 @@
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/variables.less";
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/mixins.less";
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/forms.less";
+@import "/constants/blocks/core?type=less";
 
 //-----STYLES-----
 blocks-fiche-entry {
 
-  .clearfix();//seems to be necessary
-  margin-bottom: 10px;
+  .make-row();
+  .clearfix();//doesn't seem to be inherited from make-row well...
 
-  &:last-child {
-    margin-bottom: 0;
-  }
+  //note: don't clear the margin of the last entry: it will create a padding with a (possible) column border
 
-  [data-property="label"] {
+  .@{FICHE_ENTRY_NAME_CLASS} {
     .make-md-column(4);
     font-weight: bold;
+
+    p:last-child {
+      margin-bottom: 0;
+    }
   }
 
-  .value {
+  .@{FICHE_ENTRY_VALUE_CLASS} {
     .make-md-column(8);
   }
 }

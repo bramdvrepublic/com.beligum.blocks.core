@@ -1,7 +1,14 @@
+/**
+ * Created by bram on 24/02/16.
+ */
 base.plugin("blocks.imports.BlocksFicheEntryText", ["base.core.Class", "blocks.imports.Text", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.MediumEditor", "blocks.core.Sidebar", function (Class, Text, BlocksConstants, BlocksMessages, Broadcaster, Editor, Sidebar)
 {
     var BlocksFicheEntryText = this;
-    this.TAGS = ["blocks-fiche-entry [data-property='label']", "blocks-fiche-entry .value"];
+    this.TAGS = [
+        "blocks-fiche-entry ."+BlocksConstants.FICHE_ENTRY_NAME_CLASS,
+        "blocks-fiche-entry ."+BlocksConstants.FICHE_ENTRY_VALUE_CLASS+" ."+BlocksConstants.DATATYPE_WIDGET_EDITOR,
+        "blocks-fiche-entry ."+BlocksConstants.FICHE_ENTRY_VALUE_CLASS+" ."+BlocksConstants.DATATYPE_WIDGET_INLINE_EDITOR
+    ];
 
     (this.Class = Class.create(Text.Class, {
 

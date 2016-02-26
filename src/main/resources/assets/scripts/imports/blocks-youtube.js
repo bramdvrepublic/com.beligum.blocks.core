@@ -1,7 +1,7 @@
 /*
  * Allows editiong of an embedded youtube video when you click on it
  * */
-base.plugin("blocks.imports.BlocksYoutube", ["base.core.Class", "blocks.imports.Block", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Block, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
+base.plugin("blocks.imports.BlocksYoutube", ["base.core.Class", "blocks.imports.Block", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", function (Class, Block, BlocksConstants, BlocksMessages, Sidebar)
 {
     var BlocksYoutube = this;
     this.TAGS = ["blocks-youtube"];
@@ -36,8 +36,8 @@ base.plugin("blocks.imports.BlocksYoutube", ["base.core.Class", "blocks.imports.
             var iframe = embedded.children("iframe");
             iframe.addClass("edit");
 
-            retVal.push(SidebarUtils.addValueAttribute(Sidebar, iframe, "video url", "Paste or type a Youtube link", "src", false, true, false));
-            retVal.push(SidebarUtils.addUniqueClass(Sidebar, embedded, "formaat", [{"name": "16 x 9", value: "embed-responsive-16by9"}, {"name": "4 x 3", value: "embed-responsive-4by3"}]));
+            retVal.push(this.addValueAttribute(Sidebar, iframe, "video url", "Paste or type a Youtube link", "src", false, true, false));
+            retVal.push(this.addUniqueClass(Sidebar, embedded, "formaat", [{"name": "16 x 9", value: "embed-responsive-16by9"}, {"name": "4 x 3", value: "embed-responsive-4by3"}]));
 
             return retVal;
         },

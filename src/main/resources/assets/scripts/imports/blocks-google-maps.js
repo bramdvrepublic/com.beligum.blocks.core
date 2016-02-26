@@ -1,7 +1,7 @@
 /**
  * Created by wouter on 1/09/15.
  */
-base.plugin("blocks.imports.GoogleMaps", ["base.core.Class", "blocks.imports.Block", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Block, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
+base.plugin("blocks.imports.GoogleMaps", ["base.core.Class", "blocks.imports.Block", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", function (Class, Block, BlocksConstants, BlocksMessages, Sidebar)
 {
     var BlocksMaps = this;
     this.TAGS = ["blocks-google-maps"];

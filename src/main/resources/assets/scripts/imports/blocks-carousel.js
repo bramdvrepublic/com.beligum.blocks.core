@@ -1,7 +1,7 @@
 /**
  * Created by wouter on 18/06/15.
  */
-base.plugin("blocks.imports.BlocksCarousel", ["base.core.Class", "blocks.imports.Block", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Block, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
+base.plugin("blocks.imports.BlocksCarousel", ["base.core.Class", "blocks.imports.Block", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", function (Class, Block, BlocksConstants, BlocksMessages, Sidebar)
 {
     var BlocksCarousel = this;
     this.TAGS = ["blocks-carousel"];
@@ -48,7 +48,7 @@ base.plugin("blocks.imports.BlocksCarousel", ["base.core.Class", "blocks.imports
         {
             var retVal = BlocksCarousel.Class.Super.prototype.getConfigs.call(this, block, element);
 
-            retVal.push(SidebarUtils.addOptionalClass(Sidebar, block.element, "Seamless", BlocksConstants.SEAMLESS_CLASS));
+            retVal.push(this.addOptionalClass(Sidebar, block.element, "Seamless", BlocksConstants.SEAMLESS_CLASS));
 
             var element = element.find(".carousel");
             this._listGroup = $('<div class="list-group" />');

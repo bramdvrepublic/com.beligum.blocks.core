@@ -2,7 +2,7 @@
  * Created by wouter on 15/06/15.
  */
 
-base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.core.SidebarUtils", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", "blocks.core.Hover", "blocks.imports.Widget", function (Broadcaster, Constants, DOM, Layouter, SidebarUtils, Finder, Notification, Commons, Hover, Widget)
+base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks.core", "blocks.core.DomManipulation", "blocks.core.Layouter", "blocks.media.Finder", "blocks.core.Notification", "base.core.Commons", "blocks.core.Hover", "blocks.imports.Widget", function (Broadcaster, Constants, DOM, Layouter, Finder, Notification, Commons, Hover, Widget)
 {
     var SideBar = this;
     var configPanels = {};

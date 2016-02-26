@@ -1,7 +1,7 @@
 /*
  * Allows editing of an image when youy click on it
  * */
-base.plugin("blocks.imports.Image", ["base.core.Class", "blocks.imports.Property", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", function (Class, Property, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils)
+base.plugin("blocks.imports.Image", ["base.core.Class", "blocks.imports.Property", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", function (Class, Property, BlocksConstants, BlocksMessages, Sidebar)
 {
     var Image = this;
     this.TAGS = ["img"];
@@ -32,7 +32,7 @@ base.plugin("blocks.imports.Image", ["base.core.Class", "blocks.imports.Property
         {
             var retVal = Image.Class.Super.prototype.getConfigs.call(this, block, element);
 
-            retVal.push(SidebarUtils.addValueAttribute(Sidebar, element, "Image url", "Paste or type an image link", "src", false, true, false));
+            retVal.push(this.addValueAttribute(Sidebar, element, "Image url", "Paste or type an image link", "src", false, true, false));
 
             retVal.push(this._getCreateLinkConfig(block, element));
 
@@ -40,7 +40,7 @@ base.plugin("blocks.imports.Image", ["base.core.Class", "blocks.imports.Property
             // because it won't work since the css styling for the .bordered class is wrapped in 'blocks-image'
             if (block.element.prop("tagName") == 'BLOCKS-IMAGE') {
                 //note that we always add the config classes to the outer block (the template instance) to be as flexible as possible
-                retVal.push(SidebarUtils.addOptionalClass(Sidebar, block.element, "Rand", BlocksConstants.IMAGE_BORDERED_CLASS));
+                retVal.push(this.addOptionalClass(Sidebar, block.element, "Rand", BlocksConstants.IMAGE_BORDERED_CLASS));
             }
 
             return retVal;

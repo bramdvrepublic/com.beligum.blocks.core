@@ -1,7 +1,7 @@
 /**
  * Created by wouter on 17/06/15.
  */
-base.plugin("blocks.imports.Page", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.Broadcaster", "blocks.core.SidebarUtils", "blocks.core.UI", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, Broadcaster, SidebarUtils, UI)
+base.plugin("blocks.imports.Page", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.Broadcaster", "blocks.core.UI", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, Broadcaster, UI)
 {
     var Page = this;
     this.TAGS = ['.' + BlocksConstants.PAGE_CONTENT_CLASS];
@@ -74,7 +74,7 @@ base.plugin("blocks.imports.Page", ["base.core.Class", "blocks.imports.Widget", 
             }
 
             if (title.hasAttribute("property")) {
-                retVal.push(SidebarUtils.addValueHtml(Sidebar, title, "Page title", "Enter a title for this page", false));
+                retVal.push(this.addValueHtml(Sidebar, title, "Page title", "Enter a title for this page", false));
             }
 
             return retVal;

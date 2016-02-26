@@ -2,7 +2,7 @@
  * Created by wouter on 8/07/15.
  */
 
-base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.core.Sidebar", "blocks.core.SidebarUtils", "base.core.Commons", function (Class, Sidebar, SidebarUtils, Commons)
+base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.imports.Widget", "blocks.core.Sidebar", "base.core.Commons", function (Class, Widget, Sidebar, Commons)
 {
     var MediumEditorExtensions = this;
 
@@ -245,9 +245,12 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.co
         {
             var form = $('<div id="' + ('medium-editor-toolbar-form-anchor-' + this.getEditorId()) + '" class="form-inline medium-editor-toolbar-form"></div>');
 
-            //var inputActions = SidebarUtils.buildInputActions(Sidebar, true, true, null);
+            //TODO this is a fast hack to make the createTextInput() method below work cause we're not subclassing from Widget
+            var dummyWidget = new Widget.Class();
+
+            //var inputActions = this.buildInputActions(Sidebar, true, true, null);
             //TODO add the inputActions to the constructor below, but make it work with the sidebar finder
-            var formGroup = SidebarUtils.createTextInput(Sidebar, function getterFunction()
+            var formGroup = dummyWidget.createTextInput(Sidebar, function getterFunction()
                 {
                     //return element.attr(attribute);
                 }, function setterFunction(val)

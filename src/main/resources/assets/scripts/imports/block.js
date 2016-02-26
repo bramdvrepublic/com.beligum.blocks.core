@@ -1,7 +1,7 @@
 /**
  * Created by wouter on 17/07/15.
  */
-base.plugin("blocks.imports.Block", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.SidebarUtils", "blocks.core.Layouter", "base.core.Commons", "blocks.imports.All", function (Class, Widget, BlocksConstants, BlocksMessages, Sidebar, SidebarUtils, Layouter, Commons, All)
+base.plugin("blocks.imports.Block", ["base.core.Class", "blocks.imports.Widget", "constants.blocks.core", "messages.blocks.core", "blocks.core.Layouter", "base.core.Commons", "blocks.imports.All", function (Class, Widget, BlocksConstants, BlocksMessages, Layouter, Commons, All)
 {
     var Block = this;
     this.TAGS = All.IMPORTS;
