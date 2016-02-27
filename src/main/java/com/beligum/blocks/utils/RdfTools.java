@@ -1,9 +1,9 @@
 package com.beligum.blocks.utils;
 
-import com.beligum.base.models.ifaces.BasicModel;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.exceptions.RdfException;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
@@ -27,7 +27,7 @@ public class RdfTools
      * Generate a new id-value
      * e.g. http://www.republic.be/v1/resource/address/156465
      */
-    public static URI createAbsoluteResourceId(BasicModel entity)
+    public static URI createAbsoluteResourceId(RdfClass entity)
     {
         return createAbsoluteResourceId(entity, new Long(RdfTools.SIMPLE_FLAKE.generate()).toString());
     }
@@ -37,7 +37,7 @@ public class RdfTools
      * Generate a new id-value
      * e.g. /v1/resource/address/156465
      */
-    public static URI createRelativeResourceId(BasicModel entity)
+    public static URI createRelativeResourceId(RdfClass entity)
     {
         return createRelativeResourceId(entity, new Long(RdfTools.SIMPLE_FLAKE.generate()).toString());
     }
@@ -46,36 +46,18 @@ public class RdfTools
      * Create a absolute resource id, based on the type and an existing id-value
      * e.g. http://www.republic.be/v1/resource/address/big-street-in-antwerp
      */
-    public static URI createAbsoluteResourceId(BasicModel entity, String id)
+    public static URI createAbsoluteResourceId(RdfClass entity, String id)
     {
-        return UriBuilder.fromUri(Settings.instance().getSiteDomain()).path(ParserConstants.RESOURCE_ENDPOINT).path(entity.getResourceUriClassName()).path(id).build();
+        return UriBuilder.fromUri(Settings.instance().getSiteDomain()).path(ParserConstants.RESOURCE_ENDPOINT).path(entity.getName()).path(id).build();
     }
 
     /**
      * Create a locale resource id, based on the type and an existing id-value
      * e.g. /v1/resource/address/big-street-in-antwerp
      */
-    public static URI createRelativeResourceId(BasicModel entity, String id)
+    public static URI createRelativeResourceId(RdfClass entity, String id)
     {
-        return UriBuilder.fromUri("/").path(ParserConstants.RESOURCE_ENDPOINT).path(entity.getResourceUriClassName()).path(id).build();
-    }
-
-    /**
-     * Create a locale ontology uri, based on the type
-     * e.g. /v1/ontology/address
-     */
-    public static URI createRelativeOntologyUri(BasicModel entity)
-    {
-         return UriBuilder.fromUri("/").path(ParserConstants.ONTOLOGY_ENDPOINT).path(entity.getResourceUriClassName()).build();
-    }
-
-    /**
-     * Create an absolute ontology uri, based on the type
-     * e.g. http://www.republic.be/v1/ontology/address
-     */
-    public static URI createAbsoluteOntologyUri(BasicModel entity)
-    {
-        return UriBuilder.fromUri(Settings.instance().getSiteDomain()).path(ParserConstants.ONTOLOGY_ENDPOINT).path(entity.getResourceUriClassName()).build();
+        return UriBuilder.fromUri("/").path(ParserConstants.RESOURCE_ENDPOINT).path(entity.getName()).path(id).build();
     }
 
 

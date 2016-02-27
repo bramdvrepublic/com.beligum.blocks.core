@@ -33,165 +33,107 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
         },
 
         //-----PRIVATE METHODS-----
+        /**
+         * Mainly created to lazy-load the combobox; we return a combobox directly, which we will fill with the data from an endpoint.
+         */
         _createCombobox: function (block, element)
         {
-            var ATTRIBUTE_NAME = "property";
-            var combobox = this.addUniqueAttributeValue(Sidebar, block.element, "Property type", ATTRIBUTE_NAME,
-                [{
-                    name: "Loading…",
-                    value: ""
-                }]
-            );
+            var PROPERTY_ATTR = "property";
+            var DATATYPE_ATTR = "datatype";
+            var CONTENT_ATTR = "content";
+
+            //this is the label that belongs to the value
+            var labelElement = element.find("[data-property='" + BlocksConstants.FICHE_ENTRY_NAME_PROPERTY + "']");
+            //this is the element that holds the true value of the entry
+            var propElement = element.find("." + BlocksConstants.FICHE_ENTRY_PROPERTY_CLASS);
 
             var _this = this;
-            //note: we need this (instead of $.getJSON) to disable to async
-            $.getJSON("/blocks/admin/rdf/properties/")
-                .done(function (data)
+            var combobox = this.addUniqueAttributeValueAsync(Sidebar, propElement, "Property type", PROPERTY_ATTR, "/blocks/admin/rdf/properties/", "title", "name",
+                function changeListener(oldValueTerm, newValueTerm)
                 {
-                    _this._termMappings = {};
+                    //we need this code to abort early if we already have the correct class set on the property element
+                    // this is because this code get's called too much and interferes with the editor-initialization code
+                    if (newValueTerm && propElement.hasClass(newValueTerm.widgetType)) {
+                        return;
+                    }
 
-                    var EMPTY_SEL_NAME = "Please select…";
-                    var EMPTY_SEL_VALUE = "";
-                    var comboEntries = [{
-                        name: EMPTY_SEL_NAME,
-                        value: EMPTY_SEL_VALUE
-                    }];
+                    //we can't replace the element because too many other closures are hooked to it,
+                    //so we simply reset the existing element by removing all attributes and clearing it's html content
 
-                    $.each(data, function (idx, entry)
-                    {
-                        comboEntries.push({
-                            name: entry.title,
-                            value: entry.name
-                        });
-
-                        //save the object in a mapping structure for later
-                        _this._termMappings[entry.name] = entry;
+                    //first copy the attributes to remove if we don't do this it causes problems
+                    //iterating over the array we're removing elements from
+                    var attributes = $.map(propElement[0].attributes, function(item) {
+                        return item.name;
                     });
 
-                    //sort on name
-                    comboEntries.sort(function (a, b)
-                    {
-                        //let the empty selection come first
-                        if (a.name === EMPTY_SEL_NAME) {
-                            return -1;
-                        }
-                        else {
-                            var aName = a.name == null ? null : a.name.toLowerCase();
-                            var bName = b.name == null ? null : b.name.toLowerCase();
-
-                            return ((aName < bName) ? -1 : ((aName > bName) ? 1 : 0));
-                        }
+                    // now remove the attributes
+                    $.each(attributes, function(i, item) {
+                        propElement.removeAttr(item);
                     });
 
-                    //get the value of the attribute on the element
-                    //we don't set the property on the element itself, but on a special wrapper element annotated with the .property attribute
-                    var propElement = element.find("." + BlocksConstants.FICHE_ENTRY_PROPERTY_CLASS);
-                    var labelElement = element.find("." + BlocksConstants.FICHE_ENTRY_NAME_CLASS);
-                    var attr = propElement.attr(ATTRIBUTE_NAME);
-                    // For some browsers, `attr` is undefined; for others, 'attr' is false.  Check for both.
-                    var hasAttr = (typeof attr !== typeof undefined && attr !== false);
-                    var attrFound = false;
+                    //here, we have a clean element, so we can start building again...
+                    propElement.addClass(BlocksConstants.FICHE_ENTRY_PROPERTY_CLASS);
+                    propElement.html(BlocksMessages.widgetFicheEntryDefaultValue);
 
-                    //we externalized this method to be able to load the data lazily when an async json call completed
-                    _this.reinitCombobox(combobox, comboEntries,
-                        function initCallback(testValue)
-                        {
-                            var retVal = false;
+                    labelElement.html(BlocksMessages.widgetFicheEntryDefaultLabel);
+                    if (newValueTerm) {
 
-                            //signal the caller to stop as soon as we found the value with the retVal
-                            //note that we allow the caller to add an empty ("") value to indicate the selection where no attribute is set (yet)
-                            //Note that this is more or less the same init code as Widget.addUniqueAttributeValue()
-                            if (!attrFound && (attr == testValue || (testValue === "" && !hasAttr))) {
-                                attrFound = true;
-                                retVal = true;
-                            }
+                        //this will reset any previously added widgets after the combobox
+                        combobox.nextAll().remove();
 
-                            //return true if this element needs to be selected
-                            return retVal;
-                        },
-                        function changeCallback(oldValue, newValue)
-                        {
-                            var oldValueTerm = _this._termMappings[oldValue];
-                            var newValueTerm = _this._termMappings[newValue];
+                        //set the label html
+                        labelElement.html("<p>" + newValueTerm.label + "</p>");
 
-                            if (newValue) {
-                                propElement.attr(ATTRIBUTE_NAME, newValue);
-                            }
-                            else {
-                                propElement.removeAttr(ATTRIBUTE_NAME);
-                            }
+                        //initialize the property attributes
+                        propElement.attr(PROPERTY_ATTR, newValueTerm.name);
+                        propElement.attr(DATATYPE_ATTR, newValueTerm.dataType);
+                        propElement.addClass(newValueTerm.widgetType);
 
-                            //we save the widgetType as a class name, so we can filter with the widget classes
-                            if (oldValueTerm) {
-                                propElement.removeClass(oldValueTerm.widgetType);
-                            }
-                            if (newValueTerm) {
-                                //we really switched to a new type (alternative is we load the page with newValueTerm as a class)
-                                if (!propElement.hasClass(newValueTerm.widgetType)) {
-
-                                    propElement.addClass(newValueTerm.widgetType);
-                                    labelElement.html("<p>" + newValueTerm.label + "</p>");
-
-                                    //this will reset any previously added widgets after the combobox
-                                    combobox.nextAll().remove();
-
-                                    var defaultEditorHtml = "<p>Type your text here...</p>";
-                                    //some more type-specific post-processing
-                                    switch (newValueTerm.widgetType) {
-                                        case BlocksConstants.SIDEBAR_WIDGET_EDITOR:
-                                            propElement.html(defaultEditorHtml);
-                                            break;
-                                        case BlocksConstants.SIDEBAR_WIDGET_INLINE_EDITOR:
-                                            propElement.html(defaultEditorHtml);
-                                            propElement.attr(BlocksConstants.TEXT_EDITOR_OPTIONS_ATTR, BlocksConstants.TEXT_EDITOR_OPTIONS_FORCE_INLINE+" "+BlocksConstants.TEXT_EDITOR_OPTIONS_NO_TOOLBAR);
-                                            break;
-                                        case BlocksConstants.SIDEBAR_WIDGET_TOGGLE:
-                                            combobox.after(_this._createBooleanWidget(block, element, propElement));
-                                            break;
-                                    }
-                                }
-                                //initialize some widgets on page load
-                                else {
-                                    switch (newValueTerm.widgetType) {
-                                        case BlocksConstants.SIDEBAR_WIDGET_TOGGLE:
-                                            combobox.after(_this._createBooleanWidget(block, element, propElement));
-                                            break;
-                                    }
-                                }
-                            }
-                            else {
-                                labelElement.html(BlocksMessages.widgetFicheEntryDefaultLabel);
-                                propElement.html(BlocksMessages.widgetFicheEntryDefaultValue);
-                            }
+                        //some more type-specific post-processing
+                        var defaultEditorHtml = "<p>Type your text here...</p>";
+                        switch (newValueTerm.widgetType) {
+                            case BlocksConstants.SIDEBAR_WIDGET_EDITOR:
+                                propElement.html(defaultEditorHtml);
+                                break;
+                            case BlocksConstants.SIDEBAR_WIDGET_INLINE_EDITOR:
+                                propElement.html(defaultEditorHtml);
+                                //we're not a span, so force inline
+                                propElement.attr(BlocksConstants.TEXT_EDITOR_OPTIONS_ATTR, BlocksConstants.TEXT_EDITOR_OPTIONS_FORCE_INLINE + " " + BlocksConstants.TEXT_EDITOR_OPTIONS_NO_TOOLBAR);
+                                break;
+                            case BlocksConstants.SIDEBAR_WIDGET_TOGGLE:
+                                combobox.after(_this._createBooleanWidget(block, propElement, CONTENT_ATTR));
+                                break;
                         }
-                    );
-                })
-                .fail(function (xhr, textStatus, exception)
-                {
-                    Notification.error(BlocksMessages.generalServerDataError + (exception ? "; " + exception : ""), xhr);
+                    }
                 });
 
             return combobox;
         },
-        _createBooleanWidget: function (block, element, propElement)
+        _createBooleanWidget: function (block, propElement, contentAttr)
         {
+            var CONTENT_VALUE_TRUE = "true";
+            var CONTENT_VALUE_FALSE = "false";
+
             var retVal = $('<div class="' + BlocksConstants.SIDEBAR_WIDGET_WRAPPER_CLASS + '"></div>');
 
             var toggleState = function (newState)
             {
                 if (newState) {
-                    propElement.html('<i class="fa fa-fw '+onClass+'" />');
-                } else {
-                    propElement.html('<i class="fa fa-fw '+offClass+'" />');
+                    propElement.attr(contentAttr, CONTENT_VALUE_TRUE);
+                    propElement.html('<i class="fa fa-fw ' + onClass + '" />');
+                }
+                else {
+                    propElement.attr(contentAttr, CONTENT_VALUE_FALSE);
+                    propElement.html('<i class="fa fa-fw ' + offClass + '" />');
                 }
             };
 
-            var onClass = "fa-check-square-o";
-            var offClass = "fa-square-o";
+            var onClass = "fa-check";
+            var offClass = "fa-close";
             var toggleButton = this.createToggleButton("Value",
                 function initStateCallback()
                 {
-                    var retVal = propElement.find('.'+onClass).length > 0;
+                    var retVal = propElement.attr(contentAttr) == CONTENT_VALUE_TRUE;
 
                     toggleState(retVal);
 

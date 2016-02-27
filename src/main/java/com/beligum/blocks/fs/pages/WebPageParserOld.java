@@ -9,6 +9,7 @@ import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.Node;
 import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.models.interfaces.WebPage;
+import com.beligum.blocks.rdf.ontology.Classes;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.utils.RdfTools;
@@ -78,7 +79,7 @@ public class WebPageParserOld
         this.pageTitle = I18nFactory.instance().getResourceBundle(locale).get(core.Entries.defaultPageTitle);
         Element base = this.source.getFirstElement("base");
         this.setBase(base, uri);
-        pageResource = ResourceFactoryImpl.instance().createResource(RdfTools.createRelativeResourceId(new com.beligum.blocks.rdf.schema.Page()), RdfTools.createLocalType("Webpage"), locale);
+        pageResource = ResourceFactoryImpl.instance().createResource(RdfTools.createRelativeResourceId(Classes.Page), RdfTools.createLocalType("Webpage"), locale);
         this.resources.put(pageResource.getBlockId().toString(), pageResource);
         this.elements = this.source.getAllElements();
         for (HtmlTemplate template : HtmlParser.getTemplateCache().values()) {

@@ -3,6 +3,7 @@ package com.beligum.blocks.fs.metadata;
 import com.beligum.base.auth.models.Person;
 import com.beligum.base.config.CoreConfiguration;
 import com.beligum.blocks.fs.ifaces.ResourcePath;
+import com.beligum.blocks.rdf.ontology.Classes;
 import com.beligum.blocks.schema.ebucore.v1_6.jaxb.*;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang3.StringUtils;
@@ -135,7 +136,7 @@ public class EBUCoreHdfsMetadataWriter extends AbstractHdfsMetadataWriter
         super.updateCreator(creator);
 
         //makes sense to use a relative url, right? (is more update-proof?)
-        String creatorId = RdfTools.createRelativeResourceId(creator, "" + creator.getId()).toString();
+        String creatorId = RdfTools.createRelativeResourceId(Classes.Person, "" + creator.getId()).toString();
 
         EntityType creatorEntity = null;
         //if we're the first, set us as creator

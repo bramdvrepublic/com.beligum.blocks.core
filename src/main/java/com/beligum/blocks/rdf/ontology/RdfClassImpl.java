@@ -2,15 +2,14 @@ package com.beligum.blocks.rdf.ontology;
 
 import com.beligum.base.filesystem.MessagesFileEntry;
 import com.beligum.base.models.AbstractJsonObject;
-import com.beligum.blocks.config.SidebarWidget;
-import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
 
 import java.net.URI;
 
 /**
- * Created by bram on 2/25/16.
+ * Created by bram on 2/27/16.
  */
-public class RdfPropertyImpl extends AbstractJsonObject implements RdfProperty
+public class RdfClassImpl extends AbstractJsonObject implements RdfClass
 {
     //-----CONSTANTS-----
 
@@ -20,32 +19,21 @@ public class RdfPropertyImpl extends AbstractJsonObject implements RdfProperty
     private String vocabularyPrefix;
     private MessagesFileEntry title;
     private MessagesFileEntry label;
-    /**
-     * Note that W3C keeps a list of common prefixes, defined in every initial RDFa context.
-     * See here for the list:
-     * https://www.w3.org/2011/rdfa-context/rdfa-1.1
-     */
-    private URI dataType;
-    private SidebarWidget widgetType;
     private URI[] isSameAs;
 
     //-----CONSTRUCTORS-----
-    public RdfPropertyImpl(String name,
-                           URI vocabulary,
-                           String vocabularyPrefix,
-                           MessagesFileEntry title,
-                           MessagesFileEntry label,
-                           URI dataType,
-                           SidebarWidget widgetType,
-                           URI[] isSameAs)
+    public RdfClassImpl(String name,
+                        URI vocabulary,
+                        String vocabularyPrefix,
+                        MessagesFileEntry title,
+                        MessagesFileEntry label,
+                        URI[] isSameAs)
     {
         this.name = name;
         this.vocabulary = vocabulary;
         this.vocabularyPrefix = vocabularyPrefix;
         this.title = title;
         this.label = label;
-        this.dataType = dataType;
-        this.widgetType = widgetType;
         //make it uniform (always an array)
         this.isSameAs = isSameAs == null ? new URI[] {} : isSameAs;
     }
@@ -85,16 +73,6 @@ public class RdfPropertyImpl extends AbstractJsonObject implements RdfProperty
     public String getLabel()
     {
         return label.getI18nValue();
-    }
-    @Override
-    public URI getDataType()
-    {
-        return dataType;
-    }
-    @Override
-    public String getWidgetType()
-    {
-        return widgetType.getConstant();
     }
     @Override
     public URI[] getIsSameAs()

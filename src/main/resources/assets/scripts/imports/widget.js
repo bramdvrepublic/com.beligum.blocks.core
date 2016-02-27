@@ -4,7 +4,7 @@
 /*
  * This is the abstract superclass that all widgets need to extend
  */
-base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.core", "base.core.Class", "base.core.Commons", function (BlocksConstants, BlocksMessages, Class, Commons)
+base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.core", "base.core.Class", "base.core.Commons", "blocks.core.Notification", function (BlocksConstants, BlocksMessages, Class, Commons, Notification)
 {
     var Widget = this;
 
@@ -315,12 +315,9 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * */
         addUniqueAttributeValue: function (Sidebar, element, labelText, name, values, changeListener)
         {
+            var hasAttr = element.hasAttribute(name);
             //get the value of the attribute on the element
-            var attr = element.attr(name);
-
-            // For some browsers, `attr` is undefined; for others,
-            // `attr` is false.  Check for both.
-            var hasAttr = (typeof attr !== typeof undefined && attr !== false);
+            var attr = hasAttr ? element.attr(name) : null;
 
             var attrFound = false;
             var retVal = this.createCombobox(Sidebar, labelText, values,
@@ -328,18 +325,21 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 {
                     var retVal = false;
 
-                    //signal the caller to stop as soon as we found the value with the retVal
-                    //note that we allow the caller to add an empty ("") value to indicate the selection where no attribute is set (yet)
-                    if (!attrFound && (attr == testValue || (testValue === "" && !hasAttr))) {
-                        attrFound = true;
-                        retVal = true;
+                    //make sure we don't set the attribute to "undefined"
+                    if (typeof testValue !== typeof undefined) {
+                        //signal the caller to stop as soon as we found the value with the retVal
+                        //note that we allow the caller to add an empty ("") value to indicate the selection where no attribute is set (yet)
+                        if (!attrFound && (attr == testValue || (testValue === "" && !hasAttr))) {
+                            attrFound = true;
+                            retVal = true;
+                        }
                     }
 
                     return retVal;
                 },
                 function changeCallback(oldValue, newValue)
                 {
-                    if (newValue != "") {
+                    if (newValue) {
                         element.attr(name, newValue);
                     }
                     else {
@@ -352,6 +352,95 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     if (changeListener) {
                         changeListener(oldValue, newValue);
                     }
+                });
+
+            return retVal;
+        },
+
+        addUniqueAttributeValueAsync: function (Sidebar, element, labelText, attribute, valuesEndpoint, nameProperty, valueProperty, changeListener)
+        {
+            var retVal = this.addUniqueAttributeValue(Sidebar, element, labelText, attribute,
+                [{
+                    name: BlocksMessages.comboboxLoadingName,
+                    value: BlocksMessages.comboboxLoadingValue
+                }]
+            );
+
+            var _this = this;
+            //note: we need this (instead of $.getJSON) to disable to async
+            $.getJSON(valuesEndpoint)
+                .done(function (data)
+                {
+                    //initialize a private variable that will hold mappings between the data objects from the server
+                    // and the keys in the combobox
+                    _this._termMappings = {};
+
+                    var comboEntries = [];
+                    $.each(data, function (idx, entry)
+                    {
+                        comboEntries.push({
+                            name: entry[nameProperty],
+                            value: entry[valueProperty]
+                        });
+
+                        //save the object in a mapping structure for later
+                        _this._termMappings[entry.name] = entry;
+                    });
+
+                    //sort the combobox entries on name
+                    comboEntries.sort(function (a, b)
+                    {
+                        var aName = a.name == null ? null : a.name.toLowerCase();
+                        var bName = b.name == null ? null : b.name.toLowerCase();
+
+                        return ((aName < bName) ? -1 : ((aName > bName) ? 1 : 0));
+                    });
+
+                    var hasAttr = element.hasAttribute(attribute);
+                    //get the value of the attribute on the element
+                    var attr = hasAttr ? element.attr(attribute) : null;
+                    var attrFound = false;
+
+                    //we externalized this method to be able to load the data lazily when an async json call completed
+                    _this.reinitCombobox(retVal, comboEntries,
+                        function initCallback(testValue)
+                        {
+                            var retVal = false;
+
+                            //make sure we don't set the attribute to "undefined"
+                            if (typeof testValue !== typeof undefined) {
+                                //signal the caller to stop as soon as we found the value with the retVal
+                                //note that we allow the caller to add an empty ("") value to indicate the selection where no attribute is set (yet)
+                                //Note that this is more or less the same init code as Widget.addUniqueAttributeValue()
+                                if (!attrFound && (attr == testValue || (testValue === "" && !hasAttr))) {
+                                    attrFound = true;
+                                    retVal = true;
+                                }
+                            }
+
+                            //return true if this element needs to be selected
+                            return retVal;
+                        },
+                        function changeCallback(oldValue, newValue)
+                        {
+                            var oldValueTerm = _this._termMappings[oldValue];
+                            var newValueTerm = _this._termMappings[newValue];
+
+                            element.removeAttr(attribute);
+                            //if we have a new value, set the property attr
+                            if (newValue) {
+                                element.attr(attribute, newValue);
+                            }
+
+                            if (changeListener) {
+                                changeListener(oldValueTerm, newValueTerm);
+                            }
+                        }
+                    );
+                })
+                .fail(function (xhr, textStatus, exception)
+                {
+                    Notification.error(BlocksMessages.generalServerDataError + (exception ? "; " + exception : ""), xhr);
                 });
 
             return retVal;

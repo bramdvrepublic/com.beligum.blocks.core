@@ -128,11 +128,6 @@ public class DBDocumentInfo implements BasicModel
     {
         return this.getId() == null || this.getId() <= 0;
     }
-    @Override
-    public String getResourceUriClassName()
-    {
-        return "document-info";
-    }
 
     //-----PRIVATE CLASSES-----
     public static class DBDocumentInfoListener

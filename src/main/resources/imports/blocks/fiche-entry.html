@@ -11,12 +11,13 @@
     #constants('blocks.core')
 ## Note: don't use .label here, it's taken by bootstrap (the pills thing))!
 ## Also don't use <label> because it messes with the cursor (and is meant for forms, not key/value setups)
-    <div data-property="name" class="$CONSTANTS.blocks.core.FICHE_ENTRY_NAME_CLASS" $CONSTANTS.blocks.core.TEXT_EDITOR_OPTIONS_ATTR="$CONSTANTS.blocks.core.TEXT_EDITOR_OPTIONS_NO_TOOLBAR">
+    <div data-property="$CONSTANTS.blocks.core.FICHE_ENTRY_NAME_PROPERTY">
         $MESSAGES.blocks.core.widgetFicheEntryDefaultLabel
     </div>
-    <div data-property="value" class="$CONSTANTS.blocks.core.FICHE_ENTRY_VALUE_CLASS">
+    <div data-property="$CONSTANTS.blocks.core.FICHE_ENTRY_VALUE_PROPERTY">
     ## This is the wrapper on which the property attribute will be set; that way, we can store the raw html with data-property="value"
     ## and store the rdfa-property containing the real data (and type))
+    ## Note: sync this code with the code in blocks-fiche-entry.js::_createCombobox()
         <div class="$CONSTANTS.blocks.core.FICHE_ENTRY_PROPERTY_CLASS">
             $MESSAGES.blocks.core.widgetFicheEntryDefaultValue
         </div>

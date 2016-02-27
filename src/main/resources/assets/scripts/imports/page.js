@@ -69,7 +69,7 @@ base.plugin("blocks.imports.Page", ["base.core.Class", "blocks.imports.Widget", 
 
             var title = $("title");
             if (title.length == 0) {
-                title = $("<title property='page-title' />").html(BlocksMessages.defaultPageTitle);
+                title = $("<title property='title' />").html(BlocksMessages.defaultPageTitle);
                 $("head").append(title);
             }
 
@@ -77,12 +77,16 @@ base.plugin("blocks.imports.Page", ["base.core.Class", "blocks.imports.Widget", 
                 retVal.push(this.addValueHtml(Sidebar, title, "Page title", "Enter a title for this page", false));
             }
 
+            retVal.push(this.addUniqueAttributeValueAsync(Sidebar, $("html"), "Page subject", "typeof", "/blocks/admin/rdf/classes/", "title", "name", null));
+
             return retVal;
         },
         getWindowName: function ()
         {
             return BlocksMessages.widgetPageTitle;
         },
+
+        //-----PRIVATE METHODS-----
 
     })).register(this.TAGS);
 

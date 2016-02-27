@@ -6,6 +6,7 @@ import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import com.beligum.blocks.models.interfaces.WebPath;
 import com.beligum.blocks.models.sql.DBPath;
+import com.beligum.blocks.rdf.ontology.Classes;
 import com.beligum.blocks.utils.RdfTools;
 
 import javax.ws.rs.core.UriBuilder;
@@ -78,7 +79,7 @@ public class Route
     public void create() throws Exception
     {
         WebPath retVal = PersistenceControllerImpl.instance().getPath(simplePath, locale);
-        URI blockId = RdfTools.createRelativeResourceId(new com.beligum.blocks.rdf.schema.Page());
+        URI blockId = RdfTools.createRelativeResourceId(Classes.Page);
         if (retVal == null) {
 
             // Check if other languages are linked to this path

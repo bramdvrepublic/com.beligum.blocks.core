@@ -1,11 +1,11 @@
 package com.beligum.blocks.rdf.sources;
 
-import com.beligum.base.models.ifaces.BasicModel;
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.HdfsResourcePath;
 import com.beligum.blocks.fs.pages.DefaultPageImpl;
 import com.beligum.blocks.fs.pages.ifaces.Page;
+import com.beligum.blocks.rdf.ontology.Classes;
 import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang3.StringUtils;
@@ -194,11 +194,9 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
             // If nothing was found, this is a true new page and thus we generate a new resource id.
             // Note that we discard any possible supplied typeOf values in this case; we force it to be a page
             if (newResource==null) {
-                BasicModel type = new com.beligum.blocks.rdf.schema.Page();
-
-                //it makes sense to make the links relative, right; we're much more future proof this way
-                newTypeOf = RdfTools.createRelativeOntologyUri(type);
-                newResource = RdfTools.createRelativeResourceId(type);
+                //since the vocab is set to the same value as the vocab of the Page class, we can safely use the short version
+                newTypeOf = URI.create(Classes.Page.getName());
+                newResource = RdfTools.createRelativeResourceId(Classes.Page);
             }
 
             htmlTag.attr(HTML_ROOT_SUBJECT_ATTR, newResource.toString());

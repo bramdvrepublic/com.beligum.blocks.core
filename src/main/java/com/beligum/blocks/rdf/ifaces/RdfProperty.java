@@ -22,6 +22,25 @@ public interface RdfProperty extends JsonObject
     URI getVocabulary();
 
     /**
+     * The site-specific ontology prefix of the full vocabulary URI for this property. Together with the name, it forms the CURIE.
+     * Note: don't add the colon.
+     * Eg. mot (results into mot:postalCode)
+     */
+    String getVocabularyPrefix();
+
+    /**
+     * The full, absolute URI of this property that is built from the vocabulary URI and the name
+     * Eg. http://www.reinvention.be/ontology/postalCode
+     */
+    URI getFullName();
+
+    /**
+     * The full, absolute URI of this property that is built from the vocabulary CURIE and the name
+     * Eg. mot:postalCode
+     */
+    URI getCurieName();
+
+    /**
      * The human readable describing phrase for this property, to be used to build admin-side selection lists etc.
      * Eg. Postal code
      */

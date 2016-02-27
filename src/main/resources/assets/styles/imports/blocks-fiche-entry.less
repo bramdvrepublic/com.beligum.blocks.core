@@ -18,7 +18,7 @@ blocks-fiche-entry {
     margin-bottom: 15px;
   }
 
-  .@{FICHE_ENTRY_NAME_CLASS} {
+  [data-property='@{FICHE_ENTRY_NAME_PROPERTY}'] {
     .make-md-column(4);
     font-weight: bold;
 
@@ -27,7 +27,7 @@ blocks-fiche-entry {
     }
   }
 
-  .@{FICHE_ENTRY_VALUE_CLASS} {
+  [data-property='@{FICHE_ENTRY_VALUE_PROPERTY}'] {
     .make-md-column(8);
 
     p:last-child {

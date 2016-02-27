@@ -59,7 +59,7 @@ public class RdfFactory
                 }
             }
 
-            R.cacheManager().getApplicationCache().put(CacheKeys.RDF_CLASSES, discoveredClasses.toArray(new RdfProperty[discoveredClasses.size()]));
+            R.cacheManager().getApplicationCache().put(CacheKeys.RDF_CLASSES, discoveredClasses.toArray(new RdfClass[discoveredClasses.size()]));
         }
 
         return (RdfClass[]) R.cacheManager().getApplicationCache().get(CacheKeys.RDF_CLASSES);

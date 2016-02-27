@@ -33,6 +33,15 @@ public class RdfEndpoint
         return Response.ok(RdfFactory.getProperties()).build();
     }
 
+    @GET
+    @Path("/classes/")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
+    public Response getClasses() throws IOException
+    {
+        return Response.ok(RdfFactory.getClasses()).build();
+    }
+
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
