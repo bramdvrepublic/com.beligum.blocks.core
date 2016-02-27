@@ -10,7 +10,13 @@ blocks-fiche-entry {
   .make-row();
   .clearfix();//doesn't seem to be inherited from make-row well...
 
-  //note: don't clear the margin of the last entry: it will create a padding with a (possible) column border
+  margin-top: 5px;
+  margin-bottom: 5px;
+
+  //create a padding with a (possible) column border
+  &:last-of-type {
+    margin-bottom: 15px;
+  }
 
   .@{FICHE_ENTRY_NAME_CLASS} {
     .make-md-column(4);
@@ -23,5 +29,9 @@ blocks-fiche-entry {
 
   .@{FICHE_ENTRY_VALUE_CLASS} {
     .make-md-column(8);
+
+    p:last-child {
+      margin-bottom: 0;
+    }
   }
 }

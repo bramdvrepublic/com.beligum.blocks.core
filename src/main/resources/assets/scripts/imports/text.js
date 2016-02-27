@@ -24,6 +24,8 @@ base.plugin("blocks.imports.Text", ["base.core.Class", "blocks.imports.Property"
             // Preparation
             element.attr("contenteditable", true);
 
+            var inlineEditor = element.prop('tagName') == 'SPAN';
+
             //this allows us to set some specific additional options to the elements to control how the editor behaves
             var options = {};
             var optionsAttr = element.attr(BlocksConstants.TEXT_EDITOR_OPTIONS_ATTR);
@@ -31,13 +33,18 @@ base.plugin("blocks.imports.Text", ["base.core.Class", "blocks.imports.Property"
                 //this converts and array to an object
                 var optionsAttrValues = optionsAttr.split(" ");
                 for (var i = 0; i < optionsAttrValues.length; i++) {
-                    //for now, we don't have values, so just set to true
-                    //note that code (eg the constuctor in mediumModule.js) depends on this to be true
-                    options[optionsAttrValues[i]] = true;
+                    var option = optionsAttrValues[i];
+                    //special flag to force the inline editor, no matter the tag
+                    if (option == BlocksConstants.TEXT_EDITOR_OPTIONS_FORCE_INLINE) {
+                        inlineEditor = true;
+                    }
+                    else {
+                        //for now, we don't have values, so just set to true
+                        //note that code (eg the constuctor in mediumModule.js) depends on this to be true
+                        options[option] = true;
+                    }
                 }
             }
-
-            var inlineEditor = element.prop('tagName') == 'SPAN';
 
             // last argument means inline (no enter allowed) or not
             var editor = Editor.getEditor(element, inlineEditor, options[BlocksConstants.TEXT_EDITOR_OPTIONS_NO_TOOLBAR]);

@@ -74,7 +74,7 @@ public class WebPageParserOld
         this.source = new Source(source);
         this.source.fullSequentialParse();
         this.database = database;
-        this.vocab = Settings.instance().getDefaultRdfSchema();
+        this.vocab = Settings.instance().getRdfOntologyUri();
         this.pageTitle = I18nFactory.instance().getResourceBundle(locale).get(core.Entries.defaultPageTitle);
         Element base = this.source.getFirstElement("base");
         this.setBase(base, uri);

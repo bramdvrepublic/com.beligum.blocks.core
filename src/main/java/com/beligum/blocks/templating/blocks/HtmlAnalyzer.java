@@ -38,8 +38,9 @@ public class HtmlAnalyzer
     private final TemplateCache allTagTemplates;
     private Source htmlDocument;
     private String normalizedHtml;
-    private AttributeRef htmlResource;
+    private AttributeRef htmlAbout;
     private AttributeRef htmlTypeof;
+    private AttributeRef htmlVocab;
     private Locale htmlLocale;
     private Map<URI, ReferenceRef> internalRefs;
     private Map<URI, ReferenceRef> externalRefs;
@@ -62,13 +63,17 @@ public class HtmlAnalyzer
     {
         return normalizedHtml;
     }
-    public AttributeRef getHtmlResource()
+    public AttributeRef getHtmlAbout()
     {
-        return htmlResource;
+        return htmlAbout;
     }
     public AttributeRef getHtmlTypeof()
     {
         return htmlTypeof;
+    }
+    public AttributeRef getHtmlVocab()
+    {
+        return htmlVocab;
     }
     public Locale getHtmlLanguage()
     {
@@ -119,13 +124,13 @@ public class HtmlAnalyzer
         //extract the base resource id
         Attributes htmlAttributes = htmlElement.getAttributes();
         String tempAttrValue;
-        if (htmlAttributes.get(HtmlSource.HTML_ROOT_RESOURCE_ATTR)!=null && !StringUtils.isEmpty(tempAttrValue = htmlAttributes.getValue(HtmlSource.HTML_ROOT_RESOURCE_ATTR))) {
+        if (htmlAttributes.get(HtmlSource.HTML_ROOT_SUBJECT_ATTR) != null && !StringUtils.isEmpty(tempAttrValue = htmlAttributes.getValue(HtmlSource.HTML_ROOT_SUBJECT_ATTR))) {
             //note that the html tag is always part of the normalized html
-            this.htmlResource = new AttributeRef(tempAttrValue, htmlAttributes.get(HtmlSource.HTML_ROOT_RESOURCE_ATTR), true);
+            this.htmlAbout = new AttributeRef(tempAttrValue, htmlAttributes.get(HtmlSource.HTML_ROOT_SUBJECT_ATTR), true);
         }
         else {
             //makes sense to allow null resources; it allows to use this analyzer more generally
-            this.htmlResource = null;
+            this.htmlAbout = null;
         }
 
         //extract the base typeof
@@ -134,8 +139,16 @@ public class HtmlAnalyzer
             this.htmlTypeof = new AttributeRef(tempAttrValue, htmlAttributes.get(HtmlSource.HTML_ROOT_TYPEOF_ATTR), true);
         }
         else {
-            //this is a nice practice and allows us to skip a lot of null tests (reason why ROOT was added in the first place)
             this.htmlTypeof = null;
+        }
+
+        //extract the base vocab
+        if (htmlAttributes.get(HtmlSource.HTML_ROOT_VOCAB_ATTR)!=null && !StringUtils.isEmpty(tempAttrValue = htmlAttributes.getValue(HtmlSource.HTML_ROOT_VOCAB_ATTR))) {
+            //note that the html tag is always part of the normalized html
+            this.htmlVocab = new AttributeRef(tempAttrValue, htmlAttributes.get(HtmlSource.HTML_ROOT_VOCAB_ATTR), true);
+        }
+        else {
+            this.htmlVocab = null;
         }
 
         //extract and store the locale

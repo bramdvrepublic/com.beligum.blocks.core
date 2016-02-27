@@ -246,7 +246,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
         {
             var id = Commons.generateId();
 
-            var formGroup = $('<div class="form-group"></div>');
+            var formGroup = $('<div class="'+BlocksConstants.SIDEBAR_WIDGET_WRAPPER_CLASS+'"></div>');
             if (labelText) {
                 var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
             }
@@ -470,7 +470,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             var resetBtn = null;
             var selectBtn = null;
 
-            var formGroup = $('<div class="form-group"></div>');
+            var formGroup = $('<div class="'+BlocksConstants.SIDEBAR_WIDGET_WRAPPER_CLASS+'"></div>');
             if (labelText) {
                 var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
             }
@@ -726,7 +726,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
         {
             // Create selectbox to add to sidebar
             var id = Commons.generateId();
-            var content = $('<div class="form-group" />');
+            var content = $('<div class="'+BlocksConstants.SIDEBAR_WIDGET_WRAPPER_CLASS+'" />');
             content.append($('<label for="' + id + '">' + labelText + '</label>'));
             var dropdown = $('<div class="dropdown"/>').appendTo(content);
             var button = $('<button id="' + id + '" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="btn btn-default dropdown-toggle"><span class="text">-----</span>&#160;<span class="caret"></span></button>').appendTo(dropdown);
@@ -827,7 +827,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             }
 
             // Create selectbox to add to sidebar
-            var formGroup = $("<div class='form-group' />");
+            var formGroup = $("<div class=''+BlocksConstants.SIDEBAR_WIDGET_WRAPPER_CLASS+'' />");
 
             // Create checkboxes for each value
             var id = Commons.generateId();

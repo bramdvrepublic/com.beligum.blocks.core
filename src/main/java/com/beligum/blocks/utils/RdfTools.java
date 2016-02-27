@@ -104,7 +104,7 @@ public class RdfTools
     * */
     public static URI makeLocalAbsolute(String relativePath)
     {
-        return addToUri(Settings.instance().getDefaultRdfSchema(), relativePath);
+        return addToUri(Settings.instance().getRdfOntologyUri(), relativePath);
     }
 
     /*
@@ -119,22 +119,22 @@ public class RdfTools
 
         if (relativePath.startsWith("/"))
             relativePath = relativePath.substring(1);
-        String fragment = Settings.instance().getDefaultRdfSchema().getFragment();
+        String fragment = Settings.instance().getRdfOntologyUri().getFragment();
         if (fragment == null) {
             Path path = Paths.get(uri.getPath());
             path = path.resolve(relativePath).normalize();
-            retVal = UriBuilder.fromUri(Settings.instance().getDefaultRdfSchema()).replacePath(path.toString()).build();
+            retVal = UriBuilder.fromUri(Settings.instance().getRdfOntologyUri()).replacePath(path.toString()).build();
         }
         // Add to fragment
         else {
             fragment = fragment.trim();
             if (fragment.equals("")) {
-                retVal = UriBuilder.fromUri(Settings.instance().getDefaultRdfSchema()).fragment(relativePath).build();
+                retVal = UriBuilder.fromUri(Settings.instance().getRdfOntologyUri()).fragment(relativePath).build();
             }
             else {
                 if (!fragment.endsWith("/"))
                     fragment = fragment + "/";
-                retVal = UriBuilder.fromUri(Settings.instance().getDefaultRdfSchema()).fragment(fragment + relativePath).build();
+                retVal = UriBuilder.fromUri(Settings.instance().getRdfOntologyUri()).fragment(fragment + relativePath).build();
             }
         }
 

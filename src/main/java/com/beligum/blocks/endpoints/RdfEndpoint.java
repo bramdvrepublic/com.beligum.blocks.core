@@ -1,7 +1,6 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.blocks.rdf.ontology.Term;
-import com.beligum.blocks.rdf.ontology.Terms;
+import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.security.Permissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
@@ -11,8 +10,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Created by bram on 2/25/16.
@@ -33,12 +30,7 @@ public class RdfEndpoint
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
     public Response getProperties() throws IOException
     {
-        Set<Term> properties = new HashSet<>();
-
-        properties.add(Terms.postalCode);
-        properties.add(Terms.isVerified);
-
-        return Response.ok(properties).build();
+        return Response.ok(RdfFactory.getProperties()).build();
     }
 
     //-----PROTECTED METHODS-----

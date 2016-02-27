@@ -36,9 +36,11 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
      * However, I'm still not 100% convinced we should prefer @resource over @about for the
      * main top-level subject statement. The main reason I'm going with @resource now is
      * simplicity (eg. it's the only one of the two that's present in RDFa Lite).
+     * --> End of discussion, switched to @about because it the right thing
      */
-    public static final String HTML_ROOT_RESOURCE_ATTR = "resource";
+    public static final String HTML_ROOT_SUBJECT_ATTR = "about";
     public static final String HTML_ROOT_TYPEOF_ATTR = "typeof";
+    public static final String HTML_ROOT_VOCAB_ATTR = "vocab";
     public static final String HTML_TITLE_ELEMENT = "title";
 
     //-----VARIABLES-----
@@ -84,7 +86,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
         this.htmlTag.attr(HTML_ROOT_LANG_ATTR, R.i18nFactory().getOptimalLocale(this.sourceAddress).getLanguage());
 
         //NOTE that the search for the base resource uses the language set in the previous code, so make sure this comes after it
-        this.updateBaseResourceAndType(fileContext, this.htmlTag);
+        this.updateBaseAttributes(fileContext, this.htmlTag);
 
         //make the input html a bit more uniform
         this.document.outputSettings().prettyPrint(true);
@@ -157,20 +159,21 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
 
         return this.htmlAnalyzer;
     }
-    private void updateBaseResourceAndType(FileContext fileContext, Element htmlTag) throws IOException
+    private void updateBaseAttributes(FileContext fileContext, Element htmlTag) throws IOException
     {
-        String resourceAttr = htmlTag.attr(HTML_ROOT_RESOURCE_ATTR);
+        String subjectAttr = htmlTag.attr(HTML_ROOT_SUBJECT_ATTR);
         String typeofAttr = htmlTag.attr(HTML_ROOT_TYPEOF_ATTR);
+        String vocabAttr = htmlTag.attr(HTML_ROOT_VOCAB_ATTR);
 
-        // If the saved page has no resource attribute, we assume it's a newly saved paged and two things can happen:
+        // If the saved page has no about attribute, we assume it's a newly saved paged and two things can happen:
         //  - There's another page with the same language in the system (like /en/new-page for /fr/new-page)
         //    If this is the case, we need to link the two pages together (eg; to allow them to move around to other URLs in the future),
         //    so we search for such a page and use the same base resource if we find one.
         //  - If there's not such a page, this is the very first page for this URL and this language, so we generate a new resource ID,
         //    based on the (B-tree friendly) SimpleFlake number (eg. see http://akmanalp.com/simpleflake_presentation/#/12)
         //
-        // Note that we only consider changing the typeof attribute if we're changing the resource attribute. Otherwise, we leave it alone.
-        if (StringUtils.isEmpty(resourceAttr)) {
+        // Note that we only consider changing the typeof attribute if we're changing the about attribute. Otherwise, we leave it alone.
+        if (StringUtils.isEmpty(subjectAttr)) {
 
             URI newResource = null;
             URI newTypeOf = null;
@@ -179,8 +182,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
             // by looking up other files by exchanging the (possible) language-part in the url.
             HtmlAnalyzer translationAnalyzer = this.findTranslationAnalyzer(fileContext);
             if (translationAnalyzer != null) {
-
-                newResource = URI.create(translationAnalyzer.getHtmlResource().value);
+                newResource = URI.create(translationAnalyzer.getHtmlAbout().value);
 
                 //by only modifying if empty, this means we can override the value of the translation if we provide our own, custom typeof;
                 //it's flexible, but maybe we should force-lock it to the translation's typeof?
@@ -199,8 +201,13 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
                 newResource = RdfTools.createRelativeResourceId(type);
             }
 
-            htmlTag.attr(HTML_ROOT_RESOURCE_ATTR, newResource.toString());
+            htmlTag.attr(HTML_ROOT_SUBJECT_ATTR, newResource.toString());
             htmlTag.attr(HTML_ROOT_TYPEOF_ATTR, newTypeOf.toString());
+        }
+
+        if (StringUtils.isEmpty(vocabAttr)) {
+            htmlTag.attr(HTML_ROOT_VOCAB_ATTR, Settings.instance().getRdfOntologyUri().toString());
+            //TODO ideally, this should set the prefix too, but since it allows for multiple prefixes, it's more complex...
         }
     }
     private HtmlAnalyzer findTranslationAnalyzer(FileContext fileContext) throws IOException
@@ -220,7 +227,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
                     if (fileContext.util().exists(new org.apache.hadoop.fs.Path(transPageResourceUri))) {
                         Page transPage = new DefaultPageImpl(new HdfsResourcePath(fileContext, transPageResourceUri));
                         HtmlAnalyzer analyzer = transPage.createAnalyzer();
-                        HtmlAnalyzer.AttributeRef transPageResource = analyzer.getHtmlResource();
+                        HtmlAnalyzer.AttributeRef transPageResource = analyzer.getHtmlAbout();
                         if (transPageResource!=null) {
                             retVal = analyzer;
                             break;

@@ -33,7 +33,7 @@ public class Settings
     private Locale cachedDefaultLanguage;
     private URI cachedSiteDomain;
     private URI[] cachedSiteAliases;
-    private URI defaultRdfSchema;
+    private URI cachedRdfOntologyUri;
     private URI cachedPagesStorePath;
     private URI cachedPagesViewPath;
     private Class<? extends TransactionManager> cachedTransactionManagerClass;
@@ -321,30 +321,21 @@ public class Settings
 
         return this.cachedPagesTripleStoreDir;
     }
-
-
-
-
-
-
-
-
-    //TODO revise these below:
-    public URI getDefaultRdfSchema()
+    public URI getRdfOntologyUri()
     {
-        if (this.defaultRdfSchema == null) {
-            String schema = R.configuration().getString("blocks.core.rdf.schema.url");
+        if (this.cachedRdfOntologyUri == null) {
+            String uri = R.configuration().getString("blocks.core.rdf.ontology.uri");
             try {
-                this.defaultRdfSchema = URI.create(schema);
+                this.cachedRdfOntologyUri = URI.create(uri);
             }
             catch (Exception e) {
-                throw new RuntimeException("Wrong default RDF blocks.core.rdf.schema.url configured; " + schema, e);
+                throw new RuntimeException("Error while parsing RDF ontology URI; " + uri, e);
             }
         }
-        return this.defaultRdfSchema;
+        return this.cachedRdfOntologyUri;
     }
-    public String getDefaultRdfPrefix()
+    public String getRdfOntologyPrefix()
     {
-        return R.configuration().getString("blocks.core.rdf.schema.prefix");
+        return R.configuration().getString("blocks.core.rdf.ontology.prefix");
     }
 }

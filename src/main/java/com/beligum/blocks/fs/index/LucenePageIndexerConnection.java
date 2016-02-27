@@ -139,7 +139,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         URI pageAddress = page.buildAddress();
 
         SimplePageIndexEntry entry = new SimplePageIndexEntry(pageAddress);
-        entry.setResource(htmlAnalyzer.getHtmlResource() == null ? null : htmlAnalyzer.getHtmlResource().value);
+        entry.setResource(htmlAnalyzer.getHtmlAbout() == null ? null : htmlAnalyzer.getHtmlAbout().value);
         entry.setLanguage(htmlAnalyzer.getHtmlLanguage() == null ? null : htmlAnalyzer.getHtmlLanguage().getLanguage());
         URI parent = this.getParentUri(pageAddress, fc);
         entry.setParent(parent == null ? null : parent.toString());

@@ -5,9 +5,10 @@ base.plugin("blocks.imports.BlocksFicheEntryText", ["base.core.Class", "blocks.i
 {
     var BlocksFicheEntryText = this;
     this.TAGS = [
-        "blocks-fiche-entry ."+BlocksConstants.FICHE_ENTRY_NAME_CLASS,
-        "blocks-fiche-entry ."+BlocksConstants.FICHE_ENTRY_VALUE_CLASS+" ."+BlocksConstants.DATATYPE_WIDGET_EDITOR,
-        "blocks-fiche-entry ."+BlocksConstants.FICHE_ENTRY_VALUE_CLASS+" ."+BlocksConstants.DATATYPE_WIDGET_INLINE_EDITOR
+        //Note: we don't allow the user to edit the label of the property (but it works)
+        //"blocks-fiche-entry ."+BlocksConstants.FICHE_ENTRY_NAME_CLASS,
+        "blocks-fiche-entry ."+BlocksConstants.FICHE_ENTRY_VALUE_CLASS+" ."+BlocksConstants.SIDEBAR_WIDGET_EDITOR,
+        "blocks-fiche-entry ."+BlocksConstants.FICHE_ENTRY_VALUE_CLASS+" ."+BlocksConstants.SIDEBAR_WIDGET_INLINE_EDITOR
     ];
 
     (this.Class = Class.create(Text.Class, {
