@@ -56,6 +56,11 @@ public class Settings
         return Settings.instance;
     }
 
+    public boolean hasBlocksConfig()
+    {
+        return R.configuration().getMaxIndex("blocks")>=0;
+    }
+
     public URI getSiteDomain()
     {
         if (this.cachedSiteDomain == null) {

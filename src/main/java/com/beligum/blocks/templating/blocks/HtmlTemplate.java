@@ -1,5 +1,6 @@
 package com.beligum.blocks.templating.blocks;
 
+import com.beligum.base.config.SecurityConfiguration;
 import com.beligum.base.security.PermissionRole;
 import com.beligum.base.security.PermissionsConfigurator;
 import com.beligum.base.server.R;
@@ -519,7 +520,10 @@ public abstract class HtmlTemplate
 
         Attribute scope = resource.getAttributes().get(ATTRIBUTE_RESOURCE_ROLE_SCOPE);
         if (scope != null && !StringUtils.isEmpty(scope.getValue())) {
-            retVal = R.configuration().getSecurityConfig().lookupPermissionRole(scope.getValue());
+            SecurityConfiguration securityConfig = R.configuration().getSecurityConfig();
+            if (securityConfig!=null) {
+                retVal = securityConfig.lookupPermissionRole(scope.getValue());
+            }
         }
 
         //possible that the above function re-fills it with null

@@ -19,14 +19,7 @@ public interface RdfClass extends JsonObject
      * The site-specific ontology URI for this class. Together with the name, it forms the full URI.
      * Eg. http://www.reinvention.be/ontology/
      */
-    URI getVocabulary();
-
-    /**
-     * The site-specific ontology prefix of the full vocabulary URI for this class. Together with the name, it forms the CURIE.
-     * Note: don't add the colon.
-     * Eg. mot
-     */
-    String getVocabularyPrefix();
+    RdfVocabulary getVocabulary();
 
     /**
      * The full, absolute URI of this class that is built from the vocabulary URI and the name

@@ -3,6 +3,7 @@ package com.beligum.blocks.rdf.ontology;
 import com.beligum.base.filesystem.MessagesFileEntry;
 import com.beligum.base.models.AbstractJsonObject;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
 
 import java.net.URI;
 
@@ -15,23 +16,20 @@ public class RdfClassImpl extends AbstractJsonObject implements RdfClass
 
     //-----VARIABLES-----
     private String name;
-    private URI vocabulary;
-    private String vocabularyPrefix;
+    private RdfVocabulary vocabulary;
     private MessagesFileEntry title;
     private MessagesFileEntry label;
     private URI[] isSameAs;
 
     //-----CONSTRUCTORS-----
     public RdfClassImpl(String name,
-                        URI vocabulary,
-                        String vocabularyPrefix,
+                        RdfVocabulary vocabulary,
                         MessagesFileEntry title,
                         MessagesFileEntry label,
                         URI[] isSameAs)
     {
         this.name = name;
         this.vocabulary = vocabulary;
-        this.vocabularyPrefix = vocabularyPrefix;
         this.title = title;
         this.label = label;
         //make it uniform (always an array)
@@ -45,24 +43,19 @@ public class RdfClassImpl extends AbstractJsonObject implements RdfClass
         return name;
     }
     @Override
-    public URI getVocabulary()
+    public RdfVocabulary getVocabulary()
     {
         return vocabulary;
     }
     @Override
-    public String getVocabularyPrefix()
-    {
-        return vocabularyPrefix;
-    }
-    @Override
     public URI getFullName()
     {
-        return vocabulary.resolve(name);
+        return vocabulary.getNamespace().resolve(name);
     }
     @Override
     public URI getCurieName()
     {
-        return URI.create(vocabularyPrefix+":"+name);
+        return URI.create(vocabulary.getPrefix()+":"+name);
     }
     @Override
     public String getTitle()

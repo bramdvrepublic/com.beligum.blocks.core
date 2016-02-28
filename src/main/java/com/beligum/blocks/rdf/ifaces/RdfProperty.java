@@ -19,14 +19,7 @@ public interface RdfProperty extends JsonObject
      * The site-specific ontology prefix URI for this property. Together with the name, it forms the full URI.
      * Eg. http://www.reinvention.be/ontology/
      */
-    URI getVocabulary();
-
-    /**
-     * The site-specific ontology prefix of the full vocabulary URI for this property. Together with the name, it forms the CURIE.
-     * Note: don't add the colon.
-     * Eg. mot (results into mot:postalCode)
-     */
-    String getVocabularyPrefix();
+    RdfVocabulary getVocabulary();
 
     /**
      * The full, absolute URI of this property that is built from the vocabulary URI and the name
@@ -53,11 +46,11 @@ public interface RdfProperty extends JsonObject
     String getLabel();
 
     /**
-     * The full (non-curie) datatype (probably XSD) of this property. This is used by the client side code, together with the WidgetType (see below),
+     * The full datatype (can also be XSD) of this property. This is used by the client side code, together with the WidgetType (see below),
      * to create an appropriate input method and validation for entering a value for this property.
      * Eg. http://www.w3.org/2001/XMLSchema#integer
      */
-    URI getDataType();
+    RdfClass getDataType();
 
     /**
      * This widget-type to be used in the admin sidebar (or just inline, eg. in the case of the editor)
