@@ -51,21 +51,40 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
             var combobox = this.addUniqueAttributeValueAsync(Sidebar, propElement, "Property type", PROPERTY_ATTR, "/blocks/admin/rdf/properties/", "title", "name",
                 function changeListener(oldValueTerm, newValueTerm)
                 {
-                    //we need this code to abort early if we already have the correct class set on the property element
-                    // this is because this code get's called too much and interferes with the editor-initialization code
-                    if (newValueTerm && propElement.hasClass(newValueTerm.widgetType)) {
+                    //for now, we don't allow the combobox to switch to an "empty" value, so ignore if that happens (probably during initialization)
+                    if (!newValueTerm) {
                         return;
                     }
 
-                    //we can't replace the element because too many other closures are hooked to it,
-                    //so we simply reset the existing element by removing all attributes and clearing it's html content
+                    // don't change anything if they're both the same
+                    if (oldValueTerm && oldValueTerm.name==newValueTerm.name) {
+                        return;
+                    }
+
+                    //This method gets called every time the user focuses a fiche entry, because the combobox is re-loaded
+                    //every time, resulting in a change from undefined to the currently configured value.
+                    //We can't really start from scratch every time, because that would mean we'd lose our previously entered data.
+                    //To detect a 'real change', we check three attributes on the propElement: the property, the data type and the widget class.
+                    //Note that we can't just use the property attribute to check if everything is ok, because when this method is called,
+                    //that attribute has just been set (since we requested it by passing PROPERTY_ATTR to addUniqueAttributeValueAsync).
+                    //When all three are ok, we conclude nothing needs to be changed and it's not a 'real change', but rather a 'focus' event.
+                    if (
+                        propElement.hasAttribute(PROPERTY_ATTR) && propElement.attr(PROPERTY_ATTR)==newValueTerm.name &&
+                        propElement.hasAttribute(DATATYPE_ATTR) && propElement.attr(DATATYPE_ATTR)==newValueTerm.dataType &&
+                        propElement.hasClass(newValueTerm.widgetType)
+                    ) {
+                        return;
+                    }
+
+                    //If we reach this point, the element needs to change. Because there's a lot of attributes coming in from other plugin modules,
+                    //our approach is to strip all attributes and html off and start over. Note that we can't just replace the element because too many other
+                    //closures are hooked to it,
 
                     //first copy the attributes to remove if we don't do this it causes problems
                     //iterating over the array we're removing elements from
                     var attributes = $.map(propElement[0].attributes, function(item) {
                         return item.name;
                     });
-
                     // now remove the attributes
                     $.each(attributes, function(i, item) {
                         propElement.removeAttr(item);
@@ -75,9 +94,10 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                     propElement.addClass(BlocksConstants.FICHE_ENTRY_PROPERTY_CLASS);
                     propElement.html(BlocksMessages.widgetFicheEntryDefaultValue);
 
-                    labelElement.html(BlocksMessages.widgetFicheEntryDefaultLabel);
-                    if (newValueTerm) {
-
+                    if (!newValueTerm) {
+                        labelElement.html(BlocksMessages.widgetFicheEntryDefaultLabel);
+                    }
+                    else {
                         //this will reset any previously added widgets after the combobox
                         combobox.nextAll().remove();
 
@@ -87,6 +107,8 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                         //initialize the property attributes
                         propElement.attr(PROPERTY_ATTR, newValueTerm.name);
                         propElement.attr(DATATYPE_ATTR, newValueTerm.dataType);
+
+                        //we need to add this class to have it picked up by widget-specific modules (like the editor)
                         propElement.addClass(newValueTerm.widgetType);
 
                         //some more type-specific post-processing

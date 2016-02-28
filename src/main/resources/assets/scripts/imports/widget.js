@@ -313,11 +313,11 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * labelText: name to show as label
          * values = array of objects {value: 'a value to change', name: 'name of the value}
          * */
-        addUniqueAttributeValue: function (Sidebar, element, labelText, name, values, changeListener)
+        addUniqueAttributeValue: function (Sidebar, element, labelText, attribute, values, changeListener)
         {
-            var hasAttr = element.hasAttribute(name);
+            var hasAttr = element.hasAttribute(attribute);
             //get the value of the attribute on the element
-            var attr = hasAttr ? element.attr(name) : null;
+            var attr = hasAttr ? element.attr(attribute) : null;
 
             var attrFound = false;
             var retVal = this.createCombobox(Sidebar, labelText, values,
@@ -340,11 +340,11 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 function changeCallback(oldValue, newValue)
                 {
                     if (newValue) {
-                        element.attr(name, newValue);
+                        element.attr(attribute, newValue);
                     }
                     else {
                         if (hasAttr) {
-                            element.removeAttribute(name);
+                            element.removeAttribute(attribute);
                         }
                     }
 
@@ -362,7 +362,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             var retVal = this.addUniqueAttributeValue(Sidebar, element, labelText, attribute,
                 [{
                     name: BlocksMessages.comboboxLoadingName,
-                    value: BlocksMessages.comboboxLoadingValue
+                    value: undefined //don't make this null cause it needs to be different from the default attr value in the test routines above
                 }]
             );
 
@@ -427,8 +427,9 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                             var newValueTerm = _this._termMappings[newValue];
 
                             element.removeAttr(attribute);
-                            //if we have a new value, set the property attr
-                            if (newValue) {
+
+                            //if we have a new value and an attribute to set, set it
+                            if (attribute && newValue) {
                                 element.attr(attribute, newValue);
                             }
 
@@ -818,11 +819,12 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             var content = $('<div class="'+BlocksConstants.SIDEBAR_WIDGET_WRAPPER_CLASS+'" />');
             content.append($('<label for="' + id + '">' + labelText + '</label>'));
             var dropdown = $('<div class="dropdown"/>').appendTo(content);
-            var button = $('<button id="' + id + '" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="btn btn-default dropdown-toggle"><span class="text">-----</span>&#160;<span class="caret"></span></button>').appendTo(dropdown);
+            var button = $('<button id="' + id + '" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="btn btn-default dropdown-toggle"><span class="text">'+BlocksMessages.comboboxEmptySelection+'</span>&#160;<span class="caret"></span></button>').appendTo(dropdown);
 
             // Create values inside selectbox and see which one to select
             dropdown.append($('<ul class="dropdown-menu" aria-labelledby="' + id + '"/>'));
 
+            //call it once (can be called again)
             //we externalized this method to be able to load the data lazily when an async json call completed
             this.reinitCombobox(content, values, initCallback, changeCallback);
 
@@ -842,7 +844,8 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
         {
             //Note: sync this with the classes in createCombobox() above
             var dropdownMenu = combobox.find(".dropdown-menu");
-            var id = combobox.find("button.dropdown-toggle").attr("id");
+            var dropdownToggle = combobox.find("button.dropdown-toggle");
+            var id = dropdownToggle.attr("id");
 
             //start by clearing existing values in the ul list
             dropdownMenu.empty();
@@ -890,6 +893,11 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
             if (activateAfterInit) {
                 activateAfterInit.click();
+            }
+            // if we don' have anything to activate, make sure we get rid of the "Loading" entry
+            // by reverting back to the default empty label
+            else {
+                dropdownToggle.find('.text').text(BlocksMessages.comboboxEmptySelection);
             }
         },
 
