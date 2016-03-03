@@ -1,6 +1,6 @@
 package com.beligum.blocks.rdf.ontology;
 
-import com.beligum.blocks.rdf.ifaces.RdfDataType;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfLiteral;
 import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
 import com.beligum.blocks.rdf.ontology.vocabularies.RDFS;
@@ -14,20 +14,20 @@ public class RdfLiteralImpl extends AbstractRdfResourceImpl implements RdfLitera
 
     //-----VARIABLES-----
     private String value;
-    private RdfDataType dataType;
+    private RdfClass dataType;
 
     //-----CONSTRUCTORS-----
-    public RdfLiteralImpl(String value, RdfDataType dataType)
+    public RdfLiteralImpl(String value, RdfClass dataType)
     {
         this(RDFS.LITERAL.getName(), RDFS.INSTANCE, value, dataType);
     }
     //only for subclasses
-    protected RdfLiteralImpl(String name, RdfVocabulary vocabulary, String value, RdfDataType dataType)
+    protected RdfLiteralImpl(String name, RdfVocabulary vocabulary, String value, RdfClass dataType)
     {
-        super(name, vocabulary);
+        super();
 
-        this.value = null;
-        this.dataType = null;
+        this.value = value;
+        this.dataType = dataType;
     }
 
     //-----PUBLIC METHODS-----
@@ -37,7 +37,7 @@ public class RdfLiteralImpl extends AbstractRdfResourceImpl implements RdfLitera
         return value;
     }
     @Override
-    public RdfDataType getDataType()
+    public RdfClass getDataType()
     {
         return dataType;
     }

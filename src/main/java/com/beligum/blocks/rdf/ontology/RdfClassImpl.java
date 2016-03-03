@@ -14,6 +14,8 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    private String name;
+    private RdfVocabulary vocabulary;
     private MessagesFileEntry title;
     private MessagesFileEntry label;
     private URI[] isSameAs;
@@ -25,15 +27,40 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
                         MessagesFileEntry label,
                         URI[] isSameAs)
     {
-        super(name, vocabulary);
+        super();
 
+        this.name = name;
+        this.vocabulary = vocabulary;
         this.title = title;
         this.label = label;
         //make it uniform (always an array)
         this.isSameAs = isSameAs == null ? new URI[] {} : isSameAs;
+
+        //add ourself to the selected vocabulary
+        this.vocabulary.add(this);
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public String getName()
+    {
+        return name;
+    }
+    @Override
+    public RdfVocabulary getVocabulary()
+    {
+        return vocabulary;
+    }
+    @Override
+    public URI getFullName()
+    {
+        return vocabulary.getNamespace().resolve(name);
+    }
+    @Override
+    public URI getCurieName()
+    {
+        return URI.create(vocabulary.getPrefix() + ":" + name);
+    }
     @Override
     public String getTitle()
     {

@@ -15,5 +15,5 @@ public interface RdfLiteral extends RdfResource
     /**
      * Returns the full datatype (probably XSD or RDF) of this literal value.
      */
-    RdfDataType getDataType();
+    RdfClass getDataType();
 }

@@ -3,7 +3,7 @@ package com.beligum.blocks.rdf.ifaces;
 /**
  * Created by bram on 2/26/16.
  */
-public interface RdfProperty extends RdfResource
+public interface RdfProperty extends RdfClass
 {
     /**
      * The full datatype (can also be XSD) of this property. This is used by the client side code, together with the WidgetType (see below),

@@ -77,6 +77,9 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
         else if (rdfResource instanceof RdfProperty) {
             this.properties.add((RdfProperty) rdfResource);
         }
+        else if (rdfResource instanceof RdfLiteral) {
+            this.literals.add((RdfLiteral) rdfResource);
+        }
         else {
             Logger.error("Unknown RDF resource type encountered, not adding to vocabulary; "+rdfResource.getClass());
         }
