@@ -1,4 +1,6 @@
-package com.beligum.blocks.rdf.ontology.vocabs;
+package com.beligum.blocks.rdf.ontology.vocabularies;
+
+import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
 
 import java.net.URI;
 
@@ -8,11 +10,12 @@ import java.net.URI;
 public final class DBO extends AbstractRdfVocabulary
 {
     //-----SINGLETON-----
-    public static final DBO INSTANCE = new DBO();
+    public static final RdfVocabulary INSTANCE = new DBO();
     private DBO()
     {
         super(URI.create("http://dbpedia.org/ontology/"), "dbo");
     }
 
     //-----ENTRIES-----
+
 }

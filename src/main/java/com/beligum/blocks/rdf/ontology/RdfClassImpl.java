@@ -1,7 +1,6 @@
 package com.beligum.blocks.rdf.ontology;
 
 import com.beligum.base.filesystem.MessagesFileEntry;
-import com.beligum.base.models.AbstractJsonObject;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
 
@@ -10,13 +9,11 @@ import java.net.URI;
 /**
  * Created by bram on 2/27/16.
  */
-public class RdfClassImpl extends AbstractJsonObject implements RdfClass
+public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
 {
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private String name;
-    private RdfVocabulary vocabulary;
     private MessagesFileEntry title;
     private MessagesFileEntry label;
     private URI[] isSameAs;
@@ -28,8 +25,8 @@ public class RdfClassImpl extends AbstractJsonObject implements RdfClass
                         MessagesFileEntry label,
                         URI[] isSameAs)
     {
-        this.name = name;
-        this.vocabulary = vocabulary;
+        super(name, vocabulary);
+
         this.title = title;
         this.label = label;
         //make it uniform (always an array)
@@ -37,26 +34,6 @@ public class RdfClassImpl extends AbstractJsonObject implements RdfClass
     }
 
     //-----PUBLIC METHODS-----
-    @Override
-    public String getName()
-    {
-        return name;
-    }
-    @Override
-    public RdfVocabulary getVocabulary()
-    {
-        return vocabulary;
-    }
-    @Override
-    public URI getFullName()
-    {
-        return vocabulary.getNamespace().resolve(name);
-    }
-    @Override
-    public URI getCurieName()
-    {
-        return URI.create(vocabulary.getPrefix()+":"+name);
-    }
     @Override
     public String getTitle()
     {

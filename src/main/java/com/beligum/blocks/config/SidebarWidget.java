@@ -15,6 +15,7 @@ public enum SidebarWidget
 {
     //-----CONSTANTS-----
     //this mapping makes sure we can use them in JS/CSS/...
+    Undefined(core.Entries.SIDEBAR_WIDGET_UNDEFINED),
     Editor(core.Entries.SIDEBAR_WIDGET_EDITOR),
     InlineEditor(core.Entries.SIDEBAR_WIDGET_INLINE_EDITOR),
     ToggleButton(core.Entries.SIDEBAR_WIDGET_TOGGLE),

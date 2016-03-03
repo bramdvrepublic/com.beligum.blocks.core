@@ -4,11 +4,10 @@ import com.beligum.base.server.R;
 import com.beligum.base.utils.toolkit.ReflectionFunctions;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ifaces.RdfClassCollection;
+import com.beligum.blocks.rdf.ifaces.RdfClassFactory;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ifaces.RdfPropertyCollection;
+import com.beligum.blocks.rdf.ifaces.RdfPropertyFactory;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -28,11 +27,11 @@ public class RdfFactory
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.RDF_PROPERTIES)) {
             Set<RdfProperty> discovered = new HashSet<>();
-            Set<Class<?>> collections = ReflectionFunctions.searchAllClassesImplementing(RdfPropertyCollection.class);
+            Set<Class<?>> collections = ReflectionFunctions.searchAllClassesImplementing(RdfPropertyFactory.class);
             for (Class<?> c : collections) {
                 try {
-                    RdfPropertyCollection collection = (RdfPropertyCollection) c.newInstance();
-                    discovered.addAll(Arrays.asList(collection.getProperties()));
+                    RdfPropertyFactory collection = (RdfPropertyFactory) c.newInstance();
+                    discovered.addAll(collection.getRdfProperties());
                 }
                 catch (Exception e) {
                     throw new RuntimeException("Error while instantiating an RDF property collection, this shouldn't happen; "+c, e);
@@ -48,11 +47,11 @@ public class RdfFactory
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.RDF_CLASSES)) {
             Set<RdfClass> discoveredClasses = new HashSet<>();
-            Set<Class<?>> rdfClasses = ReflectionFunctions.searchAllClassesImplementing(RdfClassCollection.class);
+            Set<Class<?>> rdfClasses = ReflectionFunctions.searchAllClassesImplementing(RdfClassFactory.class);
             for (Class<?> c : rdfClasses) {
                 try {
-                    RdfClassCollection collection = (RdfClassCollection) c.newInstance();
-                    discoveredClasses.addAll(Arrays.asList(collection.getClasses()));
+                    RdfClassFactory collection = (RdfClassFactory) c.newInstance();
+                    discoveredClasses.addAll(collection.getRdfClasses());
                 }
                 catch (Exception e) {
                     throw new RuntimeException("Error while instantiating an RDF class collection, this shouldn't happen; "+c, e);

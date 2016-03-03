@@ -1,4 +1,4 @@
-package com.beligum.blocks.rdf.ontology.vocabs;
+package com.beligum.blocks.rdf.ontology.vocabularies;
 
 import com.beligum.blocks.config.Settings;
 

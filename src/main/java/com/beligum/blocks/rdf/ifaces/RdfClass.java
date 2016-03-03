@@ -1,38 +1,14 @@
 package com.beligum.blocks.rdf.ifaces;
 
-import com.beligum.base.models.ifaces.JsonObject;
-
 import java.net.URI;
 
 /**
+ * This is more or less the OO representation of the RDFS::Class
+ *
  * Created by bram on 2/26/16.
  */
-public interface RdfClass extends JsonObject
+public interface RdfClass extends RdfResource
 {
-    /**
-     * The short, capitalized and camel-cased name that needs to be appended to the vocab to get the full describing URI for this class.
-     * Eg. WaterWell
-     */
-    String getName();
-
-    /**
-     * The site-specific ontology URI for this class. Together with the name, it forms the full URI.
-     * Eg. http://www.reinvention.be/ontology/
-     */
-    RdfVocabulary getVocabulary();
-
-    /**
-     * The full, absolute URI of this class that is built from the vocabulary URI and the name
-     * Eg. http://www.reinvention.be/ontology/WaterWell
-     */
-    URI getFullName();
-
-    /**
-     * The full, absolute URI of this class that is built from the vocabulary CURIE and the name
-     * Eg. mot:WaterWell
-     */
-    URI getCurieName();
-
     /**
      * The human readable describing phrase for this class, to be used to build admin-side selection lists etc.
      * Eg. Water well

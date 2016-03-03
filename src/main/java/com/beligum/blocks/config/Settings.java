@@ -34,6 +34,7 @@ public class Settings
     private URI cachedSiteDomain;
     private URI[] cachedSiteAliases;
     private URI cachedRdfOntologyUri;
+    private boolean triedRdfOntologyUri;
     private URI cachedPagesStorePath;
     private URI cachedPagesViewPath;
     private Class<? extends TransactionManager> cachedTransactionManagerClass;
@@ -328,14 +329,18 @@ public class Settings
     }
     public URI getRdfOntologyUri()
     {
-        if (this.cachedRdfOntologyUri == null) {
+        if (!this.triedRdfOntologyUri) {
             String uri = R.configuration().getString("blocks.core.rdf.ontology.uri");
-            try {
-                this.cachedRdfOntologyUri = URI.create(uri);
+            if (!StringUtils.isEmpty(uri)) {
+                try {
+                    this.cachedRdfOntologyUri = URI.create(uri);
+                }
+                catch (Exception e) {
+                    throw new RuntimeException("Error while parsing RDF ontology URI; " + uri, e);
+                }
             }
-            catch (Exception e) {
-                throw new RuntimeException("Error while parsing RDF ontology URI; " + uri, e);
-            }
+
+            this.triedRdfOntologyUri = true;
         }
         return this.cachedRdfOntologyUri;
     }
