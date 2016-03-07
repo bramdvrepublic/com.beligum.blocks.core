@@ -41,6 +41,8 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
             var PROPERTY_ATTR = "property";
             var DATATYPE_ATTR = "datatype";
             var CONTENT_ATTR = "content";
+            //makes sense to use the curie name of the terms and classes in the ontologies; it's short and future-flexible
+            var TERM_NAME_FIELD = "curieName";
 
             //this is the label that belongs to the value
             var labelElement = element.find("[data-property='" + BlocksConstants.FICHE_ENTRY_NAME_PROPERTY + "']");
@@ -48,7 +50,7 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
             var propElement = element.find("." + BlocksConstants.FICHE_ENTRY_PROPERTY_CLASS);
 
             var _this = this;
-            var combobox = this.addUniqueAttributeValueAsync(Sidebar, propElement, "Property type", PROPERTY_ATTR, "/blocks/admin/rdf/properties/", "title", "name",
+            var combobox = this.addUniqueAttributeValueAsync(Sidebar, propElement, "Property type", PROPERTY_ATTR, "/blocks/admin/rdf/properties/", "title", TERM_NAME_FIELD,
                 function changeListener(oldValueTerm, newValueTerm)
                 {
                     //for now, we don't allow the combobox to switch to an "empty" value, so ignore if that happens (probably during initialization)
@@ -57,7 +59,7 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                     }
 
                     // don't change anything if they're both the same
-                    if (oldValueTerm && oldValueTerm.name == newValueTerm.name) {
+                    if (oldValueTerm && oldValueTerm[TERM_NAME_FIELD] == newValueTerm[TERM_NAME_FIELD]) {
                         return;
                     }
 
@@ -70,8 +72,8 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                     //When all three are ok, we conclude nothing needs to be changed and it's not a 'real change', but rather a 'focus' event.
                     var skipHtmlChange = false;
                     if (
-                        propElement.hasAttribute(PROPERTY_ATTR) && propElement.attr(PROPERTY_ATTR) == newValueTerm.name &&
-                        propElement.hasAttribute(DATATYPE_ATTR) && propElement.attr(DATATYPE_ATTR) == newValueTerm.dataType.name &&
+                        propElement.hasAttribute(PROPERTY_ATTR) && propElement.attr(PROPERTY_ATTR) == newValueTerm[TERM_NAME_FIELD] &&
+                        propElement.hasAttribute(DATATYPE_ATTR) && propElement.attr(DATATYPE_ATTR) == newValueTerm.dataType[TERM_NAME_FIELD] &&
                         propElement.hasClass(newValueTerm.widgetType)
                     ) {
                         //we can't return straight away because we need to initialize the extra controls in the sidebar
@@ -109,8 +111,8 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                             labelElement.html("<p>" + newValueTerm.label + "</p>");
 
                             //initialize the property attributes
-                            propElement.attr(PROPERTY_ATTR, newValueTerm.name);
-                            propElement.attr(DATATYPE_ATTR, newValueTerm.dataType.name);
+                            propElement.attr(PROPERTY_ATTR, newValueTerm[TERM_NAME_FIELD]);
+                            propElement.attr(DATATYPE_ATTR, newValueTerm.dataType[TERM_NAME_FIELD]);
 
                             //we need to add this class to have it picked up by widget-specific modules (like the editor)
                             propElement.addClass(newValueTerm.widgetType);
@@ -211,6 +213,21 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                                     }
                                 }));
                             break;
+                        case BlocksConstants.INPUT_TYPE_RESOURCE:
+                            var defaultValue = '<p><i>Please search for a resource in the sidebar</i></p>';
+                            combobox.after(_this._createAutocompleteWidget(block, propElement, CONTENT_ATTR, newValueTerm.widgetType, newValueTerm.widgetConfig, 'Resource', defaultValue,
+                                function setterFunction(newValue)
+                                {
+                                    if (newValue!='' && newValue.charAt(0)=='#') {
+                                        propElement.attr(CONTENT_ATTR, newValue);
+                                        propElement.html('<div class="'+BlocksConstants.INPUT_TYPE_COLOR_VALUE_CLASS+'" style="background-color: '+newValue+'"></div>');
+                                    }
+                                    else {
+                                        propElement.removeAttr(CONTENT_ATTR);
+                                        propElement.html(defaultValue);
+                                    }
+                                }));
+                            break;
                     }
                 });
 
@@ -268,6 +285,69 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
             }
             var inputGroup = $('<div class="input-group"></div>').appendTo(formGroup);
             var input = $('<input id="' + id + '" type="' + htmlInputType + '" class="form-control">').appendTo(inputGroup);
+
+            //init and attach the change listener
+            input.on("change keyup focus", function (event)
+            {
+                setterFunction(input.val());
+            });
+
+            var firstValue = propElement.attr(contentAttr);
+
+            //if the html widget is uninitialized, try to set it to a default value
+            if (firstValue == BlocksMessages.widgetFicheEntryDefaultValue) {
+                //initial value may be 0 or '', so check of type
+                if (typeof initialValue !== typeof undefined) {
+                    firstValue = initialValue;
+                }
+            }
+
+            //this gives us a chance to skip this if it would be needed
+            if (typeof firstValue !== typeof undefined) {
+                //init the input
+                input.val(firstValue);
+                //fire the change (because the one above doesn't seem to do so)
+                setterFunction(firstValue);
+            }
+
+            return formGroup;
+        },
+        _createAutocompleteWidget: function (block, propElement, contentAttr, inputTypeConstant, inputTypeArgs, labelText, initialValue, setterFunction)
+        {
+            var id = Commons.generateId();
+            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
+            formGroup.addClass(inputTypeConstant);
+            if (labelText) {
+                var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
+            }
+            var inputGroup = $('<div class="input-group"></div>').appendTo(formGroup);
+            var input = $('<input id="' + id + '" type="text" class="form-control typeahead" placeholder="Search...">').appendTo(inputGroup);
+
+            //init the typeahead plugin
+            var engine = new Bloodhound(
+                {
+                    queryTokenizer: Bloodhound.tokenizers.whitespace,
+                    datumTokenizer: Bloodhound.tokenizers.whitespace,
+                    remote: {
+                        //we'll add the wildcard to the end of the endpoint url: it will end up in the value section (after the '=' sign) of the query parameter
+                        url: inputTypeArgs[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_ENDPOINT]+'%QUERY',
+                        wildcard: '%QUERY'
+                    },
+                });
+
+            var options = {
+                highlight: false,
+                minLength: 1,
+                hint: true,
+            };
+            var dataSet = {
+                name: id,
+                source: engine,
+                //sync this with the title field of com.beligum.blocks.fs.index.entries.PageIndexEntry
+                display: 'title',
+                limit: 5,
+            };
+            input.typeahead(options, dataSet);
 
             //init and attach the change listener
             input.on("change keyup focus", function (event)

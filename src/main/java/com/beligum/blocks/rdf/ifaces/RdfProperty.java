@@ -1,5 +1,7 @@
 package com.beligum.blocks.rdf.ifaces;
 
+import com.beligum.blocks.config.InputTypeConfig;
+
 /**
  * Created by bram on 2/26/16.
  */
@@ -18,4 +20,9 @@ public interface RdfProperty extends RdfClass
      * Eg. InlineEditor
      */
     String getWidgetType();
+
+    /**
+     * A map of key/value entries that contain specific settings for the input widget type
+     */
+    InputTypeConfig getWidgetConfig();
 }

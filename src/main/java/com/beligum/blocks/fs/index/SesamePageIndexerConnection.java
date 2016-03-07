@@ -15,6 +15,8 @@ import org.openrdf.sail.lucene.LuceneSailSchema;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by bram on 2/21/16.
@@ -95,6 +97,15 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         }
 
         this.connection.add(model);
+    }
+    @Override
+    public List<PageIndexEntry> search(PageIndexEntry.Field field, String query, int maxResults) throws IOException
+    {
+        List<PageIndexEntry> retVal = new ArrayList<>();
+
+        //TODO
+
+        return retVal;
     }
     @Override
     protected void begin() throws IOException

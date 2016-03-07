@@ -1,6 +1,5 @@
 package com.beligum.blocks.rdf.ontology.vocabularies;
 
-import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfDataType;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
@@ -39,7 +38,7 @@ public final class RDF extends AbstractRdfVocabulary
     /**
      * The subject is an instance of a class
      */
-    public static final RdfProperty TYPE = new RdfPropertyImpl("type", INSTANCE, Entries.RDF_title_type, Entries.RDF_label_type, RDFS.CLASS, InputType.Undefined, null);
+    public static final RdfProperty TYPE = new RdfPropertyImpl("type", INSTANCE, Entries.RDF_title_type, Entries.RDF_label_type, RDFS.CLASS);
 
     /**
      * The class of RDF properties
@@ -54,17 +53,17 @@ public final class RDF extends AbstractRdfVocabulary
     /**
      * The subject of the subject RDF statement
      */
-    public static final RdfProperty SUBJECT = new RdfPropertyImpl("subject", INSTANCE, Entries.RDF_title_subject, Entries.RDF_label_subject, RDFS.RESOURCE, InputType.Undefined, null);
+    public static final RdfProperty SUBJECT = new RdfPropertyImpl("subject", INSTANCE, Entries.RDF_title_subject, Entries.RDF_label_subject, RDFS.RESOURCE);
 
     /**
      * The predicate of the subject RDF statement
      */
-    public static final RdfProperty PREDICATE = new RdfPropertyImpl("predicate", INSTANCE, Entries.RDF_title_predicate, Entries.RDF_label_predicate, RDFS.RESOURCE, InputType.Undefined, null);
+    public static final RdfProperty PREDICATE = new RdfPropertyImpl("predicate", INSTANCE, Entries.RDF_title_predicate, Entries.RDF_label_predicate, RDFS.RESOURCE);
 
     /**
      * The object of the subject RDF statement
      */
-    public static final RdfProperty OBJECT = new RdfPropertyImpl("object", INSTANCE, Entries.RDF_title_object, Entries.RDF_label_object, RDFS.RESOURCE, InputType.Undefined, null);
+    public static final RdfProperty OBJECT = new RdfPropertyImpl("object", INSTANCE, Entries.RDF_title_object, Entries.RDF_label_object, RDFS.RESOURCE);
 
     /**
      * The class of RDF statements
@@ -89,13 +88,13 @@ public final class RDF extends AbstractRdfVocabulary
     /**
      * Idiomatic property used for structured values
      */
-    public static final RdfProperty VALUE = new RdfPropertyImpl("value", INSTANCE, Entries.RDF_title_value, Entries.RDF_label_value, RDFS.RESOURCE, InputType.Undefined, null);
+    public static final RdfProperty VALUE = new RdfPropertyImpl("value", INSTANCE, Entries.RDF_title_value, Entries.RDF_label_value, RDFS.RESOURCE);
 
     /**
      * weird: this type doesn't seem to occur in https://www.w3.org/1999/02/22-rdf-syntax-ns# ??
      * See eg. here for more info: https://www.w3.org/TR/rdf-syntax-grammar/#section-Syntax-list-elements
      */
-    public static final RdfProperty LI = new RdfPropertyImpl("li", INSTANCE, Entries.RDF_title_li, Entries.RDF_label_li, RDFS.RESOURCE, InputType.Undefined, null);
+    public static final RdfProperty LI = new RdfPropertyImpl("li", INSTANCE, Entries.RDF_title_li, Entries.RDF_label_li, RDFS.RESOURCE);
 
     /**
      * The class of RDF Lists
@@ -105,12 +104,12 @@ public final class RDF extends AbstractRdfVocabulary
     /**
      * The first item in the subject RDF list
      */
-    public static final RdfProperty FIRST = new RdfPropertyImpl("first", INSTANCE, Entries.RDF_title_first, Entries.RDF_label_first, RDFS.RESOURCE, InputType.Undefined, null);
+    public static final RdfProperty FIRST = new RdfPropertyImpl("first", INSTANCE, Entries.RDF_title_first, Entries.RDF_label_first, RDFS.RESOURCE);
 
     /**
      * The rest of the subject RDF list after the first item
      */
-    public static final RdfProperty REST = new RdfPropertyImpl("rest", INSTANCE, Entries.RDF_title_rest, Entries.RDF_label_rest, RDF.LIST, InputType.Undefined, null);
+    public static final RdfProperty REST = new RdfPropertyImpl("rest", INSTANCE, Entries.RDF_title_rest, Entries.RDF_label_rest, RDF.LIST);
 
     /**
      * The empty list, with no items in it. If the rest of a list is nil then the list has no more items in it.

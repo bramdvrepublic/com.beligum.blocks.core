@@ -384,7 +384,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                         });
 
                         //save the object in a mapping structure for later
-                        _this._termMappings[entry.name] = entry;
+                        _this._termMappings[entry[valueProperty]] = entry;
                     });
 
                     //sort the combobox entries on name

@@ -6,6 +6,14 @@ package com.beligum.blocks.fs.index.entries;
 public interface PageIndexEntry extends IndexEntry
 {
     //-----CONSTANTS-----
+    //note: sync these with the getter names below (and the setters of the implementations)
+    enum Field
+    {
+        resource,
+        title,
+        language,
+        parent
+    }
 
     //-----VARIABLES-----
 

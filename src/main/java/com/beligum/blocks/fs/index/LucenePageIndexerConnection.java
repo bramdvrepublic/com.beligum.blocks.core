@@ -11,13 +11,17 @@ import com.beligum.blocks.fs.pages.DefaultPageImpl;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
 import org.apache.hadoop.fs.FileContext;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -26,6 +30,8 @@ import org.apache.lucene.store.FSDirectory;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by bram on 2/22/16.
@@ -33,6 +39,7 @@ import java.nio.file.Files;
 public class LucenePageIndexerConnection extends AbstractIndexConnection implements PageIndexConnection
 {
     //-----CONSTANTS-----
+    private static final Analyzer DEFAULT_ANALYZER = new StandardAnalyzer();
 
     //-----VARIABLES-----
     private IndexWriter indexWriter;
@@ -59,7 +66,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     public void delete(Page page) throws IOException
     {
-        this.assertWriter();
+        this.assertWriterTransaction();
 
         this.indexWriter.deleteDocuments(AbstractIndexEntry.toLuceneId(page.buildAddress()));
 
@@ -69,7 +76,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     public void update(Page page) throws IOException
     {
-        this.assertWriter();
+        this.assertWriterTransaction();
 
         SimplePageIndexEntry indexExtry = this.createEntry(page);
 
@@ -79,6 +86,27 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
 
         //for debug
         //this.printLuceneIndex();
+    }
+    @Override
+    public List<PageIndexEntry> search(PageIndexEntry.Field field, String queryStr, int maxResults) throws IOException
+    {
+        List<PageIndexEntry> retVal = new ArrayList<>();
+
+        QueryParser parser = new QueryParser(field.name(), DEFAULT_ANALYZER);
+        try {
+            Query query = parser.parse(queryStr);
+            TopDocs topdocs = getLuceneIndexSearcher().search(query, maxResults);
+
+            //TODO this is probably not so efficient...
+            for (int i=0;i<topdocs.totalHits;i++) {
+                retVal.add(SimplePageIndexEntry.fromLuceneDoc(getLuceneIndexReader().document(topdocs.scoreDocs[i].doc)));
+            }
+        }
+        catch (ParseException e) {
+            throw new IOException("Error while parsing lucene query; "+queryStr, e);
+        }
+
+        return retVal;
     }
     @Override
     protected void begin() throws IOException
@@ -220,18 +248,24 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
             throw new IOException("Lucene index directory is not writable, please check the path; " + docDir);
         }
 
-        IndexWriterConfig iwc = new IndexWriterConfig(new StandardAnalyzer());
+        IndexWriterConfig iwc = new IndexWriterConfig(DEFAULT_ANALYZER);
 
         // Add new documents to an existing index:
         iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
 
         return new IndexWriter(FSDirectory.open(Settings.instance().getPageMainIndexFolder().toPath()), iwc);
     }
-    private void assertWriter() throws IOException
+    private void assertWriterTransaction() throws IOException
     {
-        this.indexWriter = this.getNewLuceneIndexWriter();
+        this.assertWriter();
 
         //attach this connection to the transaction manager
         StorageFactory.getCurrentRequestTx().registerResource(this);
+    }
+    private void assertWriter() throws IOException
+    {
+        if (this.indexWriter==null) {
+            this.indexWriter = this.getNewLuceneIndexWriter();
+        }
     }
 }

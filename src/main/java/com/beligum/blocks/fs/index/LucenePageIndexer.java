@@ -8,6 +8,8 @@ import java.io.IOException;
 /**
  * Started with this:
  * http://lucene.apache.org/core/5_4_1/demo/src-html/org/apache/lucene/demo/IndexFiles.html
+ * and
+ * http://lucene.apache.org/core/5_4_1/demo/src-html/org/apache/lucene/demo/SearchFiles.html
  * <p/>
  * interesting read:
  * http://stackoverflow.com/questions/9377572/is-it-good-practice-to-keep-a-lucene-indexwriter-indexsearcher-open-for-the-li

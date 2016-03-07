@@ -13,14 +13,6 @@ import java.net.URI;
 public class SimplePageIndexEntry extends AbstractIndexEntry implements PageIndexEntry
 {
     //-----CONSTANTS-----
-    //note: sync these with the variable names below
-    public enum Field
-    {
-        resource,
-        title,
-        language,
-        parent
-    }
 
     //-----VARIABLES-----
     private String resource;
@@ -35,7 +27,7 @@ public class SimplePageIndexEntry extends AbstractIndexEntry implements PageInde
     }
 
     //-----STATIC METHODS-----
-    public static Document toLuceneDoc(SimplePageIndexEntry entry)
+    public static Document toLuceneDoc(PageIndexEntry entry)
     {
         Document retVal = new Document();
 
@@ -44,18 +36,18 @@ public class SimplePageIndexEntry extends AbstractIndexEntry implements PageInde
         //      StoredField = not indexed at all
 
         //Note: we also need to insert the id of the doc even though it's an index
-        retVal.add(new StringField(AbstractIndexEntry.Field.id.name(), entry.id.toString(), org.apache.lucene.document.Field.Store.YES));
-        if (entry.resource != null) {
-            retVal.add(new StringField(Field.resource.name(), entry.resource, org.apache.lucene.document.Field.Store.YES));
+        retVal.add(new StringField(AbstractIndexEntry.Field.id.name(), entry.getId().toString(), org.apache.lucene.document.Field.Store.YES));
+        if (entry.getResource() != null) {
+            retVal.add(new StringField(PageIndexEntry.Field.resource.name(), entry.getResource(), org.apache.lucene.document.Field.Store.YES));
         }
-        if (entry.title != null) {
-            retVal.add(new TextField(Field.title.name(), entry.title, org.apache.lucene.document.Field.Store.YES));
+        if (entry.getTitle() != null) {
+            retVal.add(new TextField(PageIndexEntry.Field.title.name(), entry.getTitle(), org.apache.lucene.document.Field.Store.YES));
         }
-        if (entry.language != null) {
-            retVal.add(new StringField(Field.language.name(), entry.language, org.apache.lucene.document.Field.Store.YES));
+        if (entry.getLanguage() != null) {
+            retVal.add(new StringField(PageIndexEntry.Field.language.name(), entry.getLanguage(), org.apache.lucene.document.Field.Store.YES));
         }
-        if (entry.parent != null) {
-            retVal.add(new StringField(Field.parent.name(), entry.parent, org.apache.lucene.document.Field.Store.YES));
+        if (entry.getParent() != null) {
+            retVal.add(new StringField(PageIndexEntry.Field.parent.name(), entry.getParent(), org.apache.lucene.document.Field.Store.YES));
         }
 
         return retVal;
@@ -64,10 +56,10 @@ public class SimplePageIndexEntry extends AbstractIndexEntry implements PageInde
     {
         SimplePageIndexEntry retVal = new SimplePageIndexEntry(URI.create(document.get(AbstractIndexEntry.Field.id.name())));
 
-        retVal.setResource(document.get(Field.resource.name()));
-        retVal.setTitle(document.get(Field.title.name()));
-        retVal.setLanguage(document.get(Field.language.name()));
-        retVal.setParent(document.get(Field.parent.name()));
+        retVal.setResource(document.get(PageIndexEntry.Field.resource.name()));
+        retVal.setTitle(document.get(PageIndexEntry.Field.title.name()));
+        retVal.setLanguage(document.get(PageIndexEntry.Field.language.name()));
+        retVal.setParent(document.get(PageIndexEntry.Field.parent.name()));
 
         return retVal;
     }
