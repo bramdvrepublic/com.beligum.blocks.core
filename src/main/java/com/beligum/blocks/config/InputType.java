@@ -11,23 +11,28 @@ import java.util.Map;
  *
  * Created by bram on 2/26/16.
  */
-public enum SidebarWidget
+public enum InputType
 {
     //-----CONSTANTS-----
     //this mapping makes sure we can use them in JS/CSS/...
-    Undefined(core.Entries.SIDEBAR_WIDGET_UNDEFINED),
-    Editor(core.Entries.SIDEBAR_WIDGET_EDITOR),
-    InlineEditor(core.Entries.SIDEBAR_WIDGET_INLINE_EDITOR),
-    ToggleButton(core.Entries.SIDEBAR_WIDGET_TOGGLE),
+    Undefined(core.Entries.INPUT_TYPE_UNDEFINED),
+    Editor(core.Entries.INPUT_TYPE_EDITOR),
+    InlineEditor(core.Entries.INPUT_TYPE_INLINE_EDITOR),
+    Boolean(core.Entries.INPUT_TYPE_BOOLEAN),
+    Number(core.Entries.INPUT_TYPE_NUMBER),
+    Date(core.Entries.INPUT_TYPE_DATE),
+    Time(core.Entries.INPUT_TYPE_TIME),
+    DateTime(core.Entries.INPUT_TYPE_DATETIME),
+    Color(core.Entries.INPUT_TYPE_COLOR),
 
     ;
 
     /**
      * this will allow us to map to this enum from a constant string value
      */
-    private static final Map<String, SidebarWidget> constantValueMapping = new HashMap<>();
+    private static final Map<String, InputType> constantValueMapping = new HashMap<>();
     static {
-        for (SidebarWidget widget : SidebarWidget.values()) {
+        for (InputType widget : InputType.values()) {
             constantValueMapping.put(widget.getConstant(), widget);
         }
     }
@@ -36,13 +41,13 @@ public enum SidebarWidget
     private ConstantsFileEntry constantEntry;
 
     //-----CONSTRUCTORS-----
-    SidebarWidget(ConstantsFileEntry constantEntry)
+    InputType(ConstantsFileEntry constantEntry)
     {
         this.constantEntry = constantEntry;
     }
 
     //-----STATIC METHODS-----
-    public static SidebarWidget valueOfConstant(String constantValue)
+    public static InputType valueOfConstant(String constantValue)
     {
         return constantValueMapping.get(constantValue);
     }

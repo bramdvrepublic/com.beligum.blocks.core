@@ -59,8 +59,6 @@ public enum CacheKeys implements CacheKey
     INFINISPAN_CACHE_MANAGER,
     //Application cache key that keeps a reference to the active indexers
     REGISTERED_INDEXERS,
-    //Application cache key that keeps a list to the discovered Rdf terms
-    RDF_PROPERTIES,
-    //Application cache key that keeps a list to the discovered Rdf classes
-    RDF_CLASSES
+    //Application cache key that keeps a map to the discovered Rdf vocabularies-entries
+    RDF_VOCABULARIES
 }

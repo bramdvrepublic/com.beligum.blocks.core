@@ -1,7 +1,6 @@
 package com.beligum.blocks.rdf.ontology.vocabularies;
 
 import com.beligum.base.models.AbstractJsonObject;
-import com.beligum.base.utils.Logger;
 import com.beligum.blocks.rdf.ifaces.*;
 
 import java.net.URI;
@@ -18,20 +17,20 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
     //-----VARIABLES-----
     private final URI namespace;
     private final String prefix;
-    private final Set<RdfClass> classes;
-    private final Set<RdfDataType> dataTypes;
-    private final Set<RdfProperty> properties;
-    private final Set<RdfLiteral> literals;
+    private final Set<RdfClass> publicClasses;
+    private final Set<RdfDataType> publicDataTypes;
+    private final Set<RdfProperty> publicProperties;
+    private final Set<RdfLiteral> publicLiterals;
 
     //-----CONSTRUCTORS-----
     protected AbstractRdfVocabulary(URI namespace, String prefix)
     {
         this.namespace = namespace;
         this.prefix = prefix;
-        this.classes = new HashSet<>();
-        this.dataTypes = new HashSet<>();
-        this.properties = new HashSet<>();
-        this.literals = new HashSet<>();
+        this.publicClasses = new HashSet<>();
+        this.publicDataTypes = new HashSet<>();
+        this.publicProperties = new HashSet<>();
+        this.publicLiterals = new HashSet<>();
     }
 
     //-----PUBLIC METHODS-----
@@ -46,42 +45,51 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
         return prefix;
     }
     @Override
-    public Set<RdfClass> getClasses()
+    public Set<RdfClass> getPublicClasses()
     {
-        return classes;
+        return publicClasses;
     }
     @Override
-    public Set<RdfDataType> getDataTypes()
+    public Set<RdfDataType> getPublicDataTypes()
     {
-        return dataTypes;
+        return publicDataTypes;
     }
     @Override
-    public Set<RdfProperty> getProperties()
+    public Set<RdfProperty> getPublicProperties()
     {
-        return properties;
+        return publicProperties;
     }
     @Override
-    public Set<RdfLiteral> getLiterals()
+    public Set<RdfLiteral> getPublicLiterals()
     {
-        return literals;
+        return publicLiterals;
     }
     @Override
-    public void add(RdfResource rdfResource)
+    public void addClass(RdfClass rdfClass)
     {
-        if (rdfResource instanceof RdfClass) {
-            this.classes.add((RdfClass) rdfResource);
+        if (rdfClass.isPublic()) {
+            this.publicClasses.add(rdfClass);
         }
-        else if (rdfResource instanceof RdfDataType) {
-            this.dataTypes.add((RdfDataType) rdfResource);
+    }
+    @Override
+    public void addProperty(RdfProperty rdfProperty)
+    {
+        if (rdfProperty.isPublic()) {
+            this.publicProperties.add(rdfProperty);
         }
-        else if (rdfResource instanceof RdfProperty) {
-            this.properties.add((RdfProperty) rdfResource);
+    }
+    @Override
+    public void addDataType(RdfDataType rdfDataType)
+    {
+        if (rdfDataType.isPublic()) {
+            this.publicDataTypes.add(rdfDataType);
         }
-        else if (rdfResource instanceof RdfLiteral) {
-            this.literals.add((RdfLiteral) rdfResource);
-        }
-        else {
-            Logger.error("Unknown RDF resource type encountered, not adding to vocabulary; "+rdfResource.getClass());
+    }
+    @Override
+    public void addLiteral(RdfLiteral rdfLiteral)
+    {
+        if (rdfLiteral.isPublic()) {
+            this.publicLiterals.add(rdfLiteral);
         }
     }
 

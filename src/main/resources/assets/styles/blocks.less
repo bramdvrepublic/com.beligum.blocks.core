@@ -536,6 +536,9 @@ ul.@{BLOCK_ACTIONS_CLASS} {
           }
           .dropdown-menu {
             min-width: 0; //reset
+            max-height: 300px; //don't let the dropdown grow outside the page
+            max-width: 240px; // a good default value so large strings make the dropdown scroll horizontally
+            overflow: auto; //make the menu act like a combobox
             &:extend(.dropdown-menu-@{formAlign});
             & > li > a {
               cursor: pointer;

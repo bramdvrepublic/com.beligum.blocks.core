@@ -23,6 +23,9 @@ public class RdfDataTypeImpl extends RdfClassImpl implements RdfDataType
                            URI[] isSameAs)
     {
         super(name, vocabulary, title, label, isSameAs);
+
+        //we don't have subclasses so don't worry about type checking (yet)
+        vocabulary.addDataType(this);
     }
 
     //-----PUBLIC METHODS-----

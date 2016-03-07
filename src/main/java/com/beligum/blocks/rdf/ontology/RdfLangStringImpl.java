@@ -18,7 +18,11 @@ public class RdfLangStringImpl extends RdfLiteralImpl implements RdfLangString
     //-----CONSTRUCTORS-----
     public RdfLangStringImpl(String value, Locale language)
     {
-        super(RDF.LANGSTRING.getName(), RDF.INSTANCE, value, RDF.LANGSTRING);
+        this(value, language, false);
+    }
+    public RdfLangStringImpl(String value, Locale language, boolean isPublic)
+    {
+        super(RDF.LANGSTRING.getName(), RDF.INSTANCE, value, RDF.LANGSTRING, isPublic);
 
         this.language = language;
     }

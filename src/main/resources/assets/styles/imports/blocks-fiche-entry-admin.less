@@ -1,0 +1,68 @@
+//-----IMPORTS-----
+@import (reference) "/assets/webjars/bootstrap/3.3.4/less/variables.less";
+@import (reference) "/assets/webjars/bootstrap/3.3.4/less/mixins.less";
+@import (reference) "/assets/webjars/bootstrap/3.3.4/less/forms.less";
+@import (reference) "/assets/webjars/bootstrap/3.3.4/less/utilities.less";
+@import "/constants/blocks/core?type=less";
+
+//-----STYLES-----
+.@{PAGE_SIDEBAR_CLASS} {
+
+  //wrapper for an entry in a panel in the sidebar
+  .@{INPUT_TYPE_WRAPPER_CLASS} {
+    //a number spinner should be on the same line and rather small
+    &.@{INPUT_TYPE_NUMBER} {
+
+      .input-group {
+        .pull-right();
+
+        input {
+          max-width: 100px;
+        }
+      }
+    }
+
+    //date and time are small enough to fit on the same line
+    &.@{INPUT_TYPE_DATE} {
+      .input-group {
+        .pull-right();
+
+        &,
+        & input {
+          max-width: 160px;
+        }
+      }
+    }
+    &.@{INPUT_TYPE_TIME} {
+      .input-group {
+        .pull-right();
+
+        &,
+        & input {
+          max-width: 130px;
+        }
+      }
+    }
+    &.@{INPUT_TYPE_DATETIME} {
+      .input-group {
+        .pull-right();
+
+        &,
+        & input {
+          max-width: 230px;
+        }
+      }
+    }
+
+    &.@{INPUT_TYPE_COLOR} {
+      .input-group {
+        .pull-right();
+
+        &,
+        & input {
+          max-width: 45px;
+        }
+      }
+    }
+  }
+}

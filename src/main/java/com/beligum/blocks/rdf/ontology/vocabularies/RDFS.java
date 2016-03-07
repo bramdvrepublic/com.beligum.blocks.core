@@ -1,6 +1,6 @@
 package com.beligum.blocks.rdf.ontology.vocabularies;
 
-import com.beligum.blocks.config.SidebarWidget;
+import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfDataType;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
@@ -47,32 +47,32 @@ public final class RDFS extends AbstractRdfVocabulary
     /**
      * The subject is a subclass of a class
      */
-    public static final RdfProperty SUBCLASSOF = new RdfPropertyImpl("subClassOf", INSTANCE, Entries.RDFS_title_subClassOf, Entries.RDFS_label_subClassOf, RDFS.CLASS, SidebarWidget.Undefined, null);
+    public static final RdfProperty SUBCLASSOF = new RdfPropertyImpl("subClassOf", INSTANCE, Entries.RDFS_title_subClassOf, Entries.RDFS_label_subClassOf, RDFS.CLASS, InputType.Undefined, null);
 
     /**
      * The subject is a subproperty of a property
      */
-    public static final RdfProperty SUBPROPERTYOF = new RdfPropertyImpl("subPropertyOf", INSTANCE, Entries.RDFS_title_subPropertyOf, Entries.RDFS_label_subPropertyOf, RDF.PROPERTY, SidebarWidget.Undefined, null);
+    public static final RdfProperty SUBPROPERTYOF = new RdfPropertyImpl("subPropertyOf", INSTANCE, Entries.RDFS_title_subPropertyOf, Entries.RDFS_label_subPropertyOf, RDF.PROPERTY, InputType.Undefined, null);
 
     /**
      * A domain of the subject property
      */
-    public static final RdfProperty DOMAIN = new RdfPropertyImpl("domain", INSTANCE, Entries.RDFS_title_domain, Entries.RDFS_label_domain, RDFS.CLASS, SidebarWidget.Undefined, null);
+    public static final RdfProperty DOMAIN = new RdfPropertyImpl("domain", INSTANCE, Entries.RDFS_title_domain, Entries.RDFS_label_domain, RDFS.CLASS, InputType.Undefined, null);
 
     /**
      * A range of the subject property
      */
-    public static final RdfProperty RANGE = new RdfPropertyImpl("range", INSTANCE, Entries.RDFS_title_range, Entries.RDFS_label_range, RDFS.CLASS, SidebarWidget.Undefined, null);
+    public static final RdfProperty RANGE = new RdfPropertyImpl("range", INSTANCE, Entries.RDFS_title_range, Entries.RDFS_label_range, RDFS.CLASS, InputType.Undefined, null);
 
     /**
      * A description of the subject resource
      */
-    public static final RdfProperty COMMENT = new RdfPropertyImpl("comment", INSTANCE, Entries.RDFS_title_comment, Entries.RDFS_label_comment, RDFS.LITERAL, SidebarWidget.Undefined, null);
+    public static final RdfProperty COMMENT = new RdfPropertyImpl("comment", INSTANCE, Entries.RDFS_title_comment, Entries.RDFS_label_comment, RDFS.LITERAL, InputType.Undefined, null);
 
     /**
      * A human-readable name for the subject
      */
-    public static final RdfProperty LABEL = new RdfPropertyImpl("label", INSTANCE, Entries.RDFS_title_label, Entries.RDFS_label_label, RDFS.LITERAL, SidebarWidget.Undefined, null);
+    public static final RdfProperty LABEL = new RdfPropertyImpl("label", INSTANCE, Entries.RDFS_title_label, Entries.RDFS_label_label, RDFS.LITERAL, InputType.Undefined, null);
 
     /**
      * The class of RDF datatypes
@@ -87,17 +87,17 @@ public final class RDFS extends AbstractRdfVocabulary
     /**
      * A member of the subject resource
      */
-    public static final RdfProperty MEMBER = new RdfPropertyImpl("member", INSTANCE, Entries.RDFS_title_member, Entries.RDFS_label_member, RDFS.RESOURCE, SidebarWidget.Undefined, null);
+    public static final RdfProperty MEMBER = new RdfPropertyImpl("member", INSTANCE, Entries.RDFS_title_member, Entries.RDFS_label_member, RDFS.RESOURCE, InputType.Undefined, null);
 
     /**
      * The defininition of the subject resource
      */
-    public static final RdfProperty ISDEFINEDBY = new RdfPropertyImpl("isDefinedBy", INSTANCE, Entries.RDFS_title_isDefinedBy, Entries.RDFS_label_isDefinedBy, RDFS.RESOURCE, SidebarWidget.Undefined, null);
+    public static final RdfProperty ISDEFINEDBY = new RdfPropertyImpl("isDefinedBy", INSTANCE, Entries.RDFS_title_isDefinedBy, Entries.RDFS_label_isDefinedBy, RDFS.RESOURCE, InputType.Undefined, null);
 
     /**
      * Further information about the subject resource
      */
-    public static final RdfProperty SEEALSO = new RdfPropertyImpl("seeAlso", INSTANCE, Entries.RDFS_title_seeAlso, Entries.RDFS_label_seeAlso, RDFS.RESOURCE, SidebarWidget.Undefined, null);
+    public static final RdfProperty SEEALSO = new RdfPropertyImpl("seeAlso", INSTANCE, Entries.RDFS_title_seeAlso, Entries.RDFS_label_seeAlso, RDFS.RESOURCE, InputType.Undefined, null);
 
     /**
      * The class of container membership properties, rdf:_1, rdf:_2, ..., all of which are sub-properties of 'member'

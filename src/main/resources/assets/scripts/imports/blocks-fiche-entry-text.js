@@ -7,8 +7,8 @@ base.plugin("blocks.imports.BlocksFicheEntryText", ["base.core.Class", "blocks.i
     this.TAGS = [
         //Note: we don't allow the user to edit the label of the property (but it works)
         //"blocks-fiche-entry ."+BlocksConstants.FICHE_ENTRY_NAME_CLASS,
-        "blocks-fiche-entry [data-property="+BlocksConstants.FICHE_ENTRY_VALUE_PROPERTY+"] ."+BlocksConstants.SIDEBAR_WIDGET_EDITOR,
-        "blocks-fiche-entry [data-property="+BlocksConstants.FICHE_ENTRY_VALUE_PROPERTY+"] ."+BlocksConstants.SIDEBAR_WIDGET_INLINE_EDITOR
+        "blocks-fiche-entry [data-property="+BlocksConstants.FICHE_ENTRY_VALUE_PROPERTY+"] ."+BlocksConstants.INPUT_TYPE_EDITOR,
+        "blocks-fiche-entry [data-property="+BlocksConstants.FICHE_ENTRY_VALUE_PROPERTY+"] ."+BlocksConstants.INPUT_TYPE_INLINE_EDITOR
     ];
 
     (this.Class = Class.create(Text.Class, {

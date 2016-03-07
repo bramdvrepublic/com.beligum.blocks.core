@@ -3,6 +3,7 @@
 <meta property="blocks:icon" content="fa-list-alt">
 
 <link href="/assets/styles/imports/blocks-fiche-entry.less" rel="stylesheet"/>
+<link href="/assets/styles/imports/blocks-fiche-entry-admin.less" rel="stylesheet" data-scope-role="admin" />
 
 <script src="/assets/scripts/imports/blocks-fiche-entry.js" type="application/javascript" data-scope-role="admin"></script>
 <script src="/assets/scripts/imports/blocks-fiche-entry-text.js" type="application/javascript" data-scope-role="admin"></script>
@@ -11,10 +12,12 @@
     #constants('blocks.core')
 ## Note: don't use .label here, it's taken by bootstrap (the pills thing))!
 ## Also don't use <label> because it messes with the cursor (and is meant for forms, not key/value setups)
-    <div data-property="$CONSTANTS.blocks.core.FICHE_ENTRY_NAME_PROPERTY">
+## TODO we can't use $CONSTANTS.blocks.core.FICHE_ENTRY_NAME_PROPERTY here because it doesn't get parsed during property substitution
+    <div data-property="name">
         $MESSAGES.blocks.core.widgetFicheEntryDefaultLabel
     </div>
-    <div data-property="$CONSTANTS.blocks.core.FICHE_ENTRY_VALUE_PROPERTY">
+## TODO we can't use $CONSTANTS.blocks.core.FICHE_ENTRY_VALUE_PROPERTY here because it doesn't get parsed during property substitution
+    <div data-property="value">
     ## This is the wrapper on which the property attribute will be set; that way, we can store the raw html with data-property="value"
     ## and store the rdfa-property containing the real data (and type))
     ## Note: sync this code with the code in blocks-fiche-entry.js::_createCombobox()

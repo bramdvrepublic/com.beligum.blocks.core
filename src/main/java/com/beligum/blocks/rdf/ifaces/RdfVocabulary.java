@@ -11,6 +11,11 @@ import java.util.Set;
 public interface RdfVocabulary
 {
     /**
+     * The name of the static singleton class variable that holds an instance of this vocabulary
+     */
+    String INSTANCE_FIELD_NAME = "INSTANCE";
+
+    /**
      * The full namespace URI of this vocabulary
      */
     URI getNamespace();
@@ -23,36 +28,51 @@ public interface RdfVocabulary
     String getPrefix();
 
     /**
-     * Returns all classes in this vocabulary
+     * Returns all classes in this vocabulary that are accessible from the client-side UI
      */
     //avoids infinite recursion
     @JsonIgnore
-    Set<RdfClass> getClasses();
+    Set<RdfClass> getPublicClasses();
 
     /**
-     * Returns all properties in this vocabulary
+     * Returns all properties in this vocabulary that are accessible from the client-side UI
      */
     //avoids infinite recursion
     @JsonIgnore
-    Set<RdfDataType> getDataTypes();
+    Set<RdfDataType> getPublicDataTypes();
 
     /**
-     * Returns all properties in this vocabulary
+     * Returns all properties in this vocabulary that are accessible from the client-side UI
      */
     //avoids infinite recursion
     @JsonIgnore
-    Set<RdfProperty> getProperties();
+    Set<RdfProperty> getPublicProperties();
 
     /**
-     * Returns all literals in this vocabulary
+     * Returns all literals in this vocabulary that are accessible from the client-side UI
      */
     //avoids infinite recursion
     @JsonIgnore
-    Set<RdfLiteral> getLiterals();
+    Set<RdfLiteral> getPublicLiterals();
 
     /**
      * Call this method to add a class to the vocabulary (probably only during static initialization)
      */
-    void add(RdfResource rdfClass);
+    void addClass(RdfClass rdfClass);
+
+    /**
+     * Call this method to add a property to the vocabulary (probably only during static initialization)
+     */
+    void addProperty(RdfProperty rdfProperty);
+
+    /**
+     * Call this method to add a dataType to the vocabulary (probably only during static initialization)
+     */
+    void addDataType(RdfDataType rdfDataType);
+
+    /**
+     * Call this method to add a literal to the vocabulary (probably only during static initialization)
+     */
+    void addLiteral(RdfLiteral rdfLiteral);
 
 }

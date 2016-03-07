@@ -1,7 +1,7 @@
 /**
  * Created by bram on 25/02/16.
  */
-base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.imports.Block", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.Notification", function (Class, Block, BlocksConstants, BlocksMessages, Sidebar, Notification)
+base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.imports.Block", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", "blocks.core.Notification", "base.core.Commons", function (Class, Block, BlocksConstants, BlocksMessages, Sidebar, Notification, Commons)
 {
     var BlocksFicheEntryText = this;
     this.TAGS = ["blocks-fiche-entry"];
@@ -57,75 +57,160 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                     }
 
                     // don't change anything if they're both the same
-                    if (oldValueTerm && oldValueTerm.name==newValueTerm.name) {
+                    if (oldValueTerm && oldValueTerm.name == newValueTerm.name) {
                         return;
                     }
 
                     //This method gets called every time the user focuses a fiche entry, because the combobox is re-loaded
                     //every time, resulting in a change from undefined to the currently configured value.
-                    //We can't really start from scratch every time, because that would mean we'd lose our previously entered data.
+                    //We can't really start building the html from scratch every time, because that would mean we'd lose our previously entered data.
                     //To detect a 'real change', we check three attributes on the propElement: the property, the data type and the widget class.
                     //Note that we can't just use the property attribute to check if everything is ok, because when this method is called,
                     //that attribute has just been set (since we requested it by passing PROPERTY_ATTR to addUniqueAttributeValueAsync).
                     //When all three are ok, we conclude nothing needs to be changed and it's not a 'real change', but rather a 'focus' event.
+                    var skipHtmlChange = false;
                     if (
-                        propElement.hasAttribute(PROPERTY_ATTR) && propElement.attr(PROPERTY_ATTR)==newValueTerm.name &&
-                        propElement.hasAttribute(DATATYPE_ATTR) && propElement.attr(DATATYPE_ATTR)==newValueTerm.dataType &&
+                        propElement.hasAttribute(PROPERTY_ATTR) && propElement.attr(PROPERTY_ATTR) == newValueTerm.name &&
+                        propElement.hasAttribute(DATATYPE_ATTR) && propElement.attr(DATATYPE_ATTR) == newValueTerm.dataType.name &&
                         propElement.hasClass(newValueTerm.widgetType)
                     ) {
-                        return;
+                        //we can't return straight away because we need to initialize the extra controls in the sidebar
+                        skipHtmlChange = true;
                     }
 
                     //If we reach this point, the element needs to change. Because there's a lot of attributes coming in from other plugin modules,
                     //our approach is to strip all attributes and html off and start over. Note that we can't just replace the element because too many other
                     //closures are hooked to it,
 
-                    //first copy the attributes to remove if we don't do this it causes problems
-                    //iterating over the array we're removing elements from
-                    var attributes = $.map(propElement[0].attributes, function(item) {
-                        return item.name;
-                    });
-                    // now remove the attributes
-                    $.each(attributes, function(i, item) {
-                        propElement.removeAttr(item);
-                    });
+                    if (!skipHtmlChange) {
+                        //first copy the attributes to remove if we don't do this it causes problems
+                        //iterating over the array we're removing elements from
+                        var attributes = $.map(propElement[0].attributes, function (item)
+                        {
+                            return item.name;
+                        });
+                        // now remove the attributes
+                        $.each(attributes, function (i, item)
+                        {
+                            propElement.removeAttr(item);
+                        });
 
-                    //here, we have a clean element, so we can start building again...
-                    propElement.addClass(BlocksConstants.FICHE_ENTRY_PROPERTY_CLASS);
-                    propElement.html(BlocksMessages.widgetFicheEntryDefaultValue);
+                        //here, we have a clean element, so we can start building again...
+                        propElement.addClass(BlocksConstants.FICHE_ENTRY_PROPERTY_CLASS);
+                        propElement.html(BlocksMessages.widgetFicheEntryDefaultValue);
 
-                    if (!newValueTerm) {
-                        labelElement.html(BlocksMessages.widgetFicheEntryDefaultLabel);
-                    }
-                    else {
-                        //this will reset any previously added widgets after the combobox
-                        combobox.nextAll().remove();
-
-                        //set the label html
-                        labelElement.html("<p>" + newValueTerm.label + "</p>");
-
-                        //initialize the property attributes
-                        propElement.attr(PROPERTY_ATTR, newValueTerm.name);
-                        propElement.attr(DATATYPE_ATTR, newValueTerm.dataType);
-
-                        //we need to add this class to have it picked up by widget-specific modules (like the editor)
-                        propElement.addClass(newValueTerm.widgetType);
-
-                        //some more type-specific post-processing
-                        var defaultEditorHtml = "<p>Type your text here...</p>";
-                        switch (newValueTerm.widgetType) {
-                            case BlocksConstants.SIDEBAR_WIDGET_EDITOR:
-                                propElement.html(defaultEditorHtml);
-                                break;
-                            case BlocksConstants.SIDEBAR_WIDGET_INLINE_EDITOR:
-                                propElement.html(defaultEditorHtml);
-                                //we're not a span, so force inline
-                                propElement.attr(BlocksConstants.TEXT_EDITOR_OPTIONS_ATTR, BlocksConstants.TEXT_EDITOR_OPTIONS_FORCE_INLINE + " " + BlocksConstants.TEXT_EDITOR_OPTIONS_NO_TOOLBAR);
-                                break;
-                            case BlocksConstants.SIDEBAR_WIDGET_TOGGLE:
-                                combobox.after(_this._createBooleanWidget(block, propElement, CONTENT_ATTR));
-                                break;
+                        //-- Initialize the html
+                        //we don't really allow this for now (it resets the html back to the default state if we pass undefined or null as newValue)
+                        if (!newValueTerm) {
+                            labelElement.html(BlocksMessages.widgetFicheEntryDefaultLabel);
                         }
+                        else {
+                            //set the label html
+                            labelElement.html("<p>" + newValueTerm.label + "</p>");
+
+                            //initialize the property attributes
+                            propElement.attr(PROPERTY_ATTR, newValueTerm.name);
+                            propElement.attr(DATATYPE_ATTR, newValueTerm.dataType.name);
+
+                            //we need to add this class to have it picked up by widget-specific modules (like the editor)
+                            propElement.addClass(newValueTerm.widgetType);
+
+                            var defaultEditorHtml = "<p>Type your text here...</p>";
+                            switch (newValueTerm.widgetType) {
+                                case BlocksConstants.INPUT_TYPE_EDITOR:
+                                    propElement.html(defaultEditorHtml);
+                                    break;
+                                case BlocksConstants.INPUT_TYPE_INLINE_EDITOR:
+                                    propElement.html(defaultEditorHtml);
+                                    //we're not a span, so force inline
+                                    propElement.attr(BlocksConstants.TEXT_EDITOR_OPTIONS_ATTR, BlocksConstants.TEXT_EDITOR_OPTIONS_FORCE_INLINE + " " + BlocksConstants.TEXT_EDITOR_OPTIONS_NO_TOOLBAR);
+                                    break;
+                            }
+                        }
+                    }
+
+                    //-- Initialize the sidebar
+                    //this will reset any previously added widgets after the combobox
+                    combobox.nextAll().remove();
+                    switch (newValueTerm.widgetType) {
+                        case BlocksConstants.INPUT_TYPE_BOOLEAN:
+                            combobox.after(_this._createBooleanWidget(block, propElement, CONTENT_ATTR));
+                            break;
+                        case BlocksConstants.INPUT_TYPE_NUMBER:
+                            var defaultValue = 0;
+                            combobox.after(_this._createInputWidget(block, propElement, CONTENT_ATTR, newValueTerm.widgetType, 'number', 'Value', defaultValue,
+                                function setterFunction(newValue)
+                                {
+                                    if (newValue!='') {
+                                        propElement.attr(CONTENT_ATTR, newValue);
+                                        propElement.html(newValue);
+                                    }
+                                    else {
+                                        propElement.removeAttr(CONTENT_ATTR);
+                                        propElement.html(defaultValue);
+                                    }
+                                }));
+                            break;
+                        case BlocksConstants.INPUT_TYPE_DATE:
+                            var defaultValue = '<p><i>Please enter a valid date in the sidebar</i></p>';
+                            combobox.after(_this._createInputWidget(block, propElement, CONTENT_ATTR, newValueTerm.widgetType, 'date', 'Date', defaultValue,
+                                function setterFunction(newValue)
+                                {
+                                    if (newValue!='') {
+                                        propElement.attr(CONTENT_ATTR, newValue);
+                                        propElement.html(newValue);
+                                    }
+                                    else {
+                                        propElement.removeAttr(CONTENT_ATTR);
+                                        propElement.html(defaultValue);
+                                    }
+                                }));
+                            break;
+                        case BlocksConstants.INPUT_TYPE_TIME:
+                            var defaultValue = '<p><i>Please enter a valid time in the sidebar</i></p>';
+                            combobox.after(_this._createInputWidget(block, propElement, CONTENT_ATTR, newValueTerm.widgetType, 'time', 'Time', defaultValue,
+                                function setterFunction(newValue)
+                                {
+                                    if (newValue!='') {
+                                        propElement.attr(CONTENT_ATTR, newValue);
+                                        propElement.html(newValue);
+                                    }
+                                    else {
+                                        propElement.removeAttr(CONTENT_ATTR);
+                                        propElement.html(defaultValue);
+                                    }
+                                }));
+                            break;
+                        case BlocksConstants.INPUT_TYPE_DATETIME:
+                            var defaultValue = '<p><i>Please enter a valid date and time in the sidebar</i></p>';
+                            combobox.after(_this._createInputWidget(block, propElement, CONTENT_ATTR, newValueTerm.widgetType, 'datetime-local', 'Date and time', defaultValue,
+                                function setterFunction(newValue)
+                                {
+                                    if (newValue!='') {
+                                        propElement.attr(CONTENT_ATTR, newValue);
+                                        propElement.html(newValue);
+                                    }
+                                    else {
+                                        propElement.removeAttr(CONTENT_ATTR);
+                                        propElement.html(defaultValue);
+                                    }
+                                }));
+                            break;
+                        case BlocksConstants.INPUT_TYPE_COLOR:
+                            var defaultValue = '<p><i>Please enter a color in the sidebar</i></p>';
+                            combobox.after(_this._createInputWidget(block, propElement, CONTENT_ATTR, newValueTerm.widgetType, 'color', 'Color', defaultValue,
+                                function setterFunction(newValue)
+                                {
+                                    if (newValue!='' && newValue.charAt(0)=='#') {
+                                        propElement.attr(CONTENT_ATTR, newValue);
+                                        propElement.html('<div class="'+BlocksConstants.INPUT_TYPE_COLOR_VALUE_CLASS+'" style="background-color: '+newValue+'"></div>');
+                                    }
+                                    else {
+                                        propElement.removeAttr(CONTENT_ATTR);
+                                        propElement.html(defaultValue);
+                                    }
+                                }));
+                            break;
                     }
                 });
 
@@ -136,7 +221,7 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
             var CONTENT_VALUE_TRUE = "true";
             var CONTENT_VALUE_FALSE = "false";
 
-            var retVal = $('<div class="' + BlocksConstants.SIDEBAR_WIDGET_WRAPPER_CLASS + '"></div>');
+            var retVal = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
 
             var toggleState = function (newState)
             {
@@ -172,6 +257,43 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
             retVal.append(toggleButton);
 
             return retVal;
+        },
+        _createInputWidget: function (block, propElement, contentAttr, inputTypeConstant, htmlInputType, labelText, initialValue, setterFunction)
+        {
+            var id = Commons.generateId();
+            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
+            formGroup.addClass(inputTypeConstant);
+            if (labelText) {
+                var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
+            }
+            var inputGroup = $('<div class="input-group"></div>').appendTo(formGroup);
+            var input = $('<input id="' + id + '" type="' + htmlInputType + '" class="form-control">').appendTo(inputGroup);
+
+            //init and attach the change listener
+            input.on("change keyup focus", function (event)
+            {
+                setterFunction(input.val());
+            });
+
+            var firstValue = propElement.attr(contentAttr);
+
+            //if the html widget is uninitialized, try to set it to a default value
+            if (firstValue == BlocksMessages.widgetFicheEntryDefaultValue) {
+                //initial value may be 0 or '', so check of type
+                if (typeof initialValue !== typeof undefined) {
+                    firstValue = initialValue;
+                }
+            }
+
+            //this gives us a chance to skip this if it would be needed
+            if (typeof firstValue !== typeof undefined) {
+                //init the input
+                input.val(firstValue);
+                //fire the change (because the one above doesn't seem to do so)
+                setterFunction(firstValue);
+            }
+
+            return formGroup;
         },
 
     })).register(this.TAGS);

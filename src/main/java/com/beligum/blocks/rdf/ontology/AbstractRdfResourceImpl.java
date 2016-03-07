@@ -11,13 +11,20 @@ public abstract class AbstractRdfResourceImpl extends AbstractJsonObject impleme
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
+    private boolean isPublic;
 
     //-----CONSTRUCTORS-----
-    protected AbstractRdfResourceImpl()
+    protected AbstractRdfResourceImpl(boolean isPublic)
     {
+        this.isPublic = isPublic;
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public boolean isPublic()
+    {
+        return isPublic;
+    }
 
     //-----PROTECTED METHODS-----
 

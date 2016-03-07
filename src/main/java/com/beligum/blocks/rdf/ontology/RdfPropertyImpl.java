@@ -1,7 +1,7 @@
 package com.beligum.blocks.rdf.ontology;
 
 import com.beligum.base.filesystem.MessagesFileEntry;
-import com.beligum.blocks.config.SidebarWidget;
+import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
@@ -17,7 +17,7 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
 
     //-----VARIABLES-----
     private RdfClass dataType;
-    private SidebarWidget widgetType;
+    private InputType widgetType;
 
     //-----CONSTRUCTORS-----
     public RdfPropertyImpl(String name,
@@ -25,13 +25,27 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
                            MessagesFileEntry title,
                            MessagesFileEntry label,
                            RdfClass dataType,
-                           SidebarWidget widgetType,
+                           InputType widgetType,
                            URI[] isSameAs)
     {
-        super(name, vocabulary, title, label, isSameAs);
+        this(name, vocabulary, title, label, dataType, widgetType, isSameAs, false);
+    }
+    public RdfPropertyImpl(String name,
+                           RdfVocabulary vocabulary,
+                           MessagesFileEntry title,
+                           MessagesFileEntry label,
+                           RdfClass dataType,
+                           InputType widgetType,
+                           URI[] isSameAs,
+                           boolean isPublic)
+    {
+        super(name, vocabulary, title, label, isSameAs, isPublic);
 
         this.widgetType = widgetType;
         this.dataType = dataType;
+
+        //we don't have subclasses so don't worry about type checking (yet)
+        vocabulary.addProperty(this);
     }
 
     //-----PUBLIC METHODS-----

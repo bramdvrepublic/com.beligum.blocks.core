@@ -1,14 +1,18 @@
 package com.beligum.blocks.config;
 
 import com.beligum.base.server.R;
+import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.ReflectionFunctions;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ifaces.RdfClassFactory;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ifaces.RdfPropertyFactory;
+import com.beligum.blocks.rdf.ifaces.RdfResourceFactory;
+import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
 
+import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -17,55 +21,90 @@ import java.util.Set;
 public class RdfFactory
 {
     //-----CONSTANTS-----
+    private enum RdfMapCacheKey
+    {
+        CLASS,
+        PROPERTY
+        ;
+    }
 
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    public static RdfProperty[] getProperties()
+    public static Set<RdfProperty> getProperties()
     {
-        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.RDF_PROPERTIES)) {
-            Set<RdfProperty> discovered = new HashSet<>();
-            Set<Class<?>> collections = ReflectionFunctions.searchAllClassesImplementing(RdfPropertyFactory.class);
-            for (Class<?> c : collections) {
-                try {
-                    RdfPropertyFactory collection = (RdfPropertyFactory) c.newInstance();
-                    discovered.addAll(collection.getRdfProperties());
-                }
-                catch (Exception e) {
-                    throw new RuntimeException("Error while instantiating an RDF property collection, this shouldn't happen; "+c, e);
-                }
-            }
-
-            R.cacheManager().getApplicationCache().put(CacheKeys.RDF_PROPERTIES, discovered.toArray(new RdfProperty[discovered.size()]));
-        }
-
-        return (RdfProperty[]) R.cacheManager().getApplicationCache().get(CacheKeys.RDF_PROPERTIES);
+        return getRdfMapCache(RdfMapCacheKey.PROPERTY, RdfProperty.class);
     }
-    public static RdfClass[] getClasses()
+    public static Set<RdfClass> getClasses()
     {
-        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.RDF_CLASSES)) {
-            Set<RdfClass> discoveredClasses = new HashSet<>();
-            Set<Class<?>> rdfClasses = ReflectionFunctions.searchAllClassesImplementing(RdfClassFactory.class);
-            for (Class<?> c : rdfClasses) {
-                try {
-                    RdfClassFactory collection = (RdfClassFactory) c.newInstance();
-                    discoveredClasses.addAll(collection.getRdfClasses());
-                }
-                catch (Exception e) {
-                    throw new RuntimeException("Error while instantiating an RDF class collection, this shouldn't happen; "+c, e);
-                }
-            }
-
-            R.cacheManager().getApplicationCache().put(CacheKeys.RDF_CLASSES, discoveredClasses.toArray(new RdfClass[discoveredClasses.size()]));
-        }
-
-        return (RdfClass[]) R.cacheManager().getApplicationCache().get(CacheKeys.RDF_CLASSES);
+        return getRdfMapCache(RdfMapCacheKey.CLASS, RdfClass.class);
     }
 
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+    /**
+     * TODO: little bit dirty with all the casting...
+     */
+    private static <T> Set<T> getRdfMapCache(RdfMapCacheKey type, Class<? extends T> clazz)
+    {
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.RDF_VOCABULARIES)) {
+            Map<RdfMapCacheKey, Set> retVal = new HashMap<>();
+            retVal.put(RdfMapCacheKey.CLASS, new HashSet<RdfClass>());
+            retVal.put(RdfMapCacheKey.PROPERTY, new HashSet<RdfProperty>());
 
+            //make sure we instantiate the resource factories once before building up the cache,
+            // to allow static members to be initialized and added to the proper vocabulary
+            Set<Class<?>> resourceFactories = ReflectionFunctions.searchAllClassesImplementing(RdfResourceFactory.class);
+            for (Class<?> c : resourceFactories) {
+                try {
+                    c.newInstance();
+                }
+                catch (Exception e) {
+                    throw new RuntimeException("Error while instantiating an RDF resource factory, this shouldn't happen; " + c, e);
+                }
+            }
+
+            Set<Class<?>> collections = ReflectionFunctions.searchAllClassesImplementing(RdfVocabulary.class);
+            for (Class<?> c : collections) {
+                try {
+                    //we don't take abstract superclasses into account
+                    if (!java.lang.reflect.Modifier.isAbstract(c.getModifiers())) {
+                        Field instanceVariable = c.getDeclaredField(RdfVocabulary.INSTANCE_FIELD_NAME);
+                        if (java.lang.reflect.Modifier.isStatic(instanceVariable.getModifiers())) {
+                            if (RdfVocabulary.class.isAssignableFrom(instanceVariable.getType())) {
+                                RdfVocabulary vocab = (RdfVocabulary) instanceVariable.get(null);
+                                retVal.get(RdfMapCacheKey.CLASS).addAll(vocab.getPublicClasses());
+                                retVal.get(RdfMapCacheKey.PROPERTY).addAll(vocab.getPublicProperties());
+                            }
+                            else {
+                                Logger.warn("Encountered RDF vocabulary class with a static singleton field '" + RdfVocabulary.INSTANCE_FIELD_NAME + "', but not of type '" +
+                                            RdfVocabulary.class.getCanonicalName() + "' please make it implement that class; " +
+                                            c.getCanonicalName());
+                            }
+                        }
+                        else {
+                            Logger.warn("Encountered RDF vocabulary class with a non-static singleton field '" + RdfVocabulary.INSTANCE_FIELD_NAME + "', please make it static instead; " +
+                                        c.getCanonicalName());
+                        }
+                    }
+                }
+                catch (NoSuchFieldException e) {
+                    Logger.warn("Encountered RDF vocabulary class without a static singleton field '" + RdfVocabulary.INSTANCE_FIELD_NAME + "', please change the implementation; " +
+                                c.getCanonicalName(), e);
+                }
+                catch (Exception e) {
+                    throw new RuntimeException("Error while instantiating an RDF vocabulary, this shouldn't happen; " + c, e);
+                }
+            }
+
+            R.cacheManager().getApplicationCache().put(CacheKeys.RDF_VOCABULARIES, retVal);
+        }
+
+        Object tempRetVal = ((Map)R.cacheManager().getApplicationCache().get(CacheKeys.RDF_VOCABULARIES)).get(type);
+
+        return (Set<T>) tempRetVal;
+    }
 }

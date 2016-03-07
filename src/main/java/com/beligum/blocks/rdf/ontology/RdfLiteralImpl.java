@@ -19,15 +19,18 @@ public class RdfLiteralImpl extends AbstractRdfResourceImpl implements RdfLitera
     //-----CONSTRUCTORS-----
     public RdfLiteralImpl(String value, RdfClass dataType)
     {
-        this(RDFS.LITERAL.getName(), RDFS.INSTANCE, value, dataType);
+        this(RDFS.LITERAL.getName(), RDFS.INSTANCE, value, dataType, false);
     }
     //only for subclasses
-    protected RdfLiteralImpl(String name, RdfVocabulary vocabulary, String value, RdfClass dataType)
+    protected RdfLiteralImpl(String name, RdfVocabulary vocabulary, String value, RdfClass dataType, boolean isPublic)
     {
-        super();
+        super(isPublic);
 
         this.value = value;
         this.dataType = dataType;
+
+        //we'll add ourself and the subclass to the literal collection of the vocab
+        vocabulary.addLiteral(this);
     }
 
     //-----PUBLIC METHODS-----

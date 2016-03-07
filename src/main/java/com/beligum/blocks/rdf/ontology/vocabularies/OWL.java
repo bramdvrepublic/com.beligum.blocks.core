@@ -1,6 +1,6 @@
 package com.beligum.blocks.rdf.ontology.vocabularies;
 
-import com.beligum.blocks.config.SidebarWidget;
+import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
@@ -57,5 +57,5 @@ public final class OWL extends AbstractRdfVocabulary
     /**
      * The property that determines that two given individuals are equal
      */
-    public static final RdfProperty SAMEAS = new RdfPropertyImpl("sameAs", INSTANCE, Entries.OWL_title_sameAs, Entries.OWL_label_sameAs, OWL.THING, SidebarWidget.Undefined, null);
+    public static final RdfProperty SAMEAS = new RdfPropertyImpl("sameAs", INSTANCE, Entries.OWL_title_sameAs, Entries.OWL_label_sameAs, OWL.THING, InputType.Undefined, null);
 }

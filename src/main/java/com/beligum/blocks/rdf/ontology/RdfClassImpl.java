@@ -27,7 +27,16 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
                         MessagesFileEntry label,
                         URI[] isSameAs)
     {
-        super();
+        this(name, vocabulary, title, label, isSameAs, false);
+    }
+    public RdfClassImpl(String name,
+                        RdfVocabulary vocabulary,
+                        MessagesFileEntry title,
+                        MessagesFileEntry label,
+                        URI[] isSameAs,
+                        boolean isPublic)
+    {
+        super(isPublic);
 
         this.name = name;
         this.vocabulary = vocabulary;
@@ -36,8 +45,10 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
         //make it uniform (always an array)
         this.isSameAs = isSameAs == null ? new URI[] {} : isSameAs;
 
-        //add ourself to the selected vocabulary
-        this.vocabulary.add(this);
+        //only add ourself to the selected vocabulary if we are a pure class
+        if (this.getClass().equals(RdfClassImpl.class)) {
+            this.vocabulary.addClass(this);
+        }
     }
 
     //-----PUBLIC METHODS-----
