@@ -77,7 +77,7 @@ base.plugin("blocks.imports.Page", ["base.core.Class", "blocks.imports.Widget", 
                 retVal.push(this.addValueHtml(Sidebar, title, "Page title", "Enter a title for this page", false));
             }
 
-            retVal.push(this.addUniqueAttributeValueAsync(Sidebar, $("html"), "Page subject", "typeof", "/blocks/admin/rdf/classes/", "title", "name", null));
+            retVal.push(this.addUniqueAttributeValueAsync(Sidebar, $("html"), "Page subject", "typeof", "/blocks/admin/rdf/classes/", "title", "curieName", null));
 
             return retVal;
         },

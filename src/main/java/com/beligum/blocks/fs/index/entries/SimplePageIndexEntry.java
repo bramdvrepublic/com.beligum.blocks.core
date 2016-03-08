@@ -16,6 +16,7 @@ public class SimplePageIndexEntry extends AbstractIndexEntry implements PageInde
 
     //-----VARIABLES-----
     private String resource;
+    private String typeOf;
     private String title;
     private String language;
     private String parent;
@@ -36,9 +37,14 @@ public class SimplePageIndexEntry extends AbstractIndexEntry implements PageInde
         //      StoredField = not indexed at all
 
         //Note: we also need to insert the id of the doc even though it's an index
-        retVal.add(new StringField(AbstractIndexEntry.Field.id.name(), entry.getId().toString(), org.apache.lucene.document.Field.Store.YES));
+        retVal.add(new StringField(IndexEntry.Field.id.name(), entry.getId().toString(), org.apache.lucene.document.Field.Store.YES));
+        //don't store it, we just add it to the index to be able to query the URI (again) more naturally
+        retVal.add(new TextField(IndexEntry.Field.tokenisedId.name(), entry.getId().toString(), org.apache.lucene.document.Field.Store.NO));
         if (entry.getResource() != null) {
             retVal.add(new StringField(PageIndexEntry.Field.resource.name(), entry.getResource(), org.apache.lucene.document.Field.Store.YES));
+        }
+        if (entry.getTypeOf() != null) {
+            retVal.add(new StringField(PageIndexEntry.Field.typeOf.name(), entry.getTypeOf(), org.apache.lucene.document.Field.Store.YES));
         }
         if (entry.getTitle() != null) {
             retVal.add(new TextField(PageIndexEntry.Field.title.name(), entry.getTitle(), org.apache.lucene.document.Field.Store.YES));
@@ -54,9 +60,10 @@ public class SimplePageIndexEntry extends AbstractIndexEntry implements PageInde
     }
     public static SimplePageIndexEntry fromLuceneDoc(Document document) throws IOException
     {
-        SimplePageIndexEntry retVal = new SimplePageIndexEntry(URI.create(document.get(AbstractIndexEntry.Field.id.name())));
+        SimplePageIndexEntry retVal = new SimplePageIndexEntry(URI.create(document.get(IndexEntry.Field.id.name())));
 
         retVal.setResource(document.get(PageIndexEntry.Field.resource.name()));
+        retVal.setTypeOf(document.get(PageIndexEntry.Field.typeOf.name()));
         retVal.setTitle(document.get(PageIndexEntry.Field.title.name()));
         retVal.setLanguage(document.get(PageIndexEntry.Field.language.name()));
         retVal.setParent(document.get(PageIndexEntry.Field.parent.name()));
@@ -73,6 +80,15 @@ public class SimplePageIndexEntry extends AbstractIndexEntry implements PageInde
     public void setResource(String resource)
     {
         this.resource = resource;
+    }
+    @Override
+    public String getTypeOf()
+    {
+        return typeOf;
+    }
+    public void setTypeOf(String typeOf)
+    {
+        this.typeOf = typeOf;
     }
     @Override
     public String getTitle()

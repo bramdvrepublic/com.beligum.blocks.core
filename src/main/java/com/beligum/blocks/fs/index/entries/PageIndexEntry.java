@@ -7,10 +7,11 @@ public interface PageIndexEntry extends IndexEntry
 {
     //-----CONSTANTS-----
     //note: sync these with the getter names below (and the setters of the implementations)
-    enum Field
+    enum Field implements IndexEntry.IndexEntryField
     {
         resource,
         title,
+        typeOf,
         language,
         parent
     }
@@ -21,6 +22,7 @@ public interface PageIndexEntry extends IndexEntry
 
     //-----PUBLIC METHODS-----
     String getResource();
+    String getTypeOf();
     String getTitle();
     String getLanguage();
     String getParent();

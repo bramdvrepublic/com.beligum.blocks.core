@@ -3,8 +3,10 @@ package com.beligum.blocks.endpoints;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.entries.PageIndexEntry;
+import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexer;
 import com.beligum.blocks.security.Permissions;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
 import javax.ws.rs.GET;
@@ -56,7 +58,14 @@ public class RdfEndpoint
     {
         PageIndexer mainPageIndexer = StorageFactory.getMainPageIndexer();
 
-        List<PageIndexEntry> result = mainPageIndexer.connect().search(PageIndexEntry.Field.title, query+"*", 10);
+        PageIndexConnection.FieldQuery[] queries = new PageIndexConnection.FieldQuery[]{ new PageIndexConnection.FieldQuery(PageIndexEntry.Field.typeOf, resourceTypeCurie.toString(), BooleanClause.Occur.FILTER,
+                                                                                                                            PageIndexConnection.FieldQuery.Type.EXACT),
+                                                                                         /*new PageIndexConnection.FieldQuery(IndexEntry.Field.tokenisedId, query, BooleanClause.Occur.MUST,
+                                                                                                                            PageIndexConnection.FieldQuery.Type.WILDCARD),*/
+                                                                                         new PageIndexConnection.FieldQuery(PageIndexEntry.Field.title, query, BooleanClause.Occur.MUST,
+                                                                                                                            PageIndexConnection.FieldQuery.Type.WILDCARD) };
+
+        List<PageIndexEntry> result = mainPageIndexer.connect().search(queries, 10);
 
         return Response.ok(result).build();
     }

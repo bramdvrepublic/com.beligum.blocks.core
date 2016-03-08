@@ -14,16 +14,10 @@ import org.apache.hadoop.fs.FileContext;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
@@ -88,22 +82,40 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         //this.printLuceneIndex();
     }
     @Override
-    public List<PageIndexEntry> search(PageIndexEntry.Field field, String queryStr, int maxResults) throws IOException
+    public List<PageIndexEntry> search(FieldQuery[] fieldQueries, int maxResults) throws IOException
     {
         List<PageIndexEntry> retVal = new ArrayList<>();
 
-        QueryParser parser = new QueryParser(field.name(), DEFAULT_ANALYZER);
         try {
-            Query query = parser.parse(queryStr);
+            BooleanQuery query = new BooleanQuery();
+            for (FieldQuery q : fieldQueries) {
+                Query subQuery = null;
+                switch (q.getType()) {
+                    case EXACT:
+                        //note that we must not escape an exact value (eg. it doesn't work if you do)
+                        subQuery = new TermQuery(new Term(q.getField().name(), q.getQuery()));
+                        break;
+                    case WILDCARD:
+                        QueryParser parser = new QueryParser(q.getField().name(), DEFAULT_ANALYZER);
+                        //we need to escape the wildcard query, and append the asterisk afterwards (or it will be escaped)
+                        subQuery = parser.parse(QueryParser.escape(q.getQuery()) + "*");
+                        break;
+                    default:
+                        throw new ParseException("Encountered unsupported query type; this shouldn't happen; "+q.getType());
+                }
+
+                query.add(subQuery, q.getBool());
+            }
+
             TopDocs topdocs = getLuceneIndexSearcher().search(query, maxResults);
 
             //TODO this is probably not so efficient...
-            for (int i=0;i<topdocs.totalHits;i++) {
+            for (int i = 0; i < topdocs.totalHits; i++) {
                 retVal.add(SimplePageIndexEntry.fromLuceneDoc(getLuceneIndexReader().document(topdocs.scoreDocs[i].doc)));
             }
         }
         catch (ParseException e) {
-            throw new IOException("Error while parsing lucene query; "+queryStr, e);
+            throw new IOException("Error while parsing multi-field lucene query; " + fieldQueries, e);
         }
 
         return retVal;
@@ -116,28 +128,28 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     protected void prepareCommit() throws IOException
     {
-        if (this.indexWriter!=null) {
+        if (this.indexWriter != null) {
             this.indexWriter.prepareCommit();
         }
     }
     @Override
     protected void commit() throws IOException
     {
-        if (this.indexWriter!=null) {
+        if (this.indexWriter != null) {
             this.indexWriter.commit();
         }
     }
     @Override
     protected void rollback() throws IOException
     {
-        if (this.indexWriter!=null) {
+        if (this.indexWriter != null) {
             this.indexWriter.rollback();
         }
     }
     @Override
     public void close() throws IOException
     {
-        if (this.indexWriter!=null) {
+        if (this.indexWriter != null) {
             this.indexWriter.close();
             this.indexWriter = null;
         }
@@ -168,6 +180,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
 
         SimplePageIndexEntry entry = new SimplePageIndexEntry(pageAddress);
         entry.setResource(htmlAnalyzer.getHtmlAbout() == null ? null : htmlAnalyzer.getHtmlAbout().value);
+        entry.setTypeOf(htmlAnalyzer.getHtmlTypeof() == null ? null : htmlAnalyzer.getHtmlTypeof().value);
         entry.setLanguage(htmlAnalyzer.getHtmlLanguage() == null ? null : htmlAnalyzer.getHtmlLanguage().getLanguage());
         URI parent = this.getParentUri(pageAddress, fc);
         entry.setParent(parent == null ? null : parent.toString());
@@ -264,7 +277,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     }
     private void assertWriter() throws IOException
     {
-        if (this.indexWriter==null) {
+        if (this.indexWriter == null) {
             this.indexWriter = this.getNewLuceneIndexWriter();
         }
     }

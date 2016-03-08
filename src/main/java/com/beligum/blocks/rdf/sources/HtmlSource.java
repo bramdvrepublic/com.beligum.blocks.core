@@ -195,7 +195,9 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
             // Note that we discard any possible supplied typeOf values in this case; we force it to be a page
             if (newResource==null) {
                 //since the vocab is set to the same value as the vocab of the Page class, we can safely use the short version
-                newTypeOf = URI.create(Classes.Page.getName());
+                //Not any more: we're trying to always use the curie name as 'value' in dropdowns etc, so to make the type dropdown
+                //              work, it needs to be a curie value
+                newTypeOf = Classes.Page.getCurieName();
                 newResource = RdfTools.createRelativeResourceId(Classes.Page);
             }
 

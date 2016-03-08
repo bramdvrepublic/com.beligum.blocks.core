@@ -99,7 +99,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         this.connection.add(model);
     }
     @Override
-    public List<PageIndexEntry> search(PageIndexEntry.Field field, String query, int maxResults) throws IOException
+    public List search(FieldQuery[] fieldQueries, int maxResults) throws IOException
     {
         List<PageIndexEntry> retVal = new ArrayList<>();
 

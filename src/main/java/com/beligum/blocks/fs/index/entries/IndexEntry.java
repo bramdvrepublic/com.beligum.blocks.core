@@ -9,6 +9,16 @@ import java.net.URI;
 public interface IndexEntry extends Serializable
 {
     //-----CONSTANTS-----
+    interface IndexEntryField
+    {
+        //since all implementations are enums, this will be implemented by the default enum name() method
+        String name();
+    }
+    enum Field implements IndexEntryField
+    {
+        id,
+        tokenisedId
+    }
 
     //-----VARIABLES-----
 

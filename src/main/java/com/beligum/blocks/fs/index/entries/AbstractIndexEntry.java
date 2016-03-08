@@ -10,10 +10,6 @@ import java.net.URI;
 public abstract class AbstractIndexEntry implements IndexEntry
 {
     //-----CONSTANTS-----
-    public enum Field
-    {
-        id
-    }
 
     //-----VARIABLES-----
     protected URI id;
