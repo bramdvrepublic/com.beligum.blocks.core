@@ -25,7 +25,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by bram on 2/22/16.
@@ -88,7 +90,22 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
 
         try {
             BooleanQuery query = new BooleanQuery();
+            Map<Integer, BooleanQuery> groups = new HashMap<>();
             for (FieldQuery q : fieldQueries) {
+
+                BooleanQuery activeQuery = query;
+                if (q.getGroup()!=null) {
+                    if (groups.containsKey(q.getGroup())) {
+                        activeQuery = groups.get(q.getGroup());
+                    }
+                    else {
+                        activeQuery = new BooleanQuery();
+                        groups.put(q.getGroup(), activeQuery);
+                        //TODO hmm, this (FILTER) won't always be true...
+                        query.add(activeQuery, BooleanClause.Occur.FILTER);
+                    }
+                }
+
                 Query subQuery = null;
                 switch (q.getType()) {
                     case EXACT:
@@ -104,7 +121,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
                         throw new ParseException("Encountered unsupported query type; this shouldn't happen; "+q.getType());
                 }
 
-                query.add(subQuery, q.getBool());
+                activeQuery.add(subQuery, q.getBool());
             }
 
             TopDocs topdocs = getLuceneIndexSearcher().search(query, maxResults);

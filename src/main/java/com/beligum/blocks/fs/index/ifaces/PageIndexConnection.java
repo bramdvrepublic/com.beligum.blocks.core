@@ -27,13 +27,15 @@ public interface PageIndexConnection<T extends PageIndexEntry> extends IndexConn
         private String query;
         private BooleanClause.Occur bool;
         private Type type;
+        private Integer group;
 
-        public FieldQuery(IndexEntry.IndexEntryField field, String query, BooleanClause.Occur bool, Type type)
+        public FieldQuery(IndexEntry.IndexEntryField field, String query, BooleanClause.Occur bool, Type type, Integer group)
         {
             this.field = field;
             this.query = query;
             this.bool = bool;
             this.type = type;
+            this.group = group;
         }
         public IndexEntry.IndexEntryField getField()
         {
@@ -50,6 +52,10 @@ public interface PageIndexConnection<T extends PageIndexEntry> extends IndexConn
         public Type getType()
         {
             return type;
+        }
+        public Integer getGroup()
+        {
+            return group;
         }
     }
 
