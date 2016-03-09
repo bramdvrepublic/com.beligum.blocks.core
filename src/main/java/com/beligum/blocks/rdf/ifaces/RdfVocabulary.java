@@ -11,11 +11,6 @@ import java.util.Set;
 public interface RdfVocabulary
 {
     /**
-     * The name of the static singleton class variable that holds an instance of this vocabulary
-     */
-    String INSTANCE_FIELD_NAME = "INSTANCE";
-
-    /**
      * The full namespace URI of this vocabulary
      */
     URI getNamespace();

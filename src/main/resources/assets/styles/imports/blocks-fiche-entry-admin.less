@@ -64,5 +64,35 @@
         }
       }
     }
+
+    &.@{INPUT_TYPE_RESOURCE} {
+      //typeahead menu wrapper
+      .tt-menu {
+      }
+
+      //typeahead suggestion entry wrapper
+      .tt-suggestion {
+
+        cursor: pointer;
+
+        //individiual sub-sections in a suggestion box
+        p {
+          max-width: 220px;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow-x: hidden;
+          margin-right: 10px;
+
+          &.@{INPUT_TYPE_RES_SUG_TITLE_CLASS} {
+            font-weight: bold;
+            margin: 0;
+          }
+          &.@{INPUT_TYPE_RES_SUG_SUBTITLE_CLASS} {
+            font-size: 0.8em;
+            margin: 0;
+          }
+        }
+      }
+    }
   }
 }

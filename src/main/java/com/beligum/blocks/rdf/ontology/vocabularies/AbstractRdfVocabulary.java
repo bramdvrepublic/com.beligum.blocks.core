@@ -1,6 +1,7 @@
 package com.beligum.blocks.rdf.ontology.vocabularies;
 
 import com.beligum.base.models.AbstractJsonObject;
+import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.*;
 
 import java.net.URI;
@@ -31,6 +32,11 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
         this.publicDataTypes = new HashSet<>();
         this.publicProperties = new HashSet<>();
         this.publicLiterals = new HashSet<>();
+
+        //add this vocabulary to the cached map of vocabularies
+        RdfFactory.getVocabularies().put(this.getNamespace(), this);
+        //store the prefix mapping
+        RdfFactory.getVocabularyPrefixes().put(this.getPrefix(), this.getNamespace());
     }
 
     //-----PUBLIC METHODS-----

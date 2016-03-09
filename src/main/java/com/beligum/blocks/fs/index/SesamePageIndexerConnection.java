@@ -48,16 +48,15 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     {
         //TODO
         String queryString = "PREFIX search:   <" + LuceneSailSchema.NAMESPACE + "> \n" +
-                             "PREFIX mot:   <http://www.mot.be/ontology/> \n" +
                              "SELECT ?x ?score ?snippet WHERE {?x search:matches [\n" +
                              "search:query \"aimé\"; \n" +
-                             "search:property mot:comment; \n" +
+                             "search:property <http://www.mot.be/ontology/comment>; \n" +
                              "search:score ?score; \n" +
                              "search:snippet ?snippet ] }";
-        System.out.println("Running query: \n"+queryString);
+
         TupleQuery query = connection.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
-        TupleQueryResult result = query.evaluate();
-        try {
+
+        try (TupleQueryResult result = query.evaluate()) {
             if (!result.hasNext()) {
                 System.out.println("-------- NO MATCHES!! ---------");
             }
@@ -72,8 +71,6 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
                     }
                 }
             }
-        } finally {
-            result.close();
         }
 
         return null;
@@ -168,7 +165,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
                              "search:property mot:comment; \n" +
                              "search:score ?score; \n" +
                              "search:snippet ?snippet ] }";
-        System.out.println("Running query: \n"+queryString);
+        System.out.println("Running query: \n" + queryString);
         TupleQuery query = connection.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
         TupleQueryResult result = query.evaluate();
         try {
@@ -186,7 +183,8 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
                     }
                 }
             }
-        } finally {
+        }
+        finally {
             result.close();
         }
     }

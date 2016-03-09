@@ -101,7 +101,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
                     else {
                         activeQuery = new BooleanQuery();
                         groups.put(q.getGroup(), activeQuery);
-                        //TODO hmm, this (FILTER) won't always be true...
+                        //TODO hmm, this (FILTER = and) won't always be true...
                         query.add(activeQuery, BooleanClause.Occur.FILTER);
                     }
                 }

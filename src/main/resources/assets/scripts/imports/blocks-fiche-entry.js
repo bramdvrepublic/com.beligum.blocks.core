@@ -143,7 +143,7 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                             combobox.after(_this._createInputWidget(block, propElement, CONTENT_ATTR, newValueTerm.widgetType, 'number', 'Value', defaultValue,
                                 function setterFunction(newValue)
                                 {
-                                    if (newValue!='') {
+                                    if (newValue != '') {
                                         propElement.attr(CONTENT_ATTR, newValue);
                                         propElement.html(newValue);
                                     }
@@ -158,7 +158,7 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                             combobox.after(_this._createInputWidget(block, propElement, CONTENT_ATTR, newValueTerm.widgetType, 'date', 'Date', defaultValue,
                                 function setterFunction(newValue)
                                 {
-                                    if (newValue!='') {
+                                    if (newValue != '') {
                                         propElement.attr(CONTENT_ATTR, newValue);
                                         propElement.html(newValue);
                                     }
@@ -173,7 +173,7 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                             combobox.after(_this._createInputWidget(block, propElement, CONTENT_ATTR, newValueTerm.widgetType, 'time', 'Time', defaultValue,
                                 function setterFunction(newValue)
                                 {
-                                    if (newValue!='') {
+                                    if (newValue != '') {
                                         propElement.attr(CONTENT_ATTR, newValue);
                                         propElement.html(newValue);
                                     }
@@ -188,7 +188,7 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                             combobox.after(_this._createInputWidget(block, propElement, CONTENT_ATTR, newValueTerm.widgetType, 'datetime-local', 'Date and time', defaultValue,
                                 function setterFunction(newValue)
                                 {
-                                    if (newValue!='') {
+                                    if (newValue != '') {
                                         propElement.attr(CONTENT_ATTR, newValue);
                                         propElement.html(newValue);
                                     }
@@ -203,9 +203,9 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                             combobox.after(_this._createInputWidget(block, propElement, CONTENT_ATTR, newValueTerm.widgetType, 'color', 'Color', defaultValue,
                                 function setterFunction(newValue)
                                 {
-                                    if (newValue!='' && newValue.charAt(0)=='#') {
+                                    if (newValue != '' && newValue.charAt(0) == '#') {
                                         propElement.attr(CONTENT_ATTR, newValue);
-                                        propElement.html('<div class="'+BlocksConstants.INPUT_TYPE_COLOR_VALUE_CLASS+'" style="background-color: '+newValue+'"></div>');
+                                        propElement.html('<div class="' + BlocksConstants.INPUT_TYPE_COLOR_VALUE_CLASS + '" style="background-color: ' + newValue + '"></div>');
                                     }
                                     else {
                                         propElement.removeAttr(CONTENT_ATTR);
@@ -216,11 +216,12 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                         case BlocksConstants.INPUT_TYPE_RESOURCE:
                             var defaultValue = '<p><i>Please search for a resource in the sidebar</i></p>';
                             combobox.after(_this._createAutocompleteWidget(block, propElement, CONTENT_ATTR, newValueTerm.widgetType, newValueTerm.widgetConfig, 'Resource', defaultValue,
+                                //Note: this function receives the entire object as it was returned from the server endpoint (class AutocompleteSuggestion)
                                 function setterFunction(newValue)
                                 {
-                                    if (newValue!='' && newValue.charAt(0)=='#') {
-                                        propElement.attr(CONTENT_ATTR, newValue);
-                                        propElement.html('<div class="'+BlocksConstants.INPUT_TYPE_COLOR_VALUE_CLASS+'" style="background-color: '+newValue+'"></div>');
+                                    if (newValue && newValue.value != '') {
+                                        propElement.attr(CONTENT_ATTR, newValue.value);
+                                        propElement.html('<a href="'+newValue.value+'">'+newValue.title+'</a>');
                                     }
                                     else {
                                         propElement.removeAttr(CONTENT_ATTR);
@@ -330,7 +331,7 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                     datumTokenizer: Bloodhound.tokenizers.whitespace,
                     remote: {
                         //we'll add the wildcard to the end of the endpoint url: it will end up in the value section (after the '=' sign) of the query parameter
-                        url: inputTypeArgs[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_ENDPOINT]+'%QUERY',
+                        url: inputTypeArgs[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_ENDPOINT] + '%QUERY',
                         wildcard: '%QUERY'
                     },
                 });
@@ -343,35 +344,44 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
             var dataSet = {
                 name: id,
                 source: engine,
+                limit: 5,
                 //sync this with the title field of com.beligum.blocks.fs.index.entries.PageIndexEntry
                 display: 'title',
-                limit: 5,
+                templates: {
+                    //we add title (hover) tags as well because the css will probably chop it off (ellipsis overflow)
+                    suggestion: Handlebars.compile('<div><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '" title="{{title}}">{{title}}</p><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_SUBTITLE_CLASS + '" title="{{subTitle}}">{{subTitle}}</p></div>')
+                }
             };
             input.typeahead(options, dataSet);
 
-            //init and attach the change listener
-            input.on("change keyup focus", function (event)
+            input.bind('typeahead:select', function (ev, suggestion)
             {
-                setterFunction(input.val());
+                setterFunction(suggestion);
             });
 
-            var firstValue = propElement.attr(contentAttr);
-
-            //if the html widget is uninitialized, try to set it to a default value
-            if (firstValue == BlocksMessages.widgetFicheEntryDefaultValue) {
-                //initial value may be 0 or '', so check of type
-                if (typeof initialValue !== typeof undefined) {
-                    firstValue = initialValue;
-                }
-            }
-
-            //this gives us a chance to skip this if it would be needed
-            if (typeof firstValue !== typeof undefined) {
-                //init the input
-                input.val(firstValue);
-                //fire the change (because the one above doesn't seem to do so)
-                setterFunction(firstValue);
-            }
+            ////init and attach the change listener
+            //input.on("change keyup focus", function (event)
+            //{
+            //    setterFunction(input.val());
+            //});
+            //
+            //var firstValue = propElement.attr(contentAttr);
+            //
+            ////if the html widget is uninitialized, try to set it to a default value
+            //if (firstValue == BlocksMessages.widgetFicheEntryDefaultValue) {
+            //    //initial value may be 0 or '', so check of type
+            //    if (typeof initialValue !== typeof undefined) {
+            //        firstValue = initialValue;
+            //    }
+            //}
+            //
+            ////this gives us a chance to skip this if it would be needed
+            //if (typeof firstValue !== typeof undefined) {
+            //    //init the input
+            //    input.val(firstValue);
+            //    //fire the change (because the one above doesn't seem to do so)
+            //    setterFunction(firstValue);
+            //}
 
             return formGroup;
         },
