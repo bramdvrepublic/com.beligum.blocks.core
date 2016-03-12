@@ -33,7 +33,7 @@ public class ServerStartStopListener implements ServerLifecycleListener
     @Override
     public void onServerStarted(Server server, Container container)
     {
-        if (Settings.instance().hasBlocksConfig()) {
+        if (Settings.instance().hasBlocksCoreConfig()) {
             //let all .html files pass through our HtmlParser
             R.resourceFactory().registerParser(Resource.MimeType.HTML, new HtmlParser());
 
@@ -57,7 +57,7 @@ public class ServerStartStopListener implements ServerLifecycleListener
     @Override
     public void onServerStopped(Server server, Container container)
     {
-        if (Settings.instance().hasBlocksConfig()) {
+        if (Settings.instance().hasBlocksCoreConfig()) {
             //don't boot it up if it's not there
             if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
                 try {

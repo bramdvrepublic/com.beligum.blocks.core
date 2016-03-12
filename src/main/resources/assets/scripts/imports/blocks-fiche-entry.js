@@ -354,6 +354,7 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
             };
             input.typeahead(options, dataSet);
 
+            //gets called when a real selection is done
             input.bind('typeahead:select', function (ev, suggestion)
             {
                 setterFunction(suggestion);
