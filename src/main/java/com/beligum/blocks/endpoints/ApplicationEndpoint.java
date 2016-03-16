@@ -7,12 +7,14 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.ParserConstants;
+import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.HdfsResource;
 import com.beligum.blocks.fs.HdfsResourcePath;
 import com.beligum.blocks.fs.pages.DefaultPageImpl;
 import com.beligum.blocks.fs.pages.ifaces.Page;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
@@ -30,6 +32,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -57,7 +60,10 @@ public class ApplicationEndpoint
     {
         //security; rebuild the url instead of blindly accepting what comes in
         //note: the randomURL doesn't include the query params; get them from the requestContext
-        URI requestedUri = UriBuilder.fromUri(Settings.instance().getSiteDomain()).replacePath(randomURL.getPath()).replaceQuery(R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri().getQuery()).build();
+        URI
+                        requestedUri =
+                        UriBuilder.fromUri(Settings.instance().getSiteDomain()).replacePath(randomURL.getPath())
+                                  .replaceQuery(R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri().getQuery()).build();
 
         FileContext fs = StorageFactory.getPageViewFileSystem();
         URI fsPageUri = DefaultPageImpl.toResourceUri(requestedUri, Settings.instance().getPagesViewPath());
@@ -74,8 +80,6 @@ public class ApplicationEndpoint
             if (SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
                 this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template);
             }
-
-
 
             retVal = Response.ok(template);
         }
@@ -102,7 +106,7 @@ public class ApplicationEndpoint
                 Locale requestedUriLocale = R.i18nFactory().getUrlLocale(requestedUri);
 
                 //OPTION 2: no URL-language available: redirect to a good guess
-                if (requestedUriLocale==null) {
+                if (requestedUriLocale == null) {
                     Locale redirectLocale = R.i18nFactory().getBrowserLocale();
                     //if the requested locale is supported by the site, use it, otherwise use the default locale
                     //if the default is forced, use it no matter what
@@ -110,10 +114,12 @@ public class ApplicationEndpoint
                         redirectLocale = Settings.instance().getDefaultLanguage();
                     }
 
-                    if (redirectLocale==null) {
-                        throw new IOException("Encountered null-valued default language; this shouldn't happen; "+requestedUri);
+                    if (redirectLocale == null) {
+                        throw new IOException("Encountered null-valued default language; this shouldn't happen; " + requestedUri);
                     }
                     else {
+                        //we redirect to the &lang=.. (instead of lang-prefixed arl) when we're dealing with a resource to have a cleaner URL
+                        //Note that it gets stored locally with a lang-prefixed path though; see DefaultPageImpl.toResourceUri for details
                         if (requestedUri.getPath().startsWith(ParserConstants.RESOURCE_ENDPOINT)) {
                             retVal = Response.seeOther(UriBuilder.fromUri(requestedUri).queryParam(I18nFactory.LANG_QUERY_PARAM, redirectLocale.getLanguage()).build());
                         }
@@ -123,6 +129,23 @@ public class ApplicationEndpoint
                     }
                 }
                 else {
+                    //when we're dealing with a resource, we validate the resource type (the path part coming after the "/resource" path)
+                    // to make sure it can be mapped in our ontology (during page creation)
+                    if (requestedUri.getPath().startsWith(ParserConstants.RESOURCE_ENDPOINT)) {
+                        java.nio.file.Path path = Paths.get(requestedUri.getPath());
+                        if (path.getNameCount() != 3) {
+                            throw new IOException("Encountered an (unexisting) resource URL with the wrong format. Need at least 3 segments: /resource/<type>/<id>;" + requestedUri);
+                        }
+                        else {
+                            //index wise: since part 0 is "resource" (validated above), we validate index 1 to be the type
+                            URI resourceTypeCurie = URI.create(Settings.instance().getRdfOntologyPrefix() + ":" + path.getName(1).toString());
+                            RdfClass resourcedType = RdfFactory.getClassForResourceType(resourceTypeCurie);
+                            if (resourcedType==null) {
+                                throw new IOException("Encountered an (unexisting) resource URL with an unknown RDF ontology type ("+resourceTypeCurie+");" + requestedUri);
+                            }
+                        }
+                    }
+
                     //this means we redirected from the new-template-selection page
                     String newPageTemplateName = null;
                     if (R.cacheManager().getFlashCache().getTransferredEntries() != null) {
