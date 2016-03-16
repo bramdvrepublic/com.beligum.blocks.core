@@ -17,6 +17,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -56,7 +57,7 @@ public class RdfEndpoint
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
     public Response getResources(@QueryParam("resourceTypeCurie") URI resourceTypeCurie, @QueryParam("maxResults") int maxResults, @QueryParam("query") String query) throws IOException
     {
-        List<AutocompleteSuggestion> retVal = null;
+        List<AutocompleteSuggestion> retVal = new ArrayList<>();
 
         RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
         if (rdfClass!=null) {
@@ -84,7 +85,12 @@ public class RdfEndpoint
             }
         }
 
-        return Response.ok(retVal).build();
+        if (retVal==null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        else {
+            return Response.ok(retVal).build();
+        }
     }
 
     //-----PROTECTED METHODS-----

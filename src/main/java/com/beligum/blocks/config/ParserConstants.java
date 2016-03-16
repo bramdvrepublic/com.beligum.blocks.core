@@ -26,7 +26,7 @@ public class ParserConstants
         }
     }
 
-    public final static String RESOURCE_ENDPOINT = "/v1/resource/";
+    public final static String RESOURCE_ENDPOINT = "/resource/";
     public final static String ONTOLOGY_ENDPOINT = "/ontology/";
 
     public final static String JSONLD_ID = "@id";

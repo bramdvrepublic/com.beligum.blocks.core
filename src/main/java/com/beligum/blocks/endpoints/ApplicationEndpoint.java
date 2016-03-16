@@ -6,6 +6,7 @@ import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.HdfsResource;
@@ -52,10 +53,11 @@ public class ApplicationEndpoint
     }
     @Path("/{randomPage:.*}")
     @GET
-    public Response getPage(@PathParam("randomPage") String randomURLPath) throws Exception
+    public Response getPage(@PathParam("randomPage") URI randomURL) throws Exception
     {
         //security; rebuild the url instead of blindly accepting what comes in
-        URI requestedUri = Settings.instance().getSiteDomain().resolve("/"+randomURLPath).normalize();
+        //note: the randomURL doesn't include the query params; get them from the requestContext
+        URI requestedUri = UriBuilder.fromUri(Settings.instance().getSiteDomain()).replacePath(randomURL.getPath()).replaceQuery(R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri().getQuery()).build();
 
         FileContext fs = StorageFactory.getPageViewFileSystem();
         URI fsPageUri = DefaultPageImpl.toResourceUri(requestedUri, Settings.instance().getPagesViewPath());
@@ -112,7 +114,12 @@ public class ApplicationEndpoint
                         throw new IOException("Encountered null-valued default language; this shouldn't happen; "+requestedUri);
                     }
                     else {
-                        retVal = Response.seeOther(UriBuilder.fromUri(requestedUri).replacePath("/"+redirectLocale.getLanguage()+requestedUri.getPath()).build());
+                        if (requestedUri.getPath().startsWith(ParserConstants.RESOURCE_ENDPOINT)) {
+                            retVal = Response.seeOther(UriBuilder.fromUri(requestedUri).queryParam(I18nFactory.LANG_QUERY_PARAM, redirectLocale.getLanguage()).build());
+                        }
+                        else {
+                            retVal = Response.seeOther(UriBuilder.fromUri(requestedUri).replacePath("/" + redirectLocale.getLanguage() + requestedUri.getPath()).build());
+                        }
                     }
                 }
                 else {

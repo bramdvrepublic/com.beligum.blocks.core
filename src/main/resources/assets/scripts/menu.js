@@ -329,11 +329,11 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         dialog.open();
 
         $.ajax({
-                type: 'POST',
-                url: "/blocks/admin/page/save/" + window.location.href,
-                data: savePage,
-                contentType: 'application/json; charset=UTF-8',
-            })
+            type: 'POST',
+            url: "/blocks/admin/page/save?url=" + encodeURIComponent(document.URL),
+            data: savePage,
+            contentType: 'application/json; charset=UTF-8',
+        })
             .done(function (url, textStatus, response)
             {
             })

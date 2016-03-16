@@ -162,11 +162,11 @@ public class PageEndpoint
     }
 
     @POST
-    @javax.ws.rs.Path("/save/{url:.*}")
+    @javax.ws.rs.Path("/save")
     @Consumes(MediaType.APPLICATION_JSON)
     @RequiresPermissions(value = { Permissions.PAGE_CREATE_PERMISSION_STRING,
                                    Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    public Response savePage(@PathParam("url") URI uri, String content) throws Exception
+    public Response savePage(@QueryParam("url") URI uri, String content) throws Exception
     {
         //Note: the first true flag: compacting helps minimizing the whitespace of the JSONLD properties
         //      the 2nd true flag: save the language (correctly derived from the current context) to the <html> tag (thus, it's also saved to the normalized form)

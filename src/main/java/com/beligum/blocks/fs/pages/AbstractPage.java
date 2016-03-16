@@ -1,5 +1,7 @@
 package com.beligum.blocks.fs.pages;
 
+import com.beligum.base.i18n.I18nFactory;
+import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.ifaces.ResourcePath;
 import com.beligum.blocks.fs.pages.ifaces.Page;
@@ -8,10 +10,12 @@ import com.beligum.blocks.rdf.sources.HtmlStreamSource;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.List;
 
 /**
  * Created by bram on 1/27/16.
@@ -44,14 +48,22 @@ public abstract class AbstractPage implements Page
         if (uri != null) {
             Settings settings = Settings.instance();
 
+            //if the uri is absolute (starts with http://...), check if the domain (authority = domain+port) matches,
+            // otherwise (eg. when the URI is relative (eg. /resource/...) the authority will be null (and that's ok)
+            if (uri.getAuthority()!=null && !uri.getAuthority().equals(settings.getSiteDomain().getAuthority())) {
+                throw new SecurityException("Trying to create a page path from outside the domain (" + settings.getSiteDomain() + "), can't proceed; " + uri);
+            }
+
             String relativeUrlStr = uri.getPath();
+            String lang = getQueryParamLanguage(uri);
+            // we map the "lang" query param to the beginning of the URL by appending its value as a prefix to the path
+            // this way, we (locally) uniformize the "/en/page" path to the "/page?lang=en" path
+            if (!StringUtils.isEmpty(lang)) {
+                relativeUrlStr = "/"+lang+relativeUrlStr;
+            }
             URI relativeUrl = URI.create(relativeUrlStr);
             //note: since we'll reuse the path below (under a different root path), we must make them relative (or they'll resolve to the real filesystem root later on instead of the chroot)
             relativeUrl = ROOT.relativize(relativeUrl);
-            URI relativeUrlTest = ROOT.relativize(settings.getSiteDomain().relativize(uri));
-            if (!relativeUrl.equals(relativeUrlTest)) {
-                throw new SecurityException("Trying to create a page path from outside the domain (" + settings.getSiteDomain() + "), can't proceed; " + uri);
-            }
 
             //note: we normalize before resolving for safety
             URI tempPagePath = baseUri.resolve(relativeUrl.normalize());
@@ -147,5 +159,16 @@ public abstract class AbstractPage implements Page
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+    private static String getQueryParamLanguage(URI uri)
+    {
+        String retVal = null;
 
+        MultivaluedMap<String, String> query = StringFunctions.getQueryParameters(uri);
+        List<String> queryLang = query.get(I18nFactory.LANG_QUERY_PARAM);
+        if (queryLang!=null && !queryLang.isEmpty()) {
+            retVal = queryLang.iterator().next();
+        }
+
+        return retVal;
+    }
 }
