@@ -40,6 +40,8 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
         {
             var PROPERTY_ATTR = "property";
             var DATATYPE_ATTR = "datatype";
+            var TYPEOF_ATTR = "typeof";
+            var RESOURCE_ATTR = "resource";
             var CONTENT_ATTR = "content";
             //makes sense to use the curie name of the terms and classes in the ontologies; it's short and future-flexible
             var TERM_NAME_FIELD = "curieName";
@@ -73,7 +75,11 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                     var skipHtmlChange = false;
                     if (
                         propElement.hasAttribute(PROPERTY_ATTR) && propElement.attr(PROPERTY_ATTR) == newValueTerm[TERM_NAME_FIELD] &&
-                        propElement.hasAttribute(DATATYPE_ATTR) && propElement.attr(DATATYPE_ATTR) == newValueTerm.dataType[TERM_NAME_FIELD] &&
+                        (
+                            //we either need a datatype (for literals) or a typeof (for references)
+                            (propElement.hasAttribute(DATATYPE_ATTR) && propElement.attr(DATATYPE_ATTR) == newValueTerm.dataType[TERM_NAME_FIELD]) ||
+                            (propElement.hasAttribute(TYPEOF_ATTR) && propElement.attr(TYPEOF_ATTR) == newValueTerm.dataType[TERM_NAME_FIELD])
+                        ) &&
                         propElement.hasClass(newValueTerm.widgetType)
                     ) {
                         //we can't return straight away because we need to initialize the extra controls in the sidebar
@@ -112,7 +118,16 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
 
                             //initialize the property attributes
                             propElement.attr(PROPERTY_ATTR, newValueTerm[TERM_NAME_FIELD]);
-                            propElement.attr(DATATYPE_ATTR, newValueTerm.dataType[TERM_NAME_FIELD]);
+
+                            //if we're dealing with a reference to another resource, we use the typeof attribute,
+                            //otherwise (when dealing with a literal), we use the datatype attribute
+                            if (newValueTerm.widgetType==BlocksConstants.INPUT_TYPE_RESOURCE) {
+                                //note that despite it's name, this value will just contain a curie name to an RDF class
+                                propElement.attr(TYPEOF_ATTR, newValueTerm.dataType[TERM_NAME_FIELD]);
+                            }
+                            else {
+                                propElement.attr(DATATYPE_ATTR, newValueTerm.dataType[TERM_NAME_FIELD]);
+                            }
 
                             //we need to add this class to have it picked up by widget-specific modules (like the editor)
                             propElement.addClass(newValueTerm.widgetType);
@@ -215,16 +230,30 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                             break;
                         case BlocksConstants.INPUT_TYPE_RESOURCE:
                             var defaultValue = '<p><i>Please search for a resource in the sidebar</i></p>';
-                            combobox.after(_this._createAutocompleteWidget(block, propElement, CONTENT_ATTR, newValueTerm.widgetType, newValueTerm.widgetConfig, 'Resource', defaultValue,
+                            combobox.after(_this._createAutocompleteWidget(block, propElement, RESOURCE_ATTR, newValueTerm.widgetType, newValueTerm.widgetConfig, 'Resource', defaultValue,
                                 //Note: this function receives the entire object as it was returned from the server endpoint (class AutocompleteSuggestion)
                                 function setterFunction(newValue)
                                 {
-                                    if (newValue && newValue.value != '') {
-                                        propElement.attr(CONTENT_ATTR, newValue.value);
-                                        propElement.html('<a href="'+newValue.value+'">'+newValue.title+'</a>');
+                                    if (newValue && newValue.label != '') {
+
+                                        //the real value of the property is the remote resource id
+                                        propElement.attr(RESOURCE_ATTR, newValue.resourceUri);
+
+                                        //if the value has a link, let's render a hyperlink
+                                        if (newValue.link) {
+                                            var link = $('<a href="' + newValue.link + '">' + newValue.label + '</a>');
+                                            //little trick to get the hostname of an url: put it in a link element (which we need anyway) and query for the raw JS hostname
+                                            if (link[0].hostname != document.location.hostname) {
+                                                link.attr("target", "_blank");
+                                            }
+                                            propElement.html(link);
+                                        }
+                                        else {
+                                            propElement.html(newValue.label);
+                                        }
                                     }
                                     else {
-                                        propElement.removeAttr(CONTENT_ATTR);
+                                        propElement.removeAttr(RESOURCE_ATTR);
                                         propElement.html(defaultValue);
                                     }
                                 }));
@@ -331,7 +360,7 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                     datumTokenizer: Bloodhound.tokenizers.whitespace,
                     remote: {
                         //we'll add the wildcard to the end of the endpoint url: it will end up in the value section (after the '=' sign) of the query parameter
-                        url: inputTypeArgs[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_ENDPOINT] + '%QUERY',
+                        url: inputTypeArgs[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT] + '%QUERY',
                         wildcard: '%QUERY'
                     },
                 });
@@ -344,10 +373,12 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
             var dataSet = {
                 name: id,
                 source: engine,
-                limit: 5,
+                //workaround for bug https://github.com/twitter/typeahead.js/issues/1201#issuecomment-185854471
+                limit: parseInt(inputTypeArgs[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_MAXRESULTS]) - 1,
                 //sync this with the title field of com.beligum.blocks.fs.index.entries.PageIndexEntry
                 display: 'title',
                 templates: {
+                    empty: '<div class="tt-suggestion "' + BlocksConstants.INPUT_TYPE_RES_SUG_EMPTY_CLASS + '><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">' + 'No match for this query' + '</p></div>',
                     //we add title (hover) tags as well because the css will probably chop it off (ellipsis overflow)
                     suggestion: Handlebars.compile('<div><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '" title="{{title}}">{{title}}</p><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_SUBTITLE_CLASS + '" title="{{subTitle}}">{{subTitle}}</p></div>')
                 }
@@ -357,32 +388,50 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
             //gets called when a real selection is done
             input.bind('typeahead:select', function (ev, suggestion)
             {
-                setterFunction(suggestion);
+                $.getJSON(inputTypeArgs[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT] + encodeURIComponent(suggestion.resourceId))
+                    .done(function (data)
+                    {
+                        setterFunction(data);
+                    })
+                    .fail(function (xhr, textStatus, exception)
+                    {
+                        Notification.error(BlocksMessages.generalServerDataError + (exception ? "; " + exception : ""), xhr);
+                    });
             });
 
             ////init and attach the change listener
-            //input.on("change keyup focus", function (event)
-            //{
-            //    setterFunction(input.val());
-            //});
-            //
-            //var firstValue = propElement.attr(contentAttr);
-            //
-            ////if the html widget is uninitialized, try to set it to a default value
-            //if (firstValue == BlocksMessages.widgetFicheEntryDefaultValue) {
-            //    //initial value may be 0 or '', so check of type
-            //    if (typeof initialValue !== typeof undefined) {
-            //        firstValue = initialValue;
-            //    }
-            //}
-            //
-            ////this gives us a chance to skip this if it would be needed
-            //if (typeof firstValue !== typeof undefined) {
-            //    //init the input
-            //    input.val(firstValue);
-            //    //fire the change (because the one above doesn't seem to do so)
-            //    setterFunction(firstValue);
-            //}
+
+            var firstValue = propElement.attr(contentAttr);
+
+            //if the html widget is uninitialized, try to set it to a default value
+            if (typeof firstValue === typeof undefined) {
+                //initial value may be 0 or '', so check of type
+                if (typeof initialValue !== typeof undefined) {
+                    //signal the setter function to reset the tag
+                    setterFunction(null);
+                }
+            }
+            else {
+                //this gives us a chance to skip this if it would be needed
+                if (typeof firstValue !== typeof undefined) {
+                    //if we have a real value, contact the resource endpoint to load the official name (not the more human friendly label) into the autocomplete box
+                    if (firstValue != initialValue) {
+                        $.getJSON(inputTypeArgs[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT] + encodeURIComponent(firstValue))
+                            .done(function (data)
+                            {
+                                //init the input
+                                input.typeahead('val', data.name);
+
+                                //don't think we need to re-set the html here, just init the autocomplete box
+                                //setterFunction(data);
+                            })
+                            .fail(function (xhr, textStatus, exception)
+                            {
+                                Notification.error(BlocksMessages.generalServerDataError + (exception ? "; " + exception : ""), xhr);
+                            });
+                    }
+                }
+            }
 
             return formGroup;
         },

@@ -49,4 +49,10 @@ public class RdfLiteralImpl extends AbstractRdfResourceImpl implements RdfLitera
 
     //-----PRIVATE METHODS-----
 
+    //-----MANAGEMENT METHODS-----
+    @Override
+    public String toString()
+    {
+        return this.getValue();
+    }
 }

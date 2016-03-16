@@ -1,6 +1,7 @@
 package com.beligum.blocks.rdf.sources;
 
 import com.beligum.base.server.R;
+import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.HdfsResourcePath;
 import com.beligum.blocks.fs.pages.DefaultPageImpl;
@@ -41,6 +42,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
     public static final String HTML_ROOT_SUBJECT_ATTR = "about";
     public static final String HTML_ROOT_TYPEOF_ATTR = "typeof";
     public static final String HTML_ROOT_VOCAB_ATTR = "vocab";
+    public static final String HTML_ROOT_PREFIX_ATTR = "prefix";
     public static final String HTML_TITLE_ELEMENT = "title";
 
     //-----VARIABLES-----
@@ -69,9 +71,9 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
      * For performance sake, try to call this method before invoking the getters below,
      * cause it will trigger a re-analyze.
      * For now, it does:
-     *  - modify the "lang" attribute of the <html> tag to the current request language
-     *  - set or update the "resource" and "typeof" attribute
-     *  - clean up the the code
+     * - modify the "lang" attribute of the <html> tag to the current request language
+     * - set or update the "resource" and "typeof" attribute
+     * - clean up the the code
      */
     @Override
     public void prepareForSaving(FileContext fileContext) throws IOException
@@ -164,6 +166,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
         String subjectAttr = htmlTag.attr(HTML_ROOT_SUBJECT_ATTR);
         String typeofAttr = htmlTag.attr(HTML_ROOT_TYPEOF_ATTR);
         String vocabAttr = htmlTag.attr(HTML_ROOT_VOCAB_ATTR);
+        String prefixAttr = htmlTag.attr(HTML_ROOT_PREFIX_ATTR);
 
         // If the saved page has no about attribute, we assume it's a newly saved paged and two things can happen:
         //  - There's another page with the same language in the system (like /en/new-page for /fr/new-page)
@@ -193,12 +196,19 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
 
             // If nothing was found, this is a true new page and thus we generate a new resource id.
             // Note that we discard any possible supplied typeOf values in this case; we force it to be a page
-            if (newResource==null) {
+            // --> not any more: it makes sense to create a new page, select it's typeof and then save it (for the first time)
+            if (newResource == null) {
                 //since the vocab is set to the same value as the vocab of the Page class, we can safely use the short version
                 //Not any more: we're trying to always use the curie name as 'value' in dropdowns etc, so to make the type dropdown
                 //              work, it needs to be a curie value
-                newTypeOf = Classes.Page.getCurieName();
-                newResource = RdfTools.createRelativeResourceId(Classes.Page);
+                if (typeofAttr.isEmpty()) {
+                    newTypeOf = Classes.Page.getCurieName();
+                }
+                else {
+                    newTypeOf = URI.create(typeofAttr);
+                }
+
+                newResource = RdfTools.createRelativeResourceId(RdfFactory.getClassForResourceType(newTypeOf));
             }
 
             htmlTag.attr(HTML_ROOT_SUBJECT_ATTR, newResource.toString());
@@ -207,7 +217,13 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
 
         if (StringUtils.isEmpty(vocabAttr)) {
             htmlTag.attr(HTML_ROOT_VOCAB_ATTR, Settings.instance().getRdfOntologyUri().toString());
-            //TODO ideally, this should set the prefix too, but since it allows for multiple prefixes, it's more complex...
+        }
+
+        if (StringUtils.isEmpty(prefixAttr)) {
+            //Note: separate multiple prefixes by a space, like so: prefix="dc: http://purl.org/dc/terms/ schema: http://schema.org/"
+            String[] prefixes = new String[] { Settings.instance().getRdfOntologyPrefix() + ": " + Settings.instance().getRdfOntologyUri().toString() };
+            htmlTag.attr(HTML_ROOT_PREFIX_ATTR, StringUtils.join(prefixes, " "));
+            //TODO ideally, this should set the other prefixes too..., but it's more complex...
         }
     }
     private HtmlAnalyzer findTranslationAnalyzer(FileContext fileContext) throws IOException
@@ -228,7 +244,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
                         Page transPage = new DefaultPageImpl(new HdfsResourcePath(fileContext, transPageResourceUri));
                         HtmlAnalyzer analyzer = transPage.createAnalyzer();
                         HtmlAnalyzer.AttributeRef transPageResource = analyzer.getHtmlAbout();
-                        if (transPageResource!=null) {
+                        if (transPageResource != null) {
                             retVal = analyzer;
                             break;
                         }

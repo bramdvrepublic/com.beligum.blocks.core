@@ -24,6 +24,7 @@ public class Settings
 
     private static final String DEFAULT_XADISK_INSTANCE_ID = "xa-1";
     private static final long DEFAULT_XADISK_BOOT_TIMEOUT = 60 * 1000; //1 minute
+    private static final String DEFAULT_GEONAMES_USERNAME = "demo";
 
     private static Settings instance;
     /**
@@ -71,6 +72,10 @@ public class Settings
     {
         if (this.cachedSiteDomain == null) {
             String schema = R.configuration().getString("blocks.core.domain.main");
+            //note that we're configuring a _domain_, not a domain + a root path
+            if (schema.endsWith("/")) {
+                schema = schema.substring(0, schema.lastIndexOf("/"));
+            }
             try {
                 this.cachedSiteDomain = URI.create(schema);
             }
@@ -93,8 +98,13 @@ public class Settings
                 if (aliases!=null && aliases.length>0) {
                     List<URI> tmpList = new ArrayList<>();
                     for (int i=0;i<aliases.length;i++) {
-                        if (!StringUtils.isEmpty(aliases[i])) {
-                            tmpList.add(URI.create(aliases[i]));
+                        String alias = aliases[i];
+                        if (!StringUtils.isEmpty(alias)) {
+                            //note that we're configuring a _domain_, not a domain + a root path
+                            if (alias.endsWith("/")) {
+                                alias = alias.substring(0, alias.lastIndexOf("/"));
+                            }
+                            tmpList.add(URI.create(alias));
                         }
                     }
                     this.cachedSiteAliases = tmpList.toArray(new URI[tmpList.size()]);
@@ -352,5 +362,15 @@ public class Settings
     public String getRdfOntologyPrefix()
     {
         return R.configuration().getString("blocks.core.rdf.ontology.prefix");
+    }
+    public String getGeonamesUsername()
+    {
+        String retVal = R.configuration().getString("blocks.core.geonames.username", null);
+        if (retVal==null) {
+            Logger.warn("No geonames username specified, using default username '"+DEFAULT_GEONAMES_USERNAME+"', but this is not optimal...");
+            retVal = DEFAULT_GEONAMES_USERNAME;
+        }
+
+        return retVal;
     }
 }

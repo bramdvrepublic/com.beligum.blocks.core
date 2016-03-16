@@ -1,4 +1,4 @@
-package com.beligum.blocks.endpoints.beans;
+package com.beligum.blocks.rdf.ontology.vocabularies.geo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -12,6 +12,7 @@ public class GeonameCitySuggestion extends AbstractGeonameSuggestion
 
     //-----VARIABLES-----
     private String countryCode;
+    private String countryName;
 
     //-----CONSTRUCTORS-----
     public GeonameCitySuggestion()
@@ -19,6 +20,11 @@ public class GeonameCitySuggestion extends AbstractGeonameSuggestion
     }
 
     //-----PUBLIC METHODS-----
+    @Override
+    public String getSubTitle()
+    {
+        return toponymName + ", " + (this.getCountryName() == null ? this.getCountryCode() : this.getCountryName());
+    }
 
     //-----PROTECTED METHODS-----
 
@@ -32,5 +38,15 @@ public class GeonameCitySuggestion extends AbstractGeonameSuggestion
     private void setCountryCode(String countryCode)
     {
         this.countryCode = countryCode;
+    }
+    @JsonIgnore
+    private String getCountryName()
+    {
+        return countryName;
+    }
+    @JsonProperty
+    private void setCountryName(String countryName)
+    {
+        this.countryName = countryName;
     }
 }

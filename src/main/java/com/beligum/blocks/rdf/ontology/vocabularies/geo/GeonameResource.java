@@ -1,4 +1,4 @@
-package com.beligum.blocks.endpoints.beans;
+package com.beligum.blocks.rdf.ontology.vocabularies.geo;
 
 import com.beligum.blocks.endpoints.ifaces.AutocompleteValue;
 import com.fasterxml.jackson.annotation.JacksonInject;
@@ -45,7 +45,7 @@ public class GeonameResource extends AbstractGeoname implements AutocompleteValu
         return resourceType;
     }
     @Override
-    public String getText()
+    public String getLabel()
     {
         return name;
     }
@@ -53,11 +53,13 @@ public class GeonameResource extends AbstractGeoname implements AutocompleteValu
     public URI getLink()
     {
         if (!this.triedLink) {
-            for (GeonameLangValue val : this.alternateName) {
-                if (val != null && val.getLang() != null && val.getLang().equals(LINK_LANGUAGE)) {
-                    this.cachedLink = URI.create(val.getValue());
-                    //we stop at first sight of a link
-                    break;
+            if (this.alternateName!=null) {
+                for (GeonameLangValue val : this.alternateName) {
+                    if (val != null && val.getLang() != null && val.getLang().equals(LINK_LANGUAGE)) {
+                        this.cachedLink = URI.create(val.getValue());
+                        //we stop at first sight of a link
+                        break;
+                    }
                 }
             }
 
@@ -65,6 +67,13 @@ public class GeonameResource extends AbstractGeoname implements AutocompleteValu
         }
 
         return this.cachedLink;
+    }
+    //this getter is a little bit of a mindfuck because it doesn't match it's setter; the setter is used to set the name property, coming in (deserialized) from geonames,
+    //this getter is called when the same object is serialized to our own JS client code, but then we return the toponymName property (instead of the name property)
+    @Override
+    public String getName()
+    {
+        return toponymName;
     }
 
     //-----PROTECTED METHODS-----
@@ -93,11 +102,6 @@ public class GeonameResource extends AbstractGeoname implements AutocompleteValu
     private void setAlternateName(List<GeonameLangValue> alternateName)
     {
         this.alternateName = alternateName;
-    }
-    @JsonIgnore
-    private String getName()
-    {
-        return name;
     }
     @JsonIgnore
     private String getToponymName()

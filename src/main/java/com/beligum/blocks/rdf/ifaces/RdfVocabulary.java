@@ -3,6 +3,7 @@ package com.beligum.blocks.rdf.ifaces;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.net.URI;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -23,25 +24,32 @@ public interface RdfVocabulary
     String getPrefix();
 
     /**
-     * Returns all classes in this vocabulary that are accessible from the client-side UI
+     * Returns all classes in this vocabulary
      */
     //avoids infinite recursion
     @JsonIgnore
-    Set<RdfClass> getPublicClasses();
+    Map<URI, RdfClass> getAllClasses();
+
+    /**
+     * Returns all classes in this vocabulary that are selectable from the client-side page-type-dropdown
+     */
+    //avoids infinite recursion
+    @JsonIgnore
+    Map<URI, RdfClass> getPublicClasses();
 
     /**
      * Returns all properties in this vocabulary that are accessible from the client-side UI
      */
     //avoids infinite recursion
     @JsonIgnore
-    Set<RdfDataType> getPublicDataTypes();
+    Map<URI, RdfDataType> getPublicDataTypes();
 
     /**
      * Returns all properties in this vocabulary that are accessible from the client-side UI
      */
     //avoids infinite recursion
     @JsonIgnore
-    Set<RdfProperty> getPublicProperties();
+    Map<URI, RdfProperty> getPublicProperties();
 
     /**
      * Returns all literals in this vocabulary that are accessible from the client-side UI
@@ -69,5 +77,4 @@ public interface RdfVocabulary
      * Call this method to add a literal to the vocabulary (probably only during static initialization)
      */
     void addLiteral(RdfLiteral rdfLiteral);
-
 }

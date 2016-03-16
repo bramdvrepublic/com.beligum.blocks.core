@@ -44,13 +44,11 @@ public abstract class AbstractPage implements Page
         if (uri != null) {
             Settings settings = Settings.instance();
 
-            //note: the toString is mandatory, otherwise the Path creation fails because there's no scheme
-            //note2: second one is for security
             String relativeUrlStr = uri.getPath();
             URI relativeUrl = URI.create(relativeUrlStr);
-            //note: we need to make it relative to match the one below
+            //note: since we'll reuse the path below (under a different root path), we must make them relative (or they'll resolve to the real filesystem root later on instead of the chroot)
             relativeUrl = ROOT.relativize(relativeUrl);
-            URI relativeUrlTest = settings.getSiteDomain().relativize(uri);
+            URI relativeUrlTest = ROOT.relativize(settings.getSiteDomain().relativize(uri));
             if (!relativeUrl.equals(relativeUrlTest)) {
                 throw new SecurityException("Trying to create a page path from outside the domain (" + settings.getSiteDomain() + "), can't proceed; " + uri);
             }

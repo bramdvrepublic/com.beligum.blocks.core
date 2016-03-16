@@ -7,6 +7,8 @@ import com.beligum.blocks.config.Settings;
  */
 public class SettingsVocabulary extends AbstractRdfVocabulary
 {
+    //-----VARIABLES-----
+
     //-----SINGLETON-----
     public static final SettingsVocabulary INSTANCE = new SettingsVocabulary();
     private SettingsVocabulary()

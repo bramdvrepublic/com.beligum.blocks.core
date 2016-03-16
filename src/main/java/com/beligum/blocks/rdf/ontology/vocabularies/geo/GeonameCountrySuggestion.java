@@ -1,4 +1,4 @@
-package com.beligum.blocks.endpoints.beans;
+package com.beligum.blocks.rdf.ontology.vocabularies.geo;
 
 /**
  * Created by bram on 3/12/16.

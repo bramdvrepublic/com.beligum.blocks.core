@@ -193,7 +193,10 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         HtmlAnalyzer htmlAnalyzer = page.createAnalyzer();
 
         FileContext fc = page.getResourcePath().getFileContext();
-        URI pageAddress = page.buildAddress();
+        //note that AbstractPage.buildAddress() uses the siteDomain setting to generate it's absolute URL,
+        // but we prefer to use relative paths for our (long term) index, so make it relative
+        //the first resolve makes sure it always starts with a slash
+        URI pageAddress = URI.create("/").resolve(Settings.instance().getSiteDomain().relativize(page.buildAddress()));
 
         SimplePageIndexEntry entry = new SimplePageIndexEntry(pageAddress);
         entry.setResource(htmlAnalyzer.getHtmlAbout() == null ? null : htmlAnalyzer.getHtmlAbout().value);

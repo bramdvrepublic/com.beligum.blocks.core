@@ -5,7 +5,9 @@ import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.rdf.ifaces.*;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -18,9 +20,10 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
     //-----VARIABLES-----
     private final URI namespace;
     private final String prefix;
-    private final Set<RdfClass> publicClasses;
-    private final Set<RdfDataType> publicDataTypes;
-    private final Set<RdfProperty> publicProperties;
+    private final Map<URI, RdfClass> allClasses;
+    private final Map<URI, RdfClass> publicClasses;
+    private final Map<URI, RdfDataType> publicDataTypes;
+    private final Map<URI, RdfProperty> publicProperties;
     private final Set<RdfLiteral> publicLiterals;
 
     //-----CONSTRUCTORS-----
@@ -28,9 +31,10 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
     {
         this.namespace = namespace;
         this.prefix = prefix;
-        this.publicClasses = new HashSet<>();
-        this.publicDataTypes = new HashSet<>();
-        this.publicProperties = new HashSet<>();
+        this.allClasses = new HashMap<>();
+        this.publicClasses = new HashMap<>();
+        this.publicDataTypes = new HashMap<>();
+        this.publicProperties = new HashMap<>();
         this.publicLiterals = new HashSet<>();
 
         //add this vocabulary to the cached map of vocabularies
@@ -51,17 +55,22 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
         return prefix;
     }
     @Override
-    public Set<RdfClass> getPublicClasses()
+    public Map<URI, RdfClass> getAllClasses()
+    {
+        return allClasses;
+    }
+    @Override
+    public Map<URI, RdfClass> getPublicClasses()
     {
         return publicClasses;
     }
     @Override
-    public Set<RdfDataType> getPublicDataTypes()
+    public Map<URI, RdfDataType> getPublicDataTypes()
     {
         return publicDataTypes;
     }
     @Override
-    public Set<RdfProperty> getPublicProperties()
+    public Map<URI, RdfProperty> getPublicProperties()
     {
         return publicProperties;
     }
@@ -73,22 +82,24 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
     @Override
     public void addClass(RdfClass rdfClass)
     {
+        this.allClasses.put(rdfClass.getCurieName(), rdfClass);
+
         if (rdfClass.isPublic()) {
-            this.publicClasses.add(rdfClass);
+            this.publicClasses.put(rdfClass.getCurieName(), rdfClass);
         }
     }
     @Override
     public void addProperty(RdfProperty rdfProperty)
     {
         if (rdfProperty.isPublic()) {
-            this.publicProperties.add(rdfProperty);
+            this.publicProperties.put(rdfProperty.getCurieName(), rdfProperty);
         }
     }
     @Override
     public void addDataType(RdfDataType rdfDataType)
     {
         if (rdfDataType.isPublic()) {
-            this.publicDataTypes.add(rdfDataType);
+            this.publicDataTypes.put(rdfDataType.getCurieName(), rdfDataType);
         }
     }
     @Override

@@ -367,7 +367,6 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             );
 
             var _this = this;
-            //note: we need this (instead of $.getJSON) to disable to async
             $.getJSON(valuesEndpoint)
                 .done(function (data)
                 {

@@ -1,4 +1,4 @@
-package com.beligum.blocks.endpoints.beans;
+package com.beligum.blocks.rdf.ontology.vocabularies.geo;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 

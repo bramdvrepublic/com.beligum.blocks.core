@@ -41,6 +41,7 @@ public class HtmlAnalyzer
     private AttributeRef htmlAbout;
     private AttributeRef htmlTypeof;
     private AttributeRef htmlVocab;
+    private AttributeRef htmlPrefixes;
     private Locale htmlLocale;
     private Map<URI, ReferenceRef> internalRefs;
     private Map<URI, ReferenceRef> externalRefs;
@@ -74,6 +75,10 @@ public class HtmlAnalyzer
     public AttributeRef getHtmlVocab()
     {
         return htmlVocab;
+    }
+    public AttributeRef getHtmlPrefixes()
+    {
+        return htmlPrefixes;
     }
     public Locale getHtmlLanguage()
     {
@@ -149,6 +154,15 @@ public class HtmlAnalyzer
         }
         else {
             this.htmlVocab = null;
+        }
+
+        //extract the base prefix
+        if (htmlAttributes.get(HtmlSource.HTML_ROOT_PREFIX_ATTR)!=null && !StringUtils.isEmpty(tempAttrValue = htmlAttributes.getValue(HtmlSource.HTML_ROOT_PREFIX_ATTR))) {
+            //note that the html tag is always part of the normalized html
+            this.htmlPrefixes = new AttributeRef(tempAttrValue, htmlAttributes.get(HtmlSource.HTML_ROOT_PREFIX_ATTR), true);
+        }
+        else {
+            this.htmlPrefixes = null;
         }
 
         //extract and store the locale

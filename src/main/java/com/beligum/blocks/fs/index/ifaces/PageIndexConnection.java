@@ -29,6 +29,10 @@ public interface PageIndexConnection<T extends PageIndexEntry> extends IndexConn
         private Type type;
         private Integer group;
 
+        public FieldQuery(IndexEntry.IndexEntryField field, String query, BooleanClause.Occur bool, Type type)
+        {
+            this(field, query, bool, type, null);
+        }
         public FieldQuery(IndexEntry.IndexEntryField field, String query, BooleanClause.Occur bool, Type type, Integer group)
         {
             this.field = field;

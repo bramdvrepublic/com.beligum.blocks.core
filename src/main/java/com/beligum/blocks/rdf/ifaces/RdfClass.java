@@ -1,5 +1,6 @@
 package com.beligum.blocks.rdf.ifaces;
 
+import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.net.URI;
@@ -54,4 +55,12 @@ public interface RdfClass extends RdfResource
      * Eg. http://dbpedia.org/page/Water_well
      */
     URI[] getIsSameAs();
+
+    /**
+     * Factory method to get a reference to the endpoint for this class.
+     * The endpoint is used to lookup remote or local values for autocomplete boxes etc. of resources with this type.
+     * Can return null to signal there is no such functionality and this class is for syntax/semantic-use only
+     */
+    @JsonIgnore
+    RdfQueryEndpoint getEndpoint();
 }

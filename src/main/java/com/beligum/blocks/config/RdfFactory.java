@@ -48,6 +48,30 @@ public class RdfFactory
 
         return (Map<String, URI>) R.cacheManager().getApplicationCache().get(CacheKeys.RDF_VOCABULARY_PREFIXES);
     }
+    public static RdfVocabulary getVocabularyForPrefix(String prefix)
+    {
+        RdfVocabulary retVal = null;
+
+        URI vocabUri = getVocabularyPrefixes().get(prefix);
+        if (vocabUri!=null) {
+            retVal = getVocabularies().get(vocabUri);
+        }
+
+        return retVal;
+    }
+    public static RdfClass getClassForResourceType(URI resourceTypeCurie)
+    {
+        RdfClass retVal = null;
+
+        RdfVocabulary vocab = getVocabularyForPrefix(resourceTypeCurie.getScheme());
+        if (vocab!=null) {
+            //note: We search in all classes (difference between public and non-public classes is that the public classes are exposed to the client as selectable as a page-type).
+            //      Since we also want to look up a value (eg. with the innner Geonames endpoint), we allow all classes to be searched.
+            retVal = vocab.getAllClasses().get(resourceTypeCurie);
+        }
+
+        return retVal;
+    }
     public static Set<RdfProperty> getProperties()
     {
         return getRdfMapCache(RdfMapCacheKey.PROPERTY, RdfProperty.class);
@@ -85,8 +109,8 @@ public class RdfFactory
             Map<URI, RdfVocabulary> vocabularies = getVocabularies();
             for (Map.Entry<URI, RdfVocabulary> e : vocabularies.entrySet()) {
                 RdfVocabulary vocab = e.getValue();
-                retVal.get(RdfMapCacheKey.CLASS).addAll(vocab.getPublicClasses());
-                retVal.get(RdfMapCacheKey.PROPERTY).addAll(vocab.getPublicProperties());
+                retVal.get(RdfMapCacheKey.CLASS).addAll(vocab.getPublicClasses().values());
+                retVal.get(RdfMapCacheKey.PROPERTY).addAll(vocab.getPublicProperties().values());
             }
 
             R.cacheManager().getApplicationCache().put(CacheKeys.RDF_VOCABULARY_ENTRIES, retVal);
