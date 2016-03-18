@@ -243,7 +243,8 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                                         if (newValue.link) {
                                             var link = $('<a href="' + newValue.link + '">' + newValue.label + '</a>');
                                             //little trick to get the hostname of an url: put it in a link element (which we need anyway) and query for the raw JS hostname
-                                            if (link[0].hostname != document.location.hostname) {
+                                            //also note that we can force an external link server side with the externalLink property
+                                            if (newValue.externalLink || link[0].hostname != document.location.hostname) {
                                                 link.attr("target", "_blank");
                                             }
                                             propElement.html(link);

@@ -50,6 +50,11 @@ public class DefaultResourceValue implements AutocompleteValue
         return link;
     }
     @Override
+    public boolean isExternalLink()
+    {
+        return false;
+    }
+    @Override
     public String getName()
     {
         return name;

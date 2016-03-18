@@ -1,6 +1,8 @@
 package com.beligum.blocks.rdf.ontology.vocabularies.geo;
 
+import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
+import com.beligum.blocks.utils.RdfTools;
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -26,7 +28,7 @@ public abstract class AbstractGeonameSuggestion extends AbstractGeoname implemen
     @Override
     public URI getResourceId()
     {
-        return toGeonamesUri(geonameId);
+        return RdfTools.createRelativeResourceId(RdfFactory.getClassForResourceType(this.getResourceType()), geonameId);
     }
     @Override
     public URI getResourceType()

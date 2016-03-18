@@ -3,6 +3,7 @@ package com.beligum.blocks.config;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.toolkit.ReflectionFunctions;
 import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfResourceFactory;
@@ -28,6 +29,7 @@ public class RdfFactory
     }
 
     //-----VARIABLES-----
+    private static boolean initialized = false;
 
     //-----CONSTRUCTORS-----
 
@@ -50,6 +52,9 @@ public class RdfFactory
     }
     public static RdfVocabulary getVocabularyForPrefix(String prefix)
     {
+        //make sure we booted the static members at least once
+        assertInitialized();
+
         RdfVocabulary retVal = null;
 
         URI vocabUri = getVocabularyPrefixes().get(prefix);
@@ -61,6 +66,9 @@ public class RdfFactory
     }
     public static RdfClass getClassForResourceType(URI resourceTypeCurie)
     {
+        //make sure we booted the static members at least once
+        assertInitialized();
+
         RdfClass retVal = null;
 
         RdfVocabulary vocab = getVocabularyForPrefix(resourceTypeCurie.getScheme());
@@ -68,6 +76,20 @@ public class RdfFactory
             //note: We search in all classes (difference between public and non-public classes is that the public classes are exposed to the client as selectable as a page-type).
             //      Since we also want to look up a value (eg. with the innner Geonames endpoint), we allow all classes to be searched.
             retVal = vocab.getAllClasses().get(resourceTypeCurie);
+        }
+
+        return retVal;
+    }
+    public static RdfQueryEndpoint getEndpointForResourceType(URI resourceTypeCurie)
+    {
+        //make sure we booted the static members at least once
+        assertInitialized();
+
+        RdfQueryEndpoint retVal = null;
+
+        RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
+        if (rdfClass!=null) {
+            retVal = rdfClass.getEndpoint();
         }
 
         return retVal;
@@ -87,24 +109,15 @@ public class RdfFactory
     /**
      * TODO: little bit dirty with all the casting...
      */
-    private static <T> Set<T> getRdfMapCache(RdfMapCacheKey type, Class<? extends T> clazz)
+    private static <T> Set<T> getRdfMapCache(RdfMapCacheKey type, Class < ? extends T > clazz)
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.RDF_VOCABULARY_ENTRIES)) {
             Map<RdfMapCacheKey, Set> retVal = new HashMap<>();
             retVal.put(RdfMapCacheKey.CLASS, new HashSet<RdfClass>());
             retVal.put(RdfMapCacheKey.PROPERTY, new HashSet<RdfProperty>());
 
-            //make sure we instantiate the resource factories once before building up the cache,
-            // to allow static members to be initialized and added to the proper vocabulary
-            Set<Class<?>> resourceFactories = ReflectionFunctions.searchAllClassesImplementing(RdfResourceFactory.class);
-            for (Class<?> c : resourceFactories) {
-                try {
-                    c.newInstance();
-                }
-                catch (Exception e) {
-                    throw new RuntimeException("Error while instantiating an RDF resource factory, this shouldn't happen; " + c, e);
-                }
-            }
+            //make sure we booted the static members at least once
+            assertInitialized();
 
             Map<URI, RdfVocabulary> vocabularies = getVocabularies();
             for (Map.Entry<URI, RdfVocabulary> e : vocabularies.entrySet()) {
@@ -119,5 +132,25 @@ public class RdfFactory
         Object tempRetVal = ((Map)R.cacheManager().getApplicationCache().get(CacheKeys.RDF_VOCABULARY_ENTRIES)).get(type);
 
         return (Set<T>) tempRetVal;
+    }
+    /**
+     * This will instantiate all static factory classes once if needed,
+     * so we can be sure every RDF member has been assigned to it's proper vocabulary, etc.
+     */
+    private static void assertInitialized()
+    {
+        if (!initialized) {
+            Set<Class<?>> resourceFactories = ReflectionFunctions.searchAllClassesImplementing(RdfResourceFactory.class);
+            for (Class<?> c : resourceFactories) {
+                try {
+                    c.newInstance();
+                }
+                catch (Exception e) {
+                    throw new RuntimeException("Error while instantiating an RDF resource factory, this shouldn't happen; " + c, e);
+                }
+            }
+
+            initialized = true;
+        }
     }
 }

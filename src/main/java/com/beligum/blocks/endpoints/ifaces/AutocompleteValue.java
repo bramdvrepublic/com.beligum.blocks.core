@@ -28,6 +28,11 @@ public interface AutocompleteValue
     URI getLink();
 
     /**
+     * Specifies if the link of getLink() (if any) is external (eg. should open in a new tab/window) or local to this site.
+     */
+    boolean isExternalLink();
+
+    /**
      * Unlike the label, this is the more 'official' name of this value; eg the name that will be placed in the autocomplete input box when we load the value back in
      * For example: the label for "Brussels" might be "Brussels, capital of Belgium" and it's (Dutch) name could eg. be "Brussel"
      */

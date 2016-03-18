@@ -10,6 +10,7 @@ import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
+import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.fs.HdfsResource;
 import com.beligum.blocks.fs.HdfsResourcePath;
 import com.beligum.blocks.fs.pages.DefaultPageImpl;
@@ -77,109 +78,137 @@ public class ApplicationEndpoint
         Resource resource = R.resourceFactory().lookup(new HdfsResource(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), fs, page.getNormalizedPageProxyPath()));
 
         Response.ResponseBuilder retVal = null;
-        if (resource.exists()) {
-            Template template = R.templateEngine().getNewTemplate(resource);
+        URI externalRedirectUri = null;
 
-            //this will allow the blocks javascript/css to be included if we're logged in and have permission
-            if (SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
-                this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template);
-            }
-
-            retVal = Response.ok(template);
-        }
-
-        // General remark: we force the page to be created to have a language using redirects. It's not strictly necessary,
-        // but it helps us a lot while linking translations together during page persist; by supplying a part in the URL-path
-        // that identifies the language of the page, it's far easier to auto-generate translation URLs, and as a plus,
-        // it introduces some structure to the site.
-        //
-        // We have four, ordered possibilities:
-        // - OPTION 1: the page doesn't exist & the user has no rights -> 404
-        // - OPTION 2: the page doesn't exist & the user has create rights & no language present -> redirect to URL with language prefix
-        // - OPTION 3: the page doesn't exist & the user has create rights & language is present & page template in flash cache -> render a page template instance (not yet persisted)
-        // - OPTION 4: the page doesn't exist & the user has create rights & language is present & nothing in flash cache -> show new page selection list
-        else {
-            //OPTION 1: if we have permission to create a new page, do it, otherwise, the page doesn't exist
-            if (!SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
-                throw new NotFoundException();
-            }
-            else {
-                // Note that, as a general language-selection mechanism, we only support URI locales,
-                // but when there's no such locale found, we try to redirect to the one requested by the browser
-                // and if all fails, we redirect to the default, configured locale
-                Locale requestedUriLocale = R.i18nFactory().getUrlLocale(requestedUri);
-
-                //OPTION 2: no URL-language available: redirect to a good guess
-                if (requestedUriLocale == null) {
-                    Locale redirectLocale = R.i18nFactory().getBrowserLocale();
-                    //if the requested locale is supported by the site, use it, otherwise use the default locale
-                    //if the default is forced, use it no matter what
-                    if (Settings.instance().getForceRedirectToDefaultLocale() || !Settings.instance().getLanguages().containsKey(redirectLocale.getLanguage())) {
-                        redirectLocale = Settings.instance().getDefaultLanguage();
-                    }
-
-                    if (redirectLocale == null) {
-                        throw new IOException("Encountered null-valued default language; this shouldn't happen; " + requestedUri);
-                    }
-                    else {
-                        //we redirect to the &lang=.. (instead of lang-prefixed arl) when we're dealing with a resource to have a cleaner URL
-                        //Note that it gets stored locally with a lang-prefixed path though; see DefaultPageImpl.toResourceUri for details
-                        if (requestedUri.getPath().startsWith(ParserConstants.RESOURCE_ENDPOINT)) {
-                            retVal = Response.seeOther(UriBuilder.fromUri(requestedUri).queryParam(I18nFactory.LANG_QUERY_PARAM, redirectLocale.getLanguage()).build());
-                        }
-                        else {
-                            retVal = Response.seeOther(UriBuilder.fromUri(requestedUri).replacePath("/" + redirectLocale.getLanguage() + requestedUri.getPath()).build());
-                        }
+        // First, check if we're dealing with a resource.
+        // If it's associated endpoint wants to redirect to another URL (eg. when we use resources of an external ontology)
+        // don't try to lookup the resource locally, but redirect there.
+        if (requestedUri.getPath().startsWith(ParserConstants.RESOURCE_ENDPOINT)) {
+            //check if it's a full resource path
+            java.nio.file.Path path = Paths.get(requestedUri.getPath());
+            if (path.getNameCount() == 3) {
+                //index wise: since part 0 is "resource" (validated above), we validate index 1 to be the type (and 2 to be the ID)
+                URI resourceTypeCurie = URI.create(Settings.instance().getRdfOntologyPrefix() + ":" + path.getName(1).toString());
+                RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
+                if (rdfClass != null) {
+                    RdfQueryEndpoint endpoint = rdfClass.getEndpoint();
+                    if (endpoint != null) {
+                        externalRedirectUri = endpoint.getExternalResourceRedirect(requestedUri, R.i18nFactory().getOptimalLocale());
                     }
                 }
+            }
+        }
+
+        //if we found an external redirect URL, redirect there, otherwise continue
+        if (externalRedirectUri!=null) {
+            retVal = Response.seeOther(externalRedirectUri);
+        }
+        else {
+            if (resource.exists()) {
+
+                Template template = R.templateEngine().getNewTemplate(resource);
+
+                //this will allow the blocks javascript/css to be included if we're logged in and have permission
+                if (SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
+                    this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template);
+                }
+
+                retVal = Response.ok(template);
+            }
+
+            // General remark: we force the page to be created to have a language using redirects. It's not strictly necessary,
+            // but it helps us a lot while linking translations together during page persist; by supplying a part in the URL-path
+            // that identifies the language of the page, it's far easier to auto-generate translation URLs, and as a plus,
+            // it introduces some structure to the site.
+            //
+            // We have four, ordered possibilities:
+            // - OPTION 1: the page doesn't exist & the user has no rights -> 404
+            // - OPTION 2: the page doesn't exist & the user has create rights & no language present -> redirect to URL with language prefix
+            // - OPTION 3: the page doesn't exist & the user has create rights & language is present & page template in flash cache -> render a page template instance (not yet persisted)
+            // - OPTION 4: the page doesn't exist & the user has create rights & language is present & nothing in flash cache -> show new page selection list
+            else {
+                //OPTION 1: if we have permission to create a new page, do it, otherwise, the page doesn't exist
+                if (!SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
+                    throw new NotFoundException();
+                }
                 else {
-                    //when we're dealing with a resource, we validate the resource type (the path part coming after the "/resource" path)
-                    // to make sure it can be mapped in our ontology (during page creation)
-                    if (requestedUri.getPath().startsWith(ParserConstants.RESOURCE_ENDPOINT)) {
-                        java.nio.file.Path path = Paths.get(requestedUri.getPath());
-                        if (path.getNameCount() != 3) {
-                            throw new IOException("Encountered an (unexisting) resource URL with the wrong format. Need at least 3 segments: /resource/<type>/<id>;" + requestedUri);
+                    // Note that, as a general language-selection mechanism, we only support URI locales,
+                    // but when there's no such locale found, we try to redirect to the one requested by the browser
+                    // and if all fails, we redirect to the default, configured locale
+                    Locale requestedUriLocale = R.i18nFactory().getUrlLocale(requestedUri);
+
+                    //OPTION 2: no URL-language available: redirect to a good guess
+                    if (requestedUriLocale == null) {
+                        Locale redirectLocale = R.i18nFactory().getBrowserLocale();
+                        //if the requested locale is supported by the site, use it, otherwise use the default locale
+                        //if the default is forced, use it no matter what
+                        if (Settings.instance().getForceRedirectToDefaultLocale() || !Settings.instance().getLanguages().containsKey(redirectLocale.getLanguage())) {
+                            redirectLocale = Settings.instance().getDefaultLanguage();
+                        }
+
+                        if (redirectLocale == null) {
+                            throw new IOException("Encountered null-valued default language; this shouldn't happen; " + requestedUri);
                         }
                         else {
-                            //index wise: since part 0 is "resource" (validated above), we validate index 1 to be the type
-                            URI resourceTypeCurie = URI.create(Settings.instance().getRdfOntologyPrefix() + ":" + path.getName(1).toString());
-                            RdfClass resourcedType = RdfFactory.getClassForResourceType(resourceTypeCurie);
-                            if (resourcedType == null) {
-                                throw new IOException("Encountered an (unexisting) resource URL with an unknown RDF ontology type (" + resourceTypeCurie + ");" + requestedUri);
+                            //we redirect to the &lang=.. (instead of lang-prefixed arl) when we're dealing with a resource to have a cleaner URL
+                            //Note that it gets stored locally with a lang-prefixed path though; see DefaultPageImpl.toResourceUri for details
+                            if (requestedUri.getPath().startsWith(ParserConstants.RESOURCE_ENDPOINT)) {
+                                retVal = Response.seeOther(UriBuilder.fromUri(requestedUri).queryParam(I18nFactory.LANG_QUERY_PARAM, redirectLocale.getLanguage()).build());
+                            }
+                            else {
+                                retVal = Response.seeOther(UriBuilder.fromUri(requestedUri).replacePath("/" + redirectLocale.getLanguage() + requestedUri.getPath()).build());
                             }
                         }
                     }
-
-                    //this means we redirected from the new-template-selection page
-                    String newPageTemplateName = null;
-                    if (R.cacheManager().getFlashCache().getTransferredEntries() != null) {
-                        newPageTemplateName = (String) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_TEMPLATE_NAME.name());
-                    }
-
-                    //OPTION 3: there's a template-selection in the flash cache (we came from the page-selection page)
-                    // Note that we use the flash cache as a template-selection mechanism to keep the final URL clean
-                    if (!StringUtils.isEmpty(newPageTemplateName)) {
-                        //check if the name exists and is all right
-                        HtmlTemplate pageTemplate = HtmlParser.getTemplateCache().getByTagName(newPageTemplateName);
-                        if (pageTemplate != null && pageTemplate instanceof PageTemplate) {
-                            Template newPageInstance = R.templateEngine().getNewTemplate(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), pageTemplate.createNewHtmlInstance());
-
-                            //this will allow the blocks javascript/css to be included
-                            this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, newPageInstance);
-
-                            retVal = Response.ok(newPageInstance);
-                        }
-                        else {
-                            throw new InternalServerErrorException("Requested to create a new page with an invalid page template name; " + newPageTemplateName);
-                        }
-                    }
-                    //OPTION 4: empty flash cache; show the page templates list
                     else {
-                        Template newPageTemplateList = new_page.get().getNewTemplate();
-                        newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_URL.getValue(), requestedUri.toString());
-                        newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TEMPLATES.getValue(), this.buildLocalizedPageTemplateMap());
+                        //when we're dealing with a resource, we validate the resource type (the path part coming after the "/resource" path)
+                        // to make sure it can be mapped in our ontology (during page creation)
+                        if (requestedUri.getPath().startsWith(ParserConstants.RESOURCE_ENDPOINT)) {
+                            java.nio.file.Path path = Paths.get(requestedUri.getPath());
+                            if (path.getNameCount() != 3) {
+                                throw new IOException("Encountered an (unexisting) resource URL with the wrong format. Need at least 3 segments: /resource/<type>/<id>;" + requestedUri);
+                            }
+                            else {
+                                //index wise: since part 0 is "resource" (validated above), we validate index 1 to be the type
+                                URI resourceTypeCurie = URI.create(Settings.instance().getRdfOntologyPrefix() + ":" + path.getName(1).toString());
+                                RdfClass resourcedType = RdfFactory.getClassForResourceType(resourceTypeCurie);
+                                if (resourcedType == null) {
+                                    throw new IOException("Encountered an (unexisting) resource URL with an unknown RDF ontology type (" + resourceTypeCurie + ");" + requestedUri);
+                                }
+                            }
+                        }
 
-                        retVal = Response.ok(newPageTemplateList);
+                        //this means we redirected from the new-template-selection page
+                        String newPageTemplateName = null;
+                        if (R.cacheManager().getFlashCache().getTransferredEntries() != null) {
+                            newPageTemplateName = (String) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_TEMPLATE_NAME.name());
+                        }
+
+                        //OPTION 3: there's a template-selection in the flash cache (we came from the page-selection page)
+                        // Note that we use the flash cache as a template-selection mechanism to keep the final URL clean
+                        if (!StringUtils.isEmpty(newPageTemplateName)) {
+                            //check if the name exists and is all right
+                            HtmlTemplate pageTemplate = HtmlParser.getTemplateCache().getByTagName(newPageTemplateName);
+                            if (pageTemplate != null && pageTemplate instanceof PageTemplate) {
+                                Template newPageInstance = R.templateEngine().getNewTemplate(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), pageTemplate.createNewHtmlInstance());
+
+                                //this will allow the blocks javascript/css to be included
+                                this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, newPageInstance);
+
+                                retVal = Response.ok(newPageInstance);
+                            }
+                            else {
+                                throw new InternalServerErrorException("Requested to create a new page with an invalid page template name; " + newPageTemplateName);
+                            }
+                        }
+                        //OPTION 4: empty flash cache; show the page templates list
+                        else {
+                            Template newPageTemplateList = new_page.get().getNewTemplate();
+                            newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_URL.getValue(), requestedUri.toString());
+                            newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TEMPLATES.getValue(), this.buildLocalizedPageTemplateMap());
+
+                            retVal = Response.ok(newPageTemplateList);
+                        }
                     }
                 }
             }

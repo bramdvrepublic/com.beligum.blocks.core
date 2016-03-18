@@ -61,6 +61,23 @@ public class RdfTools
     }
 
     /**
+     * Extracts the last part (the real ID) from a resource URI.
+     * Only returns non-null if the supplied URI is a valid resource URI
+     * Note that the resource itself may not exist though, this extraction is just lexicographical.
+     */
+    public static String extractResourceId(URI resourceUri)
+    {
+        String retVal = null;
+
+        if (isResourceUrl(resourceUri)) {
+            //a resource URI has form /resource/<type>/<id> so third part is the ID
+            retVal = Paths.get(resourceUri.getPath()).getName(2).toString();
+        }
+
+        return retVal;
+    }
+
+    /**
      * Determines if the supplied URL is a valid resource URL (might not exist though)
      */
     public static boolean isResourceUrl(URI uri)

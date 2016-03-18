@@ -1,6 +1,8 @@
 package com.beligum.blocks.rdf.ontology.vocabularies.geo;
 
+import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteValue;
+import com.beligum.blocks.utils.RdfTools;
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -37,7 +39,7 @@ public class GeonameResource extends AbstractGeoname implements AutocompleteValu
     @Override
     public URI getResourceUri()
     {
-        return URI.create(GEONAMES_URI_PREFIX + this.geonameId + GEONAMES_URI_SUFFIX);
+        return RdfTools.createRelativeResourceId(RdfFactory.getClassForResourceType(this.getResourceType()), this.geonameId);
     }
     @Override
     public URI getResourceType()
@@ -52,21 +54,13 @@ public class GeonameResource extends AbstractGeoname implements AutocompleteValu
     @Override
     public URI getLink()
     {
-        if (!this.triedLink) {
-            if (this.alternateName!=null) {
-                for (GeonameLangValue val : this.alternateName) {
-                    if (val != null && val.getLang() != null && val.getLang().equals(LINK_LANGUAGE)) {
-                        this.cachedLink = URI.create(val.getValue());
-                        //we stop at first sight of a link
-                        break;
-                    }
-                }
-            }
-
-            this.triedLink = true;
-        }
-
-        return this.cachedLink;
+        //note that the endpoint behind this will take care of the redirection to a good external landing page
+        return getResourceUri();
+    }
+    @Override
+    public boolean isExternalLink()
+    {
+        return true;
     }
     //this getter is a little bit of a mindfuck because it doesn't match it's setter; the setter is used to set the name property, coming in (deserialized) from geonames,
     //this getter is called when the same object is serialized to our own JS client code, but then we return the toponymName property (instead of the name property)
@@ -130,5 +124,22 @@ public class GeonameResource extends AbstractGeoname implements AutocompleteValu
     }
 
     //-----PRIVATE METHODS-----
+    private URI findExternalLink()
+    {
+        if (!this.triedLink) {
+            if (this.alternateName!=null) {
+                for (GeonameLangValue val : this.alternateName) {
+                    if (val != null && val.getLang() != null && val.getLang().equals(LINK_LANGUAGE)) {
+                        this.cachedLink = URI.create(val.getValue());
+                        //we stop at first sight of a link
+                        break;
+                    }
+                }
+            }
 
+            this.triedLink = true;
+        }
+
+        return this.cachedLink;
+    }
 }

@@ -162,6 +162,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     {
         List<PageIndexEntry> retVal = new ArrayList<>();
 
+        //old code when experimenting with lucene grouping to select the best double resource URI result (eg. for language selection)
         //        Sort groupSort = new Sort();
         //        groupSort.setSort(new SortField(PageIndexEntry.Field.resource.name(), SortField.Type.STRING, true)/*, new SortField("progress", SortField.FLOAT, true)*/);
         //        TermFirstPassGroupingCollector c1 = new TermFirstPassGroupingCollector(PageIndexEntry.Field.resource.name(), Sort.RELEVANCE, maxResults);

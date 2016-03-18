@@ -27,6 +27,10 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
+    public SettingsQueryEndpoint()
+    {
+
+    }
 
     //-----PUBLIC METHODS-----
     @Override
@@ -97,10 +101,17 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
         List<PageIndexEntry> matchingPages = StorageFactory.getMainPageIndexer().connect().search(queries, 1);
         if (!matchingPages.isEmpty()) {
             PageIndexEntry entry = matchingPages.iterator().next();
+            //note: the ID of a page is the public URL
             retVal = new DefaultResourceValue(URI.create(entry.getResource()), resourceType.getCurieName(), entry.getTitle(), entry.getId(), entry.getTitle());
         }
 
         return retVal;
+    }
+    @Override
+    public URI getExternalResourceRedirect(URI resourceId, Locale language)
+    {
+        //nothing special to redirect to; we'll render the resource out ourselves
+        return null;
     }
 
     //-----PROTECTED METHODS-----

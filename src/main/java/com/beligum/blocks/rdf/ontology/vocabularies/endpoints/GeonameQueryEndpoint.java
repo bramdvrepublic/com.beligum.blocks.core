@@ -10,6 +10,7 @@ import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ontology.vocabularies.geo.AbstractGeoname;
 import com.beligum.blocks.rdf.ontology.vocabularies.geo.GeonameResource;
+import com.beligum.blocks.utils.RdfTools;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -114,7 +115,7 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
         UriBuilder builder = UriBuilder.fromUri("http://api.geonames.org/get")
                                        .queryParam("username", this.username)
                                        //we pass only the id, not the entire URI
-                                       .queryParam("geonameId", AbstractGeoname.fromGeonamesUri(resourceId))
+                                       .queryParam("geonameId", RdfTools.extractResourceId(resourceId))
                                        //when we query, we query for a lot
                                        .queryParam("style", "FULL")
                                        .queryParam("type", "json");
@@ -130,7 +131,7 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
             InjectableValues inject = new InjectableValues.Std().addValue(AbstractGeoname.RESOURCE_TYPE_INJECTABLE, resourceType.getCurieName());
             ObjectReader reader = XML.getObjectMapper().readerFor(GeonameResource.class).with(inject);
 
-            //note: the Geonames '/get' endpoint seems to be XML only!
+            //note: the Geonames '/get' endpoint is XML only!
             retVal = reader.readValue(response.readEntity(String.class));
         }
         else {
@@ -138,6 +139,12 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
         }
 
         return retVal;
+    }
+    @Override
+    public URI getExternalResourceRedirect(URI resourceId, Locale language)
+    {
+        //TODO what about the language?
+        return AbstractGeoname.toGeonamesUri(RdfTools.extractResourceId(resourceId));
     }
 
     //-----PROTECTED METHODS-----
