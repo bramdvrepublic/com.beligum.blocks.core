@@ -85,6 +85,8 @@ public class ServerStartStopListener implements ServerLifecycleListener
                 try {
                     TransactionManager transactionManager = StorageFactory.getTransactionManager();
                     if (transactionManager instanceof UserTransactionManager) {
+                        UserTransactionManager userTransactionManager = (UserTransactionManager) transactionManager;
+                        userTransactionManager.setForceShutdown(true);
                         ((UserTransactionManager) transactionManager).close();
                     }
                     else {

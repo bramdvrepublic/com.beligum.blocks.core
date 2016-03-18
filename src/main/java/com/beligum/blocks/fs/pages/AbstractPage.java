@@ -2,6 +2,7 @@ package com.beligum.blocks.fs.pages;
 
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.utils.toolkit.StringFunctions;
+import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.ifaces.ResourcePath;
 import com.beligum.blocks.fs.pages.ifaces.Page;
@@ -15,6 +16,8 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 /**
@@ -106,7 +109,7 @@ public abstract class AbstractPage implements Page
 
     //-----PUBLIC METHODS-----
     @Override
-    public URI buildAddress() throws IOException
+    public URI buildAbsoluteAddress() throws IOException
     {
         if (!this.checkedAddress) {
             URI resourceUri = this.getResourcePath().getLocalPath().toUri();
@@ -122,26 +125,43 @@ public abstract class AbstractPage implements Page
             else {
                 throw new IOException("Unknown filesystem schema found in local page resource URI; " + resourceUri);
             }
-            this.publicAddress = settings.getSiteDomain().resolve(fsUri.relativize(resourceUri));
 
-            boolean changed = false;
-            String path = this.publicAddress.getPath();
-            if (path.endsWith(settings.getPagesFileExtension())) {
-                path = path.substring(0, path.length() - settings.getPagesFileExtension().length());
-                changed = true;
+            UriBuilder builder = UriBuilder.fromUri(settings.getSiteDomain().resolve(fsUri.relativize(resourceUri)));
+            String pathStr = builder.build().getPath();
+            if (pathStr.endsWith(settings.getPagesFileExtension())) {
+                pathStr = pathStr.substring(0, pathStr.length() - settings.getPagesFileExtension().length());
+                builder.replacePath(pathStr);
             }
-            if (path.endsWith(DIR_PAGE_NAME)) {
-                path = path.substring(0, path.length() - DIR_PAGE_NAME.length());
-                changed = true;
+            if (pathStr.endsWith(DIR_PAGE_NAME)) {
+                pathStr = pathStr.substring(0, pathStr.length() - DIR_PAGE_NAME.length());
+                builder.replacePath(pathStr);
             }
-            if (changed) {
-                this.publicAddress = UriBuilder.fromUri(this.publicAddress).replacePath(path).build();
+            //we save resources with a language-prefixed path just like all the other pages,
+            // but use the 'lang' query parameter in public form, because it reflects the nature
+            // of a resource url better, so if the second path-part (the first in public form) is a resource string,
+            // we're dealing with a resource page and need to convert it back to it's public form
+            Path path = Paths.get(pathStr);
+            if (path.getNameCount()>1) {
+                //note that subpath chops off the leading slash, so make sure we add it again before comparing to the endpoint string
+                String noLangPath = "/" + path.subpath(1, path.getNameCount()).toString();
+                if (noLangPath.startsWith(ParserConstants.RESOURCE_ENDPOINT)) {
+                    builder.replacePath(noLangPath);
+                    builder.queryParam(I18nFactory.LANG_QUERY_PARAM, path.getName(0).toString());
+                }
             }
 
+            this.publicAddress = builder.build();
             this.checkedAddress = true;
         }
 
         return this.publicAddress;
+    }
+    @Override
+    public URI buildRelativeAddress() throws IOException
+    {
+        //note that buildAbsoluteAddress() uses the siteDomain setting to generate it's absolute URL,
+        //the first resolve makes sure it always starts with a slash
+        return URI.create("/").resolve(Settings.instance().getSiteDomain().relativize(this.buildAbsoluteAddress()));
     }
     @Override
     public ResourcePath getResourcePath()
@@ -152,7 +172,7 @@ public abstract class AbstractPage implements Page
     public HtmlSource readOriginalHtml() throws IOException
     {
         try (InputStream is = this.getResourcePath().getFileContext().open(this.getResourcePath().getLocalPath())) {
-            return new HtmlStreamSource(this.buildAddress(), is);
+            return new HtmlStreamSource(this.buildAbsoluteAddress(), is);
         }
     }
 

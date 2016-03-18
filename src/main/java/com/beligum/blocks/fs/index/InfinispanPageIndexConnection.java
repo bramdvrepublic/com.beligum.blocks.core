@@ -50,7 +50,7 @@
 //    {
 //        this.assertWriteTransaction();
 //
-//        cache.remove(page.buildAddress().toString());
+//        cache.remove(page.buildAbsoluteAddress().toString());
 //    }
 //    @Override
 //    public void update(Page page) throws IOException
@@ -60,7 +60,7 @@
 //        HtmlAnalyzer htmlAnalyzer = page.createAnalyzer();
 //
 //        FileContext fc = page.getResourcePath().getFileContext();
-//        URI pageAddress = page.buildAddress();
+//        URI pageAddress = page.buildAbsoluteAddress();
 //        PageIndexEntry entry = new PageIndexEntry();
 //        entry.setId(pageAddress);
 //        entry.setResource(htmlAnalyzer.getHtmlResource() == null ? null : URI.create(htmlAnalyzer.getHtmlResource().value));

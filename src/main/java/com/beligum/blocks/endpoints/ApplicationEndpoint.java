@@ -42,6 +42,7 @@ import java.util.*;
 public class ApplicationEndpoint
 {
     //-----CONSTANTS-----
+    private static final URI ROOT = URI.create("/");
 
     //-----VARIABLES-----
 
@@ -60,10 +61,9 @@ public class ApplicationEndpoint
     {
         //security; rebuild the url instead of blindly accepting what comes in
         //note: the randomURL doesn't include the query params; get them from the requestContext
-        URI
-                        requestedUri =
-                        UriBuilder.fromUri(Settings.instance().getSiteDomain()).replacePath(randomURL.getPath())
-                                  .replaceQuery(R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri().getQuery()).build();
+        //note: the root is needed to make sure the path always starts with a slash (eg. not the case when this endpoint matched the root ("") path)
+        URI requestedUri = UriBuilder.fromUri(Settings.instance().getSiteDomain()).replacePath(ROOT.resolve(randomURL.getPath()).toString())
+                                     .replaceQuery(R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri().getQuery()).build();
 
         FileContext fs = StorageFactory.getPageViewFileSystem();
         URI fsPageUri = DefaultPageImpl.toResourceUri(requestedUri, Settings.instance().getPagesViewPath());
@@ -140,8 +140,8 @@ public class ApplicationEndpoint
                             //index wise: since part 0 is "resource" (validated above), we validate index 1 to be the type
                             URI resourceTypeCurie = URI.create(Settings.instance().getRdfOntologyPrefix() + ":" + path.getName(1).toString());
                             RdfClass resourcedType = RdfFactory.getClassForResourceType(resourceTypeCurie);
-                            if (resourcedType==null) {
-                                throw new IOException("Encountered an (unexisting) resource URL with an unknown RDF ontology type ("+resourceTypeCurie+");" + requestedUri);
+                            if (resourcedType == null) {
+                                throw new IOException("Encountered an (unexisting) resource URL with an unknown RDF ontology type (" + resourceTypeCurie + ");" + requestedUri);
                             }
                         }
                     }

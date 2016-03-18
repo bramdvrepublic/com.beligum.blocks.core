@@ -60,7 +60,23 @@ public class RdfTools
         return UriBuilder.fromUri("/").path(ParserConstants.RESOURCE_ENDPOINT).path(entity.getName()).path(id).build();
     }
 
+    /**
+     * Determines if the supplied URL is a valid resource URL (might not exist though)
+     */
+    public static boolean isResourceUrl(URI uri)
+    {
+        boolean retVal = false;
 
+        if (uri!=null && uri.getPath()!=null) {
+            Path path = Paths.get(uri.getPath());
+            //A bit conservative: we need three segments: the word 'resource', the type of the resource and the ID
+            if (path.getNameCount() == 3 && path.startsWith(ParserConstants.RESOURCE_ENDPOINT)) {
+                retVal = true;
+            }
+        }
+
+        return retVal;
+    }
 
 
 

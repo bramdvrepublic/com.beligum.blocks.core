@@ -119,7 +119,7 @@
 //        Importer rdfImporter = new JenaImporter(page.getRdfExportFileFormat());
 //        Model model = null;
 //        try (InputStream is = fc.open(page.getRdfExportFile())) {
-//            model = rdfImporter.importDocument(is, page.buildAddress());
+//            model = rdfImporter.importDocument(is, page.buildAbsoluteAddress());
 //        }
 //
 //        dataset.getDefaultModel().add(model);

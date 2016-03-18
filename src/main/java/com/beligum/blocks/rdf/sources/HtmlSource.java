@@ -189,12 +189,14 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
 
                 //by only modifying if empty, this means we can override the value of the translation if we provide our own, custom typeof;
                 //it's flexible, but maybe we should force-lock it to the translation's typeof?
+                //Note that we could opt to lock all types together, but know that it's still possible to change the type of a single page afterwards,
+                // so we have to implement a bulk-update mechanism later on anyway (and also note that this code here won't get executed if we change a type of a page afterwards)
                 if (typeofAttr.isEmpty() && translationAnalyzer.getHtmlTypeof() != null) {
                     newTypeOf = URI.create(translationAnalyzer.getHtmlTypeof().value);
                 }
             }
 
-            // If nothing was found, this is a true new page and thus we generate a new resource id.
+            // If nothing was found, this is a true new page and thus we generate a new resource id (if we need to).
             // Note that we discard any possible supplied typeOf values in this case; we force it to be a page
             // --> not any more: it makes sense to create a new page, select it's typeof and then save it (for the first time)
             if (newResource == null) {
@@ -208,7 +210,23 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
                     newTypeOf = URI.create(typeofAttr);
                 }
 
-                newResource = RdfTools.createRelativeResourceId(RdfFactory.getClassForResourceType(newTypeOf));
+                //if the address of this page is already a resource url, we don't have to generate a new one, but just make it relative
+                // if not, we create a new resource URL, based on the typeof attribute
+                if (RdfTools.isResourceUrl(this.sourceAddress)) {
+                    //Note that this will chop off any query parameters (especially the lang param) too, which is expected behavior,
+                    // because the resource should be the relative 'base' URI, without any languages
+                    newResource = URI.create(this.sourceAddress.getPath());
+                }
+                else {
+                    newResource = RdfTools.createRelativeResourceId(RdfFactory.getClassForResourceType(newTypeOf));
+                }
+            }
+            //this happens when we create a new page (or resource) but the resource already exists (in another language)
+            else {
+                //this will happen if typeofAttr is not empty (thus was supplied during first save), so the
+                if (newTypeOf==null && !typeofAttr.isEmpty()) {
+                    newTypeOf = URI.create(typeofAttr);
+                }
             }
 
             htmlTag.attr(HTML_ROOT_SUBJECT_ATTR, newResource.toString());

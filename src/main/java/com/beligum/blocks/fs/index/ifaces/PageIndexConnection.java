@@ -4,6 +4,7 @@ import com.beligum.blocks.fs.index.entries.IndexEntry;
 import com.beligum.blocks.fs.index.entries.PageIndexEntry;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.Query;
 
 import java.io.IOException;
 import java.net.URI;
@@ -76,6 +77,11 @@ public interface PageIndexConnection<T extends PageIndexEntry> extends IndexConn
      * Search each field on its corresponding query, indicating of it's a AND (true) or OR (false) query, returning the maxResults best results
      */
     List<T> search(FieldQuery[] fieldQueries, int maxResults) throws IOException;
+
+    /**
+     * Search for the low-level lucene query, returning the maxResults best results
+     */
+    List<T> search(Query luceneQuery, int maxResults) throws IOException;
 
     //-----PROTECTED METHODS-----
 

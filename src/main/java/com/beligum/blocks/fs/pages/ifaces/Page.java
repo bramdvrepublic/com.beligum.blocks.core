@@ -18,11 +18,18 @@ import java.net.URI;
 public interface Page
 {
     /**
-     * Computes (and caches) the public URL of this page, based on the relative path name of this page on the server.
+     * Computes (and caches) the public, full (domain-prefixed) URL of this page, based on the relative path name of this page on the server.
      * @return
      * @throws IOException
      */
-    URI buildAddress() throws IOException;
+    URI buildAbsoluteAddress() throws IOException;
+
+    /**
+     * Computes (and caches) the public, relative (so without domain) URL of this page, based on the relative path name of this page on the server.
+     * @return
+     * @throws IOException
+     */
+    URI buildRelativeAddress() throws IOException;
 
     /**
      * Creates the semantic importer for this kind of page (currently an RDFa processor)

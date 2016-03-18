@@ -5,6 +5,7 @@ import com.beligum.blocks.fs.index.entries.PageIndexEntry;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.Importer;
+import org.apache.lucene.search.Query;
 import org.openrdf.model.Model;
 import org.openrdf.query.*;
 import org.openrdf.repository.RepositoryException;
@@ -90,13 +91,22 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         //explicitly read the model from disk so we can use this indexer stand alone
         Importer rdfImporter = page.createImporter(page.getRdfExportFileFormat());
         try (InputStream is = page.getResourcePath().getFileContext().open(page.getRdfExportFile())) {
-            model = rdfImporter.importDocument(is, page.buildAddress());
+            model = rdfImporter.importDocument(is, page.buildRelativeAddress());
         }
 
         this.connection.add(model);
     }
     @Override
     public List search(FieldQuery[] fieldQueries, int maxResults) throws IOException
+    {
+        List<PageIndexEntry> retVal = new ArrayList<>();
+
+        //TODO
+
+        return retVal;
+    }
+    @Override
+    public List search(Query luceneQuery, int maxResults) throws IOException
     {
         List<PageIndexEntry> retVal = new ArrayList<>();
 

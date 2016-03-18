@@ -8,6 +8,7 @@ import gen.com.beligum.blocks.endpoints.ApplicationEndpointRoutes;
 import gen.com.beligum.blocks.endpoints.UsersEndpointRoutes;
 
 import javax.ws.rs.Path;
+import java.net.URI;
 
 /**
  * Created by bram on 12/1/15.
@@ -35,17 +36,17 @@ public class UsersEndpoint extends AbstractUsersEndpoint
     @Override
     protected ReverseRoute getLoginRedirect()
     {
-        return ApplicationEndpointRoutes.getPage("");
+        return ApplicationEndpointRoutes.getPage(URI.create(""));
     }
     @Override
     protected ReverseRoute getLogoutRedirect()
     {
-        return ApplicationEndpointRoutes.getPage("");
+        return ApplicationEndpointRoutes.getPage(URI.create(""));
     }
     @Override
     protected ReverseRoute getEmailCallbackRedirect()
     {
-        return ApplicationEndpointRoutes.getPage("");
+        return ApplicationEndpointRoutes.getPage(URI.create(""));
     }
 
     //-----PROTECTED METHODS-----

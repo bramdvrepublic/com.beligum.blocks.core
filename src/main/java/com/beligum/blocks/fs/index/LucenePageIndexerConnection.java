@@ -12,6 +12,7 @@ import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
@@ -35,7 +36,9 @@ import java.util.Map;
 public class LucenePageIndexerConnection extends AbstractIndexConnection implements PageIndexConnection
 {
     //-----CONSTANTS-----
-    private static final Analyzer DEFAULT_ANALYZER = new StandardAnalyzer();
+    private static final Analyzer STANDARD_ANALYZER = new StandardAnalyzer();
+    private static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
+    private static final Analyzer DEFAULT_ANALYZER = STANDARD_ANALYZER;
 
     //-----VARIABLES-----
     private IndexWriter indexWriter;
@@ -64,7 +67,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     {
         this.assertWriterTransaction();
 
-        this.indexWriter.deleteDocuments(AbstractIndexEntry.toLuceneId(page.buildAddress()));
+        this.indexWriter.deleteDocuments(AbstractIndexEntry.toLuceneId(page.buildRelativeAddress()));
 
         //for debug
         //this.printLuceneIndex();
@@ -124,15 +127,39 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
                 activeQuery.add(subQuery, q.getBool());
             }
 
-            TopDocs topdocs = getLuceneIndexSearcher().search(query, maxResults);
-
-            //TODO this is probably not so efficient...
-            for (int i = 0; i < topdocs.totalHits; i++) {
-                retVal.add(SimplePageIndexEntry.fromLuceneDoc(getLuceneIndexReader().document(topdocs.scoreDocs[i].doc)));
-            }
+            retVal = this.search(query, maxResults);
         }
         catch (ParseException e) {
             throw new IOException("Error while parsing multi-field lucene query; " + fieldQueries, e);
+        }
+
+        return retVal;
+    }
+    @Override
+    public List<PageIndexEntry> search(Query luceneQuery, int maxResults) throws IOException
+    {
+        List<PageIndexEntry> retVal = new ArrayList<>();
+
+//        Sort groupSort = new Sort();
+//        groupSort.setSort(new SortField(PageIndexEntry.Field.resource.name(), SortField.Type.STRING, true)/*, new SortField("progress", SortField.FLOAT, true)*/);
+//        TermFirstPassGroupingCollector c1 = new TermFirstPassGroupingCollector(PageIndexEntry.Field.resource.name(), Sort.RELEVANCE, maxResults);
+//
+//        getLuceneIndexSearcher().search(luceneQuery, c1);
+//        boolean fillFields = true;
+//        Collection<SearchGroup<BytesRef>> topGroups = c1.getTopGroups(0, fillFields);
+//
+//        if (topGroups == null) {
+//            // No groups matched
+//            return retVal;
+//        }
+//        boolean getScores = true;
+//        boolean getMaxScores = true;
+//        TermSecondPassGroupingCollector c2 = new TermSecondPassGroupingCollector("author", topGroups, groupSort, docSort, docOffset + docsPerGroup, getScores, getMaxScores, fillFields);
+
+        TopDocs topdocs = getLuceneIndexSearcher().search(luceneQuery, maxResults);
+        //TODO this is probably not so efficient?
+        for (int i = 0; i < topdocs.totalHits; i++) {
+            retVal.add(SimplePageIndexEntry.fromLuceneDoc(getLuceneIndexReader().document(topdocs.scoreDocs[i].doc)));
         }
 
         return retVal;
@@ -193,10 +220,8 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         HtmlAnalyzer htmlAnalyzer = page.createAnalyzer();
 
         FileContext fc = page.getResourcePath().getFileContext();
-        //note that AbstractPage.buildAddress() uses the siteDomain setting to generate it's absolute URL,
-        // but we prefer to use relative paths for our (long term) index, so make it relative
-        //the first resolve makes sure it always starts with a slash
-        URI pageAddress = URI.create("/").resolve(Settings.instance().getSiteDomain().relativize(page.buildAddress()));
+        // we prefer to use relative paths for our (long term) index
+        URI pageAddress = page.buildRelativeAddress();
 
         SimplePageIndexEntry entry = new SimplePageIndexEntry(pageAddress);
         entry.setResource(htmlAnalyzer.getHtmlAbout() == null ? null : htmlAnalyzer.getHtmlAbout().value);
