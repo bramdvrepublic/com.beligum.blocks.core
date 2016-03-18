@@ -121,7 +121,7 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
 
                             //if we're dealing with a reference to another resource, we use the typeof attribute,
                             //otherwise (when dealing with a literal), we use the datatype attribute
-                            if (newValueTerm.widgetType==BlocksConstants.INPUT_TYPE_RESOURCE) {
+                            if (newValueTerm.widgetType == BlocksConstants.INPUT_TYPE_RESOURCE) {
                                 //note that despite it's name, this value will just contain a curie name to an RDF class
                                 propElement.attr(TYPEOF_ATTR, newValueTerm.dataType[TERM_NAME_FIELD]);
                             }
@@ -359,9 +359,14 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                     queryTokenizer: Bloodhound.tokenizers.whitespace,
                     datumTokenizer: Bloodhound.tokenizers.whitespace,
                     remote: {
-                        //we'll add the wildcard to the end of the endpoint url: it will end up in the value section (after the '=' sign) of the query parameter
-                        url: inputTypeArgs[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT] + '%QUERY',
-                        wildcard: '%QUERY'
+                        //note: the prepare function below will add the correct query at the end
+                        url: inputTypeArgs[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT],
+                        prepare: function (query, settings)
+                        {
+                            settings.url = settings.url + encodeURIComponent(query);
+
+                            return settings;
+                        },
                     },
                 });
 

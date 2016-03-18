@@ -57,12 +57,16 @@ public class ApplicationEndpoint
     }
     @Path("/{randomPage:.*}")
     @GET
-    public Response getPage(@PathParam("randomPage") URI randomURL) throws Exception
+    public Response getPage(@PathParam("randomPage") String randomPage) throws Exception
     {
+        //make sure the path always starts with a slash (eg. not the case when this endpoint matched the root ("") path)
+        if (!randomPage.startsWith("/")) {
+            randomPage = "/" + randomPage;
+        }
+
         //security; rebuild the url instead of blindly accepting what comes in
         //note: the randomURL doesn't include the query params; get them from the requestContext
-        //note: the root is needed to make sure the path always starts with a slash (eg. not the case when this endpoint matched the root ("") path)
-        URI requestedUri = UriBuilder.fromUri(Settings.instance().getSiteDomain()).replacePath(ROOT.resolve(randomURL.getPath()).toString())
+        URI requestedUri = UriBuilder.fromUri(Settings.instance().getSiteDomain()).replacePath(randomPage.toString())
                                      .replaceQuery(R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri().getQuery()).build();
 
         FileContext fs = StorageFactory.getPageViewFileSystem();

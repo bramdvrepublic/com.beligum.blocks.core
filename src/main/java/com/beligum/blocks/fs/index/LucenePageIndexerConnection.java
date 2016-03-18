@@ -13,11 +13,13 @@ import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -38,6 +40,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     //-----CONSTANTS-----
     private static final Analyzer STANDARD_ANALYZER = new StandardAnalyzer();
     private static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
+    private static final Analyzer WHITESPACE_ANALYZER = new WhitespaceAnalyzer();
     private static final Analyzer DEFAULT_ANALYZER = STANDARD_ANALYZER;
 
     //-----VARIABLES-----
@@ -55,7 +58,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         TermQuery query = new TermQuery(AbstractIndexEntry.toLuceneId(key));
         TopDocs topdocs = getLuceneIndexSearcher().search(query, 1);
 
-        if (topdocs.totalHits == 0) {
+        if (topdocs.scoreDocs.length == 0) {
             return null;
         }
         else {
@@ -97,7 +100,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
             for (FieldQuery q : fieldQueries) {
 
                 BooleanQuery activeQuery = query;
-                if (q.getGroup()!=null) {
+                if (q.getGroup() != null) {
                     if (groups.containsKey(q.getGroup())) {
                         activeQuery = groups.get(q.getGroup());
                     }
@@ -116,12 +119,31 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
                         subQuery = new TermQuery(new Term(q.getField().name(), q.getQuery()));
                         break;
                     case WILDCARD:
-                        QueryParser parser = new QueryParser(q.getField().name(), DEFAULT_ANALYZER);
+                        QueryParser queryParser = new QueryParser(q.getField().name(), DEFAULT_ANALYZER);
+                        //we need to escape the wildcard query, and appedkdkdlkjsdfnd the asterisk afterwards (or it will be escaped)
+                        subQuery = queryParser.parse(QueryParser.escape(q.getQuery()) + "*");
+                        break;
+                    case WILDCARD_COMPLEX:
                         //we need to escape the wildcard query, and append the asterisk afterwards (or it will be escaped)
-                        subQuery = parser.parse(QueryParser.escape(q.getQuery()) + "*");
+                        ComplexPhraseQueryParser complexPhraseParser = new ComplexPhraseQueryParser(q.getField().name(), DEFAULT_ANALYZER);
+                        complexPhraseParser.setInOrder(true);
+                        //this is tricky: using an asterisk after a special character seems to throw lucene off
+                        // since the standard analyzer doesn't index those characters anyway (eg. "blah (en)" gets indexed as "blah" and "en"),
+                        // it's safe to delete those special characters and just add the asterisk
+                        String parsedQuery = this.removeEscapedChars(q.getQuery()).trim();
+                        String queryStr = null;
+                        //this check is needed because "\"bram*\"" doesn't seem to match the "bram" token
+                        if (parsedQuery.contains(" ")) {
+                            queryStr = "\"" + parsedQuery +"*\"";
+                        }
+                        else {
+                            queryStr = parsedQuery +"*";
+                        }
+
+                        subQuery = complexPhraseParser.parse(queryStr);
                         break;
                     default:
-                        throw new ParseException("Encountered unsupported query type; this shouldn't happen; "+q.getType());
+                        throw new ParseException("Encountered unsupported query type; this shouldn't happen; " + q.getType());
                 }
 
                 activeQuery.add(subQuery, q.getBool());
@@ -140,26 +162,26 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     {
         List<PageIndexEntry> retVal = new ArrayList<>();
 
-//        Sort groupSort = new Sort();
-//        groupSort.setSort(new SortField(PageIndexEntry.Field.resource.name(), SortField.Type.STRING, true)/*, new SortField("progress", SortField.FLOAT, true)*/);
-//        TermFirstPassGroupingCollector c1 = new TermFirstPassGroupingCollector(PageIndexEntry.Field.resource.name(), Sort.RELEVANCE, maxResults);
-//
-//        getLuceneIndexSearcher().search(luceneQuery, c1);
-//        boolean fillFields = true;
-//        Collection<SearchGroup<BytesRef>> topGroups = c1.getTopGroups(0, fillFields);
-//
-//        if (topGroups == null) {
-//            // No groups matched
-//            return retVal;
-//        }
-//        boolean getScores = true;
-//        boolean getMaxScores = true;
-//        TermSecondPassGroupingCollector c2 = new TermSecondPassGroupingCollector("author", topGroups, groupSort, docSort, docOffset + docsPerGroup, getScores, getMaxScores, fillFields);
+        //        Sort groupSort = new Sort();
+        //        groupSort.setSort(new SortField(PageIndexEntry.Field.resource.name(), SortField.Type.STRING, true)/*, new SortField("progress", SortField.FLOAT, true)*/);
+        //        TermFirstPassGroupingCollector c1 = new TermFirstPassGroupingCollector(PageIndexEntry.Field.resource.name(), Sort.RELEVANCE, maxResults);
+        //
+        //        getLuceneIndexSearcher().search(luceneQuery, c1);
+        //        boolean fillFields = true;
+        //        Collection<SearchGroup<BytesRef>> topGroups = c1.getTopGroups(0, fillFields);
+        //
+        //        if (topGroups == null) {
+        //            // No groups matched
+        //            return retVal;
+        //        }
+        //        boolean getScores = true;
+        //        boolean getMaxScores = true;
+        //        TermSecondPassGroupingCollector c2 = new TermSecondPassGroupingCollector("author", topGroups, groupSort, docSort, docOffset + docsPerGroup, getScores, getMaxScores, fillFields);
 
         TopDocs topdocs = getLuceneIndexSearcher().search(luceneQuery, maxResults);
         //TODO this is probably not so efficient?
-        for (int i = 0; i < topdocs.totalHits; i++) {
-            retVal.add(SimplePageIndexEntry.fromLuceneDoc(getLuceneIndexReader().document(topdocs.scoreDocs[i].doc)));
+        for (ScoreDoc scoreDoc : topdocs.scoreDocs) {
+            retVal.add(SimplePageIndexEntry.fromLuceneDoc(getLuceneIndexReader().document(scoreDoc.doc)));
         }
 
         return retVal;
@@ -325,5 +347,22 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         if (this.indexWriter == null) {
             this.indexWriter = this.getNewLuceneIndexWriter();
         }
+    }
+    //exactly the same code as QueryParserBase.escape(), but with the sb.append('\\'); line commented and added an else-part
+    private String removeEscapedChars(String s) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            // These characters are part of the query syntax and must be escaped
+            if (c == '\\' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')' || c == ':'
+                || c == '^' || c == '[' || c == ']' || c == '\"' || c == '{' || c == '}' || c == '~'
+                || c == '*' || c == '?' || c == '|' || c == '&' || c == '/') {
+                //sb.append('\\');
+            }
+            else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
     }
 }

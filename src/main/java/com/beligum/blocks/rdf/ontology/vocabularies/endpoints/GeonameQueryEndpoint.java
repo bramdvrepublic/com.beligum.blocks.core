@@ -130,7 +130,7 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
             InjectableValues inject = new InjectableValues.Std().addValue(AbstractGeoname.RESOURCE_TYPE_INJECTABLE, resourceType.getCurieName());
             ObjectReader reader = XML.getObjectMapper().readerFor(GeonameResource.class).with(inject);
 
-            //note: the '/get' endpoint is XML only!
+            //note: the Geonames '/get' endpoint seems to be XML only!
             retVal = reader.readValue(response.readEntity(String.class));
         }
         else {

@@ -20,8 +20,21 @@ public interface PageIndexConnection<T extends PageIndexEntry> extends IndexConn
     {
         public enum Type
         {
+            /**
+             * Search for the exact value in the query, nothing more, nothing less
+             */
             EXACT,
-            WILDCARD
+            /**
+             * Search for the value in the query, analyzed (eg. chopped into pieces on whitespace) and wildcarded.
+             * Eg. a search for "Top Gu" on 'title' will result in this query "title:top title:gu*"
+             */
+            WILDCARD,
+            /**
+             * More or less the same as WILDCARD, but the query string won't be tokenized.
+             * Eg. a search for "Top Gu" on 'title' will result in this query "title:top\ gu*"
+             * Will result in less (but more correct) matches than WILDCARD.
+             */
+            WILDCARD_COMPLEX
         }
 
         private IndexEntry.IndexEntryField field;

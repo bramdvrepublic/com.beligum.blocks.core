@@ -38,9 +38,9 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
                         new PageIndexConnection.FieldQuery[] { new PageIndexConnection.FieldQuery(PageIndexEntry.Field.typeOf, resourceType.getCurieName().toString(), BooleanClause.Occur.FILTER,
                                                                                                   PageIndexConnection.FieldQuery.Type.EXACT),
                                                                new PageIndexConnection.FieldQuery(IndexEntry.Field.tokenisedId, query, BooleanClause.Occur.SHOULD,
-                                                                                                  PageIndexConnection.FieldQuery.Type.WILDCARD, 3),
+                                                                                                  PageIndexConnection.FieldQuery.Type.WILDCARD_COMPLEX, 1),
                                                                new PageIndexConnection.FieldQuery(PageIndexEntry.Field.title, query, BooleanClause.Occur.SHOULD,
-                                                                                                  PageIndexConnection.FieldQuery.Type.WILDCARD, 3) };
+                                                                                                  PageIndexConnection.FieldQuery.Type.WILDCARD_COMPLEX, 1) };
 
         //See https://lucene.apache.org/core/5_4_1/queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package_description
         //#typeOf:mot:Person #(tokenisedId:bra* title:bra*)
