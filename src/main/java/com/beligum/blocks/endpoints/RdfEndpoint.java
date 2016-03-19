@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Created by bram on 2/25/16.
@@ -65,12 +66,7 @@ public class RdfEndpoint
         if (rdfClass!=null) {
             RdfQueryEndpoint endpoint = rdfClass.getEndpoint();
             if (endpoint!=null) {
-                //note that we can't just use the requested URI because we're in an admin endpoint
-                String referer = R.requestContext().getJaxRsRequest().getHeaders().getFirst(HttpHeaders.REFERER);
-                if (org.apache.commons.lang.StringUtils.isEmpty(referer)) {
-                    throw new IOException("We must have a referer URI to be able to detect the current language; "+referer);
-                }
-                retVal = endpoint.search(rdfClass, query, I18nFactory.instance().getOptimalLocale(URI.create(referer)), maxResults);
+                retVal = endpoint.search(rdfClass, query, this.getRefererLanguage(), maxResults);
             }
         }
 
@@ -88,7 +84,7 @@ public class RdfEndpoint
         if (rdfClass!=null) {
             RdfQueryEndpoint endpoint = rdfClass.getEndpoint();
             if (endpoint!=null) {
-                retVal = endpoint.getResource(rdfClass, resourceUri, I18nFactory.instance().getOptimalLocale());
+                retVal = endpoint.getResource(rdfClass, resourceUri, this.getRefererLanguage());
             }
         }
 
@@ -103,5 +99,14 @@ public class RdfEndpoint
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+    private Locale getRefererLanguage() throws IOException
+    {
+        //note that we can't just use the requested URI because we're in an admin endpoint
+        String referer = R.requestContext().getJaxRsRequest().getHeaders().getFirst(HttpHeaders.REFERER);
+        if (org.apache.commons.lang.StringUtils.isEmpty(referer)) {
+            throw new IOException("We must have a referer URI to be able to detect the current language; "+referer);
+        }
 
+        return I18nFactory.instance().getOptimalLocale(URI.create(referer));
+    }
 }
