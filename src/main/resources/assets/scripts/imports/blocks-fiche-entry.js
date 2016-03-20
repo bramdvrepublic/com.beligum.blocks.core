@@ -115,11 +115,12 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                     var skipHtmlChange = false;
                     if (
                         propElement.hasAttribute(PROPERTY_ATTR) && propElement.attr(PROPERTY_ATTR) == newValueTerm[TERM_NAME_FIELD] &&
-                        (
-                            //we either need a datatype (for literals) or a typeof (for references)
-                            (propElement.hasAttribute(DATATYPE_ATTR) && propElement.attr(DATATYPE_ATTR) == newValueTerm.dataType[TERM_NAME_FIELD]) ||
-                            (propElement.hasAttribute(TYPEOF_ATTR) && propElement.attr(TYPEOF_ATTR) == newValueTerm.dataType[TERM_NAME_FIELD])
-                        ) &&
+                            // Since we abandoned the use of @typeof, we abandoned this sub-check as well; seems to be working fine.
+                            //(
+                            //    //we either need a datatype (for literals) or a typeof (for references)
+                            //    (propElement.hasAttribute(DATATYPE_ATTR) && propElement.attr(DATATYPE_ATTR) == newValueTerm.dataType[TERM_NAME_FIELD]) ||
+                            //    (propElement.hasAttribute(TYPEOF_ATTR) && propElement.attr(TYPEOF_ATTR) == newValueTerm.dataType[TERM_NAME_FIELD])
+                            //) &&
                         propElement.hasClass(newValueTerm.widgetType)
                     ) {
                         //we can't return straight away because we need to initialize the extra controls in the sidebar
@@ -160,9 +161,10 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                             //Note that we also could use the 'rel' attribute instead of 'property' when working with resources (not for literals)
                             // see https://www.w3.org/TR/rdfa-syntax/#chaining-with-property-and-typeof
                             // "The main differences between @property and @rel (or @rev) is that the former does not induce chaining.
-                            //  (see this URL for what chaining is: https://www.w3.org/TR/rdfa-syntax/#inheriting-subject-from-resource)
-                            //  The only exception to this rule is when @typeof is also present on the element. In that case the effect of @property is identical to @rel."
-                            //Since we _are_ using "typeof", it truly is identical.
+                            //  (see this URL for what chaining is: https://www.w3.org/TR/rdfa-syntax/#inheriting-subject-from-resource)"
+                            //Also note that we abanoned the use of @typeof to avoid data duplication and because it's never used like this
+                            // in literature examples. (@typeof is rather used to create blank nodes while creating a new resource), so the
+                            // explanation in the url above about equality of @property and @rel while using @typeof is't valid anymore.
                             //
                             //More info from https://www.w3.org/TR/rdfa-syntax/#object-resolution-for-the-property-attribute
                             // "An object literal will be generated when @property is present and no resource attribute is present."
@@ -173,8 +175,8 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                             //otherwise (when dealing with a literal), we use the datatype attribute.
                             //We compare the use of @typeof (together with @resource) as the 'reference-equivalent' of using @datatype together with a literal.
                             if (newValueTerm.widgetType == BlocksConstants.INPUT_TYPE_RESOURCE) {
-                                //note that despite it's name, this value will just contain a curie name to an RDF class
-                                propElement.attr(TYPEOF_ATTR, newValueTerm.dataType[TERM_NAME_FIELD]);
+                                //NOOP: @typeof isn't added anymore, see above for reason
+                                //propElement.attr(TYPEOF_ATTR, newValueTerm.dataType[TERM_NAME_FIELD]);
                             }
                             else {
                                 propElement.attr(DATATYPE_ATTR, newValueTerm.dataType[TERM_NAME_FIELD]);
