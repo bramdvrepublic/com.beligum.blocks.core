@@ -25,8 +25,8 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
     var TIMEZONE_FORMAT = "Z";
 
     //Formats for XSD value of date-time
-    //More or less the same as 'YYYY-MM-DD[T]HH:mm:ss.SSS[Z]', but not 100% --> see moments.js source code
-    var DATE_TIME_VALUE_FORMAT = moment.ISO_8601;
+    //Note that 'moment.ISO_8601' is more or less the same as 'YYYY-MM-DD[T]HH:mm:ss.SSS[Z]', but not 100% --> see moments.js source code (but we can live with it)
+    var DATE_TIME_VALUE_FORMAT = 'YYYY-MM-DD[T]HH:mm:ss.SSS[Z]';
     //Note that this is not 100% XSD: we omit the optional timezone to simplify this widget (if you need timezones, use the datetime widget instead)
     var DATE_VALUE_FORMAT = "YYYY-MM-DD";
     var TIME_VALUE_FORMAT = 'HH:mm:ss.SSS[Z]';
