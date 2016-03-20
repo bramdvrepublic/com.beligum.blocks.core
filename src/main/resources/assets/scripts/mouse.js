@@ -59,7 +59,7 @@
  *
  */
 
-base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "constants.base.core", "constants.blocks.core", "blocks.core.Sidebar", "blocks.core.Hover", "blocks.core.UI", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, SideBar, Hover, UI)
+base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layouter", "constants.base.core.internal", "constants.blocks.core", "blocks.core.Sidebar", "blocks.core.Hover", "blocks.core.UI", function (Broadcaster, Layouter, BaseConstantsInternal, BlocksConstants, SideBar, Hover, UI)
 {
     // watch out with this value: it should be smaller than the smallest possible object in the layout system (width or height)
     // but when clicking near the edge of such an object, even smaller; so maybe TODO: activate the DnD when entering a new block?
@@ -69,7 +69,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     var Mouse = this;
     var active = false;
     // dragging options, kept here for parsedContent while waiting for drag
-    var draggingStatus = BaseConstants.DRAGGING.NO;
+    var draggingStatus = BaseConstantsInternal.DRAGGING.NO;
     var draggingStartEvent = null;
     var dblClickFound = false;
     var startBlock = null;
@@ -97,7 +97,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         draggingStartEvent = null;
 
         startBlock = null;
-        draggingStatus = BaseConstants.DRAGGING.NO;
+        draggingStatus = BaseConstantsInternal.DRAGGING.NO;
 
         //re-enable (or reset) the events of the overlays to work
         var overlays = $('.' + BlocksConstants.BLOCK_OVERLAY_CLASS);
@@ -111,7 +111,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
 
     this.disallowDrag = function ()
     {
-        draggingStatus = BaseConstants.DRAGGING.NOT_ALLOWED;
+        draggingStatus = BaseConstantsInternal.DRAGGING.NOT_ALLOWED;
     };
 
     this.allowDrag = function ()
@@ -138,7 +138,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
 
         $(document).on("mouseleave.blocks_core", function (event)
         {
-            if (draggingStatus == BaseConstants.DRAGGING.YES) {
+            if (draggingStatus == BaseConstantsInternal.DRAGGING.YES) {
                 Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG, event);
             }
             Mouse.resetMouse();
@@ -162,20 +162,20 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
      * Calculates the direction of the current mouse vector for the supplied block.
      * Eg. the side of thet that block should be 'highlighted' based on the current mouse movements
      * @param block The block for which you want to calulate it
-     * @returns BaseConstants.DIRECTION
+     * @returns BaseConstantsInternal.DIRECTION
      */
     this.directionForBlock = function (block)
     {
         if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.left, block.top, block.right, block.top)) {
-            return BaseConstants.DIRECTION.UP;
+            return BaseConstantsInternal.DIRECTION.UP;
         } else if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.left, block.bottom, block.right, block.bottom)) {
-            return BaseConstants.DIRECTION.DOWN;
+            return BaseConstantsInternal.DIRECTION.DOWN;
         } else if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.left, block.top, block.left, block.bottom)) {
-            return BaseConstants.DIRECTION.LEFT;
+            return BaseConstantsInternal.DIRECTION.LEFT;
         } else if (intersects(directionVector.x1, directionVector.y1, directionVector.x2, directionVector.y2, block.right, block.top, block.right, block.bottom)) {
-            return BaseConstants.DIRECTION.RIGHT;
+            return BaseConstantsInternal.DIRECTION.RIGHT;
         } else {
-            return BaseConstants.DIRECTION.NONE;
+            return BaseConstantsInternal.DIRECTION.NONE;
         }
     };
 
@@ -212,7 +212,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 $('.' + BlocksConstants.BLOCK_OVERLAY_CLASS).addClass(BlocksConstants.BLOCK_OVERLAY_NO_EVENTS_CLASS);
 
                 //we're attempting to dnd an existing block
-                if (draggingStatus == BaseConstants.DRAGGING.NO) {
+                if (draggingStatus == BaseConstantsInternal.DRAGGING.NO) {
                     if (block != null && block.canDrag) {
                         // save the block we started on for future reference
                         // (because we're removing the events from the overlay classes for now)
@@ -225,7 +225,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
 
                     //if we don't have a startblock, we must be dragging from the new-block button
                     if (startBlock != null || creatingNew) {
-                        draggingStatus = BaseConstants.DRAGGING.WAITING;
+                        draggingStatus = BaseConstantsInternal.DRAGGING.WAITING;
                         draggingStartEvent = event;
 
                         //put the mousemove on the document instead of the overlay so we get the events even though BLOCK_OVERLAY_NO_EVENTS_CLASS
@@ -243,13 +243,13 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                     // this overload the resetMouse above and actually makes sense:
                     // it means we clicked down outside of any block hotspot (eg. just on the page) and if we start dragging now,
                     // (if that really does that, that's another question)
-                    draggingStatus = BaseConstants.DRAGGING.TEXT_SELECTION;
+                    draggingStatus = BaseConstantsInternal.DRAGGING.TEXT_SELECTION;
                 }
             }
             else {
                 // middle or right mouse button presses
                 //TODO ??
-                if (draggingStatus == BaseConstants.DRAGGING.YES) {
+                if (draggingStatus == BaseConstantsInternal.DRAGGING.YES) {
                     Broadcaster.send(Broadcaster.EVENTS.ABORT_DRAG, event);
                 }
                 Mouse.resetMouse();
@@ -263,17 +263,17 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
     var mouseUp = function (event)
     {
         if (active && event.which == 1) {
-            if (draggingStatus != BaseConstants.DRAGGING.NOT_ALLOWED) {
+            if (draggingStatus != BaseConstantsInternal.DRAGGING.NOT_ALLOWED) {
 
                 //the low level html element we clicked on
                 var element = $(event.target);
 
-                if (draggingStatus == BaseConstants.DRAGGING.YES) {
+                if (draggingStatus == BaseConstantsInternal.DRAGGING.YES) {
                     Broadcaster.send(Broadcaster.EVENTS.END_DRAG, event);
                 }
                 // this means we were dragging, but haven't exceeded the threshold yet
                 // so, instead of starting to drag a block, we clicked one (or the create block button)
-                else if (draggingStatus == BaseConstants.DRAGGING.WAITING) {
+                else if (draggingStatus == BaseConstantsInternal.DRAGGING.WAITING) {
 
                     //Note: when we drag the new block button, startBlock will be null (and the popover will do it's work)
                     if (startBlock != null) {
@@ -292,7 +292,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
                 }
                 // this means the mousedown happened outside of any block or other kind of hotspot
                 // eg. on the page itself, so we're focusing the page (and it should blur any active focus down the line)
-                else if (draggingStatus == BaseConstants.DRAGGING.TEXT_SELECTION) {
+                else if (draggingStatus == BaseConstantsInternal.DRAGGING.TEXT_SELECTION) {
                     if (Hover.getFocusedBlock() != null) {
                         //this will mainly end up in sidebar.js
                         Broadcaster.send(Broadcaster.EVENTS.FOCUS_BLOCK, event, {
@@ -322,7 +322,7 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
         //Logger.debug("Calculate wait for drag");
         if (Math.abs(draggingStartEvent.pageX - event.pageX) > DRAGGING_THRESHOLD ||
             Math.abs(draggingStartEvent.pageY - event.pageY) > DRAGGING_THRESHOLD) {
-            draggingStatus = BaseConstants.DRAGGING.YES;
+            draggingStatus = BaseConstantsInternal.DRAGGING.YES;
             //Logger.debug("Start drag");
 
             var overlays = $('.' + BlocksConstants.BLOCK_OVERLAY_CLASS);
@@ -347,11 +347,11 @@ base.plugin("blocks.core.Mouse", ["blocks.core.Broadcaster", "blocks.core.Layout
             calculateDirection(event);
 
             //we're waiting for the threshold to be exceeded
-            if (draggingStatus == BaseConstants.DRAGGING.WAITING) {
+            if (draggingStatus == BaseConstantsInternal.DRAGGING.WAITING) {
                 enableDragAfterTreshold(event);
             }
             //we're dragging a block around
-            else if (draggingStatus == BaseConstants.DRAGGING.YES) {
+            else if (draggingStatus == BaseConstantsInternal.DRAGGING.YES) {
                 var block = Hover.getHoveredBlock();
 
                 Broadcaster.send(Broadcaster.EVENTS.DRAG_OVER_BLOCK, event, {

@@ -2,7 +2,7 @@
  * Created by wouter on 5/03/15.
  */
 
-base.plugin("blocks.core.Elements.Property", ["base.core.Class", "constants.base.core", "constants.blocks.core", "blocks.core.DomManipulation", "base.core.Commons", function (Class, BaseConstants, BlocksConstants, DOM, Commons)
+base.plugin("blocks.core.Elements.Property", ["base.core.Class", "constants.base.core.internal", "constants.blocks.core", "blocks.core.DomManipulation", "base.core.Commons", function (Class, BaseConstantsInternal, BlocksConstants, DOM, Commons)
 {
 
     var body = $("body");
@@ -122,16 +122,16 @@ base.plugin("blocks.core.Elements.Property", ["base.core.Class", "constants.base
         getElementAtSide: function (side)
         {
             if (DOM.isColumn(this.element)) {
-                if (side == BaseConstants.SIDE.LEFT) {
+                if (side == BaseConstantsInternal.SIDE.LEFT) {
                     return this.getPrevious();
-                } else if (side == BaseConstants.SIDE.RIGHT) {
+                } else if (side == BaseConstantsInternal.SIDE.RIGHT) {
                     return this.getNext();
                 } else {
                     return null;
                 }
-            } else if (side == BaseConstants.SIDE.TOP) {
+            } else if (side == BaseConstantsInternal.SIDE.TOP) {
                 return this.getPrevious();
-            } else if (side == BaseConstants.SIDE.BOTTOM) {
+            } else if (side == BaseConstantsInternal.SIDE.BOTTOM) {
                 return this.getNext();
             } else {
                 return null;

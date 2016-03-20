@@ -102,7 +102,7 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
         if (!matchingPages.isEmpty()) {
             PageIndexEntry entry = matchingPages.iterator().next();
             //note: the ID of a page is the public URL
-            retVal = new DefaultResourceValue(URI.create(entry.getResource()), resourceType.getCurieName(), entry.getTitle(), entry.getId(), entry.getTitle());
+            retVal = new DefaultResourceValue(URI.create(entry.getResource()), resourceType.getCurieName(), entry.getTitle(), entry.getId(), null, entry.getTitle());
         }
 
         return retVal;

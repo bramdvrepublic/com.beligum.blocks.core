@@ -63,4 +63,11 @@ public interface RdfClass extends RdfResource
      */
     @JsonIgnore
     RdfQueryEndpoint getEndpoint();
+
+    /**
+     * A list of all properties of this class. This list is returned by the RDF endpoint when the properties for a page of type 'this' is requested.
+     * When this method returns null, all RdfProperties known to this server are returned. When an empty list is returned, this class doesn't have any properties.
+     */
+    @JsonIgnore
+    RdfProperty[] getProperties();
 }

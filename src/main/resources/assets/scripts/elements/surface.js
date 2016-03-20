@@ -1,6 +1,6 @@
 // smallest element with 4 corners
 // and a function to check if x,y is inside the surface
-base.plugin("blocks.core.Elements.Surface", ["base.core.Class", "constants.base.core", function (Class, Constants)
+base.plugin("blocks.core.Elements.Surface", ["base.core.Class", "constants.base.core.internal", function (Class, Constants)
 {
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};

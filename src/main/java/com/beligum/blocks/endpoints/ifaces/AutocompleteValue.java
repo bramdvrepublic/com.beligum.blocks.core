@@ -33,6 +33,11 @@ public interface AutocompleteValue
     boolean isExternalLink();
 
     /**
+     * The URL of the image-value of this resource or null if this value doesn't have an image. If not-null, this takes precedence over the label (which is attached to the alt attribute of this image)
+     */
+    URI getImage();
+
+    /**
      * Unlike the label, this is the more 'official' name of this value; eg the name that will be placed in the autocomplete input box when we load the value back in
      * For example: the label for "Brussels" might be "Brussels, capital of Belgium" and it's (Dutch) name could eg. be "Brussel"
      */

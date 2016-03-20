@@ -28,7 +28,7 @@
  *
  * */
 
-base.plugin("blocks.core.Broadcaster", ["constants.base.core", "blocks.core.DomManipulation", function (Constants, DOM)
+base.plugin("blocks.core.Broadcaster", ["constants.base.core.internal", "blocks.core.DomManipulation", function (Constants, DOM)
 {
     var Broadcaster = this;
 

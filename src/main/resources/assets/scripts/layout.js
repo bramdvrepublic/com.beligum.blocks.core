@@ -14,7 +14,7 @@
  * DO_REFRESH_LAYOUT is for when the we have to rebuild the layout tree, but the dom did not change (e.g. window resize)
  * DOM_DID CHANGE is for ... well, ...
  */
-base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.core", "blocks.core.Hover", "blocks.core.DomManipulation", function (Broadcaster, Constants, Hover, DOM)
+base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.core.internal", "blocks.core.Hover", "blocks.core.DomManipulation", function (Broadcaster, Constants, Hover, DOM)
 {
     var Layouter = this;
 

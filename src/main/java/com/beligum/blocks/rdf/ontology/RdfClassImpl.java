@@ -3,6 +3,7 @@ package com.beligum.blocks.rdf.ontology;
 import com.beligum.base.filesystem.MessagesFileEntry;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
 
 import java.net.URI;
@@ -21,6 +22,7 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     private MessagesFileEntry label;
     private URI[] isSameAs;
     private RdfQueryEndpoint queryEndpoint;
+    private RdfProperty[] properties;
 
     //-----CONSTRUCTORS-----
     public RdfClassImpl(String name,
@@ -29,7 +31,7 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
                         MessagesFileEntry label,
                         URI[] isSameAs)
     {
-        this(name, vocabulary, title, label, isSameAs, false, null);
+        this(name, vocabulary, title, label, isSameAs, false, null, null);
     }
     public RdfClassImpl(String name,
                         RdfVocabulary vocabulary,
@@ -37,7 +39,8 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
                         MessagesFileEntry label,
                         URI[] isSameAs,
                         boolean isPublic,
-                        RdfQueryEndpoint queryEndpoint)
+                        RdfQueryEndpoint queryEndpoint,
+                        RdfProperty[] properties)
     {
         super(isPublic);
 
@@ -48,6 +51,7 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
         //make it uniform (always an array)
         this.isSameAs = isSameAs == null ? new URI[] {} : isSameAs;
         this.queryEndpoint = queryEndpoint;
+        this.properties = properties;
 
         //only add ourself to the selected vocabulary if we are a pure class
         if (this.getClass().equals(RdfClassImpl.class)) {
@@ -95,6 +99,11 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     public RdfQueryEndpoint getEndpoint()
     {
         return queryEndpoint;
+    }
+    @Override
+    public RdfProperty[] getProperties()
+    {
+        return properties;
     }
 
     //-----PROTECTED METHODS-----

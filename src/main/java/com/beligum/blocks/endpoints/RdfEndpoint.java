@@ -1,14 +1,13 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteValue;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.security.Permissions;
-import org.apache.http.HttpHeaders;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
 import javax.ws.rs.GET;
@@ -19,9 +18,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 /**
  * Created by bram on 2/25/16.
@@ -37,21 +34,40 @@ public class RdfEndpoint
 
     //-----PUBLIC METHODS-----
     @GET
-    @Path("/properties/")
-    @Produces(MediaType.APPLICATION_JSON)
-    @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
-    public Response getProperties() throws IOException
-    {
-        return Response.ok(RdfFactory.getProperties()).build();
-    }
-
-    @GET
     @Path("/classes/")
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
     public Response getClasses() throws IOException
     {
         return Response.ok(RdfFactory.getClasses()).build();
+    }
+
+    @GET
+    @Path("/properties/")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
+    public Response getProperties(@QueryParam("resourceTypeCurie") URI resourceTypeCurie) throws IOException
+    {
+        Set<RdfProperty> retVal = null;
+
+        if (resourceTypeCurie != null) {
+            RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
+            if (rdfClass != null) {
+                RdfProperty[] classProps = rdfClass.getProperties();
+                //note that the javadoc of getProperties() says that we returns all properties if this returns null (which will be true later on),
+                // but if it returns the empty array, no properties should be returned.
+                if (classProps!=null) {
+                    retVal = new LinkedHashSet<>(Arrays.asList(classProps));
+                }
+            }
+        }
+
+        //if nothing happened, we just return all properties known to this classpath
+        if (retVal == null) {
+            retVal = RdfFactory.getProperties();
+        }
+
+        return Response.ok(retVal).build();
     }
 
     @GET
@@ -63,15 +79,16 @@ public class RdfEndpoint
         List<AutocompleteSuggestion> retVal = new ArrayList<>();
 
         RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
-        if (rdfClass!=null) {
+        if (rdfClass != null) {
             RdfQueryEndpoint endpoint = rdfClass.getEndpoint();
-            if (endpoint!=null) {
-                retVal = endpoint.search(rdfClass, query, this.getRefererLanguage(), maxResults);
+            if (endpoint != null) {
+                retVal = endpoint.search(rdfClass, query, R.i18nFactory().getOptimalRefererLocale(), maxResults);
             }
         }
 
         return Response.ok(retVal).build();
     }
+
     @GET
     @Path("/resource/")
     @Produces(MediaType.APPLICATION_JSON)
@@ -81,14 +98,14 @@ public class RdfEndpoint
         AutocompleteValue retVal = null;
 
         RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
-        if (rdfClass!=null) {
+        if (rdfClass != null) {
             RdfQueryEndpoint endpoint = rdfClass.getEndpoint();
-            if (endpoint!=null) {
-                retVal = endpoint.getResource(rdfClass, resourceUri, this.getRefererLanguage());
+            if (endpoint != null) {
+                retVal = endpoint.getResource(rdfClass, resourceUri, R.i18nFactory().getOptimalRefererLocale());
             }
         }
 
-        if (retVal==null) {
+        if (retVal == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         else {
@@ -99,14 +116,4 @@ public class RdfEndpoint
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private Locale getRefererLanguage() throws IOException
-    {
-        //note that we can't just use the requested URI because we're in an admin endpoint
-        String referer = R.requestContext().getJaxRsRequest().getHeaders().getFirst(HttpHeaders.REFERER);
-        if (org.apache.commons.lang.StringUtils.isEmpty(referer)) {
-            throw new IOException("We must have a referer URI to be able to detect the current language; "+referer);
-        }
-
-        return I18nFactory.instance().getOptimalLocale(URI.create(referer));
-    }
 }

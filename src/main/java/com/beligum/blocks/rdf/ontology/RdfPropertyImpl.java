@@ -51,7 +51,7 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
                            URI[] isSameAs,
                            boolean isPublic)
     {
-        super(name, vocabulary, title, label, isSameAs, isPublic, null);
+        super(name, vocabulary, title, label, isSameAs, isPublic, null, null);
 
         this.widgetType = widgetType;
         //make it uniform; no nulls

@@ -16,15 +16,17 @@ public class DefaultResourceValue implements AutocompleteValue
     private URI resourceType;
     private String label;
     private URI link;
+    private URI image;
     private String name;
 
     //-----CONSTRUCTORS-----
-    public DefaultResourceValue(URI resourceUri, URI resourceType, String label, URI link, String name)
+    public DefaultResourceValue(URI resourceUri, URI resourceType, String label, URI link, URI image, String name)
     {
         this.resourceUri = resourceUri;
         this.resourceType = resourceType;
         this.label = label;
         this.link = link;
+        this.image = image;
         this.name = name;
     }
 
@@ -53,6 +55,11 @@ public class DefaultResourceValue implements AutocompleteValue
     public boolean isExternalLink()
     {
         return false;
+    }
+    @Override
+    public URI getImage()
+    {
+        return image;
     }
     @Override
     public String getName()

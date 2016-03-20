@@ -7,7 +7,7 @@
  * drop between 2 blocks, we also overlay the other block (other)
  * We show arrows in the overlay to indicate the direction the block will move.
  */
-base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Layouter", "constants.base.core", "constants.blocks.core", "blocks.core.Hover", "messages.blocks.core", "blocks.core.Notification", "blocks.core.Mouse", "blocks.core.DomManipulation", function (Broadcaster, Layouter, BaseConstants, BlocksConstants, Hover, BlocksMessages, Notification, Mouse, DOM)
+base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Layouter", "constants.base.core.internal", "constants.blocks.core", "blocks.core.Hover", "messages.blocks.core", "blocks.core.Notification", "blocks.core.Mouse", "blocks.core.DomManipulation", function (Broadcaster, Layouter, BaseConstantsInternal, BlocksConstants, Hover, BlocksMessages, Notification, Mouse, DOM)
 {
     var DragDrop = this;
     var draggingEnabled = false;
@@ -17,22 +17,22 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
     var currentDraggedBlock = null;
     var sidebarLeft = null;
     var oldDirection = {
-        dir: BaseConstants.DIRECTION.NONE,
+        dir: BaseConstantsInternal.DIRECTION.NONE,
         stamp: $.now()
     };
 
     // Simple object to translate SIDE in css border side
     var cssSide = {};
-    cssSide[BaseConstants.SIDE.TOP] = "top";
-    cssSide[BaseConstants.SIDE.BOTTOM] = "bottom";
-    cssSide[BaseConstants.SIDE.LEFT] = "left";
-    cssSide[BaseConstants.SIDE.RIGHT] = "right";
+    cssSide[BaseConstantsInternal.SIDE.TOP] = "top";
+    cssSide[BaseConstantsInternal.SIDE.BOTTOM] = "bottom";
+    cssSide[BaseConstantsInternal.SIDE.LEFT] = "left";
+    cssSide[BaseConstantsInternal.SIDE.RIGHT] = "right";
 
     var cssBorderSide = {};
-    cssBorderSide[BaseConstants.SIDE.TOP] = "border-" + cssSide[BaseConstants.SIDE.TOP];
-    cssBorderSide[BaseConstants.SIDE.BOTTOM] = "border-" + cssSide[BaseConstants.SIDE.BOTTOM];
-    cssBorderSide[BaseConstants.SIDE.LEFT] = "border-" + cssSide[BaseConstants.SIDE.LEFT];
-    cssBorderSide[BaseConstants.SIDE.RIGHT] = "border-" + cssSide[BaseConstants.SIDE.RIGHT];
+    cssBorderSide[BaseConstantsInternal.SIDE.TOP] = "border-" + cssSide[BaseConstantsInternal.SIDE.TOP];
+    cssBorderSide[BaseConstantsInternal.SIDE.BOTTOM] = "border-" + cssSide[BaseConstantsInternal.SIDE.BOTTOM];
+    cssBorderSide[BaseConstantsInternal.SIDE.LEFT] = "border-" + cssSide[BaseConstantsInternal.SIDE.LEFT];
+    cssBorderSide[BaseConstantsInternal.SIDE.RIGHT] = "border-" + cssSide[BaseConstantsInternal.SIDE.RIGHT];
 
     /*
      * METHODS CALLED WHILE DRAGGING
@@ -55,7 +55,7 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
 
 //        Broadcaster.zoom();
         oldDirection = {
-            dir: BaseConstants.DIRECTION.NONE,
+            dir: BaseConstantsInternal.DIRECTION.NONE,
             stamp: $.now()
         };
 
@@ -134,15 +134,15 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
 
                 if (pageY > container.top && pageY < container.bottom) {
                     if (pageX < container.left) {
-                        dropSpot = new blocks.elements.Dropspot(BaseConstants.SIDE.LEFT, container, 0);
+                        dropSpot = new blocks.elements.Dropspot(BaseConstantsInternal.SIDE.LEFT, container, 0);
                     } else if (pageX > container.right) {
-                        dropSpot = new blocks.elements.Dropspot(BaseConstants.SIDE.RIGHT, container, 0);
+                        dropSpot = new blocks.elements.Dropspot(BaseConstantsInternal.SIDE.RIGHT, container, 0);
                     }
                 } else if (pageX > container.left && pageX < container.right) {
                     if (pageY < container.top) {
-                        dropSpot = new blocks.elements.Dropspot(BaseConstants.SIDE.TOP, container, 0);
+                        dropSpot = new blocks.elements.Dropspot(BaseConstantsInternal.SIDE.TOP, container, 0);
                     } else if (pageY > container.bottom) {
-                        dropSpot = new blocks.elements.Dropspot(BaseConstants.SIDE.BOTTOM, container, 0);
+                        dropSpot = new blocks.elements.Dropspot(BaseConstantsInternal.SIDE.BOTTOM, container, 0);
                     }
                 }
                 if (dropSpot != null) {
@@ -432,19 +432,19 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             // Instead of showing the drop surface with the border of a bounding box, we'll just draw the border
             // as a box itself, so we can use the background css to style it
             var offset = BlocksConstants.BLOCKS_DROPSPOT_BORDER_WIDTH / 2.0;
-            if (side == BaseConstants.SIDE.TOP) {
+            if (side == BaseConstantsInternal.SIDE.TOP) {
                 top = surface.top - offset;
                 height = BlocksConstants.BLOCKS_DROPSPOT_BORDER_WIDTH;
             }
-            else if (side == BaseConstants.SIDE.RIGHT) {
+            else if (side == BaseConstantsInternal.SIDE.RIGHT) {
                 left = surface.right - offset;
                 width = BlocksConstants.BLOCKS_DROPSPOT_BORDER_WIDTH;
             }
-            else if (side == BaseConstants.SIDE.BOTTOM) {
+            else if (side == BaseConstantsInternal.SIDE.BOTTOM) {
                 top = surface.bottom - offset;
                 height = BlocksConstants.BLOCKS_DROPSPOT_BORDER_WIDTH;
             }
-            else if (side == BaseConstants.SIDE.LEFT) {
+            else if (side == BaseConstantsInternal.SIDE.LEFT) {
                 left = surface.left - offset;
                 width = BlocksConstants.BLOCKS_DROPSPOT_BORDER_WIDTH;
             }

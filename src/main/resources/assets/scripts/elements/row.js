@@ -1,6 +1,6 @@
 // A row inside a column or a container
 // Can only contain columns
-base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core", function (Class, Constants)
+base.plugin("blocks.core.Elements.Row", ["base.core.Class", "constants.base.core.internal", function (Class, Constants)
 {
     blocks = window['blocks'] || {};
     blocks.elements = blocks.elements || {};

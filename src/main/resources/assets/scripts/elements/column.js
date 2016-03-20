@@ -2,7 +2,7 @@
  * Created by wouter on 9/03/15.
  */
 
-base.plugin("blocks.core.Elements.Column", ["base.core.Class", "constants.base.core", function (Class, Constants)
+base.plugin("blocks.core.Elements.Column", ["base.core.Class", "constants.base.core.internal", function (Class, Constants)
 {
     blocks = window['blocks'] || {};
     // A column (inside a row) -> Can contain rows or templates

@@ -14,7 +14,7 @@
  * */
 
 
-base.plugin("blocks.core.DomManipulation", ["constants.base.core", "constants.blocks.core", function (Constants, BlocksConstants)
+base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "constants.blocks.core", function (Constants, BlocksConstants)
 {
     var DOM = this;
 

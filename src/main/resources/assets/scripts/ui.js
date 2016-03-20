@@ -1,4 +1,4 @@
-base.plugin("blocks.core.UI", ["constants.base.core", "constants.blocks.core", function (BaseConstants, BlocksConstants)
+base.plugin("blocks.core.UI", ["constants.base.core.internal", "constants.blocks.core", function (BaseConstantsInternal, BlocksConstants)
 {
     var UI = this;
 

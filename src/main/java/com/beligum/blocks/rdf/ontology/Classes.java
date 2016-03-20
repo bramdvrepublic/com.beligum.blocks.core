@@ -23,7 +23,9 @@ public class Classes implements RdfResourceFactory
                                                                        URI.create("http://schema.org/Person")
                                                            },
                                                            true,
-                                                           new SettingsQueryEndpoint());
+                                                           new SettingsQueryEndpoint(),
+                                                           //return all properties
+                                                           null);
 
     public static final RdfClass Page = new RdfClassImpl("Page",
                                                          SettingsVocabulary.INSTANCE,
@@ -33,7 +35,9 @@ public class Classes implements RdfResourceFactory
                                                                      URI.create("http://schema.org/WebPage")
                                                          },
                                                          true,
-                                                         new SettingsQueryEndpoint());
+                                                         new SettingsQueryEndpoint(),
+                                                         //return all properties
+                                                         null);
 
     public static final RdfClass Country = new RdfClassImpl("Country",
                                                             SettingsVocabulary.INSTANCE,
@@ -44,7 +48,9 @@ public class Classes implements RdfResourceFactory
                                                             },
                                                             //note: because we use a fixed-value ontology (geonames), we don't make this public (so users can select it as a type for their page)
                                                             false,
-                                                            new GeonameQueryEndpoint(AbstractGeoname.Type.COUNTRY));
+                                                            new GeonameQueryEndpoint(AbstractGeoname.Type.COUNTRY),
+                                                            //return all properties
+                                                            null);
 
     public static final RdfClass City = new RdfClassImpl("City",
                                                          SettingsVocabulary.INSTANCE,
@@ -55,5 +61,7 @@ public class Classes implements RdfResourceFactory
                                                          },
                                                          //note: because we use a fixed-value ontology (geonames), we don't make this public (so users can select it as a type for their page)
                                                          false,
-                                                         new GeonameQueryEndpoint(AbstractGeoname.Type.CITY));
+                                                         new GeonameQueryEndpoint(AbstractGeoname.Type.CITY),
+                                                         //return all properties
+                                                         null);
 }

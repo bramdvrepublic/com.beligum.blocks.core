@@ -298,6 +298,9 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         //clear the manual container width (we'll re-set it back later)
         clearContainerWidth();
 
+        //clear special classes for disabling selection of text when the sidebar is open (will be reset later)
+        DOM.enableTextSelection();
+
         //create a new node out of the full page html
         var savePage = $("html").clone();
 
@@ -316,8 +319,9 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         //convert from jQuery to html string
         savePage = savePage[0].outerHTML;
 
-        //recalculate the container width because we cleared it above
+        //reset what we cleared cleared it above
         updateContainerWidth();
+        DOM.disableTextSelection();
 
         var dialog = new BootstrapDialog({
             type: BootstrapDialog.TYPE_PRIMARY,

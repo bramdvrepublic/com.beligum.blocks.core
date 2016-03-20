@@ -62,6 +62,11 @@ public class GeonameResource extends AbstractGeoname implements AutocompleteValu
     {
         return true;
     }
+    @Override
+    public URI getImage()
+    {
+        return null;
+    }
     //this getter is a little bit of a mindfuck because it bears the same name as it's setter but is used differently;
     // the setter is used to set the name property, coming in (deserialized) from geonames,
     // this getter is called when the same object is serialized to our own JS client code, but we can return a different property if we want to
