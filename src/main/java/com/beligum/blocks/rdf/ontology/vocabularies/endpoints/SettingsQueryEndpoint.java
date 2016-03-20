@@ -98,11 +98,23 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
                                         new PageIndexConnection.FieldQuery(PageIndexEntry.Field.resource, resourceId.toString(), BooleanClause.Occur.MUST, PageIndexConnection.FieldQuery.Type.EXACT)
                         };
 
-        List<PageIndexEntry> matchingPages = StorageFactory.getMainPageIndexer().connect().search(queries, 1);
+        List<PageIndexEntry> matchingPages = StorageFactory.getMainPageIndexer().connect().search(queries, Settings.instance().getLanguages().size());
         if (!matchingPages.isEmpty()) {
-            PageIndexEntry entry = matchingPages.iterator().next();
+            PageIndexEntry selectedEntry = null;
+            for (PageIndexEntry entry : matchingPages) {
+                if (selectedEntry==null) {
+                    selectedEntry = entry;
+                }
+                else {
+                    int entryLangScore = this.getLanguageScore(entry, language);
+                    int selectedLangScore = this.getLanguageScore(selectedEntry, language);
+                    if (entryLangScore > selectedLangScore) {
+                        selectedEntry = entry;
+                    }
+                }
+            }
             //note: the ID of a page is the public URL
-            retVal = new DefaultResourceValue(URI.create(entry.getResource()), resourceType.getCurieName(), entry.getTitle(), entry.getId(), null, entry.getTitle());
+            retVal = new DefaultResourceValue(URI.create(selectedEntry.getResource()), resourceType.getCurieName(), selectedEntry.getTitle(), selectedEntry.getId(), null, selectedEntry.getTitle());
         }
 
         return retVal;
