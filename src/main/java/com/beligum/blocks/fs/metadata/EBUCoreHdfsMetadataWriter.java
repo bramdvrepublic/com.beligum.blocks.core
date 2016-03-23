@@ -3,7 +3,7 @@ package com.beligum.blocks.fs.metadata;
 import com.beligum.base.auth.models.Person;
 import com.beligum.base.config.CoreConfiguration;
 import com.beligum.blocks.fs.ifaces.ResourcePath;
-import com.beligum.blocks.rdf.ontology.Classes;
+import com.beligum.blocks.rdf.ontology.factories.Classes;
 import com.beligum.blocks.schema.ebucore.v1_6.jaxb.*;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang3.StringUtils;

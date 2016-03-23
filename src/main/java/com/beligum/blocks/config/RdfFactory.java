@@ -4,10 +4,7 @@ import com.beligum.base.server.R;
 import com.beligum.base.utils.toolkit.ReflectionFunctions;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
-import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ifaces.RdfResourceFactory;
-import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
+import com.beligum.blocks.rdf.ifaces.*;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -66,16 +63,20 @@ public class RdfFactory
     }
     public static RdfClass getClassForResourceType(URI resourceTypeCurie)
     {
+        return (RdfClass) getForResourceType(resourceTypeCurie);
+    }
+    public static RdfResource getForResourceType(URI resourceTypeCurie)
+    {
         //make sure we booted the static members at least once
         assertInitialized();
 
-        RdfClass retVal = null;
+        RdfResource retVal = null;
 
         RdfVocabulary vocab = getVocabularyForPrefix(resourceTypeCurie.getScheme());
         if (vocab!=null) {
             //note: We search in all classes (difference between public and non-public classes is that the public classes are exposed to the client as selectable as a page-type).
             //      Since we also want to look up a value (eg. with the innner Geonames endpoint), we allow all classes to be searched.
-            retVal = vocab.getAllClasses().get(resourceTypeCurie);
+            retVal = vocab.getAllTypes().get(resourceTypeCurie);
         }
 
         return retVal;
@@ -87,7 +88,7 @@ public class RdfFactory
 
         RdfQueryEndpoint retVal = null;
 
-        RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
+        RdfClass rdfClass = (RdfClass) RdfFactory.getForResourceType(resourceTypeCurie);
         if (rdfClass!=null) {
             retVal = rdfClass.getEndpoint();
         }

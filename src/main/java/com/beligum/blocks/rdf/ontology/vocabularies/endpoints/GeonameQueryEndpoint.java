@@ -5,7 +5,7 @@ import com.beligum.base.utils.json.Json;
 import com.beligum.base.utils.xml.XML;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
-import com.beligum.blocks.endpoints.ifaces.AutocompleteValue;
+import com.beligum.blocks.endpoints.ifaces.ResourceValue;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ontology.vocabularies.geo.AbstractGeoname;
@@ -106,7 +106,7 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
         return retVal;
     }
     @Override
-    public AutocompleteValue getResource(RdfClass resourceType, URI resourceId, Locale language) throws IOException
+    public ResourceValue getResource(RdfClass resourceType, URI resourceId, Locale language) throws IOException
     {
         GeonameResource retVal = null;
 

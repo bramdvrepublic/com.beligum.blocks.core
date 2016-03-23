@@ -46,7 +46,9 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         };
 
         //allows us to select only the last row and column in the tree
+        var firstRow = null;
         var lastRow = null;
+        var firstColumn = null;
         var lastColumn = null;
         //we'll cycle through the parents until we hit the page, then reversing the order and creating windows, starting with the page
         while (currBlock != null) {
@@ -54,19 +56,27 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 pushActiveBlock(currBlock, currElement);
             }
             else if (currBlock instanceof blocks.elements.Page) {
-                //if we have a row, push that one first before closing with the page
-                if (lastColumn != null) {
-                    pushActiveBlock(lastColumn, lastColumn.element);
+                //we select the _first_ column, (instead of the last, see row below) because it's what
+                // we naturally expect in the GUI (the column closest around the block we're focusing)
+                if (firstColumn != null) {
+                    pushActiveBlock(firstColumn, firstColumn.element);
                 }
+                //if we have a row, push that one first before closing with the page
                 if (lastRow != null) {
                     pushActiveBlock(lastRow, lastRow.element);
                 }
                 pushActiveBlock(currBlock, currElement);
             }
             else if (currBlock instanceof blocks.elements.Row) {
+                if (firstRow==null) {
+                    firstRow = currBlock;
+                }
                 lastRow = currBlock;
             }
             else if (currBlock instanceof blocks.elements.Column) {
+                if (firstColumn==null) {
+                    firstColumn = currBlock;
+                }
                 lastColumn = currBlock;
             }
 

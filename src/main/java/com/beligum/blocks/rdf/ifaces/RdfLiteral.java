@@ -5,15 +5,6 @@ package com.beligum.blocks.rdf.ifaces;
  *
  * Created by bram on 3/2/16.
  */
-public interface RdfLiteral extends RdfResource
+public interface RdfLiteral extends RdfValueResource
 {
-    /**
-     * Returns the string-representation of this literal value.
-     */
-    String getValue();
-
-    /**
-     * Returns the full datatype (probably XSD or RDF) of this literal value.
-     */
-    RdfClass getDataType();
 }

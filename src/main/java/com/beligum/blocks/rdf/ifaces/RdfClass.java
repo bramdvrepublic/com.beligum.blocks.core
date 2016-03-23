@@ -4,6 +4,7 @@ import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.net.URI;
+import java.util.Set;
 
 /**
  * This is more or less the OO representation of the RDFS::Class
@@ -40,9 +41,21 @@ public interface RdfClass extends RdfResource
 
     /**
      * The human readable describing phrase for this class, to be used to build admin-side selection lists etc.
+     * This is the admin-side of this value; returns the key to this resource bundle
+     */
+    String getTitleKey();
+
+    /**
+     * The human readable describing phrase for this class, to be used to build admin-side selection lists etc.
      * Eg. Water well
      */
     String getTitle();
+
+    /**
+     * The human readable describing phrase for this class, to be used in public HTML pages as a describing label next to the value of this class.
+     * This is the admin-side of this value; returns the key to this resource bundle
+     */
+    String getLabelKey();
 
     /**
      * The human readable describing phrase for this class, to be used in public HTML pages as a describing label next to the value of this class.
@@ -65,9 +78,16 @@ public interface RdfClass extends RdfResource
     RdfQueryEndpoint getEndpoint();
 
     /**
-     * A list of all properties of this class. This list is returned by the RDF endpoint when the properties for a page of type 'this' is requested.
+     * A collection of all properties of this class. This list is returned by the RDF endpoint when the properties for a page of type 'this' is requested.
      * When this method returns null, all RdfProperties known to this server are returned. When an empty list is returned, this class doesn't have any properties.
      */
     @JsonIgnore
-    RdfProperty[] getProperties();
+    Set<RdfProperty> getProperties();
+
+    /**
+     * Setter for the value above. Note that this was pulled out of the constructor and made public to allow us to set it in a separate mapping.
+     * This was because there was a cyclic static initialization dependency while creating the objects: terms relied on classes which relied on terms (to initialize this set).
+     */
+    @JsonIgnore
+    void setProperties(Set<RdfProperty> properties);
 }

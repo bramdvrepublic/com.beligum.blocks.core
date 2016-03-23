@@ -6,7 +6,7 @@ import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import com.beligum.blocks.models.interfaces.WebPath;
 import com.beligum.blocks.models.sql.DBPath;
-import com.beligum.blocks.rdf.ontology.Classes;
+import com.beligum.blocks.rdf.ontology.factories.Classes;
 import com.beligum.blocks.utils.RdfTools;
 
 import javax.ws.rs.core.UriBuilder;

@@ -1,12 +1,14 @@
 package com.beligum.blocks.rdf.ontology;
 
 import com.beligum.base.filesystem.MessagesFileEntry;
+import com.beligum.base.i18n.I18nFactory;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
 
 import java.net.URI;
+import java.util.Set;
 
 /**
  * Created by bram on 2/27/16.
@@ -22,7 +24,7 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     private MessagesFileEntry label;
     private URI[] isSameAs;
     private RdfQueryEndpoint queryEndpoint;
-    private RdfProperty[] properties;
+    private Set<RdfProperty> properties;
 
     //-----CONSTRUCTORS-----
     public RdfClassImpl(String name,
@@ -31,7 +33,7 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
                         MessagesFileEntry label,
                         URI[] isSameAs)
     {
-        this(name, vocabulary, title, label, isSameAs, false, null, null);
+        this(name, vocabulary, title, label, isSameAs, false, null);
     }
     public RdfClassImpl(String name,
                         RdfVocabulary vocabulary,
@@ -39,8 +41,7 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
                         MessagesFileEntry label,
                         URI[] isSameAs,
                         boolean isPublic,
-                        RdfQueryEndpoint queryEndpoint,
-                        RdfProperty[] properties)
+                        RdfQueryEndpoint queryEndpoint)
     {
         super(isPublic);
 
@@ -51,7 +52,7 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
         //make it uniform (always an array)
         this.isSameAs = isSameAs == null ? new URI[] {} : isSameAs;
         this.queryEndpoint = queryEndpoint;
-        this.properties = properties;
+        this.properties = null;
 
         //only add ourself to the selected vocabulary if we are a pure class
         if (this.getClass().equals(RdfClassImpl.class)) {
@@ -73,7 +74,7 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     @Override
     public URI getFullName()
     {
-        return vocabulary.getNamespace().resolve(name);
+        return vocabulary.resolve(name);
     }
     @Override
     public URI getCurieName()
@@ -81,14 +82,26 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
         return URI.create(vocabulary.getPrefix() + ":" + name);
     }
     @Override
+    public String getTitleKey()
+    {
+        return title.getCanonicalKey();
+    }
+    @Override
     public String getTitle()
     {
-        return title.getI18nValue();
+        //Note: we can't return the regular optimal locale, because this will probably be called from an admin endpoint
+        return I18nFactory.instance().getResourceBundle(I18nFactory.instance().getOptimalRefererLocale()).get(title);
+    }
+    @Override
+    public String getLabelKey()
+    {
+        return label.getCanonicalKey();
     }
     @Override
     public String getLabel()
     {
-        return label.getI18nValue();
+        //Note: we can't return the regular optimal locale, because this will probably be called from an admin endpoint
+        return I18nFactory.instance().getResourceBundle(I18nFactory.instance().getOptimalRefererLocale()).get(label);
     }
     @Override
     public URI[] getIsSameAs()
@@ -101,9 +114,14 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
         return queryEndpoint;
     }
     @Override
-    public RdfProperty[] getProperties()
+    public Set<RdfProperty> getProperties()
     {
         return properties;
+    }
+    @Override
+    public void setProperties(Set<RdfProperty> properties)
+    {
+        this.properties = properties;
     }
 
     //-----PROTECTED METHODS-----

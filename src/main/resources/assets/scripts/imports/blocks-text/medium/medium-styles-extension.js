@@ -172,7 +172,7 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.im
                 if (classes != "") {
                     selectedElements[i].element.addClass(arguments[1].trim());
                 } else {
-                    selectedElements[i].element.attr("class", "");
+                    selectedElements[i].element.removeAttr("class");
                 }
             }
 

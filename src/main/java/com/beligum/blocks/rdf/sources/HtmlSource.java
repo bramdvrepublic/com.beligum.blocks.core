@@ -6,7 +6,7 @@ import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.HdfsResourcePath;
 import com.beligum.blocks.fs.pages.DefaultPageImpl;
 import com.beligum.blocks.fs.pages.ifaces.Page;
-import com.beligum.blocks.rdf.ontology.Classes;
+import com.beligum.blocks.rdf.ontology.factories.Classes;
 import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang3.StringUtils;

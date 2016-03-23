@@ -55,7 +55,8 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     public PageIndexEntry get(URI key) throws IOException
     {
-        TermQuery query = new TermQuery(AbstractIndexEntry.toLuceneId(key));
+        //since we treat all URIs as relative, we only take the path into account
+        TermQuery query = new TermQuery(AbstractIndexEntry.toLuceneId(StringFunctions.getRightOfDomain(key)));
         TopDocs topdocs = getLuceneIndexSearcher().search(query, 1);
 
         if (topdocs.scoreDocs.length == 0) {

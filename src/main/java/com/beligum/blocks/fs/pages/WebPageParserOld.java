@@ -9,7 +9,7 @@ import com.beligum.blocks.models.factories.ResourceFactoryImpl;
 import com.beligum.blocks.models.interfaces.Node;
 import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.models.interfaces.WebPage;
-import com.beligum.blocks.rdf.ontology.Classes;
+import com.beligum.blocks.rdf.ontology.factories.Classes;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.utils.RdfTools;

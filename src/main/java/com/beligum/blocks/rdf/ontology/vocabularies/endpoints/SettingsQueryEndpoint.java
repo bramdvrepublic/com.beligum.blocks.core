@@ -3,7 +3,7 @@ package com.beligum.blocks.rdf.ontology.vocabularies.endpoints;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
-import com.beligum.blocks.endpoints.ifaces.AutocompleteValue;
+import com.beligum.blocks.endpoints.ifaces.ResourceValue;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.fs.index.entries.IndexEntry;
 import com.beligum.blocks.fs.index.entries.PageIndexEntry;
@@ -89,9 +89,9 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
         return retVal;
     }
     @Override
-    public AutocompleteValue getResource(RdfClass resourceType, URI resourceId, Locale language) throws IOException
+    public ResourceValue getResource(RdfClass resourceType, URI resourceId, Locale language) throws IOException
     {
-        AutocompleteValue retVal = null;
+        ResourceValue retVal = null;
 
         PageIndexConnection.FieldQuery[] queries =
                         new PageIndexConnection.FieldQuery[] {

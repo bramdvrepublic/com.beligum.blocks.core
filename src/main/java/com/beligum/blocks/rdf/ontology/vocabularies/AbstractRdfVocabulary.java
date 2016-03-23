@@ -20,7 +20,7 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
     //-----VARIABLES-----
     private final URI namespace;
     private final String prefix;
-    private final Map<URI, RdfClass> allClasses;
+    private final Map<URI, RdfResource> allTypes;
     private final Map<URI, RdfClass> publicClasses;
     private final Map<URI, RdfDataType> publicDataTypes;
     private final Map<URI, RdfProperty> publicProperties;
@@ -31,7 +31,7 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
     {
         this.namespace = namespace;
         this.prefix = prefix;
-        this.allClasses = new HashMap<>();
+        this.allTypes = new HashMap<>();
         this.publicClasses = new HashMap<>();
         this.publicDataTypes = new HashMap<>();
         this.publicProperties = new HashMap<>();
@@ -50,14 +50,18 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
         return namespace;
     }
     @Override
+    public URI resolve(String suffix)
+    {
+        return namespace == null ? null : namespace.resolve(suffix);
+    }
+    @Override
     public final String getPrefix()
     {
         return prefix;
     }
-    @Override
-    public Map<URI, RdfClass> getAllClasses()
+    public Map<URI, RdfResource> getAllTypes()
     {
-        return allClasses;
+        return allTypes;
     }
     @Override
     public Map<URI, RdfClass> getPublicClasses()
@@ -82,7 +86,7 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
     @Override
     public void addClass(RdfClass rdfClass)
     {
-        this.allClasses.put(rdfClass.getCurieName(), rdfClass);
+        this.allTypes.put(rdfClass.getCurieName(), rdfClass);
 
         if (rdfClass.isPublic()) {
             this.publicClasses.put(rdfClass.getCurieName(), rdfClass);
@@ -91,6 +95,8 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
     @Override
     public void addProperty(RdfProperty rdfProperty)
     {
+        this.allTypes.put(rdfProperty.getCurieName(), rdfProperty);
+
         if (rdfProperty.isPublic()) {
             this.publicProperties.put(rdfProperty.getCurieName(), rdfProperty);
         }
@@ -98,6 +104,8 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
     @Override
     public void addDataType(RdfDataType rdfDataType)
     {
+        this.allTypes.put(rdfDataType.getCurieName(), rdfDataType);
+
         if (rdfDataType.isPublic()) {
             this.publicDataTypes.put(rdfDataType.getCurieName(), rdfDataType);
         }

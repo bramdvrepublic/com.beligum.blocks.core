@@ -17,6 +17,12 @@ public interface RdfVocabulary
     URI getNamespace();
 
     /**
+     * Resulves the supplied suffix against the full namespace of this vocabulary
+     */
+    @JsonIgnore
+    URI resolve(String suffix);
+
+    /**
      * The abbreviated namespace prefix (without the colon) to create a CURIE
      * Note that W3C has an official list of predefined prefixes that are always there, together with some popular prefixes:
      * https://www.w3.org/2011/rdfa-context/rdfa-1.1
@@ -24,11 +30,11 @@ public interface RdfVocabulary
     String getPrefix();
 
     /**
-     * Returns all classes in this vocabulary
+     * Returns all typed members (classes, properties and dataTypes) in this vocabulary
      */
     //avoids infinite recursion
     @JsonIgnore
-    Map<URI, RdfClass> getAllClasses();
+    Map<URI, RdfResource> getAllTypes();
 
     /**
      * Returns all classes in this vocabulary that are selectable from the client-side page-type-dropdown

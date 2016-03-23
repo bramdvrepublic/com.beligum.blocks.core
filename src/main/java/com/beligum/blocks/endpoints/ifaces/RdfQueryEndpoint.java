@@ -32,7 +32,7 @@ public interface RdfQueryEndpoint
      * @return the wrapped value with all possible fields indicating how to render this value (if may contain null values for some properties of AutocompleteValue)
      * @throws IOException
      */
-    AutocompleteValue getResource(RdfClass resourceType, URI resourceId, Locale language) throws IOException;
+    ResourceValue getResource(RdfClass resourceType, URI resourceId, Locale language) throws IOException;
 
     /**
      * Allow the endpoint to redirect the public GET of the specified resource to another URL

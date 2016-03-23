@@ -5,7 +5,7 @@ import java.net.URI;
 /**
  * Created by bram on 3/12/16.
  */
-public interface AutocompleteValue
+public interface ResourceValue
 {
     /**
      * The public ID of this resource

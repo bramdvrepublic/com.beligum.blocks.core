@@ -3,7 +3,7 @@ package com.beligum.blocks.endpoints;
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
-import com.beligum.blocks.endpoints.ifaces.AutocompleteValue;
+import com.beligum.blocks.endpoints.ifaces.ResourceValue;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
@@ -53,11 +53,11 @@ public class RdfEndpoint
         if (resourceTypeCurie != null) {
             RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
             if (rdfClass != null) {
-                RdfProperty[] classProps = rdfClass.getProperties();
+                Set<RdfProperty> classProps = rdfClass.getProperties();
                 //note that the javadoc of getProperties() says that we returns all properties if this returns null (which will be true later on),
                 // but if it returns the empty array, no properties should be returned.
                 if (classProps!=null) {
-                    retVal = new LinkedHashSet<>(Arrays.asList(classProps));
+                    retVal = classProps;
                 }
             }
         }
@@ -95,7 +95,7 @@ public class RdfEndpoint
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
     public Response getResource(@QueryParam("resourceTypeCurie") URI resourceTypeCurie, @QueryParam("resourceUri") URI resourceUri) throws IOException
     {
-        AutocompleteValue retVal = null;
+        ResourceValue retVal = null;
 
         RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
         if (rdfClass != null) {
