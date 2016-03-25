@@ -166,6 +166,12 @@ public class PageEndpoint
                                    Permissions.PAGE_MODIFY_PERMISSION_STRING })
     public Response savePage(@QueryParam("url") URI uri, String content) throws Exception
     {
+        //note that we need an absolute URI (eg. to have a correct root RDF context for Sesame),
+        // but we allow for relative URIs to be imported -> just make them absolute based on the current settings
+        if (!uri.isAbsolute()) {
+            uri = Settings.instance().getSiteDomain().resolve(uri);
+        }
+
         //Note: the first true flag: compacting helps minimizing the whitespace of the JSONLD properties
         //      the 2nd true flag: save the language (correctly derived from the current context) to the <html> tag (thus, it's also saved to the normalized form)
         //TODO: validate the uri?

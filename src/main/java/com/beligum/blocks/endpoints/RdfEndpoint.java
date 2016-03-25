@@ -1,9 +1,10 @@
 package com.beligum.blocks.endpoints;
 
 import com.beligum.base.server.R;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
-import com.beligum.blocks.endpoints.ifaces.ResourceValue;
+import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
@@ -85,6 +86,9 @@ public class RdfEndpoint
                 retVal = endpoint.search(rdfClass, query, R.i18nFactory().getOptimalRefererLocale(), maxResults);
             }
         }
+        else {
+            Logger.warn("Encountered unknown resource type; "+resourceTypeCurie);
+        }
 
         return Response.ok(retVal).build();
     }
@@ -95,7 +99,7 @@ public class RdfEndpoint
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
     public Response getResource(@QueryParam("resourceTypeCurie") URI resourceTypeCurie, @QueryParam("resourceUri") URI resourceUri) throws IOException
     {
-        ResourceValue retVal = null;
+        ResourceInfo retVal = null;
 
         RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
         if (rdfClass != null) {
@@ -103,6 +107,9 @@ public class RdfEndpoint
             if (endpoint != null) {
                 retVal = endpoint.getResource(rdfClass, resourceUri, R.i18nFactory().getOptimalRefererLocale());
             }
+        }
+        else {
+            Logger.warn("Encountered unknown resource type; "+resourceTypeCurie);
         }
 
         if (retVal == null) {

@@ -5,11 +5,11 @@ import com.beligum.base.utils.json.Json;
 import com.beligum.base.utils.xml.XML;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
-import com.beligum.blocks.endpoints.ifaces.ResourceValue;
+import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ontology.vocabularies.geo.AbstractGeoname;
-import com.beligum.blocks.rdf.ontology.vocabularies.geo.GeonameResource;
+import com.beligum.blocks.rdf.ontology.vocabularies.geo.GeonameResourceInfo;
 import com.beligum.blocks.utils.RdfTools;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -106,9 +106,9 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
         return retVal;
     }
     @Override
-    public ResourceValue getResource(RdfClass resourceType, URI resourceId, Locale language) throws IOException
+    public ResourceInfo getResource(RdfClass resourceType, URI resourceId, Locale language) throws IOException
     {
-        GeonameResource retVal = null;
+        GeonameResourceInfo retVal = null;
 
         ClientConfig config = new ClientConfig();
         Client httpClient = ClientBuilder.newClient(config);
@@ -129,7 +129,7 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
         if (response.getStatus() == Response.Status.OK.getStatusCode()) {
 
             InjectableValues inject = new InjectableValues.Std().addValue(AbstractGeoname.RESOURCE_TYPE_INJECTABLE, resourceType.getCurieName());
-            ObjectReader reader = XML.getObjectMapper().readerFor(GeonameResource.class).with(inject);
+            ObjectReader reader = XML.getObjectMapper().readerFor(GeonameResourceInfo.class).with(inject);
 
             //note: the Geonames '/get' endpoint is XML only!
             retVal = reader.readValue(response.readEntity(String.class));

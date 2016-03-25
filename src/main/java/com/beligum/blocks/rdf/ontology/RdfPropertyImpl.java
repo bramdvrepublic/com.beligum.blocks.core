@@ -69,9 +69,9 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
         return dataType;
     }
     @Override
-    public String getWidgetType()
+    public InputType getWidgetType()
     {
-        return widgetType.getConstant();
+        return widgetType;
     }
     @Override
     public InputTypeConfig getWidgetConfig()

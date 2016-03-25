@@ -19,7 +19,7 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
 
     //Formats for human readable date & time
     var DATE_TIME_LOCALE = BaseMessages.locale;
-    var DATE_TIME_FORMAT = "dddd LL, LT";
+    var DATE_TIME_FORMAT = "dddd LL - LT";
     var DATE_FORMAT = "dddd LL";
     var TIME_FORMAT = "LT";
     var TIMEZONE_FORMAT = "Z";
@@ -359,16 +359,15 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
             {
                 if (newState) {
                     propElement.attr(contentAttr, CONTENT_VALUE_TRUE);
-                    propElement.html('<i class="fa fa-fw ' + onClass + '" />');
                 }
                 else {
                     propElement.attr(contentAttr, CONTENT_VALUE_FALSE);
-                    propElement.html('<i class="fa fa-fw ' + offClass + '" />');
                 }
+
+                //Note: we just create a dummy inner <i>, rest is done in CSS, based on the content attribute
+                propElement.html('<div class="' + BlocksConstants.INPUT_TYPE_BOOLEAN_VALUE_CLASS + '" />');
             };
 
-            var onClass = "fa-check";
-            var offClass = "fa-close";
             var toggleButton = this.createToggleButton("Value",
                 function initStateCallback()
                 {

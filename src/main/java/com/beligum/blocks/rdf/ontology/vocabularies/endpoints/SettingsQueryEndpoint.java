@@ -3,13 +3,13 @@ package com.beligum.blocks.rdf.ontology.vocabularies.endpoints;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
-import com.beligum.blocks.endpoints.ifaces.ResourceValue;
+import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.fs.index.entries.IndexEntry;
 import com.beligum.blocks.fs.index.entries.PageIndexEntry;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ontology.vocabularies.local.DefaultResourceValue;
+import com.beligum.blocks.rdf.ontology.vocabularies.local.DefaultResourceInfo;
 import com.beligum.blocks.rdf.ontology.vocabularies.local.ResourceSuggestion;
 import org.apache.lucene.search.BooleanClause;
 
@@ -89,9 +89,9 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
         return retVal;
     }
     @Override
-    public ResourceValue getResource(RdfClass resourceType, URI resourceId, Locale language) throws IOException
+    public ResourceInfo getResource(RdfClass resourceType, URI resourceId, Locale language) throws IOException
     {
-        ResourceValue retVal = null;
+        ResourceInfo retVal = null;
 
         PageIndexConnection.FieldQuery[] queries =
                         new PageIndexConnection.FieldQuery[] {
@@ -114,7 +114,7 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
                 }
             }
             //note: the ID of a page is the public URL
-            retVal = new DefaultResourceValue(URI.create(selectedEntry.getResource()), resourceType.getCurieName(), selectedEntry.getTitle(), selectedEntry.getId(), null, selectedEntry.getTitle());
+            retVal = new DefaultResourceInfo(URI.create(selectedEntry.getResource()), resourceType.getCurieName(), selectedEntry.getTitle(), selectedEntry.getId(), null, selectedEntry.getTitle());
         }
 
         return retVal;

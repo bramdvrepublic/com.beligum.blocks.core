@@ -8,7 +8,7 @@ import java.util.Map;
 
 /**
  * This represents a widget in the blocks sidebar. To be used to link RDF data types to input-widgets.
- *
+ * <p>
  * Created by bram on 2/26/16.
  */
 public enum InputType
@@ -24,14 +24,13 @@ public enum InputType
     Time(core.Entries.INPUT_TYPE_TIME),
     DateTime(core.Entries.INPUT_TYPE_DATETIME),
     Color(core.Entries.INPUT_TYPE_COLOR),
-    Resource(core.Entries.INPUT_TYPE_RESOURCE),
-
-    ;
+    Resource(core.Entries.INPUT_TYPE_RESOURCE),;
 
     /**
      * this will allow us to map to this enum from a constant string value
      */
     private static final Map<String, InputType> constantValueMapping = new HashMap<>();
+
     static {
         for (InputType widget : InputType.values()) {
             constantValueMapping.put(widget.getConstant(), widget);
@@ -62,5 +61,4 @@ public enum InputType
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-
 }

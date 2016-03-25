@@ -1,7 +1,7 @@
 package com.beligum.blocks.rdf.ontology.vocabularies.geo;
 
 import com.beligum.blocks.config.RdfFactory;
-import com.beligum.blocks.endpoints.ifaces.ResourceValue;
+import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.utils.RdfTools;
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Created by bram on 3/12/16.
  */
-public class GeonameResource extends AbstractGeoname implements ResourceValue
+public class GeonameResourceInfo extends AbstractGeoname implements ResourceInfo
 {
     //-----CONSTANTS-----
     //special value for 'lang' that maps to external documentation
@@ -31,7 +31,7 @@ public class GeonameResource extends AbstractGeoname implements ResourceValue
     private transient URI cachedLink;
 
     //-----CONSTRUCTORS-----
-    public GeonameResource()
+    public GeonameResourceInfo()
     {
     }
 

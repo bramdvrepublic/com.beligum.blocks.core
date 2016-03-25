@@ -2,6 +2,17 @@
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/variables.less";
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/mixins.less";
 @import (reference) "/assets/webjars/bootstrap/3.3.4/less/forms.less";
+
+@import "/assets/webjars/font-awesome/4.3.0/less/variables.less";
+@import "/assets/webjars/font-awesome/4.3.0/less/core.less";
+@import "/assets/webjars/font-awesome/4.3.0/less/mixins.less";
+//
+//@import "/assets/webjars/font-awesome/4.3.0/less/variables.less";
+//@import "/assets/webjars/font-awesome/4.3.0/less/core.less";
+//@import "/assets/webjars/font-awesome/4.3.0/less/fixed-width.less";
+//@import "/assets/webjars/font-awesome/4.3.0/less/icons.less";
+//@import "/assets/webjars/font-awesome/4.3.0/less/mixins.less";
+
 @import "/constants/blocks/core?type=less";
 
 //-----STYLES-----
@@ -32,6 +43,22 @@ blocks-fiche-entry {
 
     p:last-child {
       margin-bottom: 0;
+    }
+
+    .@{INPUT_TYPE_BOOLEAN} {
+      .@{INPUT_TYPE_BOOLEAN_VALUE_CLASS} {
+        .fa-icon();
+      }
+      &[content='false'] {
+        .@{INPUT_TYPE_BOOLEAN_VALUE_CLASS}:before {
+          content: @fa-var-times;
+        }
+      }
+      &[content='true'] {
+        .@{INPUT_TYPE_BOOLEAN_VALUE_CLASS}:before {
+          content: @fa-var-check;
+        }
+      }
     }
 
     .@{INPUT_TYPE_COLOR_VALUE_CLASS} {
