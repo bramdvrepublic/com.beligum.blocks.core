@@ -2,11 +2,12 @@ package com.beligum.blocks.rdf.ontology.vocabularies.endpoints;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.json.Json;
+import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.base.utils.xml.XML;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
-import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
+import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ontology.vocabularies.geo.AbstractGeoname;
 import com.beligum.blocks.rdf.ontology.vocabularies.geo.GeonameResourceInfo;
@@ -48,15 +49,15 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
 
     //-----PUBLIC METHODS-----
     @Override
-    public List<AutocompleteSuggestion> search(RdfClass resourceType, final String query, Locale language, int maxResults) throws IOException
+    public List<AutocompleteSuggestion> search(RdfClass resourceType, final String query, boolean prefixSearch, Locale language, int maxResults) throws IOException
     {
         List<AutocompleteSuggestion> retVal = new ArrayList<>();
 
         ClientConfig config = new ClientConfig();
         Client httpClient = ClientBuilder.newClient(config);
+        //for details, see http://www.geonames.org/export/geonames-search.html
         UriBuilder builder = UriBuilder.fromUri("http://api.geonames.org/search")
                                        .queryParam("username", this.username)
-                                       .queryParam("name_startsWith", query)
                                        //no need to fetch the entire node; we'll do that during selection
                                        //note: we selct MEDIUM instead of SHORT to get the full country name (for cities)
                                        .queryParam("style", "MEDIUM")
@@ -64,6 +65,14 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
                                        //can be any of [population,elevation,relevance]
                                        .queryParam("orderby", "relevance")
                                        .queryParam("type", "json");
+
+        if (prefixSearch) {
+            builder.queryParam("name_startsWith", query);
+        }
+        else {
+            //from the docs: query needs to be query encoded!
+            builder.queryParam("q", StringFunctions.encodeHtmlUrl(query));
+        }
 
         if (geonameType.featureClasses != null) {
             for (String c : geonameType.featureClasses) {

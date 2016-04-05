@@ -169,4 +169,16 @@ public class Terms implements RdfResourceFactory
                                                                   new URI[] { DBO.INSTANCE.resolve("comment")
                                                                   },
                                                                   true);
+
+    //TODO maybe integrate this in the blocks-image block?
+    public static final RdfProperty image = new RdfPropertyImpl("image",
+                                                                SettingsVocabulary.INSTANCE,
+                                                                ontology.Entries.propertyTitle_image,
+                                                                ontology.Entries.propertyLabel_image,
+                                                                XSD.ANY_URI,
+                                                                InputType.Uri,
+                                                                null,
+                                                                new URI[] {
+                                                                },
+                                                                false);
 }

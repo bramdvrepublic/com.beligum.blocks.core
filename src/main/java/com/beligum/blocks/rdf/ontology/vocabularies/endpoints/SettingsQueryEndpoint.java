@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
+import static com.beligum.blocks.fs.index.entries.PageIndexEntry.Field.language;
+
 /**
  * Created by bram on 3/14/16.
  */
@@ -34,7 +36,7 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
 
     //-----PUBLIC METHODS-----
     @Override
-    public List<AutocompleteSuggestion> search(RdfClass resourceType, String query, Locale language, int maxResults) throws IOException
+    public List<AutocompleteSuggestion> search(RdfClass resourceType, String query, boolean prefixSearch, Locale language, int maxResults) throws IOException
     {
         List<AutocompleteSuggestion> retVal = new ArrayList<>();
 
@@ -42,7 +44,7 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
                         new PageIndexConnection.FieldQuery[] { new PageIndexConnection.FieldQuery(PageIndexEntry.Field.typeOf, resourceType.getCurieName().toString(), BooleanClause.Occur.FILTER,
                                                                                                   PageIndexConnection.FieldQuery.Type.EXACT),
                                                                new PageIndexConnection.FieldQuery(IndexEntry.Field.tokenisedId, query, BooleanClause.Occur.SHOULD,
-                                                                                                  PageIndexConnection.FieldQuery.Type.WILDCARD_COMPLEX, 1),
+                                                                                                  prefixSearch ? PageIndexConnection.FieldQuery.Type.WILDCARD_COMPLEX : PageIndexConnection.FieldQuery.Type.WILDCARD, 1),
                                                                new PageIndexConnection.FieldQuery(PageIndexEntry.Field.title, query, BooleanClause.Occur.SHOULD,
                                                                                                   PageIndexConnection.FieldQuery.Type.WILDCARD_COMPLEX, 1) };
 

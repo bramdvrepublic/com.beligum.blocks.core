@@ -73,7 +73,7 @@ public class Classes implements RdfResourceFactory
     public static final InputTypeConfig DEFAULT_PERSON_ENDPOINT_CONFIG = new InputTypeConfig(new String[][] {
                     { core.Entries.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT.getValue(),
                       gen.com.beligum.blocks.endpoints.RdfEndpointRoutes
-                                      .getResources(Classes.Person.getCurieName(), AUTOCOMPLETE_MAX_RESULTS, "").getAbsoluteUrl()
+                                      .getResources(Classes.Person.getCurieName(), AUTOCOMPLETE_MAX_RESULTS, "", true).getAbsoluteUrl()
                     },
                     { core.Entries.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT.getValue(),
                       gen.com.beligum.blocks.endpoints.RdfEndpointRoutes
@@ -87,7 +87,7 @@ public class Classes implements RdfResourceFactory
                     { core.Entries.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT.getValue(),
                       gen.com.beligum.blocks.endpoints.RdfEndpointRoutes
                                       .getResources(Classes.City.getCurieName(), AUTOCOMPLETE_MAX_RESULTS,
-                                                    "").getAbsoluteUrl()
+                                                    "", true).getAbsoluteUrl()
                     },
                     { core.Entries.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT.getValue(),
                       gen.com.beligum.blocks.endpoints.RdfEndpointRoutes
@@ -102,7 +102,7 @@ public class Classes implements RdfResourceFactory
                     { core.Entries.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT.getValue(),
                       gen.com.beligum.blocks.endpoints.RdfEndpointRoutes
                                       .getResources(Classes.Country.getCurieName(), AUTOCOMPLETE_MAX_RESULTS,
-                                                    "").getAbsoluteUrl()
+                                                    "", true).getAbsoluteUrl()
                     },
                     { core.Entries.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT.getValue(),
                       gen.com.beligum.blocks.endpoints.RdfEndpointRoutes

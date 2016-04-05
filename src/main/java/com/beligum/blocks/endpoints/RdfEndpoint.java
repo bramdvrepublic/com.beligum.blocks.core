@@ -11,10 +11,7 @@ import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.security.Permissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
@@ -75,7 +72,7 @@ public class RdfEndpoint
     @Path("/resources/")
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
-    public Response getResources(@QueryParam("resourceTypeCurie") URI resourceTypeCurie, @QueryParam("maxResults") int maxResults, @QueryParam("query") String query) throws IOException
+    public Response getResources(@QueryParam("resourceTypeCurie") URI resourceTypeCurie, @QueryParam("maxResults") int maxResults, @QueryParam("query") String query, @QueryParam("prefixSearch") @DefaultValue("true") boolean prefixSearch) throws IOException
     {
         List<AutocompleteSuggestion> retVal = new ArrayList<>();
 
@@ -83,7 +80,7 @@ public class RdfEndpoint
         if (rdfClass != null) {
             RdfQueryEndpoint endpoint = rdfClass.getEndpoint();
             if (endpoint != null) {
-                retVal = endpoint.search(rdfClass, query, R.i18nFactory().getOptimalRefererLocale(), maxResults);
+                retVal = endpoint.search(rdfClass, query, prefixSearch, R.i18nFactory().getOptimalRefererLocale(), maxResults);
             }
         }
         else {
