@@ -106,11 +106,11 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
     }
     public InputStream openNewHtmlInputStream() throws IOException
     {
-        return new ByteArrayInputStream(this.document.outputSettings(this.document.outputSettings().syntax(Document.OutputSettings.Syntax.html)).outerHtml().getBytes(this.document.charset()));
+        return new ByteArrayInputStream(this.document.outputSettings(this.buildNewStreamOutputSettings(this.document).syntax(Document.OutputSettings.Syntax.html)).outerHtml().getBytes(this.document.charset()));
     }
     public InputStream openNewXHtmlInputStream() throws IOException
     {
-        return new ByteArrayInputStream(this.document.outputSettings(this.document.outputSettings().syntax(Document.OutputSettings.Syntax.xml)).outerHtml().getBytes(this.document.charset()));
+        return new ByteArrayInputStream(this.document.outputSettings(this.buildNewStreamOutputSettings(this.document).syntax(Document.OutputSettings.Syntax.xml)).outerHtml().getBytes(this.document.charset()));
     }
 
     //-----HTMl-ONLY PUBLIC METHODS-----
@@ -272,6 +272,13 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
         }
 
         return retVal;
+    }
+    /**
+     * This allows us to trim the values when parsing RDFA html
+     */
+    private Document.OutputSettings buildNewStreamOutputSettings(Document doc)
+    {
+        return doc.outputSettings().indentAmount(0).prettyPrint(false);
     }
 
     //-----MANAGEMENT METHODS-----

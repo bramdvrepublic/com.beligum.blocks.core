@@ -133,7 +133,7 @@ public class SimplePageStore implements PageStore
 
                 //parse and generate the RDF model
                 Model rdfModel = page.createImporter(Format.RDFA).importDocument(source);
-                //export the RDF model to the storage file (JSON-LD)
+                //export the RDF model to the storage file (note that this file will be re-read to save to the triple store)
                 try (OutputStream os = fileContext.create(page.getRdfExportFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
                     page.createExporter(page.getRdfExportFileFormat()).exportModel(rdfModel, os);
                 }

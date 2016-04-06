@@ -13,6 +13,13 @@ import java.util.Locale;
 public interface RdfQueryEndpoint
 {
     /**
+     * Subclass this interface in endpoint-subclasses to pass specific options to the search endpoints
+     */
+    interface SearchOption
+    {
+    }
+
+    /**
      * Searches the (fast) index of the specified type for the supplied query string.
      * Mainly used to feed client-side autocomplete boxes
      *
@@ -23,7 +30,7 @@ public interface RdfQueryEndpoint
      * @return a list of maxResults size
      * @throws IOException
      */
-    List<AutocompleteSuggestion> search(RdfClass resourceType, String query, boolean prefixSearch, Locale language, int maxResults) throws IOException;
+    List<AutocompleteSuggestion> search(RdfClass resourceType, String query, boolean prefixSearch, Locale language, int maxResults, SearchOption... options) throws IOException;
 
     /**
      * Gets the full value of the resource with the specified id-URI.

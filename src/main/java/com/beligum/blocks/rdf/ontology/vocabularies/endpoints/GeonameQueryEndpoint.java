@@ -49,7 +49,7 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
 
     //-----PUBLIC METHODS-----
     @Override
-    public List<AutocompleteSuggestion> search(RdfClass resourceType, final String query, boolean prefixSearch, Locale language, int maxResults) throws IOException
+    public List<AutocompleteSuggestion> search(RdfClass resourceType, final String query, boolean prefixSearch, Locale language, int maxResults, SearchOption... options) throws IOException
     {
         List<AutocompleteSuggestion> retVal = new ArrayList<>();
 
@@ -62,8 +62,10 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
                                        //note: we selct MEDIUM instead of SHORT to get the full country name (for cities)
                                        .queryParam("style", "MEDIUM")
                                        .queryParam("maxRows", maxResults)
+                                       //I think the default is "population", which seems to be more natural
+                                       // (better to find a large, more-or-less-good match, than to find the very specific wrong match)
                                        //can be any of [population,elevation,relevance]
-                                       .queryParam("orderby", "relevance")
+                                       .queryParam("orderby", "population")
                                        .queryParam("type", "json");
 
         if (prefixSearch) {

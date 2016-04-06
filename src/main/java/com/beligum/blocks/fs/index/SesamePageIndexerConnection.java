@@ -5,6 +5,8 @@ import com.beligum.blocks.fs.index.entries.PageIndexEntry;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.Importer;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.Query;
 import org.openrdf.model.Model;
 import org.openrdf.query.*;
@@ -101,7 +103,51 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     {
         List<PageIndexEntry> retVal = new ArrayList<>();
 
-        //TODO
+        Query luceneQuery;
+        try {
+            luceneQuery = this.buildLuceneQuery(fieldQueries);
+        }
+        catch (ParseException e) {
+            throw new IOException("Error while parsing multi-field lucene query; " + fieldQueries, e);
+        }
+
+        //see http://rdf4j.org/doc/4/programming.docbook?view#The_Lucene_SAIL
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("PREFIX search: <").append(LuceneSailSchema.NAMESPACE).append("> \n")
+                    //links the resource to be found with the following query statements (required)
+                    .append("SELECT ?x ?score ?snippet WHERE {?x search:matches [\n")
+                    //specifies the Lucene query (required)
+                    //.append("search:query \"").append(luceneQuery.toString()).append("\"; \n")
+                    //.append("search:query \"").append("Lambrechtsplein").append("\"; \n")
+                    .append("search:LuceneQuery \"").append(QueryParser.escape("http://www.mot.be/ontology/title")+":lambrechtsplein").append("\"; \n")
+                    //specifies the property to search. If omitted all properties are searched (optional)
+                    //.append("search:property <http://www.mot.be/ontology/comment>; \n")
+                    //specifies a variable for the score (optional)
+                    .append("search:score ?score; \n")
+                    //specifies a variable for a highlighted snippet (optional)
+                    .append("search:snippet ?snippet; \n")
+                    //found in the source code: org.openrdf.sail.lucene.LuceneSailSchema
+                    .append("search:matches ?matches; \n")
+                    .append("] }");
+
+        TupleQuery query = connection.prepareTupleQuery(QueryLanguage.SPARQL, queryBuilder.toString());
+
+        try (TupleQueryResult result = query.evaluate()) {
+            if (!result.hasNext()) {
+                System.out.println("-------- NO MATCHES!! ---------");
+            }
+            else {
+                System.out.println("-------- FOUND MATCHES ---------");
+                // print the results
+                while (result.hasNext()) {
+                    BindingSet bindings = result.next();
+                    System.out.println("found match: ");
+                    for (Binding binding : bindings) {
+                        System.out.println(" " + binding.getName() + ": " + binding.getValue());
+                    }
+                }
+            }
+        }
 
         return retVal;
     }

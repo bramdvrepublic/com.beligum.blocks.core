@@ -7,6 +7,7 @@ import com.beligum.blocks.rdf.importers.semargl.SesameRDFaParser;
 import org.openrdf.model.Model;
 import org.openrdf.model.impl.LinkedHashModel;
 import org.openrdf.rio.*;
+import org.openrdf.rio.helpers.BasicParserSettings;
 import org.openrdf.rio.helpers.RDFaParserSettings;
 import org.openrdf.rio.helpers.RDFaVersion;
 import org.openrdf.rio.helpers.StatementCollector;
@@ -108,8 +109,8 @@ public class SesameImporter extends AbstractImporter
 //        parser.getParserConfig().set(BasicParserSettings.FAIL_ON_UNKNOWN_DATATYPES, false);
 //        parser.getParserConfig().addNonFatalError(BasicParserSettings.FAIL_ON_UNKNOWN_DATATYPES);
 
-//        parser.getParserConfig().set(BasicParserSettings.NORMALIZE_DATATYPE_VALUES, false);
-//        parser.getParserConfig().addNonFatalError(BasicParserSettings.NORMALIZE_DATATYPE_VALUES);
+        parser.getParserConfig().set(BasicParserSettings.NORMALIZE_DATATYPE_VALUES, false);
+        parser.getParserConfig().addNonFatalError(BasicParserSettings.NORMALIZE_DATATYPE_VALUES);
 
 //        parser.getParserConfig().set(BasicParserSettings.VERIFY_RELATIVE_URIS, true);
 //        parser.getParserConfig().addNonFatalError(BasicParserSettings.VERIFY_RELATIVE_URIS);

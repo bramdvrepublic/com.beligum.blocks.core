@@ -11,15 +11,12 @@ import com.beligum.blocks.fs.pages.DefaultPageImpl;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
 import org.apache.hadoop.fs.FileContext;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -28,9 +25,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by bram on 2/22/16.
@@ -38,10 +33,6 @@ import java.util.Map;
 public class LucenePageIndexerConnection extends AbstractIndexConnection implements PageIndexConnection
 {
     //-----CONSTANTS-----
-    private static final Analyzer STANDARD_ANALYZER = new StandardAnalyzer();
-    private static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
-    private static final Analyzer WHITESPACE_ANALYZER = new WhitespaceAnalyzer();
-    private static final Analyzer DEFAULT_ANALYZER = STANDARD_ANALYZER;
 
     //-----VARIABLES-----
     private IndexWriter indexWriter;
@@ -96,61 +87,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         List<PageIndexEntry> retVal = new ArrayList<>();
 
         try {
-            BooleanQuery query = new BooleanQuery();
-            Map<Integer, BooleanQuery> groups = new HashMap<>();
-            for (FieldQuery q : fieldQueries) {
-
-                BooleanQuery activeQuery = query;
-                if (q.getGroup() != null) {
-                    if (groups.containsKey(q.getGroup())) {
-                        activeQuery = groups.get(q.getGroup());
-                    }
-                    else {
-                        activeQuery = new BooleanQuery();
-                        groups.put(q.getGroup(), activeQuery);
-                        //TODO hmm, this (FILTER = and) won't always be true...
-                        query.add(activeQuery, BooleanClause.Occur.FILTER);
-                    }
-                }
-
-                Query subQuery = null;
-                switch (q.getType()) {
-                    case EXACT:
-                        //note that we must not escape an exact value (eg. it doesn't work if you do)
-                        subQuery = new TermQuery(new Term(q.getField().name(), q.getQuery()));
-                        break;
-                    case WILDCARD:
-                        QueryParser queryParser = new QueryParser(q.getField().name(), DEFAULT_ANALYZER);
-                        //we need to escape the wildcard query, and appedkdkdlkjsdfnd the asterisk afterwards (or it will be escaped)
-                        subQuery = queryParser.parse(QueryParser.escape(q.getQuery()) + "*");
-                        break;
-                    case WILDCARD_COMPLEX:
-                        //we need to escape the wildcard query, and append the asterisk afterwards (or it will be escaped)
-                        ComplexPhraseQueryParser complexPhraseParser = new ComplexPhraseQueryParser(q.getField().name(), DEFAULT_ANALYZER);
-                        complexPhraseParser.setInOrder(true);
-                        //this is tricky: using an asterisk after a special character seems to throw lucene off
-                        // since the standard analyzer doesn't index those characters anyway (eg. "blah (en)" gets indexed as "blah" and "en"),
-                        // it's safe to delete those special characters and just add the asterisk
-                        String parsedQuery = this.removeEscapedChars(q.getQuery()).trim();
-                        String queryStr = null;
-                        //this check is needed because "\"bram*\"" doesn't seem to match the "bram" token
-                        if (parsedQuery.contains(" ")) {
-                            queryStr = "\"" + parsedQuery +"*\"";
-                        }
-                        else {
-                            queryStr = parsedQuery +"*";
-                        }
-
-                        subQuery = complexPhraseParser.parse(queryStr);
-                        break;
-                    default:
-                        throw new ParseException("Encountered unsupported query type; this shouldn't happen; " + q.getType());
-                }
-
-                activeQuery.add(subQuery, q.getBool());
-            }
-
-            retVal = this.search(query, maxResults);
+            retVal = this.search(this.buildLuceneQuery(fieldQueries), maxResults);
         }
         catch (ParseException e) {
             throw new IOException("Error while parsing multi-field lucene query; " + fieldQueries, e);
@@ -349,22 +286,5 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         if (this.indexWriter == null) {
             this.indexWriter = this.getNewLuceneIndexWriter();
         }
-    }
-    //exactly the same code as QueryParserBase.escape(), but with the sb.append('\\'); line commented and added an else-part
-    private String removeEscapedChars(String s) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            // These characters are part of the query syntax and must be escaped
-            if (c == '\\' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')' || c == ':'
-                || c == '^' || c == '[' || c == ']' || c == '\"' || c == '{' || c == '}' || c == '~'
-                || c == '*' || c == '?' || c == '|' || c == '&' || c == '/') {
-                //sb.append('\\');
-            }
-            else {
-                sb.append(c);
-            }
-        }
-        return sb.toString();
     }
 }

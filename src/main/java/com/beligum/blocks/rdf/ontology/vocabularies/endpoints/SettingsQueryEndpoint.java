@@ -36,7 +36,7 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
 
     //-----PUBLIC METHODS-----
     @Override
-    public List<AutocompleteSuggestion> search(RdfClass resourceType, String query, boolean prefixSearch, Locale language, int maxResults) throws IOException
+    public List<AutocompleteSuggestion> search(RdfClass resourceType, String query, boolean prefixSearch, Locale language, int maxResults, SearchOption... options) throws IOException
     {
         List<AutocompleteSuggestion> retVal = new ArrayList<>();
 
