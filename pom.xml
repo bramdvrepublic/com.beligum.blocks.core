@@ -13,10 +13,11 @@
     <parent>
         <groupId>com.beligum</groupId>
         <artifactId>parent-web</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
     </parent>
 
     <properties>
+
         <git.url.repo.name>${git.url.repo.prefix}blocks.core</git.url.repo.name>
 
         <hadoop.hdfs.version>2.7.1</hadoop.hdfs.version>
@@ -41,12 +42,12 @@
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-core</artifactId>
-            <version>0.3.17</version>
+            <version>0.3.18-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-auth</artifactId>
-            <version>0.1.5</version>
+            <version>0.1.7-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
@@ -609,7 +610,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
     </dependencies>
 
 </project>

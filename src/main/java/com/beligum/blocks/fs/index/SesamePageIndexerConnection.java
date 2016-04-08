@@ -1,7 +1,6 @@
 package com.beligum.blocks.fs.index;
 
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
@@ -14,11 +13,10 @@ import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.openrdf.model.IRI;
-import org.openrdf.model.Model;
-import org.openrdf.model.Value;
+import org.openrdf.model.*;
 import org.openrdf.query.*;
 import org.openrdf.repository.RepositoryException;
+import org.openrdf.repository.RepositoryResult;
 import org.openrdf.repository.sail.SailRepository;
 import org.openrdf.repository.sail.SailRepositoryConnection;
 import org.openrdf.sail.lucene.LuceneSailSchema;
@@ -107,7 +105,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         this.connection.add(model);
     }
     @Override
-    public List search(String luceneQuery, Map fieldValues, String sortField, boolean sortAscending, int pageSize, int pageOffset) throws IOException
+    public List search(RdfClass type, String luceneQuery, Map fieldValues, String sortField, boolean sortAscending, int pageSize, int pageOffset, Locale language) throws IOException
     {
         //see http://rdf4j.org/doc/4/programming.docbook?view#The_Lucene_SAIL
         //and maybe the source code: org.openrdf.sail.lucene.LuceneSailSchema
@@ -117,15 +115,13 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         queryBuilder.append("PREFIX ").append(searchPrefix).append(": <").append(LuceneSailSchema.NAMESPACE).append("> \n");
         queryBuilder.append("\n");
 
-        //        String sortField = "isVerified";
-        //        boolean sortAscending = true;
-        //        String luceneQuery = "Bouwkundig";
-        //        Map<String, String> filters = new HashMap<>();
-        //        int pageSize = 10;
-        //        int pageOffset = 0;
-
         //links the resource to be found with the following query statements (required)
-        queryBuilder.append("SELECT DISTINCT ?s ?p ?o").append(" WHERE {\n");
+        queryBuilder.append("SELECT DISTINCT ?s").append(" WHERE {\n");
+
+        //TODO implement the type
+        if (type != null) {
+            queryBuilder.append("\t").append("?s a <").append(type.getFullName().toString()).append("> . \n");
+        }
 
         //---Lucene---
         if (!StringUtils.isEmpty(luceneQuery)) {
@@ -161,40 +157,55 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         queryBuilder.append("}\n");
 
         //---Sorting---
-        //        if (!StringUtils.isEmpty(sortField)) {
-        //            queryBuilder.append("ORDER BY ").append(sortAscending ? "ASC(" : "DESC(").append("?sortField").append(")").append("\n");
+        if (!StringUtils.isEmpty(sortField)) {
+            queryBuilder.append("ORDER BY ").append(sortAscending ? "ASC(" : "DESC(").append("?sortField").append(")").append("\n");
+        }
+        //note that, for pagination to work properly, we need to sort the results, so always add a sort field.
+        // eg see here: https://lists.w3.org/Archives/Public/public-rdf-dawg-comments/2011Oct/0024.html
+        else {
+            queryBuilder.append("ORDER BY ").append(sortAscending ? "ASC(" : "DESC(").append("?s").append(")").append("\n");
+        }
+
+        //---Paging---
+        queryBuilder.append(" LIMIT ").append(pageSize).append(" OFFSET ").append(pageOffset).append("\n");
+
+        //        int testLimit = 10;
+        //        String testQuery = "CONSTRUCT {\n" +
+        //                           "    ?s ?p ?o\n" +
+        //                           "}\n" +
+        //                           "where {\n" +
+        //                           "    ?s ?p ?o .\n" +
+        //                           "    {\n" +
+        //                           "        select distinct ?s where {?s ?p ?o} limit "+testLimit+"\n" +
+        //                           "    }\n" +
+        //                           "}";
+        //        GraphQueryResult graphResult = connection.prepareGraphQuery(QueryLanguage.SPARQL, testQuery).evaluate();
+        //        Logger.info("---------------------");
+        //        while (graphResult.hasNext()) {
+        //            Statement st = graphResult.next();
+        //            Logger.info(st.getObject().toString());
         //        }
-        //        //note that, for pagination to work properly, we need to sort the results, so always add a sort field.
-        //        // eg see here: https://lists.w3.org/Archives/Public/public-rdf-dawg-comments/2011Oct/0024.html
-        //        else {
-        //            queryBuilder.append("ORDER BY ").append(sortAscending ? "ASC(" : "DESC(").append("?s").append(")").append("\n");
-        //        }
+        //        Logger.info("---------------------");
+
+        //        // wrap in an object repository
+        //        ObjectRepositoryFactory factory = new ObjectRepositoryFactory();
+        //        ObjectRepository repository = factory.createRepository(this.connection.getRepository());
         //
-        //        //---Paging---
-        //        queryBuilder.append(" LIMIT ").append(pageSize).append(" OFFSET ").append(pageOffset).append("\n");
+        //        ObjectConnection con = repository.getConnection();
+        //
+        //        // retrieve a Document by id
+        //        ValueFactory vf = con.getValueFactory();
+        //        org.openrdf.model.URI id = vf.createURI("http://example.com/data/2012/getting-started");
+        //        AlibabaTest doc = con.getObject(AlibabaTest.class, id);
+        //
+        //        // close everything down
+        //        con.close();
+        //        repository.shutDown();
 
-//        int testLimit = 10;
-//        String testQuery = "CONSTRUCT {\n" +
-//                           "    ?s ?p ?o\n" +
-//                           "}\n" +
-//                           "where {\n" +
-//                           "    ?s ?p ?o .\n" +
-//                           "    {\n" +
-//                           "        select distinct ?s where {?s ?p ?o} limit "+testLimit+"\n" +
-//                           "    }\n" +
-//                           "}";
-//        GraphQueryResult graphResult = connection.prepareGraphQuery(QueryLanguage.SPARQL, testQuery).evaluate();
-//        Logger.info("---------------------");
-//        while (graphResult.hasNext()) {
-//            Statement st = graphResult.next();
-//            Logger.info(st.getObject().toString());
-//        }
-//        Logger.info("---------------------");
-
-        return this.search(queryBuilder.toString());
+        return this.search(queryBuilder.toString(), language);
     }
     @Override
-    public List search(String sparqlQuery) throws IOException
+    public List search(String sparqlQuery, Locale language) throws IOException
     {
         List<ResourceIndexEntry> retVal = new ArrayList<>();
 
@@ -204,40 +215,20 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
             List<String> bindingNames = result.getBindingNames();
 
             //watch out: order must be preserved (eg. because we're likely to use sorting or scoring)
-            Map<URI, ResourceIndexEntry> entries = new LinkedHashMap<>();
             while (result.hasNext()) {
 
                 BindingSet bindingSet = result.next();
-                //See the above select query for an example of the expected query syntax
+                //we expect only one binding: the subject URI
                 Value subject = bindingSet.getValue(bindingNames.get(0));
-                Value predicate = bindingSet.getValue(bindingNames.get(1));
-                Value object = bindingSet.getValue(bindingNames.get(2));
 
                 if (subject instanceof IRI) {
-                    //we convert to a uniform Java-URI so it's compatible with existing interfaces later on
-                    URI subjectUri = this.toUri(subject, false, true);
-                    ResourceIndexEntry entry = entries.get(subjectUri);
-                    if (entry == null) {
-                        entries.put(subjectUri, entry = new SimpleResourceIndexEntry(subjectUri));
-                    }
-
-                    RdfClass predicateClass = RdfFactory.getClassForResourceType(this.toUri(predicate, true, false));
-                    if (predicateClass != null) {
-                        Value oldProperty = entry.getProperties().put(predicateClass, object);
-                        if (oldProperty != null) {
-                            Logger.warn("Watch out, overwriting an existing (and thus double) predicate '" + predicate + "' for resource; " + subject);
-                        }
-                    }
-                    else {
-                        Logger.warn("Skipping incompatible sparql result because it's predicate is not a known RDF class; " + predicate);
-                    }
+                    //this will query the triplestore to build up the properties list
+                    retVal.add(this.buildResourceEntry((IRI) subject, language));
                 }
                 else {
                     Logger.warn("Skipping incompatible sparql result because it's subject is no IRI; " + subject);
                 }
             }
-
-            retVal = new ArrayList<>(entries.values());
         }
 
         return retVal;
@@ -322,6 +313,43 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         //if it's not absolute (eg. it doesn't start with http://..., this means the relativize 'succeeded' and the retVal starts with the RDF ontology URI)
         if (!relative.isAbsolute()) {
             retVal = ROOT.resolve(relative);
+        }
+
+        return retVal;
+    }
+    private ResourceIndexEntry buildResourceEntry(IRI resourceId, Locale language) throws IOException
+    {
+        //we convert to a uniform Java-URI so it's compatible with existing interfaces later on
+        ResourceIndexEntry retVal = new SimpleResourceIndexEntry(this.toUri(resourceId, false, true));
+
+        RepositoryResult<Statement> properties = this.connection.getStatements(resourceId, null, null);
+        while (properties.hasNext()) {
+            Statement statement = properties.next();
+
+            Logger.info("\t"+statement);
+
+            //note that we don't convert to a RdfClass to allow for unmapped properties
+            URI predicateClass = this.toUri(statement.getPredicate(), true, false);
+            if (predicateClass != null) {
+                //we only add literals that match the passed-down language (disabled when null)
+                boolean skip = false;
+                if (language != null && statement.getObject() instanceof Literal) {
+                    Literal object = (Literal) statement.getObject();
+                    if (object.getLanguage().isPresent()) {
+                        skip = !object.getLanguage().get().equals(language.getLanguage());
+                    }
+                }
+
+                if (!skip) {
+                    Value oldProperty = retVal.getProperties().put(predicateClass, statement.getObject());
+                    if (oldProperty != null) {
+                        Logger.warn("Watch out, overwriting an existing (and thus double) predicate '" + statement.getPredicate() + "' for resource; " + resourceId);
+                    }
+                }
+            }
+            else {
+                Logger.warn("Skipping incompatible sparql result because it's predicate is not a known RDF class; " + statement.getPredicate());
+            }
         }
 
         return retVal;

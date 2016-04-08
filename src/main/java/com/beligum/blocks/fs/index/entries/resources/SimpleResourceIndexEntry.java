@@ -1,6 +1,5 @@
 package com.beligum.blocks.fs.index.entries.resources;
 
-import com.beligum.blocks.rdf.ifaces.RdfClass;
 import org.openrdf.model.Value;
 
 import java.io.IOException;
@@ -17,7 +16,7 @@ public class SimpleResourceIndexEntry implements ResourceIndexEntry
 
     //-----VARIABLES-----
     private URI subject;
-    private Map<RdfClass, Value> properties;
+    private Map<URI, Value> properties;
 
     //-----CONSTRUCTORS-----
     public SimpleResourceIndexEntry(URI subject) throws IOException
@@ -32,7 +31,7 @@ public class SimpleResourceIndexEntry implements ResourceIndexEntry
     {
         return subject;
     }
-    public Map<RdfClass, Value> getProperties()
+    public Map<URI, Value> getProperties()
     {
         return properties;
     }

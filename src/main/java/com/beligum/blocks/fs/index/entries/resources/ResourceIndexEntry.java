@@ -1,9 +1,9 @@
 package com.beligum.blocks.fs.index.entries.resources;
 
 import com.beligum.blocks.fs.index.entries.IndexEntry;
-import com.beligum.blocks.rdf.ifaces.RdfClass;
 import org.openrdf.model.Value;
 
+import java.net.URI;
 import java.util.Map;
 
 /**
@@ -18,7 +18,7 @@ public interface ResourceIndexEntry extends IndexEntry
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    Map<RdfClass, Value> getProperties();
+    Map<URI, Value> getProperties();
 
     //-----PROTECTED METHODS-----
 

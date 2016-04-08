@@ -196,6 +196,7 @@ public class HdfsResourcePath implements ResourcePath
     //-----UTILITY METHODS-----
     public static String calcHashChecksumFor(InputStream is) throws IOException
     {
+        //System.out.println(Base64.class.getProtectionDomain().getCodeSource().getLocation());
         return DigestUtils.sha1Hex(is);
     }
 

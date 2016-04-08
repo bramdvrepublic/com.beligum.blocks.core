@@ -1,15 +1,18 @@
 package com.beligum.blocks.rdf.importers;
 
+import com.beligum.base.i18n.I18nFactory;
+import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.Importer;
 import org.apache.commons.lang.StringUtils;
 import org.openrdf.model.*;
-import org.openrdf.model.impl.SimpleLiteral;
 import org.openrdf.model.impl.SimpleValueFactory;
 import org.openrdf.model.vocabulary.RDF;
 import org.openrdf.model.vocabulary.XMLSchema;
 
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -51,19 +54,6 @@ public abstract class AbstractImporter implements Importer
     //-----PROTECTED METHODS-----
     protected Model filterRelevantNodes(Model model, URI documentBaseUri) throws IOException
     {
-        //        //select only the relevant triples
-        //        //TODO this is probably not the best way...
-        //        Model filteredModel = ModelFactory.createDefaultModel();
-        //        //Note: check the property (document.toString); it should correspond with the @id in JSON-LD (unverified code)
-        //        StmtIterator selection = model.listStatements(new SimpleSelector(model.createProperty(documentBaseUri.toString()), null, (RDFNode) null));
-        //        while (selection.hasNext()) {
-        ////            Statement stmt = selection.nextStatement();
-        ////            filteredModel.add(stmt.getSubject(), stmt.getPredicate(), stmt.getObject());
-        //            filteredModel.add(selection.nextStatement());
-        //        }
-        //
-        //        return filteredModel;
-
         final boolean IGNORE_STYLESHEETS = true;
         final boolean IGNORE_FAVICON = true;
         final boolean DOCBASE_ONLY = false;
@@ -114,6 +104,29 @@ public abstract class AbstractImporter implements Importer
             // so it should be quite clean already. Also because the HTML input stream, coming from JSoup is minified before passed to Sesame.
             // But it can be easily supported (the part where the exception is thrown)
             if (!removed) {
+                //these will hold possible modified pieces of the statement
+                Resource newSubject = null;
+                IRI newPredicate = null;
+                Value newObject = null;
+
+                //trim all "lang" params from the subject
+                //This is an important change:
+                // From time to time, the eg. ?lang=en part of an URI seeps through, even though we set every RDFa html tag with a clear @about attribute
+                // eg. this is the case as subject of "http://www.w3.org/ns/rdfa#usesVocabulary"
+                // Because we don't save the statements of a resource by language (the @lang tag makes sure it is added statement-per-statement for certain datatypes),
+                // the subject of the resource needs to be cleared from all lang query params to avoid false doubles while querying the triplestore (eg. using SPARQL).
+                // We group by subject-URI and double (or triple, or ..., depends on the amount of languages in the system) entries mess up the counts, iterations, group-by's, etc.
+                // That's why we try hard here to avoid these during import.
+                if (stmt.getSubject() instanceof IRI) {
+                    URI subject = URI.create(stmt.getSubject().stringValue());
+                    MultivaluedMap<String, String> queryParams = StringFunctions.getQueryParameters(subject);
+                    if (queryParams!=null && queryParams.containsKey(I18nFactory.LANG_QUERY_PARAM)) {
+                        URI noLangUri = UriBuilder.fromUri(subject).replaceQueryParam(I18nFactory.LANG_QUERY_PARAM, null).build();
+                        newSubject = factory.createIRI(noLangUri.toString());
+                    }
+                }
+
+                //if the object is a literal, check if it needs to be trimmed
                 if (stmt.getObject() instanceof Literal) {
                     Literal literal = (Literal) stmt.getObject();
                     String objectValue = literal.getLabel();
@@ -121,29 +134,41 @@ public abstract class AbstractImporter implements Importer
 
                     if (!objectValue.equals(objectValueTrimmed)) {
                         //Note: this makes sense: see SimpleLiteral(String label, IRI datatype) constructor code
-                        Literal trimmedLiteral = null;
                         if (literal.getDatatype().equals(RDF.LANGSTRING)) {
-                            trimmedLiteral = factory.createLiteral(objectValueTrimmed, literal.getLanguage().get());
+                            newObject = factory.createLiteral(objectValueTrimmed, literal.getLanguage().get());
                         }
                         else if (literal.getDatatype().equals(XMLSchema.STRING)) {
-                            trimmedLiteral = factory.createLiteral(objectValueTrimmed, literal.getDatatype());
+                            newObject = factory.createLiteral(objectValueTrimmed, literal.getDatatype());
                         }
                         else {
                             throw new IOException("Encountered unsupported simple literal value, this shouldn't happen; " + literal.getDatatype());
                         }
-
-                        Statement trimmedStmt = null;
-                        if (stmt.getContext() == null) {
-                            trimmedStmt = factory.createStatement(stmt.getSubject(), stmt.getPredicate(), trimmedLiteral);
-                        }
-                        else {
-                            trimmedStmt = factory.createStatement(stmt.getSubject(), stmt.getPredicate(), trimmedLiteral, stmt.getContext());
-                        }
-                        //we can't add them directly to the model or we'll have a concurrent mod exception, and since statements don't really have an order,
-                        // it's safe to add them afterwards after this loop
-                        editedStatements.add(trimmedStmt);
-                        iter.remove();
                     }
+                }
+
+                //check if we need to change the statement: remove it from the model and add it again later on
+                if (newSubject!=null || newObject!=null || newPredicate!=null) {
+                    if (newSubject==null) {
+                        newSubject = stmt.getSubject();
+                    }
+                    if (newPredicate==null) {
+                        newPredicate = stmt.getPredicate();
+                    }
+                    if (newObject==null) {
+                        newObject = stmt.getObject();
+                    }
+
+                    Statement modifiedStmt = null;
+                    if (stmt.getContext() == null) {
+                        modifiedStmt = factory.createStatement(newSubject, newPredicate, newObject);
+                    }
+                    else {
+                        modifiedStmt = factory.createStatement(newSubject, newPredicate, newObject, stmt.getContext());
+                    }
+                    //we can't add them directly to the model or we'll have a concurrent mod exception, and since statements don't really have an order,
+                    // it's safe to add them afterwards after this loop
+                    editedStatements.add(modifiedStmt);
+                    iter.remove();
                 }
             }
         }
