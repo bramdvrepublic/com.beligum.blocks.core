@@ -1,4 +1,6 @@
-package com.beligum.blocks.fs.index.entries;
+package com.beligum.blocks.fs.index.entries.pages;
+
+import com.beligum.blocks.fs.index.entries.IndexEntry;
 
 /**
  * Created by bram on 2/23/16.

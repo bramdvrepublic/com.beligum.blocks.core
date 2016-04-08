@@ -184,7 +184,7 @@ public class PageEndpoint
         if (savedPage != null) {
             //Note: transaction handling is done through the global XA transaction
             StorageFactory.getMainPageIndexer().connect().update(savedPage);
-            StorageFactory.getTriplestorePageIndexer().connect().update(savedPage);
+            StorageFactory.getTriplestoreIndexer().connect().update(savedPage);
         }
 
         return Response.ok().build();
@@ -203,7 +203,7 @@ public class PageEndpoint
 
         if (deletedPage!=null) {
             StorageFactory.getMainPageIndexer().connect().delete(deletedPage);
-            StorageFactory.getTriplestorePageIndexer().connect().delete(deletedPage);
+            StorageFactory.getTriplestoreIndexer().connect().delete(deletedPage);
         }
 
         return Response.ok().build();

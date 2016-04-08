@@ -3,11 +3,11 @@ package com.beligum.blocks.rdf.ontology.vocabularies.endpoints;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
-import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
+import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.fs.index.entries.IndexEntry;
-import com.beligum.blocks.fs.index.entries.PageIndexEntry;
-import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
+import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
+import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ontology.vocabularies.local.DefaultResourceInfo;
 import com.beligum.blocks.rdf.ontology.vocabularies.local.ResourceSuggestion;
@@ -16,8 +16,6 @@ import org.apache.lucene.search.BooleanClause;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
-
-import static com.beligum.blocks.fs.index.entries.PageIndexEntry.Field.language;
 
 /**
  * Created by bram on 3/14/16.
@@ -40,13 +38,13 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
     {
         List<AutocompleteSuggestion> retVal = new ArrayList<>();
 
-        PageIndexConnection.FieldQuery[] queries =
-                        new PageIndexConnection.FieldQuery[] { new PageIndexConnection.FieldQuery(PageIndexEntry.Field.typeOf, resourceType.getCurieName().toString(), BooleanClause.Occur.FILTER,
-                                                                                                  PageIndexConnection.FieldQuery.Type.EXACT),
-                                                               new PageIndexConnection.FieldQuery(IndexEntry.Field.tokenisedId, query, BooleanClause.Occur.SHOULD,
-                                                                                                  prefixSearch ? PageIndexConnection.FieldQuery.Type.WILDCARD_COMPLEX : PageIndexConnection.FieldQuery.Type.WILDCARD, 1),
-                                                               new PageIndexConnection.FieldQuery(PageIndexEntry.Field.title, query, BooleanClause.Occur.SHOULD,
-                                                                                                  PageIndexConnection.FieldQuery.Type.WILDCARD_COMPLEX, 1) };
+        LuceneQueryConnection.FieldQuery[] queries =
+                        new LuceneQueryConnection.FieldQuery[] { new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.typeOf, resourceType.getCurieName().toString(), BooleanClause.Occur.FILTER,
+                                                                                                      LuceneQueryConnection.FieldQuery.Type.EXACT),
+                                                                 new LuceneQueryConnection.FieldQuery(IndexEntry.Field.tokenisedId, query, BooleanClause.Occur.SHOULD,
+                                                                                                      prefixSearch ? LuceneQueryConnection.FieldQuery.Type.WILDCARD_COMPLEX : LuceneQueryConnection.FieldQuery.Type.WILDCARD, 1),
+                                                                 new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.title, query, BooleanClause.Occur.SHOULD,
+                                                                                                      LuceneQueryConnection.FieldQuery.Type.WILDCARD_COMPLEX, 1) };
 
         //See https://lucene.apache.org/core/5_4_1/queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package_description
         //#typeOf:mot:Person #(tokenisedId:bra* title:bra*)
@@ -54,7 +52,7 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
         //        StringBuilder luceneQuery = new StringBuilder();
         //        luceneQuery/*.append("#")*/.append(PageIndexEntry.Field.typeOf.name()).append(":").append(QueryParser.escape(resourceType.getCurieName().toString()))/*.append("\"")*/;
 
-        List<PageIndexEntry> matchingPages = StorageFactory.getMainPageIndexer().connect().search(queries, maxResults);
+        List<PageIndexEntry> matchingPages = StorageFactory.getMainPageQueryConnection().search(queries, maxResults);
 
         /*
          * Note that this is not the best way to do this: it should actually be implemented with the grouping functionality of Lucene
@@ -95,12 +93,12 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
     {
         ResourceInfo retVal = null;
 
-        PageIndexConnection.FieldQuery[] queries =
-                        new PageIndexConnection.FieldQuery[] {
-                                        new PageIndexConnection.FieldQuery(PageIndexEntry.Field.resource, resourceId.toString(), BooleanClause.Occur.MUST, PageIndexConnection.FieldQuery.Type.EXACT)
+        LuceneQueryConnection.FieldQuery[] queries =
+                        new LuceneQueryConnection.FieldQuery[] {
+                                        new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.resource, resourceId.toString(), BooleanClause.Occur.MUST, LuceneQueryConnection.FieldQuery.Type.EXACT)
                         };
 
-        List<PageIndexEntry> matchingPages = StorageFactory.getMainPageIndexer().connect().search(queries, Settings.instance().getLanguages().size());
+        List<PageIndexEntry> matchingPages = StorageFactory.getMainPageQueryConnection().search(queries, Settings.instance().getLanguages().size());
         if (!matchingPages.isEmpty()) {
             PageIndexEntry selectedEntry = null;
             for (PageIndexEntry entry : matchingPages) {

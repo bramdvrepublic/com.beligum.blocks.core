@@ -9,7 +9,9 @@ import com.beligum.blocks.fs.hdfs.TransactionalRawLocalFileSystem;
 import com.beligum.blocks.fs.index.LucenePageIndexer;
 import com.beligum.blocks.fs.index.SesamePageIndexer;
 import com.beligum.blocks.fs.index.ifaces.Indexer;
+import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexer;
+import com.beligum.blocks.fs.index.ifaces.SparqlQueryConnection;
 import com.beligum.blocks.fs.pages.SimplePageStore;
 import com.beligum.blocks.fs.pages.ifaces.PageStore;
 import org.apache.commons.lang.StringUtils;
@@ -71,7 +73,11 @@ public class StorageFactory
 
         return (PageIndexer) R.cacheManager().getApplicationCache().get(CacheKeys.MAIN_PAGE_INDEX);
     }
-    public static PageIndexer getTriplestorePageIndexer() throws IOException
+    public static LuceneQueryConnection getMainPageQueryConnection() throws IOException
+    {
+        return (LuceneQueryConnection) getMainPageIndexer().connect();
+    }
+    public static PageIndexer getTriplestoreIndexer() throws IOException
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRIPLESTORE_PAGE_INDEX)) {
             Indexer indexer = new SesamePageIndexer();
@@ -80,6 +86,10 @@ public class StorageFactory
         }
 
         return (PageIndexer) R.cacheManager().getApplicationCache().get(CacheKeys.TRIPLESTORE_PAGE_INDEX);
+    }
+    public static SparqlQueryConnection getTriplestoreQueryConnection() throws IOException
+    {
+        return (SparqlQueryConnection) getTriplestoreIndexer().connect();
     }
     public static TransactionManager getTransactionManager() throws IOException
     {

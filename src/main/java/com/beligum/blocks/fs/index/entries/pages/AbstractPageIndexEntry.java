@@ -1,5 +1,6 @@
-package com.beligum.blocks.fs.index.entries;
+package com.beligum.blocks.fs.index.entries.pages;
 
+import com.beligum.blocks.fs.index.entries.IndexEntry;
 import org.apache.lucene.index.Term;
 
 import java.net.URI;
@@ -7,7 +8,7 @@ import java.net.URI;
 /**
  * Created by bram on 2/14/16.
  */
-public abstract class AbstractIndexEntry implements IndexEntry
+public abstract class AbstractPageIndexEntry implements IndexEntry
 {
     //-----CONSTANTS-----
 
@@ -15,7 +16,7 @@ public abstract class AbstractIndexEntry implements IndexEntry
     protected URI id;
 
     //-----CONSTRUCTORS-----
-    protected AbstractIndexEntry(URI id)
+    protected AbstractPageIndexEntry(URI id)
     {
         this.id = id;
     }
@@ -50,10 +51,10 @@ public abstract class AbstractIndexEntry implements IndexEntry
     {
         if (this == o)
             return true;
-        if (!(o instanceof AbstractIndexEntry))
+        if (!(o instanceof AbstractPageIndexEntry))
             return false;
 
-        AbstractIndexEntry that = (AbstractIndexEntry) o;
+        AbstractPageIndexEntry that = (AbstractPageIndexEntry) o;
 
         return getId() != null ? getId().equals(that.getId()) : that.getId() == null;
 

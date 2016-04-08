@@ -1,5 +1,6 @@
-package com.beligum.blocks.fs.index.entries;
+package com.beligum.blocks.fs.index.entries.pages;
 
+import com.beligum.blocks.fs.index.entries.IndexEntry;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -10,7 +11,7 @@ import java.net.URI;
 /**
  * Created by bram on 2/13/16.
  */
-public class SimplePageIndexEntry extends AbstractIndexEntry implements PageIndexEntry
+public class SimplePageIndexEntry extends AbstractPageIndexEntry implements PageIndexEntry
 {
     //-----CONSTANTS-----
 

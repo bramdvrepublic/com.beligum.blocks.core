@@ -14,7 +14,7 @@ public class DebugEndpoint
     @Path("sparql")
     public Response testSparql() throws IOException
     {
-//        PageIndexer<SelectBuilder, Query, QueryExecution> tripleStore = StorageFactory.getTriplestorePageIndexer();
+//        PageIndexer<SelectBuilder, Query, QueryExecution> tripleStore = StorageFactory.getTriplestoreIndexer();
 //
 //        boolean success = false;
 //        try {
