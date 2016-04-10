@@ -17,7 +17,7 @@ public interface RdfVocabulary
     URI getNamespace();
 
     /**
-     * Resulves the supplied suffix against the full namespace of this vocabulary
+     * Resolves the supplied suffix against the full namespace of this vocabulary
      */
     @JsonIgnore
     URI resolve(String suffix);
@@ -28,6 +28,12 @@ public interface RdfVocabulary
      * https://www.w3.org/2011/rdfa-context/rdfa-1.1
      */
     String getPrefix();
+
+    /**
+     * Resolves the supplied suffix against the curie namespace of this vocabulary
+     */
+    @JsonIgnore
+    URI resolveCurie(String suffix);
 
     /**
      * Returns all typed members (classes, properties and dataTypes) in this vocabulary

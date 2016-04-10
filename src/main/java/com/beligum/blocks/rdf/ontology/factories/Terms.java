@@ -170,7 +170,7 @@ public class Terms implements RdfResourceFactory
                                                                   },
                                                                   true);
 
-    //TODO maybe integrate this in the blocks-image block?
+    //TODO integrate this in the blocks-image block
     public static final RdfProperty image = new RdfPropertyImpl("image",
                                                                 SettingsVocabulary.INSTANCE,
                                                                 ontology.Entries.propertyTitle_image,
@@ -181,4 +181,28 @@ public class Terms implements RdfResourceFactory
                                                                 new URI[] {
                                                                 },
                                                                 false);
+
+    //TODO integrate this in the blocks-text block
+    public static final RdfProperty text = new RdfPropertyImpl("text",
+                                                                SettingsVocabulary.INSTANCE,
+                                                                ontology.Entries.propertyTitle_text,
+                                                                ontology.Entries.propertyLabel_text,
+                                                                RDF.HTML,
+                                                                InputType.Editor,
+                                                                null,
+                                                                new URI[] {
+                                                                },
+                                                                false);
+
+    //TODO integrate this in the ... (page?) block
+    public static final RdfProperty title = new RdfPropertyImpl("title",
+                                                               SettingsVocabulary.INSTANCE,
+                                                               ontology.Entries.propertyTitle_title,
+                                                               ontology.Entries.propertyLabel_title,
+                                                               XSD.STRING,
+                                                               InputType.InlineEditor,
+                                                               null,
+                                                               new URI[] {
+                                                               },
+                                                               false);
 }

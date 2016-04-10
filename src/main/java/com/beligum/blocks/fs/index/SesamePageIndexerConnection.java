@@ -1,6 +1,7 @@
 package com.beligum.blocks.fs.index;
 
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
@@ -11,6 +12,8 @@ import com.beligum.blocks.fs.index.ifaces.SparqlQueryConnection;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfResource;
+import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.openrdf.model.*;
@@ -105,7 +108,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         this.connection.add(model);
     }
     @Override
-    public List search(RdfClass type, String luceneQuery, Map fieldValues, String sortField, boolean sortAscending, int pageSize, int pageOffset, Locale language) throws IOException
+    public List<ResourceIndexEntry> search(RdfClass type, String luceneQuery, Map fieldValues, String sortField, boolean sortAscending, int pageSize, int pageOffset, Locale language) throws IOException
     {
         //see http://rdf4j.org/doc/4/programming.docbook?view#The_Lucene_SAIL
         //and maybe the source code: org.openrdf.sail.lucene.LuceneSailSchema
@@ -202,10 +205,10 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         //        con.close();
         //        repository.shutDown();
 
-        return this.search(queryBuilder.toString(), language);
+        return this.search(queryBuilder.toString(), type, language);
     }
     @Override
-    public List search(String sparqlQuery, Locale language) throws IOException
+    public List<ResourceIndexEntry> search(String sparqlQuery, RdfClass type, Locale language) throws IOException
     {
         List<ResourceIndexEntry> retVal = new ArrayList<>();
 
@@ -223,7 +226,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
 
                 if (subject instanceof IRI) {
                     //this will query the triplestore to build up the properties list
-                    retVal.add(this.buildResourceEntry((IRI) subject, language));
+                    retVal.add(this.buildResourceEntry((IRI) subject, type, language));
                 }
                 else {
                     Logger.warn("Skipping incompatible sparql result because it's subject is no IRI; " + subject);
@@ -317,10 +320,21 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
 
         return retVal;
     }
-    private ResourceIndexEntry buildResourceEntry(IRI resourceId, Locale language) throws IOException
+    private ResourceIndexEntry buildResourceEntry(IRI resourceId, RdfClass type, Locale language) throws IOException
     {
-        //we convert to a uniform Java-URI so it's compatible with existing interfaces later on
-        ResourceIndexEntry retVal = new SimpleResourceIndexEntry(this.toUri(resourceId, false, true));
+        Class<? extends ResourceIndexEntry> resourceIndexClass = type.getResourceIndexClass();
+        if (resourceIndexClass==null) {
+            resourceIndexClass = SimpleResourceIndexEntry.class;
+        }
+
+        ResourceIndexEntry retVal = null;
+        try {
+            //we convert to a uniform Java-URI so it's compatible with existing interfaces later on
+            retVal = resourceIndexClass.getConstructor(URI.class).newInstance(this.toUri(resourceId, false, true));
+        }
+        catch (Exception e) {
+            throw new IOException("Error while initializing a resource index entry class '"+resourceIndexClass.getCanonicalName()+"', you probably want to check it's constructor signature", e);
+        }
 
         RepositoryResult<Statement> properties = this.connection.getStatements(resourceId, null, null);
         while (properties.hasNext()) {
@@ -328,27 +342,35 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
 
             Logger.info("\t"+statement);
 
-            //note that we don't convert to a RdfClass to allow for unmapped properties
-            URI predicateClass = this.toUri(statement.getPredicate(), true, false);
-            if (predicateClass != null) {
-                //we only add literals that match the passed-down language (disabled when null)
-                boolean skip = false;
-                if (language != null && statement.getObject() instanceof Literal) {
-                    Literal object = (Literal) statement.getObject();
-                    if (object.getLanguage().isPresent()) {
-                        skip = !object.getLanguage().get().equals(language.getLanguage());
+            //Note that we need a CURIE for RdfFactory.getForResourceType(), so first convert the absolute predicate URI to a curie URI
+            RdfVocabulary vocab = RdfFactory.getVocabularies().get(URI.create(statement.getPredicate().getNamespace()));
+            if (vocab!=null) {
+                URI predicateResourceUri = vocab.resolveCurie(statement.getPredicate().getLocalName());
+                //RdfResource predicateResource = RdfFactory.getForResourceType(this.toUri(statement.getPredicate(), true, false));
+                RdfResource predicateResource = RdfFactory.getForResourceType(predicateResourceUri);
+                if (predicateResource != null) {
+                    //we only add literals that match the passed-down language (disabled when null)
+                    boolean skip = false;
+                    if (language != null && statement.getObject() instanceof Literal) {
+                        Literal object = (Literal) statement.getObject();
+                        if (object.getLanguage().isPresent()) {
+                            skip = !object.getLanguage().get().equals(language.getLanguage());
+                        }
+                    }
+
+                    if (!skip) {
+                        Value oldProperty = retVal.getProperties().put(predicateResource, statement.getObject());
+                        if (oldProperty != null) {
+                            Logger.warn("Watch out, overwriting an existing (and thus double) predicate '" + statement.getPredicate() + "' for resource; " + resourceId);
+                        }
                     }
                 }
-
-                if (!skip) {
-                    Value oldProperty = retVal.getProperties().put(predicateClass, statement.getObject());
-                    if (oldProperty != null) {
-                        Logger.warn("Watch out, overwriting an existing (and thus double) predicate '" + statement.getPredicate() + "' for resource; " + resourceId);
-                    }
+                else {
+                    Logger.warn("Skipping incompatible sparql result because it's predicate is not a known RDF class; " + statement.getPredicate());
                 }
             }
             else {
-                Logger.warn("Skipping incompatible sparql result because it's predicate is not a known RDF class; " + statement.getPredicate());
+                Logger.warn("Skipping incompatible sparql result because it's namespace is not in a known RDF vocabulary; " + statement.getPredicate());
             }
         }
 

@@ -1,6 +1,7 @@
 package com.beligum.blocks.fs.index.ifaces;
 
 import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
+import com.beligum.blocks.fs.index.entries.resources.ResourceIndexEntry;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 
 import java.io.IOException;
@@ -35,12 +36,12 @@ public interface SparqlQueryConnection<T extends PageIndexEntry> extends QueryCo
      * @return the result list
      * @throws IOException
      */
-    List<T> search(RdfClass type, String luceneQuery, Map<String, String> fieldValues, String sortField, boolean sortAscending, int pageSize, int pageOffset, Locale language) throws IOException;
+    <T extends ResourceIndexEntry> List<T> search(RdfClass type, String luceneQuery, Map<String, String> fieldValues, String sortField, boolean sortAscending, int pageSize, int pageOffset, Locale language) throws IOException;
 
     /**
      * Search the triple store with the specified raw Sparql query
      */
-    List<T> search(String sparqlQuery, Locale language) throws IOException;
+    <T extends ResourceIndexEntry> List<T> search(String sparqlQuery, RdfClass type, Locale language) throws IOException;
 
     //-----PROTECTED METHODS-----
 

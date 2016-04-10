@@ -1,6 +1,7 @@
 package com.beligum.blocks.config;
 
 import com.beligum.base.server.R;
+import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.ReflectionFunctions;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
@@ -153,5 +154,20 @@ public class RdfFactory
 
             initialized = true;
         }
+    }
+    private static URI curieToFull(URI resourceTypeCurie)
+    {
+        //if we find nothing, we return null, which kind of makes sense to indicate an error
+        URI retVal = null;
+
+        RdfVocabulary vocab = getVocabularyForPrefix(resourceTypeCurie.getScheme());
+        if (vocab!=null) {
+            retVal = vocab.resolve(resourceTypeCurie.getPath());
+        }
+        else {
+            Logger.warn("Encountered unknown curie schema, returning null for; " + resourceTypeCurie);
+        }
+
+        return retVal;
     }
 }

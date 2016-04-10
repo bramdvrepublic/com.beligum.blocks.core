@@ -1,6 +1,7 @@
 package com.beligum.blocks.rdf.ifaces;
 
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
+import com.beligum.blocks.fs.index.entries.resources.ResourceIndexEntry;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.net.URI;
@@ -83,6 +84,13 @@ public interface RdfClass extends RdfResource
      */
     @JsonIgnore
     Set<RdfProperty> getProperties();
+
+    /**
+     * A subclass of ResourceIndexEntry to use when building the java-object when the RDF triples come back from the triple store.
+     * If this is null, a generic SimpleResourceIndexEntry is used.
+     */
+    @JsonIgnore
+    Class<? extends ResourceIndexEntry> getResourceIndexClass();
 
     /**
      * Setter for the value above. Note that this was pulled out of the constructor and made public to allow us to set it in a separate mapping.

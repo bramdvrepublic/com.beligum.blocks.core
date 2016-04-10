@@ -59,6 +59,12 @@ public abstract class AbstractRdfVocabulary extends AbstractJsonObject implement
     {
         return prefix;
     }
+    @Override
+    public URI resolveCurie(String suffix)
+    {
+        return URI.create(this.prefix+":"+suffix);
+    }
+    @Override
     public Map<URI, RdfResource> getAllTypes()
     {
         return allTypes;
