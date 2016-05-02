@@ -1,7 +1,6 @@
 package com.beligum.blocks.routing;
 
 import com.beligum.base.server.R;
-import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.controllers.PersistenceControllerImpl;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
 import com.beligum.blocks.models.interfaces.WebPath;
@@ -39,7 +38,7 @@ public class Route
         this.database = database;
 
         if (uri == null) {
-            uri = Settings.instance().getSiteDomain();
+            uri = R.configuration().getSiteDomain();
         }
         this.uri = uri;
 
@@ -48,13 +47,13 @@ public class Route
         // If not in production set the domain manually (overwrite localhost)
         URI domain = uri;
         if (!R.configuration().getProduction()) {
-            domain = Settings.instance().getSiteDomain();
+            domain = R.configuration().getSiteDomain();
         }
 
         this.locale = getLanguageFromPath(currentPath);
         if (locale.equals(Locale.ROOT)) {
             this.simplePath = Paths.get("/").resolve(currentPath).normalize();
-            this.languagedPath = Paths.get("/").resolve(Settings.instance().getDefaultLanguage().getLanguage()).resolve(this.simplePath).normalize();
+            this.languagedPath = Paths.get("/").resolve(R.configuration().getDefaultLanguage().getLanguage()).resolve(this.simplePath).normalize();
             this.uri = UriBuilder.fromUri("").scheme(this.uri.getScheme()).userInfo(this.uri.getUserInfo()).host(this.uri.getHost()).port(this.uri.getPort()).path(this.languagedPath.toString())
                                       .replaceQuery(this.uri.getQuery()).fragment(this.uri.getFragment()).build();
         }
@@ -85,8 +84,8 @@ public class Route
             // Check if other languages are linked to this path
             Map<String, WebPath> languagePaths = PersistenceControllerImpl.instance().getLanguagePaths(simplePath.toString());
             if (languagePaths.size() > 0) {
-                if (languagePaths.containsKey(Settings.instance().getDefaultLanguage().toString())) {
-                    blockId = languagePaths.get(Settings.instance().getDefaultLanguage().toString()).getBlockId();
+                if (languagePaths.containsKey(R.configuration().getDefaultLanguage().toString())) {
+                    blockId = languagePaths.get(R.configuration().getDefaultLanguage().toString()).getBlockId();
                 }
                 else {
                     blockId = languagePaths.values().iterator().next().getBlockId();
@@ -106,7 +105,7 @@ public class Route
                 // check if this path exists, if not create
 
                 // now add paths for other languages
-                for (Locale l : Settings.instance().getLanguages().values()) {
+                for (Locale l : R.configuration().getLanguages().values()) {
                     if (!l.equals(locale) && !paths.containsKey(l.getLanguage())) {
                         WebPath webPath = new DBPath(blockId, simplePath, l);
                         PersistenceControllerImpl.instance().savePath(webPath);
@@ -166,7 +165,7 @@ public class Route
         Locale retVal = null;
         if (path.getNameCount() > 0) {
             String lang = path.getName(0).toString();
-            retVal = Settings.instance().getLanguages().get(lang);
+            retVal = R.configuration().getLanguages().get(lang);
             if (retVal == null) {
                 retVal = Locale.ROOT;
             }

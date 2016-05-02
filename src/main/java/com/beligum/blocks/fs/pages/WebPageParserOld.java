@@ -1,6 +1,7 @@
 package com.beligum.blocks.fs.pages;
 
 import com.beligum.base.i18n.I18nFactory;
+import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.controllers.interfaces.PersistenceController;
@@ -421,7 +422,7 @@ public class WebPageParserOld
             this.base = UriBuilder.fromUri(this.base).replacePath("").build();
         }
         else {
-            this.base = cleanUri(Settings.instance().getSiteDomain());
+            this.base = cleanUri(R.configuration().getSiteDomain());
         }
     }
 

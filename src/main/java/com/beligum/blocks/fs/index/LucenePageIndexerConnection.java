@@ -8,7 +8,7 @@ import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
 import com.beligum.blocks.fs.index.entries.pages.SimplePageIndexEntry;
 import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
-import com.beligum.blocks.fs.pages.DefaultPageImpl;
+import com.beligum.blocks.fs.pages.ReadOnlyPage;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
 import org.apache.hadoop.fs.FileContext;
@@ -64,7 +64,8 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     {
         this.assertWriterTransaction();
 
-        this.indexWriter.deleteDocuments(AbstractPageIndexEntry.toLuceneId(page.buildRelativeAddress()));
+        //don't use the canonical address as the id of the entry: it's not unique (will be the same for different languages)
+        this.indexWriter.deleteDocuments(AbstractPageIndexEntry.toLuceneId(page.getPublicRelativeAddress()));
 
         //for debug
         //this.printLuceneIndex();
@@ -192,7 +193,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
                     break;
                 case WILDCARD:
                     QueryParser queryParser = new QueryParser(q.getField().name(), DEFAULT_ANALYZER);
-                    //we need to escape the wildcard query, and appedkdkdlkjsdfnd the asterisk afterwards (or it will be escaped)
+                    //we need to escape the wildcard query, and append the asterisk afterwards (or it will be escaped)
                     subQuery = queryParser.parse(QueryParser.escape(q.getQuery()) + "*");
                     break;
                 case WILDCARD_COMPLEX:
@@ -259,17 +260,15 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     {
         HtmlAnalyzer htmlAnalyzer = page.createAnalyzer();
 
-        FileContext fc = page.getResourcePath().getFileContext();
-        // we prefer to use relative paths for our (long term) index
-        URI pageAddress = page.buildRelativeAddress();
+        //note that we don't index the (optional, eg. for resource-urls) 'lang' param as part of the
 
-        SimplePageIndexEntry entry = new SimplePageIndexEntry(pageAddress);
+        //don't use the canonical address as the id of the entry: it's not unique (will be the same for different languages)
+        SimplePageIndexEntry entry = new SimplePageIndexEntry(page.getPublicRelativeAddress());
         entry.setResource(htmlAnalyzer.getHtmlAbout() == null ? null : htmlAnalyzer.getHtmlAbout().value);
         entry.setTypeOf(htmlAnalyzer.getHtmlTypeof() == null ? null : htmlAnalyzer.getHtmlTypeof().value);
-        entry.setLanguage(htmlAnalyzer.getHtmlLanguage() == null ? null : htmlAnalyzer.getHtmlLanguage().getLanguage());
-        URI parent = this.getParentUri(pageAddress, fc);
-        entry.setParent(parent == null ? null : parent.toString());
         entry.setTitle(htmlAnalyzer.getTitle());
+        entry.setLanguage(htmlAnalyzer.getHtmlLanguage() == null ? null : htmlAnalyzer.getHtmlLanguage().getLanguage());
+        entry.setCanonicalAddress(page.getCanonicalAddress() == null ? null : page.getCanonicalAddress().toString());
 
         return entry;
     }
@@ -287,8 +286,8 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
             }
             else {
                 //note: this is null proof
-                URI parentResourceUri = DefaultPageImpl.toResourceUri(parentUri, Settings.instance().getPagesStorePath());
-                if (parentResourceUri != null && fc.util().exists(new org.apache.hadoop.fs.Path(parentResourceUri))) {
+                Page parentPage = new ReadOnlyPage(pageUri);
+                if (fc.util().exists(parentPage.getResourcePath().getLocalPath())) {
                     retVal = parentUri;
                 }
                 else {

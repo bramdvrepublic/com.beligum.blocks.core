@@ -11,6 +11,7 @@ import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Locale;
 
 /**
  * Created by bram on 1/14/16.
@@ -18,18 +19,28 @@ import java.net.URI;
 public interface Page
 {
     /**
-     * Computes (and caches) the public, full (domain-prefixed) URL of this page, based on the relative path name of this page on the server.
-     * @return
-     * @throws IOException
+     * Returns the most naked form of this page; eg. stripped from all language params, it's file storage extension (or directory dummy filename, etc).
+     * This address is to be used to index this page (together with it's language, but separately).
+     * This allows us to easily perform redirects eg. when a requested page doesn't exist for the requested path in the requested language, but does with another language.
+     * For example, if the page /en/this/page exists, but the user requests /nl/this/page, we can easily lookup the second page using it's canonical address /this/page
      */
-    URI buildAbsoluteAddress() throws IOException;
+    URI getCanonicalAddress();
 
     /**
-     * Computes (and caches) the public, relative (so without domain) URL of this page, based on the relative path name of this page on the server.
-     * @return
-     * @throws IOException
+     * Returns the language of this page, as extracted (and stripped) during creation. May be null, if no such value was present during creation (eg. /this/page)
+     * or the used language was unsupported with the current site language settings (eg. /xx/this/page)
      */
-    URI buildRelativeAddress() throws IOException;
+    Locale getLanguage();
+
+    /**
+     * returns the public, full (domain-prefixed) URL of this page, based on the relative path name of this page on the server.
+     */
+    URI getPublicAbsoluteAddress() throws IOException;
+
+    /**
+     * returns the public, relative (so without domain) URL of this page, based on the relative path name of this page on the server.
+     */
+    URI getPublicRelativeAddress() throws IOException;
 
     /**
      * Creates the semantic importer for this kind of page (currently an RDFa processor)

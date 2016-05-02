@@ -102,11 +102,11 @@ public class AdminEndpoint
                         }
                         String localUrl = Paths.get("/").resolve(Paths.get(path.getLanguage().getLanguage())).resolve(url).normalize().toString();
 
-                        URI uri = Settings.instance().getSiteDomain().resolve(localUrl);
+                        URI uri = R.configuration().getSiteDomain().resolve(localUrl);
                         Route route = new Route(uri, PersistenceControllerImpl.instance());
 
                         if (route.getLocale().equals(Locale.ROOT)) {
-                            uri = UriBuilder.fromUri(Settings.instance().getSiteDomain()).path(Settings.instance().getDefaultLanguage().getLanguage()).path(localUrl).build();
+                            uri = UriBuilder.fromUri(R.configuration().getSiteDomain()).path(R.configuration().getDefaultLanguage().getLanguage()).path(localUrl).build();
                             route = new Route(uri, PersistenceControllerImpl.instance());
                             //TODO what about the other languages??
                         }

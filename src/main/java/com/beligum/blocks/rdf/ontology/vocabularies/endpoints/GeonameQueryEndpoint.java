@@ -2,7 +2,6 @@ package com.beligum.blocks.rdf.ontology.vocabularies.endpoints;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.json.Json;
-import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.base.utils.xml.XML;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
@@ -49,7 +48,7 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
 
     //-----PUBLIC METHODS-----
     @Override
-    public List<AutocompleteSuggestion> search(RdfClass resourceType, final String query, boolean prefixSearch, Locale language, int maxResults, SearchOption... options) throws IOException
+    public List<AutocompleteSuggestion> search(RdfClass resourceType, final String query, QueryType queryType, Locale language, int maxResults, SearchOption... options) throws IOException
     {
         List<AutocompleteSuggestion> retVal = new ArrayList<>();
 
@@ -68,12 +67,22 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
                                        .queryParam("orderby", "population")
                                        .queryParam("type", "json");
 
-        if (prefixSearch) {
-            builder.queryParam("name_startsWith", query);
-        }
-        else {
-            //from the docs: query needs to be query encoded!
-            builder.queryParam("q", StringFunctions.encodeHtmlUrl(query));
+        //from the Geoname docs: needs to be query encoded (but builder.queryParam() does that for us, so don't encode twice!)!
+        switch (queryType) {
+            case STARTS_WITH:
+                builder.queryParam("name_startsWith", query);
+                break;
+            case NAME:
+                builder.queryParam("name", query);
+                break;
+            case FULL:
+                //Note that 'q' searches over everything (capital, continent, etc) of a place or country,
+                // often resulting in a too-broad result set (often not sorted the way we want, so if we take the first, it's often very wrong)
+                // but it does allow us to use terms like 'Halen,Belgium' to specify more precisely what we want.
+                builder.queryParam("q", query);
+                break;
+            default:
+                throw new IOException("Unsupported or unimplemented query type encountered, can't proceed; "+queryType);
         }
 
         if (geonameType.featureClasses != null) {

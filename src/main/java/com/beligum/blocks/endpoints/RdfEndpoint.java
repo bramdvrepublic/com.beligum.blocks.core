@@ -4,8 +4,8 @@ import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
-import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
+import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.security.Permissions;
@@ -16,7 +16,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Created by bram on 2/25/16.
@@ -80,7 +82,12 @@ public class RdfEndpoint
         if (rdfClass != null) {
             RdfQueryEndpoint endpoint = rdfClass.getEndpoint();
             if (endpoint != null) {
-                retVal = endpoint.search(rdfClass, query, prefixSearch, R.i18nFactory().getOptimalRefererLocale(), maxResults);
+                RdfQueryEndpoint.QueryType queryType = RdfQueryEndpoint.QueryType.FULL;
+                if (prefixSearch) {
+                    queryType = RdfQueryEndpoint.QueryType.STARTS_WITH;
+                }
+
+                retVal = endpoint.search(rdfClass, query, queryType, R.i18nFactory().getOptimalRefererLocale(), maxResults);
             }
         }
         else {

@@ -1,5 +1,6 @@
 package com.beligum.blocks.fs.index;
 
+import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.Settings;
@@ -102,7 +103,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         //explicitly read the model from disk so we can use this indexer stand alone
         Importer rdfImporter = page.createImporter(page.getRdfExportFileFormat());
         try (InputStream is = page.getResourcePath().getFileContext().open(page.getRdfExportFile())) {
-            model = rdfImporter.importDocument(is, page.buildRelativeAddress());
+            model = rdfImporter.importDocument(is, page.getPublicRelativeAddress());
         }
 
         this.connection.add(model);
@@ -212,7 +213,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     {
         List<ResourceIndexEntry> retVal = new ArrayList<>();
 
-        TupleQuery query = connection.prepareTupleQuery(QueryLanguage.SPARQL, sparqlQuery, Settings.instance().getSiteDomain().toString());
+        TupleQuery query = connection.prepareTupleQuery(QueryLanguage.SPARQL, sparqlQuery, R.configuration().getSiteDomain().toString());
 
         try (TupleQueryResult result = query.evaluate()) {
             List<String> bindingNames = result.getBindingNames();
@@ -312,7 +313,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     {
         URI retVal = uri;
 
-        URI relative = Settings.instance().getSiteDomain().relativize(retVal);
+        URI relative = R.configuration().getSiteDomain().relativize(retVal);
         //if it's not absolute (eg. it doesn't start with http://..., this means the relativize 'succeeded' and the retVal starts with the RDF ontology URI)
         if (!relative.isAbsolute()) {
             retVal = ROOT.resolve(relative);

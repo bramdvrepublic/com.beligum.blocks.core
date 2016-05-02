@@ -1,5 +1,6 @@
 package com.beligum.blocks.utils;
 
+import com.beligum.base.server.R;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.exceptions.RdfException;
@@ -48,7 +49,7 @@ public class RdfTools
      */
     public static URI createAbsoluteResourceId(RdfClass entity, String id)
     {
-        return UriBuilder.fromUri(Settings.instance().getSiteDomain()).path(ParserConstants.RESOURCE_ENDPOINT).path(entity.getName()).path(id).build();
+        return UriBuilder.fromUri(R.configuration().getSiteDomain()).path(ParserConstants.RESOURCE_ENDPOINT).path(entity.getName()).path(id).build();
     }
 
     /**

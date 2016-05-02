@@ -27,13 +27,6 @@ public class Settings
     private static final String DEFAULT_GEONAMES_USERNAME = "demo";
 
     private static Settings instance;
-    /**
-     * the languages this site can work with, ordered from most preferred languages, to less preferred
-     */
-    private LinkedHashMap<String, Locale> cachedLanguages;
-    private Locale cachedDefaultLanguage;
-    private URI cachedSiteDomain;
-    private URI[] cachedSiteAliases;
     private URI cachedRdfOntologyUri;
     private boolean triedRdfOntologyUri;
     private URI cachedPagesStorePath;
@@ -62,98 +55,9 @@ public class Settings
     {
         return R.configuration().getMaxIndex("blocks")>=0;
     }
-
     public boolean hasBlocksCoreConfig()
     {
         return R.configuration().getMaxIndex("blocks.core")>=0;
-    }
-
-    public URI getSiteDomain()
-    {
-        if (this.cachedSiteDomain == null) {
-            String schema = R.configuration().getString("blocks.core.domain.main");
-            //note that we're configuring a _domain_, not a domain + a root path
-            if (schema.endsWith("/")) {
-                schema = schema.substring(0, schema.lastIndexOf("/"));
-            }
-            try {
-                this.cachedSiteDomain = URI.create(schema);
-            }
-            catch (Exception e) {
-                throw new RuntimeException("Site main domain in blocks config is not valid. This setting is vital, can't proceed.", e);
-            }
-        }
-
-        return this.cachedSiteDomain;
-    }
-    /**
-     * The aliases for the domain above (eg. like Apache ServerName vs. ServerAlias settings)
-     * @return
-     */
-    public URI[] getSiteAliases()
-    {
-        if (this.cachedSiteAliases == null) {
-            try {
-                String[] aliases = R.configuration().getStringArray("blocks.core.domain.alias");
-                if (aliases!=null && aliases.length>0) {
-                    List<URI> tmpList = new ArrayList<>();
-                    for (int i=0;i<aliases.length;i++) {
-                        String alias = aliases[i];
-                        if (!StringUtils.isEmpty(alias)) {
-                            //note that we're configuring a _domain_, not a domain + a root path
-                            if (alias.endsWith("/")) {
-                                alias = alias.substring(0, alias.lastIndexOf("/"));
-                            }
-                            tmpList.add(URI.create(alias));
-                        }
-                    }
-                    this.cachedSiteAliases = tmpList.toArray(new URI[tmpList.size()]);
-                }
-                else {
-                    this.cachedSiteAliases = new URI[0];
-                }
-            }
-            catch (Exception e) {
-                Logger.error("Error while getting site domain alias in blocks config. Proceeding without aliases", e);
-                this.cachedSiteAliases = new URI[0];
-            }
-        }
-
-        return this.cachedSiteAliases;
-    }
-    /**
-     * @return The languages this site can work with, ordered from most preferred getLanguage, to less preferred. If no such languages are specified in the configuration xml, an array with a default getLanguage is returned.
-     */
-    public Map<String, Locale> getLanguages()
-    {
-        if (cachedLanguages == null) {
-            cachedLanguages = new LinkedHashMap<>();
-            ArrayList<String> cachedLanguagesTemp = new ArrayList<String>(Arrays.asList(R.configuration().getStringArray("blocks.core.languages")));
-
-            for (String l : cachedLanguagesTemp) {
-
-                Locale locale = new Locale(l);
-                if (this.cachedDefaultLanguage == null)
-                    this.cachedDefaultLanguage = locale;
-                //                String getLanguage = locale;
-                cachedLanguages.put(locale.getLanguage(), locale);
-            }
-            if (cachedLanguages.size() == 0) {
-                this.cachedDefaultLanguage = Locale.ENGLISH;
-                cachedLanguages.put(cachedDefaultLanguage.getLanguage(), cachedDefaultLanguage);
-            }
-        }
-        return cachedLanguages;
-    }
-    /**
-     * @return The first languages in the languages-list, or the no-getLanguage-constant if no such list is present in the configuration-xml.
-     */
-    public Locale getDefaultLanguage()
-    {
-        if (cachedDefaultLanguage == null) {
-            this.getLanguages();
-        }
-        return cachedDefaultLanguage;
     }
     /**
      * Flag that indicates if we should redirect to the default locale of the site on creating a language-less new page.
@@ -163,14 +67,6 @@ public class Settings
     public boolean getForceRedirectToDefaultLocale()
     {
         return R.configuration().getBoolean("blocks.core.pages.force-default-locale", false);
-    }
-    public Locale getLocaleForLanguage(String language)
-    {
-        Locale retVal = this.getDefaultLanguage();
-        if (this.cachedLanguages.containsKey(language)) {
-            retVal = this.cachedLanguages.get(language);
-        }
-        return retVal;
     }
     public Class<? extends TransactionManager> getTransactionManagerClass()
     {
@@ -249,7 +145,10 @@ public class Settings
     {
         if (this.cachedPagesStoreJournalDir == null) {
             //Note: the journal dir resides on the local, naked file system, watch out you don't point to a dir in the distributed or transactional fs
-            this.cachedPagesStoreJournalDir = new File(R.configuration().getString("blocks.core.pages.journal-dir"));
+            String path = R.configuration().getString("blocks.core.pages.journal-dir");
+            if (!StringUtils.isEmpty(path)) {
+                this.cachedPagesStoreJournalDir = new File(path);
+            }
         }
 
         return this.cachedPagesStoreJournalDir;

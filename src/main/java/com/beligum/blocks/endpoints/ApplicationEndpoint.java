@@ -9,11 +9,9 @@ import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.fs.HdfsResource;
-import com.beligum.blocks.fs.HdfsResourcePath;
-import com.beligum.blocks.fs.pages.DefaultPageImpl;
+import com.beligum.blocks.fs.pages.ReadOnlyPage;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.security.Permissions;
@@ -25,7 +23,6 @@ import com.beligum.blocks.utils.comparators.MapComparator;
 import gen.com.beligum.blocks.core.constants.blocks.core;
 import gen.com.beligum.blocks.core.fs.html.views.new_page;
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.fs.FileContext;
 import org.apache.shiro.SecurityUtils;
 
 import javax.ws.rs.*;
@@ -67,15 +64,13 @@ public class ApplicationEndpoint
 
         //security; rebuild the url instead of blindly accepting what comes in
         //note: the randomURL doesn't include the query params; get them from the requestContext
-        URI requestedUri = UriBuilder.fromUri(Settings.instance().getSiteDomain()).replacePath(randomPage.toString())
+        URI requestedUri = UriBuilder.fromUri(R.configuration().getSiteDomain()).replacePath(randomPage.toString())
                                      .replaceQuery(R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri().getQuery()).build();
 
-        FileContext fs = StorageFactory.getPageViewFileSystem();
-        URI fsPageUri = DefaultPageImpl.toResourceUri(requestedUri, Settings.instance().getPagesViewPath());
-        Page page = new DefaultPageImpl(new HdfsResourcePath(fs, fsPageUri));
+        Page page = new ReadOnlyPage(requestedUri);
         // Since we allow the user to create pretty url's, it's mime type will not always be clear.
         // But not this endpoint only accepts HTML requests, so force the mime type
-        Resource resource = R.resourceFactory().lookup(new HdfsResource(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), fs, page.getNormalizedPageProxyPath()));
+        Resource resource = R.resourceFactory().lookup(new HdfsResource(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), page.getResourcePath().getFileContext(), page.getNormalizedPageProxyPath()));
 
         Response.ResponseBuilder retVal = null;
         URI externalRedirectUri = null;
@@ -142,8 +137,8 @@ public class ApplicationEndpoint
                         Locale redirectLocale = R.i18nFactory().getBrowserLocale();
                         //if the requested locale is supported by the site, use it, otherwise use the default locale
                         //if the default is forced, use it no matter what
-                        if (Settings.instance().getForceRedirectToDefaultLocale() || !Settings.instance().getLanguages().containsKey(redirectLocale.getLanguage())) {
-                            redirectLocale = Settings.instance().getDefaultLanguage();
+                        if (Settings.instance().getForceRedirectToDefaultLocale() || !R.configuration().getLanguages().containsKey(redirectLocale.getLanguage())) {
+                            redirectLocale = R.configuration().getDefaultLanguage();
                         }
 
                         if (redirectLocale == null) {
@@ -244,9 +239,9 @@ public class ApplicationEndpoint
                     description = template.getDescriptions().get(requestLocale);
                 }
                 // default getLanguage of the site
-                else if (template.getTitles().containsKey(Settings.instance().getDefaultLanguage())) {
-                    title = template.getTitles().get(Settings.instance().getDefaultLanguage());
-                    description = template.getDescriptions().get(Settings.instance().getDefaultLanguage());
+                else if (template.getTitles().containsKey(R.configuration().getDefaultLanguage())) {
+                    title = template.getTitles().get(R.configuration().getDefaultLanguage());
+                    description = template.getDescriptions().get(R.configuration().getDefaultLanguage());
                 }
                 // No getLanguage if available
                 else if (template.getTitles().containsKey(Locale.ROOT)) {

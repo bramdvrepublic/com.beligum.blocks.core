@@ -1,7 +1,7 @@
 package com.beligum.blocks.models.jackson.page;
 
+import com.beligum.base.server.R;
 import com.beligum.blocks.config.ParserConstants;
-import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.models.WebPageImpl;
 import com.beligum.blocks.models.interfaces.Resource;
 import com.beligum.blocks.models.interfaces.WebPage;
@@ -51,7 +51,7 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
                 Iterator<String> fieldnames = o.fieldNames();
                 while (fieldnames.hasNext()) {
                     String lang = fieldnames.next();
-                    Locale locale = Settings.instance().getLocaleForLanguage(lang);
+                    Locale locale = R.configuration().getLocaleForLanguage(lang);
                     if (locale != null) {
                         webPage.setParsedHtml(o.get(lang).asText(), locale);
                     }
@@ -68,7 +68,7 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
                 Iterator<String> fieldnames = o.fieldNames();
                 while (fieldnames.hasNext()) {
                     String lang = fieldnames.next();
-                    Locale locale = Settings.instance().getLocaleForLanguage(lang);
+                    Locale locale = R.configuration().getLocaleForLanguage(lang);
                     if (locale != null) {
                         webPage.setPageTemplate(o.get(lang).asText(), locale);
                     }
@@ -85,7 +85,7 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
                 Iterator<String> fieldnames = o.fieldNames();
                 while (fieldnames.hasNext()) {
                     String lang = fieldnames.next();
-                    Locale locale = Settings.instance().getLocaleForLanguage(lang);
+                    Locale locale = R.configuration().getLocaleForLanguage(lang);
                     if (locale != null) {
                         webPage.setPageTitle(o.get(lang).asText(), locale);
                     }
@@ -102,7 +102,7 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
                 Iterator<String> fieldnames = o.fieldNames();
                 while (fieldnames.hasNext()) {
                     String lang = fieldnames.next();
-                    Locale locale = Settings.instance().getLocaleForLanguage(lang);
+                    Locale locale = R.configuration().getLocaleForLanguage(lang);
                     if (locale != null) {
                         webPage.setText(o.get(lang).asText(), locale);
                     }
@@ -119,7 +119,7 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
                 Iterator<String> fieldnames = o.fieldNames();
                 while (fieldnames.hasNext()) {
                     String lang = fieldnames.next();
-                    Locale locale = Settings.instance().getLocaleForLanguage(lang);
+                    Locale locale = R.configuration().getLocaleForLanguage(lang);
                     if (locale != null) {
                         webPage.setUpdatedAt(LocalDateTime.ofInstant(Instant.ofEpochMilli((o.get(lang).asLong())), ZoneId.systemDefault()));
                     }
@@ -136,7 +136,7 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
                 Iterator<String> fieldnames = o.fieldNames();
                 while (fieldnames.hasNext()) {
                     String lang = fieldnames.next();
-                    Locale locale = Settings.instance().getLocaleForLanguage(lang);
+                    Locale locale = R.configuration().getLocaleForLanguage(lang);
                     if (locale != null) {
                         webPage.setCreatedAt(LocalDateTime.ofInstant(Instant.ofEpochMilli((o.get(lang).asLong())), ZoneId.systemDefault()));
                     }
@@ -153,7 +153,7 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
                 Iterator<String> fieldnames = o.fieldNames();
                 while (fieldnames.hasNext()) {
                     String lang = fieldnames.next();
-                    Locale locale = Settings.instance().getLocaleForLanguage(lang);
+                    Locale locale = R.configuration().getLocaleForLanguage(lang);
                     if (locale != null) {
                         webPage.setCreatedBy(o.get(lang).asText(), locale);
                     }
@@ -170,7 +170,7 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
                 Iterator<String> fieldnames = o.fieldNames();
                 while (fieldnames.hasNext()) {
                     String lang = fieldnames.next();
-                    Locale locale = Settings.instance().getLocaleForLanguage(lang);
+                    Locale locale = R.configuration().getLocaleForLanguage(lang);
                     if (locale != null) {
                         webPage.setUpdatedBy(o.get(lang).asText(), locale);
                     }
@@ -194,7 +194,7 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
                     Iterator<String> fieldnames = o.fieldNames();
                     while (fieldnames.hasNext()) {
                         String lang = fieldnames.next();
-                        Locale locale = Settings.instance().getLocaleForLanguage(lang);
+                        Locale locale = R.configuration().getLocaleForLanguage(lang);
                         if (isArray(node, lang)) {
                             templates = new HashSet<String>();
                             Iterator<JsonNode> iterator = node.get(lang).iterator();
@@ -224,7 +224,7 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
                     Iterator<String> fieldnames = o.fieldNames();
                     while (fieldnames.hasNext()) {
                         String lang = fieldnames.next();
-                        Locale locale = Settings.instance().getLocaleForLanguage(lang);
+                        Locale locale = R.configuration().getLocaleForLanguage(lang);
                         if (isArray(node, lang)) {
                             resources = new HashSet<String>();
                             Iterator<JsonNode> iterator = node.get(lang).iterator();
@@ -259,7 +259,7 @@ public class PageDeserializer<T extends WebPage> extends NodeDeserializer
                     Iterator<String> fieldnames = o.fieldNames();
                     while (fieldnames.hasNext()) {
                         String lang = fieldnames.next();
-                        Locale locale = Settings.instance().getLocaleForLanguage(lang);
+                        Locale locale = R.configuration().getLocaleForLanguage(lang);
                         if (isArray(node, lang)) {
                             resources = new HashSet<String>();
                             Iterator<JsonNode> iterator = node.get(lang).iterator();

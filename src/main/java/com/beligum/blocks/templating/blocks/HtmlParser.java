@@ -1,8 +1,10 @@
 package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.resources.ClasspathSearchResult;
+import com.beligum.base.resources.SizedInputStreamImpl;
 import com.beligum.base.resources.ifaces.Parser;
 import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.resources.ifaces.SizedInputStream;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
@@ -68,7 +70,7 @@ public class HtmlParser implements Parser
      * @throws IOException
      */
     @Override
-    public InputStream parse(Resource resource) throws IOException
+    public SizedInputStream parse(Resource resource) throws IOException
     {
         try {
             //the solves a lot of issues with inactive lines
@@ -420,7 +422,8 @@ public class HtmlParser implements Parser
                 retVal.append(output.toString());
             }
 
-            return new ByteArrayInputStream(retVal.toString().getBytes(Charsets.UTF_8));
+            byte[] bytes = retVal.toString().getBytes(Charsets.UTF_8);
+            return new SizedInputStreamImpl(new ByteArrayInputStream(bytes), bytes.length);
         }
         catch (Exception e) {
             throw new IOException("Caught exception while parsing html file", e);

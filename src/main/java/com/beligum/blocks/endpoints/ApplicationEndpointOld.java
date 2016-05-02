@@ -1,28 +1,14 @@
 package com.beligum.blocks.endpoints;
 
-import com.beligum.base.resources.ResourceRequestImpl;
 import com.beligum.base.server.R;
-import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.templating.ifaces.TemplateContext;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.config.StorageFactory;
-import com.beligum.blocks.fs.HdfsResource;
-import com.beligum.blocks.fs.HdfsResourcePath;
-import com.beligum.blocks.fs.ifaces.ResourcePath;
-import com.beligum.blocks.fs.pages.DefaultPageImpl;
-import com.beligum.blocks.fs.pages.ifaces.Page;
-import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
-import org.apache.hadoop.fs.FileContext;
-import org.apache.shiro.SecurityUtils;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
-import java.net.URI;
 
 @Path("/old")
 public class ApplicationEndpointOld
@@ -95,27 +81,27 @@ public class ApplicationEndpointOld
 //
 //        return retVal;
 //    }
-    @Path("/{randomPage:.*}")
-    @GET
-    public Response getPageNew(@PathParam("randomPage") String randomURLPath) throws Exception
-    {
-        URI requestedURI = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
-        URI validUri = DefaultPageImpl.toResourceUri(requestedURI, Settings.instance().getPagesViewPath());
-
-        FileContext fs = StorageFactory.getPageViewFileSystem();
-        ResourcePath resourcePath = new HdfsResourcePath(fs, validUri);
-
-        final Page page = new DefaultPageImpl(resourcePath);
-
-        Template template = R.templateEngine().getNewTemplate(R.resourceFactory().lookup(new HdfsResource(new ResourceRequestImpl(validUri), fs, page.getNormalizedPageProxyPath())));
-
-        //this will allow the blocks javascript/css to be included if we're logged in and have permission
-        if (SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
-            this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template.getContext());
-        }
-
-        return Response.ok(template).build();
-    }
+//    @Path("/{randomPage:.*}")
+//    @GET
+//    public Response getPageNew(@PathParam("randomPage") String randomURLPath) throws Exception
+//    {
+//        URI requestedURI = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
+//        URI validUri = DefaultPageImpl.toResourceUri(requestedURI, Settings.instance().getPagesViewPath());
+//
+//        FileContext fs = StorageFactory.getPageViewFileSystem();
+//        ResourcePath resourcePath = new HdfsResourcePath(fs, validUri);
+//
+//        final Page page = new DefaultPageImpl(resourcePath);
+//
+//        Template template = R.templateEngine().getNewTemplate(R.resourceFactory().lookup(new HdfsResource(new ResourceRequestImpl(validUri), fs, page.getNormalizedPageProxyPath())));
+//
+//        //this will allow the blocks javascript/css to be included if we're logged in and have permission
+//        if (SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
+//            this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template.getContext());
+//        }
+//
+//        return Response.ok(template).build();
+//    }
 
     //    @GET
     //    @Path("{getLanguage:.*}/resource/{name:.*}")

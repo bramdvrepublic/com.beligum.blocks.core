@@ -1,6 +1,6 @@
 package com.beligum.blocks.models;
 
-import com.beligum.blocks.config.Settings;
+import com.beligum.base.server.R;
 import com.beligum.blocks.models.interfaces.WebPage;
 
 import java.net.URI;
@@ -377,8 +377,8 @@ public class WebPageImpl extends ResourceImpl implements WebPage
             if (value.containsKey(Locale.ROOT)) {
                 retVal = value.get(Locale.ROOT);
             }
-            else if (value.containsKey(Settings.instance().getDefaultLanguage())) {
-                retVal = value.get(Settings.instance().getDefaultLanguage());
+            else if (value.containsKey(R.configuration().getDefaultLanguage())) {
+                retVal = value.get(R.configuration().getDefaultLanguage());
             }
             else if (value.containsKey(this.getLanguage())) {
                 retVal = value.get(this.getLanguage());

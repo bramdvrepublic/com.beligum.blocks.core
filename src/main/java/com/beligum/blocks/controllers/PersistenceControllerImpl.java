@@ -197,7 +197,7 @@ public class PersistenceControllerImpl implements PersistenceController
             pathMap.put(p.getLanguage().getLanguage(), p);
         }
         // now find the best match for the page -> take the order of the languages in the config file
-        for (Locale l : Settings.instance().getLanguages().values()) {
+        for (Locale l : R.configuration().getLanguages().values()) {
             if (pathMap.containsKey(l.getLanguage())) {
                 retVal = pathMap.get(l.getLanguage());
                 break;
@@ -335,7 +335,7 @@ public class PersistenceControllerImpl implements PersistenceController
     private void removePageFromLucene(String id)
     {
         String name = PersistenceController.WEB_PAGE_CLASS;
-        for (Locale locale : Settings.instance().getLanguages().values()) {
+        for (Locale locale : R.configuration().getLanguages().values()) {
             String index = ElasticSearch.instance().getPageIndexName(locale);
             ElasticSearch.instance().getClient().prepareDelete(index, name, id).execute().actionGet();
         }

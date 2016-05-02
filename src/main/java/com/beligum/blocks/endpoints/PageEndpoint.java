@@ -8,7 +8,6 @@ import com.beligum.base.security.Authentication;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.sources.HtmlSource;
@@ -99,7 +98,7 @@ public class PageEndpoint
                 HashMap<String, String> pageTemplate = new HashMap();
 
                 //the order of locales in which the templates will be searched
-                final Locale[] LANGS = { browserLang, Settings.instance().getDefaultLanguage(), Locale.ROOT };
+                final Locale[] LANGS = { browserLang, R.configuration().getDefaultLanguage(), Locale.ROOT };
                 pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_NAME.getValue(), template.getTemplateName());
                 pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_TITLE.getValue(), this.findI18NValue(LANGS, template.getTitles(), core.Entries.emptyTemplateTitle.getI18nValue()));
                 pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_DESCRIPTION.getValue(), this.findI18NValue(LANGS, template.getDescriptions(), core.Entries.emptyTemplateDescription.getI18nValue()));
@@ -164,18 +163,21 @@ public class PageEndpoint
     @Consumes(MediaType.APPLICATION_JSON)
     @RequiresPermissions(value = { Permissions.PAGE_CREATE_PERMISSION_STRING,
                                    Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    public Response savePage(@QueryParam("url") URI uri, String content) throws Exception
+    public Response savePage(@QueryParam("url") URI url, String content) throws Exception
     {
+        //avoid directory attacks
+        url = url.normalize();
+
         //note that we need an absolute URI (eg. to have a correct root RDF context for Sesame),
         // but we allow for relative URIs to be imported -> just make them absolute based on the current settings
-        if (!uri.isAbsolute()) {
-            uri = Settings.instance().getSiteDomain().resolve(uri);
+        if (!url.isAbsolute()) {
+            url = R.configuration().getSiteDomain().resolve(url);
         }
 
-        //Note: the first true flag: compacting helps minimizing the whitespace of the JSONLD properties
-        //      the 2nd true flag: save the language (correctly derived from the current context) to the <html> tag (thus, it's also saved to the normalized form)
-        //TODO: validate the uri?
-        HtmlSource source = new HtmlStringSource(uri, content);
+        //Note: domain checking is done in the AbstractPage constructor later on
+
+        //this just wraps the raw data coming in
+        HtmlSource source = new HtmlStringSource(url, content);
 
         //save the file to disk and pull all the proxies etc
         Page savedPage = StorageFactory.getPageStore().save(source, new PersonRepository().get(Authentication.getCurrentPrincipal()));

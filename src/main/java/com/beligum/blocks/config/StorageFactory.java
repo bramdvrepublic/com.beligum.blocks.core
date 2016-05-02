@@ -28,6 +28,7 @@ import org.xadisk.filesystem.standalone.StandaloneFileSystemConfiguration;
 
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashSet;
@@ -159,13 +160,16 @@ public class StorageFactory
     {
         synchronized (txManagerLock) {
             if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
-                XAFileSystem xafs = XAFileSystemProxy.bootNativeXAFileSystem(new StandaloneFileSystemConfiguration(Settings.instance().getPagesStoreJournalDir().getAbsolutePath(), Settings.instance().getPagesStoreJournalId()));
-                try {
-                    xafs.waitForBootup(Settings.instance().getPagesStoreJournalBootTimeout());
-                    R.cacheManager().getApplicationCache().put(CacheKeys.XADISK_FILE_SYSTEM, xafs);
-                }
-                catch (InterruptedException e) {
-                    throw new IOException("Error occurred whlie booting transactional XADisk file system (timeout=" + Settings.instance().getPagesStoreJournalBootTimeout(), e);
+                File dir = Settings.instance().getPagesStoreJournalDir();
+                if (dir!=null) {
+                    XAFileSystem xafs = XAFileSystemProxy.bootNativeXAFileSystem(new StandaloneFileSystemConfiguration(dir.getAbsolutePath(), Settings.instance().getPagesStoreJournalId()));
+                    try {
+                        xafs.waitForBootup(Settings.instance().getPagesStoreJournalBootTimeout());
+                        R.cacheManager().getApplicationCache().put(CacheKeys.XADISK_FILE_SYSTEM, xafs);
+                    }
+                    catch (InterruptedException e) {
+                        throw new IOException("Error occurred whlie booting transactional XADisk file system (timeout=" + Settings.instance().getPagesStoreJournalBootTimeout(), e);
+                    }
                 }
             }
 

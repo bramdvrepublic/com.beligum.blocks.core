@@ -10,7 +10,7 @@ base.plugin("blocks.core.Notification", ["blocks.core.Broadcaster", function (Br
             type: BootstrapDialog.TYPE_INFO,
             buttons: [
                 {
-                    label: 'Information',
+                    label: 'Ok',
                     cssClass: '',
                     action: function (dialogRef)
                     {

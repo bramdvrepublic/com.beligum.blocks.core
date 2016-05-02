@@ -62,15 +62,13 @@ public class SimplePageStore implements PageStore
     {
         Page retVal = null;
 
-        //create this here, so we don't boot the filesystem on validation error
-        URI resourceUri = DefaultPageImpl.toResourceUri(source.getSourceAddress(), Settings.instance().getPagesStorePath());
+        //Translates the address of the source page to a page (and a save location on disk),
+        //extracting all necessary information from the URL and normalizing the address in the mean time
+        Page newPage = new ReadWritePage(source.getSourceAddress());
 
-        //now execute the FS changes
-        FileContext fileContext = StorageFactory.getPageStoreFileSystem();
-
-        ResourcePath resourcePath = new HdfsResourcePath(fileContext, resourceUri);
-        //we need to use the abstract type here to have access to the package private setters
-        AbstractPage page = new DefaultPageImpl(resourcePath);
+        //cache some vars
+        ResourcePath resourcePath = newPage.getResourcePath();
+        FileContext fileContext = resourcePath.getFileContext();
 
         //will synchronize the metadata directory by creating/releasing a lock file
         try (LockFile lock = resourcePath.acquireLock()) {
@@ -126,22 +124,22 @@ public class SimplePageStore implements PageStore
                 }
 
                 //save the normalized page html
-                Path normalizedHtml = page.getNormalizedPageProxyPath();
+                Path normalizedHtml = newPage.getNormalizedPageProxyPath();
                 try (Writer writer = new BufferedWriter(new OutputStreamWriter(fileContext.create(normalizedHtml, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
                     writer.write(source.getNormalizedHtml());
                 }
 
                 //parse and generate the RDF model
-                Model rdfModel = page.createImporter(Format.RDFA).importDocument(source);
+                Model rdfModel = newPage.createImporter(Format.RDFA).importDocument(source);
                 //export the RDF model to the storage file (note that this file will be re-read to save to the triple store)
-                try (OutputStream os = fileContext.create(page.getRdfExportFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
-                    page.createExporter(page.getRdfExportFileFormat()).exportModel(rdfModel, os);
+                try (OutputStream os = fileContext.create(newPage.getRdfExportFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
+                    newPage.createExporter(newPage.getRdfExportFileFormat()).exportModel(rdfModel, os);
                 }
 
                 //save the page metadata (read it in if it exists)
-                this.writeMetadata(fileContext, resourcePath, creator, page.createMetadataWriter());
+                this.writeMetadata(fileContext, resourcePath, creator, newPage.createMetadataWriter());
 
-                retVal = page;
+                retVal = newPage;
             }
         }
 
@@ -152,40 +150,36 @@ public class SimplePageStore implements PageStore
     {
         Page retVal = null;
 
-        //create this here, so we don't boot the filesystem on validation error
-        URI resourceUri = DefaultPageImpl.toResourceUri(publicAddress, Settings.instance().getPagesStorePath());
+        Page page = new ReadWritePage(publicAddress);
 
-        //now execute the FS changes
-        FileContext fs = StorageFactory.getPageStoreFileSystem();
-
-        ResourcePath resourcePath = new HdfsResourcePath(fs, resourceUri);
-        //we need to use the abstract type here to have access to the package private setters
-        AbstractPage page = new DefaultPageImpl(resourcePath);
+        //cache some vars
+        ResourcePath resourcePath = page.getResourcePath();
+        FileContext fileContext = resourcePath.getFileContext();
 
         try (LockFile lock = resourcePath.acquireLock()) {
 
             //make sure the path dirs exist
             //Note: this also works for dirs, since they're special files inside the actual dir
-            fs.mkdir(resourcePath.getLocalPath().getParent(), FsPermission.getDirDefault(), true);
+            fileContext.mkdir(resourcePath.getLocalPath().getParent(), FsPermission.getDirDefault(), true);
 
             //save the page metadata BEFORE we create the history entry (to make sure we save who deleted it)
-            this.writeMetadata(fs, resourcePath, deleter, page.createMetadataWriter());
+            this.writeMetadata(fileContext, resourcePath, deleter, page.createMetadataWriter());
 
             //we're overwriting; make an entry in the history folder
             //TODO maybe we want to make this asynchronous?
-            if (fs.util().exists(resourcePath.getLocalPath())) {
-                this.addHistoryEntry(fs, resourcePath);
+            if (fileContext.util().exists(resourcePath.getLocalPath())) {
+                this.addHistoryEntry(fileContext, resourcePath);
             }
 
             //delete the original page html and leave the rest alone
-            fs.delete(resourcePath.getLocalPath(), false);
+            fileContext.delete(resourcePath.getLocalPath(), false);
 
             //list everything under meta folder and delete it, except for the HISTORY folder
-            RemoteIterator<FileStatus> metaEntries = fs.listStatus(resourcePath.getMetaFolder());
+            RemoteIterator<FileStatus> metaEntries = fileContext.listStatus(resourcePath.getMetaFolder());
             while (metaEntries.hasNext()) {
                 FileStatus child = metaEntries.next();
                 if (!child.getPath().equals(resourcePath.getMetaHistoryFolder())) {
-                    fs.delete(child.getPath(), true);
+                    fileContext.delete(child.getPath(), true);
                 }
             }
 

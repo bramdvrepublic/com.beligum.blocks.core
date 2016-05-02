@@ -1,7 +1,7 @@
 package com.beligum.blocks.templating.blocks;
 
+import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.rdf.sources.HtmlSource;
 import com.google.common.collect.ImmutableSet;
 import net.htmlparser.jericho.*;
@@ -26,8 +26,8 @@ public class HtmlAnalyzer
 
     private static Set<String> SITE_DOMAINS = new HashSet<>();
     static {
-        SITE_DOMAINS.add(Settings.instance().getSiteDomain().getAuthority());
-        for (URI alias : Settings.instance().getSiteAliases()) {
+        SITE_DOMAINS.add(R.configuration().getSiteDomain().getAuthority());
+        for (URI alias : R.configuration().getSiteAliases()) {
             if (alias!=null && !StringUtils.isEmpty(alias.getAuthority())) {
                 SITE_DOMAINS.add(alias.getAuthority());
             }

@@ -3,8 +3,7 @@ package com.beligum.blocks.rdf.sources;
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.Settings;
-import com.beligum.blocks.fs.HdfsResourcePath;
-import com.beligum.blocks.fs.pages.DefaultPageImpl;
+import com.beligum.blocks.fs.pages.ReadOnlyPage;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ontology.factories.Classes;
 import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
@@ -214,7 +213,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
                 // if not, we create a new resource URL, based on the typeof attribute
                 if (RdfTools.isResourceUrl(this.sourceAddress)) {
                     //Note that this will chop off any query parameters (especially the lang param) too, which is expected behavior,
-                    // because the resource should be the relative 'base' URI, without any languages
+                    // because the resource should be the relative 'base' URI, without any languages, otherwise we'll have double results when using the SPARQL endpoint
                     newResource = URI.create(this.sourceAddress.getPath());
                 }
                 else {
@@ -249,7 +248,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
         HtmlAnalyzer retVal = null;
 
         Locale thisLang = R.i18nFactory().getUrlLocale(this.getSourceAddress());
-        Map<String, Locale> siteLanguages = Settings.instance().getLanguages();
+        Map<String, Locale> siteLanguages = R.configuration().getLanguages();
         for (Map.Entry<String, Locale> l : siteLanguages.entrySet()) {
             Locale lang = l.getValue();
             //we're searching for a translation, not the same language
@@ -257,9 +256,8 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
                 UriBuilder translatedUri = UriBuilder.fromUri(this.getSourceAddress());
                 if (R.i18nFactory().getUrlLocale(this.getSourceAddress(), translatedUri, lang) != null) {
                     URI transPagePublicUri = translatedUri.build();
-                    URI transPageResourceUri = DefaultPageImpl.toResourceUri(transPagePublicUri, Settings.instance().getPagesStorePath());
-                    if (fileContext.util().exists(new org.apache.hadoop.fs.Path(transPageResourceUri))) {
-                        Page transPage = new DefaultPageImpl(new HdfsResourcePath(fileContext, transPageResourceUri));
+                    Page transPage = new ReadOnlyPage(transPagePublicUri);
+                    if (fileContext.util().exists(transPage.getResourcePath().getLocalPath())) {
                         HtmlAnalyzer analyzer = transPage.createAnalyzer();
                         HtmlAnalyzer.AttributeRef transPageResource = analyzer.getHtmlAbout();
                         if (transPageResource != null) {

@@ -20,17 +20,31 @@ public interface RdfQueryEndpoint
     }
 
     /**
+     * How to interpret the query string:
+     *
+     *   STARTS_WITH = prefix-search, mainly for autocomplete
+     *   NAME = only search the name (or label or title) of the resource
+     *   FULL = full-text search on everything we know about the resource
+     */
+    enum QueryType
+    {
+        STARTS_WITH,
+        NAME,
+        FULL
+    }
+
+    /**
      * Searches the (fast) index of the specified type for the supplied query string.
      * Mainly used to feed client-side autocomplete boxes
      *
      * @param query the query (prefix) string we're searching for
-     * @param prefixSearch is the query a true (google-like) query or a (more restrictive) prefix-search (eg. for autocomplete-boxes)?
+     * @param queryType is the query a true (google-like) query or a (more restrictive) prefix-search (eg. for autocomplete-boxes) or just a (more restrictive) name search?
      * @param language the optional language to search for, may be null
      * @param maxResults the maximum results to return
      * @return a list of maxResults size
      * @throws IOException
      */
-    List<AutocompleteSuggestion> search(RdfClass resourceType, String query, boolean prefixSearch, Locale language, int maxResults, SearchOption... options) throws IOException;
+    List<AutocompleteSuggestion> search(RdfClass resourceType, String query, QueryType queryType, Locale language, int maxResults, SearchOption... options) throws IOException;
 
     /**
      * Gets the full value of the resource with the specified id-URI.

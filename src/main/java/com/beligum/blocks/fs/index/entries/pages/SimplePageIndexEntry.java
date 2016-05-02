@@ -20,7 +20,7 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
     private String typeOf;
     private String title;
     private String language;
-    private String parent;
+    private String canonicalAddress;
 
     //-----CONSTRUCTORS-----
     public SimplePageIndexEntry(URI id) throws IOException
@@ -53,8 +53,8 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
         if (entry.getLanguage() != null) {
             retVal.add(new StringField(PageIndexEntry.Field.language.name(), entry.getLanguage(), org.apache.lucene.document.Field.Store.YES));
         }
-        if (entry.getParent() != null) {
-            retVal.add(new StringField(PageIndexEntry.Field.parent.name(), entry.getParent(), org.apache.lucene.document.Field.Store.YES));
+        if (entry.getCanonicalAddress() != null) {
+            retVal.add(new StringField(PageIndexEntry.Field.canonicalAddress.name(), entry.getCanonicalAddress(), org.apache.lucene.document.Field.Store.YES));
         }
 
         return retVal;
@@ -67,7 +67,7 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
         retVal.setTypeOf(document.get(PageIndexEntry.Field.typeOf.name()));
         retVal.setTitle(document.get(PageIndexEntry.Field.title.name()));
         retVal.setLanguage(document.get(PageIndexEntry.Field.language.name()));
-        retVal.setParent(document.get(PageIndexEntry.Field.parent.name()));
+        retVal.setCanonicalAddress(document.get(PageIndexEntry.Field.canonicalAddress.name()));
 
         return retVal;
     }
@@ -81,6 +81,15 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
     public void setResource(String resource)
     {
         this.resource = resource;
+    }
+    @Override
+    public String getCanonicalAddress()
+    {
+        return canonicalAddress;
+    }
+    public void setCanonicalAddress(String canonicalAddress)
+    {
+        this.canonicalAddress = canonicalAddress;
     }
     @Override
     public String getTypeOf()
@@ -109,15 +118,6 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
     {
         this.language = language;
     }
-    @Override
-    public String getParent()
-    {
-        return parent;
-    }
-    public void setParent(String parent)
-    {
-        this.parent = parent;
-    }
 
     //-----PROTECTED METHODS-----
 
@@ -131,7 +131,6 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
                "id='" + id + '\'' +
                ", title='" + title + '\'' +
                ", language='" + language + '\'' +
-               ", parent=" + parent +
                '}';
     }
 }

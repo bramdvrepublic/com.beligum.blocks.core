@@ -1,6 +1,6 @@
 package com.beligum.blocks.models.sql;
 
-import com.beligum.blocks.config.Settings;
+import com.beligum.base.server.R;
 import com.beligum.blocks.models.interfaces.WebPath;
 import com.beligum.blocks.models.jackson.path.PathDeserializer;
 import com.beligum.blocks.models.jackson.path.PathSerializer;
@@ -74,7 +74,7 @@ public class DBPath extends DBDocumentInfo implements WebPath
     @Override
     public Locale getLanguage()
     {
-        return Settings.instance().getLocaleForLanguage(this.language);
+        return R.configuration().getLocaleForLanguage(this.language);
     }
 
     @Override

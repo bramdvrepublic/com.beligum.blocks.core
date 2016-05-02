@@ -182,7 +182,7 @@ public class ElasticSearch
     private void init() throws IOException
     {
         // TODO: should check for all indexes. e.g. when new language is created we don't have to remove all indexes
-        if (!this.client.admin().indices().exists(new IndicesExistsRequest(getPageIndexName(Settings.instance().getDefaultLanguage()))).actionGet().isExists()) {
+        if (!this.client.admin().indices().exists(new IndicesExistsRequest(getPageIndexName(R.configuration().getDefaultLanguage()))).actionGet().isExists()) {
             // Delete all to start fresh
             this.client.admin().indices().delete(new DeleteIndexRequest("*")).actionGet();
 

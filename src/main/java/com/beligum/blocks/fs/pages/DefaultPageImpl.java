@@ -1,7 +1,8 @@
 package com.beligum.blocks.fs.pages;
 
 import com.beligum.base.resources.ifaces.Resource;
-import com.beligum.blocks.fs.ifaces.ResourcePath;
+import com.beligum.blocks.config.StorageFactory;
+import com.beligum.blocks.fs.HdfsResourcePath;
 import com.beligum.blocks.fs.metadata.EBUCoreHdfsMetadataWriter;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
 import com.beligum.blocks.rdf.exporters.SesameExporter;
@@ -15,11 +16,14 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tika.mime.MediaType;
 
 import java.io.IOException;
+import java.net.URI;
 
 /**
+ * This intermediate class handles all implementation-specific settings, except for the read-only/read-write details (see subclasses)
+ *
  * Created by bram on 1/14/16.
  */
-public class DefaultPageImpl extends AbstractPage
+public abstract class DefaultPageImpl extends AbstractPage
 {
     //-----CONSTANTS-----
     private MediaType PAGE_PROXY_NORMALIZED_MIME_TYPE = Resource.MimeType.HTML.getMimeType();
@@ -30,7 +34,6 @@ public class DefaultPageImpl extends AbstractPage
     // https://jena.apache.org/documentation/io/rdf-output.html#n-triples-and-n-quads
     // "These provide the formats that are fastest to write, and data of any size can be output."
     // "They maximise the interoperability with other systems and are useful for database dumps."
-
     private Format PAGE_PROXY_RDF_FORMAT = Format.NTRIPLES;
     private Resource.MimeType PAGE_PROXY_RDF_TYPE = PAGE_PROXY_RDF_FORMAT.getMimeType();
     // Note: makes sense to prefix with the mvn artifact, so we know what we wrote it with
@@ -39,9 +42,15 @@ public class DefaultPageImpl extends AbstractPage
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    public DefaultPageImpl(ResourcePath resourcePath)
+    protected DefaultPageImpl(URI uri, URI fileSystemBaseUri) throws IOException
     {
-        super(resourcePath);
+        super(uri);
+
+        //Note: the root-relative is to remove the leading slash
+        URI resourceUri = fileSystemBaseUri.resolve(ROOT.relativize(this.relativeStoragePath));
+
+        //here, we effectively attach a save-implementation to the disk location URI
+        this.resourcePath = new HdfsResourcePath(StorageFactory.getPageStoreFileSystem(), resourceUri);
     }
 
     //-----PUBLIC METHODS-----

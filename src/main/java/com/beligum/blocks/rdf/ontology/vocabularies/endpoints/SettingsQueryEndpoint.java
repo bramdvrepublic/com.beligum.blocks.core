@@ -1,6 +1,6 @@
 package com.beligum.blocks.rdf.ontology.vocabularies.endpoints;
 
-import com.beligum.blocks.config.Settings;
+import com.beligum.base.server.R;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
@@ -34,17 +34,28 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
 
     //-----PUBLIC METHODS-----
     @Override
-    public List<AutocompleteSuggestion> search(RdfClass resourceType, String query, boolean prefixSearch, Locale language, int maxResults, SearchOption... options) throws IOException
+    public List<AutocompleteSuggestion> search(RdfClass resourceType, String query, QueryType queryType, Locale language, int maxResults, SearchOption... options) throws IOException
     {
         List<AutocompleteSuggestion> retVal = new ArrayList<>();
 
+        LuceneQueryConnection.FieldQuery.Type fieldQueryType = null;
+        switch (queryType) {
+            case STARTS_WITH:
+            case NAME:
+                fieldQueryType = LuceneQueryConnection.FieldQuery.Type.WILDCARD_COMPLEX;
+                break;
+            case FULL:
+                fieldQueryType = LuceneQueryConnection.FieldQuery.Type.WILDCARD;
+                break;
+            default:
+                throw new IOException("Unsupported or unimplemented query type encountered, can't proceed; "+queryType);
+        }
+
         LuceneQueryConnection.FieldQuery[] queries =
-                        new LuceneQueryConnection.FieldQuery[] { new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.typeOf, resourceType.getCurieName().toString(), BooleanClause.Occur.FILTER,
-                                                                                                      LuceneQueryConnection.FieldQuery.Type.EXACT),
-                                                                 new LuceneQueryConnection.FieldQuery(IndexEntry.Field.tokenisedId, query, BooleanClause.Occur.SHOULD,
-                                                                                                      prefixSearch ? LuceneQueryConnection.FieldQuery.Type.WILDCARD_COMPLEX : LuceneQueryConnection.FieldQuery.Type.WILDCARD, 1),
-                                                                 new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.title, query, BooleanClause.Occur.SHOULD,
-                                                                                                      LuceneQueryConnection.FieldQuery.Type.WILDCARD_COMPLEX, 1) };
+                        new LuceneQueryConnection.FieldQuery[] { new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.typeOf, resourceType.getCurieName().toString(), BooleanClause.Occur.FILTER, LuceneQueryConnection.FieldQuery.Type.EXACT),
+                                                                 new LuceneQueryConnection.FieldQuery(IndexEntry.Field.tokenisedId, query, BooleanClause.Occur.SHOULD, fieldQueryType, 1),
+                                                                 new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.title, query, BooleanClause.Occur.SHOULD, LuceneQueryConnection.FieldQuery.Type.WILDCARD_COMPLEX, 1)
+                        };
 
         //See https://lucene.apache.org/core/5_4_1/queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package_description
         //#typeOf:mot:Person #(tokenisedId:bra* title:bra*)
@@ -95,10 +106,11 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
 
         LuceneQueryConnection.FieldQuery[] queries =
                         new LuceneQueryConnection.FieldQuery[] {
-                                        new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.resource, resourceId.toString(), BooleanClause.Occur.MUST, LuceneQueryConnection.FieldQuery.Type.EXACT)
+                                        new LuceneQueryConnection.FieldQuery(IndexEntry.Field.id, resourceId.toString(), BooleanClause.Occur.SHOULD, LuceneQueryConnection.FieldQuery.Type.EXACT),
+                                        new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.resource, resourceId.toString(), BooleanClause.Occur.SHOULD, LuceneQueryConnection.FieldQuery.Type.EXACT)
                         };
 
-        List<PageIndexEntry> matchingPages = StorageFactory.getMainPageQueryConnection().search(queries, Settings.instance().getLanguages().size());
+        List<PageIndexEntry> matchingPages = StorageFactory.getMainPageQueryConnection().search(queries, R.configuration().getLanguages().size());
         if (!matchingPages.isEmpty()) {
             PageIndexEntry selectedEntry = null;
             for (PageIndexEntry entry : matchingPages) {
@@ -142,7 +154,7 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
         if (entry.getLanguage().equals(requestLanguage.getLanguage())) {
             retVal = 3;
         }
-        else if (entry.getLanguage().equals(Settings.instance().getDefaultLanguage().getLanguage())) {
+        else if (entry.getLanguage().equals(R.configuration().getDefaultLanguage().getLanguage())) {
             retVal = 2;
         }
 
