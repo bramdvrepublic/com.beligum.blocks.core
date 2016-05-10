@@ -42,7 +42,6 @@ public class SimpleResourceIndexer implements ResourceIndexer
         this.assertInit();
 
         URI id = null;
-        URI link = null;
         String title = null;
         String description = null;
         URI image = null;
@@ -69,7 +68,7 @@ public class SimpleResourceIndexer implements ResourceIndexer
             }
         }
 
-        return new SimpleResourceIndexEntry(id, link, title, description, image);
+        return new SimpleResourceIndexEntry(id, title, description, image);
     }
 
     //-----PROTECTED METHODS-----

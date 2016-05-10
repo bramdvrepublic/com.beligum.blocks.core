@@ -9,8 +9,8 @@ import com.beligum.blocks.fs.index.entries.IndexEntry;
 import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
 import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.rdf.ontology.vocabularies.local.DefaultResourceInfo;
 import com.beligum.blocks.rdf.ontology.vocabularies.local.ResourceSuggestion;
+import com.beligum.blocks.rdf.ontology.vocabularies.local.WrappedPageResourceInfo;
 import org.apache.lucene.search.BooleanClause;
 
 import java.io.IOException;
@@ -54,7 +54,7 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
         LuceneQueryConnection.FieldQuery[] queries =
                         new LuceneQueryConnection.FieldQuery[] { new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.typeOf, resourceType.getCurieName().toString(), BooleanClause.Occur.FILTER, LuceneQueryConnection.FieldQuery.Type.EXACT),
                                                                  new LuceneQueryConnection.FieldQuery(IndexEntry.Field.tokenisedId, query, BooleanClause.Occur.SHOULD, fieldQueryType, 1),
-                                                                 new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.title, query, BooleanClause.Occur.SHOULD, LuceneQueryConnection.FieldQuery.Type.WILDCARD_COMPLEX, 1)
+                                                                 new LuceneQueryConnection.FieldQuery(IndexEntry.Field.title, query, BooleanClause.Occur.SHOULD, LuceneQueryConnection.FieldQuery.Type.WILDCARD_COMPLEX, 1)
                         };
 
         //See https://lucene.apache.org/core/5_4_1/queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package_description
@@ -73,7 +73,7 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
         Map<URI, EntryWithIndex<PageIndexEntry>> langMapping = new LinkedHashMap<>();
         for (PageIndexEntry page : matchingPages) {
 
-            URI resourceUri = URI.create(page.getResource());
+            URI resourceUri = page.getResource();
             EntryWithIndex<PageIndexEntry> selectedEntry = langMapping.get(resourceUri);
             //this means we have a double result with a different language, so we need to select which language we want to return
             // or else we'll be returning doubles, which is annoying
@@ -104,10 +104,11 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
     {
         ResourceInfo retVal = null;
 
+        String resourceIdStr = resourceId.toString();
         LuceneQueryConnection.FieldQuery[] queries =
                         new LuceneQueryConnection.FieldQuery[] {
-                                        new LuceneQueryConnection.FieldQuery(IndexEntry.Field.id, resourceId.toString(), BooleanClause.Occur.SHOULD, LuceneQueryConnection.FieldQuery.Type.EXACT),
-                                        new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.resource, resourceId.toString(), BooleanClause.Occur.SHOULD, LuceneQueryConnection.FieldQuery.Type.EXACT)
+                                        new LuceneQueryConnection.FieldQuery(IndexEntry.Field.id, resourceIdStr, BooleanClause.Occur.SHOULD, LuceneQueryConnection.FieldQuery.Type.EXACT),
+                                        new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.resource, resourceIdStr, BooleanClause.Occur.SHOULD, LuceneQueryConnection.FieldQuery.Type.EXACT)
                         };
 
         List<PageIndexEntry> matchingPages = StorageFactory.getMainPageQueryConnection().search(queries, R.configuration().getLanguages().size());
@@ -125,8 +126,9 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
                     }
                 }
             }
-            //note: the ID of a page is the public URL
-            retVal = new DefaultResourceInfo(URI.create(selectedEntry.getResource()), resourceType.getCurieName(), selectedEntry.getTitle(), selectedEntry.getId(), null, selectedEntry.getTitle());
+
+            //we just wrap the index extry in a resource info wrapper
+            retVal = new WrappedPageResourceInfo(selectedEntry);
         }
 
         return retVal;
@@ -151,10 +153,10 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
     {
         int retVal = 1;
 
-        if (entry.getLanguage().equals(requestLanguage.getLanguage())) {
+        if (entry.getLanguage().equals(requestLanguage)) {
             retVal = 3;
         }
-        else if (entry.getLanguage().equals(R.configuration().getDefaultLanguage().getLanguage())) {
+        else if (entry.getLanguage().equals(R.configuration().getDefaultLanguage())) {
             retVal = 2;
         }
 

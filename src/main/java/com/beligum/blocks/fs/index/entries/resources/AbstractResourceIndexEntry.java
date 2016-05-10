@@ -37,11 +37,6 @@ public abstract class AbstractResourceIndexEntry implements ResourceIndexEntry
         return subject;
     }
     @Override
-    public URI getLink()
-    {
-        return this.getId();
-    }
-    @Override
     public Map<RdfResource, Value> getProperties()
     {
         return properties;

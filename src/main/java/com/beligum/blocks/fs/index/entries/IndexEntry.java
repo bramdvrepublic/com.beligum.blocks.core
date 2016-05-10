@@ -17,7 +17,10 @@ public interface IndexEntry extends Serializable
     enum Field implements IndexEntryField
     {
         id,
-        tokenisedId
+        tokenisedId,
+        title,
+        description,
+        image,
     }
 
     //-----VARIABLES-----
@@ -26,6 +29,26 @@ public interface IndexEntry extends Serializable
 
     //-----PUBLIC METHODS-----
     URI getId();
+
+    /**
+     * The title of this resource, to be used directly in the HTML that is returned to the client.
+     * So, in the right language and format. Mainly used to build eg. search result lists.
+     * Try not to return null or "".
+     */
+    String getTitle();
+
+    /**
+     * The description of this resource, to be used directly in the HTML that is returned to the client.
+     * So, in the right language and format. Mainly used to build eg. search result lists.
+     * Might be empty or null.
+     */
+    String getDescription();
+
+    /**
+     * A link to the main image that describes this resource, mainly used to build eg. search result lists.
+     * Might be null.
+     */
+    URI getImage();
 
     //-----PROTECTED METHODS-----
 

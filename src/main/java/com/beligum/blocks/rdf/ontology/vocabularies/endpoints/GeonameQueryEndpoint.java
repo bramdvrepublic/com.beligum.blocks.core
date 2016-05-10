@@ -153,6 +153,9 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
 
             //note: the Geonames '/get' endpoint is XML only!
             retVal = reader.readValue(response.readEntity(String.class));
+
+            //API doesn't seem to return this -> set it manually
+            retVal.setLanguage(language);
         }
         else {
             throw new IOException("Error status returned while searching for geonames id '" + resourceId + "'; " + response);

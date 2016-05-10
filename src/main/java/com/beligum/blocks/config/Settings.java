@@ -8,6 +8,8 @@ import org.apache.commons.lang3.StringUtils;
 import javax.transaction.TransactionManager;
 import java.io.File;
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -36,8 +38,8 @@ public class Settings
     private File cachedPagesStoreJournalDir;
     protected HashMap<String, String> cachedHdfsProperties = null;
     protected HashMap<String, String> cachedEsProperties = null;
-    private File cachedPagesMainIndexDir;
-    private File cachedPagesTripleStoreDir;
+    private Path cachedPagesMainIndexDir;
+    private Path cachedPagesTripleStoreDir;
 
     private Settings()
     {
@@ -223,20 +225,20 @@ public class Settings
 
         return this.cachedEsProperties;
     }
-    public File getPageMainIndexFolder()
+    public Path getPageMainIndexFolder()
     {
         if (this.cachedPagesMainIndexDir == null) {
             //Note: the journal dir resides on the local, naked file system, watch out you don't point to a dir in the distributed or transactional fs
-            this.cachedPagesMainIndexDir = new File(R.configuration().getString("blocks.core.pages.main-index.dir"));
+            this.cachedPagesMainIndexDir = Paths.get(R.configuration().getString("blocks.core.pages.main-index.dir"));
         }
 
         return this.cachedPagesMainIndexDir;
     }
-    public File getPageTripleStoreFolder()
+    public Path getPageTripleStoreFolder()
     {
         if (this.cachedPagesTripleStoreDir == null) {
             //Note: the journal dir resides on the local, naked file system, watch out you don't point to a dir in the distributed or transactional fs
-            this.cachedPagesTripleStoreDir = new File(R.configuration().getString("blocks.core.pages.triple-store.dir"));
+            this.cachedPagesTripleStoreDir = Paths.get(R.configuration().getString("blocks.core.pages.triple-store.dir"));
         }
 
         return this.cachedPagesTripleStoreDir;

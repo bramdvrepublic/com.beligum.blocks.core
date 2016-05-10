@@ -14,6 +14,9 @@ public abstract class AbstractPageIndexEntry implements IndexEntry
 
     //-----VARIABLES-----
     protected URI id;
+    protected String title;
+    protected String description;
+    protected URI image;
 
     //-----CONSTRUCTORS-----
     protected AbstractPageIndexEntry(URI id)
@@ -32,16 +35,44 @@ public abstract class AbstractPageIndexEntry implements IndexEntry
     }
 
     //-----PUBLIC METHODS-----
+    @Override
     public URI getId()
     {
         return id;
     }
-    public void setId(URI id)
+    @Override
+    public String getTitle()
     {
-        this.id = id;
+        return title;
+    }
+    @Override
+    public String getDescription()
+    {
+        return description;
+    }
+    @Override
+    public URI getImage()
+    {
+        return image;
     }
 
     //-----PROTECTED METHODS-----
+    protected void setId(URI id)
+    {
+        this.id = id;
+    }
+    protected void setTitle(String title)
+    {
+        this.title = title;
+    }
+    protected void setDescription(String description)
+    {
+        this.description = description;
+    }
+    protected void setImage(String image)
+    {
+        this.image = image == null ? null : URI.create(image);
+    }
 
     //-----PRIVATE METHODS-----
 

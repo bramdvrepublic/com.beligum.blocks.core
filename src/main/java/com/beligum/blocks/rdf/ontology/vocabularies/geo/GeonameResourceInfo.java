@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Created by bram on 3/12/16.
@@ -25,6 +26,7 @@ public class GeonameResourceInfo extends AbstractGeoname implements ResourceInfo
     private String toponymName;
     private String geonameId;
     private List<GeonameLangValue> alternateName;
+    private Locale language;
 
     //temp values...
     private transient boolean triedLink;
@@ -67,13 +69,25 @@ public class GeonameResourceInfo extends AbstractGeoname implements ResourceInfo
     {
         return null;
     }
-    //this getter is a little bit of a mindfuck because it bears the same name as it's setter but is used differently;
+    //this getter is a little bit of a mindfuck because it has the same name as it's setter but is used differently;
     // the setter is used to set the name property, coming in (deserialized) from geonames,
     // this getter is called when the same object is serialized to our own JS client code, but we can return a different property if we want to
     @Override
     public String getName()
     {
         return name;
+    }
+    @Override
+    public Locale getLanguage()
+    {
+        return language;
+    }
+    /**
+     * We need to make this one public because the geonames webservice doesn't return the value; it's set manually after fetching it from the service
+     */
+    public void setLanguage(Locale language)
+    {
+        this.language = language;
     }
 
     //-----PROTECTED METHODS-----
@@ -133,7 +147,7 @@ public class GeonameResourceInfo extends AbstractGeoname implements ResourceInfo
     private URI findExternalLink()
     {
         if (!this.triedLink) {
-            if (this.alternateName!=null) {
+            if (this.alternateName != null) {
                 for (GeonameLangValue val : this.alternateName) {
                     if (val != null && val.getLang() != null && val.getLang().equals(LINK_LANGUAGE)) {
                         this.cachedLink = URI.create(val.getValue());

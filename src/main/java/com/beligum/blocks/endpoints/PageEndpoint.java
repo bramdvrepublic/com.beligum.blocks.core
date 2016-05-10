@@ -183,11 +183,12 @@ public class PageEndpoint
         Page savedPage = StorageFactory.getPageStore().save(source, new PersonRepository().get(Authentication.getCurrentPrincipal()));
 
         //above method returns null if nothing changed (so nothing to re-index)
-        if (savedPage != null) {
-            //Note: transaction handling is done through the global XA transaction
-            StorageFactory.getMainPageIndexer().connect().update(savedPage);
-            StorageFactory.getTriplestoreIndexer().connect().update(savedPage);
-        }
+        //Update: I stopped doing this because if the indexing goes wrong, we can re-import (even if the data didn't change)
+        //if (savedPage != null) {
+        //Note: transaction handling is done through the global XA transaction
+        StorageFactory.getMainPageIndexer().connect().update(savedPage);
+        StorageFactory.getTriplestoreIndexer().connect().update(savedPage);
+        //}
 
         return Response.ok().build();
     }

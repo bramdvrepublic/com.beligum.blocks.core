@@ -15,16 +15,14 @@ public class SimpleResourceIndexEntry implements ResourceIndexEntry
 
     //-----VARIABLES-----
     private URI id;
-    private URI link;
     private String title;
     private String description;
     private URI image;
 
     //-----CONSTRUCTORS-----
-    public SimpleResourceIndexEntry(URI id, URI link, String title, String description, URI image)
+    public SimpleResourceIndexEntry(URI id, String title, String description, URI image)
     {
         this.id = id;
-        this.link = link;
         this.title = title;
         this.description = description;
         this.image = image;
@@ -40,11 +38,6 @@ public class SimpleResourceIndexEntry implements ResourceIndexEntry
     public Map<RdfResource, Value> getProperties()
     {
         return null;
-    }
-    @Override
-    public URI getLink()
-    {
-        return link;
     }
     @Override
     public String getTitle()

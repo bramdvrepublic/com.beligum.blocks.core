@@ -124,7 +124,7 @@ public class ApplicationEndpoint
             else {
                 //OPTION 1: if we have permission to create a new page, do it, otherwise, the page doesn't exist
                 if (!SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
-                    throw new NotFoundException();
+                    throw new NotFoundException("Can't find this page and you have no rights to create it; "+randomPage);
                 }
                 else {
                     // Note that, as a general language-selection mechanism, we only support URI locales,

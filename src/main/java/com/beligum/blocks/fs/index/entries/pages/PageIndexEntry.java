@@ -1,6 +1,10 @@
 package com.beligum.blocks.fs.index.entries.pages;
 
 import com.beligum.blocks.fs.index.entries.IndexEntry;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
+
+import java.net.URI;
+import java.util.Locale;
 
 /**
  * Created by bram on 2/23/16.
@@ -12,12 +16,9 @@ public interface PageIndexEntry extends IndexEntry
     enum Field implements IndexEntry.IndexEntryField
     {
         resource,
-        title,
         typeOf,
         language,
         canonicalAddress,
-        description,
-        image
     }
 
     //-----VARIABLES-----
@@ -25,13 +26,10 @@ public interface PageIndexEntry extends IndexEntry
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    String getResource();
-    String getTypeOf();
-    String getTitle();
-    String getLanguage();
-    String getCanonicalAddress();
-    String getDescription();
-    String getImage();
+    URI getResource();
+    RdfClass getTypeOf();
+    Locale getLanguage();
+    URI getCanonicalAddress();
 
     //-----PROTECTED METHODS-----
 

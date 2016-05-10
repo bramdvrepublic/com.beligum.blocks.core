@@ -5,9 +5,11 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
+import com.beligum.blocks.fs.index.entries.IndexEntry;
 import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
 import com.beligum.blocks.fs.index.entries.resources.ResourceIndexEntry;
 import com.beligum.blocks.fs.index.entries.resources.SimpleResourceIndexEntry;
+import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.index.ifaces.SparqlQueryConnection;
 import com.beligum.blocks.fs.pages.ifaces.Page;
@@ -16,6 +18,7 @@ import com.beligum.blocks.rdf.ifaces.RdfResource;
 import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.BooleanClause;
 import org.openrdf.model.IRI;
 import org.openrdf.model.Literal;
 import org.openrdf.model.Statement;
@@ -102,7 +105,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         this.connection.add(page.readRdfModel());
     }
     @Override
-    public List<ResourceIndexEntry> search(RdfClass type, String luceneQuery, Map fieldValues, String sortField, boolean sortAscending, int pageSize, int pageOffset, Locale language) throws IOException
+    public List<IndexEntry> search(RdfClass type, String luceneQuery, Map fieldValues, String sortField, boolean sortAscending, int pageSize, int pageOffset, Locale language) throws IOException
     {
         //see http://rdf4j.org/doc/4/programming.docbook?view#The_Lucene_SAIL
         //and maybe the source code: org.openrdf.sail.lucene.LuceneSailSchema
@@ -202,9 +205,9 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         return this.search(queryBuilder.toString(), type, language);
     }
     @Override
-    public List<ResourceIndexEntry> search(String sparqlQuery, RdfClass type, Locale language) throws IOException
+    public List<IndexEntry> search(String sparqlQuery, RdfClass type, Locale language) throws IOException
     {
-        List<ResourceIndexEntry> retVal = new ArrayList<>();
+        List<IndexEntry> retVal = new ArrayList<>();
 
         TupleQuery query = connection.prepareTupleQuery(QueryLanguage.SPARQL, sparqlQuery, R.configuration().getSiteDomain().toString());
 
@@ -219,8 +222,14 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
                 Value subject = bindingSet.getValue(bindingNames.get(0));
 
                 if (subject instanceof IRI) {
+                    IRI subjectIRI = (IRI) subject;
+
                     //this will query the triplestore to build up the properties list
-                    retVal.add(this.buildResourceEntry((IRI) subject, type, language));
+                    retVal.add(this.buildResourceEntry(subjectIRI, type, language));
+
+                    //this will query the lucene index to get the entries (note that the above works as well)
+                    //Hmm, this seems to be 5 times slower than the one above??
+//                    retVal.add(buildLuceneIndexEntry(subjectIRI, type, language));
                 }
                 else {
                     Logger.warn("Skipping incompatible sparql result because it's subject is no IRI; " + subject);
@@ -366,8 +375,29 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
                 }
             }
             else {
-                Logger.warn("Skipping incompatible sparql result because it's namespace is not in a known RDF vocabulary; " + statement.getPredicate());
+                //happens eg. with http://www.w3.org/ns/rdfa#usesVocabulary
+                //Logger.warn("Skipping incompatible sparql result because it's namespace is not in a known RDF vocabulary; " + statement.getPredicate());
             }
+        }
+
+        return retVal;
+    }
+    private IndexEntry buildLuceneIndexEntry(IRI resourceId, RdfClass type, Locale language) throws IOException
+    {
+        IndexEntry retVal = null;
+
+        //we convert to a uniform Java-URI so it's compatible with existing interfaces later on
+        URI resourceUri = this.toUri(resourceId, false, true);
+        String resourceIdStr = resourceUri.toString();
+        LuceneQueryConnection.FieldQuery[] queries =
+                        new LuceneQueryConnection.FieldQuery[] {
+                                        new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.resource, resourceIdStr, BooleanClause.Occur.MUST, LuceneQueryConnection.FieldQuery.Type.EXACT),
+                                        new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.language, language.getLanguage(), BooleanClause.Occur.MUST, LuceneQueryConnection.FieldQuery.Type.EXACT)
+                        };
+
+        List<PageIndexEntry> matchingPages = StorageFactory.getMainPageQueryConnection().search(queries, 1);
+        if (!matchingPages.isEmpty()) {
+            retVal = matchingPages.iterator().next();
         }
 
         return retVal;

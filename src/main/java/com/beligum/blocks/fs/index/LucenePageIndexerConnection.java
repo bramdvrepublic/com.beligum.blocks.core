@@ -1,20 +1,17 @@
 package com.beligum.blocks.fs.index;
 
+import com.beligum.base.server.R;
 import com.beligum.base.utils.toolkit.StringFunctions;
-import com.beligum.blocks.config.RdfFactory;
+import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.entries.pages.AbstractPageIndexEntry;
 import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
 import com.beligum.blocks.fs.index.entries.pages.SimplePageIndexEntry;
-import com.beligum.blocks.fs.index.entries.resources.ResourceIndexEntry;
 import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.pages.ReadOnlyPage;
 import com.beligum.blocks.fs.pages.ifaces.Page;
-import com.beligum.blocks.rdf.ifaces.RdfClass;
-import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
@@ -79,7 +76,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     {
         this.assertWriterTransaction();
 
-        SimplePageIndexEntry indexExtry = this.createEntry(page);
+        SimplePageIndexEntry indexExtry = new SimplePageIndexEntry(page);
 
         //let's not mix-and-mingle writes (even though the IndexWriter is thread-safe),
         // so we can do a clean commit/rollback on our own
@@ -248,8 +245,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     }
     private void printLuceneIndex() throws IOException
     {
-        final java.nio.file.Path docDir = Settings.instance().getPageMainIndexFolder().toPath();
-        Directory dir = FSDirectory.open(docDir);
+        Directory dir = FSDirectory.open(Settings.instance().getPageMainIndexFolder());
 
         try (IndexReader reader = DirectoryReader.open(dir)) {
             int numDocs = reader.numDocs();
@@ -257,37 +253,6 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
                 Document d = reader.document(i);
                 System.out.println(i + ") " + d);
             }
-        }
-    }
-    private SimplePageIndexEntry createEntry(Page page) throws IOException
-    {
-        HtmlAnalyzer htmlAnalyzer = page.createAnalyzer();
-
-        String typeOfCurie = htmlAnalyzer.getHtmlTypeof() == null ? null : htmlAnalyzer.getHtmlTypeof().value;
-        RdfClass typeOf = typeOfCurie == null ? null : RdfFactory.getClassForResourceType(URI.create(typeOfCurie));
-        if (typeOf == null) {
-            throw new IOException("Trying to index a page without a type, this shouldn't happen; " + page.getPublicRelativeAddress());
-        }
-        else {
-            //don't use the canonical address as the id of the entry: it's not unique (will be the same for different languages)
-            SimplePageIndexEntry entry = new SimplePageIndexEntry(page.getPublicRelativeAddress());
-            entry.setResource(htmlAnalyzer.getHtmlAbout() == null ? null : htmlAnalyzer.getHtmlAbout().value);
-            entry.setTypeOf(typeOf.getCurieName().toString());
-            entry.setTitle(htmlAnalyzer.getTitle());
-            entry.setLanguage(htmlAnalyzer.getHtmlLanguage() == null ? null : htmlAnalyzer.getHtmlLanguage().getLanguage());
-            entry.setCanonicalAddress(page.getCanonicalAddress() == null ? null : page.getCanonicalAddress().toString());
-
-            //note: the getResourceIndexer() never returns null (has a SimpleResourceIndexer as fallback)
-            ResourceIndexEntry indexEntry = typeOf.getResourceIndexer().index(page.readRdfModel());
-            //overwrite the title if the indexer found a better match (note that the indexer can generate any kind of title it wants, not just the page <title>)
-            if (StringUtils.isBlank(entry.getTitle()) && !StringUtils.isBlank(indexEntry.getTitle())) {
-                entry.setTitle(indexEntry.getTitle());
-            }
-            entry.setDescription(indexEntry.getDescription());
-            entry.setImage(indexEntry.getImage() == null ? null : indexEntry.getImage().toString());
-            //TODO do something with the link coming from the indexer as well??
-
-            return entry;
         }
     }
     /**
@@ -319,26 +284,26 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     }
     private IndexReader getLuceneIndexReader() throws IOException
     {
-        //if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_READER)) {
-        //make sure the basic structure to read stuff exists
-        try (IndexWriter writer = getNewLuceneIndexWriter()) {
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_READER)) {
+            //make sure the basic structure to read stuff exists
+            this.assertBasicStructure();
+            //TODO we just set the value to a dummy true value because it didn't work so well...
+            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_READER, true);
         }
 
-        IndexReader reader = DirectoryReader.open(FSDirectory.open(Settings.instance().getPageMainIndexFolder().toPath()));
-        return reader;
-        //R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_READER, reader);
-        //}
-
+        return DirectoryReader.open(FSDirectory.open(Settings.instance().getPageMainIndexFolder()));
         //return (IndexReader) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_READER);
     }
     private IndexSearcher getLuceneIndexSearcher() throws IOException
     {
-        //if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_SEARCHER)) {
-        IndexSearcher searcher = new IndexSearcher(getLuceneIndexReader());
-        return searcher;
-        //R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_SEARCHER, searcher);
-        //}
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_SEARCHER)) {
+            //make sure the basic structure to read stuff exists
+            this.assertBasicStructure();
+            //TODO we just set the value to a dummy true value because it didn't work so well...
+            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_SEARCHER, true);
+        }
 
+        return new IndexSearcher(getLuceneIndexReader());
         //return (IndexSearcher) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_SEARCHER);
     }
     /**
@@ -355,7 +320,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
      */
     private IndexWriter getNewLuceneIndexWriter() throws IOException
     {
-        final java.nio.file.Path docDir = Settings.instance().getPageMainIndexFolder().toPath();
+        final java.nio.file.Path docDir = Settings.instance().getPageMainIndexFolder();
         if (!Files.exists(docDir)) {
             Files.createDirectories(docDir);
         }
@@ -368,7 +333,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         // Add new documents to an existing index:
         iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
 
-        return new IndexWriter(FSDirectory.open(Settings.instance().getPageMainIndexFolder().toPath()), iwc);
+        return new IndexWriter(FSDirectory.open(Settings.instance().getPageMainIndexFolder()), iwc);
     }
     private void assertWriterTransaction() throws IOException
     {
@@ -381,6 +346,15 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     {
         if (this.indexWriter == null) {
             this.indexWriter = this.getNewLuceneIndexWriter();
+        }
+    }
+    /**
+     * Watch out: don't call this method often, it's hideously slow!
+     */
+    private void assertBasicStructure() throws IOException
+    {
+        try (IndexWriter indexWriter = this.getNewLuceneIndexWriter()) {
+            //just open and close the writer once, else we'll get a "no segments* file found" exception
         }
     }
 }

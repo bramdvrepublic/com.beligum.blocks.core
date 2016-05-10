@@ -53,6 +53,8 @@ public enum CacheKeys implements CacheKey
     NEW_PAGE_TEMPLATE_NAME,
     //Application cache key that hold the lucene index reader
     LUCENE_INDEX_READER,
+    //Application cache key that hold the lucene index writer
+    LUCENE_INDEX_WRITER,
     //Application cache key that hold the lucene index searcher
     LUCENE_INDEX_SEARCHER,
     //Application cache key that hold the Infinispan cache manager

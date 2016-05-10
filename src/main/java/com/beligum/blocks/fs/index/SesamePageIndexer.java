@@ -10,7 +10,6 @@ import org.openrdf.repository.sail.SailRepository;
 import org.openrdf.sail.lucene.LuceneSail;
 import org.openrdf.sail.nativerdf.NativeStore;
 
-import java.io.File;
 import java.io.IOException;
 
 /**
@@ -64,11 +63,11 @@ public class SesamePageIndexer implements PageIndexer
 
                 try {
                     //create the repository for the linked data
-                    NativeStore dataRepo = new NativeStore(new File(Settings.instance().getPageTripleStoreFolder(), DATA_SUBDIR));
+                    NativeStore dataRepo = new NativeStore(Settings.instance().getPageTripleStoreFolder().resolve(DATA_SUBDIR).toFile());
 
                     //create the repository for the lucene index
                     LuceneSail indexRepo = new LuceneSail();
-                    indexRepo.setParameter(LuceneSail.LUCENE_DIR_KEY, new File(Settings.instance().getPageTripleStoreFolder(), SesamePageIndexer.INDEX_SUBDIR).getAbsolutePath());
+                    indexRepo.setParameter(LuceneSail.LUCENE_DIR_KEY, Settings.instance().getPageTripleStoreFolder().resolve(SesamePageIndexer.INDEX_SUBDIR).toFile().getAbsolutePath());
 
                     //link both together
                     indexRepo.setBaseSail(dataRepo);
