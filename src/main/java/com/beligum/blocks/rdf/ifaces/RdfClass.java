@@ -2,6 +2,7 @@ package com.beligum.blocks.rdf.ifaces;
 
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.fs.index.entries.resources.ResourceIndexEntry;
+import com.beligum.blocks.fs.index.entries.resources.ResourceIndexer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.net.URI;
@@ -91,6 +92,13 @@ public interface RdfClass extends RdfResource
      */
     @JsonIgnore
     Class<? extends ResourceIndexEntry> getResourceIndexClass();
+
+    /**
+     * An indexer that pulls out search-relevant information from this instance during indexing.
+     * If this is null, a generic SimpleResourceIndexer is used.
+     */
+    @JsonIgnore
+    ResourceIndexer getResourceIndexer();
 
     /**
      * Setter for the value above. Note that this was pulled out of the constructor and made public to allow us to set it in a separate mapping.

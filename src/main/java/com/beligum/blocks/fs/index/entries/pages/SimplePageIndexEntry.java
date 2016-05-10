@@ -21,6 +21,8 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
     private String title;
     private String language;
     private String canonicalAddress;
+    private String description;
+    private String image;
 
     //-----CONSTRUCTORS-----
     public SimplePageIndexEntry(URI id) throws IOException
@@ -56,6 +58,12 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
         if (entry.getCanonicalAddress() != null) {
             retVal.add(new StringField(PageIndexEntry.Field.canonicalAddress.name(), entry.getCanonicalAddress(), org.apache.lucene.document.Field.Store.YES));
         }
+        if (entry.getDescription() != null) {
+            retVal.add(new StringField(PageIndexEntry.Field.description.name(), entry.getDescription(), org.apache.lucene.document.Field.Store.YES));
+        }
+        if (entry.getImage() != null) {
+            retVal.add(new StringField(PageIndexEntry.Field.image.name(), entry.getImage(), org.apache.lucene.document.Field.Store.YES));
+        }
 
         return retVal;
     }
@@ -68,6 +76,8 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
         retVal.setTitle(document.get(PageIndexEntry.Field.title.name()));
         retVal.setLanguage(document.get(PageIndexEntry.Field.language.name()));
         retVal.setCanonicalAddress(document.get(PageIndexEntry.Field.canonicalAddress.name()));
+        retVal.setDescription(document.get(PageIndexEntry.Field.description.name()));
+        retVal.setImage(document.get(PageIndexEntry.Field.image.name()));
 
         return retVal;
     }
@@ -117,6 +127,24 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
     public void setLanguage(String language)
     {
         this.language = language;
+    }
+    @Override
+    public String getDescription()
+    {
+        return description;
+    }
+    public void setDescription(String description)
+    {
+        this.description = description;
+    }
+    @Override
+    public String getImage()
+    {
+        return image;
+    }
+    public void setImage(String image)
+    {
+        this.image = image;
     }
 
     //-----PROTECTED METHODS-----

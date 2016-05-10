@@ -4,6 +4,8 @@ import com.beligum.base.filesystem.MessagesFileEntry;
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.fs.index.entries.resources.ResourceIndexEntry;
+import com.beligum.blocks.fs.index.entries.resources.ResourceIndexer;
+import com.beligum.blocks.fs.index.entries.resources.SimpleResourceIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
@@ -27,6 +29,7 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     private RdfQueryEndpoint queryEndpoint;
     private Set<RdfProperty> properties;
     private Class<? extends ResourceIndexEntry> resourceIndexClass;
+    private ResourceIndexer resourceIndexer;
 
     //-----CONSTRUCTORS-----
     public RdfClassImpl(String name,
@@ -35,7 +38,7 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
                         MessagesFileEntry label,
                         URI[] isSameAs)
     {
-        this(name, vocabulary, title, label, isSameAs, false, null, null);
+        this(name, vocabulary, title, label, isSameAs, false, null, null, null);
     }
     public RdfClassImpl(String name,
                         RdfVocabulary vocabulary,
@@ -45,7 +48,7 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
                         boolean isPublic,
                         RdfQueryEndpoint queryEndpoint)
     {
-        this(name, vocabulary, title, label, isSameAs, isPublic, queryEndpoint, null);
+        this(name, vocabulary, title, label, isSameAs, isPublic, queryEndpoint, null, null);
     }
     public RdfClassImpl(String name,
                         RdfVocabulary vocabulary,
@@ -54,7 +57,8 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
                         URI[] isSameAs,
                         boolean isPublic,
                         RdfQueryEndpoint queryEndpoint,
-                        Class<? extends ResourceIndexEntry> resourceIndexClass)
+                        Class<? extends ResourceIndexEntry> resourceIndexClass,
+                        ResourceIndexer resourceIndexer)
     {
         super(isPublic);
 
@@ -67,6 +71,11 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
         this.queryEndpoint = queryEndpoint;
         this.properties = null;
         this.resourceIndexClass = resourceIndexClass;
+        this.resourceIndexer = resourceIndexer;
+        //revert to default if null
+        if (this.resourceIndexer==null) {
+            this.resourceIndexer = new SimpleResourceIndexer();
+        }
 
         //only add ourself to the selected vocabulary if we are a pure class
         if (this.getClass().equals(RdfClassImpl.class)) {
@@ -142,6 +151,12 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     {
         return resourceIndexClass;
     }
+    @Override
+    public ResourceIndexer getResourceIndexer()
+    {
+        return resourceIndexer;
+    }
+
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----

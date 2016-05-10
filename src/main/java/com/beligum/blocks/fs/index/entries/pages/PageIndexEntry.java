@@ -15,7 +15,9 @@ public interface PageIndexEntry extends IndexEntry
         title,
         typeOf,
         language,
-        canonicalAddress
+        canonicalAddress,
+        description,
+        image
     }
 
     //-----VARIABLES-----
@@ -28,6 +30,8 @@ public interface PageIndexEntry extends IndexEntry
     String getTitle();
     String getLanguage();
     String getCanonicalAddress();
+    String getDescription();
+    String getImage();
 
     //-----PROTECTED METHODS-----
 

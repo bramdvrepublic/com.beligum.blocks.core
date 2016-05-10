@@ -8,6 +8,7 @@ import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.rdf.sources.HtmlSource;
 import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
 import org.apache.hadoop.fs.Path;
+import org.openrdf.model.Model;
 
 import java.io.IOException;
 import java.net.URI;
@@ -100,4 +101,10 @@ public interface Page
      * @return
      */
     ResourcePath getResourcePath();
+
+    /**
+     * Reads the RDF model from disk to a memory graph.
+     * Note: nothing is cached, this is just a convenience method.
+     */
+    Model readRdfModel() throws IOException;
 }

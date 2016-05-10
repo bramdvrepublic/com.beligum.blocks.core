@@ -1,16 +1,20 @@
 package com.beligum.blocks.fs.index;
 
 import com.beligum.base.utils.toolkit.StringFunctions;
+import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.entries.pages.AbstractPageIndexEntry;
 import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
 import com.beligum.blocks.fs.index.entries.pages.SimplePageIndexEntry;
+import com.beligum.blocks.fs.index.entries.resources.ResourceIndexEntry;
 import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.pages.ReadOnlyPage;
 import com.beligum.blocks.fs.pages.ifaces.Page;
+import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
@@ -222,7 +226,6 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
             activeQuery.add(subQuery, q.getBool());
         }
 
-
         return query;
     }
     //exactly the same code as QueryParserBase.escape(), but with the sb.append('\\'); line commented and added an else-part
@@ -260,17 +263,32 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     {
         HtmlAnalyzer htmlAnalyzer = page.createAnalyzer();
 
-        //note that we don't index the (optional, eg. for resource-urls) 'lang' param as part of the
+        String typeOfCurie = htmlAnalyzer.getHtmlTypeof() == null ? null : htmlAnalyzer.getHtmlTypeof().value;
+        RdfClass typeOf = typeOfCurie == null ? null : RdfFactory.getClassForResourceType(URI.create(typeOfCurie));
+        if (typeOf == null) {
+            throw new IOException("Trying to index a page without a type, this shouldn't happen; " + page.getPublicRelativeAddress());
+        }
+        else {
+            //don't use the canonical address as the id of the entry: it's not unique (will be the same for different languages)
+            SimplePageIndexEntry entry = new SimplePageIndexEntry(page.getPublicRelativeAddress());
+            entry.setResource(htmlAnalyzer.getHtmlAbout() == null ? null : htmlAnalyzer.getHtmlAbout().value);
+            entry.setTypeOf(typeOf.getCurieName().toString());
+            entry.setTitle(htmlAnalyzer.getTitle());
+            entry.setLanguage(htmlAnalyzer.getHtmlLanguage() == null ? null : htmlAnalyzer.getHtmlLanguage().getLanguage());
+            entry.setCanonicalAddress(page.getCanonicalAddress() == null ? null : page.getCanonicalAddress().toString());
 
-        //don't use the canonical address as the id of the entry: it's not unique (will be the same for different languages)
-        SimplePageIndexEntry entry = new SimplePageIndexEntry(page.getPublicRelativeAddress());
-        entry.setResource(htmlAnalyzer.getHtmlAbout() == null ? null : htmlAnalyzer.getHtmlAbout().value);
-        entry.setTypeOf(htmlAnalyzer.getHtmlTypeof() == null ? null : htmlAnalyzer.getHtmlTypeof().value);
-        entry.setTitle(htmlAnalyzer.getTitle());
-        entry.setLanguage(htmlAnalyzer.getHtmlLanguage() == null ? null : htmlAnalyzer.getHtmlLanguage().getLanguage());
-        entry.setCanonicalAddress(page.getCanonicalAddress() == null ? null : page.getCanonicalAddress().toString());
+            //note: the getResourceIndexer() never returns null (has a SimpleResourceIndexer as fallback)
+            ResourceIndexEntry indexEntry = typeOf.getResourceIndexer().index(page.readRdfModel());
+            //overwrite the title if the indexer found a better match (note that the indexer can generate any kind of title it wants, not just the page <title>)
+            if (StringUtils.isBlank(entry.getTitle()) && !StringUtils.isBlank(indexEntry.getTitle())) {
+                entry.setTitle(indexEntry.getTitle());
+            }
+            entry.setDescription(indexEntry.getDescription());
+            entry.setImage(indexEntry.getImage() == null ? null : indexEntry.getImage().toString());
+            //TODO do something with the link coming from the indexer as well??
 
-        return entry;
+            return entry;
+        }
     }
     /**
      * Look in our file system and search for the parent of this document (with the same language).

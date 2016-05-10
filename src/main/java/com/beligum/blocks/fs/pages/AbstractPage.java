@@ -5,11 +5,13 @@ import com.beligum.base.server.R;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.ifaces.ResourcePath;
 import com.beligum.blocks.fs.pages.ifaces.Page;
+import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.rdf.sources.HtmlSource;
 import com.beligum.blocks.rdf.sources.HtmlStreamSource;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.openrdf.model.Model;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
@@ -96,6 +98,7 @@ public abstract class AbstractPage implements Page
             //note: URIs are immutable, so this is safe
             this.relativeStoragePath = this.canonicalAddress;
         }
+
         if (!isDir) {
             //note: we need to go one 'up' first, to be able to replace the fileName with the new (with ext) fileName
             this.relativeStoragePath = this.relativeStoragePath.resolve(".");
@@ -168,6 +171,19 @@ public abstract class AbstractPage implements Page
         try (InputStream is = this.getResourcePath().getFileContext().open(this.getResourcePath().getLocalPath())) {
             return new HtmlStreamSource(this.getPublicAbsoluteAddress(), is);
         }
+    }
+    @Override
+    public Model readRdfModel() throws IOException
+    {
+        Model retVal = null;
+
+        //explicitly read the model from disk so we can use this stand alone
+        Importer rdfImporter = this.createImporter(this.getRdfExportFileFormat());
+        try (InputStream is = this.getResourcePath().getFileContext().open(this.getRdfExportFile())) {
+            retVal = rdfImporter.importDocument(is, this.getPublicRelativeAddress());
+        }
+
+        return retVal;
     }
 
     //-----PROTECTED METHODS-----

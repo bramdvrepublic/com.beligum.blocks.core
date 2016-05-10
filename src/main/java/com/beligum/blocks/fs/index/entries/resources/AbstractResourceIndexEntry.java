@@ -5,7 +5,6 @@ import com.beligum.blocks.rdf.ontology.factories.Terms;
 import org.apache.commons.lang3.StringUtils;
 import org.openrdf.model.Value;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,9 +24,9 @@ public abstract class AbstractResourceIndexEntry implements ResourceIndexEntry
     /**
      * !!! Note !!! this constructor is expected in com.beligum.blocks.fs.index.buildResourceEntry(), so watch out if you change it's signature!
      */
-    protected AbstractResourceIndexEntry(URI subject) throws IOException
+    protected AbstractResourceIndexEntry(URI subjectOrId)
     {
-        this.subject = subject;
+        this.subject = subjectOrId;
         this.properties = new HashMap<>();
     }
 

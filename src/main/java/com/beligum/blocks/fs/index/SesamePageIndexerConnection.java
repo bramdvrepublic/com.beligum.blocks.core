@@ -11,13 +11,15 @@ import com.beligum.blocks.fs.index.entries.resources.SimpleResourceIndexEntry;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.index.ifaces.SparqlQueryConnection;
 import com.beligum.blocks.fs.pages.ifaces.Page;
-import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfResource;
 import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.openrdf.model.*;
+import org.openrdf.model.IRI;
+import org.openrdf.model.Literal;
+import org.openrdf.model.Statement;
+import org.openrdf.model.Value;
 import org.openrdf.query.*;
 import org.openrdf.repository.RepositoryException;
 import org.openrdf.repository.RepositoryResult;
@@ -26,7 +28,6 @@ import org.openrdf.repository.sail.SailRepositoryConnection;
 import org.openrdf.sail.lucene.LuceneSailSchema;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.util.*;
 
@@ -98,15 +99,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     {
         this.assertTransaction();
 
-        Model model = null;
-
-        //explicitly read the model from disk so we can use this indexer stand alone
-        Importer rdfImporter = page.createImporter(page.getRdfExportFileFormat());
-        try (InputStream is = page.getResourcePath().getFileContext().open(page.getRdfExportFile())) {
-            model = rdfImporter.importDocument(is, page.getPublicRelativeAddress());
-        }
-
-        this.connection.add(model);
+        this.connection.add(page.readRdfModel());
     }
     @Override
     public List<ResourceIndexEntry> search(RdfClass type, String luceneQuery, Map fieldValues, String sortField, boolean sortAscending, int pageSize, int pageOffset, Locale language) throws IOException
@@ -341,7 +334,8 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         while (properties.hasNext()) {
             Statement statement = properties.next();
 
-            Logger.info("\t"+statement);
+            //DEBUG
+            //Logger.info("\t"+statement);
 
             //Note that we need a CURIE for RdfFactory.getForResourceType(), so first convert the absolute predicate URI to a curie URI
             RdfVocabulary vocab = RdfFactory.getVocabularies().get(URI.create(statement.getPredicate().getNamespace()));
@@ -367,7 +361,8 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
                     }
                 }
                 else {
-                    Logger.warn("Skipping incompatible sparql result because it's predicate is not a known RDF class; " + statement.getPredicate());
+                    //happens a lot, ignore this
+                    //Logger.warn("Skipping incompatible sparql result because it's predicate is not a known RDF class; " + statement.getPredicate());
                 }
             }
             else {

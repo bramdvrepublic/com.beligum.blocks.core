@@ -7,6 +7,7 @@ import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.ifaces.Importer;
 import org.apache.commons.lang.StringUtils;
 import org.openrdf.model.*;
+import org.openrdf.model.impl.LinkedHashModel;
 import org.openrdf.model.impl.SimpleValueFactory;
 import org.openrdf.model.vocabulary.RDF;
 import org.openrdf.model.vocabulary.XMLSchema;
@@ -15,9 +16,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * Created by bram on 1/23/16.
@@ -52,6 +51,9 @@ public abstract class AbstractImporter implements Importer
     //-----PUBLIC METHODS-----
 
     //-----PROTECTED METHODS-----
+    /**
+     * Note: this returns a newly created (memory based) model, so all connections with a possible underlying store are cut
+     */
     protected Model filterRelevantNodes(Model model, URI documentBaseUri) throws IOException
     {
         final boolean IGNORE_STYLESHEETS = true;
@@ -61,7 +63,9 @@ public abstract class AbstractImporter implements Importer
         ValueFactory factory = SimpleValueFactory.getInstance();
         String documentBaseUriStr = documentBaseUri.toString();
         Iterator<Statement> iter = model.iterator();
-        List<Statement> editedStatements = new ArrayList<>();
+        //Note that the model has a "predictable iteration order", and since we get a ConcurrentModException while altering the model itself,
+        // we choose to create a new one, and add the valid filtered nodes in order to this new one
+        Model filteredModel = new LinkedHashModel();
         while (iter.hasNext()) {
             Statement stmt = iter.next();
 
@@ -74,7 +78,6 @@ public abstract class AbstractImporter implements Importer
             //remove all the XHTML stylesheets predicates from the model
             boolean removed = false;
             if (!removed && IGNORE_STYLESHEETS && (stmt.getPredicate().toString().equals(XHTML_NS_STYLESHEET) || stmt.getPredicate().toString().equals(LOCAL_NS_STYLESHEET))) {
-                iter.remove();
                 removed = true;
             }
             //removes all favicon statements. Note that this last check isn't waterproof (we can use any name for our favicons), but it works 99% of the time
@@ -82,18 +85,14 @@ public abstract class AbstractImporter implements Importer
                 (stmt.getPredicate().toString().equals(XHTML_NS_ICON) || stmt.getPredicate().toString().equals(LOCAL_NS_ICON) ||
                  stmt.getPredicate().toString().equals(XHTML_NS_APPLE_TOUCH_ICON) || stmt.getPredicate().toString().equals(LOCAL_NS_APPLE_TOUCH_ICON)
                 ) && stmt.getObject().toString().contains("favicon")) {
-                iter.remove();
                 removed = true;
             }
             //remove all non-documentBaseUri subjects from the model
             if (!removed && DOCBASE_ONLY && !stmt.getSubject().toString().equals(documentBaseUriStr)) {
-                iter.remove();
                 removed = true;
             }
-
             //we're not interested in blank nodes because they don't have a page as subject, so we might as well filter them out
             if (!removed && stmt.getSubject() instanceof BNode) {
-                iter.remove();
                 removed = true;
             }
 
@@ -165,22 +164,19 @@ public abstract class AbstractImporter implements Importer
                     else {
                         modifiedStmt = factory.createStatement(newSubject, newPredicate, newObject, stmt.getContext());
                     }
-                    //we can't add them directly to the model or we'll have a concurrent mod exception, and since statements don't really have an order,
-                    // it's safe to add them afterwards after this loop
-                    editedStatements.add(modifiedStmt);
-                    iter.remove();
+
+                    filteredModel.add(modifiedStmt);
+                }
+                else {
+                    filteredModel.add(stmt);
                 }
             }
-        }
-
-        if (!editedStatements.isEmpty()) {
-            model.addAll(editedStatements);
         }
 
         //DEBUG
         //RDFDataMgr.write(System.out, model, RDFFormat.NTRIPLES);
 
-        return model;
+        return filteredModel;
     }
 
     //-----PRIVATE METHODS-----
