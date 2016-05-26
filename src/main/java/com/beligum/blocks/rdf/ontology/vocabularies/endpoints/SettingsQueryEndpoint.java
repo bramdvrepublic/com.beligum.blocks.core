@@ -73,7 +73,8 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
         Map<URI, EntryWithIndex<PageIndexEntry>> langMapping = new LinkedHashMap<>();
         for (PageIndexEntry page : matchingPages) {
 
-            URI resourceUri = page.getResource();
+            URI pageId = URI.create(page.getId());
+            URI resourceUri = URI.create(page.getResource());
             EntryWithIndex<PageIndexEntry> selectedEntry = langMapping.get(resourceUri);
             //this means we have a double result with a different language, so we need to select which language we want to return
             // or else we'll be returning doubles, which is annoying
@@ -85,14 +86,14 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
                 int selectedLangScore = this.getLanguageScore(selectedEntry.entry, language);
                 if (entryLangScore > selectedLangScore) {
                     //replace the entry in the result list
-                    retVal.set(selectedEntry.index, new ResourceSuggestion(resourceUri, resourceType.getCurieName(), page.getTitle(), page.getId().getPath()));
+                    retVal.set(selectedEntry.index, new ResourceSuggestion(resourceUri, resourceType.getCurieName(), page.getTitle(), pageId.getPath()));
                     //replace the entry in the lang mapping
                     langMapping.replace(resourceUri, new EntryWithIndex(page, selectedEntry.index));
                 }
             }
             else {
                 //Note: the ID of a page is also it's public address, but for the returned ID, we use the resource URI, which is the base ID that describes the 'concept' behind the page
-                retVal.add(new ResourceSuggestion(resourceUri, resourceType.getCurieName(), page.getTitle(), page.getId().getPath()));
+                retVal.add(new ResourceSuggestion(resourceUri, resourceType.getCurieName(), page.getTitle(), pageId.getPath()));
                 langMapping.put(resourceUri, new EntryWithIndex(page, retVal.size() - 1));
             }
         }

@@ -1,18 +1,30 @@
 package com.beligum.blocks.rdf.ifaces;
 
+import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.fs.index.entries.resources.ResourceIndexEntry;
 import com.beligum.blocks.fs.index.entries.resources.ResourceIndexer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.ObjectCodec;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Set;
 
 /**
  * This is more or less the OO representation of the RDFS::Class
- *
+ * <p>
  * Created by bram on 2/26/16.
  */
+@JsonSerialize(using = RdfClass._JsonSerializer.class)
+@JsonDeserialize(using = RdfClass._JsonDeserializer.class)
 public interface RdfClass extends RdfResource
 {
     /**
@@ -106,4 +118,38 @@ public interface RdfClass extends RdfResource
      */
     @JsonIgnore
     void setProperties(Set<RdfProperty> properties);
+
+    //-----INNER CLASSES-----
+    class _JsonSerializer extends JsonSerializer<RdfClass>
+    {
+        @Override
+        public void serialize(RdfClass value, JsonGenerator gen, SerializerProvider serializers) throws IOException
+        {
+            URI curie = value == null ? null : (value.getCurieName() == null ? null : value.getCurieName());
+            if (curie != null) {
+                //ToStringSerializer.instance.serialize(curie, gen, serializers);
+                gen.writeString(value.toString());
+            }
+        }
+        @Override
+        public void serializeWithType(RdfClass value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer) throws IOException
+        {
+            typeSer.writeTypePrefixForScalar(value, gen);
+            serialize(value, gen, serializers);
+            typeSer.writeTypeSuffixForScalar(value, gen);
+        }
+    }
+
+    class _JsonDeserializer extends JsonDeserializer<RdfClass>
+    {
+        @Override
+        public RdfClass deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException
+        {
+            ObjectCodec oc = p.getCodec();
+            JsonNode node = oc.readTree(p);
+            String value = node.textValue();
+
+            return value == null ? null : RdfFactory.getClassForResourceType(URI.create(value));
+        }
+    }
 }

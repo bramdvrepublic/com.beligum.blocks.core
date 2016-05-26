@@ -57,7 +57,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
             return null;
         }
         else {
-            return SimplePageIndexEntry.fromLuceneDoc(getLuceneIndexReader().document(topdocs.scoreDocs[0].doc));
+            return SimplePageIndexEntry.fromLuceneDoc(getLuceneIndexSearcher().doc(topdocs.scoreDocs[0].doc));
         }
     }
     @Override
@@ -80,7 +80,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
 
         //let's not mix-and-mingle writes (even though the IndexWriter is thread-safe),
         // so we can do a clean commit/rollback on our own
-        this.indexWriter.updateDocument(AbstractPageIndexEntry.toLuceneId(indexExtry), SimplePageIndexEntry.toLuceneDoc(indexExtry));
+        this.indexWriter.updateDocument(AbstractPageIndexEntry.toLuceneId(indexExtry), indexExtry.createLuceneDoc());
 
         //for debug
         //this.printLuceneIndex();
@@ -124,7 +124,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         TopDocs topdocs = getLuceneIndexSearcher().search(luceneQuery, maxResults);
         //TODO this is probably not so efficient?
         for (ScoreDoc scoreDoc : topdocs.scoreDocs) {
-            retVal.add(SimplePageIndexEntry.fromLuceneDoc(getLuceneIndexReader().document(scoreDoc.doc)));
+            retVal.add(SimplePageIndexEntry.fromLuceneDoc(getLuceneIndexSearcher().doc(scoreDoc.doc)));
         }
 
         return retVal;
@@ -146,6 +146,9 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     {
         if (this.indexWriter != null) {
             this.indexWriter.commit();
+
+            //mark all readers and searchers to reload
+            this.indexChanged();
         }
     }
     @Override
@@ -282,29 +285,24 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
 
         return retVal;
     }
-    private IndexReader getLuceneIndexReader() throws IOException
-    {
-        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_READER)) {
-            //make sure the basic structure to read stuff exists
-            this.assertBasicStructure();
-            //TODO we just set the value to a dummy true value because it didn't work so well...
-            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_READER, true);
-        }
-
-        return DirectoryReader.open(FSDirectory.open(Settings.instance().getPageMainIndexFolder()));
-        //return (IndexReader) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_READER);
-    }
     private IndexSearcher getLuceneIndexSearcher() throws IOException
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_SEARCHER)) {
             //make sure the basic structure to read stuff exists
             this.assertBasicStructure();
-            //TODO we just set the value to a dummy true value because it didn't work so well...
-            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_SEARCHER, true);
+
+            IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Settings.instance().getPageMainIndexFolder()));
+            IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+
+            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_SEARCHER, indexSearcher);
         }
 
-        return new IndexSearcher(getLuceneIndexReader());
-        //return (IndexSearcher) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_SEARCHER);
+        return (IndexSearcher) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_SEARCHER);
+    }
+    private void indexChanged()
+    {
+        //will be re-initialized on next read/search
+        R.cacheManager().getApplicationCache().remove(CacheKeys.LUCENE_INDEX_SEARCHER);
     }
     /**
      * From the Lucene JavaDoc:
@@ -348,13 +346,14 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
             this.indexWriter = this.getNewLuceneIndexWriter();
         }
     }
-    /**
-     * Watch out: don't call this method often, it's hideously slow!
-     */
     private void assertBasicStructure() throws IOException
     {
-        try (IndexWriter indexWriter = this.getNewLuceneIndexWriter()) {
-            //just open and close the writer once, else we'll get a "no segments* file found" exception
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_BOOTED)) {
+            //Watch out: don't call this method often, it's hideously slow!
+            try (IndexWriter indexWriter = this.getNewLuceneIndexWriter()) {
+                //just open and close the writer once, else we'll get a "no segments* file found" exception
+            }
+            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_BOOTED, true);
         }
     }
 }

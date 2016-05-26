@@ -14,23 +14,23 @@ public class SimpleResourceIndexEntry implements ResourceIndexEntry
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private URI id;
+    private String id;
     private String title;
     private String description;
-    private URI image;
+    private String image;
 
     //-----CONSTRUCTORS-----
     public SimpleResourceIndexEntry(URI id, String title, String description, URI image)
     {
-        this.id = id;
+        this.id = id == null ? null : id.toString();
         this.title = title;
         this.description = description;
-        this.image = image;
+        this.image = image == null ? null : image.toString();
     }
 
     //-----PUBLIC METHODS-----
     @Override
-    public URI getId()
+    public String getId()
     {
         return id;
     }
@@ -50,7 +50,7 @@ public class SimpleResourceIndexEntry implements ResourceIndexEntry
         return description;
     }
     @Override
-    public URI getImage()
+    public String getImage()
     {
         return image;
     }

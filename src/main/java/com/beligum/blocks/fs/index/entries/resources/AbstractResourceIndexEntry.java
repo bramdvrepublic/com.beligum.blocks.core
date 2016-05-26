@@ -17,7 +17,7 @@ public abstract class AbstractResourceIndexEntry implements ResourceIndexEntry
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private URI subject;
+    private String subject;
     private Map<RdfResource, Value> properties;
 
     //-----CONSTRUCTORS-----
@@ -26,13 +26,13 @@ public abstract class AbstractResourceIndexEntry implements ResourceIndexEntry
      */
     protected AbstractResourceIndexEntry(URI subjectOrId)
     {
-        this.subject = subjectOrId;
+        this.subject = subjectOrId == null ? null : subjectOrId.toString();
         this.properties = new HashMap<>();
     }
 
     //-----PUBLIC METHODS-----
     @Override
-    public URI getId()
+    public String getId()
     {
         return subject;
     }
@@ -47,7 +47,7 @@ public abstract class AbstractResourceIndexEntry implements ResourceIndexEntry
         String retVal = null;
 
         Value image = this.getProperties().get(Terms.title);
-        if (image!=null) {
+        if (image != null) {
             retVal = image.stringValue();
         }
 
@@ -59,13 +59,13 @@ public abstract class AbstractResourceIndexEntry implements ResourceIndexEntry
         return null;
     }
     @Override
-    public URI getImage()
+    public String getImage()
     {
-        URI retVal = null;
+        String retVal = null;
 
         Value image = this.getProperties().get(Terms.image);
-        if (image!=null && !StringUtils.isEmpty(image.stringValue())) {
-            retVal = URI.create(image.stringValue());
+        if (image != null && !StringUtils.isEmpty(image.stringValue())) {
+            retVal = image.stringValue();
         }
 
         return retVal;

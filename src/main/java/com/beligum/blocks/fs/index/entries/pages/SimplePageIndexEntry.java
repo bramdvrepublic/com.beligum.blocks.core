@@ -1,14 +1,16 @@
 package com.beligum.blocks.fs.index.entries.pages;
 
-import com.beligum.base.server.R;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.fs.index.entries.IndexEntry;
 import com.beligum.blocks.fs.index.entries.resources.ResourceIndexEntry;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
+import com.fasterxml.jackson.dataformat.protobuf.schema.ProtobufSchema;
+import com.fasterxml.jackson.dataformat.protobuf.schema.ProtobufSchemaLoader;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 
@@ -22,29 +24,46 @@ import java.util.Locale;
 public class SimplePageIndexEntry extends AbstractPageIndexEntry implements PageIndexEntry
 {
     //-----CONSTANTS-----
+    private static ProtobufSchema PROTOBUF_SCHEMA;
 
     //-----VARIABLES-----
-    private URI resource;
-    private RdfClass typeOf;
-    private Locale language;
-    private URI canonicalAddress;
+    private String resource;
+    private String typeOf;
+    private String language;
+    private String canonicalAddress;
 
     //-----CONSTRUCTORS-----
+    //for serialization
+    private SimplePageIndexEntry() throws IOException
+    {
+        this((URI) null, (URI) null, (RdfClass) null, (String) null, (Locale) null, (URI) null, (String) null, (URI) null);
+    }
     public SimplePageIndexEntry(URI id, URI resource, RdfClass typeOf, String title, Locale language, URI canonicalAddress, String description, URI image) throws IOException
+    {
+        this(id == null ? null : id.toString(),
+             resource == null ? null : resource.toString(),
+             typeOf == null ? null : typeOf.getCurieName().toString(),
+             title,
+             language == null ? null : language.getLanguage(),
+             canonicalAddress == null ? null : canonicalAddress.toString(),
+             description,
+             image == null ? null : image.toString());
+    }
+    private SimplePageIndexEntry(String id, String resource, String typeOfCurie, String title, String language, String canonicalAddress, String description, String image) throws IOException
     {
         super(id);
 
-        this.resource = resource;
-        this.typeOf = typeOf;
-        this.title = title;
-        this.language = language;
-        this.canonicalAddress = canonicalAddress;
-        this.description = description;
-        this.image = image;
+        this.setResource(resource);
+        this.setTypeOf(typeOfCurie);
+        this.setTitle(title);
+        this.setLanguage(language);
+        this.setCanonicalAddress(canonicalAddress);
+        this.setDescription(description);
+        this.setImage(image);
     }
     public SimplePageIndexEntry(Page page) throws IOException
     {
-        super(page.getPublicRelativeAddress());
+        super(page.getPublicRelativeAddress().toString());
 
         HtmlAnalyzer htmlAnalyzer = page.createAnalyzer();
         String typeOfCurie = htmlAnalyzer.getHtmlTypeof() == null ? null : htmlAnalyzer.getHtmlTypeof().value;
@@ -70,21 +89,27 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
             this.setImage(indexEntry.getImage() == null ? null : indexEntry.getImage().toString());
         }
     }
-    private SimplePageIndexEntry(String id, String resource, String typeOfCurie, String title, String language, String canonicalAddress, String description, String image) throws IOException
-    {
-        super(URI.create(id));
-
-        this.setResource(resource);
-        this.setTypeOf(typeOfCurie);
-        this.setTitle(title);
-        this.setLanguage(language);
-        this.setCanonicalAddress(canonicalAddress);
-        this.setDescription(description);
-        this.setImage(image);
-    }
 
     //-----STATIC METHODS-----
-    public static Document toLuceneDoc(PageIndexEntry entry)
+    public static PageIndexEntry fromLuceneDoc(Document document) throws IOException
+    {
+        return getProtobufMapper().readerFor(SimplePageIndexEntry.class).with(getProtobufSchema()).readValue(document.getBinaryValue(PageIndexEntry.Field.object.name()).bytes);
+
+        //this is the old JSON-alternative
+        //return Json.read(document.get(PageIndexEntry.Field.object.name()), SimplePageIndexEntry.class);
+
+        //        return new SimplePageIndexEntry(document.get(IndexEntry.Field.id.name()),
+        //                                        document.get(PageIndexEntry.Field.resource.name()),
+        //                                        document.get(PageIndexEntry.Field.typeOf.name()),
+        //                                        document.get(IndexEntry.Field.title.name()),
+        //                                        document.get(PageIndexEntry.Field.language.name()),
+        //                                        document.get(PageIndexEntry.Field.canonicalAddress.name()),
+        //                                        document.get(IndexEntry.Field.description.name()),
+        //                                        document.get(IndexEntry.Field.image.name()));
+    }
+
+    //-----PUBLIC METHODS-----
+    public Document createLuceneDoc() throws IOException
     {
         Document retVal = new Document();
 
@@ -93,85 +118,89 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
         //      StoredField = not indexed at all
 
         //Note: we also need to insert the id of the doc even though it's an index
-        retVal.add(new StringField(IndexEntry.Field.id.name(), entry.getId().toString(), org.apache.lucene.document.Field.Store.YES));
+        retVal.add(new StringField(IndexEntry.Field.id.name(), this.getId(), org.apache.lucene.document.Field.Store.NO));
+
         //don't store it, we just add it to the index to be able to query the URI (again) more naturally
-        retVal.add(new TextField(IndexEntry.Field.tokenisedId.name(), entry.getId().toString(), org.apache.lucene.document.Field.Store.NO));
-        if (entry.getResource() != null) {
-            retVal.add(new StringField(PageIndexEntry.Field.resource.name(), entry.getResource() == null ? null : entry.getResource().toString(), org.apache.lucene.document.Field.Store.YES));
+        retVal.add(new TextField(IndexEntry.Field.tokenisedId.name(), this.getId(), org.apache.lucene.document.Field.Store.NO));
+
+        if (this.getResource() != null) {
+            retVal.add(new StringField(PageIndexEntry.Field.resource.name(), this.getResource(), org.apache.lucene.document.Field.Store.NO));
         }
-        if (entry.getTypeOf() != null) {
-            retVal.add(new StringField(PageIndexEntry.Field.typeOf.name(), entry.getTypeOf() == null ? null : entry.getTypeOf().getCurieName().toString(), org.apache.lucene.document.Field.Store.YES));
+        if (this.getTypeOf() != null) {
+            retVal.add(new StringField(PageIndexEntry.Field.typeOf.name(), this.getTypeOf(), org.apache.lucene.document.Field.Store.NO));
         }
-        if (entry.getTitle() != null) {
-            retVal.add(new TextField(IndexEntry.Field.title.name(), entry.getTitle(), org.apache.lucene.document.Field.Store.YES));
+        if (this.getTitle() != null) {
+            retVal.add(new TextField(IndexEntry.Field.title.name(), this.getTitle(), org.apache.lucene.document.Field.Store.NO));
         }
-        if (entry.getLanguage() != null) {
-            retVal.add(new StringField(PageIndexEntry.Field.language.name(), entry.getLanguage() == null ? null : entry.getLanguage().getLanguage(), org.apache.lucene.document.Field.Store.YES));
+        if (this.getLanguage() != null) {
+            retVal.add(new StringField(PageIndexEntry.Field.language.name(), this.getLanguage(), org.apache.lucene.document.Field.Store.NO));
         }
-        if (entry.getCanonicalAddress() != null) {
-            retVal.add(new StringField(PageIndexEntry.Field.canonicalAddress.name(), entry.getCanonicalAddress() == null ? null : entry.getCanonicalAddress().toString(),
-                                       org.apache.lucene.document.Field.Store.YES));
+        if (this.getCanonicalAddress() != null) {
+            retVal.add(new StringField(PageIndexEntry.Field.canonicalAddress.name(), this.getCanonicalAddress(), org.apache.lucene.document.Field.Store.NO));
         }
-        if (entry.getDescription() != null) {
-            retVal.add(new StringField(IndexEntry.Field.description.name(), entry.getDescription(), org.apache.lucene.document.Field.Store.YES));
+        if (this.getDescription() != null) {
+            retVal.add(new StringField(IndexEntry.Field.description.name(), this.getDescription(), org.apache.lucene.document.Field.Store.NO));
         }
-        if (entry.getImage() != null) {
-            retVal.add(new StringField(IndexEntry.Field.image.name(), entry.getImage() == null ? null : entry.getImage().toString(), org.apache.lucene.document.Field.Store.YES));
+        if (this.getImage() != null) {
+            retVal.add(new StringField(IndexEntry.Field.image.name(), this.getImage(), org.apache.lucene.document.Field.Store.NO));
         }
+
+        //stores the entire object in the index (using Protocol Buffers)
+        //see https://github.com/FasterXML/jackson-dataformats-binary/tree/master/protobuf
+        byte[] serializedObject = getProtobufMapper().writer(getProtobufSchema()).writeValueAsBytes(this);
+        retVal.add(new StoredField(PageIndexEntry.Field.object.name(), serializedObject));
+
+        //this is the old JSON-alternative
+        //retVal.add(new StoredField(PageIndexEntry.Field.object.name(), Json.write(this)));
 
         return retVal;
     }
-    public static SimplePageIndexEntry fromLuceneDoc(Document document) throws IOException
-    {
-        return new SimplePageIndexEntry(document.get(IndexEntry.Field.id.name()),
-                                        document.get(PageIndexEntry.Field.resource.name()),
-                                        document.get(PageIndexEntry.Field.typeOf.name()),
-                                        document.get(IndexEntry.Field.title.name()),
-                                        document.get(PageIndexEntry.Field.language.name()),
-                                        document.get(PageIndexEntry.Field.canonicalAddress.name()),
-                                        document.get(IndexEntry.Field.description.name()),
-                                        document.get(IndexEntry.Field.image.name()));
-    }
-
-    //-----PUBLIC METHODS-----
     @Override
-    public URI getResource()
+    public String getResource()
     {
         return resource;
     }
     private void setResource(String resource)
     {
-        this.resource = resource == null ? null : URI.create(resource);
+        this.resource = resource;
     }
     @Override
-    public URI getCanonicalAddress()
+    public String getCanonicalAddress()
     {
         return canonicalAddress;
     }
     private void setCanonicalAddress(String canonicalAddress)
     {
-        this.canonicalAddress = canonicalAddress == null ? null : URI.create(canonicalAddress);
+        this.canonicalAddress = canonicalAddress;
     }
     @Override
-    public RdfClass getTypeOf()
+    public String getTypeOf()
     {
         return typeOf;
     }
     private void setTypeOf(String typeOfCurie)
     {
-        this.typeOf = typeOfCurie == null ? null : RdfFactory.getClassForResourceType(URI.create(typeOfCurie));
+        this.typeOf = typeOfCurie;
     }
     @Override
-    public Locale getLanguage()
+    public String getLanguage()
     {
         return language;
     }
     private void setLanguage(String language)
     {
-        this.language = language == null ? null : R.configuration().getLocaleForLanguage(language);
+        this.language = language;
     }
 
     //-----PROTECTED METHODS-----
+    protected static ProtobufSchema getProtobufSchema() throws IOException
+    {
+        if (PROTOBUF_SCHEMA == null) {
+            PROTOBUF_SCHEMA = ProtobufSchemaLoader.std.parse(createProtobufSchema(SimplePageIndexEntry.class));
+        }
+
+        return PROTOBUF_SCHEMA;
+    }
 
     //-----PRIVATE METHODS-----
 

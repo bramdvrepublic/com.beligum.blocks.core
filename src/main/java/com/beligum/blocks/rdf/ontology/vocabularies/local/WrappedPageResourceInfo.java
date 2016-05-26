@@ -1,5 +1,6 @@
 package com.beligum.blocks.rdf.ontology.vocabularies.local;
 
+import com.beligum.base.server.R;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
 
@@ -31,13 +32,13 @@ public class WrappedPageResourceInfo implements ResourceInfo
     @Override
     public URI getResourceUri()
     {
-        return this.indexEntry == null ? null : this.indexEntry.getResource();
+        return this.indexEntry.getResource() == null ? null : URI.create(this.indexEntry.getResource());
     }
     @Override
     public URI getResourceType()
     {
-        if (this.indexEntry != null && this.indexEntry.getTypeOf() != null) {
-            return this.indexEntry.getTypeOf().getCurieName();
+        if (this.indexEntry.getTypeOf() != null) {
+            return URI.create(this.indexEntry.getTypeOf());
         }
         else {
             return null;
@@ -46,13 +47,13 @@ public class WrappedPageResourceInfo implements ResourceInfo
     @Override
     public String getLabel()
     {
-        return this.indexEntry == null ? null : this.indexEntry.getTitle();
+        return this.indexEntry.getTitle();
     }
     @Override
     public URI getLink()
     {
         //note: the ID of a page is the public URL
-        return this.indexEntry == null ? null : this.indexEntry.getId();
+        return this.indexEntry.getId() == null ? null : URI.create(this.indexEntry.getId());
     }
     @Override
     public boolean isExternalLink()
@@ -63,17 +64,17 @@ public class WrappedPageResourceInfo implements ResourceInfo
     @Override
     public URI getImage()
     {
-        return this.indexEntry == null ? null : this.indexEntry.getImage();
+        return this.indexEntry.getImage() == null ? null : URI.create(this.indexEntry.getImage());
     }
     @Override
     public String getName()
     {
-        return this.indexEntry == null ? null : this.indexEntry.getTitle();
+        return this.indexEntry.getTitle() == null ? null : this.indexEntry.getTitle();
     }
     @Override
     public Locale getLanguage()
     {
-        return this.indexEntry == null ? null : this.indexEntry.getLanguage();
+        return this.indexEntry.getLanguage() == null ? null : R.configuration().getLocaleForLanguage(this.indexEntry.getLanguage());
     }
 
     //-----PROTECTED METHODS-----

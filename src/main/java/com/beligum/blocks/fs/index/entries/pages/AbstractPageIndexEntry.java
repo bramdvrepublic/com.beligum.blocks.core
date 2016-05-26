@@ -1,6 +1,12 @@
 package com.beligum.blocks.fs.index.entries.pages;
 
 import com.beligum.blocks.fs.index.entries.IndexEntry;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.protobuf.ProtobufMapper;
+import com.fasterxml.jackson.dataformat.protobuf.schema.NativeProtobufSchema;
+import com.fasterxml.jackson.dataformat.protobuf.schema.ProtobufSchema;
+import com.fasterxml.jackson.dataformat.protobuf.schemagen.ProtobufSchemaGenerator;
 import org.apache.lucene.index.Term;
 
 import java.net.URI;
@@ -11,15 +17,16 @@ import java.net.URI;
 public abstract class AbstractPageIndexEntry implements IndexEntry
 {
     //-----CONSTANTS-----
+    private static ObjectMapper PROTOBUF_MAPPER;
 
     //-----VARIABLES-----
-    protected URI id;
+    protected String id;
     protected String title;
     protected String description;
-    protected URI image;
+    protected String image;
 
     //-----CONSTRUCTORS-----
-    protected AbstractPageIndexEntry(URI id)
+    protected AbstractPageIndexEntry(String id)
     {
         this.id = id;
     }
@@ -36,7 +43,7 @@ public abstract class AbstractPageIndexEntry implements IndexEntry
 
     //-----PUBLIC METHODS-----
     @Override
-    public URI getId()
+    public String getId()
     {
         return id;
     }
@@ -51,13 +58,13 @@ public abstract class AbstractPageIndexEntry implements IndexEntry
         return description;
     }
     @Override
-    public URI getImage()
+    public String getImage()
     {
         return image;
     }
 
     //-----PROTECTED METHODS-----
-    protected void setId(URI id)
+    protected void setId(String id)
     {
         this.id = id;
     }
@@ -71,7 +78,27 @@ public abstract class AbstractPageIndexEntry implements IndexEntry
     }
     protected void setImage(String image)
     {
-        this.image = image == null ? null : URI.create(image);
+        this.image = image;
+    }
+
+    protected static ObjectMapper getProtobufMapper()
+    {
+        if (PROTOBUF_MAPPER == null) {
+            PROTOBUF_MAPPER = new ProtobufMapper();
+        }
+
+        return PROTOBUF_MAPPER;
+    }
+    //see https://github.com/FasterXML/jackson-dataformats-binary/tree/master/protobuf
+    protected static String createProtobufSchema(Class<?> clazz) throws JsonMappingException
+    {
+        ObjectMapper mapper = getProtobufMapper();
+        ProtobufSchemaGenerator gen = new ProtobufSchemaGenerator();
+        mapper.acceptJsonFormatVisitor(clazz, gen);
+        ProtobufSchema schemaWrapper = gen.getGeneratedSchema();
+        NativeProtobufSchema nativeProtobufSchema = schemaWrapper.getSource();
+
+        return nativeProtobufSchema.toString();
     }
 
     //-----PRIVATE METHODS-----

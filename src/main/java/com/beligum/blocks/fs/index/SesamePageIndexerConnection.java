@@ -225,11 +225,11 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
                     IRI subjectIRI = (IRI) subject;
 
                     //this will query the triplestore to build up the properties list
-                    retVal.add(this.buildResourceEntry(subjectIRI, type, language));
+//                    retVal.add(this.buildResourceEntry(subjectIRI, type, language));
 
                     //this will query the lucene index to get the entries (note that the above works as well)
                     //Hmm, this seems to be 5 times slower than the one above??
-//                    retVal.add(buildLuceneIndexEntry(subjectIRI, type, language));
+                    retVal.add(buildLuceneIndexEntry(subjectIRI, type, language));
                 }
                 else {
                     Logger.warn("Skipping incompatible sparql result because it's subject is no IRI; " + subject);

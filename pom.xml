@@ -25,6 +25,9 @@
         <jena.version>3.0.1</jena.version>
         <sesame.version>4.1.0</sesame.version>
         <semargl.version>0.6.1</semargl.version>
+        <!-- Sync this with base-core -->
+        <jackson.version>2.7.1</jackson.version>
+        <kryo.version>3.0.3</kryo.version>
 
         <!--sync this with sesame -->
         <lucene.version>5.1.0</lucene.version>
@@ -42,7 +45,7 @@
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-core</artifactId>
-            <version>0.3.19-SNAPSHOT</version>
+            <version>0.3.20-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.beligum.base</groupId>
@@ -609,6 +612,17 @@
                     <artifactId>lucene-spatial</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-protobuf</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.esotericsoftware</groupId>
+            <artifactId>kryo</artifactId>
+            <version>${kryo.version}</version>
         </dependency>
     </dependencies>
 

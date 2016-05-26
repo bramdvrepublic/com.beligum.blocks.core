@@ -1,10 +1,6 @@
 package com.beligum.blocks.fs.index.entries.pages;
 
 import com.beligum.blocks.fs.index.entries.IndexEntry;
-import com.beligum.blocks.rdf.ifaces.RdfClass;
-
-import java.net.URI;
-import java.util.Locale;
 
 /**
  * Created by bram on 2/23/16.
@@ -19,6 +15,7 @@ public interface PageIndexEntry extends IndexEntry
         typeOf,
         language,
         canonicalAddress,
+        object,
     }
 
     //-----VARIABLES-----
@@ -26,10 +23,10 @@ public interface PageIndexEntry extends IndexEntry
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    URI getResource();
-    RdfClass getTypeOf();
-    Locale getLanguage();
-    URI getCanonicalAddress();
+    String getResource();
+    String getTypeOf();
+    String getLanguage();
+    String getCanonicalAddress();
 
     //-----PROTECTED METHODS-----
 

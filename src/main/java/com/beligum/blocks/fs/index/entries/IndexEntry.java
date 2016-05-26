@@ -1,7 +1,6 @@
 package com.beligum.blocks.fs.index.entries;
 
 import java.io.Serializable;
-import java.net.URI;
 
 /**
  * Created by bram on 2/14/16.
@@ -28,7 +27,12 @@ public interface IndexEntry extends Serializable
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    URI getId();
+
+    /**
+     * The unique ID of this entry. Eg. for a page, this is the public (relative) URI.
+     * For resources, the more unique, the better, so often the real client URL is used (instead of the linked, auto-generated resource-URI)
+     */
+    String getId();
 
     /**
      * The title of this resource, to be used directly in the HTML that is returned to the client.
@@ -48,7 +52,7 @@ public interface IndexEntry extends Serializable
      * A link to the main image that describes this resource, mainly used to build eg. search result lists.
      * Might be null.
      */
-    URI getImage();
+    String getImage();
 
     //-----PROTECTED METHODS-----
 
