@@ -17,8 +17,12 @@ import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfResource;
 import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.BytesRef;
 import org.openrdf.model.IRI;
 import org.openrdf.model.Literal;
 import org.openrdf.model.Statement;
@@ -207,35 +211,87 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     public List<IndexEntry> search(String sparqlQuery, RdfClass type, Locale language) throws IOException
     {
+        long searchStart = System.currentTimeMillis();
+        long sparqlTime = 0;
+        long parseTime = 0;
+        long luceneTime = 0;
+
         List<IndexEntry> retVal = new ArrayList<>();
 
+        //execute the SPARQL query
         TupleQuery query = connection.prepareTupleQuery(QueryLanguage.SPARQL, sparqlQuery, R.configuration().getSiteDomain().toString());
 
-        try (TupleQueryResult result = query.evaluate()) {
-            List<String> bindingNames = result.getBindingNames();
+        //decide if we build a simple boolean lucene query or build a bitmap (by using TermsQuery) when searching for subjectURIs
+        //Note: I think it's better to disable this for smaller (expected) sets and enable it when you're expecting large results...
+        final boolean USE_LUCENE_TERMS_QUERY = false;
 
+        List<BytesRef> ids = null;
+        org.apache.lucene.search.BooleanQuery luceneIdQuery = null;
+        if (USE_LUCENE_TERMS_QUERY) {
+            ids = new ArrayList<>();
+        }
+        else {
+            luceneIdQuery = new org.apache.lucene.search.BooleanQuery();
+        }
+
+        //iterate over the results and add all URIs to a list to lookup with Lucene
+        int count = 0;
+        try (TupleQueryResult result = query.evaluate()) {
+            sparqlTime = System.currentTimeMillis();
+
+            //we expect only one binding: the subject URI
+            String bindingName = result.getBindingNames().iterator().next();
             //watch out: order must be preserved (eg. because we're likely to use sorting or scoring)
             while (result.hasNext()) {
 
-                BindingSet bindingSet = result.next();
-                //we expect only one binding: the subject URI
-                Value subject = bindingSet.getValue(bindingNames.get(0));
+                Value subject = result.next().getValue(bindingName);
 
                 if (subject instanceof IRI) {
                     IRI subjectIRI = (IRI) subject;
 
                     //this will query the triplestore to build up the properties list
-//                    retVal.add(this.buildResourceEntry(subjectIRI, type, language));
+                    //retVal.add(this.buildResourceEntry(subjectIRI, type, language));
 
-                    //this will query the lucene index to get the entries (note that the above works as well)
-                    //Hmm, this seems to be 5 times slower than the one above??
-                    retVal.add(buildLuceneIndexEntry(subjectIRI, type, language));
+
+                    String subjectStr = this.toUri(subjectIRI, false, true).toString();
+                    if (USE_LUCENE_TERMS_QUERY) {
+                        ids.add(new BytesRef(subjectStr));
+                    }
+                    else {
+                        luceneIdQuery.add(new TermQuery(new Term(PageIndexEntry.Field.resource.name(), subjectStr)), BooleanClause.Occur.SHOULD);
+                    }
+
+                    count++;
                 }
                 else {
                     Logger.warn("Skipping incompatible sparql result because it's subject is no IRI; " + subject);
                 }
             }
+            parseTime = System.currentTimeMillis();
         }
+
+        if (count > 0) {
+            //Connect with the page indexer here so we can re-use the connection for all results
+            LuceneQueryConnection luceneConnection = StorageFactory.getMainPageQueryConnection();
+
+            org.apache.lucene.search.BooleanQuery luceneQuery = new org.apache.lucene.search.BooleanQuery();
+            if (USE_LUCENE_TERMS_QUERY) {
+                luceneQuery.add(new TermsQuery(PageIndexEntry.Field.resource.name(), ids), BooleanClause.Occur.MUST);
+            }
+            else {
+                luceneQuery.add(luceneIdQuery, BooleanClause.Occur.MUST);
+            }
+            luceneQuery.add(new TermQuery(new Term(PageIndexEntry.Field.language.name(), language.getLanguage())), BooleanClause.Occur.MUST);
+
+            retVal = luceneConnection.search(luceneQuery, count);
+        }
+        luceneTime = System.currentTimeMillis();
+
+        Logger.info("Search took " + (System.currentTimeMillis() - searchStart) + "ms to complete.");
+        Logger.info("SPARQL took " + (sparqlTime - searchStart) + "ms to complete.");
+        Logger.info("Parse took " + (parseTime - sparqlTime) + "ms to complete.");
+        Logger.info("Lucene took " + (luceneTime - parseTime) + "ms to complete.");
+        Logger.info("\n");
 
         return retVal;
     }
@@ -326,7 +382,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     private ResourceIndexEntry buildResourceEntry(IRI resourceId, RdfClass type, Locale language) throws IOException
     {
         Class<? extends ResourceIndexEntry> resourceIndexClass = type.getResourceIndexClass();
-        if (resourceIndexClass==null) {
+        if (resourceIndexClass == null) {
             resourceIndexClass = SimpleResourceIndexEntry.class;
         }
 
@@ -336,7 +392,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
             retVal = resourceIndexClass.getConstructor(URI.class).newInstance(this.toUri(resourceId, false, true));
         }
         catch (Exception e) {
-            throw new IOException("Error while initializing a resource index entry class '"+resourceIndexClass.getCanonicalName()+"', you probably want to check it's constructor signature", e);
+            throw new IOException("Error while initializing a resource index entry class '" + resourceIndexClass.getCanonicalName() + "', you probably want to check it's constructor signature", e);
         }
 
         RepositoryResult<Statement> properties = this.connection.getStatements(resourceId, null, null);
@@ -348,7 +404,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
 
             //Note that we need a CURIE for RdfFactory.getForResourceType(), so first convert the absolute predicate URI to a curie URI
             RdfVocabulary vocab = RdfFactory.getVocabularies().get(URI.create(statement.getPredicate().getNamespace()));
-            if (vocab!=null) {
+            if (vocab != null) {
                 URI predicateResourceUri = vocab.resolveCurie(statement.getPredicate().getLocalName());
                 //RdfResource predicateResource = RdfFactory.getForResourceType(this.toUri(statement.getPredicate(), true, false));
                 RdfResource predicateResource = RdfFactory.getForResourceType(predicateResourceUri);
@@ -378,26 +434,6 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
                 //happens eg. with http://www.w3.org/ns/rdfa#usesVocabulary
                 //Logger.warn("Skipping incompatible sparql result because it's namespace is not in a known RDF vocabulary; " + statement.getPredicate());
             }
-        }
-
-        return retVal;
-    }
-    private IndexEntry buildLuceneIndexEntry(IRI resourceId, RdfClass type, Locale language) throws IOException
-    {
-        IndexEntry retVal = null;
-
-        //we convert to a uniform Java-URI so it's compatible with existing interfaces later on
-        URI resourceUri = this.toUri(resourceId, false, true);
-        String resourceIdStr = resourceUri.toString();
-        LuceneQueryConnection.FieldQuery[] queries =
-                        new LuceneQueryConnection.FieldQuery[] {
-                                        new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.resource, resourceIdStr, BooleanClause.Occur.MUST, LuceneQueryConnection.FieldQuery.Type.EXACT),
-                                        new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.language, language.getLanguage(), BooleanClause.Occur.MUST, LuceneQueryConnection.FieldQuery.Type.EXACT)
-                        };
-
-        List<PageIndexEntry> matchingPages = StorageFactory.getMainPageQueryConnection().search(queries, 1);
-        if (!matchingPages.isEmpty()) {
-            retVal = matchingPages.iterator().next();
         }
 
         return retVal;

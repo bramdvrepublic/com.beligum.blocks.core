@@ -12,6 +12,7 @@ import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.pages.ReadOnlyPage;
 import com.beligum.blocks.fs.pages.ifaces.Page;
+import jersey.repackaged.com.google.common.collect.Sets;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
@@ -25,10 +26,7 @@ import org.apache.lucene.store.FSDirectory;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by bram on 2/22/16.
@@ -36,6 +34,7 @@ import java.util.Map;
 public class LucenePageIndexerConnection extends AbstractIndexConnection implements PageIndexConnection, LuceneQueryConnection
 {
     //-----CONSTANTS-----
+    private static final Set<String> INDEX_FIELDS_TO_LOAD = Sets.newHashSet(PageIndexEntry.Field.object.name());
 
     //-----VARIABLES-----
     private IndexWriter indexWriter;
@@ -122,9 +121,8 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         //        TermSecondPassGroupingCollector c2 = new TermSecondPassGroupingCollector("author", topGroups, groupSort, docSort, docOffset + docsPerGroup, getScores, getMaxScores, fillFields);
 
         TopDocs topdocs = getLuceneIndexSearcher().search(luceneQuery, maxResults);
-        //TODO this is probably not so efficient?
         for (ScoreDoc scoreDoc : topdocs.scoreDocs) {
-            retVal.add(SimplePageIndexEntry.fromLuceneDoc(getLuceneIndexSearcher().doc(scoreDoc.doc)));
+            retVal.add(SimplePageIndexEntry.fromLuceneDoc(getLuceneIndexSearcher().doc(scoreDoc.doc, INDEX_FIELDS_TO_LOAD)));
         }
 
         return retVal;

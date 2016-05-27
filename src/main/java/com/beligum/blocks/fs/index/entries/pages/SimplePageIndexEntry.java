@@ -139,7 +139,7 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
             retVal.add(new StringField(PageIndexEntry.Field.canonicalAddress.name(), this.getCanonicalAddress(), org.apache.lucene.document.Field.Store.NO));
         }
         if (this.getDescription() != null) {
-            retVal.add(new StringField(IndexEntry.Field.description.name(), this.getDescription(), org.apache.lucene.document.Field.Store.NO));
+            retVal.add(new TextField(IndexEntry.Field.description.name(), this.getDescription(), org.apache.lucene.document.Field.Store.NO));
         }
         if (this.getImage() != null) {
             retVal.add(new StringField(IndexEntry.Field.image.name(), this.getImage(), org.apache.lucene.document.Field.Store.NO));
