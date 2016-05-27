@@ -22,7 +22,6 @@ import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.BytesRef;
 import org.openrdf.model.IRI;
 import org.openrdf.model.Literal;
 import org.openrdf.model.Statement;
@@ -38,12 +37,15 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
+import static com.beligum.base.server.R.configuration;
+
 /**
  * Created by bram on 2/21/16.
  */
 public class SesamePageIndexerConnection extends AbstractIndexConnection implements PageIndexConnection, SparqlQueryConnection
 {
     //-----CONSTANTS-----
+    public static final String SPARQL_SUBJECT_BINDING_NAME = "s";
     private static final URI ROOT = URI.create("/");
 
     //-----VARIABLES-----
@@ -120,16 +122,16 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         queryBuilder.append("\n");
 
         //links the resource to be found with the following query statements (required)
-        queryBuilder.append("SELECT DISTINCT ?s").append(" WHERE {\n");
+        queryBuilder.append("SELECT DISTINCT ?").append(SPARQL_SUBJECT_BINDING_NAME).append(" WHERE {\n");
 
         //TODO implement the type
         if (type != null) {
-            queryBuilder.append("\t").append("?s a <").append(type.getFullName().toString()).append("> . \n");
+            queryBuilder.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" a <").append(type.getFullName().toString()).append("> . \n");
         }
 
         //---Lucene---
         if (!StringUtils.isEmpty(luceneQuery)) {
-            queryBuilder.append("\t").append("?s ").append(searchPrefix).append(":matches [\n")
+            queryBuilder.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" ").append(searchPrefix).append(":matches [\n")
                         //specifies the Lucene query (required)
                         .append("\t").append("\t").append(searchPrefix).append(":query \"").append(QueryParser.escape(luceneQuery)).append("*").append("\";\n")
                         //specifies the property to search. If omitted all properties are searched (optional)
@@ -142,19 +144,21 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         }
 
         //---triple selection---
-        queryBuilder.append("\t").append("?s ?p ?o").append(" .\n");
+        queryBuilder.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" ?p ?o").append(" .\n");
 
         //---Filters---
         if (fieldValues != null) {
             Set<Map.Entry<String, String>> entries = fieldValues.entrySet();
             for (Map.Entry<String, String> filter : entries) {
-                queryBuilder.append("\t").append("?s ").append(Settings.instance().getRdfOntologyPrefix()).append(":").append(filter.getKey()).append(" ").append(filter.getValue()).append(" .\n");
+                queryBuilder.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" ").append(Settings.instance().getRdfOntologyPrefix()).append(":").append(filter.getKey()).append(" ")
+                            .append(filter.getValue()).append(" .\n");
             }
         }
 
         //---Save the sort field---
         if (!StringUtils.isEmpty(sortField)) {
-            queryBuilder.append("\t").append("?s ").append(Settings.instance().getRdfOntologyPrefix()).append(":").append(sortField).append(" ").append("?sortField").append(" .\n");
+            queryBuilder.append("\t").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(" ").append(Settings.instance().getRdfOntologyPrefix()).append(":").append(sortField).append(" ")
+                        .append("?sortField").append(" .\n");
         }
 
         //---Closes the inner SELECT---
@@ -167,7 +171,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         //note that, for pagination to work properly, we need to sort the results, so always add a sort field.
         // eg see here: https://lists.w3.org/Archives/Public/public-rdf-dawg-comments/2011Oct/0024.html
         else {
-            queryBuilder.append("ORDER BY ").append(sortAscending ? "ASC(" : "DESC(").append("?s").append(")").append("\n");
+            queryBuilder.append("ORDER BY ").append(sortAscending ? "ASC(" : "DESC(").append("?").append(SPARQL_SUBJECT_BINDING_NAME).append(")").append("\n");
         }
 
         //---Paging---
@@ -218,14 +222,12 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
 
         List<IndexEntry> retVal = new ArrayList<>();
 
-        //execute the SPARQL query
-        TupleQuery query = connection.prepareTupleQuery(QueryLanguage.SPARQL, sparqlQuery, R.configuration().getSiteDomain().toString());
-
         //decide if we build a simple boolean lucene query or build a bitmap (by using TermsQuery) when searching for subjectURIs
         //Note: I think it's better to disable this for smaller (expected) sets and enable it when you're expecting large results...
-        final boolean USE_LUCENE_TERMS_QUERY = false;
+        //Note2: pfff, need to try with bigger sets before making up my mind, true seems to be a bit faster in the end...
+        final boolean USE_LUCENE_TERMS_QUERY = true;
 
-        List<BytesRef> ids = null;
+        List<Term> ids = null;
         org.apache.lucene.search.BooleanQuery luceneIdQuery = null;
         if (USE_LUCENE_TERMS_QUERY) {
             ids = new ArrayList<>();
@@ -234,28 +236,34 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
             luceneIdQuery = new org.apache.lucene.search.BooleanQuery();
         }
 
-        //iterate over the results and add all URIs to a list to lookup with Lucene
+        //execute the SPARQL query and iterate over the results and add all URIs to a list to lookup with Lucene
         int count = 0;
+        String siteDomain = R.configuration().getSiteDomain().toString();
+        String resourceField = PageIndexEntry.Field.resource.name();
+        TupleQuery query = connection.prepareTupleQuery(QueryLanguage.SPARQL, sparqlQuery, siteDomain);
         try (TupleQueryResult result = query.evaluate()) {
             sparqlTime = System.currentTimeMillis();
 
-            //we expect only one binding: the subject URI
-            String bindingName = result.getBindingNames().iterator().next();
             //watch out: order must be preserved (eg. because we're likely to use sorting or scoring)
             while (result.hasNext()) {
 
-                Value subject = result.next().getValue(bindingName);
+                //we expect only one binding: the subject URI
+                Value subject = result.next().getValue(SPARQL_SUBJECT_BINDING_NAME);
 
                 if (subject instanceof IRI) {
-                    IRI subjectIRI = (IRI) subject;
 
                     //this will query the triplestore to build up the properties list
                     //retVal.add(this.buildResourceEntry(subjectIRI, type, language));
 
+                    //small optimization to avoid all the URI parsing, hope I didn't break something...
+                    //String subjectStr = this.toUri((IRI)subjectIRI, false, true).toString();
+                    String subjectStr = subject.stringValue().substring(siteDomain.length());
+                    if (subjectStr.charAt(0) != '/') {
+                        subjectStr = "/" + subjectStr;
+                    }
 
-                    String subjectStr = this.toUri(subjectIRI, false, true).toString();
                     if (USE_LUCENE_TERMS_QUERY) {
-                        ids.add(new BytesRef(subjectStr));
+                        ids.add(new Term(resourceField, subjectStr));
                     }
                     else {
                         luceneIdQuery.add(new TermQuery(new Term(PageIndexEntry.Field.resource.name(), subjectStr)), BooleanClause.Occur.SHOULD);
@@ -267,6 +275,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
                     Logger.warn("Skipping incompatible sparql result because it's subject is no IRI; " + subject);
                 }
             }
+
             parseTime = System.currentTimeMillis();
         }
 
@@ -276,7 +285,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
 
             org.apache.lucene.search.BooleanQuery luceneQuery = new org.apache.lucene.search.BooleanQuery();
             if (USE_LUCENE_TERMS_QUERY) {
-                luceneQuery.add(new TermsQuery(PageIndexEntry.Field.resource.name(), ids), BooleanClause.Occur.MUST);
+                luceneQuery.add(new TermsQuery(ids), BooleanClause.Occur.MUST);
             }
             else {
                 luceneQuery.add(luceneIdQuery, BooleanClause.Occur.MUST);
@@ -371,7 +380,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     {
         URI retVal = uri;
 
-        URI relative = R.configuration().getSiteDomain().relativize(retVal);
+        URI relative = configuration().getSiteDomain().relativize(retVal);
         //if it's not absolute (eg. it doesn't start with http://..., this means the relativize 'succeeded' and the retVal starts with the RDF ontology URI)
         if (!relative.isAbsolute()) {
             retVal = ROOT.resolve(relative);
