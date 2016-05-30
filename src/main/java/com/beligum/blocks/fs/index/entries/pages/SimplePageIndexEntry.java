@@ -6,6 +6,7 @@ import com.beligum.blocks.fs.index.entries.resources.ResourceIndexEntry;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.protobuf.schema.ProtobufSchema;
 import com.fasterxml.jackson.dataformat.protobuf.schema.ProtobufSchemaLoader;
 import org.apache.commons.lang.StringUtils;
@@ -109,6 +110,8 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
     }
 
     //-----PUBLIC METHODS-----
+    //Note: never serialize this to the protobuf stored field
+    @JsonIgnore
     public Document createLuceneDoc() throws IOException
     {
         Document retVal = new Document();
@@ -149,7 +152,6 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
         //see https://github.com/FasterXML/jackson-dataformats-binary/tree/master/protobuf
         byte[] serializedObject = getProtobufMapper().writer(getProtobufSchema()).writeValueAsBytes(this);
         retVal.add(new StoredField(PageIndexEntry.Field.object.name(), serializedObject));
-
         //this is the old JSON-alternative
         //retVal.add(new StoredField(PageIndexEntry.Field.object.name(), Json.write(this)));
 

@@ -104,6 +104,20 @@ public class RdfFactory
     {
         return getRdfMapCache(RdfMapCacheKey.CLASS, RdfClass.class);
     }
+    public static URI fullToCurie(URI fullUri)
+    {
+        URI retVal = null;
+
+        if (fullUri != null) {
+            URI relative = Settings.instance().getRdfOntologyUri().relativize(fullUri);
+            //if it's not absolute (eg. it doesn't start with http://..., this means the relativize 'succeeded' and the retVal starts with the RDF ontology URI)
+            if (!relative.isAbsolute()) {
+                retVal = URI.create(Settings.instance().getRdfOntologyPrefix() + ":" + relative.toString());
+            }
+        }
+
+        return retVal;
+    }
 
     //-----PROTECTED METHODS-----
 

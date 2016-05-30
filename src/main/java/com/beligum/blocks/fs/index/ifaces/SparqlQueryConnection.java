@@ -1,11 +1,11 @@
 package com.beligum.blocks.fs.index.ifaces;
 
+import com.beligum.blocks.fs.index.entries.pages.IndexSearchResult;
 import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
-import com.beligum.blocks.fs.index.entries.resources.ResourceIndexEntry;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -27,8 +27,8 @@ public interface SparqlQueryConnection<T extends PageIndexEntry> extends QueryCo
      *
      * @param type the type of resource you're looking for or null to look for any type
      * @param luceneQuery the lucene query to query for (ignored if empty or null)
-     * @param fieldValues the name (in the default local namespace, eg. "isVerified") of the fields and their value-mapping to filter by
-     * @param sortField the field (in the default local namespace, eg. "isVerified") to sort on
+     * @param fieldValues the name of the fields and their value-mapping to filter by
+     * @param sortField the field to sort on
      * @param sortAscending whether to sort ascending or descending
      * @param pageSize the number of results to return
      * @param pageOffset the offset (in pages, not in results, so the real offset will be pageOffset*pageSize) where to start returning results
@@ -36,12 +36,12 @@ public interface SparqlQueryConnection<T extends PageIndexEntry> extends QueryCo
      * @return the result list
      * @throws IOException
      */
-    <T extends ResourceIndexEntry> List<T> search(RdfClass type, String luceneQuery, Map<String, String> fieldValues, String sortField, boolean sortAscending, int pageSize, int pageOffset, Locale language) throws IOException;
+    IndexSearchResult search(RdfClass type, String luceneQuery, Map<RdfProperty, String> fieldValues, RdfProperty sortField, boolean sortAscending, int pageSize, int pageOffset, Locale language) throws IOException;
 
     /**
      * Search the triple store with the specified raw Sparql query
      */
-    <T extends ResourceIndexEntry> List<T> search(String sparqlQuery, RdfClass type, Locale language) throws IOException;
+    IndexSearchResult search(String sparqlQuery, RdfClass type, Locale language) throws IOException;
 
     //-----PROTECTED METHODS-----
 

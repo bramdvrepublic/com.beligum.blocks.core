@@ -98,8 +98,9 @@ public class SimplePageStore implements PageStore
             }
 
             //for now, we'll return null if nothing changed
+            //update: changed because sometimes we want to re-index the page (eg. in an updated manner), so just return the old page now
             if (nothingChanged) {
-                retVal = null;
+                retVal = newPage;
             }
             else {
                 //make sure the path dirs exist

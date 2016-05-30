@@ -5,13 +5,13 @@ import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
-import com.beligum.blocks.fs.index.entries.pages.AbstractPageIndexEntry;
-import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
-import com.beligum.blocks.fs.index.entries.pages.SimplePageIndexEntry;
+import com.beligum.blocks.fs.index.entries.IndexEntry;
+import com.beligum.blocks.fs.index.entries.pages.*;
 import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.pages.ReadOnlyPage;
 import com.beligum.blocks.fs.pages.ifaces.Page;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import jersey.repackaged.com.google.common.collect.Sets;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.lucene.document.Document;
@@ -35,6 +35,10 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
 {
     //-----CONSTANTS-----
     private static final Set<String> INDEX_FIELDS_TO_LOAD = Sets.newHashSet(PageIndexEntry.Field.object.name());
+
+    //this is a cap value for the most results we'll ever return
+    // (eg. the size of the array that will hold the values to be sorted before pagination)
+    private static final int MAX_SEARCH_RESULTS = 1000;
 
     //-----VARIABLES-----
     private IndexWriter indexWriter;
@@ -75,7 +79,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     {
         this.assertWriterTransaction();
 
-        SimplePageIndexEntry indexExtry = new SimplePageIndexEntry(page);
+        DeepPageIndexEntry indexExtry = new DeepPageIndexEntry(page);
 
         //let's not mix-and-mingle writes (even though the IndexWriter is thread-safe),
         // so we can do a clean commit/rollback on our own
@@ -85,47 +89,59 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         //this.printLuceneIndex();
     }
     @Override
-    public List<PageIndexEntry> search(FieldQuery[] fieldQueries, int maxResults) throws IOException
+    public IndexSearchResult search(FieldQuery[] fieldQueries, int maxResults) throws IOException
     {
-        List<PageIndexEntry> retVal = new ArrayList<>();
-
         try {
-            retVal = this.search(this.buildLuceneQuery(fieldQueries), maxResults);
+            return this.search(this.buildLuceneQuery(fieldQueries), null, false, maxResults, 0);
         }
         catch (ParseException e) {
             throw new IOException("Error while parsing multi-field lucene query; " + fieldQueries, e);
         }
-
-        return retVal;
     }
     @Override
-    public List<PageIndexEntry> search(Query luceneQuery, int maxResults) throws IOException
+    public IndexSearchResult search(Query luceneQuery, RdfProperty sortField, boolean sortAscending, int pageSize, int pageOffset) throws IOException
     {
-        List<PageIndexEntry> retVal = new ArrayList<>();
+        List<IndexEntry> retVal = new ArrayList<>();
 
-        //old code when experimenting with lucene grouping to select the best double resource URI result (eg. for language selection)
-        //        Sort groupSort = new Sort();
-        //        groupSort.setSort(new SortField(PageIndexEntry.Field.resource.name(), SortField.Type.STRING, true)/*, new SortField("progress", SortField.FLOAT, true)*/);
-        //        TermFirstPassGroupingCollector c1 = new TermFirstPassGroupingCollector(PageIndexEntry.Field.resource.name(), Sort.RELEVANCE, maxResults);
-        //
-        //        getLuceneIndexSearcher().search(luceneQuery, c1);
-        //        boolean fillFields = true;
-        //        Collection<SearchGroup<BytesRef>> topGroups = c1.getTopGroups(0, fillFields);
-        //
-        //        if (topGroups == null) {
-        //            // No groups matched
-        //            return retVal;
-        //        }
-        //        boolean getScores = true;
-        //        boolean getMaxScores = true;
-        //        TermSecondPassGroupingCollector c2 = new TermSecondPassGroupingCollector("author", topGroups, groupSort, docSort, docOffset + docsPerGroup, getScores, getMaxScores, fillFields);
+        IndexSearcher indexSearcher = getLuceneIndexSearcher();
 
-        TopDocs topdocs = getLuceneIndexSearcher().search(luceneQuery, maxResults);
-        for (ScoreDoc scoreDoc : topdocs.scoreDocs) {
+        TopDocsCollector mainCollector = null;
+
+        //note that MAX_SEARCH_RESULTS should always be larger than pageSize -> verify it here and adjust if needed
+        int newPageSize = Math.min(pageSize, MAX_SEARCH_RESULTS);
+        int newMaxResults = Math.max(pageSize, MAX_SEARCH_RESULTS);
+
+        //see http://stackoverflow.com/questions/29695307/sortiing-string-field-alphabetically-in-lucene-5-0
+        //see http://www.gossamer-threads.com/lists/lucene/java-user/203857
+        if (sortField != null) {
+            Sort sort = new Sort(/*SortField.FIELD_SCORE,*/new SortField(sortField.getCurieName().toString(), SortField.Type.STRING, sortAscending));
+
+            //found this here, I suppose we need to call this for very specific sort fields?
+            //  https://svn.alfresco.com/repos/alfresco-open-mirror/alfresco/HEAD/root/projects/solr4/source/java/org/alfresco/solr/query/AlfrescoReRankQParserPlugin.java
+            sort = sort.rewrite(indexSearcher);
+
+            mainCollector = TopFieldCollector.create(sort, newMaxResults, null, true, false, false);
+        }
+        else {
+            //Actually, I suppose we could write this as a TopFieldCollector, sorting on SortField.FIELD_SCORE, no?
+            mainCollector = TopScoreDocCollector.create(newMaxResults);
+        }
+
+        //TODO: if using deep paging, we should refactor and start using searchAfter() instead
+        indexSearcher.search(luceneQuery, mainCollector);
+
+        int totalHits = mainCollector.getTotalHits();
+        TopDocs hits = mainCollector.topDocs(pageOffset * newPageSize, newPageSize);
+        for (ScoreDoc scoreDoc : hits.scoreDocs) {
             retVal.add(SimplePageIndexEntry.fromLuceneDoc(getLuceneIndexSearcher().doc(scoreDoc.doc, INDEX_FIELDS_TO_LOAD)));
         }
 
-        return retVal;
+        return new IndexSearchResult(retVal, totalHits);
+    }
+    @Override
+    public IndexSearchResult search(Query luceneQuery, int maxResults) throws IOException
+    {
+        return this.search(luceneQuery, null, false, maxResults, 0);
     }
     @Override
     protected void begin() throws IOException

@@ -1,12 +1,13 @@
 package com.beligum.blocks.fs.index.ifaces;
 
 import com.beligum.blocks.fs.index.entries.IndexEntry;
+import com.beligum.blocks.fs.index.entries.pages.IndexSearchResult;
 import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
+import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.Query;
 
 import java.io.IOException;
-import java.util.List;
 
 /**
  * Created by bram on 4/7/16.
@@ -83,12 +84,17 @@ public interface LuceneQueryConnection<T extends PageIndexEntry> extends QueryCo
     /**
      * Search each field on its corresponding query, indicating of it's a AND (true) or OR (false) query, returning the maxResults best results
      */
-    List<T> search(FieldQuery[] fieldQueries, int maxResults) throws IOException;
+    IndexSearchResult search(FieldQuery[] fieldQueries, int maxResults) throws IOException;
 
     /**
      * Search for the low-level lucene query, returning the maxResults best results
      */
-    List<T> search(Query luceneQuery, int maxResults) throws IOException;
+    IndexSearchResult search(Query luceneQuery, RdfProperty sortField, boolean sortAscending, int pageSize, int pageOffset) throws IOException;
+
+    /**
+     * Convenience method for the one above
+     */
+    IndexSearchResult search(Query luceneQuery, int maxResults) throws IOException;
 
     //-----PROTECTED METHODS-----
 

@@ -6,6 +6,7 @@ import com.beligum.blocks.endpoints.ifaces.AutocompleteSuggestion;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.fs.index.entries.IndexEntry;
+import com.beligum.blocks.fs.index.entries.pages.IndexSearchResult;
 import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
 import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
@@ -63,7 +64,7 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
         //        StringBuilder luceneQuery = new StringBuilder();
         //        luceneQuery/*.append("#")*/.append(PageIndexEntry.Field.typeOf.name()).append(":").append(QueryParser.escape(resourceType.getCurieName().toString()))/*.append("\"")*/;
 
-        List<PageIndexEntry> matchingPages = StorageFactory.getMainPageQueryConnection().search(queries, maxResults);
+        IndexSearchResult matchingPages = StorageFactory.getMainPageQueryConnection().search(queries, maxResults);
 
         /*
          * Note that this is not the best way to do this: it should actually be implemented with the grouping functionality of Lucene
@@ -71,7 +72,8 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
          * based on the grouping of the resource URI, selecting the best matching language, effectively narrowing the results to a number < maxResults
          */
         Map<URI, EntryWithIndex<PageIndexEntry>> langMapping = new LinkedHashMap<>();
-        for (PageIndexEntry page : matchingPages) {
+        for (IndexEntry entry : matchingPages.getResults()) {
+            PageIndexEntry page = (PageIndexEntry) entry;
 
             URI pageId = URI.create(page.getId());
             URI resourceUri = URI.create(page.getResource());
@@ -112,18 +114,20 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
                                         new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.resource, resourceIdStr, BooleanClause.Occur.SHOULD, LuceneQueryConnection.FieldQuery.Type.EXACT)
                         };
 
-        List<PageIndexEntry> matchingPages = StorageFactory.getMainPageQueryConnection().search(queries, R.configuration().getLanguages().size());
-        if (!matchingPages.isEmpty()) {
+        IndexSearchResult matchingPages = StorageFactory.getMainPageQueryConnection().search(queries, R.configuration().getLanguages().size());
+        if (!matchingPages.getResults().isEmpty()) {
             PageIndexEntry selectedEntry = null;
-            for (PageIndexEntry entry : matchingPages) {
+            for (IndexEntry entry : matchingPages.getResults()) {
+                PageIndexEntry page = (PageIndexEntry) entry;
+
                 if (selectedEntry==null) {
-                    selectedEntry = entry;
+                    selectedEntry = page;
                 }
                 else {
-                    int entryLangScore = this.getLanguageScore(entry, language);
+                    int entryLangScore = this.getLanguageScore(page, language);
                     int selectedLangScore = this.getLanguageScore(selectedEntry, language);
                     if (entryLangScore > selectedLangScore) {
-                        selectedEntry = entry;
+                        selectedEntry = page;
                     }
                 }
             }
