@@ -16,20 +16,31 @@ public class IndexSearchResult
      * The list of (requested, possibly paged) hits in this result
      */
     private List<IndexEntry> results;
+
     /**
-     * The total number of hits in the entire collection for the search
+     * The total number of hits in the entire collection for the search or null if not set
      */
     private Integer totalHits;
+
+    /**
+     * The time it took to lookup the result, in milliseconds or null if not set
+     */
+    private Long lookupDuration;
 
     //-----CONSTRUCTORS-----
     public IndexSearchResult(List<IndexEntry> results)
     {
-        this(results, null);
+        this(results, null, null);
     }
     public IndexSearchResult(List<IndexEntry> results, Integer totalHits)
     {
+        this(results, totalHits, null);
+    }
+    public IndexSearchResult(List<IndexEntry> results, Integer totalHits, Long lookupDuration)
+    {
         this.results = results;
         this.totalHits = totalHits;
+        this.lookupDuration = lookupDuration;
     }
 
     //-----PUBLIC METHODS-----
@@ -40,6 +51,14 @@ public class IndexSearchResult
     public Integer getTotalHits()
     {
         return totalHits;
+    }
+    public Long getLookupDuration()
+    {
+        return lookupDuration;
+    }
+    public void setLookupDuration(Long lookupDuration)
+    {
+        this.lookupDuration = lookupDuration;
     }
 
     //-----PROTECTED METHODS-----

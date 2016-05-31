@@ -111,6 +111,8 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         int newPageSize = Math.min(pageSize, MAX_SEARCH_RESULTS);
         int newMaxResults = Math.max(pageSize, MAX_SEARCH_RESULTS);
 
+        //luceneQuery.add(new DocValuesTermsQuery(com.beligum.blocks.rdf.ontology.factories.Terms.streetName.getCurieName().toString(), DeepPageIndexEntry.preprocessSortValue("Gerendal")), BooleanClause.Occur.FILTER);
+
         //see http://stackoverflow.com/questions/29695307/sortiing-string-field-alphabetically-in-lucene-5-0
         //see http://www.gossamer-threads.com/lists/lucene/java-user/203857
         if (sortField != null) {
@@ -130,13 +132,12 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         //TODO: if using deep paging, we should refactor and start using searchAfter() instead
         indexSearcher.search(luceneQuery, mainCollector);
 
-        int totalHits = mainCollector.getTotalHits();
         TopDocs hits = mainCollector.topDocs(pageOffset * newPageSize, newPageSize);
         for (ScoreDoc scoreDoc : hits.scoreDocs) {
             retVal.add(SimplePageIndexEntry.fromLuceneDoc(getLuceneIndexSearcher().doc(scoreDoc.doc, INDEX_FIELDS_TO_LOAD)));
         }
 
-        return new IndexSearchResult(retVal, totalHits);
+        return new IndexSearchResult(retVal, mainCollector.getTotalHits());
     }
     @Override
     public IndexSearchResult search(Query luceneQuery, int maxResults) throws IOException
