@@ -3,8 +3,13 @@ package com.beligum.blocks.rdf.ifaces;
 import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.InputTypeAdapter;
 import com.beligum.blocks.config.InputTypeConfig;
+import com.beligum.blocks.fs.index.entries.RdfIndexer;
+import org.openrdf.model.Value;
 
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Locale;
 
 /**
  * Created by bram on 2/26/16.
@@ -32,4 +37,10 @@ public interface RdfProperty extends RdfClass
      * A map of key/value entries that contain specific settings for the input widget type
      */
     InputTypeConfig getWidgetConfig();
+
+    /**
+     * This method gets called when this property is indexed by our custom (currently only Lucene) indexer.
+     * It should call the right method on the indexer to index the property value as closely as possible.
+     */
+    void indexValue(RdfIndexer indexer, URI subject, Value value, Locale language) throws IOException;
 }

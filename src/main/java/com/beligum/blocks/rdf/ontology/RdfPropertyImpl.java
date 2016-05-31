@@ -3,11 +3,16 @@ package com.beligum.blocks.rdf.ontology;
 import com.beligum.base.filesystem.MessagesFileEntry;
 import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.InputTypeConfig;
+import com.beligum.blocks.fs.index.entries.RdfIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
+import com.beligum.blocks.rdf.ontology.indexers.DefaultRdfPropertyIndexer;
+import org.openrdf.model.Value;
 
+import java.io.IOException;
 import java.net.URI;
+import java.util.Locale;
 
 /**
  * Created by bram on 2/25/16.
@@ -77,6 +82,11 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
     public InputTypeConfig getWidgetConfig()
     {
         return widgetArgs;
+    }
+    @Override
+    public void indexValue(RdfIndexer indexer, URI subject, Value value, Locale language) throws IOException
+    {
+        DefaultRdfPropertyIndexer.INSTANCE.index(indexer, subject, this, value, language);
     }
 
     //-----PROTECTED METHODS-----

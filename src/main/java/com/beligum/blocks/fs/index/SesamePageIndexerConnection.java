@@ -18,6 +18,7 @@ import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfResource;
 import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
+import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.TermsQuery;
@@ -42,8 +43,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static com.beligum.base.server.R.configuration;
-
 /**
  * Created by bram on 2/21/16.
  */
@@ -51,7 +50,6 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
 {
     //-----CONSTANTS-----
     public static final String SPARQL_SUBJECT_BINDING_NAME = "s";
-    private static final URI ROOT = URI.create("/");
 
     //decide if we build a simple boolean lucene query or build a bitmap (by using TermsQuery) when searching for subjectURIs
     //Note: I think it's better to disable this for smaller (expected) sets and enable it when you're expecting large results...
@@ -421,27 +419,15 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
                 retVal = URI.create(value.stringValue());
                 if (tryLocalRdfCurie) {
                     //if it's not absolute (eg. it doesn't start with http://..., this means the relativize 'succeeded' and the retVal starts with the RDF ontology URI)
-                    URI curie = RdfFactory.fullToCurie(retVal);
+                    URI curie = RdfTools.fullToCurie(retVal);
                     if (curie!=null) {
                         retVal = curie;
                     }
                 }
                 else if (tryLocalDomain) {
-                    retVal = relativizeLocalDomain(retVal);
+                    retVal = RdfTools.relativizeToLocalDomain(retVal);
                 }
             }
-        }
-
-        return retVal;
-    }
-    private URI relativizeLocalDomain(URI uri)
-    {
-        URI retVal = uri;
-
-        URI relative = configuration().getSiteDomain().relativize(retVal);
-        //if it's not absolute (eg. it doesn't start with http://..., this means the relativize 'succeeded' and the retVal starts with the RDF ontology URI)
-        if (!relative.isAbsolute()) {
-            retVal = ROOT.resolve(relative);
         }
 
         return retVal;

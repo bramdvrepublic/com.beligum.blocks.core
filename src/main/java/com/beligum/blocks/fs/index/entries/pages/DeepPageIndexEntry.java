@@ -2,17 +2,17 @@ package com.beligum.blocks.fs.index.entries.pages;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.RdfFactory;
-import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
-import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
+import com.beligum.blocks.fs.index.entries.RdfIndexer;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ontology.vocabularies.XSD;
+import com.beligum.blocks.utils.RdfTools;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.*;
-import org.openrdf.model.*;
+import org.openrdf.model.Model;
+import org.openrdf.model.Statement;
 
 import java.io.IOException;
 import java.net.URI;
@@ -21,7 +21,7 @@ import java.util.*;
 /**
  * Created by bram on 2/13/16.
  */
-public class DeepPageIndexEntry extends SimplePageIndexEntry
+public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndexer
 {
     //-----CONSTANTS-----
     //interesting alternative guide if you ever need it: http://www.citrine.io/blog/2015/2/14/building-a-custom-analyzer-in-lucene
@@ -68,133 +68,32 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry
         while (stmtIter.hasNext()) {
             Statement stmt = stmtIter.next();
 
-            URI predicateCurie = RdfFactory.fullToCurie(URI.create(stmt.getPredicate().toString()));
+            URI predicateCurie = RdfTools.fullToCurie(URI.create(stmt.getPredicate().toString()));
             if (predicateCurie != null) {
                 RdfProperty predicate = (RdfProperty) RdfFactory.getClassForResourceType(predicateCurie);
                 if (predicate != null) {
-                    Value obj = stmt.getObject();
-
-                    String fieldName = predicate.getCurieName().toString();
-                    org.apache.lucene.document.Field field = null;
-
-                    if (obj instanceof Literal) {
-                        Literal objLiteral = (Literal) obj;
-
-                        //Note: for an overview possible values, check com.beligum.blocks.config.InputType
-                        if (predicate.getDataType().equals(XSD.BOOLEAN)) {
-                            field = createBooleanField(fieldName, objLiteral.booleanValue());
-                        }
-                        else if (predicate.getDataType().equals(XSD.DATE) || predicate.getDataType().equals(XSD.TIME) || predicate.getDataType().equals(XSD.DATE_TIME)) {
-                            field = createCalendarField(fieldName, objLiteral.calendarValue().toGregorianCalendar());
-                        }
-                        else if (predicate.getDataType().equals(XSD.INT)
-                                 || predicate.getDataType().equals(XSD.INTEGER)
-                                 || predicate.getDataType().equals(XSD.NEGATIVE_INTEGER)
-                                 || predicate.getDataType().equals(XSD.UNSIGNED_INT)
-                                 || predicate.getDataType().equals(XSD.NON_NEGATIVE_INTEGER)
-                                 || predicate.getDataType().equals(XSD.NON_POSITIVE_INTEGER)
-                                 || predicate.getDataType().equals(XSD.POSITIVE_INTEGER)
-                                 || predicate.getDataType().equals(XSD.SHORT)
-                                 || predicate.getDataType().equals(XSD.UNSIGNED_SHORT)
-                                 || predicate.getDataType().equals(XSD.BYTE)
-                                 || predicate.getDataType().equals(XSD.UNSIGNED_BYTE))
-                        {
-                            field = createIntegerField(fieldName, objLiteral.intValue());
-                        }
-                        else if (predicate.getDataType().equals(XSD.LONG)
-                                 || predicate.getDataType().equals(XSD.UNSIGNED_LONG)) {
-                            field = createLongField(fieldName, objLiteral.longValue());
-                        }
-                        else if (predicate.getDataType().equals(XSD.FLOAT)) {
-                            field = createFloatField(fieldName, objLiteral.floatValue());
-                        }
-                        else if (predicate.getDataType().equals(XSD.DOUBLE)) {
-                            field = createDoubleField(fieldName, objLiteral.doubleValue());
-                        }
-                        //this is doubtful, but let's take the largest one
-                        // Note we could also try to fit as closely as possible, but that would change the type per value (instead of per 'column'), and that's not a good idea
-                        else if (predicate.getDataType().equals(XSD.DECIMAL)) {
-                            field = createDoubleField(fieldName, objLiteral.doubleValue());
-                        }
-                        //TODO maybe we should split this up in constant text and anaylyzed text, depending on more values?
-                        else {
-                            field = createStringField(fieldName, objLiteral.getLabel());
-                        }
-                    }
-                    else if (obj instanceof IRI) {
-                        RdfQueryEndpoint endpoint = predicate.getDataType().getEndpoint();
-                        if (endpoint != null) {
-                            ResourceInfo resourceValue = endpoint.getResource(predicate, URI.create(obj.stringValue()), page.getLanguage());
-                            if (resourceValue != null) {
-                                field = createStringField(fieldName, resourceValue.getLabel());
-                            }
-                        }
-
-                        if (field == null) {
-                            Logger.warn("Encountered RDF IRI that won't be indexed because it couldn't be converted to a human-readable format; " + predicate.getCurieName());
-                        }
-                    }
-                    else {
-                        Logger.warn("Encountered RDF field of unsupported type " + obj.getClass().getSimpleName() + " that won't be indexed; " + predicate.getCurieName());
-                    }
-
-                    //group all values with the same predicate together (we need this later on)
-                    if (field != null) {
-                        List<org.apache.lucene.document.Field> fields = valuesToIndex.get(field);
-                        if (fields == null) {
-                            valuesToIndex.put(predicate, fields = new ArrayList<>());
-                        }
-                        fields.add(field);
-                    }
+                    predicate.indexValue(this, page.getPublicRelativeAddress(), stmt.getObject(), page.getLanguage());
                 }
             }
         }
 
-        //details on DocValues,
-        // see https://www.norconex.com/facets-with-lucene/
-        //See this discussion for background on multivalues
-        // see http://stackoverflow.com/questions/21002042/adding-a-multi-valued-string-field-to-a-lucene-document-do-commas-matter
-        for (Map.Entry<RdfProperty, List<org.apache.lucene.document.Field>> e : valuesToIndex.entrySet()) {
-            //index all values for this indexEntry
-            for (org.apache.lucene.document.Field field : e.getValue()) {
-                this.luceneDoc.add(field);
-            }
-
-//            //and once more with a small pre-processing step for sorting
-//            //Lucene: only one value is allowed per field
-//            this.luceneDoc.add(new SortedDocValuesField(e.getKey(), new BytesRef(preprocessSortValue(e.getValue()))));
-        }
+//        //details on DocValues,
+//        // see https://www.norconex.com/facets-with-lucene/
+//        //See this discussion for background on multivalues
+//        // see http://stackoverflow.com/questions/21002042/adding-a-multi-valued-string-field-to-a-lucene-document-do-commas-matter
+//        for (Map.Entry<RdfProperty, List<org.apache.lucene.document.Field>> e : valuesToIndex.entrySet()) {
+//            //index all values for this indexEntry
+//            for (org.apache.lucene.document.Field field : e.getValue()) {
+//                this.luceneDoc.add(field);
+//            }
+//
+////            //and once more with a small pre-processing step for sorting
+////            //Lucene: only one value is allowed per field
+////            this.luceneDoc.add(new SortedDocValuesField(e.getKey(), new BytesRef(preprocessSortValue(e.getValue()))));
+//        }
     }
 
     //-----STATIC METHODS-----
-    public static org.apache.lucene.document.Field createBooleanField(String fieldName, boolean value)
-    {
-        return new StringField(fieldName, value ? BOOLEAN_TRUE_STRING : BOOLEAN_FALSE_STRING, org.apache.lucene.document.Field.Store.NO);
-    }
-    public static org.apache.lucene.document.Field createCalendarField(String fieldName, Calendar value)
-    {
-        return new LongField(fieldName, value.getTimeInMillis(), org.apache.lucene.document.Field.Store.NO);
-    }
-    public org.apache.lucene.document.Field createIntegerField(String fieldName, int value)
-    {
-        return new IntField(fieldName, value, org.apache.lucene.document.Field.Store.NO);
-    }
-    public static org.apache.lucene.document.Field createLongField(String fieldName, long value)
-    {
-        return new LongField(fieldName, value, org.apache.lucene.document.Field.Store.NO);
-    }
-    public org.apache.lucene.document.Field createFloatField(String fieldName, float value)
-    {
-        return new FloatField(fieldName, value, org.apache.lucene.document.Field.Store.NO);
-    }
-    public org.apache.lucene.document.Field createDoubleField(String fieldName, double value)
-    {
-        return new DoubleField(fieldName, value, org.apache.lucene.document.Field.Store.NO);
-    }
-    public static org.apache.lucene.document.Field createStringField(String fieldName, String value)
-    {
-        return new TextField(fieldName, value, org.apache.lucene.document.Field.Store.NO);
-    }
     public static String preprocessSearchValue(String value) throws IOException
     {
         String retVal = value;
@@ -236,6 +135,46 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry
     public Document createLuceneDoc() throws IOException
     {
         return this.luceneDoc;
+    }
+    @Override
+    public void indexBooleanField(String fieldName, boolean value)
+    {
+        this.luceneDoc.add(new StringField(fieldName, value ? BOOLEAN_TRUE_STRING : BOOLEAN_FALSE_STRING, org.apache.lucene.document.Field.Store.NO));
+    }
+    @Override
+    public void indexCalendarField(String fieldName, Calendar value)
+    {
+        this.luceneDoc.add(new LongField(fieldName, value.getTimeInMillis(), org.apache.lucene.document.Field.Store.NO));
+    }
+    @Override
+    public void indexIntegerField(String fieldName, int value)
+    {
+        this.luceneDoc.add(new IntField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
+    }
+    @Override
+    public void indexLongField(String fieldName, long value)
+    {
+        this.luceneDoc.add(new LongField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
+    }
+    @Override
+    public void indexFloatField(String fieldName, float value)
+    {
+        this.luceneDoc.add(new FloatField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
+    }
+    @Override
+    public void indexDoubleField(String fieldName, double value)
+    {
+        this.luceneDoc.add(new DoubleField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
+    }
+    @Override
+    public void indexStringField(String fieldName, String value)
+    {
+        this.luceneDoc.add(new TextField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
+    }
+    @Override
+    public void indexConstantField(String fieldName, String value)
+    {
+        this.luceneDoc.add(new StringField(fieldName, value, org.apache.lucene.document.Field.Store.NO));
     }
 
     //-----PROTECTED METHODS-----

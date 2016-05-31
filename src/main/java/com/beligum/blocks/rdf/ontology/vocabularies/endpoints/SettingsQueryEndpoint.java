@@ -12,7 +12,10 @@ import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ontology.vocabularies.local.ResourceSuggestion;
 import com.beligum.blocks.rdf.ontology.vocabularies.local.WrappedPageResourceInfo;
+import com.beligum.blocks.utils.RdfTools;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.TermQuery;
 
 import java.io.IOException;
 import java.net.URI;
@@ -107,14 +110,14 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
     {
         ResourceInfo retVal = null;
 
-        String resourceIdStr = resourceId.toString();
-        LuceneQueryConnection.FieldQuery[] queries =
-                        new LuceneQueryConnection.FieldQuery[] {
-                                        new LuceneQueryConnection.FieldQuery(IndexEntry.Field.id, resourceIdStr, BooleanClause.Occur.SHOULD, LuceneQueryConnection.FieldQuery.Type.EXACT),
-                                        new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.resource, resourceIdStr, BooleanClause.Occur.SHOULD, LuceneQueryConnection.FieldQuery.Type.EXACT)
-                        };
+        //resources are indexed with relative id's, so make sure the URI is relative
+        String resourceIdStr = RdfTools.relativizeToLocalDomain(resourceId).toString();
 
-        IndexSearchResult matchingPages = StorageFactory.getMainPageQueryConnection().search(queries, R.configuration().getLanguages().size());
+        org.apache.lucene.search.BooleanQuery pageQuery = new org.apache.lucene.search.BooleanQuery();
+        pageQuery.add(new TermQuery(new Term(IndexEntry.Field.id.name(), resourceIdStr)), BooleanClause.Occur.SHOULD);
+        pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.resource.name(), resourceIdStr)), BooleanClause.Occur.SHOULD);
+
+        IndexSearchResult matchingPages = StorageFactory.getMainPageQueryConnection().search(pageQuery, R.configuration().getLanguages().size());
         if (!matchingPages.getResults().isEmpty()) {
             PageIndexEntry selectedEntry = null;
             for (IndexEntry entry : matchingPages.getResults()) {

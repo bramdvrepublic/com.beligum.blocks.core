@@ -1,6 +1,5 @@
 package com.beligum.blocks.utils;
 
-import com.beligum.base.server.R;
 import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.exceptions.RdfException;
@@ -12,6 +11,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 
+import static com.beligum.base.server.R.configuration;
+
 /**
  * Created by wouter on 27/04/15.
  * <p/>
@@ -22,6 +23,7 @@ public class RdfTools
     // Simpleflake generates a Long id, based on timestamp
     public static final SimpleFlake SIMPLE_FLAKE = new SimpleFlake();
     public static HashMap<URI, HashMap<String, URI>> urlcache = new HashMap<URI, HashMap<String, URI>>();
+    private static final URI ROOT = URI.create("/");
 
     /**
      * Create an absolute resource based on the resource endpoint and a type.
@@ -49,7 +51,7 @@ public class RdfTools
      */
     public static URI createAbsoluteResourceId(RdfClass entity, String id)
     {
-        return UriBuilder.fromUri(R.configuration().getSiteDomain()).path(ParserConstants.RESOURCE_ENDPOINT).path(entity.getName()).path(id).build();
+        return UriBuilder.fromUri(configuration().getSiteDomain()).path(ParserConstants.RESOURCE_ENDPOINT).path(entity.getName()).path(id).build();
     }
 
     /**
@@ -96,7 +98,41 @@ public class RdfTools
         return retVal;
     }
 
+    /**
+     * Converts a URI to it's CURIE variant, using the locally known ontologies
+     */
+    public static URI fullToCurie(URI fullUri)
+    {
+        URI retVal = null;
 
+        if (fullUri != null) {
+            URI relative = Settings.instance().getRdfOntologyUri().relativize(fullUri);
+            //if it's not absolute (eg. it doesn't start with http://..., this means the relativize 'succeeded' and the retVal starts with the RDF ontology URI)
+            if (!relative.isAbsolute()) {
+                retVal = URI.create(Settings.instance().getRdfOntologyPrefix() + ":" + relative.toString());
+            }
+        }
+
+        return retVal;
+    }
+
+    /**
+     * Make the URI relative to the locally configured domain if it's absolute (or just return it if it's not)
+     */
+    public static URI relativizeToLocalDomain(URI uri)
+    {
+        URI retVal = uri;
+
+        if (uri.isAbsolute()) {
+            URI relative = configuration().getSiteDomain().relativize(retVal);
+            //if it's not absolute (eg. it doesn't start with http://..., this means the relativize 'succeeded' and the retVal starts with the RDF ontology URI)
+            if (!relative.isAbsolute()) {
+                retVal = ROOT.resolve(relative);
+            }
+        }
+
+        return retVal;
+    }
 
 
 
