@@ -14,6 +14,7 @@ import org.openrdf.model.Value;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Calendar;
 import java.util.Locale;
 
 /**
@@ -33,8 +34,10 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
 
     //-----PUBLIC METHODS-----
     @Override
-    public void index(RdfIndexer indexer, URI subject, RdfProperty property, Value value, Locale language) throws IOException
+    public Object index(RdfIndexer indexer, URI subject, RdfProperty property, Value value, Locale language) throws IOException
     {
+        Object retVal = null;
+
         String fieldName = property.getCurieName().toString();
 
         if (value instanceof Literal) {
@@ -42,10 +45,10 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
 
             //Note: for an overview possible values, check com.beligum.blocks.config.InputType
             if (property.getDataType().equals(XSD.BOOLEAN)) {
-                indexer.indexBooleanField(fieldName, objLiteral.booleanValue());
+                indexer.indexBooleanField(fieldName, (Boolean) (retVal = objLiteral.booleanValue()));
             }
             else if (property.getDataType().equals(XSD.DATE) || property.getDataType().equals(XSD.TIME) || property.getDataType().equals(XSD.DATE_TIME)) {
-                indexer.indexCalendarField(fieldName, objLiteral.calendarValue().toGregorianCalendar());
+                indexer.indexCalendarField(fieldName, (Calendar) (retVal = objLiteral.calendarValue().toGregorianCalendar()));
             }
             else if (property.getDataType().equals(XSD.INT)
                      || property.getDataType().equals(XSD.INTEGER)
@@ -58,30 +61,30 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                      || property.getDataType().equals(XSD.UNSIGNED_SHORT)
                      || property.getDataType().equals(XSD.BYTE)
                      || property.getDataType().equals(XSD.UNSIGNED_BYTE)) {
-                indexer.indexIntegerField(fieldName, objLiteral.intValue());
+                indexer.indexIntegerField(fieldName, (Integer) (retVal = objLiteral.intValue()));
             }
             else if (property.getDataType().equals(XSD.LONG)
                      || property.getDataType().equals(XSD.UNSIGNED_LONG)) {
-                indexer.indexLongField(fieldName, objLiteral.longValue());
+                indexer.indexLongField(fieldName, (Long) (retVal = objLiteral.longValue()));
             }
             else if (property.getDataType().equals(XSD.FLOAT)) {
-                indexer.indexFloatField(fieldName, objLiteral.floatValue());
+                indexer.indexFloatField(fieldName, (Float) (retVal = objLiteral.floatValue()));
             }
             else if (property.getDataType().equals(XSD.DOUBLE)) {
-                indexer.indexDoubleField(fieldName, objLiteral.doubleValue());
+                indexer.indexDoubleField(fieldName, (Double) (retVal = objLiteral.doubleValue()));
             }
             //this is doubtful, but let's take the largest one
             // Note we could also try to fit as closely as possible, but that would change the type per value (instead of per 'column'), and that's not a good idea
             else if (property.getDataType().equals(XSD.DECIMAL)) {
-                indexer.indexDoubleField(fieldName, objLiteral.doubleValue());
+                indexer.indexDoubleField(fieldName, (Double) (retVal = objLiteral.doubleValue()));
             }
             else if (property.getDataType().equals(XSD.STRING)
                      || property.getDataType().equals(XSD.NORMALIZED_STRING)
                      || property.getDataType().equals(RDF.LANGSTRING)) {
-                indexer.indexStringField(fieldName, objLiteral.stringValue());
+                indexer.indexStringField(fieldName, (String) (retVal = objLiteral.stringValue()));
             }
             else if (property.getDataType().equals(RDF.HTML)) {
-                indexer.indexStringField(fieldName, StringFunctions.htmlToPlaintextRFC3676(objLiteral.stringValue()));
+                indexer.indexStringField(fieldName, (String) (retVal = StringFunctions.htmlToPlaintextRFC3676(objLiteral.stringValue())));
             }
             else {
                 throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '"+subject+"' because the property type is unimplemented; "+property.getDataType());
@@ -97,7 +100,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
             if (endpoint != null) {
                 ResourceInfo resourceValue = endpoint.getResource(property, uriValue, language);
                 if (resourceValue != null) {
-                    indexer.indexStringField(fieldName, resourceValue.getLabel());
+                    indexer.indexStringField(fieldName, (String) (retVal = resourceValue.getLabel()));
                 }
                 else {
                     throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '"+subject+"' because it's resource endpoint returned null");
@@ -105,7 +108,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
             }
             else {
                 //not all URIs have an endpoint (eg an <img> tag)
-                indexer.indexConstantField(fieldName, uriValue.toString());
+                indexer.indexConstantField(fieldName, (String) (retVal = uriValue.toString()));
                 //throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '"+subject+"' because the property data type has no endpoint configured");
             }
         }
@@ -113,6 +116,8 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
             throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '"+subject+"' because of an unsupported RDF type; " +
                                   value.getClass());
         }
+
+        return retVal;
     }
 
     //-----PROTECTED METHODS-----

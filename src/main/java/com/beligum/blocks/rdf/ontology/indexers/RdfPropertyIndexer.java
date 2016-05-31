@@ -20,7 +20,7 @@ public interface RdfPropertyIndexer
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    void index(RdfIndexer indexer, URI subject, RdfProperty property, Value value, Locale language) throws IOException;
+    Object index(RdfIndexer indexer, URI subject, RdfProperty property, Value value, Locale language) throws IOException;
 
     //-----PROTECTED METHODS-----
 

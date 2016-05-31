@@ -41,6 +41,7 @@ public interface RdfProperty extends RdfClass
     /**
      * This method gets called when this property is indexed by our custom (currently only Lucene) indexer.
      * It should call the right method on the indexer to index the property value as closely as possible.
+     * @return the value-object as it was indexed
      */
-    void indexValue(RdfIndexer indexer, URI subject, Value value, Locale language) throws IOException;
+    Object indexValue(RdfIndexer indexer, URI subject, Value value, Locale language) throws IOException;
 }

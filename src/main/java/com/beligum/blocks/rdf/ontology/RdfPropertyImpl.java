@@ -84,9 +84,9 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
         return widgetArgs;
     }
     @Override
-    public void indexValue(RdfIndexer indexer, URI subject, Value value, Locale language) throws IOException
+    public Object indexValue(RdfIndexer indexer, URI subject, Value value, Locale language) throws IOException
     {
-        DefaultRdfPropertyIndexer.INSTANCE.index(indexer, subject, this, value, language);
+        return DefaultRdfPropertyIndexer.INSTANCE.index(indexer, subject, this, value, language);
     }
 
     //-----PROTECTED METHODS-----

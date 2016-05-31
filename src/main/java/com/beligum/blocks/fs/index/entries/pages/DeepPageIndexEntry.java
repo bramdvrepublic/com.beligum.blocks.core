@@ -11,12 +11,16 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.*;
+import org.apache.lucene.util.BytesRef;
 import org.openrdf.model.Model;
 import org.openrdf.model.Statement;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Created by bram on 2/13/16.
@@ -24,6 +28,7 @@ import java.util.*;
 public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndexer
 {
     //-----CONSTANTS-----
+    private static final String DOUBLE_SORT_FIELD_JOINER = "\n";
     //interesting alternative guide if you ever need it: http://www.citrine.io/blog/2015/2/14/building-a-custom-analyzer-in-lucene
     private static Analyzer SORTFIELD_ANALYZER;
     private static final char SORTFIELD_ANALYZER_JOIN_CHAR = ' ';
@@ -62,7 +67,7 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
 
         this.luceneDoc = super.createLuceneDoc();
 
-        Map<RdfProperty, List<org.apache.lucene.document.Field>> valuesToIndex = new LinkedHashMap<>();
+        Map<RdfProperty, String> sortValues = new LinkedHashMap<>();
         Model rdfModel = page.readRdfModel();
         Iterator<Statement> stmtIter = rdfModel.iterator();
         while (stmtIter.hasNext()) {
@@ -72,25 +77,25 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
             if (predicateCurie != null) {
                 RdfProperty predicate = (RdfProperty) RdfFactory.getClassForResourceType(predicateCurie);
                 if (predicate != null) {
-                    predicate.indexValue(this, page.getPublicRelativeAddress(), stmt.getObject(), page.getLanguage());
+                    Object value = predicate.indexValue(this, page.getPublicRelativeAddress(), stmt.getObject(), page.getLanguage());
+
+                    String valueStr = value.toString();
+                    //Lucene: only one value is allowed per field
+                    if (sortValues.containsKey(predicate)) {
+                        valueStr = sortValues.get(predicate)+DOUBLE_SORT_FIELD_JOINER+valueStr;
+                    }
+                    sortValues.put(predicate, valueStr);
                 }
             }
         }
 
-//        //details on DocValues,
-//        // see https://www.norconex.com/facets-with-lucene/
-//        //See this discussion for background on multivalues
-//        // see http://stackoverflow.com/questions/21002042/adding-a-multi-valued-string-field-to-a-lucene-document-do-commas-matter
-//        for (Map.Entry<RdfProperty, List<org.apache.lucene.document.Field>> e : valuesToIndex.entrySet()) {
-//            //index all values for this indexEntry
-//            for (org.apache.lucene.document.Field field : e.getValue()) {
-//                this.luceneDoc.add(field);
-//            }
-//
-////            //and once more with a small pre-processing step for sorting
-////            //Lucene: only one value is allowed per field
-////            this.luceneDoc.add(new SortedDocValuesField(e.getKey(), new BytesRef(preprocessSortValue(e.getValue()))));
-//        }
+        //details on DocValues,
+        // see https://www.norconex.com/facets-with-lucene/
+        //See this discussion for background on multivalues
+        // see http://stackoverflow.com/questions/21002042/adding-a-multi-valued-string-field-to-a-lucene-document-do-commas-matter
+        for (Map.Entry<RdfProperty, String> e : sortValues.entrySet()) {
+            this.luceneDoc.add(new SortedDocValuesField(e.getKey().getCurieName().toString(), new BytesRef(preprocessSortValue(e.getValue()))));
+        }
     }
 
     //-----STATIC METHODS-----
@@ -112,7 +117,7 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
 
         if (value != null) {
             StringBuilder sb = new StringBuilder();
-            try (TokenStream ts = SORTFIELD_ANALYZER.tokenStream(null, value.toString())) {
+            try (TokenStream ts = SORTFIELD_ANALYZER.tokenStream(null, value)) {
                 CharTermAttribute term = ts.addAttribute(CharTermAttribute.class);
                 ts.reset();
                 while (ts.incrementToken()) {
