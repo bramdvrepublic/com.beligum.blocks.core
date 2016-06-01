@@ -13,6 +13,8 @@ import com.beligum.blocks.fs.pages.ReadOnlyPage;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import jersey.repackaged.com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
@@ -89,58 +91,99 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         //this.printLuceneIndex();
     }
     @Override
-    public IndexSearchResult search(FieldQuery[] fieldQueries, int maxResults) throws IOException
-    {
-        try {
-            return this.search(this.buildLuceneQuery(fieldQueries), null, false, maxResults, 0);
-        }
-        catch (ParseException e) {
-            throw new IOException("Error while parsing multi-field lucene query; " + fieldQueries, e);
-        }
-    }
-    @Override
     public IndexSearchResult search(Query luceneQuery, RdfProperty sortField, boolean sortAscending, int pageSize, int pageOffset) throws IOException
     {
         List<IndexEntry> retVal = new ArrayList<>();
 
+        long searchStart = System.currentTimeMillis();
         IndexSearcher indexSearcher = getLuceneIndexSearcher();
-
         TopDocsCollector mainCollector = null;
 
+        //keep supplied values within reasonable bounds
         //note that MAX_SEARCH_RESULTS should always be larger than pageSize -> verify it here and adjust if needed
-        int newPageSize = Math.min(pageSize, MAX_SEARCH_RESULTS);
-        int newMaxResults = Math.max(pageSize, MAX_SEARCH_RESULTS);
+        int validPageSize = Math.min(pageSize, MAX_SEARCH_RESULTS);
+        int validMaxResults = Math.max(pageSize, MAX_SEARCH_RESULTS);
+        int validPageOffset = pageOffset < 0 ? 0 : (pageOffset * validPageSize > validMaxResults ? (int) Math.floor(validMaxResults / validPageSize) : pageOffset);
 
         //see http://stackoverflow.com/questions/29695307/sortiing-string-field-alphabetically-in-lucene-5-0
         //see http://www.gossamer-threads.com/lists/lucene/java-user/203857
         if (sortField != null) {
             Sort sort = new Sort(/*SortField.FIELD_SCORE,*/new SortField(sortField.getCurieName().toString(), SortField.Type.STRING, sortAscending));
 
-            //found this here, I suppose we need to call this for very specific sort fields?
+            //found this here, I suppose we need to call this to allow very specific sort fields?
             //  https://svn.alfresco.com/repos/alfresco-open-mirror/alfresco/HEAD/root/projects/solr4/source/java/org/alfresco/solr/query/AlfrescoReRankQParserPlugin.java
             sort = sort.rewrite(indexSearcher);
 
-            mainCollector = TopFieldCollector.create(sort, newMaxResults, null, true, false, false);
+            mainCollector = TopFieldCollector.create(sort, validMaxResults, null, true, false, false);
         }
         else {
             //Actually, I suppose we could write this as a TopFieldCollector, sorting on SortField.FIELD_SCORE, no?
-            mainCollector = TopScoreDocCollector.create(newMaxResults);
+            mainCollector = TopScoreDocCollector.create(validMaxResults);
         }
 
         //TODO: if using deep paging, we should refactor and start using searchAfter() instead
         indexSearcher.search(luceneQuery, mainCollector);
 
-        TopDocs hits = mainCollector.topDocs(pageOffset * newPageSize, newPageSize);
+        TopDocs hits = mainCollector.topDocs(validPageOffset * validPageSize, validPageSize);
         for (ScoreDoc scoreDoc : hits.scoreDocs) {
             retVal.add(SimplePageIndexEntry.fromLuceneDoc(getLuceneIndexSearcher().doc(scoreDoc.doc, INDEX_FIELDS_TO_LOAD)));
         }
 
-        return new IndexSearchResult(retVal, mainCollector.getTotalHits());
+        return new IndexSearchResult(retVal, mainCollector.getTotalHits(), validPageOffset, validPageSize, System.currentTimeMillis() - searchStart);
     }
     @Override
     public IndexSearchResult search(Query luceneQuery, int maxResults) throws IOException
     {
         return this.search(luceneQuery, null, false, maxResults, 0);
+    }
+    @Override
+    public Query buildWildcardQuery(String fieldName, String phrase, boolean complex) throws IOException
+    {
+        Query retVal = null;
+
+        if (StringUtils.isEmpty(fieldName)) {
+            fieldName = DeepPageIndexEntry.CUSTOM_FIELD_ALL;
+        }
+
+        //makes sense to _not_ add the wildcard * expansion to numbers, no?
+        String wildcardSuffix = NumberUtils.isNumber(phrase) ? "" : "*";
+
+        if (!complex) {
+            QueryParser queryParser = new QueryParser(fieldName, DEFAULT_ANALYZER);
+            //we need to escape the wildcard query, and append the asterisk afterwards (or it will be escaped)
+            try {
+                retVal = queryParser.parse(QueryParser.escape(phrase) + wildcardSuffix);
+            }
+            catch (ParseException e) {
+                throw new IOException("Error while building simple Lucene wildcard query for '" + phrase + "' on field '" + fieldName + "'", e);
+            }
+        }
+        else {
+            //we need to escape the wildcard query, and append the asterisk afterwards (or it will be escaped)
+            ComplexPhraseQueryParser complexPhraseParser = new ComplexPhraseQueryParser(fieldName, DEFAULT_ANALYZER);
+            complexPhraseParser.setInOrder(true);
+            //this is tricky: using an asterisk after a special character seems to throw lucene off
+            // since the standard analyzer doesn't index those characters anyway (eg. "blah (en)" gets indexed as "blah" and "en"),
+            // it's safe to delete those special characters and just add the asterisk
+            String parsedQuery = this.removeEscapedChars(phrase).trim();
+            String queryStr = null;
+            //this check is needed because "\"bram*\"" doesn't seem to match the "bram" token
+            if (parsedQuery.contains(" ")) {
+                queryStr = "\"" + parsedQuery + wildcardSuffix + "\"";
+            }
+            else {
+                queryStr = parsedQuery + wildcardSuffix;
+            }
+
+            try {
+                retVal = complexPhraseParser.parse(queryStr);
+            }
+            catch (ParseException e) {
+                throw new IOException("Error while building complex Lucene wildcard query for '" + phrase + "' on field '" + fieldName + "'", e);
+            }
+        }
+
+        return retVal;
     }
     @Override
     protected void begin() throws IOException
@@ -183,64 +226,6 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private BooleanQuery buildLuceneQuery(FieldQuery[] fieldQueries) throws ParseException
-    {
-        BooleanQuery query = new BooleanQuery();
-        Map<Integer, BooleanQuery> groups = new HashMap<>();
-        for (FieldQuery q : fieldQueries) {
-
-            BooleanQuery activeQuery = query;
-            if (q.getGroup() != null) {
-                if (groups.containsKey(q.getGroup())) {
-                    activeQuery = groups.get(q.getGroup());
-                }
-                else {
-                    activeQuery = new BooleanQuery();
-                    groups.put(q.getGroup(), activeQuery);
-                    //TODO hmm, this (FILTER = and) won't always be true...
-                    query.add(activeQuery, BooleanClause.Occur.FILTER);
-                }
-            }
-
-            Query subQuery = null;
-            switch (q.getType()) {
-                case EXACT:
-                    //note that we must not escape an exact value (eg. it doesn't work if you do)
-                    subQuery = new TermQuery(new Term(q.getField().name(), q.getQuery()));
-                    break;
-                case WILDCARD:
-                    QueryParser queryParser = new QueryParser(q.getField().name(), DEFAULT_ANALYZER);
-                    //we need to escape the wildcard query, and append the asterisk afterwards (or it will be escaped)
-                    subQuery = queryParser.parse(QueryParser.escape(q.getQuery()) + "*");
-                    break;
-                case WILDCARD_COMPLEX:
-                    //we need to escape the wildcard query, and append the asterisk afterwards (or it will be escaped)
-                    ComplexPhraseQueryParser complexPhraseParser = new ComplexPhraseQueryParser(q.getField().name(), DEFAULT_ANALYZER);
-                    complexPhraseParser.setInOrder(true);
-                    //this is tricky: using an asterisk after a special character seems to throw lucene off
-                    // since the standard analyzer doesn't index those characters anyway (eg. "blah (en)" gets indexed as "blah" and "en"),
-                    // it's safe to delete those special characters and just add the asterisk
-                    String parsedQuery = this.removeEscapedChars(q.getQuery()).trim();
-                    String queryStr = null;
-                    //this check is needed because "\"bram*\"" doesn't seem to match the "bram" token
-                    if (parsedQuery.contains(" ")) {
-                        queryStr = "\"" + parsedQuery + "*\"";
-                    }
-                    else {
-                        queryStr = parsedQuery + "*";
-                    }
-
-                    subQuery = complexPhraseParser.parse(queryStr);
-                    break;
-                default:
-                    throw new ParseException("Encountered unsupported query type; this shouldn't happen; " + q.getType());
-            }
-
-            activeQuery.add(subQuery, q.getBool());
-        }
-
-        return query;
-    }
     //exactly the same code as QueryParserBase.escape(), but with the sb.append('\\'); line commented and added an else-part
     private String removeEscapedChars(String s)
     {

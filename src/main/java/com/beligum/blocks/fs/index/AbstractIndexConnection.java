@@ -37,7 +37,7 @@ public abstract class AbstractIndexConnection implements IndexConnection
     protected static final Analyzer STANDARD_ANALYZER = new StandardAnalyzer();
     protected static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
     protected static final Analyzer WHITESPACE_ANALYZER = new WhitespaceAnalyzer();
-    public static final Analyzer DEFAULT_ANALYZER = STANDARD_ANALYZER;
+    protected static final Analyzer DEFAULT_ANALYZER = STANDARD_ANALYZER;
 
     //-----VARIABLES-----
     private TransactionState state;

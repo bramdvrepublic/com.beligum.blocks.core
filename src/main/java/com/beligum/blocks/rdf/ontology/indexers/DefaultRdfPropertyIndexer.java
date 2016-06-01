@@ -14,7 +14,6 @@ import org.openrdf.model.Value;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Calendar;
 import java.util.Locale;
 
 /**
@@ -24,6 +23,11 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
 {
     //-----CONSTANTS-----
     public static final RdfPropertyIndexer INSTANCE = new DefaultRdfPropertyIndexer();
+
+    //Analogue to org.elasticsearch.index.mapper.core.BooleanFieldMapper.Values
+    //also see http://stackoverflow.com/questions/9661489/which-is-the-best-choice-to-indexing-a-boolean-value-in-lucene
+    private static final String BOOLEAN_TRUE_STRING = "T";
+    private static final String BOOLEAN_FALSE_STRING = "F";
 
     //-----VARIABLES-----
 
@@ -45,10 +49,11 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
 
             //Note: for an overview possible values, check com.beligum.blocks.config.InputType
             if (property.getDataType().equals(XSD.BOOLEAN)) {
-                indexer.indexBooleanField(fieldName, (Boolean) (retVal = objLiteral.booleanValue()));
+                indexer.indexConstantField(fieldName, (String) (retVal = objLiteral.booleanValue() ? BOOLEAN_TRUE_STRING : BOOLEAN_FALSE_STRING));
             }
             else if (property.getDataType().equals(XSD.DATE) || property.getDataType().equals(XSD.TIME) || property.getDataType().equals(XSD.DATE_TIME)) {
-                indexer.indexCalendarField(fieldName, (Calendar) (retVal = objLiteral.calendarValue().toGregorianCalendar()));
+                //the return value is mostly used to sort the field, and to construct the _all field, do it makes sense to return the long instead of the calendar object
+                indexer.indexLongField(fieldName, (Long) (retVal = objLiteral.calendarValue().toGregorianCalendar().getTimeInMillis()));
             }
             else if (property.getDataType().equals(XSD.INT)
                      || property.getDataType().equals(XSD.INTEGER)
@@ -115,6 +120,70 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
         else {
             throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '"+subject+"' because of an unsupported RDF type; " +
                                   value.getClass());
+        }
+
+        return retVal;
+    }
+    @Override
+    public Object prepareIndexValue(RdfProperty property, String value, Locale language) throws IOException
+    {
+        Object retVal = null;
+
+        if (value!=null) {
+            if (property.getDataType().equals(XSD.BOOLEAN)) {
+                retVal = Boolean.parseBoolean(value) ? BOOLEAN_TRUE_STRING : BOOLEAN_FALSE_STRING;
+            }
+            else if (property.getDataType().equals(XSD.DATE) || property.getDataType().equals(XSD.TIME) || property.getDataType().equals(XSD.DATE_TIME)) {
+                retVal = Long.parseLong(value);
+            }
+            else if (property.getDataType().equals(XSD.INT)
+                     || property.getDataType().equals(XSD.INTEGER)
+                     || property.getDataType().equals(XSD.NEGATIVE_INTEGER)
+                     || property.getDataType().equals(XSD.UNSIGNED_INT)
+                     || property.getDataType().equals(XSD.NON_NEGATIVE_INTEGER)
+                     || property.getDataType().equals(XSD.NON_POSITIVE_INTEGER)
+                     || property.getDataType().equals(XSD.POSITIVE_INTEGER)
+                     || property.getDataType().equals(XSD.SHORT)
+                     || property.getDataType().equals(XSD.UNSIGNED_SHORT)
+                     || property.getDataType().equals(XSD.BYTE)
+                     || property.getDataType().equals(XSD.UNSIGNED_BYTE)) {
+                retVal = Integer.parseInt(value);
+            }
+            else if (property.getDataType().equals(XSD.LONG)
+                     || property.getDataType().equals(XSD.UNSIGNED_LONG)) {
+                retVal = Long.parseLong(value);
+            }
+            else if (property.getDataType().equals(XSD.FLOAT)) {
+                retVal = Float.parseFloat(value);
+            }
+            else if (property.getDataType().equals(XSD.DOUBLE)) {
+                retVal = Double.parseDouble(value);
+            }
+            else if (property.getDataType().equals(XSD.DECIMAL)) {
+                retVal = Double.parseDouble(value);
+            }
+            else if (property.getDataType().equals(XSD.STRING)
+                     || property.getDataType().equals(XSD.NORMALIZED_STRING)
+                     || property.getDataType().equals(RDF.LANGSTRING)) {
+                retVal = retVal;
+            }
+            else if (property.getDataType().equals(RDF.HTML)) {
+                retVal = retVal;
+            }
+            else {
+                //TODO...
+                if (true) {
+                    throw new IOException("Unimplemented data type; " + property.getDataType());
+                }
+
+//                RdfQueryEndpoint endpoint = property.getDataType().getEndpoint();
+//                if (endpoint != null) {
+//
+//                }
+//                else {
+//                    throw new IOException("Unable to prepare RDF index property " + fieldName + " for value '" + value + "' because the property type is unimplemented; " + property.getDataType());
+//                }
+            }
         }
 
         return retVal;

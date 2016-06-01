@@ -1,7 +1,5 @@
 package com.beligum.blocks.fs.index.entries;
 
-import java.util.Calendar;
-
 /**
  * Created by bram on 5/31/16.
  */
@@ -14,8 +12,6 @@ public interface RdfIndexer
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
-    void indexBooleanField(String fieldName, boolean value);
-    void indexCalendarField(String fieldName, Calendar value);
     void indexIntegerField(String fieldName, int value);
     void indexLongField(String fieldName, long value);
     void indexFloatField(String fieldName, float value);

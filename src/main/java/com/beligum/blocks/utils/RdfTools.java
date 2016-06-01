@@ -124,6 +124,7 @@ public class RdfTools
         URI retVal = uri;
 
         if (uri.isAbsolute()) {
+            //Note: if the url is not relative to the siteDomain url, the url is simply returned
             URI relative = configuration().getSiteDomain().relativize(retVal);
             //if it's not absolute (eg. it doesn't start with http://..., this means the relativize 'succeeded' and the retVal starts with the RDF ontology URI)
             if (!relative.isAbsolute()) {

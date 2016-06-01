@@ -15,6 +15,7 @@ import com.beligum.blocks.rdf.ontology.vocabularies.local.WrappedPageResourceInf
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.TermQuery;
 
 import java.io.IOException;
@@ -42,24 +43,17 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
     {
         List<AutocompleteSuggestion> retVal = new ArrayList<>();
 
-        LuceneQueryConnection.FieldQuery.Type fieldQueryType = null;
-        switch (queryType) {
-            case STARTS_WITH:
-            case NAME:
-                fieldQueryType = LuceneQueryConnection.FieldQuery.Type.WILDCARD_COMPLEX;
-                break;
-            case FULL:
-                fieldQueryType = LuceneQueryConnection.FieldQuery.Type.WILDCARD;
-                break;
-            default:
-                throw new IOException("Unsupported or unimplemented query type encountered, can't proceed; "+queryType);
-        }
+        LuceneQueryConnection mainIndexer = StorageFactory.getMainPageQueryConnection();
 
-        LuceneQueryConnection.FieldQuery[] queries =
-                        new LuceneQueryConnection.FieldQuery[] { new LuceneQueryConnection.FieldQuery(PageIndexEntry.Field.typeOf, resourceType.getCurieName().toString(), BooleanClause.Occur.FILTER, LuceneQueryConnection.FieldQuery.Type.EXACT),
-                                                                 new LuceneQueryConnection.FieldQuery(IndexEntry.Field.tokenisedId, query, BooleanClause.Occur.SHOULD, fieldQueryType, 1),
-                                                                 new LuceneQueryConnection.FieldQuery(IndexEntry.Field.title, query, BooleanClause.Occur.SHOULD, LuceneQueryConnection.FieldQuery.Type.WILDCARD_COMPLEX, 1)
-                        };
+        BooleanQuery mainQuery = new BooleanQuery();
+
+        mainQuery.add(new TermQuery(new Term(PageIndexEntry.Field.typeOf.name(), resourceType.getCurieName().toString())), BooleanClause.Occur.FILTER);
+
+        BooleanQuery subQuery = new BooleanQuery();
+        boolean complexWildcard = queryType == QueryType.FULL ? false : true;
+        subQuery.add(mainIndexer.buildWildcardQuery(IndexEntry.Field.tokenisedId.name(), query, complexWildcard), BooleanClause.Occur.SHOULD);
+        subQuery.add(mainIndexer.buildWildcardQuery(IndexEntry.Field.title.name(), query, true), BooleanClause.Occur.SHOULD);
+        mainQuery.add(subQuery, BooleanClause.Occur.FILTER);
 
         //See https://lucene.apache.org/core/5_4_1/queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package_description
         //#typeOf:mot:Person #(tokenisedId:bra* title:bra*)
@@ -67,7 +61,7 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
         //        StringBuilder luceneQuery = new StringBuilder();
         //        luceneQuery/*.append("#")*/.append(PageIndexEntry.Field.typeOf.name()).append(":").append(QueryParser.escape(resourceType.getCurieName().toString()))/*.append("\"")*/;
 
-        IndexSearchResult matchingPages = StorageFactory.getMainPageQueryConnection().search(queries, maxResults);
+        IndexSearchResult matchingPages = mainIndexer.search(mainQuery, maxResults);
 
         /*
          * Note that this is not the best way to do this: it should actually be implemented with the grouping functionality of Lucene
@@ -123,7 +117,7 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
             for (IndexEntry entry : matchingPages.getResults()) {
                 PageIndexEntry page = (PageIndexEntry) entry;
 
-                if (selectedEntry==null) {
+                if (selectedEntry == null) {
                     selectedEntry = page;
                 }
                 else {

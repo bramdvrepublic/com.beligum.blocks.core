@@ -44,4 +44,9 @@ public interface RdfProperty extends RdfClass
      * @return the value-object as it was indexed
      */
     Object indexValue(RdfIndexer indexer, URI subject, Value value, Locale language) throws IOException;
+
+    /**
+     * Converts the supplied value to an object to be used during index lookups
+     */
+    Object prepareIndexValue(String value, Locale language) throws IOException;
 }

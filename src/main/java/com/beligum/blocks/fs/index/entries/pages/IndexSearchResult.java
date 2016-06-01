@@ -23,24 +23,36 @@ public class IndexSearchResult
     private Integer totalHits;
 
     /**
+     * The (zero-based) page index of this search result
+     */
+    private Integer pageIndex;
+
+    /**
+     * The maximum number of search results per page
+     */
+    private Integer pageSize;
+
+    /**
      * The time it took to lookup the result, in milliseconds or null if not set
      */
-    private Long lookupDuration;
+    private Long searchDuration;
 
     //-----CONSTRUCTORS-----
     public IndexSearchResult(List<IndexEntry> results)
     {
-        this(results, null, null);
+        this(results, null, null, null, null);
     }
-    public IndexSearchResult(List<IndexEntry> results, Integer totalHits)
+    public IndexSearchResult(List<IndexEntry> results, Integer totalHits, Integer pageIndex, Integer pageSize)
     {
-        this(results, totalHits, null);
+        this(results, totalHits, pageIndex, pageSize, null);
     }
-    public IndexSearchResult(List<IndexEntry> results, Integer totalHits, Long lookupDuration)
+    public IndexSearchResult(List<IndexEntry> results, Integer totalHits, Integer pageIndex, Integer pageSize, Long searchDuration)
     {
         this.results = results;
         this.totalHits = totalHits;
-        this.lookupDuration = lookupDuration;
+        this.pageIndex = pageIndex;
+        this.pageSize = pageSize;
+        this.searchDuration = searchDuration;
     }
 
     //-----PUBLIC METHODS-----
@@ -52,13 +64,21 @@ public class IndexSearchResult
     {
         return totalHits;
     }
-    public Long getLookupDuration()
+    public Integer getPageIndex()
     {
-        return lookupDuration;
+        return pageIndex;
     }
-    public void setLookupDuration(Long lookupDuration)
+    public Integer getPageSize()
     {
-        this.lookupDuration = lookupDuration;
+        return pageSize;
+    }
+    public Long getSearchDuration()
+    {
+        return searchDuration;
+    }
+    public String getSearchDurationSeconds()
+    {
+        return String.format("%.3f", searchDuration/1000.0f);
     }
 
     //-----PROTECTED METHODS-----

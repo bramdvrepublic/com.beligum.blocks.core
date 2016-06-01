@@ -21,6 +21,7 @@ public interface RdfPropertyIndexer
 
     //-----PUBLIC METHODS-----
     Object index(RdfIndexer indexer, URI subject, RdfProperty property, Value value, Locale language) throws IOException;
+    Object prepareIndexValue(RdfProperty property, String value, Locale language) throws IOException;
 
     //-----PROTECTED METHODS-----
 

@@ -88,6 +88,11 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
     {
         return DefaultRdfPropertyIndexer.INSTANCE.index(indexer, subject, this, value, language);
     }
+    @Override
+    public Object prepareIndexValue(String value, Locale language) throws IOException
+    {
+        return DefaultRdfPropertyIndexer.INSTANCE.prepareIndexValue(this, value, language);
+    }
 
     //-----PROTECTED METHODS-----
 

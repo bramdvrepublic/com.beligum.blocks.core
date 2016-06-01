@@ -17,7 +17,6 @@ import org.openrdf.model.Statement;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Calendar;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -28,11 +27,15 @@ import java.util.Map;
 public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndexer
 {
     //-----CONSTANTS-----
-    private static final String DOUBLE_SORT_FIELD_JOINER = "\n";
+    private static final String DEFAULT_FIELD_JOINER = " ";
+    private static final String CUSTOM_FIELD_PREFIX = "_";
+
+    //mimics the "_all" field of ElasticSearch
+    // see https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-all-field.html
+    public static final String CUSTOM_FIELD_ALL = CUSTOM_FIELD_PREFIX+"all";
+
     //interesting alternative guide if you ever need it: http://www.citrine.io/blog/2015/2/14/building-a-custom-analyzer-in-lucene
     private static Analyzer SORTFIELD_ANALYZER;
-    private static final char SORTFIELD_ANALYZER_JOIN_CHAR = ' ';
-
     static {
         try {
             /**
@@ -42,7 +45,10 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
              * - make all lowercase
              */
             SORTFIELD_ANALYZER = CustomAnalyzer.builder()
-                                               .withTokenizer("whitespace")
+                                               //difference between these two is that 'standard' also strips punctuation characters like (),' etc.
+                                               //.withTokenizer("whitespace")
+                                               .withTokenizer("standard")
+
                                                .addTokenFilter("asciifolding", "preserveOriginal", "false")
                                                .addTokenFilter("lowercase")
                                                .build();
@@ -51,11 +57,6 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
             Logger.error("Error while building sortField analyzer, this shouldn't happen; ", e);
         }
     }
-
-    //Analogue to org.elasticsearch.index.mapper.core.BooleanFieldMapper.Values
-    //also see http://stackoverflow.com/questions/9661489/which-is-the-best-choice-to-indexing-a-boolean-value-in-lucene
-    private static final String BOOLEAN_TRUE_STRING = "T";
-    private static final String BOOLEAN_FALSE_STRING = "F";
 
     //-----VARIABLES-----
     private Document luceneDoc;
@@ -82,7 +83,7 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
                     String valueStr = value.toString();
                     //Lucene: only one value is allowed per field
                     if (sortValues.containsKey(predicate)) {
-                        valueStr = sortValues.get(predicate)+DOUBLE_SORT_FIELD_JOINER+valueStr;
+                        valueStr = sortValues.get(predicate) + DEFAULT_FIELD_JOINER + valueStr;
                     }
                     sortValues.put(predicate, valueStr);
                 }
@@ -93,9 +94,22 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
         // see https://www.norconex.com/facets-with-lucene/
         //See this discussion for background on multivalues
         // see http://stackoverflow.com/questions/21002042/adding-a-multi-valued-string-field-to-a-lucene-document-do-commas-matter
+        StringBuilder sb = new StringBuilder();
         for (Map.Entry<RdfProperty, String> e : sortValues.entrySet()) {
-            this.luceneDoc.add(new SortedDocValuesField(e.getKey().getCurieName().toString(), new BytesRef(preprocessSortValue(e.getValue()))));
+            String value = e.getValue();
+
+            //add a docValue for each (possibly joined values of) field so we can sort them
+            this.luceneDoc.add(new SortedDocValuesField(e.getKey().getCurieName().toString(), new BytesRef(preprocessSortValue(value))));
+
+            //we'll also concat all (stringified) values together to be able to do an "search all"
+            if (sb.length()>0) {
+                sb.append(DEFAULT_FIELD_JOINER);
+            }
+            sb.append(value);
         }
+
+        //index the all field
+        this.indexStringField(CUSTOM_FIELD_ALL, sb.toString());
     }
 
     //-----STATIC METHODS-----
@@ -122,7 +136,7 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
                 ts.reset();
                 while (ts.incrementToken()) {
                     if (sb.length() > 0) {
-                        sb.append(SORTFIELD_ANALYZER_JOIN_CHAR);
+                        sb.append(DEFAULT_FIELD_JOINER);
                     }
                     sb.append(term.toString());
                 }
@@ -140,16 +154,6 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
     public Document createLuceneDoc() throws IOException
     {
         return this.luceneDoc;
-    }
-    @Override
-    public void indexBooleanField(String fieldName, boolean value)
-    {
-        this.luceneDoc.add(new StringField(fieldName, value ? BOOLEAN_TRUE_STRING : BOOLEAN_FALSE_STRING, org.apache.lucene.document.Field.Store.NO));
-    }
-    @Override
-    public void indexCalendarField(String fieldName, Calendar value)
-    {
-        this.luceneDoc.add(new LongField(fieldName, value.getTimeInMillis(), org.apache.lucene.document.Field.Store.NO));
     }
     @Override
     public void indexIntegerField(String fieldName, int value)
