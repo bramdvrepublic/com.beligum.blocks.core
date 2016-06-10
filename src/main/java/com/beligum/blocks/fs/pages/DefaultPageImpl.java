@@ -3,6 +3,8 @@ package com.beligum.blocks.fs.pages;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.HdfsResourcePath;
+import com.beligum.blocks.fs.logger.RdfLogWriter;
+import com.beligum.blocks.fs.logger.ifaces.LogWriter;
 import com.beligum.blocks.fs.metadata.EBUCoreHdfsMetadataWriter;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
 import com.beligum.blocks.rdf.exporters.SesameExporter;
@@ -68,6 +70,11 @@ public abstract class DefaultPageImpl extends AbstractPage
     public HtmlAnalyzer createAnalyzer() throws IOException
     {
         return new HtmlAnalyzer(this.readOriginalHtml());
+    }
+    @Override
+    public LogWriter createLogWriter() throws IOException
+    {
+        return new RdfLogWriter(this.resourcePath.getFileContext());
     }
     @Override
     public MetadataWriter createMetadataWriter() throws IOException

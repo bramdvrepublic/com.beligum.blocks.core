@@ -32,6 +32,8 @@ public interface ResourcePath
 
     Path getMetaHashFile();
 
+    Path getMetaLogFile();
+
     Path getMetaHistoryFolder();
 
     Path getMetaMonitorFolder();

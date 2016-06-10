@@ -9,7 +9,7 @@ import java.io.IOException;
 /**
  * Created by bram on 1/20/16.
  */
-public interface MetadataWriter<T>
+public interface MetadataWriter<T> extends AutoCloseable
 {
     /**
      * Read the medatadata file; create it if it doesn't exist or read in the existing metadata if it does.
@@ -31,5 +31,6 @@ public interface MetadataWriter<T>
 
     void write() throws IOException;
 
+    @Override
     void close() throws IOException;
 }

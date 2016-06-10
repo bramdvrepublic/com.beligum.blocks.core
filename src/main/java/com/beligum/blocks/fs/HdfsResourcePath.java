@@ -71,6 +71,11 @@ public class HdfsResourcePath implements ResourcePath
         return new Path(this.getMetaFolder(), Constants.META_SUBFILE_HASH);
     }
     @Override
+    public Path getMetaLogFile()
+    {
+        return new Path(this.getMetaFolder(), Constants.META_SUBFILE_LOG);
+    }
+    @Override
     public Path getMetaHistoryFolder()
     {
         //Note: if you change something here, also check the code where we delete the history folder from the snapshots (in HdfsPageStore)

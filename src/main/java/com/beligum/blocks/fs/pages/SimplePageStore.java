@@ -10,6 +10,8 @@ import com.beligum.blocks.fs.LockFile;
 import com.beligum.blocks.fs.hdfs.HdfsZipUtils;
 import com.beligum.blocks.fs.ifaces.Constants;
 import com.beligum.blocks.fs.ifaces.ResourcePath;
+import com.beligum.blocks.fs.logger.PageLogEntry;
+import com.beligum.blocks.fs.logger.ifaces.LogWriter;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.fs.pages.ifaces.PageStore;
@@ -73,6 +75,10 @@ public class SimplePageStore implements PageStore
         //will synchronize the metadata directory by creating/releasing a lock file
         try (LockFile lock = resourcePath.acquireLock()) {
 
+            // Note: it makes sense to use the now timestamp because we're about to create a snapshot of the situation _now_
+            // we can't really rely on other timestamps because which one should we take?
+            ZonedDateTime stamp = ZonedDateTime.now();
+
             //prepare the HTML for saving; this is the only place we can modify the source
             // because later on, the analyzer will have run
             source.prepareForSaving(fileContext);
@@ -103,14 +109,16 @@ public class SimplePageStore implements PageStore
                 retVal = newPage;
             }
             else {
+
                 //make sure the path dirs exist
                 //Note: this also works for dirs, since they're special files inside the actual dir
                 fileContext.mkdir(resourcePath.getLocalPath().getParent(), FsPermission.getDirDefault(), true);
 
                 //we're overwriting; make an entry in the history folder
                 //TODO maybe we want to make this asynchronous?
-                if (fileContext.util().exists(resourcePath.getLocalPath())) {
-                    this.addHistoryEntry(fileContext, resourcePath);
+                boolean existed = fileContext.util().exists(resourcePath.getLocalPath());
+                if (existed) {
+                    this.addHistoryEntry(fileContext, resourcePath, stamp);
                 }
 
                 //save the HASH of the file
@@ -137,6 +145,12 @@ public class SimplePageStore implements PageStore
                     newPage.createExporter(newPage.getRdfExportFileFormat()).exportModel(rdfModel, os);
                 }
 
+                this.writeLogEntry(newPage, creator, stamp, existed ? PageLogEntry.Action.CREATE : PageLogEntry.Action.UPDATE);
+
+                try (OutputStream os = fileContext.create(resourcePath.getMetaLogFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.APPEND), Options.CreateOpts.createParent())) {
+                    os.write("<http://localhost:8080/en/> <http://www.w3.org/ns/rdfa#usesVocabulary> <http://www.mot.be/ontology/> . \n".getBytes());
+                }
+
                 //save the page metadata (read it in if it exists)
                 this.writeMetadata(fileContext, resourcePath, creator, newPage.createMetadataWriter());
 
@@ -159,6 +173,8 @@ public class SimplePageStore implements PageStore
 
         try (LockFile lock = resourcePath.acquireLock()) {
 
+            ZonedDateTime stamp = ZonedDateTime.now();
+
             //make sure the path dirs exist
             //Note: this also works for dirs, since they're special files inside the actual dir
             fileContext.mkdir(resourcePath.getLocalPath().getParent(), FsPermission.getDirDefault(), true);
@@ -169,11 +185,13 @@ public class SimplePageStore implements PageStore
             //we're overwriting; make an entry in the history folder
             //TODO maybe we want to make this asynchronous?
             if (fileContext.util().exists(resourcePath.getLocalPath())) {
-                this.addHistoryEntry(fileContext, resourcePath);
+                this.addHistoryEntry(fileContext, resourcePath, stamp);
             }
 
             //delete the original page html and leave the rest alone
             fileContext.delete(resourcePath.getLocalPath(), false);
+
+            this.writeLogEntry(page, deleter, stamp, PageLogEntry.Action.DELETE);
 
             //list everything under meta folder and delete it, except for the HISTORY folder
             RemoteIterator<FileStatus> metaEntries = fileContext.listStatus(resourcePath.getMetaFolder());
@@ -207,12 +225,8 @@ public class SimplePageStore implements PageStore
      * @return the successfully created history entry or null of something went wrong
      * @throws IOException
      */
-    private ResourcePath addHistoryEntry(FileContext fs, ResourcePath resourcePath) throws IOException
+    private ResourcePath addHistoryEntry(FileContext fs, ResourcePath resourcePath, ZonedDateTime stamp) throws IOException
     {
-        // Note: it makes sense to use the now timestamp because we're about to create a snapshot of the situation _now_
-        // we can't really rely on other timestamps because which one should we take?
-        ZonedDateTime stamp = ZonedDateTime.now();
-
         // first, we'll create a snapshot of the meta folder to a sibling folder. We can't copy it to it's final destination
         // because that is a subfolder of the folder we're copying and we'll encounter odd recursion.
         Path snapshotMetaFolder = new Path(resourcePath.getMetaFolder().getParent(), resourcePath.getMetaFolder().getName() + Constants.TEMP_SNAPSHOT_SUFFIX);
@@ -264,6 +278,12 @@ public class SimplePageStore implements PageStore
         //Note: no need to cleanup, the XA filesystem will do that for us
 
         return success ? historyEntry : null;
+    }
+    private void writeLogEntry(Page page, Person creator, ZonedDateTime stamp, PageLogEntry.Action action) throws IOException
+    {
+        try (LogWriter logWriter = page.createLogWriter()) {
+            logWriter.writeLogEntry(new PageLogEntry(stamp, creator, page, action));
+        }
     }
     private void writeMetadata(FileContext fs, ResourcePath resourcePath, Person creator, MetadataWriter metadataWriter) throws IOException
     {

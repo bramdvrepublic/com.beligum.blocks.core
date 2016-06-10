@@ -1,6 +1,7 @@
 package com.beligum.blocks.fs.pages.ifaces;
 
 import com.beligum.blocks.fs.ifaces.ResourcePath;
+import com.beligum.blocks.fs.logger.ifaces.LogWriter;
 import com.beligum.blocks.fs.metadata.ifaces.MetadataWriter;
 import com.beligum.blocks.rdf.ifaces.Exporter;
 import com.beligum.blocks.rdf.ifaces.Format;
@@ -72,6 +73,13 @@ public interface Page
     HtmlSource readOriginalHtml() throws IOException;
 
     /**
+     * Create the log writer for this page to write to the "LOG" file in the meta dot folder.
+     * @return
+     * @throws IOException
+     */
+    LogWriter createLogWriter() throws IOException;
+
+    /**
      * Create the metadata writer for this page to writer to the "meta" file in the meta dot folder.
      * @return
      * @throws IOException
@@ -85,7 +93,7 @@ public interface Page
     Path getNormalizedPageProxyPath();
 
     /**
-     * Returns the local loction where the output of the Exporter should be stored.
+     * Returns the local location where the output of the Exporter should be stored.
      * @return
      */
     Path getRdfExportFile();

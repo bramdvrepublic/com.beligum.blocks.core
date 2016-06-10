@@ -70,9 +70,9 @@ public abstract class AbstractPage implements Page
         //this is the 'most naked' address of the page, without language params or storage filenames
         this.canonicalAddress = URI.create(relativeAddressPath);
 
-        //this is important: if the url ends with a slash, we're actually saving a 'directory', so it doesn't have a name (will become 'index' later on)
+        //this is important: if the url ends with a slash or is just empty, we're actually saving a 'directory', so it doesn't have a name (will become 'index' later on)
         String pageName = null;
-        boolean isDir = relativeAddressPath.endsWith("/");
+        boolean isDir = StringUtils.isEmpty(relativeAddressPath) || relativeAddressPath.endsWith("/");
         if (!isDir) {
             pageName = FilenameUtils.getName(relativeAddressPath);
         }
