@@ -2,22 +2,17 @@ package com.beligum.blocks.fs.index;
 
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.entries.IndexEntry;
 import com.beligum.blocks.fs.index.entries.pages.IndexSearchResult;
 import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
-import com.beligum.blocks.fs.index.entries.resources.ResourceIndexEntry;
-import com.beligum.blocks.fs.index.entries.resources.SimpleResourceIndexEntry;
 import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.index.ifaces.SparqlQueryConnection;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
-import com.beligum.blocks.rdf.ifaces.RdfResource;
-import com.beligum.blocks.rdf.ifaces.RdfVocabulary;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.Term;
@@ -26,12 +21,9 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.TermQuery;
 import org.openrdf.model.IRI;
-import org.openrdf.model.Literal;
-import org.openrdf.model.Statement;
 import org.openrdf.model.Value;
 import org.openrdf.query.*;
 import org.openrdf.repository.RepositoryException;
-import org.openrdf.repository.RepositoryResult;
 import org.openrdf.repository.sail.SailRepository;
 import org.openrdf.repository.sail.SailRepositoryConnection;
 import org.openrdf.sail.lucene.LuceneSailSchema;
@@ -201,39 +193,6 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         //---Paging---
         queryBuilder.append(" LIMIT ").append(pageSize).append(" OFFSET ").append(pageOffset).append("\n");
 
-        //        int testLimit = 10;
-        //        String testQuery = "CONSTRUCT {\n" +
-        //                           "    ?s ?p ?o\n" +
-        //                           "}\n" +
-        //                           "where {\n" +
-        //                           "    ?s ?p ?o .\n" +
-        //                           "    {\n" +
-        //                           "        select distinct ?s where {?s ?p ?o} limit "+testLimit+"\n" +
-        //                           "    }\n" +
-        //                           "}";
-        //        GraphQueryResult graphResult = connection.prepareGraphQuery(QueryLanguage.SPARQL, testQuery).evaluate();
-        //        Logger.info("---------------------");
-        //        while (graphResult.hasNext()) {
-        //            Statement st = graphResult.next();
-        //            Logger.info(st.getObject().toString());
-        //        }
-        //        Logger.info("---------------------");
-
-        //        // wrap in an object repository
-        //        ObjectRepositoryFactory factory = new ObjectRepositoryFactory();
-        //        ObjectRepository repository = factory.createRepository(this.connection.getRepository());
-        //
-        //        ObjectConnection con = repository.getConnection();
-        //
-        //        // retrieve a Document by id
-        //        ValueFactory vf = con.getValueFactory();
-        //        org.openrdf.model.URI id = vf.createURI("http://example.com/data/2012/getting-started");
-        //        AlibabaTest doc = con.getObject(AlibabaTest.class, id);
-        //
-        //        // close everything down
-        //        con.close();
-        //        repository.shutDown();
-
         return this.search(queryBuilder.toString(), type, language);
     }
     @Override
@@ -278,10 +237,6 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
                 Value subject = result.next().getValue(SPARQL_SUBJECT_BINDING_NAME);
 
                 if (subject instanceof IRI) {
-
-                    //this will query the triplestore to build up the properties list
-                    //retVal.add(this.buildResourceEntry(subjectIRI, type, language));
-
                     //small optimization to avoid all the URI parsing, hope I didn't break something...
                     //String subjectStr = this.toUri((IRI)subjectIRI, false, true).toString();
                     String subjectStr = subject.stringValue().substring(siteDomain.length());
@@ -427,65 +382,6 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
                 else if (tryLocalDomain) {
                     retVal = RdfTools.relativizeToLocalDomain(retVal);
                 }
-            }
-        }
-
-        return retVal;
-    }
-    private ResourceIndexEntry buildResourceEntry(IRI resourceId, RdfClass type, Locale language) throws IOException
-    {
-        Class<? extends ResourceIndexEntry> resourceIndexClass = type.getResourceIndexClass();
-        if (resourceIndexClass == null) {
-            resourceIndexClass = SimpleResourceIndexEntry.class;
-        }
-
-        ResourceIndexEntry retVal = null;
-        try {
-            //we convert to a uniform Java-URI so it's compatible with existing interfaces later on
-            retVal = resourceIndexClass.getConstructor(URI.class).newInstance(this.toUri(resourceId, false, true));
-        }
-        catch (Exception e) {
-            throw new IOException("Error while initializing a resource index entry class '" + resourceIndexClass.getCanonicalName() + "', you probably want to check it's constructor signature", e);
-        }
-
-        RepositoryResult<Statement> properties = this.connection.getStatements(resourceId, null, null);
-        while (properties.hasNext()) {
-            Statement statement = properties.next();
-
-            //DEBUG
-            //Logger.info("\t"+statement);
-
-            //Note that we need a CURIE for RdfFactory.getForResourceType(), so first convert the absolute predicate URI to a curie URI
-            RdfVocabulary vocab = RdfFactory.getVocabularies().get(URI.create(statement.getPredicate().getNamespace()));
-            if (vocab != null) {
-                URI predicateResourceUri = vocab.resolveCurie(statement.getPredicate().getLocalName());
-                //RdfResource predicateResource = RdfFactory.getForResourceType(this.toUri(statement.getPredicate(), true, false));
-                RdfResource predicateResource = RdfFactory.getForResourceType(predicateResourceUri);
-                if (predicateResource != null) {
-                    //we only add literals that match the passed-down language (disabled when null)
-                    boolean skip = false;
-                    if (language != null && statement.getObject() instanceof Literal) {
-                        Literal object = (Literal) statement.getObject();
-                        if (object.getLanguage().isPresent()) {
-                            skip = !object.getLanguage().get().equals(language.getLanguage());
-                        }
-                    }
-
-                    if (!skip) {
-                        Value oldProperty = retVal.getProperties().put(predicateResource, statement.getObject());
-                        if (oldProperty != null) {
-                            Logger.warn("Watch out, overwriting an existing (and thus double) predicate '" + statement.getPredicate() + "' for resource; " + resourceId);
-                        }
-                    }
-                }
-                else {
-                    //happens a lot, ignore this
-                    //Logger.warn("Skipping incompatible sparql result because it's predicate is not a known RDF class; " + statement.getPredicate());
-                }
-            }
-            else {
-                //happens eg. with http://www.w3.org/ns/rdfa#usesVocabulary
-                //Logger.warn("Skipping incompatible sparql result because it's namespace is not in a known RDF vocabulary; " + statement.getPredicate());
             }
         }
 

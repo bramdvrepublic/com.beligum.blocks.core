@@ -2,10 +2,6 @@ package com.beligum.blocks.fs.index;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.fs.index.ifaces.IndexConnection;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 import javax.transaction.xa.XAException;
@@ -33,11 +29,6 @@ public abstract class AbstractIndexConnection implements IndexConnection
         PREPARED,
         ROLLBACK_ONLY
     }
-
-    protected static final Analyzer STANDARD_ANALYZER = new StandardAnalyzer();
-    protected static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
-    protected static final Analyzer WHITESPACE_ANALYZER = new WhitespaceAnalyzer();
-    protected static final Analyzer DEFAULT_ANALYZER = STANDARD_ANALYZER;
 
     //-----VARIABLES-----
     private TransactionState state;

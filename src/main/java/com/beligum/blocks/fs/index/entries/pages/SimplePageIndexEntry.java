@@ -2,7 +2,7 @@ package com.beligum.blocks.fs.index.entries.pages;
 
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.fs.index.entries.IndexEntry;
-import com.beligum.blocks.fs.index.entries.resources.ResourceIndexEntry;
+import com.beligum.blocks.fs.index.entries.resources.ResourceIndexer;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
@@ -70,9 +70,11 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
         String typeOfCurie = htmlAnalyzer.getHtmlTypeof() == null ? null : htmlAnalyzer.getHtmlTypeof().value;
         RdfClass typeOf = typeOfCurie == null ? null : RdfFactory.getClassForResourceType(URI.create(typeOfCurie));
         if (typeOf == null) {
-            throw new IOException("Trying to create an index entra from a page without a type, this shouldn't happen; " + page.getPublicRelativeAddress());
+            throw new IOException("Trying to create an index entry from a page without a type, this shouldn't happen; " + page.getPublicRelativeAddress());
         }
         else {
+            //First, set the general properties, then add more using specific indexers and see if we need to override some general ones
+
             //don't use the canonical address as the id of the entry: it's not unique (will be the same for different languages)
             this.setResource(htmlAnalyzer.getHtmlAbout() == null ? null : htmlAnalyzer.getHtmlAbout().value);
             this.setTypeOf(typeOf.getCurieName().toString());
@@ -81,7 +83,7 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
             this.setCanonicalAddress(page.getCanonicalAddress() == null ? null : page.getCanonicalAddress().toString());
 
             //note: the getResourceIndexer() never returns null (has a SimpleResourceIndexer as fallback)
-            ResourceIndexEntry indexEntry = typeOf.getResourceIndexer().index(page.readRdfModel());
+            ResourceIndexer.IndexedResource indexEntry = typeOf.getResourceIndexer().index(page.readRdfModel());
             //overwrite the title if the indexer found a better match (note that the indexer can generate any kind of title it wants, not just the page <title>)
             if (StringUtils.isBlank(this.getTitle()) && !StringUtils.isBlank(indexEntry.getTitle())) {
                 this.setTitle(indexEntry.getTitle());
@@ -95,18 +97,6 @@ public class SimplePageIndexEntry extends AbstractPageIndexEntry implements Page
     public static PageIndexEntry fromLuceneDoc(Document document) throws IOException
     {
         return getProtobufMapper().readerFor(SimplePageIndexEntry.class).with(getProtobufSchema()).readValue(document.getBinaryValue(PageIndexEntry.Field.object.name()).bytes);
-
-        //this is the old JSON-alternative
-        //return Json.read(document.get(PageIndexEntry.Field.object.name()), SimplePageIndexEntry.class);
-
-        //        return new SimplePageIndexEntry(document.get(IndexEntry.Field.id.name()),
-        //                                        document.get(PageIndexEntry.Field.resource.name()),
-        //                                        document.get(PageIndexEntry.Field.typeOf.name()),
-        //                                        document.get(IndexEntry.Field.title.name()),
-        //                                        document.get(PageIndexEntry.Field.language.name()),
-        //                                        document.get(PageIndexEntry.Field.canonicalAddress.name()),
-        //                                        document.get(IndexEntry.Field.description.name()),
-        //                                        document.get(IndexEntry.Field.image.name()));
     }
 
     //-----PUBLIC METHODS-----

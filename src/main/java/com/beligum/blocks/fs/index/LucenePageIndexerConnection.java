@@ -17,7 +17,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
@@ -28,7 +31,9 @@ import org.apache.lucene.store.FSDirectory;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Created by bram on 2/22/16.
@@ -142,14 +147,14 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         Query retVal = null;
 
         if (StringUtils.isEmpty(fieldName)) {
-            fieldName = DeepPageIndexEntry.CUSTOM_FIELD_ALL;
+            fieldName = LucenePageIndexer.CUSTOM_FIELD_ALL;
         }
 
         //makes sense to _not_ add the wildcard * expansion to numbers, no?
         String wildcardSuffix = NumberUtils.isNumber(phrase) ? "" : "*";
 
         if (!complex) {
-            QueryParser queryParser = new QueryParser(fieldName, DEFAULT_ANALYZER);
+            QueryParser queryParser = new QueryParser(fieldName, LucenePageIndexer.DEFAULT_ANALYZER);
             //we need to escape the wildcard query, and append the asterisk afterwards (or it will be escaped)
             try {
                 retVal = queryParser.parse(QueryParser.escape(phrase) + wildcardSuffix);
@@ -160,7 +165,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         }
         else {
             //we need to escape the wildcard query, and append the asterisk afterwards (or it will be escaped)
-            ComplexPhraseQueryParser complexPhraseParser = new ComplexPhraseQueryParser(fieldName, DEFAULT_ANALYZER);
+            ComplexPhraseQueryParser complexPhraseParser = new ComplexPhraseQueryParser(fieldName, LucenePageIndexer.DEFAULT_ANALYZER);
             complexPhraseParser.setInOrder(true);
             //this is tricky: using an asterisk after a special character seems to throw lucene off
             // since the standard analyzer doesn't index those characters anyway (eg. "blah (en)" gets indexed as "blah" and "en"),
@@ -324,7 +329,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
             throw new IOException("Lucene index directory is not writable, please check the path; " + docDir);
         }
 
-        IndexWriterConfig iwc = new IndexWriterConfig(DEFAULT_ANALYZER);
+        IndexWriterConfig iwc = new IndexWriterConfig(LucenePageIndexer.DEFAULT_ANALYZER);
 
         // Add new documents to an existing index:
         iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);

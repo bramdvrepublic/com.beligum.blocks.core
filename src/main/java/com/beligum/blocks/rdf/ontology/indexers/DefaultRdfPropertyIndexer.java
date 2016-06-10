@@ -38,9 +38,9 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
 
     //-----PUBLIC METHODS-----
     @Override
-    public Object index(RdfIndexer indexer, URI subject, RdfProperty property, Value value, Locale language) throws IOException
+    public RdfIndexer.IndexResult index(RdfIndexer indexer, URI subject, RdfProperty property, Value value, Locale language) throws IOException
     {
-        Object retVal = null;
+        RdfIndexer.IndexResult retVal = null;
 
         String fieldName = property.getCurieName().toString();
 
@@ -49,11 +49,15 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
 
             //Note: for an overview possible values, check com.beligum.blocks.config.InputType
             if (property.getDataType().equals(XSD.BOOLEAN)) {
-                indexer.indexConstantField(fieldName, (String) (retVal = objLiteral.booleanValue() ? BOOLEAN_TRUE_STRING : BOOLEAN_FALSE_STRING));
+                String val = objLiteral.booleanValue() ? BOOLEAN_TRUE_STRING : BOOLEAN_FALSE_STRING;
+                indexer.indexConstantField(fieldName, val);
+                retVal = new RdfIndexer.IndexResult(val);
             }
             else if (property.getDataType().equals(XSD.DATE) || property.getDataType().equals(XSD.TIME) || property.getDataType().equals(XSD.DATE_TIME)) {
                 //the return value is mostly used to sort the field, and to construct the _all field, do it makes sense to return the long instead of the calendar object
-                indexer.indexLongField(fieldName, (Long) (retVal = objLiteral.calendarValue().toGregorianCalendar().getTimeInMillis()));
+                Long val = objLiteral.calendarValue().toGregorianCalendar().getTimeInMillis();
+                indexer.indexLongField(fieldName, val);
+                retVal = new RdfIndexer.IndexResult(val);
             }
             else if (property.getDataType().equals(XSD.INT)
                      || property.getDataType().equals(XSD.INTEGER)
@@ -66,46 +70,59 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                      || property.getDataType().equals(XSD.UNSIGNED_SHORT)
                      || property.getDataType().equals(XSD.BYTE)
                      || property.getDataType().equals(XSD.UNSIGNED_BYTE)) {
-                indexer.indexIntegerField(fieldName, (Integer) (retVal = objLiteral.intValue()));
+                Integer val = objLiteral.intValue();
+                indexer.indexIntegerField(fieldName, val);
+                retVal = new RdfIndexer.IndexResult(val);
             }
             else if (property.getDataType().equals(XSD.LONG)
                      || property.getDataType().equals(XSD.UNSIGNED_LONG)) {
-                indexer.indexLongField(fieldName, (Long) (retVal = objLiteral.longValue()));
+                Long val = objLiteral.longValue();
+                indexer.indexLongField(fieldName, val);
+                retVal = new RdfIndexer.IndexResult(val);
             }
             else if (property.getDataType().equals(XSD.FLOAT)) {
-                indexer.indexFloatField(fieldName, (Float) (retVal = objLiteral.floatValue()));
+                Float val = objLiteral.floatValue();
+                indexer.indexFloatField(fieldName, val);
+                retVal = new RdfIndexer.IndexResult(val);
             }
-            else if (property.getDataType().equals(XSD.DOUBLE)) {
-                indexer.indexDoubleField(fieldName, (Double) (retVal = objLiteral.doubleValue()));
-            }
-            //this is doubtful, but let's take the largest one
-            // Note we could also try to fit as closely as possible, but that would change the type per value (instead of per 'column'), and that's not a good idea
-            else if (property.getDataType().equals(XSD.DECIMAL)) {
-                indexer.indexDoubleField(fieldName, (Double) (retVal = objLiteral.doubleValue()));
+            else if (property.getDataType().equals(XSD.DOUBLE)
+                     //this is doubtful, but let's take the largest one
+                     // Note we could also try to fit as closely as possible, but that would change the type per value (instead of per 'column'), and that's not a good idea
+                     || property.getDataType().equals(XSD.DECIMAL)) {
+                Double val = objLiteral.doubleValue();
+                indexer.indexDoubleField(fieldName, val);
+                retVal = new RdfIndexer.IndexResult(val);
             }
             else if (property.getDataType().equals(XSD.STRING)
                      || property.getDataType().equals(XSD.NORMALIZED_STRING)
                      || property.getDataType().equals(RDF.LANGSTRING)) {
-                indexer.indexStringField(fieldName, (String) (retVal = objLiteral.stringValue()));
+                String val = objLiteral.stringValue();
+                indexer.indexStringField(fieldName, val);
+                retVal = new RdfIndexer.IndexResult(val);
             }
             else if (property.getDataType().equals(RDF.HTML)) {
-                indexer.indexStringField(fieldName, (String) (retVal = StringFunctions.htmlToPlaintextRFC3676(objLiteral.stringValue())));
+                String val = StringFunctions.htmlToPlaintextRFC3676(objLiteral.stringValue());
+                indexer.indexStringField(fieldName, val);
+                retVal = new RdfIndexer.IndexResult(val);
             }
             else {
                 throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '"+subject+"' because the property type is unimplemented; "+property.getDataType());
             }
         }
         else if (value instanceof IRI) {
-            URI uriValue = URI.create(value.stringValue());
-
-            //all local URIs should be handled (and indexed) relatively
-            uriValue = RdfTools.relativizeToLocalDomain(uriValue);
+            //all local URIs should be handled (and indexed) relatively (outside URIs will be left untouched by this method)
+            URI uriValue = RdfTools.relativizeToLocalDomain(URI.create(value.stringValue()));
 
             RdfQueryEndpoint endpoint = property.getDataType().getEndpoint();
             if (endpoint != null) {
                 ResourceInfo resourceValue = endpoint.getResource(property, uriValue, language);
                 if (resourceValue != null) {
-                    indexer.indexStringField(fieldName, (String) (retVal = resourceValue.getLabel()));
+                    String val = resourceValue.getResourceUri().toString();
+                    indexer.indexConstantField(fieldName, val);
+                    //makes sense to also index the string value (mainly because it's also added to the _all field; see DeepPageIndexEntry*)
+                    String valStr = resourceValue.getLabel();
+                    indexer.indexStringField(fieldName, valStr);
+                    retVal = new RdfIndexer.IndexResult(val, valStr);
                 }
                 else {
                     throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '"+subject+"' because it's resource endpoint returned null");
@@ -113,7 +130,9 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
             }
             else {
                 //not all URIs have an endpoint (eg an <img> tag)
-                indexer.indexConstantField(fieldName, (String) (retVal = uriValue.toString()));
+                String val = uriValue.toString();
+                indexer.indexConstantField(fieldName, val);
+                retVal = new RdfIndexer.IndexResult(val);
                 //throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '"+subject+"' because the property data type has no endpoint configured");
             }
         }
@@ -171,7 +190,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                 retVal = retVal;
             }
             else {
-                //TODO...
+                //TODO... maybe start with a try-parse of an URI and if that succeeds, lookup the Stirng value from the endpoint? Don't forget to sync with the method above though...
                 if (true) {
                     throw new IOException("Unimplemented data type; " + property.getDataType());
                 }

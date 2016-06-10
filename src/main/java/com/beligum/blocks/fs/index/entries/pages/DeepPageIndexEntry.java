@@ -2,10 +2,12 @@ package com.beligum.blocks.fs.index.entries.pages;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.RdfFactory;
+import com.beligum.blocks.fs.index.LucenePageIndexer;
 import com.beligum.blocks.fs.index.entries.RdfIndexer;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.utils.RdfTools;
+import com.google.common.base.Joiner;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
@@ -17,9 +19,10 @@ import org.openrdf.model.Statement;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
+
+import static com.beligum.blocks.fs.index.LucenePageIndexer.CUSTOM_FIELD_FIELDS;
+import static com.beligum.blocks.fs.index.LucenePageIndexer.DEFAULT_FIELD_JOINER;
 
 /**
  * Created by bram on 2/13/16.
@@ -27,15 +30,9 @@ import java.util.Map;
 public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndexer
 {
     //-----CONSTANTS-----
-    private static final String DEFAULT_FIELD_JOINER = " ";
-    private static final String CUSTOM_FIELD_PREFIX = "_";
-
-    //mimics the "_all" field of ElasticSearch
-    // see https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-all-field.html
-    public static final String CUSTOM_FIELD_ALL = CUSTOM_FIELD_PREFIX+"all";
-
     //interesting alternative guide if you ever need it: http://www.citrine.io/blog/2015/2/14/building-a-custom-analyzer-in-lucene
     private static Analyzer SORTFIELD_ANALYZER;
+
     static {
         try {
             /**
@@ -68,7 +65,10 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
 
         this.luceneDoc = super.createLuceneDoc();
 
-        Map<RdfProperty, String> sortValues = new LinkedHashMap<>();
+        //makes sense to eliminate double values for the sort list as well, I think
+        Map<RdfProperty, Set<String>> sortFieldMapping = new LinkedHashMap<>();
+        //no need to index double values, so let's use a set
+        Set<String> allField = new LinkedHashSet<>();
         Model rdfModel = page.readRdfModel();
         Iterator<Statement> stmtIter = rdfModel.iterator();
         while (stmtIter.hasNext()) {
@@ -78,14 +78,25 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
             if (predicateCurie != null) {
                 RdfProperty predicate = (RdfProperty) RdfFactory.getClassForResourceType(predicateCurie);
                 if (predicate != null) {
-                    Object value = predicate.indexValue(this, page.getPublicRelativeAddress(), stmt.getObject(), page.getLanguage());
 
-                    String valueStr = value.toString();
-                    //Lucene: only one value is allowed per field
-                    if (sortValues.containsKey(predicate)) {
-                        valueStr = sortValues.get(predicate) + DEFAULT_FIELD_JOINER + valueStr;
+                    RdfIndexer.IndexResult value = predicate.indexValue(this, page.getPublicRelativeAddress(), stmt.getObject(), page.getLanguage());
+
+                    String indexValueStr = value.indexValue.toString();
+                    //always index the raw (stringified) value...
+                    allField.add(indexValueStr);
+                    this.indexConstantField(LucenePageIndexer.CUSTOM_FIELD_ALL, indexValueStr);
+                    //...if the human-readable stringValue is different, index that one too
+                    if (!indexValueStr.equals(value.stringValue)) {
+                        allField.add(value.stringValue);
+                        this.indexStringField(LucenePageIndexer.CUSTOM_FIELD_ALL, value.stringValue);
                     }
-                    sortValues.put(predicate, valueStr);
+
+                    Set<String> sortField = sortFieldMapping.get(predicate);
+                    if (sortField == null) {
+                        sortFieldMapping.put(predicate, sortField = new LinkedHashSet<>());
+                    }
+                    //makes sense to sort on the human-readable value (eg. 'Belgium' instead of '/resource/Country/1938216')
+                    sortField.add(value.stringValue);
                 }
             }
         }
@@ -94,35 +105,30 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
         // see https://www.norconex.com/facets-with-lucene/
         //See this discussion for background on multivalues
         // see http://stackoverflow.com/questions/21002042/adding-a-multi-valued-string-field-to-a-lucene-document-do-commas-matter
-        StringBuilder sb = new StringBuilder();
-        for (Map.Entry<RdfProperty, String> e : sortValues.entrySet()) {
-            String value = e.getValue();
+        for (Map.Entry<RdfProperty, Set<String>> e : sortFieldMapping.entrySet()) {
 
-            //add a docValue for each (possibly joined values of) field so we can sort them
-            this.luceneDoc.add(new SortedDocValuesField(e.getKey().getCurieName().toString(), new BytesRef(preprocessSortValue(value))));
+            RdfProperty predicate = e.getKey();
+            String key = predicate.getCurieName().toString();
 
-            //we'll also concat all (stringified) values together to be able to do an "search all"
-            if (sb.length()>0) {
-                sb.append(DEFAULT_FIELD_JOINER);
+            //this will allow us to sort on this field
+            Set<String> sortField = sortFieldMapping.get(predicate);
+            if (sortField != null && !sortField.isEmpty()) {
+                String sortValue = preprocessSortValue(Joiner.on(LucenePageIndexer.DEFAULT_FIELD_JOINER).join(sortField));
+                this.luceneDoc.add(new SortedDocValuesField(key, new BytesRef(sortValue)));
             }
-            sb.append(value);
+
+            //index all field names so we can search for documents that do/don't have a certain field set
+            this.luceneDoc.add(new StringField(CUSTOM_FIELD_FIELDS, key, org.apache.lucene.document.Field.Store.NO));
         }
 
-        //index the all field
-        this.indexStringField(CUSTOM_FIELD_ALL, sb.toString());
+        //this will allow us to do a search-all query
+//        if (allField != null && !allField.isEmpty()) {
+//            String allValue = Joiner.on(LucenePageIndexer.DEFAULT_FIELD_JOINER).join(allField);
+//            this.indexStringField(LucenePageIndexer.CUSTOM_FIELD_ALL, allValue);
+//        }
     }
 
     //-----STATIC METHODS-----
-    public static String preprocessSearchValue(String value) throws IOException
-    {
-        String retVal = value;
-
-        if (value != null) {
-            //TODO
-        }
-
-        return retVal;
-    }
     //see https://mail-archives.apache.org/mod_mbox/lucene-solr-user/201507.mbox/%3CCALvb29w7A6TZVEtiYajDZBPGik8JjQd2tAyo2JTskVrR_JdsuQ@mail.gmail.com%3E
     // and https://examples.javacodegeeks.com/core-java/apache/lucene/lucene-indexing-example-2/
     public static String preprocessSortValue(String value) throws IOException

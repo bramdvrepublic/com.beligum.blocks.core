@@ -1,7 +1,17 @@
 package com.beligum.blocks.fs.index;
 
+import com.beligum.base.server.R;
+import com.beligum.base.utils.Logger;
+import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexer;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.IndexSearcher;
 
 import java.io.IOException;
 
@@ -22,6 +32,19 @@ import java.io.IOException;
 public class LucenePageIndexer implements PageIndexer
 {
     //-----CONSTANTS-----
+    public static final String DEFAULT_FIELD_JOINER = " ";
+
+    private static final String CUSTOM_FIELD_PREFIX = "_";
+    //mimics the "_all" field of ElasticSearch
+    // see https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-all-field.html
+    public static final String CUSTOM_FIELD_ALL = CUSTOM_FIELD_PREFIX+"all";
+    //keeps a list of all fields in this doc, to be able to search for non-existence of a field
+    public static final String CUSTOM_FIELD_FIELDS = CUSTOM_FIELD_PREFIX+"fields";
+
+    protected static final Analyzer STANDARD_ANALYZER = new StandardAnalyzer();
+    protected static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
+    protected static final Analyzer WHITESPACE_ANALYZER = new WhitespaceAnalyzer();
+    public static final Analyzer DEFAULT_ANALYZER = STANDARD_ANALYZER;
 
     //-----VARIABLES-----
 
@@ -39,15 +62,28 @@ public class LucenePageIndexer implements PageIndexer
     @Override
     public void shutdown()
     {
-        //TODO
-//        if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_READER)) {
-//            try (IndexReader reader = this.getLuceneIndexReader()) {
-//                reader.close();
-//            }
-//            catch (Exception e) {
-//                Logger.error("Exception caught while closing Lucene reader", e);
-//            }
-//        }
+        if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_SEARCHER)) {
+            IndexSearcher indexSearcher = (IndexSearcher) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_SEARCHER);
+            try (IndexReader indexReader = indexSearcher.getIndexReader()) {
+                indexReader.close();
+            }
+            catch (Exception e) {
+                Logger.error("Exception caught while closing Lucene reader", e);
+            }
+
+            R.cacheManager().getApplicationCache().remove(CacheKeys.LUCENE_INDEX_SEARCHER);
+        }
+
+        if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_WRITER)) {
+            try (IndexWriter indexWriter = (IndexWriter) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_WRITER)) {
+                indexWriter.close();
+            }
+            catch (Exception e) {
+                Logger.error("Exception caught while closing Lucene writer", e);
+            }
+
+            R.cacheManager().getApplicationCache().remove(CacheKeys.LUCENE_INDEX_WRITER);
+        }
     }
 
     //-----PROTECTED METHODS-----

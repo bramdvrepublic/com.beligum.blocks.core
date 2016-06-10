@@ -62,7 +62,7 @@ public class TemplateInstanceStackDirective extends Block
 
                 TemplateController controller = TemplateContextMap.getTemplateControllers().get(templateName);
                 if (controller != null) {
-                    //controller instances live for the duration of the entire request; make sure to reset them first
+                    //controller instances live for the duration of the entire request (per template name); make sure to reset them first
                     controller.resetConfig();
                     if (node.jjtGetNumChildren() > 2) {
                         for (int i = 2; i < node.jjtGetNumChildren(); i += 2) {

@@ -78,7 +78,7 @@ public class IndexSearchResult
     }
     public String getSearchDurationSeconds()
     {
-        return String.format("%.3f", searchDuration/1000.0f);
+        return searchDuration == null ? null : String.format("%.3f", searchDuration / 1000.0f);
     }
 
     //-----PROTECTED METHODS-----
