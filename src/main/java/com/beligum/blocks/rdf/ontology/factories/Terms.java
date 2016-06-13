@@ -184,25 +184,84 @@ public class Terms implements RdfResourceFactory
 
     //TODO integrate this in the blocks-text block
     public static final RdfProperty text = new RdfPropertyImpl("text",
+                                                               SettingsVocabulary.INSTANCE,
+                                                               ontology.Entries.propertyTitle_text,
+                                                               ontology.Entries.propertyLabel_text,
+                                                               RDF.HTML,
+                                                               InputType.Editor,
+                                                               null,
+                                                               new URI[] {
+                                                               },
+                                                               false);
+
+    //TODO integrate this in the ... (page?) block
+    public static final RdfProperty title = new RdfPropertyImpl("title",
                                                                 SettingsVocabulary.INSTANCE,
-                                                                ontology.Entries.propertyTitle_text,
-                                                                ontology.Entries.propertyLabel_text,
-                                                                RDF.HTML,
+                                                                ontology.Entries.propertyTitle_title,
+                                                                ontology.Entries.propertyLabel_title,
+                                                                XSD.STRING,
+                                                                InputType.InlineEditor,
+                                                                null,
+                                                                new URI[] {
+                                                                },
+                                                                false);
+
+    public static final RdfProperty description = new RdfPropertyImpl("description",
+                                                                SettingsVocabulary.INSTANCE,
+                                                                ontology.Entries.propertyTitle_description,
+                                                                ontology.Entries.propertyLabel_description,
+                                                                XSD.STRING,
                                                                 InputType.Editor,
                                                                 null,
                                                                 new URI[] {
                                                                 },
                                                                 false);
 
-    //TODO integrate this in the ... (page?) block
-    public static final RdfProperty title = new RdfPropertyImpl("title",
+    public static final RdfProperty type = new RdfPropertyImpl("type",
                                                                SettingsVocabulary.INSTANCE,
-                                                               ontology.Entries.propertyTitle_title,
-                                                               ontology.Entries.propertyLabel_title,
+                                                               ontology.Entries.propertyTitle_type,
+                                                               ontology.Entries.propertyLabel_type,
                                                                XSD.STRING,
+                                                               //TODO maybe a drop down instead?
                                                                InputType.InlineEditor,
                                                                null,
                                                                new URI[] {
+                                                                               DC.INSTANCE.resolve("type")
                                                                },
                                                                false);
+
+    public static final RdfProperty subject = new RdfPropertyImpl("subject",
+                                                                  SettingsVocabulary.INSTANCE,
+                                                                  ontology.Entries.propertyTitle_subject,
+                                                                  ontology.Entries.propertyLabel_subject,
+                                                                  XSD.ANY_URI,
+                                                                  InputType.Resource,
+                                                                  //TODO implement a general 'all' endpoint?
+                                                                  null,
+                                                                  new URI[] {
+                                                                                  DC.INSTANCE.resolve("subject")
+                                                                  },
+                                                                  false);
+
+    public static final RdfProperty software = new RdfPropertyImpl("software",
+                                                                   SettingsVocabulary.INSTANCE,
+                                                                   ontology.Entries.propertyTitle_software,
+                                                                   ontology.Entries.propertyLabel_software,
+                                                                   XSD.STRING,
+                                                                   InputType.InlineEditor,
+                                                                   null,
+                                                                   new URI[] {
+                                                                   },
+                                                                   false);
+
+    public static final RdfProperty softwareVersion = new RdfPropertyImpl("softwareVersion",
+                                                                   SettingsVocabulary.INSTANCE,
+                                                                   ontology.Entries.propertyTitle_softwareVersion,
+                                                                   ontology.Entries.propertyLabel_softwareVersion,
+                                                                   XSD.STRING,
+                                                                   InputType.InlineEditor,
+                                                                   null,
+                                                                   new URI[] {
+                                                                   },
+                                                                   false);
 }

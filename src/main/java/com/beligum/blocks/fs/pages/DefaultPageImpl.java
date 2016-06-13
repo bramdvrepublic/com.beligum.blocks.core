@@ -74,7 +74,7 @@ public abstract class DefaultPageImpl extends AbstractPage
     @Override
     public LogWriter createLogWriter() throws IOException
     {
-        return new RdfLogWriter(this.resourcePath.getFileContext());
+        return new RdfLogWriter(this.resourcePath);
     }
     @Override
     public MetadataWriter createMetadataWriter() throws IOException

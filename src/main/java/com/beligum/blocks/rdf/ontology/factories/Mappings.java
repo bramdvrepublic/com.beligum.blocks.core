@@ -15,5 +15,9 @@ public class Mappings implements RdfResourceFactory
                                                      Terms.name));
 
 
+        Classes.LogEntry.setProperties(Sets.newHashSet(Terms.createdAt,
+                                                     Terms.createdBy,
+                                                     Terms.name));
+
     }
 }

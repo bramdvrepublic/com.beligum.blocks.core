@@ -44,23 +44,26 @@ public abstract class AbstractHdfsLogWriter implements LogWriter
     }
 
     //-----PROTECTED METHODS-----
-    protected String buildSoftwareVersion() throws IOException
+    /**
+     * Returns an array of one (artifact) or two (artifact, version) entries
+     */
+    protected String[] buildSoftwareId() throws IOException
     {
-        String retVal = null;
-
         //this will return the maven package of the current module writing this metadata -> very useful
         CoreConfiguration.ProjectProperties properties = R.configuration().getCurrentProjectProperties();
         String artifactId = properties.getProperty(CoreConfiguration.ProjectProperties.Property.MAVEN_PROJECT_ARTIFACT_ID_KEY);
         String version = properties.getProperty(CoreConfiguration.ProjectProperties.Property.MAVEN_PROJECT_VERSION_KEY);
-        if (!StringUtils.isEmpty(artifactId) && !StringUtils.isEmpty(version)) {
-            retVal = artifactId+"-"+version;
+        if (StringUtils.isEmpty(artifactId)) {
+            throw new IOException("Encountered an empty mvn artifactId; that shouldn't happen; "+this.resourcePath);
         }
-        //that's not good, let's crash
         else {
-            throw new IOException("Encountered an empty mvn artifactId as well as an empty version; that shouldn't happen; "+this.resourcePath);
+            if (!StringUtils.isEmpty(version)) {
+                return new String[]{artifactId, version};
+            }
+            else {
+                return new String[]{artifactId};
+            }
         }
-
-        return retVal;
     }
 
     //-----PRIVATE METHODS-----

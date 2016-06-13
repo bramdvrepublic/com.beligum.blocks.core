@@ -24,7 +24,7 @@ import org.openrdf.model.Model;
 
 import java.io.*;
 import java.net.URI;
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.util.EnumSet;
 
 /**
@@ -77,7 +77,7 @@ public class SimplePageStore implements PageStore
 
             // Note: it makes sense to use the now timestamp because we're about to create a snapshot of the situation _now_
             // we can't really rely on other timestamps because which one should we take?
-            ZonedDateTime stamp = ZonedDateTime.now();
+            Instant stamp = Instant.now();
 
             //prepare the HTML for saving; this is the only place we can modify the source
             // because later on, the analyzer will have run
@@ -99,7 +99,7 @@ public class SimplePageStore implements PageStore
             if (fileContext.util().exists(hashFile)) {
                 try (FSDataInputStream is = fileContext.open(hashFile)) {
                     String existingHash = IOUtils.toString(is);
-                    nothingChanged = existingHash!=null && existingHash.equals(newHash);
+                    nothingChanged = existingHash != null && existingHash.equals(newHash);
                 }
             }
 
@@ -128,13 +128,15 @@ public class SimplePageStore implements PageStore
                 }
 
                 //save the original page html
-                try (Writer writer = new BufferedWriter(new OutputStreamWriter(fileContext.create(resourcePath.getLocalPath(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
+                try (Writer writer = new BufferedWriter(
+                                new OutputStreamWriter(fileContext.create(resourcePath.getLocalPath(), EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
                     writer.write(sourceHtml);
                 }
 
                 //save the normalized page html
                 Path normalizedHtml = newPage.getNormalizedPageProxyPath();
-                try (Writer writer = new BufferedWriter(new OutputStreamWriter(fileContext.create(normalizedHtml, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
+                try (Writer writer = new BufferedWriter(
+                                new OutputStreamWriter(fileContext.create(normalizedHtml, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())))) {
                     writer.write(source.getNormalizedHtml());
                 }
 
@@ -145,11 +147,7 @@ public class SimplePageStore implements PageStore
                     newPage.createExporter(newPage.getRdfExportFileFormat()).exportModel(rdfModel, os);
                 }
 
-                this.writeLogEntry(newPage, creator, stamp, existed ? PageLogEntry.Action.CREATE : PageLogEntry.Action.UPDATE);
-
-                try (OutputStream os = fileContext.create(resourcePath.getMetaLogFile(), EnumSet.of(CreateFlag.CREATE, CreateFlag.APPEND), Options.CreateOpts.createParent())) {
-                    os.write("<http://localhost:8080/en/> <http://www.w3.org/ns/rdfa#usesVocabulary> <http://www.mot.be/ontology/> . \n".getBytes());
-                }
+                this.writeLogEntry(newPage, creator, stamp, existed ? PageLogEntry.Action.UPDATE : PageLogEntry.Action.CREATE);
 
                 //save the page metadata (read it in if it exists)
                 this.writeMetadata(fileContext, resourcePath, creator, newPage.createMetadataWriter());
@@ -173,7 +171,7 @@ public class SimplePageStore implements PageStore
 
         try (LockFile lock = resourcePath.acquireLock()) {
 
-            ZonedDateTime stamp = ZonedDateTime.now();
+            Instant stamp = Instant.now();
 
             //make sure the path dirs exist
             //Note: this also works for dirs, since they're special files inside the actual dir
@@ -215,7 +213,7 @@ public class SimplePageStore implements PageStore
      * Very first simple try at creating a snapshot of the current pathInfo on disk, backed by the HDFS atomic rules.
      * Both the file and the meta directory are copied to a .snapshot sibling.
      * The wrapper around the resulting snapshot is returned.
-     *
+     * <p>
      * NOTE: this is not optimized in the light of:
      * - the new transactional-ness of the filesystem
      * - the fact we're gzipping the entire folder at the end
@@ -225,7 +223,7 @@ public class SimplePageStore implements PageStore
      * @return the successfully created history entry or null of something went wrong
      * @throws IOException
      */
-    private ResourcePath addHistoryEntry(FileContext fs, ResourcePath resourcePath, ZonedDateTime stamp) throws IOException
+    private ResourcePath addHistoryEntry(FileContext fs, ResourcePath resourcePath, Instant stamp) throws IOException
     {
         // first, we'll create a snapshot of the meta folder to a sibling folder. We can't copy it to it's final destination
         // because that is a subfolder of the folder we're copying and we'll encounter odd recursion.
@@ -279,7 +277,7 @@ public class SimplePageStore implements PageStore
 
         return success ? historyEntry : null;
     }
-    private void writeLogEntry(Page page, Person creator, ZonedDateTime stamp, PageLogEntry.Action action) throws IOException
+    private void writeLogEntry(Page page, Person creator, Instant stamp, PageLogEntry.Action action) throws IOException
     {
         try (LogWriter logWriter = page.createLogWriter()) {
             logWriter.writeLogEntry(new PageLogEntry(stamp, creator, page, action));

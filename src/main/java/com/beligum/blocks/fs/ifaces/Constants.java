@@ -1,5 +1,7 @@
 package com.beligum.blocks.fs.ifaces;
 
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
@@ -40,6 +42,8 @@ public interface Constants
     //org.elasticsearch.common.joda.time.format.DateTimeFormatter blah = ISODateTimeFormat.basicDateTime();
     //appendFractionOfSecond(3, 9).appendTimeZoneOffset("Z", false, 2, 2)
 
+    ZoneId FOLDER_TIMESTAMP_TIMEZONE = ZoneOffset.UTC;
+
     //interesting: http://blog.gmane.org/gmane.comp.java.joda-time.user/month=20091101
     DateTimeFormatter FOLDER_TIMESTAMP_FORMAT = new DateTimeFormatterBuilder().appendValue(ChronoField.YEAR, 4)
                                                                               .appendValue(ChronoField.MONTH_OF_YEAR, 2)
@@ -51,7 +55,9 @@ public interface Constants
                                                                               .appendLiteral('.')
                                                                               .appendValue(ChronoField.MILLI_OF_SECOND, 3)
                                                                               .appendPattern("XX")
-                                                                              .toFormatter();
+                                                                              .toFormatter()
+                                                                              //needed to avoid "Unsupported field: Year" exceptions when using Instants
+                                                                              .withZone(FOLDER_TIMESTAMP_TIMEZONE);
 
 
 //    //this should mimic the original ISODateTimeFormat.basicDateTime() the best...

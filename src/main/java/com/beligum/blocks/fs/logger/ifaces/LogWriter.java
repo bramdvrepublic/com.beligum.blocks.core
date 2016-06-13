@@ -4,7 +4,7 @@ import com.beligum.base.auth.models.Person;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.time.ZonedDateTime;
+import java.time.ZoneOffset;
 
 /**
  * Created by bram on 6/10/16.
@@ -30,7 +30,7 @@ public interface LogWriter extends AutoCloseable
     //-----INNER CLASSES-----
     interface Entry
     {
-        Instant getTimestamp();
+        Instant getUTCTimestamp();
         com.beligum.base.auth.models.Person getCreator();
     }
     abstract class AbstractEntry implements Entry
@@ -38,13 +38,14 @@ public interface LogWriter extends AutoCloseable
         private Instant timestamp;
         private Person creator;
 
-        protected AbstractEntry(ZonedDateTime timestamp, Person creator)
+        protected AbstractEntry(Instant timestamp, Person creator)
         {
-            this.timestamp = timestamp;
+            //we save all log entries relative to UTC time zone
+            this.timestamp = timestamp.atZone(ZoneOffset.UTC).toInstant();
             this.creator = creator;
         }
 
-        public Instant getTimestamp()
+        public Instant getUTCTimestamp()
         {
             return timestamp;
         }

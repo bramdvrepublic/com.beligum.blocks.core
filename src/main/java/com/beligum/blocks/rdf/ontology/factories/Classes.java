@@ -28,7 +28,7 @@ public class Classes implements RdfResourceFactory
     public static final RdfClass Person = new RdfClassImpl("Person",
                                                            SettingsVocabulary.INSTANCE,
                                                            ontology.Entries.classTitle_Person,
-                                                           ontology.Entries.classTitle_Person,
+                                                           ontology.Entries.classLabel_Person,
                                                            new URI[] { DBR.INSTANCE.resolve("Person"),
                                                                        SCHEMA.INSTANCE.resolve("Person"),
                                                                        FOAF.INSTANCE.resolve("Person")
@@ -40,7 +40,7 @@ public class Classes implements RdfResourceFactory
     public static final RdfClass Page = new RdfClassImpl("Page",
                                                          SettingsVocabulary.INSTANCE,
                                                          ontology.Entries.classTitle_Page,
-                                                         ontology.Entries.classTitle_Page,
+                                                         ontology.Entries.classLabel_Page,
                                                          new URI[] { DBR.INSTANCE.resolve("Web_page"),
                                                                      SCHEMA.INSTANCE.resolve("WebPage")
                                                          },
@@ -50,7 +50,7 @@ public class Classes implements RdfResourceFactory
     public static final RdfClass Country = new RdfClassImpl("Country",
                                                             SettingsVocabulary.INSTANCE,
                                                             ontology.Entries.classTitle_Country,
-                                                            ontology.Entries.classTitle_Country,
+                                                            ontology.Entries.classLabel_Country,
                                                             new URI[] { DBR.INSTANCE.resolve("Country"),
                                                                         SCHEMA.INSTANCE.resolve("Country")
                                                             },
@@ -61,13 +61,22 @@ public class Classes implements RdfResourceFactory
     public static final RdfClass City = new RdfClassImpl("City",
                                                          SettingsVocabulary.INSTANCE,
                                                          ontology.Entries.classTitle_City,
-                                                         ontology.Entries.classTitle_City,
+                                                         ontology.Entries.classLabel_City,
                                                          new URI[] { DBR.INSTANCE.resolve("City"),
                                                                      SCHEMA.INSTANCE.resolve("City")
                                                          },
                                                          //note: because we use a fixed-value ontology (geonames), we don't make this public (so users can select it as a type for their page)
                                                          false,
                                                          new GeonameQueryEndpoint(AbstractGeoname.Type.CITY));
+
+    public static final RdfClass LogEntry = new RdfClassImpl("LogEntry",
+                                                         SettingsVocabulary.INSTANCE,
+                                                         ontology.Entries.classTitle_LogEntry,
+                                                         ontology.Entries.classLabel_LogEntry,
+                                                         new URI[] { //RLOG Entry?
+                                                         },
+                                                         false,
+                                                         null);
 
     //-----CONFIGS-----
     public static final InputTypeConfig DEFAULT_PERSON_ENDPOINT_CONFIG = new InputTypeConfig(new String[][] {
