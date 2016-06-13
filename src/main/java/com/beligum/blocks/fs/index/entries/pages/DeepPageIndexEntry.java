@@ -82,14 +82,14 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
                     RdfIndexer.IndexResult value = predicate.indexValue(this, page.getPublicRelativeAddress(), stmt.getObject(), page.getLanguage());
 
                     String indexValueStr = value.indexValue.toString();
-                    //always index the raw (stringified) value...
+                    //we always index the raw (stringified) value...
                     allField.add(indexValueStr);
+                    //TODO: maybe we can omit this one?
                     this.indexConstantField(LucenePageIndexer.CUSTOM_FIELD_ALL, indexValueStr);
-                    //...if the human-readable stringValue is different, index that one too
-                    if (!indexValueStr.equals(value.stringValue)) {
-                        allField.add(value.stringValue);
-                        this.indexStringField(LucenePageIndexer.CUSTOM_FIELD_ALL, value.stringValue);
-                    }
+
+                    //also index it so we can search it lowercase, without punctuation, etc...
+                    allField.add(value.stringValue);
+                    this.indexStringField(LucenePageIndexer.CUSTOM_FIELD_ALL, value.stringValue);
 
                     Set<String> sortField = sortFieldMapping.get(predicate);
                     if (sortField == null) {

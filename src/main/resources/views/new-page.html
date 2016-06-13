@@ -1,6 +1,5 @@
 #define($body-html)
-    #constantsBlock("blocks.core")
-<div class="container $NEW_PAGE_CLASS">
+<div class="container $CONSTANTS.blocks.core.NEW_PAGE_CLASS">
     <div class="row">
         <div class="col-sm-12">
 
@@ -16,15 +15,15 @@
                         <i>$MESSAGES.blocks.core.noPageTemplatesAvailable</i>
                     #end
 
-                    #foreach($template in $CONTEXT[$NEW_PAGE_TEMPLATE_TEMPLATES])
-                        <a href="/blocks/admin/page/template?page_url=$TOOLKIT.esc.url($CONTEXT[$NEW_PAGE_TEMPLATE_URL])&page_class_name=$TOOLKIT.esc.url($template[$NEW_PAGE_TEMPLATE_NAME])" class="list-group-item">
+                    #foreach($template in $CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_TEMPLATES])
+                        <a href="/blocks/admin/page/template?page_url=$TOOLKIT.esc.url($CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_URL])&page_class_name=$TOOLKIT.esc.url($template[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_NAME])" class="list-group-item">
                             <div class="preview">
                                 <i class="fa fa-fw #if($template.icon)$template.icon#{else}fa-list-alt#end"></i>
                             </div>
                             <div class="caption">
-                                <h4>$template[$NEW_PAGE_TEMPLATE_TITLE]</h4>
+                                <h4>$template[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_TITLE]</h4>
                                 <p>
-                                    $template[$NEW_PAGE_TEMPLATE_DESCRIPTION]
+                                    $template[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_DESCRIPTION]
                                 </p>
                             </div>
                         </a>
@@ -34,7 +33,6 @@
         </div>
     </div>
 </div>
-#end
 #end
 
 #parse("/templates/main.html")
