@@ -9,6 +9,7 @@ import org.apache.hadoop.fs.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.file.FileVisitor;
 import java.security.SecureRandom;
 import java.util.EnumSet;
@@ -20,6 +21,7 @@ public class HdfsUtils
 {
     //-----CONSTANTS-----
     private static final SecureRandom random = new SecureRandom();
+    private static final URI ROOT = URI.create("/");
 
     //-----VARIABLES-----
 
@@ -53,7 +55,9 @@ public class HdfsUtils
     }
     /**
      * Basic implementation of a recursive, depth-first file visitor for HDFS paths,
-     * mimicing the Files.walkFileTree() of Java NIO
+     * mimicing the Files.walkFileTree() of Java NIO.
+     * Note: if using a chrooted fileSystem, callback files will be absolute (not relative to the fileSystem chroot)
+     *
      * @param fs the filesystem
      * @param folder the folder where to start
      * @param visitor the visitor implementation
@@ -62,9 +66,12 @@ public class HdfsUtils
     public static void walkFileTree(FileContext fs, Path folder, FileVisitor<Path> visitor) throws IOException
     {
         RemoteIterator<FileStatus> status = fs.listStatus(folder);
+
+        URI fsRoot = fs.resolvePath(new Path("/")).toUri();
         while (status.hasNext()) {
             FileStatus childStatus = status.next();
-            Path child = childStatus.getPath();
+            //this relativation is needed to be able to work with chrooted filesystems, because fs.listStatus() returns absolute file paths
+            Path child = new Path(ROOT.resolve(fsRoot.relativize(childStatus.getPath().toUri())));
             if (childStatus.isDirectory()) {
 
                 visitor.preVisitDirectory(child, new HadoopBasicFileAttributes(childStatus));
