@@ -1,17 +1,23 @@
 package com.beligum.blocks.fs;
 
 import com.beligum.base.utils.Logger;
+import com.beligum.base.utils.toolkit.FileFunctions;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.ifaces.Constants;
 import com.beligum.blocks.fs.ifaces.ResourcePath;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.fs.CreateFlag;
 import org.apache.hadoop.fs.FileContext;
+import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Path;
 import org.apache.tika.mime.MediaType;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
+import java.util.EnumSet;
 
 /**
  * Created by bram on 1/19/16.
@@ -32,6 +38,10 @@ public class HdfsResourcePath implements ResourcePath
     private org.apache.hadoop.fs.Path localPath;
     private org.apache.hadoop.fs.Path lockFile;
     private org.apache.hadoop.fs.Path metaFolder;
+
+    private MediaType cachedMimeType = null;
+    private Float cachedProgress = null;
+    private float progress;
 
     //-----CONSTRUCTORS-----
     public HdfsResourcePath(FileContext fileContext, URI localPath) throws IOException
@@ -74,6 +84,63 @@ public class HdfsResourcePath implements ResourcePath
     public Path getMetaLogFile()
     {
         return new Path(this.getMetaFolder(), Constants.META_SUBFILE_LOG);
+    }
+    @Override
+    public Path getMetaMimeFile()
+    {
+        return new Path(this.getMetaFolder(), Constants.META_SUBFILE_MIME);
+    }
+    @Override
+    public MediaType getMimeType()
+    {
+        if (this.cachedMimeType == null) {
+
+            Path storedMimeFile = this.getMetaMimeFile();
+            boolean newlyDetected = false;
+            try {
+                if (this.fileContext.util().exists(storedMimeFile)) {
+                    String content = HdfsUtils.readFile(this.fileContext, storedMimeFile);
+                    if (!StringUtils.isEmpty(content)) {
+                        this.cachedMimeType = MediaType.parse(content);
+                    }
+                }
+
+                if (this.cachedMimeType == null) {
+                    String mimeType = null;
+                    try (InputStream is = this.fileContext.open(this.localPath)) {
+                        mimeType = FileFunctions.getMimeType(is, this.localPath.getName());
+                        newlyDetected = true;
+                    }
+
+                    if (!StringUtils.isEmpty(mimeType)) {
+                        this.cachedMimeType = MediaType.parse(mimeType);
+                    }
+
+                    //we choose to never return null
+                    if (this.cachedMimeType == null) {
+                        this.cachedMimeType = MediaType.OCTET_STREAM;
+                    }
+                }
+            }
+            catch (IOException e) {
+                Logger.error("Caught exception while reading the stored mime type file contents of " + this.getLocalPath(), e);
+            }
+            finally {
+                if (this.cachedMimeType != null) {
+                    //store the mime type to a cache file for quick future detection
+                    if (newlyDetected) {
+                        try (OutputStream os = fileContext.create(storedMimeFile, EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE), Options.CreateOpts.createParent())) {
+                            org.apache.commons.io.IOUtils.write(this.cachedMimeType.toString(), os);
+                        }
+                        catch (Exception e) {
+                            Logger.error("Error while saving mime type '" + this.cachedMimeType + "' to cache file; this shouldn't happen; " + this.getLocalPath(), e);
+                        }
+                    }
+                }
+            }
+        }
+
+        return this.cachedMimeType;
     }
     @Override
     public Path getMetaHistoryFolder()

@@ -29,6 +29,7 @@ public interface Constants
 
     String META_SUBFILE_HASH = "HASH";
     String META_SUBFILE_LOG = "LOG";
+    String META_SUBFILE_MIME = "MIME";
     //String META_SUBFILE_LOCK = "LOCK";
     //String META_SUBFILE_ERROR = "ERROR";
 

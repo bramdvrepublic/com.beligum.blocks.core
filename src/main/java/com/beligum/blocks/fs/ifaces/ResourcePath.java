@@ -29,6 +29,8 @@ public interface ResourcePath
     Path getMetaFolder();
     Path getMetaHashFile();
     Path getMetaLogFile();
+    Path getMetaMimeFile();
+    MediaType getMimeType();
     Path getMetaHistoryFolder();
     Path getMetaMonitorFolder();
     Path getMetaProxyFolder();
