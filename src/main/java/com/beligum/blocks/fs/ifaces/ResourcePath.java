@@ -37,7 +37,7 @@ public interface ResourcePath
     Path getMetaProxyFolder(MediaType mimeType);
     Path getMetaMetadataFolder();
     String getMetaHashChecksum();
-    String calcHashChecksum() throws IOException;
+    String calcChecksumHash() throws IOException;
     LockFile acquireLock() throws IOException;
     boolean isLocked() throws IOException;
     void releaseLockFile(LockFile lock) throws IOException;

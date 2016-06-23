@@ -5,7 +5,6 @@ import com.beligum.base.utils.toolkit.FileFunctions;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.ifaces.Constants;
 import com.beligum.blocks.fs.ifaces.ResourcePath;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.CreateFlag;
 import org.apache.hadoop.fs.FileContext;
@@ -18,6 +17,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.EnumSet;
+import java.util.zip.Adler32;
 
 /**
  * Created by bram on 1/19/16.
@@ -192,13 +192,13 @@ public class HdfsResourcePath implements ResourcePath
         return retVal;
     }
     /**
-     * Calculates the SHA-1 checksum of the contents of the supplied path
+     * Calculates the Adler32 checksum of the contents of the supplied path
      *
      * @return
      * @throws IOException
      */
     @Override
-    public String calcHashChecksum() throws IOException
+    public String calcChecksumHash() throws IOException
     {
         String retVal = null;
 
@@ -288,8 +288,9 @@ public class HdfsResourcePath implements ResourcePath
     //-----UTILITY METHODS-----
     public static String calcHashChecksumFor(InputStream is) throws IOException
     {
-        //System.out.println(Base64.class.getProtectionDomain().getCodeSource().getLocation());
-        return DigestUtils.sha1Hex(is);
+        //we want speed, not security (think large media files!)
+        return calcAdler32Checksum(is);
+        //return DigestUtils.sha1Hex(is);
     }
 
     //-----PROTECTED METHODS-----
@@ -304,6 +305,27 @@ public class HdfsResourcePath implements ResourcePath
     }
 
     //-----PRIVATE METHODS-----
+    /**
+     * Note: we're not responsible for closing the stream
+     */
+    private static String calcAdler32Checksum(InputStream is) throws IOException
+    {
+        Adler32 checksum = new Adler32();
+        byte[] buffer = new byte[4096];
+
+        while (true) {
+            int length = is.read(buffer);
+
+            if (length < 0) {
+                break;
+            }
+
+            checksum.update(buffer, 0, length);
+        }
+
+        // Reduces it down to just 32 bits which we express in hex.
+        return Long.toHexString(checksum.getValue());
+    }
 
     //-----MANAGEMENT METHODS-----
     public static Path createLockPath(Path path)
