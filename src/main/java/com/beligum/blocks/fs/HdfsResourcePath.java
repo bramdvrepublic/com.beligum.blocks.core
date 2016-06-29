@@ -5,6 +5,7 @@ import com.beligum.base.utils.toolkit.FileFunctions;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.ifaces.Constants;
 import com.beligum.blocks.fs.ifaces.ResourcePath;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.CreateFlag;
 import org.apache.hadoop.fs.FileContext;
@@ -289,7 +290,8 @@ public class HdfsResourcePath implements ResourcePath
     public static String calcHashChecksumFor(InputStream is) throws IOException
     {
         //we want speed, not security (think large media files!)
-        return calcAdler32Checksum(is);
+        //return calcAdler32Checksum(is);
+        return DigestUtils.md5Hex(is);
         //return DigestUtils.sha1Hex(is);
     }
 
@@ -330,7 +332,14 @@ public class HdfsResourcePath implements ResourcePath
     //-----MANAGEMENT METHODS-----
     public static Path createLockPath(Path path)
     {
-        return new Path(path.getParent(), LOCK_FILE_PREFIX + path.getName() + Settings.instance().getPagesLockFileExtension());
+        Path retVal = null;
+
+        Path parent = path.getParent();
+        if (parent!=null) {
+            retVal = new Path(parent, LOCK_FILE_PREFIX + path.getName() + Settings.instance().getPagesLockFileExtension());
+        }
+
+        return retVal;
     }
     @Override
     public String toString()
