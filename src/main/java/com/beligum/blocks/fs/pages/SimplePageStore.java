@@ -55,7 +55,7 @@ public class SimplePageStore implements PageStore
     {
         Path pagesRoot = new Path(settings.getPagesStorePath());
         FileContext fs = StorageFactory.getPageStoreFileSystem();
-        if (fs.util().exists(pagesRoot)) {
+        if (fs.util().exists(pagesRoot) && settings.getDeleteLocksOnStartup()) {
             HdfsUtils.recursiveDeleteLockFiles(fs, pagesRoot);
         }
     }

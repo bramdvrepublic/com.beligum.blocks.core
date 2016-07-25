@@ -104,8 +104,6 @@ public class RdfLogWriter extends AbstractHdfsLogWriter
         if (software.length>1) {
             this.logStatement(entryId, Terms.softwareVersion, software[1]);
         }
-
-        rdfWriter.handleComment(StringUtils.repeat('-', startComment.length()));
     }
     @Override
     public void close() throws IOException

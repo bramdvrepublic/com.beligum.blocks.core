@@ -20,6 +20,17 @@ public class Terms implements RdfResourceFactory
     private static final int AUTOCOMPLETE_MAX_RESULTS = 10;
 
     //-----ENTRIES-----
+    public static final RdfProperty identifier = new RdfPropertyImpl("identifier",
+                                                                     SettingsVocabulary.INSTANCE,
+                                                                     ontology.Entries.propertyTitle_identifier,
+                                                                     ontology.Entries.propertyLabel_identifier,
+                                                                     XSD.STRING,
+                                                                     InputType.InlineEditor,
+                                                                     null,
+                                                                     new URI[] { DC.INSTANCE.resolve("identifier")
+                                                                     },
+                                                                     true);
+
     public static final RdfProperty givenName = new RdfPropertyImpl("givenName",
                                                                     SettingsVocabulary.INSTANCE,
                                                                     ontology.Entries.propertyTitle_givenName,
@@ -53,6 +64,17 @@ public class Terms implements RdfResourceFactory
                                                                null,
                                                                new URI[] { FOAF.INSTANCE.resolve("name"),
                                                                            VCARD.INSTANCE.resolve("fn")
+                                                               },
+                                                               true);
+
+    public static final RdfProperty role = new RdfPropertyImpl("role",
+                                                               SettingsVocabulary.INSTANCE,
+                                                               ontology.Entries.propertyTitle_role,
+                                                               ontology.Entries.propertyLabel_role,
+                                                               XSD.STRING,
+                                                               InputType.InlineEditor,
+                                                               null,
+                                                               new URI[] { VCARD.INSTANCE.resolve("role")
                                                                },
                                                                true);
 
@@ -207,15 +229,15 @@ public class Terms implements RdfResourceFactory
                                                                 false);
 
     public static final RdfProperty description = new RdfPropertyImpl("description",
-                                                                SettingsVocabulary.INSTANCE,
-                                                                ontology.Entries.propertyTitle_description,
-                                                                ontology.Entries.propertyLabel_description,
-                                                                XSD.STRING,
-                                                                InputType.Editor,
-                                                                null,
-                                                                new URI[] {
-                                                                },
-                                                                false);
+                                                                      SettingsVocabulary.INSTANCE,
+                                                                      ontology.Entries.propertyTitle_description,
+                                                                      ontology.Entries.propertyLabel_description,
+                                                                      XSD.STRING,
+                                                                      InputType.Editor,
+                                                                      null,
+                                                                      new URI[] {
+                                                                      },
+                                                                      false);
 
     public static final RdfProperty type = new RdfPropertyImpl("type",
                                                                SettingsVocabulary.INSTANCE,
@@ -255,13 +277,47 @@ public class Terms implements RdfResourceFactory
                                                                    false);
 
     public static final RdfProperty softwareVersion = new RdfPropertyImpl("softwareVersion",
+                                                                          SettingsVocabulary.INSTANCE,
+                                                                          ontology.Entries.propertyTitle_softwareVersion,
+                                                                          ontology.Entries.propertyLabel_softwareVersion,
+                                                                          XSD.STRING,
+                                                                          InputType.InlineEditor,
+                                                                          null,
+                                                                          new URI[] {
+                                                                          },
+                                                                          false);
+
+    public static final RdfProperty language = new RdfPropertyImpl("language",
                                                                    SettingsVocabulary.INSTANCE,
-                                                                   ontology.Entries.propertyTitle_softwareVersion,
-                                                                   ontology.Entries.propertyLabel_softwareVersion,
-                                                                   XSD.STRING,
+                                                                   ontology.Entries.propertyTitle_language,
+                                                                   ontology.Entries.propertyLabel_language,
+                                                                   XSD.LANGUAGE,
+                                                                   //TODO maybe a drop down instead?
                                                                    InputType.InlineEditor,
                                                                    null,
-                                                                   new URI[] {
+                                                                   new URI[] { DC.INSTANCE.resolve("language")
                                                                    },
-                                                                   false);
+                                                                   true);
+
+    public static final RdfProperty file = new RdfPropertyImpl("file",
+                                                               SettingsVocabulary.INSTANCE,
+                                                               ontology.Entries.propertyTitle_file,
+                                                               ontology.Entries.propertyLabel_file,
+                                                               XSD.ANY_URI,
+                                                               InputType.Uri,
+                                                               null,
+                                                               new URI[] {
+                                                               },
+                                                               false);
+
+    public static final RdfProperty organization = new RdfPropertyImpl("organization",
+                                                                       SettingsVocabulary.INSTANCE,
+                                                                       ontology.Entries.propertyTitle_organization,
+                                                                       ontology.Entries.propertyLabel_organization,
+                                                                       Classes.Organization,
+                                                                       InputType.Resource,
+                                                                       DEFAULT_ORGANIZATION_ENDPOINT_CONFIG,
+                                                                       new URI[] {
+                                                                       },
+                                                                       false);
 }

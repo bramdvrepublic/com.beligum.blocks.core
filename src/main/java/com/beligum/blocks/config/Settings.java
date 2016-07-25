@@ -98,6 +98,10 @@ public class Settings
 
         return this.cachedTransactionsProperties;
     }
+    public boolean getDeleteLocksOnStartup()
+    {
+        return R.configuration().getBoolean("blocks.core.pages.delete-locks-on-startup", true);
+    }
     public URI getPagesStorePath()
     {
         if (this.cachedPagesStorePath == null) {

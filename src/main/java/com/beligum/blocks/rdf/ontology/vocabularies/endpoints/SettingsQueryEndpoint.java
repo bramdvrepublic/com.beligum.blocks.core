@@ -155,10 +155,10 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
     {
         int retVal = 1;
 
-        if (entry.getLanguage().equals(requestLanguage)) {
+        if (entry.getLanguage().equals(requestLanguage.getLanguage())) {
             retVal = 3;
         }
-        else if (entry.getLanguage().equals(R.configuration().getDefaultLanguage())) {
+        else if (entry.getLanguage().equals(R.configuration().getDefaultLanguage().getLanguage())) {
             retVal = 2;
         }
 

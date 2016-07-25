@@ -9,8 +9,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 
 import java.io.IOException;
@@ -22,8 +20,10 @@ import java.util.Set;
  * <p>
  * Created by bram on 2/26/16.
  */
-@JsonSerialize(using = RdfClass._JsonSerializer.class)
-@JsonDeserialize(using = RdfClass._JsonDeserializer.class)
+//don't really remember why we used custom de/serializing, but had to disable it
+//because the JS-side relies on the metadata in this object
+//@JsonSerialize(using = RdfClass._JsonSerializer.class)
+//@JsonDeserialize(using = RdfClass._JsonDeserializer.class)
 public interface RdfClass extends RdfResource
 {
     /**
@@ -80,6 +80,7 @@ public interface RdfClass extends RdfResource
      * Optional (can be null) list of other ontology URIs that describe the same concept of the class described by this class.
      * Eg. http://dbpedia.org/page/Water_well
      */
+    @JsonIgnore
     URI[] getIsSameAs();
 
     /**

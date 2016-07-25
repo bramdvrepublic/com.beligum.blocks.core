@@ -74,7 +74,8 @@ public class RdfEndpoint
     @Path("/resources/")
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
-    public Response getResources(@QueryParam("resourceTypeCurie") URI resourceTypeCurie, @QueryParam("maxResults") int maxResults, @QueryParam("query") String query, @QueryParam("prefixSearch") @DefaultValue("true") boolean prefixSearch) throws IOException
+    //Note: the "query" parameter needs to be last, because the JS side just appends the query string to this URL
+    public Response getResources(@QueryParam("resourceTypeCurie") URI resourceTypeCurie, @QueryParam("maxResults") int maxResults, @QueryParam("prefixSearch") @DefaultValue("true") boolean prefixSearch, /* keep this last */@QueryParam("query") String query) throws IOException
     {
         List<AutocompleteSuggestion> retVal = new ArrayList<>();
 

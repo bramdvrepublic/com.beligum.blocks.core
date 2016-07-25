@@ -79,9 +79,9 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
     {
         var getClazz = function (clazz)
         {
-            var regex = new RegExp('\\b' + clazz + '\\d+');
-            regex.global = true;
-            regex.ignoreCase = true;
+            //g: global
+            //i: ignore case
+            var regex = new RegExp('\\b' + clazz + '\\d+', 'gi');
             var widths = element[0].className.match(regex, '');
             if (widths != null && widths.length > 0) {
                 var nr = widths[0].substring(7, widths[0].length);
@@ -112,6 +112,7 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
     {
         // TODO Wouter: This should change with screen width
         return "col-md-";
+
         var colClass = null;
         var docWidth = $(document).width();
         for (var i = 0; i < DOM.COLUMN_WIDTH_CLASS.length; i++) {
@@ -155,6 +156,8 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
     {
         var tcolumns = element.children();
         var columns = [];
+        var oldColumnWidths = [];
+        var newColIdx = -1;
 
         // Check if current distribution of columns is incorrect
         // Total width of all columns must be 12
@@ -162,50 +165,111 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
         for (var i = 0; i < tcolumns.length; i++) {
             var col = $(tcolumns[i]);
             if (DOM.isColumn(col)) {
-                totalWidth += DOM.getColumnWidth($(tcolumns[i]));
+                var colWidth = DOM.getColumnWidth(col);
+                totalWidth += colWidth;
                 columns.push(col);
+                oldColumnWidths.push(colWidth);
+                if (col.hasClass(BlocksConstants.NEW_BLOCK_CLASS)) {
+                    newColIdx = columns.length - 1;
+                    //cleanup
+                    col.removeClass(BlocksConstants.NEW_BLOCK_CLASS);
+                }
             }
         }
+
         if (totalWidth == DOM.MAX_COLUMNS) {
             callback();
-            return;
         }
+        else {
 
-        var columnCount = columns.length;
-        var columnsWidth = {};
-        var ratio = DOM.MAX_COLUMNS / totalWidth;
-        var newTotalWidth = 0;
-        for (var i = 0; i < columnCount; i++) {
-            columnsWidth[i] = Math.round(DOM.getColumnWidth($(columns[i])) * ratio);
-            if (columnsWidth[i] < 1) {
-                columnsWidth[i] = 1;
-            }
-            newTotalWidth += columnsWidth[i];
-        }
-        var diff = DOM.MAX_COLUMNS - newTotalWidth;
+            //if we end up here, it means we dropped a new column in a row and the row became too wide
+            //instead of solving it by re-distributing all columns in that row (affecting the overall layout way too much),
+            //we choose to 'find' the column that's too wide, scale the column to it's left down by one (except when the column if the leftmost)
+            //and rescale the new column to size 1
 
-        var index = 0;
-        var doSetColumnWidth = function ()
-        {
-            if (index < columnCount) {
-                if (diff < 0 && columnsWidth[index] > 1) {
-                    diff += 1;
-                    columnsWidth[index] -= 1;
-                } else if (diff > 0) {
-                    diff -= 1;
-                    columnsWidth[index] += 1;
+            var USE_OLD_ALGO = false;
+
+            var columnCount = columns.length;
+            var columnsWidth = {};
+            var newTotalWidth = 0;
+            if (USE_OLD_ALGO) {
+                var ratio = DOM.MAX_COLUMNS / totalWidth;
+                for (var i = 0; i < columnCount; i++) {
+                    columnsWidth[i] = Math.round(DOM.getColumnWidth($(columns[i])) * ratio);
+                    if (columnsWidth[i] < 1) {
+                        columnsWidth[i] = 1;
+                    }
+                    newTotalWidth += columnsWidth[i];
                 }
-                DOM.setColumnWidth($(columns[index]), columnsWidth[index], 50, function ()
-                {
-                    index += 1;
-                    doSetColumnWidth();
-                });
-
-            } else {
-                callback();
             }
-        };
-        doSetColumnWidth();
+            else {
+                //a column was removed from a row: since we don't really know where, we'll let the right-most column (because we generally assume the leftmost columns to be the most important in western regions) grow to it's full size
+                if (totalWidth < DOM.MAX_COLUMNS) {
+                    var allButRight = 0;
+                    for (var i = 0; i < columnCount - 1; i++) {
+                        columnsWidth[i] = oldColumnWidths[i];
+                        allButRight += columnsWidth[i];
+                    }
+                    columnsWidth[columnCount - 1] = DOM.MAX_COLUMNS - allButRight;
+                }
+                //a new col was added to a row: detect which one, make some room by resizing it's neightbour and fit it in
+                else {
+                    var allButNew = 0;
+                    for (var i = 0; i < columnCount; i++) {
+                        columnsWidth[i] = oldColumnWidths[i];
+
+                        if (i != newColIdx) {
+                            allButNew += columnsWidth[i];
+                        }
+                    }
+
+                    //will only trigger if we inserted a new column in a row (not if we moved the order of the cols in the same row)
+                    if (newColIdx != -1) {
+                        //if there's room left, squeeze in the new col
+                        if (allButNew < DOM.MAX_COLUMNS) {
+                            columnsWidth[newColIdx] = DOM.MAX_COLUMNS - allButNew;
+                        }
+                        //if not, make some room by resizing a neighbour
+                        else {
+                            columnsWidth[newColIdx] = 1;
+                            //if the new column is the first one, resize it's right col, otherwise it's left
+                            var neighbour = newColIdx == 0 ? 1 : -1;
+                            columnsWidth[newColIdx + neighbour] = columnsWidth[newColIdx + neighbour] - 1;
+                        }
+                    }
+                }
+
+                //should always be 12, right?
+                newTotalWidth = 0;
+                for (var i = 0; i < columnCount; i++) {
+                    newTotalWidth += columnsWidth[i];
+                }
+            }
+
+            var diff = DOM.MAX_COLUMNS - newTotalWidth;
+            var index = 0;
+            var doSetColumnWidth = function ()
+            {
+                if (index < columnCount) {
+                    if (diff < 0 && columnsWidth[index] > 1) {
+                        diff += 1;
+                        columnsWidth[index] -= 1;
+                    } else if (diff > 0) {
+                        diff -= 1;
+                        columnsWidth[index] += 1;
+                    }
+                    DOM.setColumnWidth($(columns[index]), columnsWidth[index], 50, function ()
+                    {
+                        index += 1;
+                        doSetColumnWidth();
+                    });
+
+                } else {
+                    callback();
+                }
+            };
+            doSetColumnWidth();
+        }
     };
 
     /**
@@ -320,7 +384,7 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
         };
 
         if (element.children().length == 0) {
-            element.toggle(150, function ()
+            element.toggle(50, function ()
             {
                 var parent = element.parent();
                 element.remove();
@@ -395,12 +459,12 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
      */
     this.createRow = function ()
     {
-        return $("<div class='" + BlocksConstants.ROW_CLASS + "'></div>")
+        return $('<div class="' + BlocksConstants.ROW_CLASS + '"></div>');
     };
 
     this.createColumn = function (columnWidth)
     {
-        return $("<div class='" + this.getColumnClass() + columnWidth + "'></div>");
+        return $('<div class="' + this.getColumnClass() + columnWidth + ' ' + BlocksConstants.NEW_BLOCK_CLASS + '"></div>');
     };
 
     this.wrapBlockInColumn = function (blockElement, columnWidth)
@@ -564,7 +628,7 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
             else if (execAsap)
                 func.apply(obj, args);
 
-            timeout = setTimeout(delayed, threshold || 100);
+            timeout = setTimeout(delayed, threshold || 50);
         };
     };
 

@@ -22,7 +22,7 @@ import java.net.URI;
 public class Classes implements RdfResourceFactory
 {
     //-----CONSTANTS-----
-    private static final int AUTOCOMPLETE_MAX_RESULTS = 10;
+    public static final int AUTOCOMPLETE_MAX_RESULTS = 10;
 
     //-----ENTRIES-----
     public static final RdfClass Person = new RdfClassImpl("Person",
@@ -32,6 +32,18 @@ public class Classes implements RdfResourceFactory
                                                            new URI[] { DBR.INSTANCE.resolve("Person"),
                                                                        SCHEMA.INSTANCE.resolve("Person"),
                                                                        FOAF.INSTANCE.resolve("Person")
+                                                           },
+                                                           true,
+                                                           new SettingsQueryEndpoint()
+    );
+
+    public static final RdfClass Organization = new RdfClassImpl("Organization",
+                                                           SettingsVocabulary.INSTANCE,
+                                                           ontology.Entries.classTitle_Organization,
+                                                           ontology.Entries.classLabel_Organization,
+                                                           new URI[] { DBR.INSTANCE.resolve("Organization"),
+                                                                       SCHEMA.INSTANCE.resolve("Organization"),
+                                                                       FOAF.INSTANCE.resolve("Organization")
                                                            },
                                                            true,
                                                            new SettingsQueryEndpoint()
@@ -82,7 +94,7 @@ public class Classes implements RdfResourceFactory
     public static final InputTypeConfig DEFAULT_PERSON_ENDPOINT_CONFIG = new InputTypeConfig(new String[][] {
                     { core.Entries.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT.getValue(),
                       gen.com.beligum.blocks.endpoints.RdfEndpointRoutes
-                                      .getResources(Classes.Person.getCurieName(), AUTOCOMPLETE_MAX_RESULTS, "", true).getAbsoluteUrl()
+                                      .getResources(Classes.Person.getCurieName(), AUTOCOMPLETE_MAX_RESULTS, true, "").getAbsoluteUrl()
                     },
                     { core.Entries.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT.getValue(),
                       gen.com.beligum.blocks.endpoints.RdfEndpointRoutes
@@ -92,11 +104,23 @@ public class Classes implements RdfResourceFactory
                     }
     });
 
+    public static final InputTypeConfig DEFAULT_ORGANIZATION_ENDPOINT_CONFIG = new InputTypeConfig(new String[][] {
+                    { core.Entries.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT.getValue(),
+                      gen.com.beligum.blocks.endpoints.RdfEndpointRoutes
+                                      .getResources(Classes.Organization.getCurieName(), AUTOCOMPLETE_MAX_RESULTS, true, "").getAbsoluteUrl()
+                    },
+                    { core.Entries.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT.getValue(),
+                      gen.com.beligum.blocks.endpoints.RdfEndpointRoutes
+                                      .getResource(Classes.Organization.getCurieName(), URI.create("")).getAbsoluteUrl()
+                    },
+                    { core.Entries.INPUT_TYPE_CONFIG_RESOURCE_MAXRESULTS.getValue(), "" + AUTOCOMPLETE_MAX_RESULTS
+                    }
+    });
+
     public static final InputTypeConfig DEFAULT_CITY_ENDPOINT_CONFIG = new InputTypeConfig(new String[][] {
                     { core.Entries.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT.getValue(),
                       gen.com.beligum.blocks.endpoints.RdfEndpointRoutes
-                                      .getResources(Classes.City.getCurieName(), AUTOCOMPLETE_MAX_RESULTS,
-                                                    "", true).getAbsoluteUrl()
+                                      .getResources(Classes.City.getCurieName(), AUTOCOMPLETE_MAX_RESULTS, true, "").getAbsoluteUrl()
                     },
                     { core.Entries.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT.getValue(),
                       gen.com.beligum.blocks.endpoints.RdfEndpointRoutes
@@ -110,8 +134,7 @@ public class Classes implements RdfResourceFactory
     public static final InputTypeConfig DEFAULT_COUNTRY_ENDPOINT_CONFIG = new InputTypeConfig(new String[][] {
                     { core.Entries.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT.getValue(),
                       gen.com.beligum.blocks.endpoints.RdfEndpointRoutes
-                                      .getResources(Classes.Country.getCurieName(), AUTOCOMPLETE_MAX_RESULTS,
-                                                    "", true).getAbsoluteUrl()
+                                      .getResources(Classes.Country.getCurieName(), AUTOCOMPLETE_MAX_RESULTS, true, "").getAbsoluteUrl()
                     },
                     { core.Entries.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT.getValue(),
                       gen.com.beligum.blocks.endpoints.RdfEndpointRoutes

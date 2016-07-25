@@ -64,7 +64,8 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
                                        //I think the default is "population", which seems to be more natural
                                        // (better to find a large, more-or-less-good match, than to find the very specific wrong match)
                                        //can be any of [population,elevation,relevance]
-                                       .queryParam("orderby", "population")
+                                       //Note: reverted to relevance (inspired by eg. Tielt-Winge, who kept on suggesting Houwaart because it has a higher population)
+                                       .queryParam("orderby", "relevance")
                                        .queryParam("type", "json");
 
         //from the Geoname docs: needs to be query encoded (but builder.queryParam() does that for us, so don't encode twice!)!

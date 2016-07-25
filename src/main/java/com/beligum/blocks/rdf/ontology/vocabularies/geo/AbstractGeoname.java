@@ -23,12 +23,32 @@ public abstract class AbstractGeoname
         COUNTRY(new String[] { "A" }, new String[] { "PCLI" }, GeonameCountrySuggestion.class),
 
         //Note: see the Geonames ontology mapping for these values:
+        // http://www.geonames.org/export/codes.html
         // http://www.geonames.org/ontology/mappings_v3.01.rdf
         // Especially, we want this value to match the OWL restrictions that map to http://schema.org/City
         CITY(new String[] { "P" }, new String[] {
+                        //populated place
                         "PPL",
-                        //for one reason of the other (eg. London), capitals aren't found that easily...
-                        "PPLC"
+                        //seat of a first-order administrative division
+                        "PPLA",
+                        //seat of a second-order administrative division
+                        "PPLA2",
+                        //seat of a third-order administrative division
+                        "PPLA3",
+                        //seat of a fourth-order administrative division
+                        "PPLA4",
+                        //capital of a political entity
+                        "PPLC",
+                        //farm village; a populated place where the population is largely engaged in agricultural activities
+                        "PPLF",
+                        //seat of government of a political entity
+                        "PPLG",
+                        //populated locality; an area similar to a locality but with a small group of dwellings or other buildings
+                        "PPLL",
+                        //populated places; cities, towns, villages, or other agglomerations of buildings where people live and work
+                        "PPLS",
+                        //section of populated place
+                        "PPLX"
         }, GeonameCitySuggestion.class);
 
         public String[] featureClasses;
