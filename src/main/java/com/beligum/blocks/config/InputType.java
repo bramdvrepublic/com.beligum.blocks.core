@@ -18,6 +18,7 @@ public enum InputType
     Undefined(core.Entries.INPUT_TYPE_UNDEFINED),
     Editor(core.Entries.INPUT_TYPE_EDITOR),
     InlineEditor(core.Entries.INPUT_TYPE_INLINE_EDITOR),
+    Enum(core.Entries.INPUT_TYPE_ENUM),
     Boolean(core.Entries.INPUT_TYPE_BOOLEAN),
     Number(core.Entries.INPUT_TYPE_NUMBER),
     Date(core.Entries.INPUT_TYPE_DATE),

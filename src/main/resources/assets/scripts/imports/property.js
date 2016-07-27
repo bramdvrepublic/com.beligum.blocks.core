@@ -57,10 +57,11 @@ base.plugin("blocks.imports.Property", ["base.core.Class", "blocks.imports.Widge
             var wrapLink = $('<a ' + LINK_PROP_ATTR + '="' + elementProperty + '"></a>');
 
             //TODO those two are a little bit ugly, but it works...
+            var _this = this;
             var addInputForm = function ()
             {
                 var link = element.parent(LINK_SELECTOR);
-                var linkInputAction = this.addValueAttribute(Sidebar, link, null, "Paste or type a link", "href", false, true, true);
+                var linkInputAction = _this.addValueAttribute(Sidebar, link, null, "Paste or type a link", "href", false, true, true);
                 retVal.append(linkInputAction);
                 retVal.addClass('active');
             };

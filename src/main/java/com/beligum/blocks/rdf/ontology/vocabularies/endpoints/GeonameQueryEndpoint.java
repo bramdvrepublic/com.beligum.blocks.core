@@ -131,35 +131,37 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
     {
         GeonameResourceInfo retVal = null;
 
-        ClientConfig config = new ClientConfig();
-        Client httpClient = ClientBuilder.newClient(config);
-        UriBuilder builder = UriBuilder.fromUri("http://api.geonames.org/get")
-                                       .queryParam("username", this.username)
-                                       //we pass only the id, not the entire URI
-                                       .queryParam("geonameId", RdfTools.extractResourceId(resourceId))
-                                       //when we query, we query for a lot
-                                       .queryParam("style", "FULL")
-                                       .queryParam("type", "json");
+        if (resourceId!=null && !resourceId.toString().isEmpty()) {
+            ClientConfig config = new ClientConfig();
+            Client httpClient = ClientBuilder.newClient(config);
+            UriBuilder builder = UriBuilder.fromUri("http://api.geonames.org/get")
+                                           .queryParam("username", this.username)
+                                           //we pass only the id, not the entire URI
+                                           .queryParam("geonameId", RdfTools.extractResourceId(resourceId))
+                                           //when we query, we query for a lot
+                                           .queryParam("style", "FULL")
+                                           .queryParam("type", "json");
 
-        if (language != null) {
-            builder.queryParam("lang", language.getLanguage());
-        }
+            if (language != null) {
+                builder.queryParam("lang", language.getLanguage());
+            }
 
-        URI target = builder.build();
-        Response response = httpClient.target(target).request(MediaType.APPLICATION_JSON).get();
-        if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+            URI target = builder.build();
+            Response response = httpClient.target(target).request(MediaType.APPLICATION_JSON).get();
+            if (response.getStatus() == Response.Status.OK.getStatusCode()) {
 
-            InjectableValues inject = new InjectableValues.Std().addValue(AbstractGeoname.RESOURCE_TYPE_INJECTABLE, resourceType.getCurieName());
-            ObjectReader reader = XML.getObjectMapper().readerFor(GeonameResourceInfo.class).with(inject);
+                InjectableValues inject = new InjectableValues.Std().addValue(AbstractGeoname.RESOURCE_TYPE_INJECTABLE, resourceType.getCurieName());
+                ObjectReader reader = XML.getObjectMapper().readerFor(GeonameResourceInfo.class).with(inject);
 
-            //note: the Geonames '/get' endpoint is XML only!
-            retVal = reader.readValue(response.readEntity(String.class));
+                //note: the Geonames '/get' endpoint is XML only!
+                retVal = reader.readValue(response.readEntity(String.class));
 
-            //API doesn't seem to return this -> set it manually
-            retVal.setLanguage(language);
-        }
-        else {
-            throw new IOException("Error status returned while searching for geonames id '" + resourceId + "'; " + response);
+                //API doesn't seem to return this -> set it manually
+                retVal.setLanguage(language);
+            }
+            else {
+                throw new IOException("Error status returned while searching for geonames id '" + resourceId + "'; " + response);
+            }
         }
 
         return retVal;

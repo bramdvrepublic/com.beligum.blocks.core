@@ -1,5 +1,5 @@
 /*
- * Allows editing of an image when youy click on it
+ * Allows editing of an image when you click on it
  * */
 base.plugin("blocks.imports.Image", ["base.core.Class", "blocks.imports.Property", "constants.blocks.core", "messages.blocks.core", "blocks.core.Sidebar", function (Class, Property, BlocksConstants, BlocksMessages, Sidebar)
 {

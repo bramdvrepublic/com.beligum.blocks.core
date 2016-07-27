@@ -171,7 +171,7 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
                 oldColumnWidths.push(colWidth);
                 if (col.hasClass(BlocksConstants.NEW_BLOCK_CLASS)) {
                     newColIdx = columns.length - 1;
-                    //cleanup
+                    //this is added in layout.js on drop
                     col.removeClass(BlocksConstants.NEW_BLOCK_CLASS);
                 }
             }
@@ -187,6 +187,7 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
             //we choose to 'find' the column that's too wide, scale the column to it's left down by one (except when the column if the leftmost)
             //and rescale the new column to size 1
 
+            //old algo spreads all columns across the row, but it's too intrusive
             var USE_OLD_ALGO = false;
 
             var columnCount = columns.length;
@@ -464,7 +465,7 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
 
     this.createColumn = function (columnWidth)
     {
-        return $('<div class="' + this.getColumnClass() + columnWidth + ' ' + BlocksConstants.NEW_BLOCK_CLASS + '"></div>');
+        return $('<div class="' + this.getColumnClass() + columnWidth + '"></div>');
     };
 
     this.wrapBlockInColumn = function (blockElement, columnWidth)

@@ -39,6 +39,11 @@ public interface RdfProperty extends RdfClass
     InputTypeConfig getWidgetConfig();
 
     /**
+     * A map of key/value entries that contain specific settings for the input widget type
+     */
+    void setWidgetConfig(InputTypeConfig config);
+
+    /**
      * This method gets called when this property is indexed by our custom (currently only Lucene) indexer.
      * It should call the right method on the indexer to index the property value as closely as possible.
      * @return the value-object as it was indexed

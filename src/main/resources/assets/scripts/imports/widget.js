@@ -366,13 +366,23 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 }]
             );
 
+            //this extracts the unique id from the dropdown (to have a unique ID later on, see _termMappings)
+            //our dropdown consists of a button with an id, so that's what we're looking for (a button with a non-empty id attr)
+            var comboId = retVal.find('button:not([id=""])').attr('id');
+
             var _this = this;
             $.getJSON(valuesEndpoint)
                 .done(function (data)
                 {
                     //initialize a private variable that will hold mappings between the data objects from the server
                     // and the keys in the combobox
-                    _this._termMappings = {};
+                    //Note that we need to make this unique by using the combobox ID because we can have multiple comboboxes in one widget
+                    if (!_this._termMappings) {
+                        _this._termMappings = {};
+                    }
+                    if (!_this._termMappings[comboId]) {
+                        _this._termMappings[comboId] = {};
+                    }
 
                     var comboEntries = [];
                     $.each(data, function (idx, entry)
@@ -383,7 +393,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                         });
 
                         //save the object in a mapping structure for later
-                        _this._termMappings[entry[valueProperty]] = entry;
+                        _this._termMappings[comboId][entry[valueProperty]] = entry;
                     });
 
                     //sort the combobox entries on name
@@ -422,8 +432,8 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                         },
                         function changeCallback(oldValue, newValue)
                         {
-                            var oldValueTerm = _this._termMappings[oldValue];
-                            var newValueTerm = _this._termMappings[newValue];
+                            var oldValueTerm = _this._termMappings[comboId][oldValue];
+                            var newValueTerm = _this._termMappings[comboId][newValue];
 
                             element.removeAttr(attribute);
 

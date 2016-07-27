@@ -115,12 +115,12 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                     var skipHtmlChange = false;
                     if (
                         propElement.hasAttribute(PROPERTY_ATTR) && propElement.attr(PROPERTY_ATTR) == newValueTerm[TERM_NAME_FIELD] &&
-                            // Since we abandoned the use of @typeof, we abandoned this sub-check as well; seems to be working fine.
-                            //(
-                            //    //we either need a datatype (for literals) or a typeof (for references)
-                            //    (propElement.hasAttribute(DATATYPE_ATTR) && propElement.attr(DATATYPE_ATTR) == newValueTerm.dataType[TERM_NAME_FIELD]) ||
-                            //    (propElement.hasAttribute(TYPEOF_ATTR) && propElement.attr(TYPEOF_ATTR) == newValueTerm.dataType[TERM_NAME_FIELD])
-                            //) &&
+                        // Since we abandoned the use of @typeof, we abandoned this sub-check as well; seems to be working fine.
+                        //(
+                        //    //we either need a datatype (for literals) or a typeof (for references)
+                        //    (propElement.hasAttribute(DATATYPE_ATTR) && propElement.attr(DATATYPE_ATTR) == newValueTerm.dataType[TERM_NAME_FIELD]) ||
+                        //    (propElement.hasAttribute(TYPEOF_ATTR) && propElement.attr(TYPEOF_ATTR) == newValueTerm.dataType[TERM_NAME_FIELD])
+                        //) &&
                         propElement.hasClass(newValueTerm.widgetType)
                     ) {
                         //we can't return straight away because we need to initialize the extra controls in the sidebar
@@ -244,7 +244,8 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                                         propElement.html(newValue);
                                     }
                                     else {
-                                        propElement.removeAttr(CONTENT_ATTR);
+                                        //don't remove the attr, set it to empty (or the help text in the HTML will end up as the value)
+                                        propElement.attr(CONTENT_ATTR, '');
                                         propElement.html(defaultValue);
                                     }
                                 },
@@ -293,14 +294,83 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                                         propElement.html('<div class="' + BlocksConstants.INPUT_TYPE_COLOR_VALUE_CLASS + '" style="background-color: ' + newValue + '"></div>');
                                     }
                                     else {
-                                        propElement.removeAttr(CONTENT_ATTR);
+                                        //don't remove the attr, set it to empty (or the help text in the HTML will end up as the value)
+                                        propElement.attr(CONTENT_ATTR, '');
                                         propElement.html(defaultValue);
                                     }
                                 },
                                 null,
                                 null));
                             break;
+
+                        case BlocksConstants.INPUT_TYPE_ENUM:
+
+                            var defaultValue = '<p><i>Please select a combobox value in the sidebar</i></p>';
+                            var endpointURL = newValueTerm.widgetConfig[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT];
+
+                            var changeListener = function (oldValueTerm, newValueTerm)
+                            {
+                                if (newValueTerm && newValueTerm.title != '') {
+                                    //since the defaultValue is wrapped in <p> and enums are always (?) xsd:strings, we uniformly wrap the values with <p>
+                                    propElement.html('<p>' + newValueTerm.title + '</p>');
+                                }
+                                else {
+                                    propElement.html(defaultValue);
+                                }
+                            };
+
+                            //we'll use the name of the property as the label (capitalized)
+                            var label = newValueTerm.label.charAt(0).toUpperCase() + newValueTerm.label.slice(1);
+                            combobox.after(_this.addUniqueAttributeValueAsync(Sidebar, propElement, label, CONTENT_ATTR, endpointURL, "title", "title", changeListener));
+                            //call it once to set the default value
+                            changeListener();
+                            break;
+
+                        case BlocksConstants.INPUT_TYPE_URI:
+
+                            var defaultValue = '<p><i>Please enter a URI in the sidebar</i></p>';
+
+                            // We need to also add the hyperlink href as a property-value, because when we wrap the <a> tag with a <div property=""> tag,
+                            // the content of the property tag (eg. the entire <a> tag) gets serialized by the RDFa parser as a I18N-string, using the human readable
+                            // text of the hyperlink as a value (instead of using the href value and serializing it as a URI). This is because the property attribute is set on the
+                            // wrapping <div> instead of on the <a> tag.
+                            //Note: from the RDFa docs: "@content is used to indicate the value of a plain literal", and since it's a URI, we add it as a resource value
+                            var currentUri = propElement.attr(RESOURCE_ATTR);
+                            var inputActions = _this.buildInputActions(Sidebar, true, false, currentUri);
+                            var inputbox = _this.createTextInput(Sidebar,
+                                function getterFunction()
+                                {
+                                    return propElement.attr(RESOURCE_ATTR);
+                                },
+                                function setterFunction(val)
+                                {
+                                    if (val && val != '') {
+
+                                        //detect an absolute URL
+                                        //see http://stackoverflow.com/questions/10687099/how-to-test-if-a-url-string-is-absolute-or-relative
+                                        var absRegex = new RegExp('^(?:[a-z]+:)?//', 'i');
+                                        var isAbsolute = absRegex.test(val);
+
+                                        propElement.attr(RESOURCE_ATTR, val);
+                                        //for now, we just use the URI as the link name...
+                                        var linkName = val;
+                                        propElement.html('<a href="' + val + '"'+(isAbsolute?' target="_blank"':'')+'>'+linkName+'</a>');
+                                    }
+                                    else {
+                                        //don't remove the attr, set it to empty (or the help text in the HTML will end up as the value)
+                                        propElement.attr(RESOURCE_ATTR, '');
+                                        propElement.html(defaultValue);
+                                    }
+                                },
+                                "URI", "Paste or type a link", false, inputActions
+                            );
+
+                            combobox.after(inputbox);
+
+                            break;
+
                         case BlocksConstants.INPUT_TYPE_RESOURCE:
+
                             var defaultValue = '<p><i>Please search for a resource in the sidebar</i></p>';
                             combobox.after(_this._createAutocompleteWidget(block, propElement, RESOURCE_ATTR, newValueTerm.widgetType, newValueTerm.widgetConfig, 'Resource', defaultValue,
                                 //Note: this function receives the entire object as it was returned from the server endpoint (class AutocompleteSuggestion)
@@ -338,7 +408,8 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                                         }
                                     }
                                     else {
-                                        propElement.removeAttr(RESOURCE_ATTR);
+                                        //don't remove the attr, set it to empty (or the help text in the HTML will end up as the value)
+                                        propElement.attr(RESOURCE_ATTR, '');
                                         propElement.html(defaultValue);
                                     }
                                 }));
@@ -476,7 +547,6 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                         prepare: function (query, settings)
                         {
                             settings.url = settings.url + encodeURIComponent(query);
-
                             return settings;
                         },
                     },
@@ -520,8 +590,8 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
 
             var firstValue = propElement.attr(contentAttr);
 
-            //if the html widget is uninitialized, try to set it to a default value
-            if (typeof firstValue === typeof undefined) {
+            //if the html widget is uninitialized or empty (because we empty it while resetting), try to set it to a default value
+            if (typeof firstValue === typeof undefined || firstValue === '') {
                 //initial value may be 0 or '', so check of type
                 if (typeof initialValue !== typeof undefined) {
                     //signal the setter function to reset the tag
@@ -602,7 +672,7 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
 
                 //Set the user-friendly HTML
                 var timezoneHtml = '';
-                if (_this._timezoneFormat!=null) {
+                if (_this._timezoneFormat != null) {
                     var timezone = val.format(_this._timezoneFormat);
                     var timezoneInnerHtml = null;
                     if (val.utcOffset() == 0) {
@@ -624,7 +694,8 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                 propElement.attr(BlocksConstants.INPUT_TYPE_TIME_GMT_ATTR, _this._gmtSelected ? BOOLEAN_ATTR_TRUE : BOOLEAN_ATTR_FALSE);
             }
             else {
-                propElement.removeAttr(CONTENT_ATTR);
+                //don't remove the attr, set it to empty (or the help text in the HTML will end up as the value)
+                propElement.attr(CONTENT_ATTR, '');
                 propElement.html(defaultValue);
             }
         },

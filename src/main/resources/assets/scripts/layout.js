@@ -14,7 +14,7 @@
  * DO_REFRESH_LAYOUT is for when the we have to rebuild the layout tree, but the dom did not change (e.g. window resize)
  * DOM_DID CHANGE is for ... well, ...
  */
-base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.core.internal", "blocks.core.Hover", "blocks.core.DomManipulation", function (Broadcaster, Constants, Hover, DOM)
+base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.core.internal", "constants.blocks.core", "blocks.core.Hover", "blocks.core.DomManipulation", function (Broadcaster, Constants, BlocksConstants, Hover, DOM)
 {
     var Layouter = this;
 
@@ -171,9 +171,12 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.
         dropLocationElement = dropOnFunctions[dropString](droppedElement, dropLocationElement);
         droppedElement = droppedFunctions[droppedString](droppedElement, dropLocationElement);
 
+        var HIDE_DURATION = 100;
+        var SHOW_DURATION = 200;
+
         var finish = function ()
         {
-            droppedElement.toggle(200, function (event)
+            droppedElement.toggle(SHOW_DURATION, function (event)
             {
                 droppedElement.css("display", "");
                 Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, event);
@@ -185,9 +188,13 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.
             });
         };
 
-        droppedElement.toggle(200, function ()
+        droppedElement.toggle(HIDE_DURATION, function ()
         {
             droppedElement.hide();
+
+            //this will be cleaned in the DOM.cleanup() below
+            droppedElement.addClass(BlocksConstants.NEW_BLOCK_CLASS);
+
             DOM.appendElement(droppedElement, dropLocationElement, side, function ()
             {
                 if (droppedContainer == null || droppedContainer == dropContainer) {

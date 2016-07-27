@@ -3,6 +3,7 @@ package com.beligum.blocks.rdf.ontology;
 import com.beligum.base.filesystem.MessagesFileEntry;
 import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.InputTypeConfig;
+import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.fs.index.entries.RdfIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
@@ -56,7 +57,20 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
                            URI[] isSameAs,
                            boolean isPublic)
     {
-        super(name, vocabulary, title, label, isSameAs, isPublic, null);
+        this(name, vocabulary, title, label, dataType, widgetType, widgetArgs, isSameAs, isPublic, null);
+    }
+    public RdfPropertyImpl(String name,
+                           RdfVocabulary vocabulary,
+                           MessagesFileEntry title,
+                           MessagesFileEntry label,
+                           RdfClass dataType,
+                           InputType widgetType,
+                           InputTypeConfig widgetArgs,
+                           URI[] isSameAs,
+                           boolean isPublic,
+                           RdfQueryEndpoint queryEndpoint)
+    {
+        super(name, vocabulary, title, label, isSameAs, isPublic, queryEndpoint);
 
         this.widgetType = widgetType;
         //make it uniform; no nulls
@@ -82,6 +96,11 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
     public InputTypeConfig getWidgetConfig()
     {
         return widgetArgs;
+    }
+    @Override
+    public void setWidgetConfig(InputTypeConfig config)
+    {
+        this.widgetArgs = config;
     }
     @Override
     public RdfIndexer.IndexResult indexValue(RdfIndexer indexer, URI subject, Value value, Locale language) throws IOException
