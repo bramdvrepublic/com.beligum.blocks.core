@@ -44,7 +44,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
 
         String fieldName = property.getCurieName().toString();
 
-        if (value instanceof Literal) {
+        if (value instanceof Literal && !property.getDataType().equals(XSD.ANY_URI)) {
             Literal objLiteral = (Literal) value;
 
             //Note: for an overview possible values, check com.beligum.blocks.config.InputType
@@ -109,7 +109,7 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                 throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '"+subject+"' because the property type is unimplemented; "+property.getDataType());
             }
         }
-        else if (value instanceof IRI) {
+        else if (value instanceof IRI || property.getDataType().equals(XSD.ANY_URI)) {
             //all local URIs should be handled (and indexed) relatively (outside URIs will be left untouched by this method)
             URI uriValue = RdfTools.relativizeToLocalDomain(URI.create(value.stringValue()));
 

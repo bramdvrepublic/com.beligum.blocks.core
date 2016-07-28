@@ -42,9 +42,9 @@ public class RequestTransactionFilter implements ContainerResponseFilter
                     try {
                         tx.commit();
                     }
-                    catch (Exception xaae) {
+                    catch (Exception e) {
                         try {
-                            Logger.warn("Caught exception while committing a file system transaction, trying to rollback...", xaae);
+                            Logger.warn("Caught exception while committing a file system transaction, trying to rollback...", e);
                             tx.rollback();
                         }
                         catch (Exception e1) {

@@ -150,7 +150,8 @@ public class SimplePageStore implements PageStore
                 this.writeLogEntry(newPage, creator, stamp, existed ? PageLogEntry.Action.UPDATE : PageLogEntry.Action.CREATE);
 
                 //save the page metadata (read it in if it exists)
-                this.writeMetadata(fileContext, resourcePath, creator, newPage.createMetadataWriter());
+                //Note: disabled and more or less replaced by the writeLogEntry() above because it was too error prone on crashes
+                //this.writeMetadata(fileContext, resourcePath, creator, newPage.createMetadataWriter());
 
                 retVal = newPage;
             }

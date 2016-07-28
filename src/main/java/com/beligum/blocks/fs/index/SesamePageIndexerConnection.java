@@ -55,7 +55,6 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
 
     //-----VARIABLES-----
     private SailRepositoryConnection connection;
-    private boolean transactional;
     private FetchPageMethod fetchPageMethod;
     private ExecutorService fetchPageExecutor;
 
@@ -69,7 +68,6 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
             throw new IOException("Error occurred while booting sesame page indexer transaction", e);
         }
 
-        this.transactional = false;
         this.fetchPageMethod = FetchPageMethod.SINGLE_TERM_QUERY;
 
         //we'll fetch the single lucene results in a separate thread
@@ -118,6 +116,8 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     public void delete(Page page) throws IOException
     {
         this.assertTransaction();
+
+        //TODO tricky stuff, what do we delete?
     }
     @Override
     public void update(Page page) throws IOException
@@ -312,14 +312,14 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     protected void begin() throws IOException
     {
-        if (this.transactional && this.connection != null) {
+        if (this.connection != null) {
             this.connection.begin();
         }
     }
     @Override
     protected void prepareCommit() throws IOException
     {
-        if (this.transactional && this.connection != null) {
+        if (this.connection != null) {
             //Note: see connection.commit() for the nitty-gritty of where I got this from
             this.connection.getSailConnection().flush();
             this.connection.getSailConnection().prepare();
@@ -328,14 +328,14 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     protected void commit() throws IOException
     {
-        if (this.transactional && this.connection != null) {
+        if (this.connection != null) {
             this.connection.getSailConnection().commit();
         }
     }
     @Override
     protected void rollback() throws IOException
     {
-        if (this.transactional && this.connection != null) {
+        if (this.connection != null) {
             this.connection.getSailConnection().rollback();
         }
     }
@@ -359,11 +359,8 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     //-----PRIVATE METHODS-----
     private void assertTransaction() throws IOException
     {
-        if (!this.transactional) {
-            //attach this connection to the transaction manager
-            StorageFactory.getCurrentRequestTx().registerResource(this);
-            this.transactional = true;
-        }
+        //attach this connection to the transaction manager
+        StorageFactory.getCurrentRequestTx().registerResource(this);
     }
     private URI toUri(Value value, boolean tryLocalRdfCurie, boolean tryLocalDomain)
     {

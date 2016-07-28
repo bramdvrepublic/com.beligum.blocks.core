@@ -320,4 +320,15 @@ public class Terms implements RdfResourceFactory
                                                                        new URI[] {
                                                                        },
                                                                        false);
+
+    public static final RdfProperty sameAs = new RdfPropertyImpl("sameAs",
+                                                                 SettingsVocabulary.INSTANCE,
+                                                                 ontology.Entries.propertyTitle_sameAs,
+                                                                 ontology.Entries.propertyLabel_sameAs,
+                                                                 XSD.ANY_URI,
+                                                                 InputType.InlineEditor,
+                                                                 null,
+                                                                 new URI[] { OWL.SAMEAS.getFullName()
+                                                                 },
+                                                                 false);
 }
