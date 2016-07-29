@@ -106,7 +106,8 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
 
         //keep supplied values within reasonable bounds
         //note that MAX_SEARCH_RESULTS should always be larger than pageSize -> verify it here and adjust if needed
-        int validPageSize = Math.min(pageSize, MAX_SEARCH_RESULTS);
+        //also note we can use a negative pageSize to 'disable' fixed sizing
+        int validPageSize = pageSize < 0 ? MAX_SEARCH_RESULTS : Math.min(pageSize, MAX_SEARCH_RESULTS);
         int validMaxResults = Math.max(pageSize, MAX_SEARCH_RESULTS);
         int validPageOffset = pageOffset < 0 ? 0 : (pageOffset * validPageSize > validMaxResults ? (int) Math.floor(validMaxResults / validPageSize) : pageOffset);
 

@@ -1,5 +1,6 @@
 package com.beligum.blocks.rdf.ifaces;
 
+import com.beligum.base.filesystem.MessagesFileEntry;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.fs.index.entries.resources.ResourceIndexer;
@@ -65,6 +66,13 @@ public interface RdfClass extends RdfResource
     String getTitle();
 
     /**
+     * The human readable describing phrase for this class, to be used to build admin-side selection lists etc.
+     * This is a more low-level (eg. API) accessor to this value, so know what you're doing.
+     */
+    @JsonIgnore
+    MessagesFileEntry getTitleMessage();
+
+    /**
      * The human readable describing phrase for this class, to be used in public HTML pages as a describing label next to the value of this class.
      * This is the admin-side of this value; returns the key to this resource bundle
      */
@@ -75,6 +83,13 @@ public interface RdfClass extends RdfResource
      * Eg. Water well
      */
     String getLabel();
+
+    /**
+     * The human readable describing phrase for this class, to be used in public HTML pages as a describing label next to the value of this class.
+     * This is a more low-level (eg. API) accessor to this value, so know what you're doing.
+     */
+    @JsonIgnore
+    MessagesFileEntry getLabelMessage();
 
     /**
      * Optional (can be null) list of other ontology URIs that describe the same concept of the class described by this class.

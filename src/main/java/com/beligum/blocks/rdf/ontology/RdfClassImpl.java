@@ -112,6 +112,11 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
         return I18nFactory.instance().getResourceBundle(I18nFactory.instance().getOptimalRefererLocale()).get(title);
     }
     @Override
+    public MessagesFileEntry getTitleMessage()
+    {
+        return title;
+    }
+    @Override
     public String getLabelKey()
     {
         return label.getCanonicalKey();
@@ -121,6 +126,11 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     {
         //Note: we can't return the regular optimal locale, because this will probably be called from an admin endpoint
         return I18nFactory.instance().getResourceBundle(I18nFactory.instance().getOptimalRefererLocale()).get(label);
+    }
+    @Override
+    public MessagesFileEntry getLabelMessage()
+    {
+        return label;
     }
     @Override
     public URI[] getIsSameAs()

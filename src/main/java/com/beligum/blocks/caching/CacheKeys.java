@@ -66,5 +66,7 @@ public enum CacheKeys implements CacheKey
     //Application cache key that maps vocabulary prefixes to full length vocabulary namespace URIs
     RDF_VOCABULARY_PREFIXES,
     //Application cache key that keeps a map to the discovered Rdf vocabularies-entries (classes and properties)
-    RDF_VOCABULARY_ENTRIES
+    RDF_VOCABULARY_ENTRIES,
+    //Application cache key that caches the most recent results to not bombard the geonames server
+    GEONAMES_CACHED_RESULTS,
 }

@@ -1,5 +1,6 @@
 package com.beligum.blocks.config;
 
+import ch.qos.logback.classic.Level;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
@@ -21,6 +22,7 @@ import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.FsConstants;
 import org.apache.hadoop.fs.local.RawLocalFs;
+import org.slf4j.LoggerFactory;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystem;
 import org.xadisk.bridge.proxies.interfaces.XAFileSystemProxy;
 import org.xadisk.bridge.proxies.interfaces.XASession;
@@ -104,6 +106,20 @@ public class StorageFactory
                 }
 
                 TransactionManager transactionManager = Settings.instance().getTransactionManagerClass().newInstance();
+
+                //tweak the log level if we're using atomikos
+                if (transactionManager.getClass().getCanonicalName().contains("atomikos")) {
+                    ch.qos.logback.classic.Logger atomikosLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("com.atomikos");
+                    if (atomikosLogger!=null) {
+                        //Atomikos info level is way too verbose; shut it down and switch to (default) WARN
+                        if (R.configuration().getLogConfig().getLogLevel().equals(Level.INFO)) {
+                            atomikosLogger.setLevel(Level.WARN);
+                        }
+                    }
+                    else {
+                        throw new IOException("Error while configuring Atomikos logger; couldn't find the logger");
+                    }
+                }
 
                 R.cacheManager().getApplicationCache().put(CacheKeys.TRANSACTION_MANAGER, transactionManager);
             }

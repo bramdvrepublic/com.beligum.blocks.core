@@ -2,6 +2,7 @@ package com.beligum.blocks.config;
 
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.lang3.StringUtils;
 
@@ -10,7 +11,9 @@ import java.io.File;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by bas on 08.10.14.
@@ -20,6 +23,7 @@ public class Settings
     private static final String TRANSACTIONS_PROPERTIES_KEY = "blocks.core.transactions.properties.property";
     private static final String PAGES_HDFS_PROPERTIES_KEY = "blocks.core.pages.hdfs.properties.property";
     private static final String ELASTIC_SEARCH_PROPERTIES_KEY = "blocks.core.elastic-search.properties.property";
+    private static final String TRANSACTION_MANAGER_KEY = "blocks.core.transactions.transaction-manager";
 
     private static final String DEFAULT_FILE_EXT = ".html";
     private static final String DEFAULT_LOCK_FILE_EXT = ".lock";
@@ -27,6 +31,11 @@ public class Settings
     private static final String DEFAULT_XADISK_INSTANCE_ID = "xa-1";
     private static final long DEFAULT_XADISK_BOOT_TIMEOUT = 60 * 1000; //1 minute
     private static final String DEFAULT_GEONAMES_USERNAME = "demo";
+    private static final String DEFAULT_TRANSACTION_MANAGER = "com.atomikos.icatch.jta.UserTransactionManager";
+    //https://www.atomikos.com/Documentation/JtaProperties
+    private static final Map<String, String> DEFAULT_TRANSACTION_MANAGER_PROPS = ImmutableMap.<String, String>builder()
+                    .put("com.atomikos.icatch.force_shutdown_on_vm_exit", "true")
+                    .build();
 
     private static Settings instance;
     private URI cachedRdfOntologyUri;
@@ -73,7 +82,7 @@ public class Settings
     public Class<? extends TransactionManager> getTransactionManagerClass()
     {
         if (this.cachedTransactionManagerClass == null) {
-            String classname = R.configuration().getString("blocks.core.transactions.transaction-manager", "com.atomikos.icatch.jta.UserTransactionManager");
+            String classname = R.configuration().getString(TRANSACTION_MANAGER_KEY, DEFAULT_TRANSACTION_MANAGER);
             try {
                 this.cachedTransactionManagerClass = (Class<? extends TransactionManager>) Class.forName(classname);
             }
@@ -93,6 +102,16 @@ public class Settings
                 String propertyKey = property.getString("name");
                 String propertyValue = property.getString("value");
                 this.cachedTransactionsProperties.put(propertyKey, propertyValue);
+            }
+
+            //set some atomikos defaults so we don't have to set them in every config
+            if (getTransactionManagerClass().getCanonicalName().equals(DEFAULT_TRANSACTION_MANAGER)) {
+                //Don't default values that have been set explicitly
+                for (Map.Entry<String, String> e: DEFAULT_TRANSACTION_MANAGER_PROPS.entrySet()) {
+                    if (!this.cachedTransactionsProperties.containsKey(e.getKey())) {
+                        this.cachedTransactionsProperties.put(e.getKey(), e.getValue());
+                    }
+                }
             }
         }
 

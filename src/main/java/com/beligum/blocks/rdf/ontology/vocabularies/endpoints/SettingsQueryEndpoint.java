@@ -81,8 +81,8 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
                 //we give priority to the requested language, then the default language, then any other language
                 // since the value in the map is the 'selected' value, we check here if we can improve that value.
                 // If so, replace it with the better value.
-                int entryLangScore = this.getLanguageScore(page, language);
-                int selectedLangScore = this.getLanguageScore(selectedEntry.entry, language);
+                int entryLangScore = PageIndexEntry.getLanguageScore(page, language);
+                int selectedLangScore = PageIndexEntry.getLanguageScore(selectedEntry.entry, language);
                 if (entryLangScore > selectedLangScore) {
                     //replace the entry in the result list
                     retVal.set(selectedEntry.index, new ResourceSuggestion(resourceUri, resourceType.getCurieName(), page.getTitle(), pageId.getPath()));
@@ -112,23 +112,8 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
         pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.resource.name(), resourceIdStr)), BooleanClause.Occur.SHOULD);
 
         IndexSearchResult matchingPages = StorageFactory.getMainPageQueryConnection().search(pageQuery, R.configuration().getLanguages().size());
-        if (!matchingPages.getResults().isEmpty()) {
-            PageIndexEntry selectedEntry = null;
-            for (IndexEntry entry : matchingPages.getResults()) {
-                PageIndexEntry page = (PageIndexEntry) entry;
-
-                if (selectedEntry == null) {
-                    selectedEntry = page;
-                }
-                else {
-                    int entryLangScore = this.getLanguageScore(page, language);
-                    int selectedLangScore = this.getLanguageScore(selectedEntry, language);
-                    if (entryLangScore > selectedLangScore) {
-                        selectedEntry = page;
-                    }
-                }
-            }
-
+        PageIndexEntry selectedEntry = PageIndexEntry.selectBestForLanguage(matchingPages, language);
+        if (selectedEntry != null) {
             //we just wrap the index extry in a resource info wrapper
             retVal = new WrappedPageResourceInfo(selectedEntry);
         }
@@ -145,25 +130,6 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    /**
-     * This will return an int value according to the language of the entry;
-     * 1) entry language = no special language
-     * 2) entry language = default language
-     * 3) entry language = requested language
-     */
-    private int getLanguageScore(PageIndexEntry entry, Locale requestLanguage)
-    {
-        int retVal = 1;
-
-        if (entry.getLanguage().equals(requestLanguage.getLanguage())) {
-            retVal = 3;
-        }
-        else if (entry.getLanguage().equals(R.configuration().getDefaultLanguage().getLanguage())) {
-            retVal = 2;
-        }
-
-        return retVal;
-    }
 
     //-----INNER CLASSES-----
     private class EntryWithIndex<T>
