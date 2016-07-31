@@ -7,6 +7,7 @@ import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.entries.IndexEntry;
 import com.beligum.blocks.fs.index.entries.pages.IndexSearchResult;
 import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
+import com.beligum.blocks.fs.index.ifaces.Indexer;
 import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.index.ifaces.SparqlQueryConnection;
@@ -24,7 +25,6 @@ import org.openrdf.model.IRI;
 import org.openrdf.model.Value;
 import org.openrdf.query.*;
 import org.openrdf.repository.RepositoryException;
-import org.openrdf.repository.sail.SailRepository;
 import org.openrdf.repository.sail.SailRepositoryConnection;
 import org.openrdf.sail.lucene.LuceneSailSchema;
 
@@ -54,15 +54,18 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     }
 
     //-----VARIABLES-----
+    private SesamePageIndexer pageIndexer;
     private SailRepositoryConnection connection;
     private FetchPageMethod fetchPageMethod;
     private ExecutorService fetchPageExecutor;
 
     //-----CONSTRUCTORS-----
-    public SesamePageIndexerConnection(SailRepository repository) throws IOException
+    public SesamePageIndexerConnection(SesamePageIndexer pageIndexer) throws IOException
     {
+        this.pageIndexer = pageIndexer;
+
         try {
-            this.connection = repository.getConnection();
+            this.connection = pageIndexer.getRDFRepository().getConnection();
         }
         catch (RepositoryException e) {
             throw new IOException("Error occurred while booting sesame page indexer transaction", e);
@@ -338,6 +341,11 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         if (this.connection != null) {
             this.connection.getSailConnection().rollback();
         }
+    }
+    @Override
+    protected Indexer getResourceManager()
+    {
+        return this.pageIndexer;
     }
     @Override
     public void close() throws IOException

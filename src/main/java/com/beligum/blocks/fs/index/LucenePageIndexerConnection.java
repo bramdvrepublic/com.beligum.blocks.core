@@ -7,15 +7,14 @@ import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.entries.IndexEntry;
 import com.beligum.blocks.fs.index.entries.pages.*;
+import com.beligum.blocks.fs.index.ifaces.Indexer;
 import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
-import com.beligum.blocks.fs.pages.ReadOnlyPage;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import jersey.repackaged.com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.hadoop.fs.FileContext;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -48,11 +47,14 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     private static final int MAX_SEARCH_RESULTS = 1000;
 
     //-----VARIABLES-----
-    private IndexWriter indexWriter;
+    private LucenePageIndexer pageIndexer;
+    private boolean createdWriter;
 
     //-----CONSTRUCTORS-----
-    public LucenePageIndexerConnection() throws IOException
+    public LucenePageIndexerConnection(LucenePageIndexer pageIndexer) throws IOException
     {
+        this.pageIndexer = pageIndexer;
+        this.createdWriter = false;
     }
 
     //-----PUBLIC METHODS-----
@@ -73,10 +75,8 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     public void delete(Page page) throws IOException
     {
-        this.assertWriterTransaction();
-
         //don't use the canonical address as the id of the entry: it's not unique (will be the same for different languages)
-        this.indexWriter.deleteDocuments(AbstractPageIndexEntry.toLuceneId(page.getPublicRelativeAddress()));
+        this.getLuceneIndexWriter().deleteDocuments(AbstractPageIndexEntry.toLuceneId(page.getPublicRelativeAddress()));
 
         //for debug
         //this.printLuceneIndex();
@@ -84,13 +84,11 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     public void update(Page page) throws IOException
     {
-        this.assertWriterTransaction();
-
         DeepPageIndexEntry indexExtry = new DeepPageIndexEntry(page);
 
         //let's not mix-and-mingle writes (even though the IndexWriter is thread-safe),
         // so we can do a clean commit/rollback on our own
-        this.indexWriter.updateDocument(AbstractPageIndexEntry.toLuceneId(indexExtry), indexExtry.createLuceneDoc());
+        this.getLuceneIndexWriter().updateDocument(AbstractPageIndexEntry.toLuceneId(indexExtry), indexExtry.createLuceneDoc());
 
         //for debug
         //this.printLuceneIndex();
@@ -199,15 +197,15 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     protected void prepareCommit() throws IOException
     {
-        if (this.indexWriter != null) {
-            this.indexWriter.prepareCommit();
+        if (this.createdWriter) {
+            this.getLuceneIndexWriter().prepareCommit();
         }
     }
     @Override
     protected void commit() throws IOException
     {
-        if (this.indexWriter != null) {
-            this.indexWriter.commit();
+        if (this.createdWriter) {
+            this.getLuceneIndexWriter().commit();
 
             //mark all readers and searchers to reload
             this.indexChanged();
@@ -216,17 +214,22 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     protected void rollback() throws IOException
     {
-        if (this.indexWriter != null) {
-            this.indexWriter.rollback();
+        if (this.createdWriter) {
+            this.getLuceneIndexWriter().rollback();
         }
+    }
+    @Override
+    protected Indexer getResourceManager()
+    {
+        return this.pageIndexer;
     }
     @Override
     public void close() throws IOException
     {
-        if (this.indexWriter != null) {
-            this.indexWriter.close();
-            this.indexWriter = null;
-        }
+        //don't do this anymore: we switched from a new writer per transaction to a single writer, so don't close it
+        //        if (this.createdWriter) {
+        //            this.getLuceneIndexWriter().close();
+        //        }
     }
 
     //-----PROTECTED METHODS-----
@@ -262,33 +265,6 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
             }
         }
     }
-    /**
-     * Look in our file system and search for the parent of this document (with the same language).
-     */
-    private URI getParentUri(URI pageUri, FileContext fc) throws IOException
-    {
-        URI retVal = null;
-
-        URI parentUri = StringFunctions.getParent(pageUri);
-        while (retVal == null) {
-            if (parentUri == null) {
-                break;
-            }
-            else {
-                //note: this is null proof
-                Page parentPage = new ReadOnlyPage(pageUri);
-                if (fc.util().exists(parentPage.getResourcePath().getLocalPath())) {
-                    retVal = parentUri;
-                }
-                else {
-                    parentUri = StringFunctions.getParent(parentUri);
-                }
-
-            }
-        }
-
-        return retVal;
-    }
     private IndexSearcher getLuceneIndexSearcher() throws IOException
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_SEARCHER)) {
@@ -308,6 +284,27 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         //will be re-initialized on next read/search
         R.cacheManager().getApplicationCache().remove(CacheKeys.LUCENE_INDEX_SEARCHER);
     }
+    private IndexWriter getLuceneIndexWriter() throws IOException
+    {
+        if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_WRITER)) {
+            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_WRITER, this.buildNewLuceneIndexWriter());
+        }
+
+        //Note that a Lucene rollback closes the index for concurrency reasons, so double-check
+        IndexWriter retVal = (IndexWriter) R.cacheManager().getApplicationCache().get(CacheKeys.LUCENE_INDEX_WRITER);
+        if (retVal==null || !retVal.isOpen()) {
+            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_WRITER, retVal = this.buildNewLuceneIndexWriter());
+        }
+
+        //register the writer on the first time we need it
+        if (!this.createdWriter) {
+            //attach this connection to the transaction manager
+            StorageFactory.getCurrentRequestTx().registerResource(this);
+            this.createdWriter = true;
+        }
+
+        return retVal;
+    }
     /**
      * From the Lucene JavaDoc:
      * "IndexWriter instances are completely thread safe, meaning multiple threads can call any of its methods, concurrently."
@@ -320,7 +317,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
      * @return
      * @throws IOException
      */
-    private IndexWriter getNewLuceneIndexWriter() throws IOException
+    private IndexWriter buildNewLuceneIndexWriter() throws IOException
     {
         final java.nio.file.Path docDir = Settings.instance().getPageMainIndexFolder();
         if (!Files.exists(docDir)) {
@@ -337,24 +334,11 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
 
         return new IndexWriter(FSDirectory.open(Settings.instance().getPageMainIndexFolder()), iwc);
     }
-    private void assertWriterTransaction() throws IOException
-    {
-        this.assertWriter();
-
-        //attach this connection to the transaction manager
-        StorageFactory.getCurrentRequestTx().registerResource(this);
-    }
-    private void assertWriter() throws IOException
-    {
-        if (this.indexWriter == null) {
-            this.indexWriter = this.getNewLuceneIndexWriter();
-        }
-    }
     private void assertBasicStructure() throws IOException
     {
         if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.LUCENE_INDEX_BOOTED)) {
             //Watch out: don't call this method often, it's hideously slow!
-            try (IndexWriter indexWriter = this.getNewLuceneIndexWriter()) {
+            try (IndexWriter indexWriter = this.buildNewLuceneIndexWriter()) {
                 //just open and close the writer once, else we'll get a "no segments* file found" exception
             }
             R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_BOOTED, true);

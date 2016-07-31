@@ -57,7 +57,7 @@ public class LucenePageIndexer implements PageIndexer
     @Override
     public PageIndexConnection connect() throws IOException
     {
-        return new LucenePageIndexerConnection();
+        return new LucenePageIndexerConnection(this);
     }
     @Override
     public void shutdown()

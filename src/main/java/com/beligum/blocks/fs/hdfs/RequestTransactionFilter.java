@@ -6,6 +6,7 @@ import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.StorageFactory;
 
 import javax.annotation.Priority;
+import javax.transaction.Status;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
@@ -34,7 +35,7 @@ public class RequestTransactionFilter implements ContainerResponseFilter
         RequestTX tx = (RequestTX) R.cacheManager().getRequestCache().get(CacheKeys.REQUEST_TRANSACTION);
         if (tx != null) {
             try {
-                if (responseContext.getStatus() >= Response.Status.BAD_REQUEST.getStatusCode()) {
+                if (responseContext.getStatus() >= Response.Status.BAD_REQUEST.getStatusCode() || tx.getStatus() != Status.STATUS_ACTIVE) {
                     tx.rollback();
                 }
                 else {
@@ -69,9 +70,16 @@ public class RequestTransactionFilter implements ContainerResponseFilter
                 throw new IOException("Exception caught while processing a file system transaction; this is bad", e);
             }
             finally {
-                tx.close();
-                //make sure we only do this once
-                R.cacheManager().getRequestCache().remove(CacheKeys.REQUEST_TRANSACTION);
+                try {
+                    tx.close();
+                }
+                catch (Exception e) {
+                    throw new IOException("Exception caught while closing a file system transaction; this is bad", e);
+                }
+                finally {
+                    //make sure we only do this once
+                    R.cacheManager().getRequestCache().remove(CacheKeys.REQUEST_TRANSACTION);
+                }
             }
         }
     }

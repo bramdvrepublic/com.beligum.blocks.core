@@ -2,12 +2,14 @@ package com.beligum.blocks.fs.index;
 
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.fs.index.ifaces.IndexConnection;
+import com.beligum.blocks.fs.index.ifaces.Indexer;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.EnumSet;
 
 /**
@@ -17,7 +19,7 @@ import java.util.EnumSet;
  * <p/>
  * Created by bram on 2/22/16.
  */
-public abstract class AbstractIndexConnection implements IndexConnection
+public abstract class AbstractIndexConnection implements IndexConnection, Serializable
 {
     //-----CONSTANTS-----
     private enum TransactionState
@@ -30,7 +32,11 @@ public abstract class AbstractIndexConnection implements IndexConnection
         ROLLBACK_ONLY
     }
 
+    //this is the same as the default of XADisk
+    private static final int DEFAULT_TRANSACTION_TIMEOUT_SECS = 10;
+
     //-----VARIABLES-----
+    private int transactionTimeout = DEFAULT_TRANSACTION_TIMEOUT_SECS;
     private TransactionState state;
     private Xid currentXid;
 
@@ -52,7 +58,7 @@ public abstract class AbstractIndexConnection implements IndexConnection
     @Override
     public int getTransactionTimeout() throws XAException
     {
-        return 0;
+        return this.transactionTimeout;
     }
 
     /**
@@ -73,10 +79,9 @@ public abstract class AbstractIndexConnection implements IndexConnection
     @Override
     public boolean setTransactionTimeout(int seconds) throws XAException
     {
-        if (seconds < 0) {
-            throw new XAException(XAException.XAER_INVAL);
-        }
-        return false;
+        this.transactionTimeout = seconds;
+
+        return true;
     }
 
     /**
@@ -95,10 +100,7 @@ public abstract class AbstractIndexConnection implements IndexConnection
         boolean retVal = false;
 
         if (xaResource instanceof AbstractIndexConnection) {
-            AbstractIndexConnection other = (AbstractIndexConnection) xaResource;
-            //Doesn't work...
-            //retVal = other.equals(this);
-            retVal = other.getClass().equals(this.getClass());
+            retVal = this.getResourceManager() == ((AbstractIndexConnection) xaResource).getResourceManager();
         }
 
         return retVal;
@@ -308,13 +310,14 @@ public abstract class AbstractIndexConnection implements IndexConnection
     @Override
     public Xid[] recover(int flag) throws XAException
     {
-        return currentXid == null || state != TransactionState.PREPARED ? new Xid[0] : new Xid[] { currentXid };
+        //currently completely disabled
+        return currentXid == null || state != TransactionState.PREPARED ? new Xid[0] : new Xid[] {currentXid};
     }
 
     //-----PROTECTED METHODS-----
+    protected abstract Indexer getResourceManager();
 
     //-----PRIVATE METHODS-----
-
     private synchronized void setXid(Xid xid) throws XAException
     {
         // start method should have been called with TMJOIN

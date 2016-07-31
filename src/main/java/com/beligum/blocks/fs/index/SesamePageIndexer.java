@@ -38,7 +38,7 @@ public class SesamePageIndexer implements PageIndexer
     @Override
     public PageIndexConnection connect() throws IOException
     {
-        return new SesamePageIndexerConnection(this.getRDFRepository());
+        return new SesamePageIndexerConnection(this);
     }
     @Override
     public void shutdown() throws IOException
@@ -52,11 +52,7 @@ public class SesamePageIndexer implements PageIndexer
             }
         }
     }
-
-    //-----PROTECTED METHODS-----
-
-    //-----PRIVATE METHODS-----
-    private SailRepository getRDFRepository() throws IOException
+    public SailRepository getRDFRepository() throws IOException
     {
         synchronized (this.repositoryLock) {
             if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRIPLESTORE_ENGINE)) {
@@ -86,4 +82,8 @@ public class SesamePageIndexer implements PageIndexer
             return (SailRepository) R.cacheManager().getApplicationCache().get(CacheKeys.TRIPLESTORE_ENGINE);
         }
     }
+
+    //-----PROTECTED METHODS-----
+
+    //-----PRIVATE METHODS-----
 }

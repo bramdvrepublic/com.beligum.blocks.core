@@ -40,12 +40,25 @@ public class ServerStartStopListener implements ServerLifecycleListener
             //we might as well pre-load the templates here
             HtmlParser.getTemplateCache();
 
-            //this will boot the transaction manager (and possibly do a restore)
+            //this will boot the xadisk transaction manager (and possibly do a restore)
             try {
                 StorageFactory.getPageStoreTransactionManager();
             }
-            catch (IOException e) {
+            catch (Exception e) {
                 throw new RuntimeIOException("Unable to boot the page store transaction manager during starup, this is bad and I can't proceed", e);
+            }
+
+            //this will startup the umbrella transaction manager and launch any pending recovery actions
+            try {
+                TransactionManager transactionManager = StorageFactory.getTransactionManager();
+                //this will force the transactions to be recovered right after startup (instead of waiting till first save)
+                if (transactionManager!=null && transactionManager instanceof UserTransactionManager) {
+                    UserTransactionManager userTransactionManager = (UserTransactionManager) transactionManager;
+                    userTransactionManager.init();
+                }
+            }
+            catch (Exception e) {
+                throw new RuntimeIOException("Unable to boot the JTA transaction manager during starup, this is bad and I can't proceed", e);
             }
 
             //this will launch/connect to the ES server

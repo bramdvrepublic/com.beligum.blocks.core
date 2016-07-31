@@ -24,6 +24,7 @@ public class Settings
     private static final String PAGES_HDFS_PROPERTIES_KEY = "blocks.core.pages.hdfs.properties.property";
     private static final String ELASTIC_SEARCH_PROPERTIES_KEY = "blocks.core.elastic-search.properties.property";
     private static final String TRANSACTION_MANAGER_KEY = "blocks.core.transactions.transaction-manager";
+    private static final String TRANSACTION_TIMEOUT_KEY = "blocks.core.transactions.timeout";
 
     private static final String DEFAULT_FILE_EXT = ".html";
     private static final String DEFAULT_LOCK_FILE_EXT = ".lock";
@@ -32,9 +33,13 @@ public class Settings
     private static final long DEFAULT_XADISK_BOOT_TIMEOUT = 60 * 1000; //1 minute
     private static final String DEFAULT_GEONAMES_USERNAME = "demo";
     private static final String DEFAULT_TRANSACTION_MANAGER = "com.atomikos.icatch.jta.UserTransactionManager";
+    private static final int DEFAULT_TRANSACTION_TIMEOUT_MILLIS = 16000;
     //https://www.atomikos.com/Documentation/JtaProperties
     private static final Map<String, String> DEFAULT_TRANSACTION_MANAGER_PROPS = ImmutableMap.<String, String>builder()
+                    //Tell Atomikos to get it's properties from here (actually system variables) instead of a properties file
+                    .put("com.atomikos.icatch.no_file", "1")
                     .put("com.atomikos.icatch.force_shutdown_on_vm_exit", "true")
+                    .put("com.atomikos.icatch.default_jta_timeout", "20000")
                     .build();
 
     private static Settings instance;
@@ -116,6 +121,20 @@ public class Settings
         }
 
         return this.cachedTransactionsProperties;
+    }
+    /**
+     * Returns the default timeout value in milliseconds for all transactions
+     */
+    public int getTransactionTimeoutMillis()
+    {
+        return R.configuration().getInt(TRANSACTION_TIMEOUT_KEY, DEFAULT_TRANSACTION_TIMEOUT_MILLIS);
+    }
+    /**
+     * Returns the default timeout value in seconds for all transactions
+     */
+    public int getTransactionTimeoutSeconds()
+    {
+        return (int) Math.round(Settings.instance().getTransactionTimeoutMillis() / 1000.0);
     }
     public boolean getDeleteLocksOnStartup()
     {

@@ -1,5 +1,6 @@
 package com.beligum.blocks.config;
 
+import bitronix.tm.TransactionManagerServices;
 import ch.qos.logback.classic.Level;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
@@ -105,7 +106,23 @@ public class StorageFactory
                     }
                 }
 
-                TransactionManager transactionManager = Settings.instance().getTransactionManagerClass().newInstance();
+                //atomikos
+                //TransactionManager transactionManager = Settings.instance().getTransactionManagerClass().newInstance();
+
+                //bitronix
+                //TODO this doesn't work because Hibernate picks up Bitronix during starup and this throws a 'cannot change the configuration while the transaction manager is running' exception...
+                //workaround is to create a file called "bitronix-default-config.properties" in the resources folder that holds the "bitronix.tm.timer.defaultTransactionTimeout = xxx" property
+                //TransactionManagerServices.getConfiguration().setDefaultTransactionTimeout(Settings.instance().getTransactionTimeoutSeconds());
+                TransactionManager transactionManager = TransactionManagerServices.getTransactionManager();
+                //Note that this values doesn't seem to propagate to the sub-transactions of the resources.
+                //The value of Bitronix' DefaultTransactionTimeout does, eg. for XADisk via this way:
+                //enlist() -> setTimeoutDate() -> start() -> XAResource.setTransactionTimeout() -> XASession.setTransactionTimeout()
+                // --> during enlist() (actually start()), a thread context is initialized that loads the default tx timeout value and so it gets passed along all the way down
+                //see bitronix.tm.BitronixTransactionManager.begin() (rule 126)
+                //and org.xadisk.filesystem.workers.TransactionTimeoutDetector.doWorkOnce() (rule 33)
+                //TODO fix above so we can reactivate the setting
+                //Note: also note there's an important setting in the constructor of com.beligum.blocks.fs.hdfs.bitronix.XAResourceProducer (setApplyTransactionTimeout()) that affects a lot...
+                //transactionManager.setTransactionTimeout(Settings.instance().getTransactionTimeoutSeconds());
 
                 //tweak the log level if we're using atomikos
                 if (transactionManager.getClass().getCanonicalName().contains("atomikos")) {
@@ -113,7 +130,7 @@ public class StorageFactory
                     if (atomikosLogger!=null) {
                         //Atomikos info level is way too verbose; shut it down and switch to (default) WARN
                         if (R.configuration().getLogConfig().getLogLevel().equals(Level.INFO)) {
-                            atomikosLogger.setLevel(Level.WARN);
+                            //atomikosLogger.setLevel(Level.WARN);
                         }
                     }
                     else {
@@ -158,12 +175,8 @@ public class StorageFactory
         //start up a new XDisk session if needed
         if (requestTx.getXdiskSession()==null) {
             try {
-                //boot a new xadisk
-                XASession xdiskSession = getPageStoreTransactionManager().createSessionForXATransaction();
-                //hook it into the request tx
-                requestTx.registerResource(xdiskSession.getXAResource());
-                //save it in our wrapper
-                requestTx.setXdiskSession(xdiskSession);
+                //boot a new xadisk, register it and save it in our wrapper
+                requestTx.setAndRegisterXdiskSession(getPageStoreTransactionManager().createSessionForXATransaction());
             }
             catch (Exception e) {
                 throw new IOException("Exception caught while booting up XADisk transaction during request; "+R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
@@ -178,7 +191,10 @@ public class StorageFactory
             if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
                 File dir = Settings.instance().getPagesStoreJournalDir();
                 if (dir!=null) {
-                    XAFileSystem xafs = XAFileSystemProxy.bootNativeXAFileSystem(new StandaloneFileSystemConfiguration(dir.getAbsolutePath(), Settings.instance().getPagesStoreJournalId()));
+                    StandaloneFileSystemConfiguration cfg = new StandaloneFileSystemConfiguration(dir.getAbsolutePath(), Settings.instance().getPagesStoreJournalId());
+                    //cfg.setTransactionTimeout(Settings.instance().getSubTransactionTimeoutSeconds());
+
+                    XAFileSystem xafs = XAFileSystemProxy.bootNativeXAFileSystem(cfg);
                     try {
                         xafs.waitForBootup(Settings.instance().getPagesStoreJournalBootTimeout());
                         R.cacheManager().getApplicationCache().put(CacheKeys.XADISK_FILE_SYSTEM, xafs);
