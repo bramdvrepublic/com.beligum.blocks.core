@@ -5,17 +5,20 @@ import bitronix.tm.internal.XAResourceHolderState;
 import bitronix.tm.recovery.RecoveryException;
 import bitronix.tm.resource.ResourceObjectFactory;
 import bitronix.tm.resource.ResourceRegistrar;
-import bitronix.tm.resource.common.*;
+import bitronix.tm.resource.common.RecoveryXAResourceHolder;
+import bitronix.tm.resource.common.ResourceBean;
+import bitronix.tm.resource.common.XAStatefulHolder;
 import bitronix.tm.resource.ehcache.EhCacheXAResourceProducer;
+import com.beligum.base.utils.Logger;
 
 import javax.naming.NamingException;
 import javax.naming.Reference;
 import javax.naming.StringRefAddr;
 import javax.transaction.xa.XAResource;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Inspired by {@link EhCacheXAResourceProducer}.
@@ -28,76 +31,72 @@ public class XAResourceProducer extends ResourceBean implements bitronix.tm.reso
 {
     //-----CONSTANTS-----
     private static final long serialVersionUID = -1026425674409225116L;
-    private static final Map<String, XAResourceProducer> PRODUCERS = new HashMap<>();
+
+    private static final ConcurrentMap<String, XAResourceProducer> producers = new ConcurrentHashMap<>();
 
     //-----VARIABLES-----
-    private final List<XAResourceHolder> xaResourceHolders;
-    private RecoveryXAResourceHolder recoveryXAResourceHolder;
+    private final ConcurrentMap<Integer, XAResourceHolder> xaResourceHolders = new ConcurrentHashMap<>();
+    private final AtomicInteger xaResourceHolderCounter = new AtomicInteger();
+    private volatile RecoveryXAResourceHolder recoveryXAResourceHolder;
 
     //-----CONSTRUCTORS-----
     private XAResourceProducer()
     {
-        this.xaResourceHolders = new ArrayList<>();
-
         setApplyTransactionTimeout(true);
     }
 
     //-----STATIS METHODS-----
     /**
-     * Register an XAResource of a XADisk with BTM. The first time a XAResource is registered a new
-     * XaDiskResourceProducer is created to hold it.
+     * Register an XAResource of a cache with BTM. The first time a XAResource is registered a new
+     * EhCacheXAResourceProducer is created to hold it.
      *
-     * @param uniqueName the uniqueName of this XAResourceProducer, usually the XADisk's name
+     * @param uniqueName the uniqueName of this XAResourceProducer, usually the cache's name
      * @param xaResource the XAResource to be registered
      */
     public static void registerXAResource(String uniqueName, XAResource xaResource)
     {
-        synchronized (PRODUCERS) {
-            XAResourceProducer xaResourceProducer = PRODUCERS.get(uniqueName);
+        XAResourceProducer xaResourceProducer = producers.get(uniqueName);
+        if (xaResourceProducer == null) {
+            xaResourceProducer = new XAResourceProducer();
+            xaResourceProducer.setUniqueName(uniqueName);
+            // the initial xaResource must be added before init() can be called
+            xaResourceProducer.addXAResource(xaResource);
 
-            if (xaResourceProducer == null) {
-                xaResourceProducer = new XAResourceProducer();
-                xaResourceProducer.setUniqueName(uniqueName);
-                // the initial xaResource must be added before init() is called
-                xaResourceProducer.addXAResource(xaResource);
+            XAResourceProducer previous = producers.putIfAbsent(uniqueName, xaResourceProducer);
+            if (previous == null) {
                 xaResourceProducer.init();
-
-                PRODUCERS.put(uniqueName, xaResourceProducer);
             }
             else {
-                xaResourceProducer.addXAResource(xaResource);
-
-                if (xaResourceProducer.xaResourceHolders.size() == 1)
-                    // was empty, init needed
-                    xaResourceProducer.init();
+                previous.addXAResource(xaResource);
             }
+        }
+        else {
+            xaResourceProducer.addXAResource(xaResource);
         }
     }
 
     /**
-     * Unregister an XAResource of a XADisk from BTM.
+     * Unregister an XAResource of a cache from BTM.
      *
-     * @param uniqueName the uniqueName of this XAResourceProducer, usually the XADisk's name
+     * @param uniqueName the uniqueName of this XAResourceProducer, usually the cache's name
      * @param xaResource the XAResource to be registered
      */
-    public static synchronized void unregisterXAResource(String uniqueName, XAResource xaResource)
+    public static void unregisterXAResource(String uniqueName, XAResource xaResource)
     {
-        synchronized (PRODUCERS) {
-            XAResourceProducer xaResourceProducer = PRODUCERS.get(uniqueName);
+        XAResourceProducer xaResourceProducer = producers.get(uniqueName);
 
-            if (xaResourceProducer != null) {
-                boolean found = xaResourceProducer.removeXAResource(xaResource);
-                if (!found) {
-                    com.beligum.base.utils.Logger.error("no XAResource " + xaResource + " found in XAResourceProducer with name " + uniqueName);
-                }
-
-                if (xaResourceProducer.xaResourceHolders.isEmpty()) {
-                    ResourceRegistrar.unregister(xaResourceProducer);
-                }
+        if (xaResourceProducer != null) {
+            boolean found = xaResourceProducer.removeXAResource(xaResource);
+            if (!found) {
+                Logger.error("no XAResource " + xaResource + " found in XAResourceProducer with name " + uniqueName);
             }
-            else {
-                com.beligum.base.utils.Logger.error("no XAResourceProducer registered with name " + uniqueName);
+            if (xaResourceProducer.xaResourceHolders.isEmpty()) {
+                xaResourceProducer.close();
+                producers.remove(uniqueName);
             }
+        }
+        else {
+            Logger.error("no XAResourceProducer registered with name " + uniqueName);
         }
     }
 
@@ -105,27 +104,23 @@ public class XAResourceProducer extends ResourceBean implements bitronix.tm.reso
     /**
      * {@inheritDoc}
      */
-    @Override
     public XAResourceHolderState startRecovery() throws RecoveryException
     {
-        synchronized (xaResourceHolders) {
-            if (recoveryXAResourceHolder != null) {
-                throw new RecoveryException("recovery already in progress on " + this);
-            }
-
-            if (xaResourceHolders.isEmpty()) {
-                throw new RecoveryException("no XAResource registered, recovery cannot be done on " + this);
-            }
-
-            recoveryXAResourceHolder = new RecoveryXAResourceHolder(xaResourceHolders.get(0));
-            return new XAResourceHolderState(recoveryXAResourceHolder, this);
+        if (recoveryXAResourceHolder != null) {
+            throw new RecoveryException("recovery already in progress on " + this);
         }
+
+        if (xaResourceHolders.isEmpty()) {
+            throw new RecoveryException("no XAResource registered, recovery cannot be done on " + this);
+        }
+
+        recoveryXAResourceHolder = new RecoveryXAResourceHolder(xaResourceHolders.values().iterator().next());
+        return new XAResourceHolderState(recoveryXAResourceHolder, this);
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override
     public void endRecovery() throws RecoveryException
     {
         recoveryXAResourceHolder = null;
@@ -134,95 +129,86 @@ public class XAResourceProducer extends ResourceBean implements bitronix.tm.reso
     /**
      * {@inheritDoc}
      */
-    @Override
     public void setFailed(boolean failed)
     {
-        // XADisk cannot fail as it's not connection oriented
+        // cache cannot fail as it's not connection oriented
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override
-    public bitronix.tm.resource.common.XAResourceHolder findXAResourceHolder(XAResource xaResource)
+    public XAResourceHolder findXAResourceHolder(XAResource xaResource)
     {
-        synchronized (xaResourceHolders) {
-            for (int i = 0; i < xaResourceHolders.size(); i++) {
-                XAResourceHolder xaResourceHolder = xaResourceHolders.get(i);
-                if (xaResource == xaResourceHolder.getXAResource()) {
-                    return xaResourceHolder;
-                }
+        for (XAResourceHolder xaResourceHolder : xaResourceHolders.values()) {
+            if (xaResource == xaResourceHolder.getXAResource()) {
+                return xaResourceHolder;
             }
-
-            return null;
         }
+
+        return null;
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override
     public void init()
     {
         try {
             ResourceRegistrar.register(this);
         }
-        catch (RecoveryException e) {
-            throw new BitronixRuntimeException("error recovering " + this, e);
+        catch (RecoveryException ex) {
+            throw new BitronixRuntimeException("error recovering " + this, ex);
         }
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override
     public void close()
     {
-        synchronized (xaResourceHolders) {
-            xaResourceHolders.clear();
-            ResourceRegistrar.unregister(this);
-        }
+        xaResourceHolders.clear();
+        xaResourceHolderCounter.set(0);
+        ResourceRegistrar.unregister(this);
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override
     public XAStatefulHolder createPooledConnection(Object xaFactory, ResourceBean bean) throws Exception
     {
-        throw new UnsupportedOperationException("XaDisk is not connection-oriented");
+        throw new UnsupportedOperationException("Ehcache is not connection-oriented");
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override
     public Reference getReference() throws NamingException
     {
-        return new Reference(XAResourceProducer.class.getName(), new StringRefAddr("uniqueName", getUniqueName()), ResourceObjectFactory.class.getName(), null);
+        return new Reference(EhCacheXAResourceProducer.class.getName(),
+                             new StringRefAddr("uniqueName", getUniqueName()),
+                             ResourceObjectFactory.class.getName(), null);
     }
 
     //-----PRIVATE METHODS-----
     private void addXAResource(XAResource xaResource)
     {
-        synchronized (xaResourceHolders) {
-            XAResourceHolder xaResourceHolder = new XAResourceHolder(xaResource, this);
+        XAResourceHolder xaResourceHolder = new XAResourceHolder(xaResource, this);
+        int key = xaResourceHolderCounter.incrementAndGet();
 
-            xaResourceHolders.add(xaResourceHolder);
-        }
+        xaResourceHolders.put(key, xaResourceHolder);
     }
+
     private boolean removeXAResource(XAResource xaResource)
     {
-        synchronized (xaResourceHolders) {
-            for (int i = 0; i < xaResourceHolders.size(); i++) {
-                XAResourceHolder xaResourceHolder = xaResourceHolders.get(i);
-                if (xaResourceHolder.getXAResource() == xaResource) {
-                    xaResourceHolders.remove(i);
-                    return true;
-                }
+        for (Map.Entry<Integer, XAResourceHolder> entry : xaResourceHolders.entrySet()) {
+            Integer key = entry.getKey();
+            XAResourceHolder xaResourceHolder = entry.getValue();
+            if (xaResourceHolder.getXAResource() == xaResource) {
+                xaResourceHolders.remove(key);
+                return true;
             }
-            return false;
         }
+        return false;
     }
 
     //-----MANAGEMENT METHODS-----

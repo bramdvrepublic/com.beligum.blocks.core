@@ -56,7 +56,9 @@ public class RequestTX
     public synchronized void registerResource(XAResource xaResource) throws IOException
     {
         try {
-            final String resourceName = xaResource.toString();//BasicFunctions.createRandomString(16);
+            //this will register a new producer for every type of XAResources we have
+            //note: the producer handles the lookup of the right xaResource internally (although it's not quite optimized yet...)
+            final String resourceName = xaResource.getClass().getCanonicalName();
             XAResourceProducer.registerXAResource(resourceName, xaResource);
             this.transaction.registerSynchronization(new Synchronization()
             {
