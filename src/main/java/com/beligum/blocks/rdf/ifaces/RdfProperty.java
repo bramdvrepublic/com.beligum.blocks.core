@@ -3,6 +3,7 @@ package com.beligum.blocks.rdf.ifaces;
 import com.beligum.blocks.config.InputType;
 import com.beligum.blocks.config.InputTypeAdapter;
 import com.beligum.blocks.config.InputTypeConfig;
+import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.fs.index.entries.RdfIndexer;
 import org.openrdf.model.Value;
 
@@ -42,6 +43,11 @@ public interface RdfProperty extends RdfClass
      * A map of key/value entries that contain specific settings for the input widget type
      */
     void setWidgetConfig(InputTypeConfig config);
+
+    /**
+     * An instance (eg. for enums) of an endpoint to use while looking up possible values of this property.
+     */
+    void setEndpoint(RdfQueryEndpoint endpoint);
 
     /**
      * This method gets called when this property is indexed by our custom (currently only Lucene) indexer.

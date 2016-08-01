@@ -17,7 +17,7 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -77,7 +77,7 @@ public class RdfEndpoint
     //Note: the "query" parameter needs to be last, because the JS side just appends the query string to this URL
     public Response getResources(@QueryParam("resourceTypeCurie") URI resourceTypeCurie, @QueryParam("maxResults") int maxResults, @QueryParam("prefixSearch") @DefaultValue("true") boolean prefixSearch, /* keep this last */@QueryParam("query") String query) throws IOException
     {
-        List<AutocompleteSuggestion> retVal = new ArrayList<>();
+        Collection<AutocompleteSuggestion> retVal = new ArrayList<>();
 
         RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
         if (rdfClass != null) {

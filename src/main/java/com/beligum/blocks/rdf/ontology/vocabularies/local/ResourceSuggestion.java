@@ -28,9 +28,9 @@ public class ResourceSuggestion implements AutocompleteSuggestion
 
     //-----PUBLIC METHODS-----
     @Override
-    public URI getResourceId()
+    public String getValue()
     {
-        return resourceId;
+        return resourceId == null ? null : resourceId.toString();
     }
     public URI getResourceType()
     {

@@ -321,7 +321,7 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
 
                             //we'll use the name of the property as the label (capitalized)
                             var label = newValueTerm.label.charAt(0).toUpperCase() + newValueTerm.label.slice(1);
-                            combobox.after(_this.addUniqueAttributeValueAsync(Sidebar, propElement, label, CONTENT_ATTR, endpointURL, "title", "title", changeListener));
+                            combobox.after(_this.addUniqueAttributeValueAsync(Sidebar, propElement, label, CONTENT_ATTR, endpointURL, "title", "value", changeListener));
                             //call it once to set the default value
                             changeListener();
                             break;
@@ -390,7 +390,8 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                                         var labelHtml = newValue.label;
                                         //if the value has an image, it takes precedence of the label and we render an image instead of text
                                         if (newValue.image) {
-                                            labelHtml = '<img src="' + newValue.image + '" alt="' + newValue.label + '">';
+                                            //note that alt is mandatory, but title provides a nice tooltip when hovering
+                                            labelHtml = '<img src="' + newValue.image + '" alt="' + newValue.label + '" title="' + newValue.label + '">';
                                         }
 
                                         //if the value has a link, let's render a hyperlink
@@ -575,7 +576,7 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
             //gets called when a real selection is done
             input.bind('typeahead:select', function (ev, suggestion)
             {
-                $.getJSON(inputTypeArgs[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT] + encodeURIComponent(suggestion.resourceId))
+                $.getJSON(inputTypeArgs[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT] + encodeURIComponent(suggestion.value))
                     .done(function (data)
                     {
                         setterFunction(propElement, initialValue, data);

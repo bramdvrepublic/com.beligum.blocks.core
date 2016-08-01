@@ -4,7 +4,7 @@ import com.beligum.blocks.rdf.ifaces.RdfClass;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.List;
+import java.util.Collection;
 import java.util.Locale;
 
 /**
@@ -44,7 +44,7 @@ public interface RdfQueryEndpoint
      * @return a list of maxResults size
      * @throws IOException
      */
-    List<AutocompleteSuggestion> search(RdfClass resourceType, String query, QueryType queryType, Locale language, int maxResults, SearchOption... options) throws IOException;
+    Collection<AutocompleteSuggestion> search(RdfClass resourceType, String query, QueryType queryType, Locale language, int maxResults, SearchOption... options) throws IOException;
 
     /**
      * Gets the full value of the resource with the specified id-URI.

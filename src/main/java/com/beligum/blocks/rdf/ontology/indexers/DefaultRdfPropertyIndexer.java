@@ -74,6 +74,11 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                 indexer.indexIntegerField(fieldName, val);
                 retVal = new RdfIndexer.IndexResult(val);
             }
+            else if (property.getDataType().equals(XSD.LANGUAGE)) {
+                String val = objLiteral.stringValue();
+                indexer.indexStringField(fieldName, val);
+                retVal = new RdfIndexer.IndexResult(val);
+            }
             else if (property.getDataType().equals(XSD.LONG)
                      || property.getDataType().equals(XSD.UNSIGNED_LONG)) {
                 Long val = objLiteral.longValue();

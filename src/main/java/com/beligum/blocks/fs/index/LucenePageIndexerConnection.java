@@ -169,7 +169,8 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
             //this is tricky: using an asterisk after a special character seems to throw lucene off
             // since the standard analyzer doesn't index those characters anyway (eg. "blah (en)" gets indexed as "blah" and "en"),
             // it's safe to delete those special characters and just add the asterisk
-            String parsedQuery = this.removeEscapedChars(phrase).trim();
+            //Update: no, had some weird issues when looking for eg. "tongs/scissors-shaped" -> worked better when replacing with a space instead of deleting them
+            String parsedQuery = this.removeEscapedChars(phrase, " ").trim();
             String queryStr = null;
             //this check is needed because "\"bram*\"" doesn't seem to match the "bram" token
             if (parsedQuery.contains(" ")) {
@@ -236,7 +237,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
 
     //-----PRIVATE METHODS-----
     //exactly the same code as QueryParserBase.escape(), but with the sb.append('\\'); line commented and added an else-part
-    private String removeEscapedChars(String s)
+    private String removeEscapedChars(String s, String replacement)
     {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < s.length(); i++) {
@@ -246,6 +247,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
                 || c == '^' || c == '[' || c == ']' || c == '\"' || c == '{' || c == '}' || c == '~'
                 || c == '*' || c == '?' || c == '|' || c == '&' || c == '/') {
                 //sb.append('\\');
+                sb.append(replacement);
             }
             else {
                 sb.append(c);

@@ -53,7 +53,7 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
     //-----PUBLIC METHODS-----
     @Override
     //Note: check the inner cache class if you add variables
-    public List<AutocompleteSuggestion> search(RdfClass resourceType, final String query, QueryType queryType, Locale language, int maxResults, SearchOption... options) throws IOException
+    public Collection<AutocompleteSuggestion> search(RdfClass resourceType, final String query, QueryType queryType, Locale language, int maxResults, SearchOption... options) throws IOException
     {
         List<AutocompleteSuggestion> retVal = new ArrayList<>();
 

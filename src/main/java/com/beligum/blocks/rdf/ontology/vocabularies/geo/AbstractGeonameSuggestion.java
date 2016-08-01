@@ -26,9 +26,9 @@ public abstract class AbstractGeonameSuggestion extends AbstractGeoname implemen
 
     //-----PUBLIC METHODS-----
     @Override
-    public URI getResourceId()
+    public String getValue()
     {
-        return RdfTools.createRelativeResourceId(RdfFactory.getClassForResourceType(this.getResourceType()), geonameId);
+        return RdfTools.createRelativeResourceId(RdfFactory.getClassForResourceType(this.getResourceType()), geonameId).toString();
     }
     @Override
     public URI getResourceType()

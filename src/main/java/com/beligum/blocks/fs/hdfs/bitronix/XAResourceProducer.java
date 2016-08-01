@@ -100,6 +100,17 @@ public class XAResourceProducer extends ResourceBean implements bitronix.tm.reso
         }
     }
 
+    /**
+     * Since manually registered resource pools are left untouched by BitronixTransactionManager.shutdown(), we need to do this manually
+     */
+    public static void shutdown()
+    {
+        for (Map.Entry<String, XAResourceProducer> e : producers.entrySet()) {
+            e.getValue().close();
+        }
+        producers.clear();
+    }
+
     //-----PUBLIC METHODS-----
     /**
      * {@inheritDoc}

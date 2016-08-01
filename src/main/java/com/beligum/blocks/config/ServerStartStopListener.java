@@ -1,11 +1,13 @@
 package com.beligum.blocks.config;
 
+import bitronix.tm.BitronixTransactionManager;
 import com.atomikos.icatch.jta.UserTransactionManager;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.server.R;
 import com.beligum.base.server.ifaces.ServerLifecycleListener;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
+import com.beligum.blocks.fs.hdfs.bitronix.XAResourceProducer;
 import com.beligum.blocks.fs.index.ifaces.Indexer;
 import com.beligum.blocks.search.ElasticSearch;
 import com.beligum.blocks.templating.blocks.HtmlParser;
@@ -100,7 +102,13 @@ public class ServerStartStopListener implements ServerLifecycleListener
                     if (transactionManager instanceof UserTransactionManager) {
                         UserTransactionManager userTransactionManager = (UserTransactionManager) transactionManager;
                         userTransactionManager.setForceShutdown(true);
-                        ((UserTransactionManager) transactionManager).close();
+                        userTransactionManager.close();
+                    }
+                    else if (transactionManager instanceof BitronixTransactionManager) {
+                        BitronixTransactionManager bitronixTransactionManager = (BitronixTransactionManager) transactionManager;
+                        //we need to explicitly shut down the manually registered ones
+                        XAResourceProducer.shutdown();
+                        bitronixTransactionManager.shutdown();
                     }
                     else {
                         //TODO no public close method on a transaction manager??

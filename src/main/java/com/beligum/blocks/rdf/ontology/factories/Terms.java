@@ -1,10 +1,12 @@
 package com.beligum.blocks.rdf.ontology.factories;
 
 import com.beligum.blocks.config.InputType;
+import com.beligum.blocks.config.InputTypeConfig;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ifaces.RdfResourceFactory;
 import com.beligum.blocks.rdf.ontology.RdfPropertyImpl;
 import com.beligum.blocks.rdf.ontology.vocabularies.*;
+import com.beligum.blocks.rdf.ontology.vocabularies.endpoints.LanguageEnumQueryEndpoint;
 import gen.com.beligum.blocks.core.messages.blocks.ontology;
 
 import java.net.URI;
@@ -292,8 +294,7 @@ public class Terms implements RdfResourceFactory
                                                                    ontology.Entries.propertyTitle_language,
                                                                    ontology.Entries.propertyLabel_language,
                                                                    XSD.LANGUAGE,
-                                                                   //TODO maybe a drop down instead?
-                                                                   InputType.InlineEditor,
+                                                                   InputType.Enum,
                                                                    null,
                                                                    new URI[] { DC.INSTANCE.resolve("language")
                                                                    },
@@ -331,4 +332,19 @@ public class Terms implements RdfResourceFactory
                                                                  new URI[] { OWL.SAMEAS.getFullName()
                                                                  },
                                                                  false);
+
+    //-----CONFIGS-----
+    /**
+     * Need to come here, because we have a cyclic reference otherwise (we would be using the property during it's static initialization)
+     */
+    static {
+        Terms.language.setEndpoint(new LanguageEnumQueryEndpoint(Terms.language));
+
+        Terms.language.setWidgetConfig(new InputTypeConfig(new String[][] {
+                        { gen.com.beligum.blocks.core.constants.blocks.core.Entries.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT.getValue(),
+                          //let's re-use the same endpoint for the enum as for the resources so we can re-use it's backend code
+                          gen.com.beligum.blocks.endpoints.RdfEndpointRoutes.getResources(Terms.language.getCurieName(), -1, false, "").getAbsoluteUrl()
+                        },
+                        }));
+    }
 }

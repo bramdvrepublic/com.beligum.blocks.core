@@ -25,7 +25,8 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     private MessagesFileEntry title;
     private MessagesFileEntry label;
     private URI[] isSameAs;
-    private RdfQueryEndpoint queryEndpoint;
+    //we need to be able to set this from the RdfProperty interface (to make static initializing possible)
+    protected RdfQueryEndpoint queryEndpoint;
     private Set<RdfProperty> properties;
     private ResourceIndexer resourceIndexer;
 

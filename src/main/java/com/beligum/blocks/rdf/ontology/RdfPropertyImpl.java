@@ -57,20 +57,7 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
                            URI[] isSameAs,
                            boolean isPublic)
     {
-        this(name, vocabulary, title, label, dataType, widgetType, widgetArgs, isSameAs, isPublic, null);
-    }
-    public RdfPropertyImpl(String name,
-                           RdfVocabulary vocabulary,
-                           MessagesFileEntry title,
-                           MessagesFileEntry label,
-                           RdfClass dataType,
-                           InputType widgetType,
-                           InputTypeConfig widgetArgs,
-                           URI[] isSameAs,
-                           boolean isPublic,
-                           RdfQueryEndpoint queryEndpoint)
-    {
-        super(name, vocabulary, title, label, isSameAs, isPublic, queryEndpoint);
+        super(name, vocabulary, title, label, isSameAs, isPublic, null);
 
         this.widgetType = widgetType;
         //make it uniform; no nulls
@@ -101,6 +88,11 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
     public void setWidgetConfig(InputTypeConfig config)
     {
         this.widgetArgs = config;
+    }
+    @Override
+    public void setEndpoint(RdfQueryEndpoint endpoint)
+    {
+        this.queryEndpoint = endpoint;
     }
     @Override
     public RdfIndexer.IndexResult indexValue(RdfIndexer indexer, URI subject, Value value, Locale language) throws IOException
