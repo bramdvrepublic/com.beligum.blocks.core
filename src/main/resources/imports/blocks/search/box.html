@@ -1,0 +1,57 @@
+<meta property="blocks:title" content="Search box" lang="en">
+<meta property="blocks:icon" content="fa-search">
+<meta property="blocks:controller" content="com.beligum.blocks.controllers.SearchController">
+
+<link rel="stylesheet" href="/assets/styles/imports/blocks-search-box.less">
+
+<script src="/assets/scripts/imports/blocks-search-box.js" data-scope-role="admin"></script>
+
+## sync with constant SEARCH_BOX_TYPE_ARG
+<template data-search-type="">
+
+    <div class="panel panel-default panel-search">
+        <div class="panel-heading">
+            <h3 class="panel-title">$MESSAGES.blocks.core.searchBoxTitle</h3>
+        </div>
+        <div class="panel-body">
+            <form METHOD="get">
+                <div class="form-inline">
+                    <div class="form-group">
+                        <input type="text" class="form-control" name="$CONSTANTS.blocks.core.SEARCH_PARAM_QUERY" placeholder="$MESSAGES.blocks.core.searchBoxInputPlaceholder"
+                               value="$!CONTROLLER.searchRequest.searchTerm">
+                    </div>
+
+                </div>
+##                <div class="form-inline secondary">
+##                    <div class="form-group">
+##                        <select class="form-control" name="$CONSTANTS.blocks.core.SEARCH_PARAM_FILTERS">
+##
+##                            <option value="" #if($CONTROLLER.searchRequest.fieldFilters.empty) selected #end>$MESSAGES.blocks.waterwell.search_type_all</option>
+##
+##                        ##                            #set($queryFilterValue="${CONSTANTS.blocks.core.SEARCH_WATERWELL_QUERY_TYPE_DESTROYED_KEY}${CONSTANTS.blocks.core.SEARCH_WATERWELL_QUERY_TYPE_DELIM}${CONSTANTS.blocks.core.SEARCH_WATERWELL_QUERY_TYPE_DESTROYED_VAL}")
+##                        ##                            <option value="$queryFilterValue" #if($CONTROLLER.getDestroyed().equals($queryFilterValue)) selected #end>$MESSAGES.blocks.waterwell.search_type_destroyed</option>
+##                        ##
+##                        ##                            #set($queryFilterValue="${CONSTANTS.blocks.core.SEARCH_WATERWELL_QUERY_TYPE_EXISTING_KEY}${CONSTANTS.blocks.core.SEARCH_WATERWELL_QUERY_TYPE_DELIM}${CONSTANTS.blocks.core.SEARCH_WATERWELL_QUERY_TYPE_EXISTING_VAL}")
+##                        ##                            <option value="$queryFilterValue" #if($CONTROLLER.getDestroyed().equals($queryFilterValue)) selected #end>$MESSAGES.blocks.waterwell.search_type_existing</option>
+##
+##                        </select>
+##                        <select class="form-control" name="$CONSTANTS.blocks.core.SEARCH_PARAM_SORT">
+##                            <option value="$CONSTANTS.blocks.core.SEARCH_WATERWELL_SORT_ADDRESS" #if($CONTROLLER.searchRequest.sortField.equals($CONSTANTS.blocks.core.SEARCH_WATERWELL_SORT_ADDRESS))
+##                                    selected #end>$MESSAGES.blocks.waterwell.sort_on_address</option>
+##                            <option value="$CONSTANTS.blocks.core.SEARCH_WATERWELL_SORT_YEAR" #if($CONTROLLER.searchRequest.sortField.equals($CONSTANTS.blocks.core.SEARCH_WATERWELL_SORT_YEAR))
+##                                    selected #end>$MESSAGES.blocks.waterwell.sort_on_year</option>
+##                        </select>
+##                    </div>
+##                </div>
+                <hr>
+                <div class="form-inline search-options">
+                    <div class="form-group">
+                        <button type="reset" class="btn btn-default pull-right">$MESSAGES.blocks.core.searchBoxButtonReset</button>
+                        <button type="submit" class="btn btn-primary pull-right">$MESSAGES.blocks.core.searchBoxButtonSearch</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</template>

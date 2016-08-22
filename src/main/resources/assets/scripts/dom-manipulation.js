@@ -169,10 +169,10 @@ base.plugin("blocks.core.DomManipulation", ["constants.base.core.internal", "con
                 totalWidth += colWidth;
                 columns.push(col);
                 oldColumnWidths.push(colWidth);
+                //this is added in layout.js on drop
                 if (col.hasClass(BlocksConstants.NEW_BLOCK_CLASS)) {
+                    //save the current array index
                     newColIdx = columns.length - 1;
-                    //this is added in layout.js on drop
-                    col.removeClass(BlocksConstants.NEW_BLOCK_CLASS);
                 }
             }
         }

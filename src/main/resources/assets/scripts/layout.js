@@ -192,8 +192,15 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.
         {
             droppedElement.hide();
 
-            //this will be cleaned in the DOM.cleanup() below
+            //this will be cleared below
             droppedElement.addClass(BlocksConstants.NEW_BLOCK_CLASS);
+
+            //I had too many problems with clearing the new class on all elements at the right time,
+            //and came up with this dirty workaround
+            setTimeout(function ()
+            {
+                droppedElement.removeClass(BlocksConstants.NEW_BLOCK_CLASS);
+            }, 1000);
 
             DOM.appendElement(droppedElement, dropLocationElement, side, function ()
             {

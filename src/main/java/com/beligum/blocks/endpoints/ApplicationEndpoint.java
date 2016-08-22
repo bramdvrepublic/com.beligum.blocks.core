@@ -78,13 +78,12 @@ public class ApplicationEndpoint
         URI requestedUri = UriBuilder.fromUri(R.configuration().getSiteDomain()).replacePath(randomPage.toString())
                                      .replaceQuery(R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri().getQuery()).build();
 
-        Locale optimalLocale = R.i18nFactory().getOptimalLocale();
-
         Page page = new ReadOnlyPage(requestedUri);
         // Since we allow the user to create pretty url's, it's mime type will not always be clear.
         // But not this endpoint only accepts HTML requests, so force the mime type
         Resource resource = R.resourceFactory().lookup(new HdfsResource(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), page.getResourcePath().getFileContext(), page.getNormalizedPageProxyPath()));
 
+        Locale optimalLocale = R.i18nFactory().getOptimalLocale();
         Response.ResponseBuilder retVal = null;
         URI externalRedirectUri = null;
 

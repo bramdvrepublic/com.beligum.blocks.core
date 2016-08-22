@@ -1,0 +1,15 @@
+<a href="$result.id" class="list-group-item">
+    <div class="media">
+        <div class="media-left">
+            <div class="img-wrapper">
+                <img class="media-object" src="#if($result.getImage())$result.getImage()#else/assets/images/blocks/placeholder_image_1.png#end" />
+            </div>
+        </div>
+        <div class="media-body">
+            <div class="media-heading">$!result.getTitle()</div>
+            <div class="media-description">
+                $!result.getDescription()
+            </div>
+        </div>
+    </div>
+</a>

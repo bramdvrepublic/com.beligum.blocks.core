@@ -135,7 +135,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         //see http://rdf4j.org/doc/4/programming.docbook?view#The_Lucene_SAIL
         //and maybe the source code: org.openrdf.sail.lucene.LuceneSailSchema
         StringBuilder queryBuilder = new StringBuilder();
-        final String searchPrefix = "search";
+        final String searchPrefix = "templates/search";
         queryBuilder.append("PREFIX ").append(Settings.instance().getRdfOntologyPrefix()).append(": <").append(Settings.instance().getRdfOntologyUri()).append("> \n");
         queryBuilder.append("PREFIX ").append(searchPrefix).append(": <").append(LuceneSailSchema.NAMESPACE).append("> \n");
         queryBuilder.append("\n");

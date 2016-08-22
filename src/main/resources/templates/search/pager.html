@@ -1,0 +1,130 @@
+<ul class="pagination">
+
+## remove this to enable use of them outside this template
+    #set($useIcons=false) ## use icons instead of words like 'Next'
+    #set($disableNotHide=false) ## render disabled buttons instead of omitting them
+
+## the first page
+    #if($CONTROLLER.searchResult.pageIndex > 0)
+        #set($link=$REQUEST.getUriInfo().getRequestUriBuilder().replaceQueryParam($CONSTANTS.blocks.core.SEARCH_PARAM_INDEX, 0))
+        <li class="first"><a href="$link">
+            #if($useIcons)
+                <i class="fa fa-angle-double-left"></i>
+            #{else}
+                <i class="fa fa-angle-double-left"></i> $MESSAGES.blocks.core.searchBoxResultFirst
+            #end
+        </a></li>
+    #else
+        #if($disableNotHide)
+            <li class="first disabled"><a>#if($useIcons)<i class="fa fa-angle-double-left"></i>#{else}$MESSAGES.blocks.core.searchBoxResultFirst#end</a></li>
+        #end
+    #end
+
+## the previous page
+    #if($CONTROLLER.searchResult.pageIndex > 0)
+        #set($index=$CONTROLLER.searchResult.pageIndex - 1)
+        #set($link=$REQUEST.getUriInfo().getRequestUriBuilder().replaceQueryParam($CONSTANTS.blocks.core.SEARCH_PARAM_INDEX, $index))
+        <li class="previous"><a href="$link">
+            #if($useIcons)
+                <i class="fa fa-angle-left"></i>
+            #{else}
+                <i class="fa fa-angle-left"></i> $MESSAGES.blocks.core.searchBoxResultPrevious
+            #end
+        </a></li>
+    #else
+        #if($disableNotHide)
+            <li class="previous disabled"><a>
+                #if($useIcons)
+                    <i class="fa fa-angle-left"></i>
+                #{else}
+                    <i class="fa fa-angle-left"></i> $MESSAGES.blocks.core.searchBoxResultPrevious
+                #end
+            </a></li>
+        #end
+    #end
+
+    #set($pagerSize=$TOOLKIT.math.toInteger($CONSTANTS.blocks.core.SEARCH_PAGER_SIZE))
+    #set($halfPagerSize=$TOOLKIT.math.floor($TOOLKIT.math.div($pagerSize, 2)))
+
+    #set($startPage=$CONTROLLER.searchResult.pageIndex - $halfPagerSize)
+    #set($endPage=$CONTROLLER.searchResult.pageIndex + $halfPagerSize)
+
+## on top of the left and right part, we always have the current page, so advance the left half one more (to show more of what's coming) if the size is even
+    #if (($halfPagerSize*2)==$pagerSize)
+        #set($startPage=$startPage+1)
+    #end
+
+    #if ($startPage<0)
+    ## end calculations are off now; adjust them before setting to final value (minus a negative number is plus)
+        #set($endPage=$endPage - $startPage)
+
+        #set($startPage=0)
+    #end
+
+    #if ($endPage>$maxPageInt)
+    ## start calculations are off now; adjust them before setting to final value
+        #set($startPage=$startPage - ($endPage - $maxPageInt))
+        #if ($startPage<0)
+            #set($startPage=0)
+        #end
+
+        #set($endPage=$maxPageInt)
+    #end
+
+    #foreach($i in [$startPage..$endPage])
+    ## Note: zero-based index
+        #set($index=$i)
+        #set($link=$REQUEST.getUriInfo().getRequestUriBuilder().replaceQueryParam($CONSTANTS.blocks.core.SEARCH_PARAM_INDEX, $index))
+        #set($label=$i + 1)
+        #if ($index==$CONTROLLER.searchResult.pageIndex)
+            <li class="active"><a href="$link">$label</a></li>
+        #else
+            <li><a href="$link">$label</a></li>
+        #end
+    #end
+
+## the next page
+    #if($CONTROLLER.searchResult.totalHits > $lastIndex)
+        #set($index=$CONTROLLER.searchResult.pageIndex + 1)
+        #set($link=$REQUEST.getUriInfo().getRequestUriBuilder().replaceQueryParam($CONSTANTS.blocks.core.SEARCH_PARAM_INDEX, $index))
+        <li class="next"><a href="$link">
+            #if($useIcons)
+                <i class="fa fa-angle-right"></i>
+            #{else}
+                $MESSAGES.blocks.core.searchBoxResultNext <i class="fa fa-angle-right"></i>
+            #end
+        </a></li>
+    #else
+        #if($disableNotHide)
+            <li class="next disabled"><a>
+                #if($useIcons)
+                    <i class="fa fa-angle-right"></i>
+                #{else}
+                    $MESSAGES.blocks.core.searchBoxResultNext <i class="fa fa-angle-right"></i>
+                #end
+            </a></li>
+        #end
+    #end
+
+## the last page
+    #if($CONTROLLER.searchResult.totalHits > $lastIndex)
+        #set($link=$REQUEST.getUriInfo().getRequestUriBuilder().replaceQueryParam($CONSTANTS.blocks.core.SEARCH_PARAM_INDEX, $maxPageInt))
+        <li class="last"><a href="$link">
+            #if($useIcons)
+                <i class="fa fa-angle-double-right"></i>
+            #{else}
+                $MESSAGES.blocks.core.searchBoxResultLast <i class="fa fa-angle-double-right"></i>
+            #end
+        </a></li>
+    #else
+        #if($disableNotHide)
+            <li class="last disabled"><a>
+                #if($useIcons)
+                    <i class="fa fa-angle-double-right"></i>
+                #{else}
+                    $MESSAGES.blocks.core.searchBoxResultLast <i class="fa fa-angle-double-right"></i>
+                #end
+            </a></li>
+        #end
+    #end
+</ul>

@@ -1,0 +1,28 @@
+#if(!$CONTROLLER.searchResult.results.empty)
+    ## we'll keep a map of encountered first letters and start a new section every time a new letter is encountered
+    ## Note: this assumes the search results are ordered alphabetically!
+    #set($letters={})
+    #foreach($result in $CONTROLLER.searchResult.results)
+
+        #set($letter=$result.title.substring(0,1).toUpperCase())
+
+        #if(!$letters[$letter])
+        <div class="col-md-12">
+            <h3>
+                #if($TOOLKIT.lang.character.isLetter($letter.charAt(0)))
+                    $letter
+                #else
+                    #
+                #end
+            </h3>
+        </div>
+
+            #set($letters[$letter]=true)
+        #end
+
+        <div class="col-md-4">
+            <a href="$result.id">$result.title</a>
+        </div>
+
+    #end
+#end
