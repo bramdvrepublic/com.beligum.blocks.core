@@ -548,6 +548,12 @@ ul.@{BLOCK_ACTIONS_CLASS} {
         }
         .slider.slider-horizontal {
           width: 100%;
+
+          .slider-handle {
+            //disable the gradient and override the color of the handle with a plain primary button color
+            background-image: none !important;
+            background-color: @btn-primary-bg;
+          }
         }
 
         .btn-toggle {

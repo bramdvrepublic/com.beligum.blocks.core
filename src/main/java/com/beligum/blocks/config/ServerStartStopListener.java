@@ -1,7 +1,6 @@
 package com.beligum.blocks.config;
 
 import bitronix.tm.BitronixTransactionManager;
-import com.atomikos.icatch.jta.UserTransactionManager;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.server.R;
 import com.beligum.base.server.ifaces.ServerLifecycleListener;
@@ -9,7 +8,6 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.fs.hdfs.bitronix.XAResourceProducer;
 import com.beligum.blocks.fs.index.ifaces.Indexer;
-import com.beligum.blocks.search.ElasticSearch;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Server;
@@ -49,24 +47,6 @@ public class ServerStartStopListener implements ServerLifecycleListener
             catch (Exception e) {
                 throw new RuntimeIOException("Unable to boot the page store transaction manager during starup, this is bad and I can't proceed", e);
             }
-
-            //this will startup the umbrella transaction manager and launch any pending recovery actions
-            try {
-                TransactionManager transactionManager = StorageFactory.getTransactionManager();
-                //this will force the transactions to be recovered right after startup (instead of waiting till first save)
-                if (transactionManager!=null && transactionManager instanceof UserTransactionManager) {
-                    UserTransactionManager userTransactionManager = (UserTransactionManager) transactionManager;
-                    userTransactionManager.init();
-                }
-            }
-            catch (Exception e) {
-                throw new RuntimeIOException("Unable to boot the JTA transaction manager during starup, this is bad and I can't proceed", e);
-            }
-
-            //this will launch/connect to the ES server
-            if (Settings.instance().hasElasticSearchConfigured()) {
-                ElasticSearch.instance().getClient();
-            }
         }
     }
     @Override
@@ -99,12 +79,7 @@ public class ServerStartStopListener implements ServerLifecycleListener
             if (R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRANSACTION_MANAGER)) {
                 try {
                     TransactionManager transactionManager = StorageFactory.getTransactionManager();
-                    if (transactionManager instanceof UserTransactionManager) {
-                        UserTransactionManager userTransactionManager = (UserTransactionManager) transactionManager;
-                        userTransactionManager.setForceShutdown(true);
-                        userTransactionManager.close();
-                    }
-                    else if (transactionManager instanceof BitronixTransactionManager) {
+                    if (transactionManager instanceof BitronixTransactionManager) {
                         BitronixTransactionManager bitronixTransactionManager = (BitronixTransactionManager) transactionManager;
                         //we need to explicitly shut down the manually registered ones
                         XAResourceProducer.shutdown();
@@ -117,10 +92,6 @@ public class ServerStartStopListener implements ServerLifecycleListener
                 catch (IOException e) {
                     Logger.error("Error while shutting down transaction manager", e);
                 }
-            }
-
-            if (Settings.instance().hasElasticSearchConfigured()) {
-                ElasticSearch.instance().getClient().close();
             }
         }
     }

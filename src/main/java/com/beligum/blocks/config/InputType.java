@@ -25,7 +25,6 @@ public enum InputType
     Time(core.Entries.INPUT_TYPE_TIME),
     DateTime(core.Entries.INPUT_TYPE_DATETIME),
     Color(core.Entries.INPUT_TYPE_COLOR),
-    //TODO not yet implemented in JS and Java (only needed for image import)
     Uri(core.Entries.INPUT_TYPE_URI),
     Resource(core.Entries.INPUT_TYPE_RESOURCE),
     ;

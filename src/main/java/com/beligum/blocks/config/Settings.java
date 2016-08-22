@@ -20,9 +20,10 @@ import java.util.Map;
  */
 public class Settings
 {
+    public static final String RESOURCE_ENDPOINT = "/resource/";
+
     private static final String TRANSACTIONS_PROPERTIES_KEY = "blocks.core.transactions.properties.property";
     private static final String PAGES_HDFS_PROPERTIES_KEY = "blocks.core.pages.hdfs.properties.property";
-    private static final String ELASTIC_SEARCH_PROPERTIES_KEY = "blocks.core.elastic-search.properties.property";
     private static final String TRANSACTION_MANAGER_KEY = "blocks.core.transactions.transaction-manager";
     private static final String TRANSACTION_TIMEOUT_KEY = "blocks.core.transactions.timeout";
 
@@ -32,14 +33,8 @@ public class Settings
     private static final String DEFAULT_XADISK_INSTANCE_ID = "xa-1";
     private static final long DEFAULT_XADISK_BOOT_TIMEOUT = 60 * 1000; //1 minute
     private static final String DEFAULT_GEONAMES_USERNAME = "demo";
-    private static final String DEFAULT_TRANSACTION_MANAGER = "com.atomikos.icatch.jta.UserTransactionManager";
     private static final int DEFAULT_TRANSACTION_TIMEOUT_MILLIS = 16000;
-    //https://www.atomikos.com/Documentation/JtaProperties
     private static final Map<String, String> DEFAULT_TRANSACTION_MANAGER_PROPS = ImmutableMap.<String, String>builder()
-                    //Tell Atomikos to get it's properties from here (actually system variables) instead of a properties file
-                    .put("com.atomikos.icatch.no_file", "1")
-                    .put("com.atomikos.icatch.force_shutdown_on_vm_exit", "true")
-                    .put("com.atomikos.icatch.default_jta_timeout", "20000")
                     .build();
 
     private static Settings instance;
@@ -87,7 +82,7 @@ public class Settings
     public Class<? extends TransactionManager> getTransactionManagerClass()
     {
         if (this.cachedTransactionManagerClass == null) {
-            String classname = R.configuration().getString(TRANSACTION_MANAGER_KEY, DEFAULT_TRANSACTION_MANAGER);
+            String classname = R.configuration().getString(TRANSACTION_MANAGER_KEY, null);
             try {
                 this.cachedTransactionManagerClass = (Class<? extends TransactionManager>) Class.forName(classname);
             }
@@ -109,13 +104,10 @@ public class Settings
                 this.cachedTransactionsProperties.put(propertyKey, propertyValue);
             }
 
-            //set some atomikos defaults so we don't have to set them in every config
-            if (getTransactionManagerClass().getCanonicalName().equals(DEFAULT_TRANSACTION_MANAGER)) {
-                //Don't default values that have been set explicitly
-                for (Map.Entry<String, String> e: DEFAULT_TRANSACTION_MANAGER_PROPS.entrySet()) {
-                    if (!this.cachedTransactionsProperties.containsKey(e.getKey())) {
-                        this.cachedTransactionsProperties.put(e.getKey(), e.getValue());
-                    }
+            //Don't default values that have been set explicitly
+            for (Map.Entry<String, String> e: DEFAULT_TRANSACTION_MANAGER_PROPS.entrySet()) {
+                if (!this.cachedTransactionsProperties.containsKey(e.getKey())) {
+                    this.cachedTransactionsProperties.put(e.getKey(), e.getValue());
                 }
             }
         }
@@ -128,13 +120,6 @@ public class Settings
     public int getTransactionTimeoutMillis()
     {
         return R.configuration().getInt(TRANSACTION_TIMEOUT_KEY, DEFAULT_TRANSACTION_TIMEOUT_MILLIS);
-    }
-    /**
-     * Returns the default timeout value in seconds for all transactions
-     */
-    public int getTransactionTimeoutSeconds()
-    {
-        return (int) Math.round(Settings.instance().getTransactionTimeoutMillis() / 1000.0);
     }
     public boolean getDeleteLocksOnStartup()
     {
@@ -233,40 +218,6 @@ public class Settings
     {
         return R.configuration().getString("blocks.core.pages.lock-file-ext", DEFAULT_LOCK_FILE_EXT);
     }
-    public boolean hasElasticSearchConfigured()
-    {
-        return !StringUtils.isEmpty(Settings.instance().getElasticSearchClusterName());
-    }
-    public boolean getElasticSearchLaunchEmbedded()
-    {
-        return R.configuration().getBoolean("blocks.core.elastic-search.launch-embedded", true);
-    }
-    public String getElasticSearchClusterName()
-    {
-        return R.configuration().getString("blocks.core.elastic-search.cluster-name");
-    }
-    public String getElasticSearchHostName()
-    {
-        return R.configuration().getString("blocks.core.elastic-search.host", "localhost");
-    }
-    public Integer getElasticSearchPort()
-    {
-        return R.configuration().getInt("blocks.core.elastic-search.port", 9000);
-    }
-    public Map<String, String> getElasticSearchProperties()
-    {
-        if (this.cachedEsProperties == null) {
-            this.cachedEsProperties = new HashMap<>();
-            List<HierarchicalConfiguration> properties = R.configuration().configurationsAt(ELASTIC_SEARCH_PROPERTIES_KEY);
-            for (HierarchicalConfiguration property : properties) {
-                String propertyKey = property.getString("name");
-                String propertyValue = property.getString("value");
-                this.cachedEsProperties.put(propertyKey, propertyValue);
-            }
-        }
-
-        return this.cachedEsProperties;
-    }
     public Path getPageMainIndexFolder()
     {
         if (this.cachedPagesMainIndexDir == null) {
@@ -312,6 +263,17 @@ public class Settings
         if (retVal==null) {
             Logger.warn("No geonames username specified, using default username '"+DEFAULT_GEONAMES_USERNAME+"', but this is not optimal...");
             retVal = DEFAULT_GEONAMES_USERNAME;
+        }
+
+        return retVal;
+    }
+    public String getGoogleMapsApiKey()
+    {
+        String retVal = R.configuration().getString("blocks.core.google-maps.api-key", null);
+
+        if (retVal==null) {
+            Logger.warn("No Google Maps API key specified, using empty string, but this will probably yield errors...");
+            retVal = "";
         }
 
         return retVal;

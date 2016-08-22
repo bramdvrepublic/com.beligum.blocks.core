@@ -20,12 +20,18 @@ import java.util.*;
  */
 public class BreadcrumbController extends DefaultTemplateController
 {
+    //-----CONSTANTS-----
+
+    //-----VARIABLES-----
+
+    //-----CONSTRUCTORS-----
     @Override
     public void created()
     {
 
     }
 
+    //-----PUBLIC METHODS-----
     /**
      * @return a breadcrumb map.entry list containing <url, title> entries.
      */
@@ -58,9 +64,12 @@ public class BreadcrumbController extends DefaultTemplateController
         return retVal.descendingIterator();
     }
 
+    //-----PROTECTED METHODS-----
 
+    //-----PRIVATE METHODS-----
     /**
      * Look in our file system and search for the parent of this document (with the same language).
+     * @deprecated old code, now using index instead
      */
     private URI getParentUri(URI pageUri, FileContext fc) throws IOException
     {

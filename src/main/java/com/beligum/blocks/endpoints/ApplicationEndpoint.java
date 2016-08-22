@@ -7,7 +7,6 @@ import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.caching.CacheKeys;
-import com.beligum.blocks.config.ParserConstants;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
@@ -51,7 +50,6 @@ import java.util.*;
 public class ApplicationEndpoint
 {
     //-----CONSTANTS-----
-    private static final URI ROOT = URI.create("/");
 
     //-----VARIABLES-----
 
@@ -90,7 +88,7 @@ public class ApplicationEndpoint
         // First, check if we're dealing with a resource.
         // If it's associated endpoint wants to redirect to another URL (eg. when we use resources of an external ontology)
         // don't try to lookup the resource locally, but redirect there.
-        if (requestedUri.getPath().startsWith(ParserConstants.RESOURCE_ENDPOINT)) {
+        if (requestedUri.getPath().startsWith(Settings.RESOURCE_ENDPOINT)) {
             //check if it's a full resource path
             java.nio.file.Path path = Paths.get(requestedUri.getPath());
             if (path.getNameCount() == 3) {
@@ -215,7 +213,7 @@ public class ApplicationEndpoint
                                 else {
                                     //we redirect to the &lang=.. (instead of lang-prefixed arl) when we're dealing with a resource to have a cleaner URL
                                     //Note that it gets stored locally with a lang-prefixed path though; see DefaultPageImpl.toResourceUri for details
-                                    if (requestedUri.getPath().startsWith(ParserConstants.RESOURCE_ENDPOINT)) {
+                                    if (requestedUri.getPath().startsWith(Settings.RESOURCE_ENDPOINT)) {
                                         retVal = Response.seeOther(UriBuilder.fromUri(requestedUri).queryParam(I18nFactory.LANG_QUERY_PARAM, redirectLocale.getLanguage()).build());
                                     }
                                     else {
@@ -226,7 +224,7 @@ public class ApplicationEndpoint
                             else {
                                 //when we're dealing with a resource, we validate the resource type (the path part coming after the "/resource" path)
                                 // to make sure it can be mapped in our ontology (during page creation)
-                                if (requestedUri.getPath().startsWith(ParserConstants.RESOURCE_ENDPOINT)) {
+                                if (requestedUri.getPath().startsWith(Settings.RESOURCE_ENDPOINT)) {
                                     java.nio.file.Path path = Paths.get(requestedUri.getPath());
                                     if (path.getNameCount() != 3) {
                                         throw new IOException("Encountered an (unexisting) resource URL with the wrong format. Need at least 3 segments: /resource/<type>/<id>;" + requestedUri);
