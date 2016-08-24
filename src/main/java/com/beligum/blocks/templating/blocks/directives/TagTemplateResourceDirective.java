@@ -52,26 +52,31 @@ public class TagTemplateResourceDirective extends Directive
         String element = TagTemplateDirectiveUtils.readValue(context, node);
 
         if (HtmlTemplate.testResourceRoleScope(roleScope) && HtmlTemplate.testResourceModeScope(mode)) {
-            boolean added = false;
-            switch (type) {
-                case inlineStyles:
-                    added = TemplateResourcesDirective.getContextResources(context).addInlineStyle(print, element, (StringWriter) writer);
-                    break;
-                case externalStyles:
-                    added = TemplateResourcesDirective.getContextResources(context).addExternalStyle(print, urlArgument, element, (StringWriter) writer);
-                    break;
-                case inlineScripts:
-                    added = TemplateResourcesDirective.getContextResources(context).addInlineScript(print, element, (StringWriter) writer);
-                    break;
-                case externalScripts:
-                    added = TemplateResourcesDirective.getContextResources(context).addExternalScript(print, urlArgument, element, (StringWriter) writer);
-                    break;
-                default:
-                    throw new ParseErrorException("Encountered unsupported resource type in directive #" + NAME + " of type " + type + "; this shouldn't happen");
-            }
+            if (writer instanceof StringWriter) {
+                boolean added = false;
+                switch (type) {
+                    case inlineStyles:
+                        added = TemplateResourcesDirective.getContextResources(context).addInlineStyle(print, element, (StringWriter) writer);
+                        break;
+                    case externalStyles:
+                        added = TemplateResourcesDirective.getContextResources(context).addExternalStyle(print, urlArgument, element, (StringWriter) writer);
+                        break;
+                    case inlineScripts:
+                        added = TemplateResourcesDirective.getContextResources(context).addInlineScript(print, element, (StringWriter) writer);
+                        break;
+                    case externalScripts:
+                        added = TemplateResourcesDirective.getContextResources(context).addExternalScript(print, urlArgument, element, (StringWriter) writer);
+                        break;
+                    default:
+                        throw new ParseErrorException("Encountered unsupported resource type in directive #" + NAME + " of type " + type + "; this shouldn't happen");
+                }
 
-            if (print) {
-                writer.write(element);
+                if (print) {
+                    writer.write(element);
+                }
+            }
+            else {
+                throw new ClassCastException("I was expecting a StringWriter (because all writers are wrapped in a StringWriter, see PageTemplateWrapperDirective), but I got a "+writer.getClass().getCanonicalName()+" instead; can't proceed and this should be fixed.");
             }
         }
 

@@ -39,12 +39,9 @@ public class BreadcrumbController extends DefaultTemplateController
     {
         LinkedList<Map.Entry<URI, String>> retVal = new LinkedList<>();
 
-        // get URI
-        URI requestedUri = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
-
         PageIndexConnection conn = StorageFactory.getMainPageIndexer().connect();
 
-        URI uri = requestedUri;
+        URI uri = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
         Set<String> encounteredIds = new HashSet<>();
         while (uri != null) {
 
@@ -58,7 +55,23 @@ public class BreadcrumbController extends DefaultTemplateController
                 }
             }
 
+            //we go one level up
+            //Note that because 'all' (what about the resources with ?lang) pages are prefixed with a language, this should render in the right language
             uri = uri.getPath().endsWith("/") ? uri.getPath().equals("/") ? null : uri.resolve("..") : uri.resolve(".");
+        }
+
+        //the breadcrumb bar isn't really designed to be empty
+        if (retVal.isEmpty()) {
+            //give it one more shot and try to find the home page with a simple heuristic
+            PageIndexEntry p = conn.get(URI.create("/"+R.i18nFactory().getOptimalLocale().getLanguage()+"/"));
+            if (p!=null) {
+                retVal.add(new DefaultMapEntry(URI.create(p.getId()), p.getTitle()));
+            }
+
+            //just add the root with a general terms as the final attempt
+            if (retVal.isEmpty()) {
+                retVal.add(new DefaultMapEntry(URI.create("/"), gen.com.beligum.blocks.core.messages.blocks.core.Entries.breadcrumbHomeTitle));
+            }
         }
 
         return retVal.descendingIterator();

@@ -83,15 +83,15 @@ public class TagTemplate extends HtmlTemplate
         // because we want to keep the wrapped resources outside the template too...
         OutputDocument htmlDoc = new OutputDocument(documentSource);
 
-        //the prefix equals the prefix of the parent, plus the prefix of us
+        //Note: don't append 'superTemplate.getPrefixHtml()' because it's already there, we copied it in (see HtmlTemplate.init())
         StringBuilder prefix = new StringBuilder();
-        if (superTemplate != null) {
-            prefix.append(superTemplate.getPrefixHtml());
-        }
         prefix.append(documentSource.subSequence(0, templateTag.getBegin()));
         this.prefixHtml = new Source(prefix);
 
         //same for the suffix but in reverse order
+        //Note: I don't really know if we can call suffix.append(superTemplate.getSuffixHtml()) here,
+        // because I think this is never used, so I can't really test, but as far as I know, we never (as with the prefix)
+        // mess with the prefix html by hand, so I think it's safe to call it.
         StringBuilder suffix = new StringBuilder();
         suffix.append(documentSource.subSequence(templateTag.getEnd(), documentSource.length()));
         if (superTemplate != null) {

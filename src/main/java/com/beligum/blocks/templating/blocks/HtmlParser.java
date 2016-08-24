@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
  * keep a refernece to prefixes or the default vocab. (e.g. property="pagetitle" and
  * property="http://www.mot.be/ontology/pagetitle" and property="mot:pagetitle" could all reference the same
  * property.
- *
+ * <p>
  * Note: the reverse of this class is com.beligum.blocks.templating.blocks.HtmlAnalyzer
  */
 public class HtmlParser implements Parser
@@ -73,353 +73,48 @@ public class HtmlParser implements Parser
     public SizedInputStream parse(Resource resource) throws IOException
     {
         try {
+            TemplateCache templateCache = this.getTemplateCache();
+
+            //the default error count is set to 2, meaning if an attribute throws two errors,
+            // it's ignored, which is problematic with all the Velocity tags
+            // Should we activate this?
+            // -> I think not, it's good that eg. in <html ${blah}> the '${blah}' is skipped,
+            //    that said, it's more problematic that eg. in <html${blah}>, the 'html${blah}' will probably be skipped...
+            //Attributes.setDefaultMaxErrorCount(10);
+
             //the solves a lot of issues with inactive lines
             Source source = new Source(this.eatVelocityComments(resource));
 
+            // this one was a bit problematic: we would like to surround all returning html with a #ptwd directive,
+            // but we can't have it twice, so it's kind of hard to detect the outer resource where we should add it.
+            // Note that we can't really use a detector like 'template instanceof PageTemplate' below because we want
+            // regular Velocity templates to be wrapped too (eg. #parse("/templates/main.html"))
+            // So we switched to detecting all _source_ (not the output or we'll wrap page templates as well and end up with doubles)
+            // resources that contain a <html> tag and hope for the best...
             boolean htmlPage = source.getFirstElement(HTML_ROOT_ELEM) != null;
-            HtmlTemplate sourceTemplate = null;
-            // if we're dealing with a template (eg. the file is a template, not an instance of a template), replace the source with the html in the template
-            TemplateCache templateCache = this.getTemplateCache();
-            String resourceRelativePath = resource.getUri().getPath();
-            if (templateCache.containsKeyByRelativePath(resourceRelativePath)) {
-                //first of all, since this method is only called when something changed, update the cache value
-                HtmlTemplate oldTemplate = templateCache.getByRelativePath(resourceRelativePath);//fetch the old value for the paths
-                sourceTemplate = HtmlTemplate.create(oldTemplate.getTemplateName(), source, oldTemplate.getAbsolutePath(), oldTemplate.getRelativePath(), oldTemplate.getSuperTemplate());
-                templateCache.putByRelativePath(resourceRelativePath, sourceTemplate);
 
-                //this is the base for all coming preprocessing
-                //note that we only use the inner html, the prefix and suffix will be rendered out before and after every instance (see loops below)
-                Segment templateHtml = sourceTemplate.getInnerHtml();
-                OutputDocument output = new OutputDocument(templateHtml);
+            // if we're dealing with a template (eg. the file is a template, not an instance of a template),
+            // store the external references and replace the source with the html in the <template> tag
 
-                //from here, it's the same for a Tag or PageImpl template; preprocess the replaceable properties
-
-                Stack<URI> currentVocabStack = new Stack<>();
-                if (sourceTemplate.getVocab() != null) {
-                    currentVocabStack.push(sourceTemplate.getVocab());
-                }
-
-                Stack<Map<String, URI>> currentPrefixesStack = new Stack<>();
-                if (sourceTemplate.getPrefixes() != null && !sourceTemplate.getPrefixes().isEmpty()) {
-                    currentPrefixesStack.push(sourceTemplate.getPrefixes());
-                }
-
-                Set<EndTag> vocabPopTags = new HashSet<>();
-                Set<EndTag> prefixPopTags = new HashSet<>();
-
-                for (Iterator<Segment> nodeIterator = templateHtml.getNodeIterator(); nodeIterator.hasNext(); ) {
-                    Segment nodeSegment = nodeIterator.next();
-                    if (nodeSegment instanceof StartTag) {
-                        StartTag tag = (StartTag) nodeSegment;
-
-                        URI currentVocab = currentVocabStack.isEmpty() ? null : currentVocabStack.peek();
-                        Map<String, URI> currentPrefixes = currentPrefixesStack.isEmpty() ? null : currentPrefixesStack.peek();
-
-                        Attributes attributes = tag.getAttributes();
-                        if (attributes != null) {
-
-                            Attribute vocabAttr = attributes.get(RDF_VOCAB_ATTR);
-                            if (vocabAttr != null) {
-                                currentVocab = parseRdfVocabAttribute(sourceTemplate, vocabAttr.getValue());
-                                //if the tag is not stand-alone, push it on the stack and save it's end tag for popping
-                                if (!tag.isEmptyElementTag()) {
-                                    currentVocabStack.push(currentVocab);
-
-                                    //since it's not an empty element tag, it should have an end tag
-                                    EndTag endTag = tag.getElement().getEndTag();
-                                    if (endTag == null) {
-                                        throw new Exception("Encountered non-empty element '" + tag.toString() + "' (at line " + getAbsoluteTemplateTagLineNumber(source, tag.getBegin()) +
-                                                            ")  without a matching end tag; " + sourceTemplate.getAbsolutePath());
-                                    }
-                                    else {
-                                        vocabPopTags.add(endTag);
-                                    }
-                                }
-                            }
-
-                            Attribute prefixAttr = attributes.get(RDF_PREFIX_ATTR);
-                            if (prefixAttr != null) {
-                                if (currentPrefixes == null) {
-                                    currentPrefixes = new LinkedHashMap<>();
-                                }
-                                else {
-                                    //merge it with the already active prefixes
-                                    currentPrefixes = new LinkedHashMap<>(currentPrefixes);
-                                }
-                                parseRdfPrefixAttribute(sourceTemplate, prefixAttr.getValue(), currentPrefixes);
-                                //if the tag is not stand-alone, merge it with the active prefixes, push it on the stack and save it's end tag for popping
-                                if (!tag.isEmptyElementTag()) {
-                                    currentPrefixesStack.push(currentPrefixes);
-                                    prefixPopTags.add(tag.getElement().getEndTag());
-                                }
-                            }
-
-                            Attribute propertyAttr = attributes.get(RDF_PROPERTY_ATTR);
-                            if (propertyAttr != null) {
-                                this.replaceTemplateProperty(source, sourceTemplate, tag.getElement(), propertyAttr, output, currentVocab, currentPrefixes);
-                            }
-
-                            Attribute dataPropertyAttr = attributes.get(NON_RDF_PROPERTY_ATTR);
-                            if (dataPropertyAttr != null) {
-                                if (propertyAttr == null) {
-                                    this.replaceTemplateProperty(source, sourceTemplate, tag.getElement(), dataPropertyAttr, output, currentVocab, currentPrefixes);
-                                }
-                                else {
-                                    Logger.warn("Not using attribute '" + NON_RDF_PROPERTY_ATTR + "' of tag " + tag.toString() + " because there's also a '" + RDF_PROPERTY_ATTR +
-                                                "' attribute set that has precedence because it's an official RDFa attribute");
-                                }
-                            }
-                        }
-                    }
-                    else if (nodeSegment instanceof EndTag) {
-                        EndTag tag = (EndTag) nodeSegment;
-
-                        if (vocabPopTags.contains(tag)) {
-                            currentVocabStack.pop();
-                            vocabPopTags.remove(tag);
-                        }
-                        if (prefixPopTags.contains(tag)) {
-                            currentPrefixesStack.pop();
-                            prefixPopTags.remove(tag);
-                        }
-                    }
-                }
-
+            HtmlTemplate template = templateCache.getByRelativePath(resource.getUri().getPath());
+            if (template!=null) {
+                OutputDocument output = this.processHtmlTemplate(resource, source, template);
                 //replace the source with the (parsed) <template> content
                 source = new Source(output.toString());
             }
 
-            //parse the main html (same for templates and instances)
-            OutputDocument output = new OutputDocument(source);
-            Collection<HtmlTemplate> allTemplates = templateCache.values();
-            for (HtmlTemplate htmlTemplate : allTemplates) {
-
-                boolean replaced = false;
-                List<net.htmlparser.jericho.Element> templateInstances = source.getAllElements(htmlTemplate.getTemplateName());
-                for (net.htmlparser.jericho.Element templateInstance : templateInstances) {
-
-                    //build the attributes map
-                    Map<String, String> attributes = new LinkedHashMap<>();
-                    templateInstance.getAttributes().populateMap(attributes, false);
-
-                    //copy in all the attributes of the template to the attributes map, except the ones that were already set in the instance
-                    Map<String, String> templateAttributes = htmlTemplate.getAttributes();
-                    if (templateAttributes != null) {
-                        for (Map.Entry<String, String> attribute : templateAttributes.entrySet()) {
-                            if (!attributes.containsKey(attribute.getKey())) {
-                                attributes.put(attribute.getKey(), attribute.getValue());
-                            }
-                        }
-                    }
-
-                    //build the properties map
-                    //note: we want to save the Velocity codes, used inside a template instance, eg:
-                    //     <tag-template-name>
-                    // -->     #foreach ($val in $values)
-                    //             <div property="value">$val</div>
-                    // -->     #end
-                    //     </tag-template-name>
-                    // so instead of iterating over the child-elements, we iterate over all nodes, saving "other" text for future use
-                    List<Token> properties = new ArrayList<>();
-                    Map<String, PropertyToken> propertyRefs = new HashMap<>();
-                    // note: this is a tricky one. It doesn't have to be the immediate children, but we can't cross the "boundary"
-                    // of another template instance either (otherwise the grandchild-properties would get assigned to the grandparent)
-                    // In practice, restricting this to the immediate children works pretty well (and neatly conforms to the WebComponents standard)
-                    Iterator<Segment> iter = templateInstance.getContent().getNodeIterator();
-                    while (iter.hasNext()) {
-                        Segment seg = iter.next();
-
-                        //if the segment is a tag, parse the element
-                        if (seg instanceof StartTag) {
-                            StartTag startTag = ((StartTag) seg);
-                            Element immediateChild = startTag.getElement();
-
-                            // Note: this first check check if the tag (eg. a <link> tag that's not closed; eg. that's not <link/>)
-                            // occurs. For more details, see http://jericho.htmlparser.net/docs/javadoc/net/htmlparser/jericho/Element.html
-                            boolean isVoidTag = startTag.equals(immediateChild);
-
-                            //skip the entire tree of the element, we'll handle it now
-                            // but watch out: an <img> element doens't have and end tag, so check for null
-                            if (!isVoidTag) {
-                                if (immediateChild.getEndTag() != null) {
-                                    while (iter.hasNext() && !iter.next().equals(immediateChild.getEndTag()));
-                                }
-                            }
-
-                            //since (for our template system) the RDF and non-RDF attributes are equal, we can treat them the same way
-                            String name = immediateChild.getAttributeValue(RDF_PROPERTY_ATTR);
-                            //note that this will be skipped when a valid RDF-attr is found (so if both are present, the RDF one has priority)
-                            if (name == null) {
-                                name = immediateChild.getAttributeValue(NON_RDF_PROPERTY_ATTR);
-                            }
-                            if (name != null) {
-                                String value = immediateChild.toString();
-
-                                // this list allows us to specify multiple properties with the same name in the instance
-                                PropertyToken values = propertyRefs.get(name);
-                                if (values == null) {
-                                    propertyRefs.put(name, values = new PropertyToken(name));
-                                    //note that this will 'eat up' all same properties that are coming in this tag
-                                    properties.add(values);
-                                }
-                                values.add(value);
-                            }
-                        }
-                        //if the segment is something else, save it in the right order for later use
-                        else {
-                            // if we encounter a resource wrapper diretive, the tag inside will be a html tag,
-                            // so we need to make sure it doesn't get eaten because there's no property attribute set
-                            // on it.
-                            String segStr = seg.toString().trim();
-                            if (segStr.startsWith("#" + TagTemplateResourceDirective.NAME)) {
-                                StringBuilder res = new StringBuilder(seg.toString());
-                                while (iter.hasNext() && !segStr.equals("#end")) {
-                                    seg = iter.next();
-                                    segStr = seg.toString().trim();
-                                    res.append(seg.toString());
-                                }
-                                segStr = res.toString();
-                            }
-                            properties.add(new OtherToken(segStr));
-                        }
-                    }
-
-                    //now start building the new tag
-                    StringBuilder builder = new StringBuilder();
-
-                    builder.append(htmlTemplate.getPrefixHtml());
-
-                    //render the start tag, except if the template is eg. a page template
-                    String renderTag = !htmlTemplate.renderTemplateTag() ? null : htmlTemplate.getTemplateName();
-                    if (renderTag != null) {
-                        String attr = templateInstance.getAttributeValue(HtmlTemplate.ATTRIBUTE_RENDER_TAG);
-                        //if it's not set, just render the tag name
-                        if (attr != null) {
-                            //NOTE: if this is set to empty, don't render the tag (and it's attributes) at all
-                            if (attr.equals("")) {
-                                renderTag = null;
-                            }
-                            else {
-                                renderTag = attr;
-                            }
-                        }
-                    }
-
-                    //the 'body' starts here
-
-                    if (renderTag != null) {
-                        builder.append("<").append(renderTag);
-
-                        //the optional attributes
-                        if (!attributes.isEmpty()) {
-                            builder.append(Attributes.generateHTML(attributes));
-                        }
-                        //close the start tag
-                        builder.append(">").append("\n");
-                    }
-                    // page templates are never rendered out (because their 'instance' is actually the <html> element)
-                    // but we use a little trick to render the arguments of their instance tag: we set a special velocity variable
-                    // that is added to the <html> tag (eg. <html $!HTML_TAG_ARGS>)
-                    else if (htmlTemplate instanceof PageTemplate) {
-                        if (!attributes.isEmpty()) {
-                            //quick loop to remove empty attributes (we want as little as possible in the <html> tag)
-                            Iterator<Map.Entry<String, String>> attIter = attributes.entrySet().iterator();
-                            while (attIter.hasNext()) {
-                                if (StringUtils.isEmpty(attIter.next().getValue())) {
-                                    attIter.remove();
-                                }
-                            }
-
-                            //we use a regular #define because we don't have a stack context yet (no very problematic because we only have one page template per page)
-                            if (!attributes.isEmpty()) {
-                                //note: don't worry about a leading space that separates the value of the variable with the "html" word in the <html> tag, because generateHTML generates it
-                                builder.append("#define($").append(HTML_ROOT_ARGS_VARIABLE_NAME).append(")").append(Attributes.generateHTML(attributes)).append("#end").append("\n");
-                            }
-                        }
-                    }
-
-                    // push the controller with the tag-attributes as arguments
-                    // note that we want to use the controller inside the <template> tag, so make sure it comes before the start tag
-                    builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.STACK.ordinal()).append(",\"")
-                           .append(htmlTemplate.getTemplateName()).append("\"");
-                    for (Map.Entry<String, String> attribute : attributes.entrySet()) {
-                        String value = attribute.getValue();
-                        builder.append(",\"").append(attribute.getKey()).append("\",\"").append(value == null ? "" : value).append("\"");
-                    }
-                    builder.append(")").append("\n");
-
-                    //define the properties in the context
-                    for (Token token : properties) {
-                        //see above: if we have a value, it's a proper property
-                        if (token instanceof PropertyToken) {
-                            PropertyToken propertyToken = (PropertyToken) token;
-                            //this allows us to assign multiple tags to a single property key
-                            for (String value : ((PropertyToken) token).getValues()) {
-                                builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.DEFINE.ordinal()).append(",\"")
-                                       .append(propertyToken.getProperty()).append("\")").append(value).append("#end").append("\n");
-                            }
-                        }
-                        //otherwise it's something else, stored in the key
-                        else {
-                            builder.append(token.getValue());
-                        }
-                    }
-
-                    //Note: this is the new and improved version of the code below, but it's still not optimal:
-                    // we should refactor the way the HtmlTemplates are handled, especially, this is probably not the place to look up
-                    // the resource here...
-                    Resource htmlTemplateResource = R.resourceFactory().get(URI.create(htmlTemplate.getRelativePath().toString()));
-                    if (htmlTemplateResource==null) {
-                        throw new IOException("Encountered a html template that doesn't seem to exist. This shouldn't happen. "+htmlTemplate.getRelativePath());
-                    }
-                    resource.addChild(htmlTemplateResource);
-                    try (InputStream is = R.resourceFactory().get(htmlTemplate.getRelativePath().toUri()).newInputStream()) {
-                        builder.append(IOUtils.toString(is));
-                    }
-
-//                    // embedding the code chunk in the file (instead of linking to it) is a lot faster, but messes up the auto-cache-reload in dev mode
-//                    if (R.configuration().getProduction()) {
-//                        //by passing along the resourceloader (and enabling postprocessing and using the parsed path), we implement recursion
-//                        try (InputStream is = R.resourceFactory().get(htmlTemplate.getRelativePath().toUri()).newInputStream()) {
-//                            builder.append(IOUtils.toString(is));
-//                        }
-//                    }
-//                    else {
-//                        //use a classic parse to parse the defines from above
-//                        builder.append("#parse('").append(htmlTemplate.getRelativePath()).append("')").append("\n");
-//                    }
-
-                    //pop the controller
-                    builder.append("#end").append("\n");
-
-                    //the end tag
-                    if (renderTag != null) {
-                        builder.append("</").append(renderTag).append(">");
-                    }
-
-                    //the suffix html (mostly empty)
-                    builder.append(htmlTemplate.getSuffixHtml());
-
-                    //replace the tag in the output with it's instance
-                    output.replace(templateInstance, builder);
-                    replaced = true;
-                }
-
-                if (replaced) {
-                    //if we don't do this, and the inner tag templates get processed first, it will be overwritten by the output of the outer tag template
-                    source = new Source(output.toString());
-                    output = new OutputDocument(source);
-                }
-            }
+            OutputDocument output = this.processResource(resource, source);
 
             StringBuilder retVal = new StringBuilder();
+
+            String outputStr = output.toString();
             if (htmlPage) {
                 retVal.append("#").append(PageTemplateWrapperDirective.NAME).append("()").append("\n");
-                retVal.append(output.toString());
+                retVal.append(outputStr);
                 retVal.append("#end");
             }
             else {
-                retVal.append(output.toString());
+                retVal.append(outputStr);
             }
 
             byte[] bytes = retVal.toString().getBytes(Charsets.UTF_8);
@@ -434,6 +129,363 @@ public class HtmlParser implements Parser
     {
         //FIXME maybe this should be VELOCITY instead?
         return Resource.MimeType.HTML;
+    }
+    private OutputDocument processResource(Resource resource, Source source) throws Exception
+    {
+        TemplateCache templateCache = this.getTemplateCache();
+
+        OutputDocument retVal = new OutputDocument(source);
+
+        //The idea is to traverse the entire html tree and parse all (start tags of) template-instances, both page and tag
+        Iterator<Segment> nodes = source.getNodeIterator();
+        while (nodes.hasNext()) {
+            Segment node = nodes.next();
+
+            //if the segment is a tag, parse the element
+            if (node instanceof StartTag) {
+                Element element = ((StartTag) node).getElement();
+
+                HtmlTemplate template = templateCache.getByTagName(element.getName());
+                if (template!=null) {
+                    StringBuilder parsedInstance = this.processTemplateInstance(resource, element, template);
+                    retVal.replace(element, parsedInstance);
+                }
+
+                // Note: this first check check if the tag (eg. a <link> tag that's not closed; eg. that's not <link/>)
+                // occurs. For more details, see http://jericho.htmlparser.net/docs/javadoc/net/htmlparser/jericho/Element.html
+                boolean isVoidTag = element.getStartTag().equals(element);
+            }
+        }
+
+        return retVal;
+    }
+    private StringBuilder processTemplateInstance(Resource resource, Element templateInstance, HtmlTemplate htmlTemplate) throws Exception
+    {
+        //build the attributes map
+        Map<String, String> attributes = new LinkedHashMap<>();
+        templateInstance.getAttributes().populateMap(attributes, false);
+
+        //copy in all the attributes of the template to the attributes map, except the ones that were already set in the instance
+        Map<String, String> templateAttributes = htmlTemplate.getAttributes();
+        if (templateAttributes != null) {
+            for (Map.Entry<String, String> attribute : templateAttributes.entrySet()) {
+                if (!attributes.containsKey(attribute.getKey())) {
+                    attributes.put(attribute.getKey(), attribute.getValue());
+                }
+            }
+        }
+
+        //build the properties map
+        //note: we want to save the Velocity codes, used inside a template instance, eg:
+        //     <tag-template-name>
+        // -->     #foreach ($val in $values)
+        //             <div property="value">$val</div>
+        // -->     #end
+        //     </tag-template-name>
+        // so instead of iterating over the child-elements, we iterate over all nodes, saving "other" text for future use
+        List<Token> properties = new ArrayList<>();
+        Map<String, PropertyToken> propertyRefs = new HashMap<>();
+        // note: this is a tricky one. It doesn't have to be the immediate children, but we can't cross the "boundary"
+        // of another template instance either (otherwise the grandchild-properties would get assigned to the grandparent)
+        // In practice, restricting this to the immediate children works pretty well (and neatly conforms to the WebComponents standard)
+        Iterator<Segment> iter = templateInstance.getContent().getNodeIterator();
+        while (iter.hasNext()) {
+            Segment seg = iter.next();
+
+            //if the segment is a tag, parse the element
+            if (seg instanceof StartTag) {
+                StartTag startTag = ((StartTag) seg);
+                Element immediateChild = startTag.getElement();
+
+                // Note: this first check check if the tag (eg. a <link> tag that's not closed; eg. that's not <link/>)
+                // occurs. For more details, see http://jericho.htmlparser.net/docs/javadoc/net/htmlparser/jericho/Element.html
+                boolean isVoidTag = startTag.equals(immediateChild);
+
+                //skip the entire tree of the element, we'll handle it now
+                // but watch out: an <img> element doens't have and end tag, so check for null
+                if (!isVoidTag) {
+                    if (immediateChild.getEndTag() != null) {
+                        while (iter.hasNext() && !iter.next().equals(immediateChild.getEndTag()))
+                            ;
+                    }
+                }
+
+                //since (for our template system) the RDF and non-RDF attributes are equal, we can treat them the same way
+                String name = immediateChild.getAttributeValue(RDF_PROPERTY_ATTR);
+                //note that this will be skipped when a valid RDF-attr is found (so if both are present, the RDF one has priority)
+                if (name == null) {
+                    name = immediateChild.getAttributeValue(NON_RDF_PROPERTY_ATTR);
+                }
+                if (name != null) {
+                    String value = immediateChild.toString();
+
+                    OutputDocument parsedValue = this.processResource(resource, new Source(value));
+                    value = parsedValue.toString();
+
+                    // this list allows us to specify multiple properties with the same name in the instance
+                    PropertyToken values = propertyRefs.get(name);
+                    if (values == null) {
+                        propertyRefs.put(name, values = new PropertyToken(name));
+                        //note that this will 'eat up' all same properties that are coming in this tag
+                        properties.add(values);
+                    }
+                    values.add(value);
+                }
+            }
+            //if the segment is something else, save it in the right order for later use
+            else {
+                // if we encounter a resource wrapper directive, the tag inside will be a html tag,
+                // so we need to make sure it doesn't get eaten because there's no property attribute set
+                // on it.
+                String segStr = seg.toString().trim();
+                if (segStr.startsWith("#" + TagTemplateResourceDirective.NAME)) {
+                    StringBuilder res = new StringBuilder(seg.toString());
+                    while (iter.hasNext() && !segStr.equals("#end")) {
+                        seg = iter.next();
+                        segStr = seg.toString().trim();
+                        res.append(seg.toString());
+                    }
+                    segStr = res.toString();
+                }
+                properties.add(new OtherToken(segStr));
+            }
+        }
+
+        //now start building the new tag
+        StringBuilder builder = new StringBuilder();
+
+        builder.append(htmlTemplate.getPrefixHtml());
+
+        //render the start tag, except if the template is eg. a page template
+        String renderTag = !htmlTemplate.renderTemplateTag() ? null : htmlTemplate.getTemplateName();
+        if (renderTag != null) {
+            String attr = templateInstance.getAttributeValue(HtmlTemplate.ATTRIBUTE_RENDER_TAG);
+            //if it's not set, just render the tag name
+            if (attr != null) {
+                //NOTE: if this is set to empty, don't render the tag (and it's attributes) at all
+                if (attr.equals("")) {
+                    renderTag = null;
+                }
+                else {
+                    renderTag = attr;
+                }
+            }
+        }
+
+        //the 'body' starts here
+
+        if (renderTag != null) {
+            builder.append("<").append(renderTag);
+
+            //the optional attributes
+            if (!attributes.isEmpty()) {
+                builder.append(Attributes.generateHTML(attributes));
+            }
+            //close the start tag
+            builder.append(">").append("\n");
+        }
+        // page templates are never rendered out (because their 'instance' is actually the <html> element)
+        // but we use a little trick to render the arguments of their instance tag: we set a special velocity variable
+        // that is added to the <html> tag (eg. <html $!HTML_TAG_ARGS>)
+        else if (htmlTemplate instanceof PageTemplate) {
+            if (!attributes.isEmpty()) {
+                //quick loop to remove empty attributes (we want as little as possible in the <html> tag)
+                Iterator<Map.Entry<String, String>> attIter = attributes.entrySet().iterator();
+                while (attIter.hasNext()) {
+                    if (StringUtils.isEmpty(attIter.next().getValue())) {
+                        attIter.remove();
+                    }
+                }
+
+                //we use a regular #define because we don't have a stack context yet (not very problematic because we only have one page template per page)
+                if (!attributes.isEmpty()) {
+                    //note: don't worry about a leading space that separates the value of the variable with the "html" word in the <html> tag, because generateHTML generates it
+                    builder.append("#define($").append(HTML_ROOT_ARGS_VARIABLE_NAME).append(")").append(Attributes.generateHTML(attributes)).append("#end").append("\n");
+                }
+            }
+        }
+
+        // push the controller with the tag-attributes as arguments
+        // note that we want to use the controller inside the <template> tag, so make sure it comes before the start tag
+        builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.STACK.ordinal()).append(",\"")
+               .append(htmlTemplate.getTemplateName()).append("\"");
+        for (Map.Entry<String, String> attribute : attributes.entrySet()) {
+            String value = attribute.getValue();
+            builder.append(",\"").append(attribute.getKey()).append("\",\"").append(value == null ? "" : value).append("\"");
+        }
+        builder.append(")").append("\n");
+
+        //define the properties in the context
+        for (Token token : properties) {
+            //see above: if we have a value, it's a proper property
+            if (token instanceof PropertyToken) {
+                PropertyToken propertyToken = (PropertyToken) token;
+                //this allows us to assign multiple tags to a single property key
+                for (String value : ((PropertyToken) token).getValues()) {
+                    builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.DEFINE.ordinal()).append(",\"")
+                           .append(propertyToken.getProperty()).append("\")").append(value).append("#end").append("\n");
+                }
+            }
+            //otherwise it's something else, stored in the key
+            else {
+                builder.append(token.getValue());
+            }
+        }
+
+        //Note: this is the new and improved version of the code below, but it's still not optimal:
+        // we should refactor the way the HtmlTemplates are handled, especially, this is probably not the place to look up
+        // the resource here...
+        Resource htmlTemplateResource = R.resourceFactory().get(URI.create(htmlTemplate.getRelativePath().toString()));
+        if (htmlTemplateResource == null) {
+            throw new IOException("Encountered a html template that doesn't seem to exist. This shouldn't happen. " + htmlTemplate.getRelativePath());
+        }
+        resource.addChild(htmlTemplateResource);
+
+        try (InputStream is = R.resourceFactory().get(htmlTemplate.getRelativePath().toUri()).newInputStream()) {
+            builder.append(IOUtils.toString(is));
+        }
+
+        //                    // embedding the code chunk in the file (instead of linking to it) is a lot faster, but messes up the auto-cache-reload in dev mode
+        //                    if (R.configuration().getProduction()) {
+        //                        //by passing along the resourceloader (and enabling postprocessing and using the parsed path), we implement recursion
+        //                        try (InputStream is = R.resourceFactory().get(htmlTemplate.getRelativePath().toUri()).newInputStream()) {
+        //                            builder.append(IOUtils.toString(is));
+        //                        }
+        //                    }
+        //                    else {
+        //                        //use a classic parse to parse the defines from above
+        //                        builder.append("#parse('").append(htmlTemplate.getRelativePath()).append("')").append("\n");
+        //                    }
+
+        //pop the controller
+        builder.append("#end").append("\n");
+
+        //the end tag
+        if (renderTag != null) {
+            builder.append("</").append(renderTag).append(">");
+        }
+
+        //the suffix html (mostly empty)
+        builder.append(htmlTemplate.getSuffixHtml());
+
+        //replace the tag in the output with it's instance
+        //output.replace(templateInstance, builder);
+
+//        if (replaced) {
+//            //if we don't do this, and the inner tag templates get processed first, it will be overwritten by the output of the outer tag template
+//            source = new Source(output.toString());
+//            output = new OutputDocument(source);
+//        }
+
+        return builder;
+    }
+
+    private OutputDocument processHtmlTemplate(Resource resource, Source source, HtmlTemplate template) throws Exception
+    {
+        //first of all, since this method is only called when something changed, update the cache value
+        //use the old template value for the paths
+        HtmlTemplate sourceTemplate = HtmlTemplate.create(template.getTemplateName(), source, template.getAbsolutePath(), template.getRelativePath(), template.getSuperTemplate());
+        getTemplateCache().putByRelativePath(resource.getUri().getPath(), sourceTemplate);
+
+        //this is the base for all coming preprocessing
+        //note that we only use the inner html, the prefix and suffix will be rendered out before and after every instance (see loops below)
+        Segment templateHtml = sourceTemplate.getInnerHtml();
+        OutputDocument output = new OutputDocument(templateHtml);
+
+        //from here, it's the same for a Tag or PageImpl template; preprocess the replaceable properties
+
+        Stack<URI> currentVocabStack = new Stack<>();
+        if (sourceTemplate.getVocab() != null) {
+            currentVocabStack.push(sourceTemplate.getVocab());
+        }
+
+        Stack<Map<String, URI>> currentPrefixesStack = new Stack<>();
+        if (sourceTemplate.getPrefixes() != null && !sourceTemplate.getPrefixes().isEmpty()) {
+            currentPrefixesStack.push(sourceTemplate.getPrefixes());
+        }
+
+        Set<EndTag> vocabPopTags = new HashSet<>();
+        Set<EndTag> prefixPopTags = new HashSet<>();
+
+        for (Iterator<Segment> nodeIterator = templateHtml.getNodeIterator(); nodeIterator.hasNext(); ) {
+            Segment nodeSegment = nodeIterator.next();
+            if (nodeSegment instanceof StartTag) {
+                StartTag tag = (StartTag) nodeSegment;
+
+                URI currentVocab = currentVocabStack.isEmpty() ? null : currentVocabStack.peek();
+                Map<String, URI> currentPrefixes = currentPrefixesStack.isEmpty() ? null : currentPrefixesStack.peek();
+
+                Attributes attributes = tag.getAttributes();
+                if (attributes != null) {
+
+                    Attribute vocabAttr = attributes.get(RDF_VOCAB_ATTR);
+                    if (vocabAttr != null) {
+                        currentVocab = parseRdfVocabAttribute(sourceTemplate, vocabAttr.getValue());
+                        //if the tag is not stand-alone, push it on the stack and save it's end tag for popping
+                        if (!tag.isEmptyElementTag()) {
+                            currentVocabStack.push(currentVocab);
+
+                            //since it's not an empty element tag, it should have an end tag
+                            EndTag endTag = tag.getElement().getEndTag();
+                            if (endTag == null) {
+                                throw new Exception("Encountered non-empty element '" + tag.toString() + "' (at line " + getAbsoluteTemplateTagLineNumber(source, tag.getBegin()) +
+                                                    ")  without a matching end tag; " + sourceTemplate.getAbsolutePath());
+                            }
+                            else {
+                                vocabPopTags.add(endTag);
+                            }
+                        }
+                    }
+
+                    Attribute prefixAttr = attributes.get(RDF_PREFIX_ATTR);
+                    if (prefixAttr != null) {
+                        if (currentPrefixes == null) {
+                            currentPrefixes = new LinkedHashMap<>();
+                        }
+                        else {
+                            //merge it with the already active prefixes
+                            currentPrefixes = new LinkedHashMap<>(currentPrefixes);
+                        }
+                        parseRdfPrefixAttribute(sourceTemplate, prefixAttr.getValue(), currentPrefixes);
+                        //if the tag is not stand-alone, merge it with the active prefixes, push it on the stack and save it's end tag for popping
+                        if (!tag.isEmptyElementTag()) {
+                            currentPrefixesStack.push(currentPrefixes);
+                            prefixPopTags.add(tag.getElement().getEndTag());
+                        }
+                    }
+
+                    Attribute propertyAttr = attributes.get(RDF_PROPERTY_ATTR);
+                    if (propertyAttr != null) {
+                        this.replaceTemplateProperty(source, sourceTemplate, tag.getElement(), propertyAttr, output, currentVocab, currentPrefixes);
+                    }
+
+                    Attribute dataPropertyAttr = attributes.get(NON_RDF_PROPERTY_ATTR);
+                    if (dataPropertyAttr != null) {
+                        if (propertyAttr == null) {
+                            this.replaceTemplateProperty(source, sourceTemplate, tag.getElement(), dataPropertyAttr, output, currentVocab, currentPrefixes);
+                        }
+                        else {
+                            Logger.warn("Not using attribute '" + NON_RDF_PROPERTY_ATTR + "' of tag " + tag.toString() + " because there's also a '" + RDF_PROPERTY_ATTR +
+                                        "' attribute set that has precedence because it's an official RDFa attribute");
+                        }
+                    }
+                }
+            }
+            else if (nodeSegment instanceof EndTag) {
+                EndTag tag = (EndTag) nodeSegment;
+
+                if (vocabPopTags.contains(tag)) {
+                    currentVocabStack.pop();
+                    vocabPopTags.remove(tag);
+                }
+                if (prefixPopTags.contains(tag)) {
+                    currentPrefixesStack.pop();
+                    prefixPopTags.remove(tag);
+                }
+            }
+        }
+
+        return output;
     }
     /**
      * Strips all lines beginning with "##" (starting from that position) and returns all the rest.
@@ -477,19 +529,19 @@ public class HtmlParser implements Parser
 
         return retVal;
     }
-//    public void resetTemplateCache() throws IOException
-//    {
-//        //needed for the html files, because they're not postprocessed in the ResouceManager and changes are not detected throug the hash system
-//        Parser htmlParser = R.resourceFactory().getParserFor(Resource.MimeType.HTML);
-//        for (HtmlTemplate htmlTemplate : HtmlParser.getTemplateCache().values()) {
-//            Path cacheFile = this.getCacheFile(htmlTemplate.getAbsolutePath());
-//            if (cacheFile != null) {
-//                Files.deleteIfExists(cacheFile);
-//            }
-//        }
-//
-//        R.cacheManager().getApplicationCache().put(CacheKeys.TAG_TEMPLATES, null);
-//    }
+    //    public void resetTemplateCache() throws IOException
+    //    {
+    //        //needed for the html files, because they're not postprocessed in the ResouceManager and changes are not detected throug the hash system
+    //        Parser htmlParser = R.resourceFactory().getParserFor(Resource.MimeType.HTML);
+    //        for (HtmlTemplate htmlTemplate : HtmlParser.getTemplateCache().values()) {
+    //            Path cacheFile = this.getCacheFile(htmlTemplate.getAbsolutePath());
+    //            if (cacheFile != null) {
+    //                Files.deleteIfExists(cacheFile);
+    //            }
+    //        }
+    //
+    //        R.cacheManager().getApplicationCache().put(CacheKeys.TAG_TEMPLATES, null);
+    //    }
 
     //-----PROTECTED METHODS-----
 
@@ -610,8 +662,10 @@ public class HtmlParser implements Parser
                     //hmm, this seems to happen sometimes...
                     row = source.getRow(tag.getStartTag().getBegin());
                 }
-                catch (IndexOutOfBoundsException e) {}
-                Logger.warn("Encountered attribute '"+attributeValue+"' in tag '"+tag.getStartTag().toString()+"' around line "+row+" that is not connected to any vocabulary or ontology and is in fact invalid; " + template.getAbsolutePath());
+                catch (IndexOutOfBoundsException e) {
+                }
+                Logger.warn("Encountered attribute '" + attributeValue + "' in tag '" + tag.getStartTag().toString() + "' around line " + row +
+                            " that is not connected to any vocabulary or ontology and is in fact invalid; " + template.getAbsolutePath());
                 //throw new Exception("Encountered attribute '"+attributeValue+"' in tag '"+tag.getStartTag().toString()+"' around line "+source.getRow(tag.getStartTag().getBegin())+" that is not connected to any vocabulary or ontology. As much as I want to allow this, I can't; " + template.getAbsolutePath());
             }
         }
