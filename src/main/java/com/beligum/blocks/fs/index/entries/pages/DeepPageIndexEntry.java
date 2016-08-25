@@ -13,6 +13,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.*;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.BytesRef;
 import org.openrdf.model.Model;
 import org.openrdf.model.Statement;
@@ -23,6 +24,7 @@ import java.util.*;
 
 import static com.beligum.blocks.fs.index.LucenePageIndexer.CUSTOM_FIELD_FIELDS;
 import static com.beligum.blocks.fs.index.LucenePageIndexer.DEFAULT_FIELD_JOINER;
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 /**
  * Created by bram on 2/13/16.
@@ -96,8 +98,32 @@ public class DeepPageIndexEntry extends SimplePageIndexEntry implements RdfIndex
                         sortFieldMapping.put(predicate, sortField = new LinkedHashSet<>());
                     }
                     //makes sense to sort on the human-readable value (eg. 'Belgium' instead of '/resource/Country/1938216')
-                    sortField.add(value.stringValue);
+                    String sortValue = value.stringValue;
+                    //this was introduced after experiencing a "java.lang.IllegalArgumentException: DocValuesField "mot:text" is too large, must be <= 32766"
+                    //see https://issues.apache.org/jira/browse/LUCENE-4583
+                    //Makes sense to crop this to a reasonable value since sorting on thousand-characters-long sort values is't really a valid use case, right?
+                    final int MAX_SORT_VALUE_LENGTH = 128;
+                    if (sortValue.length()>MAX_SORT_VALUE_LENGTH) {
+                        sortValue = sortValue.substring(0, MAX_SORT_VALUE_LENGTH);
+                    }
+                    sortField.add(sortValue);
                 }
+            }
+        }
+
+        //TODO this is a (shitty) temp workaround to solve Lucene's IllegalArgumentException when trying to index large text chunks.
+        //According to http://stackoverflow.com/questions/24019868/utf8-encoding-is-longer-than-the-max-length-32766
+        // we should index these fields (especially _all) with a different analyzer...
+        Iterator<IndexableField> fieldIter = this.luceneDoc.iterator();
+        //found this here: SortedDocValuesWriter.addValue()
+        final int MAX_FIELD_SIZE = BYTE_BLOCK_SIZE-2;
+        while (fieldIter.hasNext()) {
+            IndexableField f = fieldIter.next();
+            String stringVal = f.stringValue();
+            //non-string values are probably not too large?
+            if (stringVal!=null && stringVal.length()>MAX_FIELD_SIZE) {
+                Logger.warn("Removing field '"+f.name()+"' from the lucene document we're indexing because it's too large. Value is "+stringVal.length()+" and starts with '"+stringVal.substring(0, 20)+"...' (max "+MAX_FIELD_SIZE+" bytes allowed). Note that this means the content of this value won't be searchable (!)");
+                fieldIter.remove();
             }
         }
 
