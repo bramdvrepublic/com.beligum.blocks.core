@@ -33,6 +33,7 @@ base.plugin("mot.blocks.search", ["base.core.Class", "blocks.imports.Block", "co
             var retVal = SearchBox.Class.Super.prototype.getConfigs.call(this, block, element);
 
             retVal.push(this.addUniqueAttributeValueAsync(Sidebar, block.element, BlocksMessages.searchBoxType, BlocksConstants.SEARCH_BOX_TYPE_ARG, "/blocks/admin/rdf/classes/", "title", "curieName", null));
+            retVal.push(this.addUniqueAttributeValue(Sidebar, block.element, BlocksMessages.searchBoxResultsFormat, BlocksConstants.SEARCH_BOX_RESULTS_FORMAT_ARG, [{name: BlocksMessages.searchResultsFormatList, value: BlocksConstants.SEARCH_RESULTS_FORMAT_LIST}, {name: BlocksMessages.searchResultsFormatLetters, value: BlocksConstants.SEARCH_RESULTS_FORMAT_LETTERS}], null));
             retVal.push(this.addOptionalClass(Sidebar, block.element, BlocksMessages.searchBoxInline, BlocksConstants.SEARCH_BOX_CLASS_INLINE));
 
             return retVal;

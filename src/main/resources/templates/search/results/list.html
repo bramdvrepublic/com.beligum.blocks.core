@@ -3,6 +3,9 @@
     ## Note: zero-based index
         #set($firstIndex = ($CONTROLLER.searchResult.pageIndex * $CONTROLLER.searchResult.pageSize) + 1)
         #set($lastIndex = ($CONTROLLER.searchResult.pageIndex * $CONTROLLER.searchResult.pageSize) + $CONTROLLER.searchResult.pageSize)
+        #if($CONTROLLER.searchResult.totalHits < $lastIndex)
+            #set($lastIndex = $CONTROLLER.searchResult.totalHits)
+        #end
         $TOOLKIT.display.message($MESSAGES.blocks.core.searchBoxResultsDescription, $firstIndex, $lastIndex) <span
             class="total-hits">$CONTROLLER.searchResult.totalHits $MESSAGES.blocks.core.searchBoxResultsTitle $TOOLKIT.display.message($MESSAGES.blocks.core.searchBoxResultsDuration, $CONTROLLER.searchResult.searchDurationSeconds)</span>
     </div>

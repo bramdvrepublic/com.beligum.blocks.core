@@ -124,7 +124,14 @@ public class SearchController extends DefaultTemplateController
                 //this.searchResult = StorageFactory.getTriplestoreQueryConnection().search(rdfClass, searchTerm, new HashMap<RdfProperty, String>(), sortField, false, RESOURCES_ON_PAGE, selectedPage, R.i18nFactory().getOptimalLocale());
                 searchResult = queryConnection.search(pageQuery, sortField, false, pageSize, pageIndex);
 
-                R.cacheManager().getRequestCache().put(SEARCH_REQUEST, new IndexSearchRequest(searchTerm, fieldFilters, sortField));
+                //save the results format in the cached value so we can use it across different instances
+                String resultsFormat = this.config.get(core.SEARCH_BOX_RESULTS_FORMAT);
+                if (StringUtils.isEmpty(resultsFormat)) {
+                    //let's default to a list
+                    resultsFormat = core.SEARCH_RESULTS_FORMAT_LIST;
+                }
+
+                R.cacheManager().getRequestCache().put(SEARCH_REQUEST, new IndexSearchRequest(searchTerm, fieldFilters, sortField, resultsFormat));
                 R.cacheManager().getRequestCache().put(SEARCH_RESULT, searchResult);
             }
             catch (Exception e) {

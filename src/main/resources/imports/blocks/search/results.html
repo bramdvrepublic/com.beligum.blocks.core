@@ -10,6 +10,11 @@
 <link rel="stylesheet" href="/assets/styles/imports/blocks-search/results.less">
 
 <template>
-    #parse('/templates/search/results.html')
-    ##parse('/templates/search/letters.html')
+    #if ($CONTROLLER.searchRequest.resultsFormat==$CONSTANTS.blocks.core.SEARCH_RESULTS_FORMAT_LIST)
+        #parse('/templates/search/results/list.html')
+    #elseif ($CONTROLLER.searchRequest.resultsFormat==$CONSTANTS.blocks.core.SEARCH_RESULTS_FORMAT_LETTERS)
+        #parse('/templates/search/results/letters.html')
+    #else
+        $TOOLKIT.display.message($MESSAGES.blocks.core.searchResultsFormatUnknown, $CONTROLLER.searchRequest.resultsFormat)
+    #end
 </template>
