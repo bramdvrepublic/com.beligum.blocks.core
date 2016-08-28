@@ -125,7 +125,7 @@ public class SearchController extends DefaultTemplateController
                 searchResult = queryConnection.search(pageQuery, sortField, false, pageSize, pageIndex);
 
                 //save the results format in the cached value so we can use it across different instances
-                String resultsFormat = this.config.get(core.SEARCH_BOX_RESULTS_FORMAT);
+                String resultsFormat = this.config.get(core.SEARCH_BOX_RESULTS_FORMAT_ARG);
                 if (StringUtils.isEmpty(resultsFormat)) {
                     //let's default to a list
                     resultsFormat = core.SEARCH_RESULTS_FORMAT_LIST;

@@ -28,8 +28,11 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.beligum.blocks.caching.CacheKeys.GEONAMES_CACHED_RESULTS;
+import static com.beligum.blocks.rdf.ontology.factories.Classes.City;
 
 /**
  * Created by bram on 3/14/16.
@@ -37,6 +40,7 @@ import static com.beligum.blocks.caching.CacheKeys.GEONAMES_CACHED_RESULTS;
 public class GeonameQueryEndpoint implements RdfQueryEndpoint
 {
     //-----CONSTANTS-----
+    private static final Pattern CITY_ZIP_COUNTRY_PATTERN = Pattern.compile("([^,]*),(\\d+),(.*)");
 
     //-----VARIABLES-----
     private String username;
@@ -55,14 +59,15 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
     //Note: check the inner cache class if you add variables
     public Collection<AutocompleteSuggestion> search(RdfClass resourceType, final String query, QueryType queryType, Locale language, int maxResults, SearchOption... options) throws IOException
     {
-        List<AutocompleteSuggestion> retVal = new ArrayList<>();
+        Collection<AutocompleteSuggestion> retVal = new ArrayList<>();
 
         //I guess an empty query can't yield any results, right?
         if (!StringUtils.isEmpty(query)) {
 
             //use a cached result if it's there
             CachedSearch cacheKey = new CachedSearch(this.geonameType, resourceType, query, queryType, language, options);
-            List<AutocompleteSuggestion> cachedResult = this.getCachedEntry(cacheKey);
+            Collection<AutocompleteSuggestion> cachedResult = this.getCachedEntry(cacheKey);
+
             if (cachedResult != null) {
                 retVal = cachedResult;
             }
@@ -139,6 +144,13 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
                     throw new IOException("Error status returned while searching for geonames resource '" + query + "'; " + response);
                 }
 
+                //if we didn't find any result, use some heuristics to search a little deeper...
+                if (retVal.isEmpty()) {
+                    if (resourceType.equals(City)) {
+                        retVal = this.deeperCitySearch(httpClient, resourceType, query, queryType, language, maxResults, options);
+                    }
+                }
+
                 this.putCachedEntry(cacheKey, retVal);
             }
         }
@@ -206,11 +218,11 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private List<AutocompleteSuggestion> getCachedEntry(CachedSearch query)
+    private Collection<AutocompleteSuggestion> getCachedEntry(CachedSearch query)
     {
-        return (List<AutocompleteSuggestion>) this.getGeonameCache().get(query);
+        return (Collection<AutocompleteSuggestion>) this.getGeonameCache().get(query);
     }
-    private void putCachedEntry(CachedSearch query, List<AutocompleteSuggestion> results)
+    private void putCachedEntry(CachedSearch query, Collection<AutocompleteSuggestion> results)
     {
         this.getGeonameCache().put(query, results);
     }
@@ -231,6 +243,83 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
         }
 
         return R.cacheManager().getCache(GEONAMES_CACHED_RESULTS.name());
+    }
+    /**
+     * Geonames allows for search queries like 'Valkenburg,6305,Netherlands' where the postalCode is specified to disambiguate between places with the same name,
+     * but from time to time, the name of the city doesn't match with the official name of the city for that specific postal code.
+     * This method allows us to use queries like the one above, and use the Geonames postalCodeSearch endpoint to query the official name of that city.
+     * Note that we have to do a two-step search because the postalCodeSearch doesn't seem to return the geoname ID...
+     */
+    private Collection<AutocompleteSuggestion> deeperCitySearch(Client httpClient, RdfClass resourceType, final String query, QueryType queryType, Locale language, int maxResults, SearchOption... options)
+    {
+        Collection<AutocompleteSuggestion> retVal = new ArrayList<>();
+
+        try {
+            //this format allows us to specify an exact zip code, but if the known name doesn't match
+            Matcher matcher = CITY_ZIP_COUNTRY_PATTERN.matcher(query);
+            if (matcher.matches() && matcher.groupCount()==3) {
+                String city = matcher.group(1);
+                String zipCode = matcher.group(2);
+                String country = matcher.group(3);
+
+                //TODO fast and silly first implementation for our specific needs
+                String countryCode = null;
+                if (country.equals("Belgium")) {
+                    countryCode = "BE";
+                }
+                else if (country.equals("Netherlands")) {
+                    countryCode = "NL";
+                }
+                else if (country.equals("France")) {
+                    countryCode = "FR";
+                }
+
+                if (countryCode!=null) {
+                    UriBuilder builder = UriBuilder.fromUri("http://api.geonames.org/postalCodeSearch")
+                                                   .queryParam("username", this.username)
+                                                   .queryParam("postalcode", zipCode)
+                                                   .queryParam("country", countryCode)
+                                                   //we're only searching for the best match
+                                                   .queryParam("maxRows", 1)
+                                                   .queryParam("type", "json");
+                    if (language != null) {
+                        builder.queryParam("lang", language.getLanguage());
+                    }
+
+                    String placeName = null;
+                    URI target = builder.build();
+                    Response response = httpClient.target(target).request(MediaType.APPLICATION_JSON).get();
+                    if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+                        JsonNode jsonNode = Json.getObjectMapper().readTree(response.readEntity(String.class));
+                        Iterator<JsonNode> postalCodes = jsonNode.path("postalCodes").elements();
+                        //we're only searching for one
+                        if (postalCodes.hasNext()) {
+                            JsonNode pc = postalCodes.next();
+                            JsonNode placeNameNode = pc.get("placeName");
+                            if (placeNameNode!=null) {
+                                placeName = placeNameNode.textValue();
+                            }
+                        }
+                    }
+
+                    if (placeName!=null) {
+                        //use the new, queried name to search again
+                        //Note that we must avoid using the same pattern in CITY_ZIP_COUNTRY_PATTERN again or we'll have infinite recursion!
+                        String newQuery = placeName+","+countryCode;
+                        retVal = this.search(resourceType, newQuery, queryType, language, maxResults, options);
+                    }
+                }
+                else {
+                    Logger.warn("Unknown country '"+country+"'; can't translate it to a country code and can't use deeper search");
+                }
+            }
+        }
+        //don't let this additional search ruin the query, log and eat it
+        catch (Exception e) {
+            Logger.error("Error happened while search a bit deeper for a city resource for '"+query+"'; ", e);
+        }
+
+        return retVal;
     }
 
     /**
