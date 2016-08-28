@@ -5,6 +5,7 @@ import com.beligum.blocks.rdf.sources.HtmlSource;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Iterator;
 
 /**
  * Created by bram on 1/14/16.
@@ -19,6 +20,25 @@ public interface PageStore
      * @throws IOException
      */
     void init() throws IOException;
+
+    /**
+     * Search the page with the supplied address.
+     *
+     * @param publicAddress the address of the page to fetch
+     * @param readOnly should the page be opened read-only or read-write?
+     * @return the page or null if no such page was found.
+     * @throws IOException
+     */
+    Page get(URI publicAddress, boolean readOnly) throws IOException;
+
+    /**
+     * Get an iterator over all the stored pages in this system.
+     *
+     * @param readOnly should the pages be opened read-only or read-write?
+     * @return the iterator over all the stored pages in this system
+     * @throws IOException
+     */
+    Iterator<Page> getAll(boolean readOnly) throws IOException;
 
     /**
      * Saves the supplied source to the page store.

@@ -7,8 +7,10 @@ import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.security.Authentication;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.StorageFactory;
+import com.beligum.blocks.fs.hdfs.RequestTransactionFilter;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.sources.HtmlSource;
 import com.beligum.blocks.rdf.sources.HtmlStringSource;
@@ -165,16 +167,8 @@ public class PageEndpoint
                                    Permissions.PAGE_MODIFY_PERMISSION_STRING })
     public Response savePage(@QueryParam("url") URI url, String content) throws Exception
     {
-        //avoid directory attacks
-        url = url.normalize();
-
-        //note that we need an absolute URI (eg. to have a correct root RDF context for Sesame),
-        // but we allow for relative URIs to be imported -> just make them absolute based on the current settings
-        if (!url.isAbsolute()) {
-            url = R.configuration().getSiteDomain().resolve(url);
-        }
-
-        //Note: domain checking is done in the AbstractPage constructor later on
+        //for safety and uniformity
+        url = this.preprocessUri(url);
 
         //this just wraps the raw data coming in
         HtmlSource source = new HtmlStringSource(url, content);
@@ -211,9 +205,68 @@ public class PageEndpoint
         return Response.ok().build();
     }
 
+    @POST
+    @javax.ws.rs.Path("/reindex")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
+    public Response reindex(@QueryParam("url") URI url) throws Exception
+    {
+        //for safety and uniformity
+        url = this.preprocessUri(url);
+
+        //note: read-only because we won't be changing the page, only the index
+        Page savedPage = StorageFactory.getPageStore().get(url, true);
+
+        //above method returns null if nothing changed (so nothing to re-index)
+        if (savedPage != null) {
+            //Note: transaction handling is done through the global XA transaction
+            StorageFactory.getMainPageIndexer().connect().update(savedPage);
+            StorageFactory.getTriplestoreIndexer().connect().update(savedPage);
+        }
+
+        return Response.ok().build();
+    }
+
+    @POST
+    @javax.ws.rs.Path("/reindex/all")
+    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
+    public Response reindexAll() throws Exception
+    {
+        //note: read-only because we won't be changing the page, only the index
+        Iterator<Page> allPages = StorageFactory.getPageStore().getAll(true);
+
+        while (allPages.hasNext()) {
+            Page page = allPages.next();
+            //Note: transaction handling is done through the global XA transaction
+            //TODO does this mean all is handled in one big transaction?
+            Logger.info(page.getPublicAbsoluteAddress());
+            //StorageFactory.getMainPageIndexer().connect().update(page);
+            //StorageFactory.getTriplestoreIndexer().connect().update(page);
+
+            RequestTransactionFilter.executeManualRequestCleanup();
+        }
+
+        return Response.ok().build();
+    }
+
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
+    private URI preprocessUri(URI url)
+    {
+        //avoid directory attacks
+        url = url.normalize();
+
+        //note that we need an absolute URI (eg. to have a correct root RDF context for Sesame),
+        // but we allow for relative URIs to be imported -> just make them absolute based on the current settings
+        if (!url.isAbsolute()) {
+            url = R.configuration().getSiteDomain().resolve(url);
+        }
+
+        //Note: domain checking is done in the AbstractPage constructor later on
+
+        return url;
+    }
     private String findI18NValue(Locale[] langs, Map<Locale, String> values, String defaultValue)
     {
         String retVal = null;

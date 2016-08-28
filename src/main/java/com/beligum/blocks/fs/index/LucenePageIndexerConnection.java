@@ -94,6 +94,12 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         //this.printLuceneIndex();
     }
     @Override
+    public void deleteAll() throws IOException
+    {
+        IndexWriter indexWriter = this.getLuceneIndexWriter();
+        indexWriter.deleteAll();
+    }
+    @Override
     public IndexSearchResult search(Query luceneQuery, RdfProperty sortField, boolean sortAscending, int pageSize, int pageOffset) throws IOException
     {
         List<IndexEntry> retVal = new ArrayList<>();

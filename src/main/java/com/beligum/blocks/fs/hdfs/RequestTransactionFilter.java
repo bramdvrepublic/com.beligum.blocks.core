@@ -29,13 +29,31 @@ public class RequestTransactionFilter implements ContainerResponseFilter
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
+    /**
+     * For now, this is a bit of a hack.
+     * Sometimes we want to call multiple transactional request-operations during a single request (eg. during re-indexing).
+     * The transaction system complains when doing this, so calling this method after every 'request-operation', we simulate a real request,
+     * but it certainly is not the best approach...
+     */
+    public static void executeManualRequestCleanup() throws IOException
+    {
+        doFilter(null, null);
+    }
     @Override
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) throws IOException
+    {
+        doFilter(requestContext, responseContext);
+    }
+
+    //-----PROTECTED METHODS-----
+
+    //-----PRIVATE METHODS-----
+    private static void doFilter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) throws IOException
     {
         RequestTX tx = (RequestTX) R.cacheManager().getRequestCache().get(CacheKeys.REQUEST_TRANSACTION);
         if (tx != null) {
             try {
-                if (responseContext.getStatus() >= Response.Status.BAD_REQUEST.getStatusCode() || tx.getStatus() != Status.STATUS_ACTIVE) {
+                if ((responseContext!=null && responseContext.getStatus() >= Response.Status.BAD_REQUEST.getStatusCode()) || tx.getStatus() != Status.STATUS_ACTIVE) {
                     tx.rollback();
                 }
                 else {
@@ -83,9 +101,4 @@ public class RequestTransactionFilter implements ContainerResponseFilter
             }
         }
     }
-
-    //-----PROTECTED METHODS-----
-
-    //-----PRIVATE METHODS-----
-
 }

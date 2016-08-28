@@ -121,6 +121,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         this.assertTransaction();
 
         //TODO tricky stuff, what do we delete?
+        //First idea: we should delete all statements in the page, excluding the statements that are present in translations...
     }
     @Override
     public void update(Page page) throws IOException
@@ -128,6 +129,13 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         this.assertTransaction();
 
         this.connection.add(page.readRdfModel());
+    }
+    @Override
+    public void deleteAll() throws IOException
+    {
+        this.assertTransaction();
+
+        this.connection.clear();
     }
     @Override
     public IndexSearchResult search(RdfClass type, String luceneQuery, Map fieldValues, RdfProperty sortField, boolean sortAscending, int pageSize, int pageOffset, Locale language) throws IOException

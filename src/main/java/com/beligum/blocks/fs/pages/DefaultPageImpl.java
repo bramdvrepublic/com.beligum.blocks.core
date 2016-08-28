@@ -1,7 +1,6 @@
 package com.beligum.blocks.fs.pages;
 
 import com.beligum.base.resources.ifaces.Resource;
-import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.HdfsResourcePath;
 import com.beligum.blocks.fs.logger.RdfLogWriter;
 import com.beligum.blocks.fs.logger.ifaces.LogWriter;
@@ -14,6 +13,7 @@ import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.rdf.importers.SesameImporter;
 import com.beligum.blocks.templating.blocks.HtmlAnalyzer;
 import gen.com.beligum.blocks.core.maven;
+import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.Path;
 import org.apache.tika.mime.MediaType;
 
@@ -44,7 +44,7 @@ public abstract class DefaultPageImpl extends AbstractPage
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    protected DefaultPageImpl(URI uri, URI fileSystemBaseUri) throws IOException
+    protected DefaultPageImpl(URI uri, URI fileSystemBaseUri, FileContext fileContext) throws IOException
     {
         super(uri);
 
@@ -52,7 +52,7 @@ public abstract class DefaultPageImpl extends AbstractPage
         URI resourceUri = fileSystemBaseUri.resolve(ROOT.relativize(this.relativeStoragePath));
 
         //here, we effectively attach a save-implementation to the disk location URI
-        this.resourcePath = new HdfsResourcePath(StorageFactory.getPageStoreFileSystem(), resourceUri);
+        this.resourcePath = new HdfsResourcePath(fileContext, resourceUri);
     }
 
     //-----PUBLIC METHODS-----

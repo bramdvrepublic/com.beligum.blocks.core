@@ -21,6 +21,7 @@ public interface PageIndexConnection<T extends PageIndexEntry> extends IndexConn
     T get(URI key) throws IOException;
     void delete(Page page) throws IOException;
     void update(Page page) throws IOException;
+    void deleteAll() throws IOException;
 
     //-----PROTECTED METHODS-----
 

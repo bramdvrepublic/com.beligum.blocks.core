@@ -16,6 +16,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.SecureRandom;
 import java.util.EnumSet;
+import java.util.Iterator;
 
 /**
  * Created by bram on 1/19/16.
@@ -108,6 +109,10 @@ public class HdfsUtils
                 visitor.visitFile(child, new HadoopBasicFileAttributes(childStatus));
             }
         }
+    }
+    public static Iterator<Path> walkFileTree(FileContext fs, Path root) throws IOException
+    {
+        return new WalkHdfsIterator(fs, root);
     }
     /**
      * Copy/pasted from

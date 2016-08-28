@@ -26,6 +26,7 @@ import java.io.*;
 import java.net.URI;
 import java.time.Instant;
 import java.util.EnumSet;
+import java.util.Iterator;
 
 /**
  * Created by bram on 1/14/16.
@@ -58,6 +59,19 @@ public class SimplePageStore implements PageStore
         if (fs.util().exists(pagesRoot) && settings.getDeleteLocksOnStartup()) {
             HdfsUtils.recursiveDeleteLockFiles(fs, pagesRoot);
         }
+    }
+    @Override
+    public Page get(URI publicAddress, boolean readOnly) throws IOException
+    {
+        return readOnly ? new ReadOnlyPage(publicAddress) : new ReadWritePage(publicAddress);
+    }
+    @Override
+    public Iterator<Page> getAll(boolean readOnly) throws IOException
+    {
+        URI rootPath = readOnly ? Settings.instance().getPagesViewPath() : Settings.instance().getPagesStorePath();
+        FileContext fileContext = readOnly ? StorageFactory.getPageViewFileSystem() : StorageFactory.getPageStoreFileSystem();
+
+        return new WalkPagesIterator(HdfsUtils.walkFileTree(fileContext, new Path(rootPath)), readOnly);
     }
     @Override
     public Page save(HtmlSource source, Person creator) throws IOException

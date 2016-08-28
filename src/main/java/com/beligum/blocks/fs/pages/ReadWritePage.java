@@ -1,6 +1,7 @@
 package com.beligum.blocks.fs.pages;
 
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.config.StorageFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -17,7 +18,7 @@ public class ReadWritePage extends DefaultPageImpl
     //-----CONSTRUCTORS-----
     public ReadWritePage(URI uri) throws IOException
     {
-        super(uri, Settings.instance().getPagesStorePath());
+        super(uri, Settings.instance().getPagesStorePath(), StorageFactory.getPageStoreFileSystem());
     }
 
     //-----PUBLIC METHODS-----
