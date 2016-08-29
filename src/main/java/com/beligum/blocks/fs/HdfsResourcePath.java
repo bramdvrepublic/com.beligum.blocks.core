@@ -268,22 +268,7 @@ public class HdfsResourcePath implements ResourcePath
     @Override
     public boolean isMetaFile()
     {
-        boolean retVal = false;
-
-        // since we don't allow hidden files or folders as original files/folders,
-        // all hidden files and folders inside the hdfs fs are meta files,
-        // so if a hidden file is present somewhere on the path-names-way to the file,
-        // it's a meta file
-
-        Path p = this.localPath;
-        while (p != null && !retVal) {
-            if (p.getName().startsWith(Constants.META_FOLDER_PREFIX)) {
-                retVal = true;
-            }
-            p = p.getParent();
-        }
-
-        return retVal;
+        return HdfsUtils.isMetaPath(this.localPath);
     }
 
     //-----UTILITY METHODS-----

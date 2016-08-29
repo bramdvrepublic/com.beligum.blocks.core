@@ -70,8 +70,7 @@ public class SimplePageStore implements PageStore
     {
         URI rootPath = readOnly ? Settings.instance().getPagesViewPath() : Settings.instance().getPagesStorePath();
         FileContext fileContext = readOnly ? StorageFactory.getPageViewFileSystem() : StorageFactory.getPageStoreFileSystem();
-
-        return new WalkPagesIterator(HdfsUtils.walkFileTree(fileContext, new Path(rootPath)), readOnly);
+        return new WalkPagesIterator(fileContext, new Path(rootPath), readOnly);
     }
     @Override
     public Page save(HtmlSource source, Person creator) throws IOException

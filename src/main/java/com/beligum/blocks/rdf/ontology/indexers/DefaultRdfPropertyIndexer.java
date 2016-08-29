@@ -1,8 +1,11 @@
 package com.beligum.blocks.rdf.ontology.indexers;
 
+import com.beligum.base.i18n.I18nFactory;
+import com.beligum.base.server.R;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
+import com.beligum.blocks.exceptions.NotIndexedException;
 import com.beligum.blocks.fs.index.entries.RdfIndexer;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontology.vocabularies.RDF;
@@ -12,6 +15,7 @@ import org.openrdf.model.IRI;
 import org.openrdf.model.Literal;
 import org.openrdf.model.Value;
 
+import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Locale;
@@ -130,7 +134,15 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
                     retVal = new RdfIndexer.IndexResult(val, valStr);
                 }
                 else {
-                    throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '"+subject+"' because it's resource endpoint returned null");
+                    //make sure we have a language or we won't be able to lookup the resource from the uri
+                    URI resourceNeedingIndexation = uriValue;
+                    Locale uriValueLang = R.i18nFactory().getUrlLocale(resourceNeedingIndexation);
+                    if (uriValueLang==null) {
+                        //it's a resource, so add it as a query parameter
+                        resourceNeedingIndexation = UriBuilder.fromUri(resourceNeedingIndexation).queryParam(I18nFactory.LANG_QUERY_PARAM, language.getLanguage()).build();
+                    }
+
+                    throw new NotIndexedException(subject, resourceNeedingIndexation, "Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '" + subject + "' because it's resource endpoint returned null");
                 }
             }
             else {

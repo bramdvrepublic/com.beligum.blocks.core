@@ -2,6 +2,7 @@ package com.beligum.blocks.fs.pages;
 
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
+import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
 import java.net.URI;
@@ -16,9 +17,13 @@ public class ReadOnlyPage extends DefaultPageImpl
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    public ReadOnlyPage(URI uri) throws IOException
+    public ReadOnlyPage(URI publicUri) throws IOException
     {
-        super(uri, Settings.instance().getPagesViewPath(), StorageFactory.getPageViewFileSystem());
+        super(publicUri, Settings.instance().getPagesViewPath(), StorageFactory.getPageViewFileSystem());
+    }
+    public ReadOnlyPage(Path relativeLocalFile) throws IOException
+    {
+        super(relativeLocalFile, Settings.instance().getPagesViewPath(), StorageFactory.getPageViewFileSystem());
     }
 
     //-----PUBLIC METHODS-----

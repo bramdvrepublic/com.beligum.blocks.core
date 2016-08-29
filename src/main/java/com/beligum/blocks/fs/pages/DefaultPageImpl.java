@@ -44,10 +44,20 @@ public abstract class DefaultPageImpl extends AbstractPage
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    protected DefaultPageImpl(URI uri, URI fileSystemBaseUri, FileContext fileContext) throws IOException
+    protected DefaultPageImpl(URI publicUri, URI fileSystemBaseUri, FileContext fileContext) throws IOException
     {
-        super(uri);
+        super(publicUri);
 
+        this.postInit(fileSystemBaseUri, fileContext);
+    }
+    protected DefaultPageImpl(Path relativeLocalFile, URI fileSystemBaseUri, FileContext fileContext) throws IOException
+    {
+        super(relativeLocalFile);
+
+        this.postInit(fileSystemBaseUri, fileContext);
+    }
+    protected void postInit(URI fileSystemBaseUri, FileContext fileContext) throws IOException
+    {
         //Note: the root-relative is to remove the leading slash
         URI resourceUri = fileSystemBaseUri.resolve(ROOT.relativize(this.relativeStoragePath));
 

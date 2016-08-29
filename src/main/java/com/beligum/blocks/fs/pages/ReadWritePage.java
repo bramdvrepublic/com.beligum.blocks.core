@@ -2,6 +2,7 @@ package com.beligum.blocks.fs.pages;
 
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
+import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
 import java.net.URI;
@@ -16,9 +17,13 @@ public class ReadWritePage extends DefaultPageImpl
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    public ReadWritePage(URI uri) throws IOException
+    public ReadWritePage(URI publicUri) throws IOException
     {
-        super(uri, Settings.instance().getPagesStorePath(), StorageFactory.getPageStoreFileSystem());
+        super(publicUri, Settings.instance().getPagesStorePath(), StorageFactory.getPageStoreFileSystem());
+    }
+    public ReadWritePage(Path relativeLocalFile) throws IOException
+    {
+        super(relativeLocalFile, Settings.instance().getPagesStorePath(), StorageFactory.getPageStoreFileSystem());
     }
 
     //-----PUBLIC METHODS-----

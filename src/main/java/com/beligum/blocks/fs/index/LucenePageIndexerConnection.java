@@ -96,8 +96,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     public void deleteAll() throws IOException
     {
-        IndexWriter indexWriter = this.getLuceneIndexWriter();
-        indexWriter.deleteAll();
+        this.getLuceneIndexWriter().deleteAll();
     }
     @Override
     public IndexSearchResult search(Query luceneQuery, RdfProperty sortField, boolean sortAscending, int pageSize, int pageOffset) throws IOException
@@ -340,6 +339,9 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         // Add new documents to an existing index:
         iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
 
+        //we built it at least once, save that for later checking
+        R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_BOOTED, true);
+
         return new IndexWriter(FSDirectory.open(Settings.instance().getPageMainIndexFolder()), iwc);
     }
     private void assertBasicStructure() throws IOException
@@ -349,7 +351,10 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
             try (IndexWriter indexWriter = this.buildNewLuceneIndexWriter()) {
                 //just open and close the writer once, else we'll get a "no segments* file found" exception
             }
-            R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_BOOTED, true);
+
+            //Note: don't save the BOOTED flag here, because it's currently used to test the _reader_
+            // so we might end up with a lock-race condition if we've written before, but not read yet.
+            //Therefore, put it at the end of the buildNewLuceneIndexWriter() call above
         }
     }
 }

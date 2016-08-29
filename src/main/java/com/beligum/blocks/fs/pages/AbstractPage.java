@@ -11,6 +11,7 @@ import com.beligum.blocks.rdf.sources.HtmlStreamSource;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.fs.Path;
 import org.openrdf.model.Model;
 
 import javax.ws.rs.core.UriBuilder;
@@ -41,6 +42,10 @@ public abstract class AbstractPage implements Page
     private boolean checkedRelativeAddress;
 
     //-----CONSTRUCTORS-----
+    /**
+     * Constructor that builds a page instance from a public request-URI,
+     * handling all internal path specific translations
+     */
     protected AbstractPage(URI publicUri) throws IOException
     {
         //First, preparse the uri
@@ -106,6 +111,38 @@ public abstract class AbstractPage implements Page
         this.relativeStoragePath = this.relativeStoragePath.resolve(pageName);
 
         //note: the subclass is responsible for setting this.resourcePath
+    }
+    protected AbstractPage(Path relativeLocalFile) throws IOException
+    {
+        String ext = Settings.instance().getPagesFileExtension();
+
+        String filename = relativeLocalFile.getName();
+        if (!filename.endsWith(ext)) {
+            throw new IOException("Can't create a page from a file that doesn't end with '"+ext+"'");
+        }
+        else {
+            this.relativeStoragePath = relativeLocalFile.toUri();
+
+            //strip the storage file extension and check if we're dealing with a folder
+            String urlFilename = filename.substring(0, filename.length()-ext.length());
+            if (urlFilename.equals(DIR_PAGE_NAME)) {
+                urlFilename = null;
+            }
+
+            //we strip off the name and re-build it if necessary
+            URI canonicalTemp = relativeLocalFile.toUri().resolve(".");
+            //means we're dealing with a file-url, not a folder-url
+            if (urlFilename!=null) {
+                canonicalTemp = canonicalTemp.resolve(urlFilename);
+            }
+
+            //strip off the language prefix (note that this retuns a path without a leading slash)
+            UriBuilder uriBuilder = UriBuilder.fromUri(canonicalTemp);
+            this.language = R.i18nFactory().getUrlLocale(canonicalTemp, uriBuilder, null);
+
+            //make it 'relative' by re-adding the leading slash
+            this.canonicalAddress = ROOT.resolve(uriBuilder.build());
+        }
     }
 
     //-----PUBLIC METHODS-----

@@ -1,6 +1,7 @@
 package com.beligum.blocks.fs;
 
 import com.beligum.blocks.fs.hdfs.HadoopBasicFileAttributes;
+import com.beligum.blocks.fs.ifaces.Constants;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -16,7 +17,6 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.SecureRandom;
 import java.util.EnumSet;
-import java.util.Iterator;
 
 /**
  * Created by bram on 1/19/16.
@@ -24,8 +24,9 @@ import java.util.Iterator;
 public class HdfsUtils
 {
     //-----CONSTANTS-----
+    public static final URI ROOT = URI.create("/");
+
     private static final SecureRandom random = new SecureRandom();
-    private static final URI ROOT = URI.create("/");
 
     //-----VARIABLES-----
 
@@ -110,10 +111,6 @@ public class HdfsUtils
             }
         }
     }
-    public static Iterator<Path> walkFileTree(FileContext fs, Path root) throws IOException
-    {
-        return new WalkHdfsIterator(fs, root);
-    }
     /**
      * Copy/pasted from
      * @see org.apache.hadoop.fs.FileSystem#createNewFile(Path)
@@ -161,6 +158,25 @@ public class HdfsUtils
     public static Path createTempFile(FileContext context, String prefix, String suffix) throws IOException
     {
         return createTempFile(context, prefix, suffix, null);
+    }
+    public static boolean isMetaPath(Path localPath)
+    {
+        boolean retVal = false;
+
+        // since we don't allow hidden files or folders as original files/folders,
+        // all hidden files and folders inside the hdfs fs are meta files,
+        // so if a hidden file is present somewhere on the path-names-way to the file,
+        // it's a meta file
+
+        Path p = localPath;
+        while (p != null && !retVal) {
+            if (p.getName().startsWith(Constants.META_FOLDER_PREFIX)) {
+                retVal = true;
+            }
+            p = p.getParent();
+        }
+
+        return retVal;
     }
 
     //-----PROTECTED METHODS-----

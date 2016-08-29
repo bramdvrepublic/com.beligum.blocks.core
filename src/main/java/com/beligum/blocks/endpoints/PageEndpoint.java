@@ -10,7 +10,9 @@ import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.StorageFactory;
+import com.beligum.blocks.exceptions.NotIndexedException;
 import com.beligum.blocks.fs.hdfs.RequestTransactionFilter;
+import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.sources.HtmlSource;
 import com.beligum.blocks.rdf.sources.HtmlStringSource;
@@ -36,6 +38,10 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+
+import static com.beligum.blocks.config.StorageFactory.getMainPageIndexer;
+import static com.beligum.blocks.config.StorageFactory.getPageStore;
+import static com.beligum.blocks.config.StorageFactory.getTriplestoreIndexer;
 
 /**
  * Created by bram on 2/10/16.
@@ -174,13 +180,13 @@ public class PageEndpoint
         HtmlSource source = new HtmlStringSource(url, content);
 
         //save the file to disk and pull all the proxies etc
-        Page savedPage = StorageFactory.getPageStore().save(source, new PersonRepository().get(Authentication.getCurrentPrincipal()));
+        Page savedPage = getPageStore().save(source, new PersonRepository().get(Authentication.getCurrentPrincipal()));
 
         //above method returns null if nothing changed (so nothing to re-index)
         if (savedPage != null) {
             //Note: transaction handling is done through the global XA transaction
-            StorageFactory.getMainPageIndexer().connect().update(savedPage);
-            StorageFactory.getTriplestoreIndexer().connect().update(savedPage);
+            getMainPageIndexer().connect().update(savedPage);
+            getTriplestoreIndexer().connect().update(savedPage);
         }
 
         return Response.ok().build();
@@ -195,11 +201,11 @@ public class PageEndpoint
     public Response deletePage(String uri) throws Exception
     {
         //save the file to disk and pull all the proxies etc
-        Page deletedPage = StorageFactory.getPageStore().delete(URI.create(uri), new PersonRepository().get(Authentication.getCurrentPrincipal()));
+        Page deletedPage = getPageStore().delete(URI.create(uri), new PersonRepository().get(Authentication.getCurrentPrincipal()));
 
         if (deletedPage!=null) {
-            StorageFactory.getMainPageIndexer().connect().delete(deletedPage);
-            StorageFactory.getTriplestoreIndexer().connect().delete(deletedPage);
+            getMainPageIndexer().connect().delete(deletedPage);
+            getTriplestoreIndexer().connect().delete(deletedPage);
         }
 
         return Response.ok().build();
@@ -215,13 +221,13 @@ public class PageEndpoint
         url = this.preprocessUri(url);
 
         //note: read-only because we won't be changing the page, only the index
-        Page savedPage = StorageFactory.getPageStore().get(url, true);
+        Page savedPage = getPageStore().get(url, true);
 
         //above method returns null if nothing changed (so nothing to re-index)
         if (savedPage != null) {
             //Note: transaction handling is done through the global XA transaction
-            StorageFactory.getMainPageIndexer().connect().update(savedPage);
-            StorageFactory.getTriplestoreIndexer().connect().update(savedPage);
+            getMainPageIndexer().connect().update(savedPage);
+            getTriplestoreIndexer().connect().update(savedPage);
         }
 
         return Response.ok().build();
@@ -232,19 +238,55 @@ public class PageEndpoint
     @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
     public Response reindexAll() throws Exception
     {
-        //note: read-only because we won't be changing the page, only the index
-        Iterator<Page> allPages = StorageFactory.getPageStore().getAll(true);
-
-        while (allPages.hasNext()) {
-            Page page = allPages.next();
-            //Note: transaction handling is done through the global XA transaction
-            //TODO does this mean all is handled in one big transaction?
-            Logger.info(page.getPublicAbsoluteAddress());
-            //StorageFactory.getMainPageIndexer().connect().update(page);
-            //StorageFactory.getTriplestoreIndexer().connect().update(page);
-
+        try {
+            StorageFactory.getMainPageIndexer().connect().deleteAll();
+            StorageFactory.getTriplestoreIndexer().connect().deleteAll();
+        }
+        finally {
+            //simulate a transaction commit for each action or we'll end up with errors.
+            //Note: this means every single index call will be atomic, but the entire operation will not,
+            // so on errors, you'll end up with half-indexed pages and probably errors
+            //Also note that we need to re-connect for every action or the connection will be closed because of the cleanup
             RequestTransactionFilter.executeManualRequestCleanup();
         }
+
+        //note: read-only because we won't be changing the page, only the index
+        int counter = 0;
+        Iterator<Page> allPages = getPageStore().getAll(true);
+        while (allPages.hasNext()) {
+
+            Page page = allPages.next();
+
+            boolean completed = false;
+            while (!completed) {
+
+                PageIndexConnection mainPageConn = StorageFactory.getMainPageIndexer().connect();
+                PageIndexConnection triplestoreConn = StorageFactory.getTriplestoreIndexer().connect();
+
+                try {
+                    Logger.info("Reindexing " + page.getPublicAbsoluteAddress());
+                    mainPageConn.update(page);
+                    triplestoreConn.update(page);
+                    counter++;
+
+                    //if no NotIndexedException was thrown, we can safely mark the indexation as completed
+                    completed = true;
+                }
+                catch (NotIndexedException e) {
+                    Page pageToIndexFirst = StorageFactory.getPageStore().get(e.getResourceNeedingIndexation(), true);
+                    Logger.info("Reindexing " + pageToIndexFirst.getPublicAbsoluteAddress());
+                    mainPageConn.update(pageToIndexFirst);
+                    triplestoreConn.update(pageToIndexFirst);
+                    counter++;
+                }
+                finally {
+                    //see above
+                    RequestTransactionFilter.executeManualRequestCleanup();
+                }
+            }
+        }
+
+        Logger.info("Reindexing completed; processed "+counter+" items.");
 
         return Response.ok().build();
     }
