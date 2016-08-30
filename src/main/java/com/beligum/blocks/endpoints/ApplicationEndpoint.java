@@ -64,7 +64,7 @@ public class ApplicationEndpoint
     }
     @Path("/{randomPage:.*}")
     @GET
-    public Response getPage(@PathParam("randomPage") String randomPage) throws Exception
+    public Response getPage(@PathParam("randomPage") String randomPage, @HeaderParam("Referer") String referer) throws Exception
     {
         Response.ResponseBuilder retVal = null;
 
@@ -84,11 +84,26 @@ public class ApplicationEndpoint
         // and if all fails, we redirect to the default, configured locale
         Locale requestedUriLocale = R.i18nFactory().getUrlLocale(requestedUri);
         if (requestedUriLocale == null) {
-            Locale redirectLocale = R.i18nFactory().getBrowserLocale();
-            //if the requested locale is supported by the site, use it, otherwise use the default locale
-            //if the default is forced, use it no matter what
-            if (Settings.instance().getForceRedirectToDefaultLocale() || !R.configuration().getLanguages().containsKey(redirectLocale.getLanguage())) {
-                redirectLocale = R.configuration().getDefaultLanguage();
+
+            //if a request comes in without URL language, we launch some heuristics to fill it in:
+            // 1) check if the page we come from is one of ours and if it is, use the same language for continuity
+            Locale redirectLocale = null;
+            if (!StringUtils.isEmpty(referer)) {
+                URI refererUri = URI.create(referer);
+                if (referer.startsWith(R.configuration().getSiteDomain().toString())) {
+                    redirectLocale = R.i18nFactory().getUrlLocale(refererUri);
+                }
+            }
+
+            // 2) detect the language of the client's browser (keeping some settings into account)
+            // 3) revert to default language if the requested browser's language is unsupported or if all else fails
+            if (redirectLocale==null) {
+                redirectLocale = R.i18nFactory().getBrowserLocale();
+                //if the requested locale is supported by the site, use it, otherwise use the default locale
+                //if the default is forced, use it no matter what
+                if (redirectLocale == null || Settings.instance().getForceRedirectToDefaultLocale() || !R.configuration().getLanguages().containsKey(redirectLocale.getLanguage())) {
+                    redirectLocale = R.configuration().getDefaultLanguage();
+                }
             }
 
             if (redirectLocale == null) {
@@ -163,7 +178,7 @@ public class ApplicationEndpoint
                 // - OPTION 1: the page doesn't exist, but we can find another page with the URL as alias -> redirect to the correct URL of that page
                 // - OPTION 2: the page doesn't exist, but we can find another page with the URL as alias -> redirect to the correct URL of that page
                 // - OPTION 3: the page doesn't exist & the user has no rights -> 404
-                // - OPTION 4: the page doesn't exist & the user has create rights & no language present -> redirect to URL with language prefix
+                // - OPTION 4: the page doesn't exist & the user has create rights & no language present -> can't happen because the language check happens at the start of this method (so before the login-check)
                 // - OPTION 5: the page doesn't exist & the user has create rights & language is present & page template in flash cache -> render a page template instance (not yet persisted)
                 // - OPTION 6: the page doesn't exist & the user has create rights & language is present & nothing in flash cache -> show new page selection list
                 else {
