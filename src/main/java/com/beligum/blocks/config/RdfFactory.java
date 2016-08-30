@@ -139,7 +139,7 @@ public class RdfFactory
      * This will instantiate all static factory classes once if needed,
      * so we can be sure every RDF member has been assigned to it's proper vocabulary, etc.
      */
-    private static void assertInitialized()
+    public static void assertInitialized()
     {
         if (!initialized) {
             Set<Class<?>> resourceFactories = ReflectionFunctions.searchAllClassesImplementing(RdfResourceFactory.class);

@@ -58,6 +58,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     private SailRepositoryConnection connection;
     private FetchPageMethod fetchPageMethod;
     private ExecutorService fetchPageExecutor;
+    private boolean registeredTransaction;
 
     //-----CONSTRUCTORS-----
     public SesamePageIndexerConnection(SesamePageIndexer pageIndexer) throws IOException
@@ -80,6 +81,8 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
             //this.fetchPageExecutor = Executors.newWorkStealingPool();
             this.fetchPageExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         }
+
+        this.registeredTransaction = false;
     }
 
     //-----PUBLIC METHODS-----
@@ -375,8 +378,12 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     //-----PRIVATE METHODS-----
     private void assertTransaction() throws IOException
     {
-        //attach this connection to the transaction manager
-        StorageFactory.getCurrentRequestTx().registerResource(this);
+        //only need to do it once (at the beginnign of a method using a tx)
+        if (!this.registeredTransaction) {
+            //attach this connection to the transaction manager
+            StorageFactory.getCurrentRequestTx().registerResource(this);
+            this.registeredTransaction = true;
+        }
     }
     private URI toUri(Value value, boolean tryLocalRdfCurie, boolean tryLocalDomain)
     {

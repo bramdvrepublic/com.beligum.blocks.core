@@ -48,6 +48,9 @@ public class ServerStartStopListener implements ServerLifecycleListener
             catch (Exception e) {
                 throw new RuntimeIOException("Unable to boot the page store transaction manager during starup, this is bad and I can't proceed", e);
             }
+
+            //boot up all the static RDF fields
+            RdfFactory.assertInitialized();
         }
     }
     @Override

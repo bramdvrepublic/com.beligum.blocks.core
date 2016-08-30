@@ -11,7 +11,6 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.exceptions.NotIndexedException;
-import com.beligum.blocks.fs.hdfs.RequestTransactionFilter;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.sources.HtmlSource;
@@ -31,6 +30,8 @@ import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
 import javax.ws.rs.*;
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
@@ -38,7 +39,8 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.beligum.blocks.config.StorageFactory.*;
 
@@ -50,7 +52,8 @@ import static com.beligum.blocks.config.StorageFactory.*;
 public class PageEndpoint
 {
     //-----CONSTANTS-----
-    private static ExecutorService TASK_EXECUTOR = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    //leave some headroom...
+    private static ExecutorService TASK_EXECUTOR = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() == 1 ? 1 : Runtime.getRuntime().availableProcessors() - 1);
 
     //-----VARIABLES-----
 
@@ -59,8 +62,10 @@ public class PageEndpoint
     //-----PUBLIC METHODS-----
     public static void endAllAsyncTasksNow()
     {
-        if (TASK_EXECUTOR!=null) {
+        if (TASK_EXECUTOR != null) {
+            Logger.warn("Force-shutting down any pending asynchronous tasks...");
             TASK_EXECUTOR.shutdownNow();
+            Logger.warn("Force-shutting down any pending asynchronous tasks completed.");
         }
     }
     /**
@@ -114,8 +119,10 @@ public class PageEndpoint
                 //the order of locales in which the templates will be searched
                 final Locale[] LANGS = { browserLang, R.configuration().getDefaultLanguage(), Locale.ROOT };
                 pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_NAME.getValue(), template.getTemplateName());
-                pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_TITLE.getValue(), this.findI18NValue(LANGS, template.getTitles(), core.Entries.emptyTemplateTitle.getI18nValue()));
-                pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_DESCRIPTION.getValue(), this.findI18NValue(LANGS, template.getDescriptions(), core.Entries.emptyTemplateDescription.getI18nValue()));
+                pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_TITLE.getValue(),
+                                 this.findI18NValue(LANGS, template.getTitles(), core.Entries.emptyTemplateTitle.getI18nValue()));
+                pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_DESCRIPTION.getValue(),
+                                 this.findI18NValue(LANGS, template.getDescriptions(), core.Entries.emptyTemplateDescription.getI18nValue()));
                 pageTemplate.put(gen.com.beligum.blocks.core.constants.blocks.core.Entries.NEW_BLOCK_ICON.getValue(), this.findI18NValue(LANGS, template.getIcons(), null));
                 templates.add(pageTemplate);
             }
@@ -209,7 +216,7 @@ public class PageEndpoint
         //save the file to disk and pull all the proxies etc
         Page deletedPage = getPageStore().delete(URI.create(uri), new PersonRepository().get(Authentication.getCurrentPrincipal()));
 
-        if (deletedPage!=null) {
+        if (deletedPage != null) {
             getMainPageIndexer().connect().delete(deletedPage);
             getTriplestoreIndexer().connect().delete(deletedPage);
         }
@@ -242,36 +249,36 @@ public class PageEndpoint
     @POST
     @javax.ws.rs.Path("/reindex/all")
     @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    public Response reindexAll() throws Exception
+    public Response reindexAll(@Suspended final AsyncResponse asyncResponse) throws Exception
     {
-        try {
-            StorageFactory.getMainPageIndexer().connect().deleteAll();
-            StorageFactory.getTriplestoreIndexer().connect().deleteAll();
-        }
-        finally {
-            //simulate a transaction commit for each action or we'll end up with errors.
-            //Note: this means every single index call will be atomic, but the entire operation will not,
-            // so on errors, you'll end up with half-indexed pages and probably errors
-            //Also note that we need to re-connect for every action or the connection will be closed because of the cleanup
-            RequestTransactionFilter.executeManualRequestCleanup();
-        }
+        new Thread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try {
+                    asyncResponse.resume(this.doReindexAll());
+                }
+                catch (Exception e) {
+                    Logger.error("Caught exception while executing the reindexation of all pages on this website", e);
+                }
+            }
 
-        PageIndexConnection mainPageConn = StorageFactory.getMainPageIndexer().connect();
-        PageIndexConnection triplestoreConn = StorageFactory.getTriplestoreIndexer().connect();
+            private Response doReindexAll() throws IOException, InterruptedException
+            {
+                PageIndexConnection mainPageConn = StorageFactory.getMainPageIndexer().connect();
+                PageIndexConnection triplestoreConn = StorageFactory.getTriplestoreIndexer().connect();
 
-        final int[] counter = { 0 };
-        try {
-            //note: read-only because we won't be changing the page, only the index
-            Iterator<Page> allPages = getPageStore().getAll(true);
-            while (allPages.hasNext()) {
+                int counter = 0;
+                try {
+                    StorageFactory.getMainPageIndexer().connect().deleteAll();
+                    StorageFactory.getTriplestoreIndexer().connect().deleteAll();
 
-                final Page page = allPages.next();
+                    //note: read-only because we won't be changing the page, only the index
+                    Iterator<Page> allPages = getPageStore().getAll(true);
+                    while (allPages.hasNext()) {
 
-                TASK_EXECUTOR.submit(new Callable<Void>()
-                {
-                    @Override
-                    public Void call() throws Exception
-                    {
+                        final Page page = allPages.next();
                         boolean completed = false;
                         while (!completed) {
 
@@ -279,7 +286,7 @@ public class PageEndpoint
                                 Logger.info("Reindexing " + page.getPublicAbsoluteAddress());
                                 mainPageConn.update(page);
                                 triplestoreConn.update(page);
-                                counter[0]++;
+                                counter++;
 
                                 //if no NotIndexedException was thrown, we can safely mark the indexation as completed
                                 completed = true;
@@ -289,25 +296,27 @@ public class PageEndpoint
                                 Logger.info("Reindexing " + pageToIndexFirst.getPublicAbsoluteAddress());
                                 mainPageConn.update(pageToIndexFirst);
                                 triplestoreConn.update(pageToIndexFirst);
-                                counter[0]++;
+                                counter++;
                             }
                         }
-
-                        return null;
                     }
-                });
+                }
+                finally {
+                    //simulate a transaction commit for each action or we'll end up with errors.
+                    //Note: this means every single index call will be atomic, but the entire operation will not,
+                    // so on errors, you'll end up with half-indexed pages and probably errors
+                    //Also note that we need to re-connect for every action or the connection will be closed because of the cleanup
+                    StorageFactory.releaseCurrentRequestTx(false);
+                }
+
+                Logger.info("Reindexing completed; processed " + counter + " items.");
+
+                return Response.ok().build();
             }
+        }).start();
 
-            TASK_EXECUTOR.awaitTermination(1, TimeUnit.HOURS);
-        }
-        finally {
-            //see above
-            RequestTransactionFilter.executeManualRequestCleanup();
-        }
-
-        Logger.info("Reindexing completed; processed " + counter[0] + " items.");
-
-        return Response.ok().build();
+        //this is unused, the async method return is used instead
+        return null;
     }
 
     //-----PROTECTED METHODS-----
