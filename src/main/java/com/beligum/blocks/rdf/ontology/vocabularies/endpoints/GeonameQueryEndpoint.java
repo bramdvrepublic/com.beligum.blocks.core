@@ -263,6 +263,7 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
                 String country = matcher.group(3);
 
                 //TODO fast and silly first implementation for our specific needs
+                //see http://www.geonames.org/countries/
                 String countryCode = null;
                 if (country.equals("Belgium")) {
                     countryCode = "BE";
@@ -273,14 +274,26 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
                 else if (country.equals("France")) {
                     countryCode = "FR";
                 }
+                else if (country.equals("Germany")) {
+                    countryCode = "DE";
+                }
+                else if (country.equals("United Kingdom")) {
+                    countryCode = "GB";
+                }
+                else if (country.equals("Hungary")) {
+                    countryCode = "HU";
+                }
 
                 if (countryCode!=null) {
+                    Logger.info("Didn't find any Geonames city result for '"+query+"', searching a bit deeper because we have a postal code.");
+
                     UriBuilder builder = UriBuilder.fromUri("http://api.geonames.org/postalCodeSearch")
                                                    .queryParam("username", this.username)
-                                                   .queryParam("postalcode", zipCode)
+                                                   //.queryParam("postalcode", zipCode)
+                                                   .queryParam("placename", city)
                                                    .queryParam("country", countryCode)
-                                                   //we're only searching for the best match
-                                                   .queryParam("maxRows", 1)
+                                                   //reasonable value?
+                                                   .queryParam("maxRows", 20)
                                                    .queryParam("type", "json");
                     if (language != null) {
                         builder.queryParam("lang", language.getLanguage());
@@ -293,10 +306,11 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
                         JsonNode jsonNode = Json.getObjectMapper().readTree(response.readEntity(String.class));
                         Iterator<JsonNode> postalCodes = jsonNode.path("postalCodes").elements();
                         //we're only searching for one
-                        if (postalCodes.hasNext()) {
+                        while (postalCodes.hasNext()) {
                             JsonNode pc = postalCodes.next();
+                            JsonNode postalCodeNode = pc.get("postalCode");
                             JsonNode placeNameNode = pc.get("placeName");
-                            if (placeNameNode!=null) {
+                            if (postalCodeNode!=null && placeNameNode!=null && postalCodeNode.textValue().equals(zipCode)) {
                                 placeName = placeNameNode.textValue();
                             }
                         }
@@ -304,13 +318,21 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
 
                     if (placeName!=null) {
                         //use the new, queried name to search again
-                        //Note that we must avoid using the same pattern in CITY_ZIP_COUNTRY_PATTERN again or we'll have infinite recursion!
+                        //Note that this is a source for infinite recursion if this query doesn't yield any results, but it should, cause we just looked it up (but will be using a different endpoint during search())
+                        //Update: encountered a lot of errors when including the zipCode again, omitting it and hoping for the best...
+                        //String newQuery = placeName+","+zipCode+","+countryCode;
                         String newQuery = placeName+","+countryCode;
                         retVal = this.search(resourceType, newQuery, queryType, language, maxResults, options);
                     }
                 }
                 else {
                     Logger.warn("Unknown country '"+country+"'; can't translate it to a country code and can't use deeper search");
+                }
+
+                //as a last try, we omit the postal code and re-launch the search query one more time without postal code
+                if (retVal.isEmpty()) {
+                    String newQuery = city+","+country;
+                    retVal = this.search(resourceType, newQuery, queryType, language, maxResults, options);
                 }
             }
         }

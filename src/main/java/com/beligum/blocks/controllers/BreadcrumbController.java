@@ -56,8 +56,28 @@ public class BreadcrumbController extends DefaultTemplateController
             }
 
             //we go one level up
+            //Note that this is a bit tricky in our case because if we build the paths to the root of eg. /nl/opzoeken/bakovens/inventaris
+            // we should iterate all these:
+            // - /nl/opzoeken/bakovens/
+            // - /nl/opzoeken/bakovens
+            // - /nl/opzoeken/
+            // - /nl/opzoeken
+            // - /nl/
             //Note that because 'all' (what about the resources with ?lang) pages are prefixed with a language, this should render in the right language
-            uri = uri.getPath().endsWith("/") ? uri.getPath().equals("/") ? null : uri.resolve("..") : uri.resolve(".");
+
+            //just chop off the last slash
+            if (uri.getPath().endsWith("/")) {
+                uri = URI.create(uri.getPath().substring(0, uri.getPath().length()-1));
+            }
+            //removes the name part
+            else {
+                uri = uri.resolve(".");
+            }
+
+            //this is where we draw the line
+            if (uri.getPath().length()<=3) {
+                uri = null;
+            }
         }
 
         //the breadcrumb bar isn't really designed to be empty
