@@ -38,10 +38,9 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.concurrent.*;
 
-import static com.beligum.blocks.config.StorageFactory.getMainPageIndexer;
-import static com.beligum.blocks.config.StorageFactory.getPageStore;
-import static com.beligum.blocks.config.StorageFactory.getTriplestoreIndexer;
+import static com.beligum.blocks.config.StorageFactory.*;
 
 /**
  * Created by bram on 2/10/16.
@@ -51,12 +50,19 @@ import static com.beligum.blocks.config.StorageFactory.getTriplestoreIndexer;
 public class PageEndpoint
 {
     //-----CONSTANTS-----
+    private static ExecutorService TASK_EXECUTOR = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
 
     //-----PUBLIC METHODS-----
+    public static void endAllAsyncTasksNow()
+    {
+        if (TASK_EXECUTOR!=null) {
+            TASK_EXECUTOR.shutdownNow();
+        }
+    }
     /**
      * When a new page (a non-existing page) is requested, the (logged-in) user is presented with a list of page templates.
      * This endpoint is called when a page template is selected from that list.
@@ -250,43 +256,56 @@ public class PageEndpoint
             RequestTransactionFilter.executeManualRequestCleanup();
         }
 
-        //note: read-only because we won't be changing the page, only the index
-        int counter = 0;
-        Iterator<Page> allPages = getPageStore().getAll(true);
-        while (allPages.hasNext()) {
+        PageIndexConnection mainPageConn = StorageFactory.getMainPageIndexer().connect();
+        PageIndexConnection triplestoreConn = StorageFactory.getTriplestoreIndexer().connect();
 
-            Page page = allPages.next();
+        final int[] counter = { 0 };
+        try {
+            //note: read-only because we won't be changing the page, only the index
+            Iterator<Page> allPages = getPageStore().getAll(true);
+            while (allPages.hasNext()) {
 
-            boolean completed = false;
-            while (!completed) {
+                final Page page = allPages.next();
 
-                PageIndexConnection mainPageConn = StorageFactory.getMainPageIndexer().connect();
-                PageIndexConnection triplestoreConn = StorageFactory.getTriplestoreIndexer().connect();
+                TASK_EXECUTOR.submit(new Callable<Void>()
+                {
+                    @Override
+                    public Void call() throws Exception
+                    {
+                        boolean completed = false;
+                        while (!completed) {
 
-                try {
-                    Logger.info("Reindexing " + page.getPublicAbsoluteAddress());
-                    mainPageConn.update(page);
-                    triplestoreConn.update(page);
-                    counter++;
+                            try {
+                                Logger.info("Reindexing " + page.getPublicAbsoluteAddress());
+                                mainPageConn.update(page);
+                                triplestoreConn.update(page);
+                                counter[0]++;
 
-                    //if no NotIndexedException was thrown, we can safely mark the indexation as completed
-                    completed = true;
-                }
-                catch (NotIndexedException e) {
-                    Page pageToIndexFirst = StorageFactory.getPageStore().get(e.getResourceNeedingIndexation(), true);
-                    Logger.info("Reindexing " + pageToIndexFirst.getPublicAbsoluteAddress());
-                    mainPageConn.update(pageToIndexFirst);
-                    triplestoreConn.update(pageToIndexFirst);
-                    counter++;
-                }
-                finally {
-                    //see above
-                    RequestTransactionFilter.executeManualRequestCleanup();
-                }
+                                //if no NotIndexedException was thrown, we can safely mark the indexation as completed
+                                completed = true;
+                            }
+                            catch (NotIndexedException e) {
+                                Page pageToIndexFirst = StorageFactory.getPageStore().get(e.getResourceNeedingIndexation(), true);
+                                Logger.info("Reindexing " + pageToIndexFirst.getPublicAbsoluteAddress());
+                                mainPageConn.update(pageToIndexFirst);
+                                triplestoreConn.update(pageToIndexFirst);
+                                counter[0]++;
+                            }
+                        }
+
+                        return null;
+                    }
+                });
             }
+
+            TASK_EXECUTOR.awaitTermination(1, TimeUnit.HOURS);
+        }
+        finally {
+            //see above
+            RequestTransactionFilter.executeManualRequestCleanup();
         }
 
-        Logger.info("Reindexing completed; processed "+counter+" items.");
+        Logger.info("Reindexing completed; processed " + counter[0] + " items.");
 
         return Response.ok().build();
     }
