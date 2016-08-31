@@ -26,6 +26,7 @@ import com.google.common.collect.Lists;
 import gen.com.beligum.blocks.core.fs.html.views.modals.newblock;
 import gen.com.beligum.blocks.core.messages.blocks.core;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.time.DurationFormatUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
@@ -246,11 +247,24 @@ public class PageEndpoint
         return Response.ok().build();
     }
 
-    @POST
+    @GET
     @javax.ws.rs.Path("/reindex/all")
     @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    public Response reindexAll(@Suspended final AsyncResponse asyncResponse) throws Exception
+    public Response reindexAll(@Suspended final AsyncResponse asyncResponse, @QueryParam("start") Integer start, @QueryParam("size") Integer size) throws Exception
     {
+        //validation
+        if (start == null || start < 0) {
+            start = 0;
+        }
+        if (size == null || size < 0) {
+            //signal the logic below to run till the end
+            size = -1;
+        }
+
+        Logger.info("Launching reindexation with start index " + start + " and total size " + size);
+
+        final Integer finalSize = size;
+        final Integer finalStart = start;
         new Thread(new Runnable()
         {
             @Override
@@ -260,46 +274,15 @@ public class PageEndpoint
                     asyncResponse.resume(this.doReindexAll());
                 }
                 catch (Exception e) {
-                    Logger.error("Caught exception while executing the reindexation of all pages on this website", e);
+                    Logger.error("Caught exception while executing the reindexation of all pages of this website", e);
                 }
             }
 
             private Response doReindexAll() throws IOException, InterruptedException
             {
-                PageIndexConnection mainPageConn = StorageFactory.getMainPageIndexer().connect();
-                PageIndexConnection triplestoreConn = StorageFactory.getTriplestoreIndexer().connect();
-
-                int counter = 0;
                 try {
                     StorageFactory.getMainPageIndexer().connect().deleteAll();
                     StorageFactory.getTriplestoreIndexer().connect().deleteAll();
-
-                    //note: read-only because we won't be changing the page, only the index
-                    Iterator<Page> allPages = getPageStore().getAll(true);
-                    while (allPages.hasNext()) {
-
-                        final Page page = allPages.next();
-                        boolean completed = false;
-                        while (!completed) {
-
-                            try {
-                                Logger.info("Reindexing " + page.getPublicAbsoluteAddress());
-                                mainPageConn.update(page);
-                                triplestoreConn.update(page);
-                                counter++;
-
-                                //if no NotIndexedException was thrown, we can safely mark the indexation as completed
-                                completed = true;
-                            }
-                            catch (NotIndexedException e) {
-                                Page pageToIndexFirst = StorageFactory.getPageStore().get(e.getResourceNeedingIndexation(), true);
-                                Logger.info("Reindexing " + pageToIndexFirst.getPublicAbsoluteAddress());
-                                mainPageConn.update(pageToIndexFirst);
-                                triplestoreConn.update(pageToIndexFirst);
-                                counter++;
-                            }
-                        }
-                    }
                 }
                 finally {
                     //simulate a transaction commit for each action or we'll end up with errors.
@@ -309,13 +292,87 @@ public class PageEndpoint
                     StorageFactory.releaseCurrentRequestTx(false);
                 }
 
-                Logger.info("Reindexing completed; processed " + counter + " items.");
+                long startStamp = System.currentTimeMillis();
+                //little trick to have a final that's not so final
+                final int[] generalCounter = { 0 };
+                //only counts items really processed
+                int launchedThreads = 0;
+                boolean keepRunning = true;
+                //note: read-only because we won't be changing the page, only the index
+                Iterator<Page> allPages = getPageStore().getAll(true);
+                while (allPages.hasNext() && keepRunning) {
+                    final Page page = allPages.next();
+
+                    if (generalCounter[0] >= finalStart) {
+                        launchedThreads++;
+//                        TASK_EXECUTOR.submit(new Callable<Void>()
+//                        {
+//                            @Override
+//                            public Void call() throws Exception
+//                            {
+                                boolean completed = false;
+                                while (!completed) {
+
+                                    //Note that both need a seperate try-catch because the NotIndexedException case
+                                    // should be committed before the first one is tried again
+                                    try {
+                                        try {
+                                            PageIndexConnection mainPageConn = StorageFactory.getMainPageIndexer().connect();
+                                            PageIndexConnection triplestoreConn = StorageFactory.getTriplestoreIndexer().connect();
+
+                                            Logger.info("Reindexing " + page.getPublicAbsoluteAddress());
+                                            mainPageConn.update(page);
+                                            triplestoreConn.update(page);
+                                            generalCounter[0]++;
+
+                                            //if no NotIndexedException was thrown, we can safely mark the indexation as completed
+                                            completed = true;
+                                        }
+                                        finally {
+                                            //see above
+                                            StorageFactory.releaseCurrentRequestTx(false);
+                                        }
+                                    }
+                                    catch (NotIndexedException e) {
+                                        try {
+                                            PageIndexConnection mainPageConn = StorageFactory.getMainPageIndexer().connect();
+                                            PageIndexConnection triplestoreConn = StorageFactory.getTriplestoreIndexer().connect();
+
+                                            Page pageToIndexFirst = StorageFactory.getPageStore().get(e.getResourceNeedingIndexation(), true);
+                                            Logger.info("Reindexing parent " + pageToIndexFirst.getPublicAbsoluteAddress());
+                                            mainPageConn.update(pageToIndexFirst);
+                                            triplestoreConn.update(pageToIndexFirst);
+                                            generalCounter[0]++;
+                                        }
+                                        finally {
+                                            //see above
+                                            StorageFactory.releaseCurrentRequestTx(false);
+                                        }
+                                    }
+                                }
+
+                                //return null;
+                            //}
+                        //});
+                    }
+                    else {
+                        generalCounter[0]++;
+                    }
+
+                    keepRunning = !(finalSize != -1 && launchedThreads >= finalSize);
+                    if (!keepRunning) {
+                        Logger.info("Stopped reindexing because the maximal total size of " + finalSize + " was reached");
+                    }
+                }
+
+                //TASK_EXECUTOR.awaitTermination(1, TimeUnit.HOURS);
+
+                Logger.info("Reindexing completed; processed " + generalCounter[0] + " items in " + DurationFormatUtils.formatDuration(System.currentTimeMillis() - startStamp, "H:mm:ss") + " seconds");
 
                 return Response.ok().build();
             }
         }).start();
 
-        //this is unused, the async method return is used instead
         return null;
     }
 

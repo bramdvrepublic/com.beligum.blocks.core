@@ -236,6 +236,9 @@ public class StorageFactory
                 finally {
                     //make sure we only do this once
                     txCache.remove(CacheKeys.REQUEST_TRANSACTION);
+
+                    //detects if we're using a fake transaction cache and releases it if necessary
+                    releaseCurrentTxCache();
                 }
             }
         }
@@ -404,6 +407,7 @@ public class StorageFactory
      */
     private static Cache<CacheKey, Object> getCurrentTxCache() throws IOException
     {
+        //sync this with releaseCurrentRequestTx()
         Cache<CacheKey, Object> retVal = R.cacheManager().getRequestCache();
 
         //this means we're not in a request context (most probably in an async method),
@@ -411,7 +415,7 @@ public class StorageFactory
         if (retVal == null) {
             Cache allRequestsCache = getFakeRequestCache();
 
-            String currentCacheId = String.valueOf(Thread.currentThread().getId());
+            String currentCacheId = getFakeRequestId();
             retVal = (Cache<CacheKey, Object>) allRequestsCache.get(currentCacheId);
             if (retVal == null) {
                 Logger.warn("Building a fake TX (request) cache to support a long-running asynchronous execution. The cache currently holds "+allRequestsCache.size()+" entries. Please use this sparingly, it's quite untested...");
@@ -421,6 +425,23 @@ public class StorageFactory
         }
 
         return retVal;
+    }
+    private static void releaseCurrentTxCache()
+    {
+        //detect if we're using a fake request cache and remove it if necessary
+        Cache<CacheKey, Object> requestCache = R.cacheManager().getRequestCache();
+        if (requestCache==null) {
+            Cache allRequestsCache = getFakeRequestCache();
+            String currentCacheId = getFakeRequestId();
+            Cache<CacheKey, Object> fakeRequestCache = (Cache<CacheKey, Object>) allRequestsCache.get(currentCacheId);
+            if (fakeRequestCache!=null) {
+                allRequestsCache.remove(currentCacheId);
+            }
+        }
+    }
+    private static String getFakeRequestId()
+    {
+        return String.valueOf(Thread.currentThread().getId());
     }
     private static Cache getFakeRequestCache()
     {
