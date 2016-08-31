@@ -61,7 +61,7 @@ public class PageEndpoint
     //leave some headroom...
     private static ExecutorService TASK_EXECUTOR = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() == 1 ? 1 : Runtime.getRuntime().availableProcessors() - 1);
 
-    private static Format ERROR_STAMP_FORMATTER = new SimpleDateFormat("dd-mm-yyyy hh:mm:ss");
+    private static Format ERROR_STAMP_FORMATTER = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss");
 
     //-----VARIABLES-----
     private static boolean cancelIndexAll = false;
@@ -71,6 +71,8 @@ public class PageEndpoint
     //-----PUBLIC METHODS-----
     public static void endAllAsyncTasksNow()
     {
+        cancelIndexAll = true;
+
         if (TASK_EXECUTOR != null) {
             Logger.warn("Force-shutting down any pending asynchronous tasks...");
             TASK_EXECUTOR.shutdownNow();
@@ -258,14 +260,14 @@ public class PageEndpoint
                     getTriplestoreIndexer().connect().update(savedPage);
                 }
 
-                retVal = Response.ok();
+                retVal = Response.ok("Index of item successfull; "+url);
             }
             finally {
                 R.cacheManager().getApplicationCache().remove(REINDEXING_IN_PROGRESS);
             }
         }
         else {
-            throw new IOException("Can't start a single index action because there's a reindexing process running that was launched on " + ERROR_STAMP_FORMATTER.format(runningIndexStamp));
+            Response.ok("Can't start a single index action because there's a reindexing process running that was launched on " + ERROR_STAMP_FORMATTER.format(runningIndexStamp));
         }
 
         return retVal.build();
@@ -297,14 +299,14 @@ public class PageEndpoint
 
                 Logger.info("Index cleared.");
 
-                retVal = Response.ok();
+                retVal = Response.ok("Index cleared successfully.");
             }
             finally {
                 R.cacheManager().getApplicationCache().remove(REINDEXING_IN_PROGRESS);
             }
         }
         else {
-            throw new IOException("Can't start a clear index action because there's a reindexing process running that was launched on " + ERROR_STAMP_FORMATTER.format(runningIndexStamp));
+            Response.ok("Can't start a clear index action because there's a reindexing process running that was launched on " + ERROR_STAMP_FORMATTER.format(runningIndexStamp));
         }
 
         return retVal.build();
@@ -313,7 +315,7 @@ public class PageEndpoint
     @GET
     @javax.ws.rs.Path("/index/all")
     @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    public synchronized Response indexAll(@Suspended final AsyncResponse asyncResponse, @QueryParam("start") Integer start, @QueryParam("size") Integer size, @QueryParam("filter") String filter)
+    public synchronized Response indexAll(@Suspended final AsyncResponse asyncResponse, @QueryParam("start") Integer start, @QueryParam("size") Integer size, @QueryParam("folder") String folder, @QueryParam("filter") String filter)
                     throws Exception
     {
         //validation
@@ -329,14 +331,14 @@ public class PageEndpoint
         if (runningIndexStamp == null) {
             try {
                 R.cacheManager().getApplicationCache().put(REINDEXING_IN_PROGRESS, new Date().getTime());
-                this.doReindexAll(asyncResponse, start, size, filter);
+                this.doReindexAll(asyncResponse, start, size, folder, filter);
             }
             finally {
                 //Note: doReindexAll clears our flag (because it asynchronous)
             }
         }
         else {
-            throw new IOException("Can't start an index all action because there's a reindexing process running that was launched on " + ERROR_STAMP_FORMATTER.format(runningIndexStamp));
+            asyncResponse.resume(Response.ok("Can't start an index all action because there's a reindexing process running that was launched on " + ERROR_STAMP_FORMATTER.format(runningIndexStamp)).build());
         }
 
         return null;
@@ -345,16 +347,36 @@ public class PageEndpoint
     @GET
     @javax.ws.rs.Path("/index/all/cancel")
     @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    public synchronized Response indexAll() throws Exception
+    public synchronized Response indexAllCancel() throws Exception
     {
         Response.ResponseBuilder retVal = null;
 
         Long runningIndexStamp = (Long) R.cacheManager().getApplicationCache().get(REINDEXING_IN_PROGRESS);
         if (runningIndexStamp != null) {
             cancelIndexAll = true;
+
+            retVal = Response.ok("Reindex all process cancelled");
         }
         else {
-            throw new IOException("Can't cancel a reindex all process because nothing is running at the moment.");
+            retVal = Response.ok("Can't cancel a reindex all process because nothing is running at the moment.");
+        }
+
+        return retVal.build();
+    }
+
+    @GET
+    @javax.ws.rs.Path("/index/all/status")
+    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
+    public synchronized Response indexAllStatus() throws Exception
+    {
+        Response.ResponseBuilder retVal = null;
+
+        Long runningIndexStamp = (Long) R.cacheManager().getApplicationCache().get(REINDEXING_IN_PROGRESS);
+        if (runningIndexStamp != null) {
+            retVal = Response.ok("Reindex all process currently running and started at "+ERROR_STAMP_FORMATTER.format(runningIndexStamp));
+        }
+        else {
+            retVal = Response.ok("No reindex all process currently running.");
         }
 
         return retVal.build();
@@ -363,14 +385,14 @@ public class PageEndpoint
     //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
-    private void doReindexAll(@Suspended final AsyncResponse asyncResponse, final Integer start, final Integer size, final String filter)
+    private void doReindexAll(@Suspended final AsyncResponse asyncResponse, final Integer start, final Integer size, final String folder, final String filter)
     {
         new Thread(new Runnable()
         {
             @Override
             public void run()
             {
-                Logger.info("Launching reindexation with start index " + start + " and total size " + size);
+                Logger.info("Launching reindexation with start index " + start + " and total size " + size + " and filter "+filter);
 
                 try {
                     asyncResponse.resume(this.execute());
@@ -402,7 +424,7 @@ public class PageEndpoint
                 }
 
                 //note: read-only because we won't be changing the page, only the index
-                Iterator<Page> allPages = getPageStore().getAll(true, pathFilter);
+                Iterator<Page> allPages = getPageStore().getAll(true, folder, pathFilter);
                 while (allPages.hasNext() && keepRunning && !cancelIndexAll) {
                     final Page page = allPages.next();
 
@@ -471,10 +493,10 @@ public class PageEndpoint
                 }
 
                 //TASK_EXECUTOR.awaitTermination(1, TimeUnit.HOURS);
-                Logger.info("Reindexing " + (cancelIndexAll ? "cancelled" : "completed") + "; processed " + generalCounter[0] + " items in " +
-                            DurationFormatUtils.formatDuration(System.currentTimeMillis() - startStamp, "H:mm:ss") + " time");
-
-                return Response.ok().build();
+                String status = "Reindexing " + (cancelIndexAll ? "cancelled" : "completed") + "; processed " + generalCounter[0] + " items in " +
+                                DurationFormatUtils.formatDuration(System.currentTimeMillis() - startStamp, "H:mm:ss") + " time";
+                Logger.info(status);
+                return Response.ok(status).build();
             }
         }).start();
     }

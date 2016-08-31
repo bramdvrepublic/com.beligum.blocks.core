@@ -18,6 +18,7 @@ import com.beligum.blocks.fs.pages.ifaces.PageStore;
 import com.beligum.blocks.rdf.ifaces.Format;
 import com.beligum.blocks.rdf.sources.HtmlSource;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.openrdf.model.Model;
@@ -66,11 +67,21 @@ public class SimplePageStore implements PageStore
         return readOnly ? new ReadOnlyPage(publicAddress) : new ReadWritePage(publicAddress);
     }
     @Override
-    public Iterator<Page> getAll(boolean readOnly, PathFilter filter) throws IOException
+    public Iterator<Page> getAll(boolean readOnly, String relativeStartFolder, PathFilter filter) throws IOException
     {
         URI rootPath = readOnly ? Settings.instance().getPagesViewPath() : Settings.instance().getPagesStorePath();
+        URI startFolder = rootPath;
+        if (!StringUtils.isEmpty(relativeStartFolder)) {
+            //make sure it doesn't remove leading paths
+            while (relativeStartFolder.startsWith("/")) {
+                relativeStartFolder = relativeStartFolder.substring(1);
+            }
+
+            startFolder = startFolder.resolve(relativeStartFolder);
+        }
+
         FileContext fileContext = readOnly ? StorageFactory.getPageViewFileSystem() : StorageFactory.getPageStoreFileSystem();
-        return new WalkPagesIterator(fileContext, new Path(rootPath), readOnly, filter);
+        return new WalkPagesIterator(fileContext, new Path(rootPath), new Path(startFolder), readOnly, filter);
     }
     @Override
     public Page save(HtmlSource source, Person creator) throws IOException

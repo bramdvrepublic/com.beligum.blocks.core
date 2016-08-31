@@ -17,25 +17,23 @@ public class WalkPagesIterator implements Iterator<Page>
 
     //-----VARIABLES-----
     private FileContext fileContext;
-    private Path root;
+    private Path rootFolder;
+    private Path startFolder;
     private boolean readOnly;
     private RemoteIterator<LocatedFileStatus> fileIter;
     private Page precomputedNext;
     private PathFilter filter;
 
     //-----CONSTRUCTORS-----
-    public WalkPagesIterator(FileContext fileContext, Path root, boolean readOnly) throws IOException
-    {
-        this(fileContext, root, readOnly, null);
-    }
-    public WalkPagesIterator(FileContext fileContext, Path root, boolean readOnly, PathFilter filter) throws IOException
+    public WalkPagesIterator(FileContext fileContext, Path rootFolderAbs, Path startFolderAbs, boolean readOnly, PathFilter filter) throws IOException
     {
         this.fileContext = fileContext;
-        this.root = root;
+        this.rootFolder = rootFolderAbs;
+        this.startFolder = startFolderAbs;
         this.readOnly = readOnly;
         this.filter = filter;
 
-        this.fileIter = this.fileContext.util().listFiles(this.root, true);
+        this.fileIter = this.fileContext.util().listFiles(this.startFolder, true);
         this.precomputedNext = null;
     }
 
@@ -53,7 +51,7 @@ public class WalkPagesIterator implements Iterator<Page>
             }
         }
         catch (IOException e) {
-            com.beligum.base.utils.Logger.error("Exception caught while checking for next child, returning false; " + this.root, e);
+            com.beligum.base.utils.Logger.error("Exception caught while checking for next child, returning false; " + this.startFolder, e);
         }
 
         return retVal;
@@ -93,7 +91,7 @@ public class WalkPagesIterator implements Iterator<Page>
             //note: meta files can never resolve to pages
             if (!HdfsUtils.isMetaPath(nextPath)) {
                 //we build a relative path from the absolute path to be able to mimic a page request
-                Path nextPathRelative = new Path(HdfsUtils.ROOT.resolve(this.root.toUri().relativize(nextPath.toUri())));
+                Path nextPathRelative = new Path(HdfsUtils.ROOT.resolve(this.rootFolder.toUri().relativize(nextPath.toUri())));
 
                 if (this.filter!=null && !this.filter.accept(nextPathRelative)) {
                     //signal the next if to skip this cause the filter is set, but doesn't match
