@@ -226,8 +226,7 @@ public class PageEndpoint
     }
 
     @POST
-    @javax.ws.rs.Path("/reindex")
-    @Consumes(MediaType.APPLICATION_JSON)
+    @javax.ws.rs.Path("/index")
     @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
     public Response reindex(@QueryParam("url") URI url) throws Exception
     {
@@ -248,9 +247,31 @@ public class PageEndpoint
     }
 
     @GET
-    @javax.ws.rs.Path("/reindex/all")
+    @javax.ws.rs.Path("/index/clear")
     @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    public Response reindexAll(@Suspended final AsyncResponse asyncResponse, @QueryParam("start") Integer start, @QueryParam("size") Integer size) throws Exception
+    public Response indexClear(@Suspended final AsyncResponse asyncResponse, @QueryParam("start") Integer start, @QueryParam("size") Integer size) throws Exception
+    {
+        try {
+            StorageFactory.getMainPageIndexer().connect().deleteAll();
+            StorageFactory.getTriplestoreIndexer().connect().deleteAll();
+        }
+        finally {
+            //simulate a transaction commit for each action or we'll end up with errors.
+            //Note: this means every single index call will be atomic, but the entire operation will not,
+            // so on errors, you'll end up with half-indexed pages and probably errors
+            //Also note that we need to re-connect for every action or the connection will be closed because of the cleanup
+            StorageFactory.releaseCurrentRequestTx(false);
+        }
+
+        Logger.info("Index cleared.");
+
+        return Response.ok().build();
+    }
+
+    @GET
+    @javax.ws.rs.Path("/index/all")
+    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
+    public Response indexAll(@Suspended final AsyncResponse asyncResponse, @QueryParam("start") Integer start, @QueryParam("size") Integer size) throws Exception
     {
         //validation
         if (start == null || start < 0) {
@@ -280,23 +301,11 @@ public class PageEndpoint
 
             private Response doReindexAll() throws IOException, InterruptedException
             {
-                try {
-                    StorageFactory.getMainPageIndexer().connect().deleteAll();
-                    StorageFactory.getTriplestoreIndexer().connect().deleteAll();
-                }
-                finally {
-                    //simulate a transaction commit for each action or we'll end up with errors.
-                    //Note: this means every single index call will be atomic, but the entire operation will not,
-                    // so on errors, you'll end up with half-indexed pages and probably errors
-                    //Also note that we need to re-connect for every action or the connection will be closed because of the cleanup
-                    StorageFactory.releaseCurrentRequestTx(false);
-                }
-
                 long startStamp = System.currentTimeMillis();
                 //little trick to have a final that's not so final
                 final int[] generalCounter = { 0 };
                 //only counts items really processed
-                int launchedThreads = 0;
+                int pageCounter = 0;
                 boolean keepRunning = true;
                 //note: read-only because we won't be changing the page, only the index
                 Iterator<Page> allPages = getPageStore().getAll(true);
@@ -304,7 +313,8 @@ public class PageEndpoint
                     final Page page = allPages.next();
 
                     if (generalCounter[0] >= finalStart) {
-                        launchedThreads++;
+                        pageCounter++;
+                        //TODO the async code is buggy (indexation commits are not synchronized and they overflow)
 //                        TASK_EXECUTOR.submit(new Callable<Void>()
 //                        {
 //                            @Override
@@ -320,7 +330,7 @@ public class PageEndpoint
                                             PageIndexConnection mainPageConn = StorageFactory.getMainPageIndexer().connect();
                                             PageIndexConnection triplestoreConn = StorageFactory.getTriplestoreIndexer().connect();
 
-                                            Logger.info("Reindexing " + page.getPublicAbsoluteAddress());
+                                            Logger.info("Reindexing " + page.getPublicAbsoluteAddress() + " ("+pageCounter+","+generalCounter[0]+")");
                                             mainPageConn.update(page);
                                             triplestoreConn.update(page);
                                             generalCounter[0]++;
@@ -339,7 +349,7 @@ public class PageEndpoint
                                             PageIndexConnection triplestoreConn = StorageFactory.getTriplestoreIndexer().connect();
 
                                             Page pageToIndexFirst = StorageFactory.getPageStore().get(e.getResourceNeedingIndexation(), true);
-                                            Logger.info("Reindexing parent " + pageToIndexFirst.getPublicAbsoluteAddress());
+                                            Logger.info("Reindexing parent " + pageToIndexFirst.getPublicAbsoluteAddress() + " ("+pageCounter+","+generalCounter[0]+")");
                                             mainPageConn.update(pageToIndexFirst);
                                             triplestoreConn.update(pageToIndexFirst);
                                             generalCounter[0]++;
@@ -359,7 +369,7 @@ public class PageEndpoint
                         generalCounter[0]++;
                     }
 
-                    keepRunning = !(finalSize != -1 && launchedThreads >= finalSize);
+                    keepRunning = !(finalSize != -1 && pageCounter >= finalSize);
                     if (!keepRunning) {
                         Logger.info("Stopped reindexing because the maximal total size of " + finalSize + " was reached");
                     }
@@ -367,7 +377,7 @@ public class PageEndpoint
 
                 //TASK_EXECUTOR.awaitTermination(1, TimeUnit.HOURS);
 
-                Logger.info("Reindexing completed; processed " + generalCounter[0] + " items in " + DurationFormatUtils.formatDuration(System.currentTimeMillis() - startStamp, "H:mm:ss") + " seconds");
+                Logger.info("Reindexing completed; processed " + generalCounter[0] + " items in " + DurationFormatUtils.formatDuration(System.currentTimeMillis() - startStamp, "H:mm:ss") + " time");
 
                 return Response.ok().build();
             }
