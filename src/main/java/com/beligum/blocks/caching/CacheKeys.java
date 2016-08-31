@@ -50,5 +50,7 @@ public enum CacheKeys implements CacheKey
     //Application cache key that caches the most recent results to not bombard the geonames server
     GEONAMES_CACHED_RESULTS,
     //Application cache key that holds the cache where the fake request caches are put (for tx handling in asynchronous contexts)
-    TX_FAKE_REQUEST_CACHE
+    TX_FAKE_REQUEST_CACHE,
+    //Applicatoin cache key that holds a timestamp telling us if the engine is currently re-indexing and when it started
+    REINDEXING_IN_PROGRESS
 }

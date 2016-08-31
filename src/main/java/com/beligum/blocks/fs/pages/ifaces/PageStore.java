@@ -2,6 +2,7 @@ package com.beligum.blocks.fs.pages.ifaces;
 
 import com.beligum.base.auth.models.Person;
 import com.beligum.blocks.rdf.sources.HtmlSource;
+import org.apache.hadoop.fs.PathFilter;
 
 import java.io.IOException;
 import java.net.URI;
@@ -38,7 +39,7 @@ public interface PageStore
      * @return the iterator over all the stored pages in this system
      * @throws IOException
      */
-    Iterator<Page> getAll(boolean readOnly) throws IOException;
+    Iterator<Page> getAll(boolean readOnly, PathFilter filter) throws IOException;
 
     /**
      * Saves the supplied source to the page store.

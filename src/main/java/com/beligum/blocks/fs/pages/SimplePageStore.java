@@ -66,11 +66,11 @@ public class SimplePageStore implements PageStore
         return readOnly ? new ReadOnlyPage(publicAddress) : new ReadWritePage(publicAddress);
     }
     @Override
-    public Iterator<Page> getAll(boolean readOnly) throws IOException
+    public Iterator<Page> getAll(boolean readOnly, PathFilter filter) throws IOException
     {
         URI rootPath = readOnly ? Settings.instance().getPagesViewPath() : Settings.instance().getPagesStorePath();
         FileContext fileContext = readOnly ? StorageFactory.getPageViewFileSystem() : StorageFactory.getPageStoreFileSystem();
-        return new WalkPagesIterator(fileContext, new Path(rootPath), readOnly);
+        return new WalkPagesIterator(fileContext, new Path(rootPath), readOnly, filter);
     }
     @Override
     public Page save(HtmlSource source, Person creator) throws IOException
