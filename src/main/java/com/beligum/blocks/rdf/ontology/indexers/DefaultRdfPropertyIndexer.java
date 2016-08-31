@@ -126,12 +126,18 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
             if (endpoint != null) {
                 ResourceInfo resourceValue = endpoint.getResource(property, uriValue, language);
                 if (resourceValue != null) {
-                    String val = resourceValue.getResourceUri().toString();
-                    indexer.indexConstantField(fieldName, val);
-                    //makes sense to also index the string value (mainly because it's also added to the _all field; see DeepPageIndexEntry*)
-                    String valStr = resourceValue.getLabel();
-                    indexer.indexStringField(fieldName, valStr);
-                    retVal = new RdfIndexer.IndexResult(val, valStr);
+                    //this is error prone, but the logging info is minimal, so we wrap it to have more information
+                    try {
+                        String val = resourceValue.getResourceUri().toString();
+                        indexer.indexConstantField(fieldName, val);
+                        //makes sense to also index the string value (mainly because it's also added to the _all field; see DeepPageIndexEntry*)
+                        String valStr = resourceValue.getLabel();
+                        indexer.indexStringField(fieldName, valStr);
+                        retVal = new RdfIndexer.IndexResult(val, valStr);
+                    }
+                    catch (Exception e) {
+                        throw new IOException("Unable to index RDF property " + fieldName + " for value '" + value.stringValue() + "' of '"+subject+"' because there was an error while parsing the information coming back from the resource endpoint for datatype "+property.getDataType()+";", e);
+                    }
                 }
                 else {
                     //make sure we have a language or we won't be able to lookup the resource from the uri
