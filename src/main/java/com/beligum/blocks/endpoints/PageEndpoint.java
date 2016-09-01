@@ -500,8 +500,8 @@ public class PageEndpoint
                                 PageIndexConnection triplestoreConn = StorageFactory.getTriplestoreIndexer().connect();
 
                                 Logger.info("Reindexing " + page.getPublicAbsoluteAddress() + " (" + pageCounter + "," + generalCounter[0] + ")");
-                                //mainPageConn.update(page);
-                                //triplestoreConn.update(page);
+                                mainPageConn.update(page);
+                                triplestoreConn.update(page);
                                 generalCounter[0]++;
 
                                 //if no NotIndexedException was thrown, we can safely mark the indexation as completed
@@ -519,8 +519,8 @@ public class PageEndpoint
 
                                 Page pageToIndexFirst = StorageFactory.getPageStore().get(e.getResourceNeedingIndexation(), true);
                                 Logger.info("Reindexing parent " + pageToIndexFirst.getPublicAbsoluteAddress() + " (" + pageCounter + "," + generalCounter[0] + ")");
-                                //mainPageConn.update(pageToIndexFirst);
-                                //triplestoreConn.update(pageToIndexFirst);
+                                mainPageConn.update(pageToIndexFirst);
+                                triplestoreConn.update(pageToIndexFirst);
                                 generalCounter[0]++;
                             }
                             finally {
