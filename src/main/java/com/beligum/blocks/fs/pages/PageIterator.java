@@ -1,6 +1,7 @@
 package com.beligum.blocks.fs.pages;
 
 import com.beligum.base.utils.Logger;
+import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.fs.HdfsUtils;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import org.apache.hadoop.fs.*;
@@ -11,7 +12,7 @@ import java.util.Iterator;
 /**
  * Created by bram on 8/28/16.
  */
-public class WalkPagesIterator implements Iterator<Page>
+public class PageIterator implements Iterator<Page>
 {
     //-----CONSTANTS-----
 
@@ -22,10 +23,11 @@ public class WalkPagesIterator implements Iterator<Page>
     private boolean readOnly;
     private RemoteIterator<LocatedFileStatus> fileIter;
     private Page precomputedNext;
-    private PathFilter filter;
+    private FullPathGlobFilter filter;
+    private boolean keepRunning;
 
     //-----CONSTRUCTORS-----
-    public WalkPagesIterator(FileContext fileContext, Path rootFolderAbs, Path startFolderAbs, boolean readOnly, PathFilter filter) throws IOException
+    public PageIterator(FileContext fileContext, Path rootFolderAbs, Path startFolderAbs, boolean readOnly, FullPathGlobFilter filter, int maxDepth) throws IOException
     {
         this.fileContext = fileContext;
         this.rootFolder = rootFolderAbs;
@@ -33,11 +35,17 @@ public class WalkPagesIterator implements Iterator<Page>
         this.readOnly = readOnly;
         this.filter = filter;
 
-        this.fileIter = this.fileContext.util().listFiles(this.startFolder, true);
+        //this.fileContext.util().listFiles(this.startFolder, true);
+        this.fileIter = new HdfsFileIterator(this.fileContext, this.rootFolder, this.startFolder, true, maxDepth);
         this.precomputedNext = null;
+        this.keepRunning = true;
     }
 
     //-----PUBLIC METHODS-----
+    public void cancel()
+    {
+        this.keepRunning = false;
+    }
     @Override
     public boolean hasNext()
     {
@@ -84,21 +92,22 @@ public class WalkPagesIterator implements Iterator<Page>
     {
         Page retVal = null;
 
-        while (retVal==null && this.fileIter.hasNext()) {
+        while (retVal==null && this.fileIter.hasNext() && this.keepRunning) {
             LocatedFileStatus next = this.fileIter.next();
             Path nextPath = next.getPath();
 
-            //note: meta files can never resolve to pages
-            if (!HdfsUtils.isMetaPath(nextPath)) {
-                //we build a relative path from the absolute path to be able to mimic a page request
-                Path nextPathRelative = new Path(HdfsUtils.ROOT.resolve(this.rootFolder.toUri().relativize(nextPath.toUri())));
+            //we build a relative path from the absolute path to be able to mimic a page request
+            Path nextPathRelative = new Path(HdfsUtils.ROOT.resolve(this.rootFolder.toUri().relativize(nextPath.toUri())));
 
-                if (this.filter!=null && !this.filter.accept(nextPathRelative)) {
-                    //signal the next if to skip this cause the filter is set, but doesn't match
-                    nextPathRelative = null;
-                }
+            if (this.filter!=null && !this.filter.accept(nextPathRelative)) {
+                //signal the next if to skip this cause the filter is set, but doesn't match
+                Logger.warn("Reindexing: skipping "+nextPathRelative+" because it doesn't match the filter ("+this.filter.getPattern()+")");
+                nextPathRelative = null;
+            }
 
-                if (nextPathRelative!=null) {
+            if (nextPathRelative!=null) {
+                //will throw an exception otherwise..
+                if (nextPathRelative.getName().endsWith(Settings.instance().getPagesFileExtension())) {
                     retVal = this.readOnly ? new ReadOnlyPage(nextPathRelative) : new ReadWritePage(nextPathRelative);
                 }
             }

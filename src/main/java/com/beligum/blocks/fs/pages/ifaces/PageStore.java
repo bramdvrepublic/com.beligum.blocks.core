@@ -1,12 +1,12 @@
 package com.beligum.blocks.fs.pages.ifaces;
 
 import com.beligum.base.auth.models.Person;
+import com.beligum.blocks.fs.pages.FullPathGlobFilter;
+import com.beligum.blocks.fs.pages.PageIterator;
 import com.beligum.blocks.rdf.sources.HtmlSource;
-import org.apache.hadoop.fs.PathFilter;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Iterator;
 
 /**
  * Created by bram on 1/14/16.
@@ -36,10 +36,11 @@ public interface PageStore
      * Get an iterator over all the stored pages in this system.
      *
      * @param readOnly should the pages be opened read-only or read-write?
+     * @param depth
      * @return the iterator over all the stored pages in this system
      * @throws IOException
      */
-    Iterator<Page> getAll(boolean readOnly, String relativeStartFolder, PathFilter filter) throws IOException;
+    PageIterator getAll(boolean readOnly, String relativeStartFolder, FullPathGlobFilter filter, int depth) throws IOException;
 
     /**
      * Saves the supplied source to the page store.

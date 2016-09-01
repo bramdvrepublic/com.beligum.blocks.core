@@ -16,19 +16,25 @@ public class FullPathGlobFilter implements PathFilter
     //-----CONSTANTS-----
 
     //-----VARIABLES-----
-    private GlobPattern pattern;
+    private String pattern;
+    private GlobPattern globPattern;
 
     //-----CONSTRUCTORS-----
-    public FullPathGlobFilter(String filePattern) throws IOException
+    public FullPathGlobFilter(String pattern) throws IOException
     {
-        this.pattern = new GlobPattern(filePattern);
+        this.pattern = pattern;
+        this.globPattern = new GlobPattern(pattern);
     }
 
     //-----PUBLIC METHODS-----
+    public String getPattern()
+    {
+        return pattern;
+    }
     @Override
     public boolean accept(Path path)
     {
-        return this.pattern.matches(path.toString());
+        return this.globPattern.matches(path.toString());
     }
 
     //-----PROTECTED METHODS-----

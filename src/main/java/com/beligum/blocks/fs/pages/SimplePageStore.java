@@ -27,7 +27,6 @@ import java.io.*;
 import java.net.URI;
 import java.time.Instant;
 import java.util.EnumSet;
-import java.util.Iterator;
 
 /**
  * Created by bram on 1/14/16.
@@ -67,7 +66,7 @@ public class SimplePageStore implements PageStore
         return readOnly ? new ReadOnlyPage(publicAddress) : new ReadWritePage(publicAddress);
     }
     @Override
-    public Iterator<Page> getAll(boolean readOnly, String relativeStartFolder, PathFilter filter) throws IOException
+    public PageIterator getAll(boolean readOnly, String relativeStartFolder, FullPathGlobFilter filter, int depth) throws IOException
     {
         URI rootPath = readOnly ? Settings.instance().getPagesViewPath() : Settings.instance().getPagesStorePath();
         URI startFolder = rootPath;
@@ -81,7 +80,7 @@ public class SimplePageStore implements PageStore
         }
 
         FileContext fileContext = readOnly ? StorageFactory.getPageViewFileSystem() : StorageFactory.getPageStoreFileSystem();
-        return new WalkPagesIterator(fileContext, new Path(rootPath), new Path(startFolder), readOnly, filter);
+        return new PageIterator(fileContext, new Path(rootPath), new Path(startFolder), readOnly, filter, depth);
     }
     @Override
     public Page save(HtmlSource source, Person creator) throws IOException

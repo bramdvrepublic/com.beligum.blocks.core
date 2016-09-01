@@ -49,6 +49,8 @@ public class Settings
     protected HashMap<String, String> cachedEsProperties = null;
     private Path cachedPagesMainIndexDir;
     private Path cachedPagesTripleStoreDir;
+    private String cachedPagesFileExtension;
+    private String cachedPagesLockFileExtension;
 
     private Settings()
     {
@@ -209,14 +211,22 @@ public class Settings
      */
     public String getPagesFileExtension()
     {
-        return R.configuration().getString("blocks.core.pages.file-ext", DEFAULT_FILE_EXT);
+        if (this.cachedPagesFileExtension==null) {
+            this.cachedPagesFileExtension = R.configuration().getString("blocks.core.pages.file-ext", DEFAULT_FILE_EXT);
+        }
+
+        return this.cachedPagesFileExtension;
     }
     /**
      * @return returns the file extension of the local page resource lock file INCLUDING the dot
      */
     public String getPagesLockFileExtension()
     {
-        return R.configuration().getString("blocks.core.pages.lock-file-ext", DEFAULT_LOCK_FILE_EXT);
+        if (this.cachedPagesLockFileExtension==null) {
+            this.cachedPagesLockFileExtension = R.configuration().getString("blocks.core.pages.lock-file-ext", DEFAULT_LOCK_FILE_EXT);
+        }
+
+        return this.cachedPagesLockFileExtension;
     }
     public Path getPageMainIndexFolder()
     {
