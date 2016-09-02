@@ -305,8 +305,14 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
 
         //register the writer on the first time we need it
         if (!this.createdWriter) {
-            //attach this connection to the transaction manager
-            StorageFactory.getCurrentRequestTx().registerResource(this);
+            //Note: this check allows us to NOT join (expensive) a transaction
+            // when it's not strictly necessary. It also means that this indexation
+            // will not be transactional if no previous transaction was already started!
+            if (StorageFactory.hasCurrentRequestTx()) {
+                //attach this connection to the transaction manager
+                StorageFactory.getCurrentRequestTx().registerResource(this);
+            }
+
             this.createdWriter = true;
         }
 

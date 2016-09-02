@@ -60,6 +60,7 @@ public class StorageFactory
 
     //-----VARIABLES-----
     private static final Object txManagerLock = new Object();
+    private static final Object requestTxLock = new Object();
 
     //-----CONSTRUCTORS-----
 
@@ -160,24 +161,30 @@ public class StorageFactory
         Cache<CacheKey, Object> txCache = getCurrentTxCache();
 
         //Sync this with the release code below
-        if (!txCache.containsKey(CacheKeys.REQUEST_TRANSACTION)) {
-            try {
-                TransactionManager transactionManager = getTransactionManager();
-                //start up a new transaction
-                transactionManager.begin();
-                //fetch the transaction attached to the current thread
-                Transaction transaction = transactionManager.getTransaction();
-                //wrap it in a request object
-                RequestTX cacheEntry = new RequestTX(transaction);
+        synchronized (requestTxLock) {
+            if (!txCache.containsKey(CacheKeys.REQUEST_TRANSACTION)) {
+                try {
+                    TransactionManager transactionManager = getTransactionManager();
+                    //start up a new transaction
+                    transactionManager.begin();
+                    //fetch the transaction attached to the current thread
+                    Transaction transaction = transactionManager.getTransaction();
+                    //wrap it in a request object
+                    RequestTX cacheEntry = new RequestTX(transaction);
 
-                txCache.put(CacheKeys.REQUEST_TRANSACTION, cacheEntry);
+                    txCache.put(CacheKeys.REQUEST_TRANSACTION, cacheEntry);
+                }
+                catch (Exception e) {
+                    throw new IOException("Exception caught while booting up a request transaction; " + R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
+                }
             }
-            catch (Exception e) {
-                throw new IOException("Exception caught while booting up a request transaction; " + R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri(), e);
-            }
+
+            return (RequestTX) txCache.get(CacheKeys.REQUEST_TRANSACTION);
         }
-
-        return (RequestTX) txCache.get(CacheKeys.REQUEST_TRANSACTION);
+    }
+    public static boolean hasCurrentRequestTx() throws IOException
+    {
+        return getCurrentTxCache().containsKey(CacheKeys.REQUEST_TRANSACTION);
     }
     /**
      * Normally, this is called from RequestTransactionFilter, but sometimes
@@ -418,7 +425,7 @@ public class StorageFactory
             String currentCacheId = getFakeRequestId();
             retVal = (Cache<CacheKey, Object>) allRequestsCache.get(currentCacheId);
             if (retVal == null) {
-                Logger.warn("Building a fake TX (request) cache to support a long-running asynchronous execution. The cache currently holds "+allRequestsCache.size()+" entries. Please use this sparingly, it's quite untested...");
+                Logger.warn("Building a fake TX (request) cache for id "+currentCacheId+" to support a long-running asynchronous execution. The cache currently holds "+allRequestsCache.size()+" entries. Please use this sparingly, it's quite untested...");
                 //let's re-use the id as the name of the cache, hope that's ok...
                 allRequestsCache.put(currentCacheId, retVal = new HashMapCache<CacheKey, Object>(currentCacheId));
             }

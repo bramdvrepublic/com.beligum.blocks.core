@@ -53,7 +53,7 @@ public class XAResourceProducer extends ResourceBean implements bitronix.tm.reso
      * @param uniqueName the uniqueName of this XAResourceProducer, usually the cache's name
      * @param xaResource the XAResource to be registered
      */
-    public static void registerXAResource(String uniqueName, XAResource xaResource)
+    public static synchronized void registerXAResource(String uniqueName, XAResource xaResource)
     {
         XAResourceProducer xaResourceProducer = producers.get(uniqueName);
         if (xaResourceProducer == null) {
@@ -81,7 +81,7 @@ public class XAResourceProducer extends ResourceBean implements bitronix.tm.reso
      * @param uniqueName the uniqueName of this XAResourceProducer, usually the cache's name
      * @param xaResource the XAResource to be registered
      */
-    public static void unregisterXAResource(String uniqueName, XAResource xaResource)
+    public static synchronized void unregisterXAResource(String uniqueName, XAResource xaResource)
     {
         XAResourceProducer xaResourceProducer = producers.get(uniqueName);
 
@@ -103,7 +103,7 @@ public class XAResourceProducer extends ResourceBean implements bitronix.tm.reso
     /**
      * Since manually registered resource pools are left untouched by BitronixTransactionManager.shutdown(), we need to do this manually
      */
-    public static void shutdown()
+    public static synchronized void shutdown()
     {
         for (Map.Entry<String, XAResourceProducer> e : producers.entrySet()) {
             e.getValue().close();
@@ -115,6 +115,7 @@ public class XAResourceProducer extends ResourceBean implements bitronix.tm.reso
     /**
      * {@inheritDoc}
      */
+    @Override
     public XAResourceHolderState startRecovery() throws RecoveryException
     {
         if (recoveryXAResourceHolder != null) {
@@ -132,6 +133,7 @@ public class XAResourceProducer extends ResourceBean implements bitronix.tm.reso
     /**
      * {@inheritDoc}
      */
+    @Override
     public void endRecovery() throws RecoveryException
     {
         recoveryXAResourceHolder = null;
@@ -140,6 +142,7 @@ public class XAResourceProducer extends ResourceBean implements bitronix.tm.reso
     /**
      * {@inheritDoc}
      */
+    @Override
     public void setFailed(boolean failed)
     {
         // cache cannot fail as it's not connection oriented
@@ -148,6 +151,7 @@ public class XAResourceProducer extends ResourceBean implements bitronix.tm.reso
     /**
      * {@inheritDoc}
      */
+    @Override
     public XAResourceHolder findXAResourceHolder(XAResource xaResource)
     {
         for (XAResourceHolder xaResourceHolder : xaResourceHolders.values()) {
@@ -162,6 +166,7 @@ public class XAResourceProducer extends ResourceBean implements bitronix.tm.reso
     /**
      * {@inheritDoc}
      */
+    @Override
     public void init()
     {
         try {
@@ -175,6 +180,7 @@ public class XAResourceProducer extends ResourceBean implements bitronix.tm.reso
     /**
      * {@inheritDoc}
      */
+    @Override
     public void close()
     {
         xaResourceHolders.clear();
@@ -185,6 +191,7 @@ public class XAResourceProducer extends ResourceBean implements bitronix.tm.reso
     /**
      * {@inheritDoc}
      */
+    @Override
     public XAStatefulHolder createPooledConnection(Object xaFactory, ResourceBean bean) throws Exception
     {
         throw new UnsupportedOperationException("Ehcache is not connection-oriented");
@@ -193,6 +200,7 @@ public class XAResourceProducer extends ResourceBean implements bitronix.tm.reso
     /**
      * {@inheritDoc}
      */
+    @Override
     public Reference getReference() throws NamingException
     {
         return new Reference(EhCacheXAResourceProducer.class.getName(),
