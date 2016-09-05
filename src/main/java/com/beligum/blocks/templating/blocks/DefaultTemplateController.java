@@ -14,18 +14,18 @@ public abstract class DefaultTemplateController implements TemplateController
 
     //-----PUBLIC METHODS-----
     @Override
-    public TemplateController resetConfig()
-    {
-        this.config.clear();
-
-        return this;
-    }
-    @Override
     public TemplateConfig putConfig(String key, String value)
     {
         this.config.put(key, value);
 
         return this.config;
+    }
+    @Override
+    public TemplateController resetConfig()
+    {
+        this.config.clear();
+
+        return this;
     }
 
     //-----PROTECTED METHODS-----

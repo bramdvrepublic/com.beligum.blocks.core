@@ -246,7 +246,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
         {
             var id = Commons.generateId();
 
-            var formGroup = $('<div class="'+BlocksConstants.INPUT_TYPE_WRAPPER_CLASS+'"></div>');
+            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
             if (labelText) {
                 var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
             }
@@ -387,22 +387,35 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     var comboEntries = [];
                     $.each(data, function (idx, entry)
                     {
+                        //note: null values aren't handled very well, force-switch to empty string
+                        var value = entry[valueProperty] === null ? '' : entry[valueProperty];
+
                         comboEntries.push({
                             name: entry[nameProperty],
-                            value: entry[valueProperty]
+                            value: value
                         });
 
                         //save the object in a mapping structure for later
-                        _this._termMappings[comboId][entry[valueProperty]] = entry;
+                        _this._termMappings[comboId][value] = entry;
                     });
 
                     //sort the combobox entries on name
                     comboEntries.sort(function (a, b)
                     {
-                        var aName = a.name == null ? null : a.name.toLowerCase();
-                        var bName = b.name == null ? null : b.name.toLowerCase();
+                        //this makes sure the special 'empty valued' entries appear on top
+                        if (!a.value && b.value) {
+                            return -1;
+                        }
+                        else if (!b.value && a.value) {
+                            return 1;
+                        }
+                        //if both are non-empty or empty, just use the label
+                        else {
+                            var aName = a.name == null ? null : a.name.toLowerCase();
+                            var bName = b.name == null ? null : b.name.toLowerCase();
 
-                        return ((aName < bName) ? -1 : ((aName > bName) ? 1 : 0));
+                            return ((aName < bName) ? -1 : ((aName > bName) ? 1 : 0));
+                        }
                     });
 
                     var hasAttr = element.hasAttribute(attribute);
@@ -569,7 +582,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             var resetBtn = null;
             var selectBtn = null;
 
-            var formGroup = $('<div class="'+BlocksConstants.INPUT_TYPE_WRAPPER_CLASS+'"></div>');
+            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
             if (labelText) {
                 var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
             }
@@ -825,10 +838,10 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
         {
             // Create selectbox to add to sidebar
             var id = Commons.generateId();
-            var content = $('<div class="'+BlocksConstants.INPUT_TYPE_WRAPPER_CLASS+'" />');
+            var content = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '" />');
             content.append($('<label for="' + id + '">' + labelText + '</label>'));
             var dropdown = $('<div class="dropdown"/>').appendTo(content);
-            var button = $('<button id="' + id + '" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="btn btn-default dropdown-toggle"><span class="text">'+BlocksMessages.comboboxEmptySelection+'</span>&#160;<span class="caret"></span></button>').appendTo(dropdown);
+            var button = $('<button id="' + id + '" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="btn btn-default dropdown-toggle"><span class="text">' + BlocksMessages.comboboxEmptySelection + '</span>&#160;<span class="caret"></span></button>').appendTo(dropdown);
 
             // Create values inside selectbox and see which one to select
             dropdown.append($('<ul class="dropdown-menu" aria-labelledby="' + id + '"/>'));
@@ -849,7 +862,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * @param initCallback see createCombobox()
          * @param changeCallback see createCombobox()
          */
-        reinitCombobox: function(combobox, values, initCallback, changeCallback)
+        reinitCombobox: function (combobox, values, initCallback, changeCallback)
         {
             //Note: sync this with the classes in createCombobox() above
             var dropdownMenu = combobox.find(".dropdown-menu");
@@ -887,14 +900,14 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     //close the dropdown on click, apparently this didn't work automatically...
                     var dropDown = $('#' + id);
                     //hope this is _always_ ok
-                    if (dropDown.attr('aria-expanded')=="true") {
+                    if (dropDown.attr('aria-expanded') == "true") {
                         dropDown.dropdown("toggle");
                     }
                 });
 
                 if (initCallback) {
                     //only save the first match
-                    if (activateAfterInit==null && initCallback(c.value)) {
+                    if (activateAfterInit == null && initCallback(c.value)) {
                         activateAfterInit = a;
                     }
                 }
@@ -933,7 +946,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             }
 
             // Create selectbox to add to sidebar
-            var formGroup = $('<div class="'+BlocksConstants.INPUT_TYPE_WRAPPER_CLASS+'" />');
+            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '" />');
 
             // Create checkboxes for each value
             var id = Commons.generateId();

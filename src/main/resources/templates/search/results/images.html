@@ -1,0 +1,12 @@
+#if(!$CONTROLLER.searchResult.results.empty)
+    #foreach($result in $CONTROLLER.searchResult.results)
+        <div class="col-md-4">
+            <a href="$result.id" class="thumbnail">
+                <img src="#if($result.image)$result.image#else/assets/images/blocks/placeholder_image_1.png#end" alt="$result.title" />
+                <div class="caption">
+                    <span class="title">$result.title</span>
+                </div>
+            </a>
+        </div>
+    #end
+#end

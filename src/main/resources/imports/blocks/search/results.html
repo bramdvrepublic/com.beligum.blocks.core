@@ -9,11 +9,18 @@
 
 <link rel="stylesheet" href="/assets/styles/imports/blocks-search/results.less">
 
+<script src="/assets/scripts/imports/blocks-search/results.js" data-scope-role="admin"></script>
+
 <template>
-    #if ($CONTROLLER.searchRequest.resultsFormat==$CONSTANTS.blocks.core.SEARCH_RESULTS_FORMAT_LIST)
+    ## Note: default format is the list
+    #if (!$CONTROLLER.resultsFormat)
         #parse('/templates/search/results/list.html')
-    #elseif ($CONTROLLER.searchRequest.resultsFormat==$CONSTANTS.blocks.core.SEARCH_RESULTS_FORMAT_LETTERS)
+    #elseif ($CONTROLLER.resultsFormat==$CONSTANTS.blocks.core.SEARCH_RESULTS_FORMAT_LIST)
+        #parse('/templates/search/results/list.html')
+    #elseif ($CONTROLLER.resultsFormat==$CONSTANTS.blocks.core.SEARCH_RESULTS_FORMAT_LETTERS)
         #parse('/templates/search/results/letters.html')
+    #elseif ($CONTROLLER.resultsFormat==$CONSTANTS.blocks.core.SEARCH_RESULTS_FORMAT_IMAGES)
+        #parse('/templates/search/results/images.html')
     #else
         $TOOLKIT.display.message($MESSAGES.blocks.core.searchResultsFormatUnknown, $CONTROLLER.searchRequest.resultsFormat)
     #end

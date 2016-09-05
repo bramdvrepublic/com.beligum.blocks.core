@@ -8,7 +8,9 @@ import com.beligum.blocks.endpoints.ifaces.RdfQueryEndpoint;
 import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
+import com.beligum.blocks.rdf.ontology.RdfClassImpl;
 import com.beligum.blocks.security.Permissions;
+import gen.com.beligum.blocks.core.messages.blocks.core;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
 import javax.ws.rs.*;
@@ -27,6 +29,8 @@ import java.util.Set;
 public class RdfEndpoint
 {
     //-----CONSTANTS-----
+    //Note: the null-valued vocabulary indicates a dummy class
+    public static final RdfClass SEARCH_ALL = new RdfClassImpl("All", null, core.Entries.searchClassAllTitle, core.Entries.searchClassAllLabel);
 
     //-----VARIABLES-----
 
@@ -123,6 +127,17 @@ public class RdfEndpoint
         else {
             return Response.ok(retVal).build();
         }
+    }
+
+    @GET
+    @Path("/search/classes/")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
+    public Response getSearchClasses() throws IOException
+    {
+        Set<RdfClass> retVal = RdfFactory.getClasses();
+        retVal.add(SEARCH_ALL);
+        return Response.ok(retVal).build();
     }
 
     //-----PROTECTED METHODS-----

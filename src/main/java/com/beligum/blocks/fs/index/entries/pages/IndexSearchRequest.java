@@ -17,18 +17,12 @@ public class IndexSearchRequest
     private Map<RdfProperty, List<String>> fieldFilters;
     private RdfProperty sortField;
 
-    /**
-     * The format in which the results are presented: a list, ordered by first letter, ...
-     */
-    private String resultsFormat;
-
     //-----CONSTRUCTORS-----
-    public IndexSearchRequest(String searchTerm, Map<RdfProperty, List<String>> fieldFilters, RdfProperty sortField, String resultsFormat)
+    public IndexSearchRequest(String searchTerm, Map<RdfProperty, List<String>> fieldFilters, RdfProperty sortField)
     {
         this.searchTerm = searchTerm;
         this.fieldFilters = fieldFilters;
         this.sortField = sortField;
-        this.resultsFormat = resultsFormat;
     }
 
     //-----PUBLIC METHODS-----
@@ -43,10 +37,6 @@ public class IndexSearchRequest
     public RdfProperty getSortField()
     {
         return sortField;
-    }
-    public String getResultsFormat()
-    {
-        return resultsFormat;
     }
 
     //-----PROTECTED METHODS-----

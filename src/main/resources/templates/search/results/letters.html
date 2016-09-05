@@ -2,7 +2,7 @@
     ## we'll keep a map of encountered first letters and start a new section every time a new letter is encountered
     ## Note: this assumes the search results are ordered alphabetically!
     #set($letters={})
-    #foreach($result in $CONTROLLER.searchResult.results)
+    #foreach($result in $CONTROLLER.searchResult.alphaSortedResults)
 
         #set($letter=$result.title.substring(0,1).toUpperCase())
 

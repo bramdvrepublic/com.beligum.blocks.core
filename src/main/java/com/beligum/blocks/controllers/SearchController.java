@@ -44,6 +44,8 @@ public class SearchController extends DefaultTemplateController
     }
 
     //-----VARIABLES-----
+    private RdfClass requestedType;
+    private String resultsFormat;
 
     //-----CONSTRUCTORS-----
     @Override
@@ -104,9 +106,9 @@ public class SearchController extends DefaultTemplateController
                     typeOf = this.config.get(core.SEARCH_BOX_TYPE_ARG);
                 }
 
-                RdfClass rdfClass = typeOf == null ? null : RdfFactory.getClassForResourceType(URI.create(typeOf));
-                if (rdfClass != null) {
-                    pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.typeOf.name(), rdfClass.getCurieName().toString())), BooleanClause.Occur.FILTER);
+                this.requestedType = typeOf == null ? null : RdfFactory.getClassForResourceType(URI.create(typeOf));
+                if (this.requestedType != null) {
+                    pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.typeOf.name(), this.requestedType.getCurieName().toString())), BooleanClause.Occur.FILTER);
                 }
                 else {
                     if (!StringUtils.isEmpty(typeOf)) {
@@ -124,19 +126,19 @@ public class SearchController extends DefaultTemplateController
                 //this.searchResult = StorageFactory.getTriplestoreQueryConnection().search(rdfClass, searchTerm, new HashMap<RdfProperty, String>(), sortField, false, RESOURCES_ON_PAGE, selectedPage, R.i18nFactory().getOptimalLocale());
                 searchResult = queryConnection.search(pageQuery, sortField, false, pageSize, pageIndex);
 
-                //save the results format in the cached value so we can use it across different instances
-                String resultsFormat = this.config.get(core.SEARCH_BOX_RESULTS_FORMAT_ARG);
-                if (StringUtils.isEmpty(resultsFormat)) {
-                    //let's default to a list
-                    resultsFormat = core.SEARCH_RESULTS_FORMAT_LIST;
-                }
-
-                R.cacheManager().getRequestCache().put(SEARCH_REQUEST, new IndexSearchRequest(searchTerm, fieldFilters, sortField, resultsFormat));
+                R.cacheManager().getRequestCache().put(SEARCH_REQUEST, new IndexSearchRequest(searchTerm, fieldFilters, sortField));
                 R.cacheManager().getRequestCache().put(SEARCH_RESULT, searchResult);
             }
             catch (Exception e) {
                 Logger.error("Error while executing search query", e);
             }
+        }
+
+        //some more initializing for every instance of this controller
+        //Note: save the results format in the cached value so we can use it across different instances
+        String resultsFormatConfig = this.config.get(core.SEARCH_RESULTS_FORMAT_ARG);
+        if (!StringUtils.isEmpty(resultsFormatConfig)) {
+            this.resultsFormat = resultsFormatConfig;
         }
     }
 
@@ -148,6 +150,14 @@ public class SearchController extends DefaultTemplateController
     public IndexSearchResult getSearchResult()
     {
         return (IndexSearchResult) R.cacheManager().getRequestCache().get(SEARCH_RESULT);
+    }
+    public RdfClass getRequestedType()
+    {
+        return requestedType;
+    }
+    public String getResultsFormat()
+    {
+        return resultsFormat;
     }
 
     //-----PROTECTED METHODS-----

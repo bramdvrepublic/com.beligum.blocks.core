@@ -34,6 +34,13 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     public RdfClassImpl(String name,
                         RdfVocabulary vocabulary,
                         MessagesFileEntry title,
+                        MessagesFileEntry label)
+    {
+        this(name, vocabulary, title, label, null, false, null, null);
+    }
+    public RdfClassImpl(String name,
+                        RdfVocabulary vocabulary,
+                        MessagesFileEntry title,
                         MessagesFileEntry label,
                         URI[] isSameAs)
     {
@@ -75,7 +82,7 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
         }
 
         //only add ourself to the selected vocabulary if we are a pure class
-        if (this.getClass().equals(RdfClassImpl.class)) {
+        if (this.vocabulary!=null && this.getClass().equals(RdfClassImpl.class)) {
             this.vocabulary.addClass(this);
         }
     }
@@ -94,12 +101,12 @@ public class RdfClassImpl extends AbstractRdfResourceImpl implements RdfClass
     @Override
     public URI getFullName()
     {
-        return vocabulary.resolve(name);
+        return this.vocabulary==null ? null : vocabulary.resolve(name);
     }
     @Override
     public URI getCurieName()
     {
-        return URI.create(vocabulary.getPrefix() + ":" + name);
+        return this.vocabulary==null ? null : URI.create(vocabulary.getPrefix() + ":" + name);
     }
     @Override
     public String getTitleKey()
