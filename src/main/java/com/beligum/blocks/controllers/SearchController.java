@@ -6,6 +6,7 @@ import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.RdfFactory;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.LucenePageIndexer;
+import com.beligum.blocks.fs.index.LucenePageIndexerConnection;
 import com.beligum.blocks.fs.index.entries.pages.IndexSearchRequest;
 import com.beligum.blocks.fs.index.entries.pages.IndexSearchResult;
 import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
@@ -51,6 +52,12 @@ public class SearchController extends DefaultTemplateController
     @Override
     public void created()
     {
+        //some initializing for every instance of this controller
+        String resultsFormatConfig = this.config.get(core.SEARCH_RESULTS_FORMAT_ARG);
+        if (!StringUtils.isEmpty(resultsFormatConfig)) {
+            this.resultsFormat = resultsFormatConfig;
+        }
+
         if (!R.cacheManager().getRequestCache().containsKey(SEARCH_RESULT)) {
             try {
                 Locale locale = R.i18nFactory().getOptimalLocale();
@@ -80,6 +87,11 @@ public class SearchController extends DefaultTemplateController
 
                 // Set the page size
                 int pageSize = DEFAULT_PAGE_SIZE;
+                //note: if the search format is set to letters, we must augment the default page size because the default of 10 doesn't make sense
+                if (this.resultsFormat!=null && this.resultsFormat.equals(core.SEARCH_RESULTS_FORMAT_LETTERS)) {
+                    pageSize = LucenePageIndexerConnection.MAX_SEARCH_RESULTS;
+                }
+
                 String pageSizeParam = null;
                 try {
                     pageSizeParam = getQueryParam(core.SEARCH_PARAM_SIZE);
@@ -132,13 +144,6 @@ public class SearchController extends DefaultTemplateController
             catch (Exception e) {
                 Logger.error("Error while executing search query", e);
             }
-        }
-
-        //some more initializing for every instance of this controller
-        //Note: save the results format in the cached value so we can use it across different instances
-        String resultsFormatConfig = this.config.get(core.SEARCH_RESULTS_FORMAT_ARG);
-        if (!StringUtils.isEmpty(resultsFormatConfig)) {
-            this.resultsFormat = resultsFormatConfig;
         }
     }
 

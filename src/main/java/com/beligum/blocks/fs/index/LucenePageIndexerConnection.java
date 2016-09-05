@@ -44,7 +44,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
 
     //this is a cap value for the most results we'll ever return
     // (eg. the size of the array that will hold the values to be sorted before pagination)
-    private static final int MAX_SEARCH_RESULTS = 1000;
+    public static final int MAX_SEARCH_RESULTS = 1000;
 
     //-----VARIABLES-----
     private LucenePageIndexer pageIndexer;
