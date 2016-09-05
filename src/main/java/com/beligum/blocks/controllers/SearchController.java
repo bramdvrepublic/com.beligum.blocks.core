@@ -52,15 +52,15 @@ public class SearchController extends DefaultTemplateController
     {
         IndexSearchRequest searchRequest = this.getSearchRequest();
 
-        if (searchRequest.getSearchTerm()==null) {
+        if (searchRequest.getSearchTerm() == null) {
             searchRequest.setSearchTerm(getQueryParam(core.SEARCH_PARAM_QUERY));
         }
 
-        if (searchRequest.getFieldFilters()==null) {
+        if (searchRequest.getFieldFilters() == null) {
             searchRequest.setFieldFilters(getQueryParams(core.SEARCH_PARAM_FILTERS));
         }
 
-        if (searchRequest.getTypeOf()==null) {
+        if (searchRequest.getTypeOf() == null) {
             RdfClass typeOf = null;
             String typeOfParam = null;
             try {
@@ -76,7 +76,7 @@ public class SearchController extends DefaultTemplateController
             searchRequest.setTypeOf(typeOf);
         }
 
-        if (searchRequest.getSortField()==null) {
+        if (searchRequest.getSortField() == null) {
             RdfProperty sortField = null;
             String sortParam = getQueryParam(core.SEARCH_PARAM_SORT);
             if (!StringUtils.isEmpty(sortParam)) {
@@ -86,7 +86,7 @@ public class SearchController extends DefaultTemplateController
             searchRequest.setSortField(sortField);
         }
 
-        if (searchRequest.getPageIndex()==null) {
+        if (searchRequest.getPageIndex() == null) {
             Integer pageIndex = null;
             String pageIndexParam = null;
             try {
@@ -102,7 +102,7 @@ public class SearchController extends DefaultTemplateController
             searchRequest.setPageIndex(pageIndex);
         }
 
-        if (searchRequest.getPageSize()==null) {
+        if (searchRequest.getPageSize() == null) {
             Integer pageSize = null;
             String pageSizeParam = null;
             try {
@@ -118,7 +118,7 @@ public class SearchController extends DefaultTemplateController
             searchRequest.setPageSize(pageSize);
         }
 
-        if (searchRequest.getFormat()==null) {
+        if (searchRequest.getFormat() == null) {
             String format = null;
             String resultsFormatConfig = this.config.get(core.SEARCH_RESULTS_FORMAT_ARG);
             if (!StringUtils.isEmpty(resultsFormatConfig)) {
@@ -154,13 +154,13 @@ public class SearchController extends DefaultTemplateController
                 Locale locale = R.i18nFactory().getOptimalLocale();
 
                 //set some defaults if still empty..
-                if (searchRequest.getPageIndex()==null) {
+                if (searchRequest.getPageIndex() == null) {
                     searchRequest.setPageIndex(FIRST_PAGE_INDEX);
                 }
-                if (searchRequest.getPageSize()==null) {
+                if (searchRequest.getPageSize() == null) {
                     searchRequest.setPageSize(DEFAULT_PAGE_SIZE);
                 }
-                if (searchRequest.getFormat()==null) {
+                if (searchRequest.getFormat() == null) {
                     searchRequest.setFormat(SEARCH_RESULTS_FORMAT_LIST);
                 }
 
@@ -169,6 +169,10 @@ public class SearchController extends DefaultTemplateController
                 org.apache.lucene.search.BooleanQuery pageQuery = new org.apache.lucene.search.BooleanQuery();
 
                 pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.language.name(), locale.getLanguage())), BooleanClause.Occur.FILTER);
+
+                if (searchRequest.getTypeOf() != null) {
+                    pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.typeOf.name(), searchRequest.getTypeOf().getCurieName().toString())), BooleanClause.Occur.FILTER);
+                }
 
                 this.addFieldFilters(searchRequest.getFieldFilters(), pageQuery, locale);
 
