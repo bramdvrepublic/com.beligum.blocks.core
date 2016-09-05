@@ -48,6 +48,34 @@ base.plugin("mot.blocks.results", ["base.core.Class", "blocks.imports.Block", "c
                     }
                 ], null));
 
+            retVal.push(this.addUniqueAttributeValue(Sidebar, block.element, BlocksMessages.searchBoxResultsSize, BlocksConstants.SEARCH_RESULTS_SIZE_ARG,
+                [
+                    {
+                        name: 10,
+                        value: 10
+                    },
+                    {
+                        name: 50,
+                        value: 50
+                    },
+                    {
+                        name: 100,
+                        value: 100
+                    },
+                    {
+                        name: 250,
+                        value: 250
+                    },
+                    {
+                        name: 500,
+                        value: 500
+                    },
+                    {
+                        name: 1000,
+                        value: 1000
+                    }
+                ], null));
+
             return retVal;
         },
         getWindowName: function ()

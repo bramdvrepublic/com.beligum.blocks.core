@@ -5,18 +5,15 @@
     #foreach($result in $CONTROLLER.searchResult.alphaSortedResults)
 
         #set($letter=$result.title.substring(0,1).toUpperCase())
+        #set($isLetter=$TOOLKIT.lang.character.isLetter($letter.charAt(0)))
+        #if(!$isLetter)
+            #set($letter="#")
+        #end
 
         #if(!$letters[$letter])
         <div class="col-md-12">
-            <h3>
-                #if($TOOLKIT.lang.character.isLetter($letter.charAt(0)))
-                    $letter
-                #else
-                    #
-                #end
-            </h3>
+            <h3>$letter</h3>
         </div>
-
             #set($letters[$letter]=true)
         #end
 

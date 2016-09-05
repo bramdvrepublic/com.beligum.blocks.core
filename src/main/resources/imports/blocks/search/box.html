@@ -17,10 +17,10 @@
     <div class="panel panel-default panel-search">
         <div class="panel-heading">
             <h3 class="panel-title">
-                #if(!$CONTROLLER.requestedType)
+                #if(!$CONTROLLER.searchRequest.typeOf)
                     $MESSAGES.blocks.core.searchBoxTitle
                 #else
-                    $TOOLKIT.display.message($MESSAGES.blocks.core.searchBoxTitleWithType, $CONTROLLER.requestedType.label)
+                    $TOOLKIT.display.message($MESSAGES.blocks.core.searchBoxTitleWithType, $CONTROLLER.searchRequest.typeOf.label)
                 #end
             </h3>
         </div>
