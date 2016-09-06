@@ -115,6 +115,8 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                     var skipHtmlChange = false;
                     if (
                         propElement.hasAttribute(PROPERTY_ATTR) && propElement.attr(PROPERTY_ATTR) == newValueTerm[TERM_NAME_FIELD] &&
+                        //note that the text() function removes the <p></p> tags
+                        $.trim(labelElement.text()) === newValueTerm.label &&
                         // Since we abandoned the use of @typeof, we abandoned this sub-check as well; seems to be working fine.
                         //(
                         //    //we either need a datatype (for literals) or a typeof (for references)
@@ -154,7 +156,7 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                             labelElement.html(BlocksMessages.widgetFicheEntryDefaultLabel);
                         }
                         else {
-                            //set the label html
+                            //set the label html (note: if you change this, make sure the .text() function above in the skipHtmlChange check still works...)
                             labelElement.html("<p>" + newValueTerm.label + "</p>");
 
                             //Initialize the property attributes
@@ -204,6 +206,9 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
 
                                 if (prev!=null && prev.attr(BlocksConstants.FICHE_ENTRY_PROPERTY_CLASS)==el.attr(BlocksConstants.FICHE_ENTRY_PROPERTY_CLASS)) {
                                     el.parents('blocks-fiche-entry').addClass(BlocksConstants.FICHE_ENTRY_DOUBLE_CLASS);
+                                }
+                                else {
+                                    el.parents('blocks-fiche-entry').removeClass(BlocksConstants.FICHE_ENTRY_DOUBLE_CLASS);
                                 }
 
                                 prev = el;
