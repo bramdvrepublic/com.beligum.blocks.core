@@ -1,13 +1,14 @@
 package com.beligum.blocks.config;
 
 import bitronix.tm.BitronixTransactionManager;
+import bitronix.tm.resource.ResourceRegistrar;
+import bitronix.tm.resource.common.XAResourceProducer;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.server.R;
 import com.beligum.base.server.ifaces.ServerLifecycleListener;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.endpoints.PageEndpoint;
-import com.beligum.blocks.fs.hdfs.bitronix.XAResourceProducer;
 import com.beligum.blocks.fs.index.ifaces.Indexer;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -89,8 +90,16 @@ public class ServerStartStopListener implements ServerLifecycleListener
                     TransactionManager transactionManager = StorageFactory.getTransactionManager();
                     if (transactionManager instanceof BitronixTransactionManager) {
                         BitronixTransactionManager bitronixTransactionManager = (BitronixTransactionManager) transactionManager;
-                        //we need to explicitly shut down the manually registered ones
-                        XAResourceProducer.shutdown();
+
+                        //Since manually registered resource pools are left untouched by BitronixTransactionManager.shutdown(),
+                        // we need to do this manually
+                        XAResourceProducer customProducer = StorageFactory.getBitronixResourceProducer();
+                        if (customProducer!=null) {
+                            //hope this order is ok
+                            customProducer.close();
+                            ResourceRegistrar.unregister(customProducer);
+                        }
+
                         bitronixTransactionManager.shutdown();
                     }
                     else {

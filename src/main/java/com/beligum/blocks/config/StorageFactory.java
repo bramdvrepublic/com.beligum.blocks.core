@@ -1,6 +1,7 @@
 package com.beligum.blocks.config;
 
 import bitronix.tm.TransactionManagerServices;
+import bitronix.tm.resource.ResourceRegistrar;
 import ch.qos.logback.classic.Level;
 import com.beligum.base.cache.Cache;
 import com.beligum.base.cache.CacheKey;
@@ -12,6 +13,8 @@ import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.fs.hdfs.RequestTX;
 import com.beligum.blocks.fs.hdfs.TransactionalRawLocalFS;
 import com.beligum.blocks.fs.hdfs.TransactionalRawLocalFileSystem;
+import com.beligum.blocks.fs.hdfs.bitronix.CustomBitronixResourceProducer;
+import com.beligum.blocks.fs.hdfs.bitronix.SimpleXAResourceProducer;
 import com.beligum.blocks.fs.index.LucenePageIndexer;
 import com.beligum.blocks.fs.index.SesamePageIndexer;
 import com.beligum.blocks.fs.index.ifaces.Indexer;
@@ -123,6 +126,11 @@ public class StorageFactory
                 //workaround is to create a file called "bitronix-default-config.properties" in the resources folder that holds the "bitronix.tm.timer.defaultTransactionTimeout = xxx" property
                 //TransactionManagerServices.getConfiguration().setDefaultTransactionTimeout(Settings.instance().getTransactionTimeoutSeconds());
                 TransactionManager transactionManager = TransactionManagerServices.getTransactionManager();
+
+                //Register our custom producer
+                //Note that the unregister method is called from SimpleXAResourceProducer.close(), hope that's ok
+                ResourceRegistrar.register(new SimpleXAResourceProducer());
+
                 //Note that this values doesn't seem to propagate to the sub-transactions of the resources.
                 //The value of Bitronix' DefaultTransactionTimeout does, eg. for XADisk via this way:
                 //enlist() -> setTimeoutDate() -> start() -> XAResource.setTransactionTimeout() -> XASession.setTransactionTimeout()
@@ -155,6 +163,13 @@ public class StorageFactory
         }
 
         return (TransactionManager) cacheManager().getApplicationCache().get(CacheKeys.TRANSACTION_MANAGER);
+    }
+    public static CustomBitronixResourceProducer getBitronixResourceProducer() throws IOException
+    {
+        //make sure there's a transaction manager first..
+        TransactionManager tm = getTransactionManager();
+
+        return (CustomBitronixResourceProducer) ResourceRegistrar.get(SimpleXAResourceProducer.UNIQUE_NAME);
     }
     public static RequestTX getCurrentRequestTx() throws IOException
     {

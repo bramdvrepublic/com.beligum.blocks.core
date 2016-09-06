@@ -72,13 +72,21 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
         return NAME;
     }
     @Override
-    public FSDataInputStream open(Path f, int bufferSize) throws IOException
+    public FSDataInputStream open(Path p, int bufferSize) throws IOException
     {
-        if (!exists(f)) {
-            throw new FileNotFoundException(f.toString());
+        XASession tx = this.getRequestScopedTransaction();
+        File f = pathToFile(p);
+
+        try {
+            if (!txExists(tx, f)) {
+                throw new FileNotFoundException(p.toString());
+            }
+        }
+        catch (Exception e) {
+            throw new IOException(e);
         }
 
-        return new FSDataInputStream(new BufferedFSInputStream(new LocalFSFileInputStream(this.getRequestScopedTransaction(), f), bufferSize));
+        return new FSDataInputStream(new BufferedFSInputStream(new LocalFSFileInputStream(this.getRequestScopedTransaction(), p), bufferSize));
     }
     @Override
     public FSDataOutputStream create(Path f, FsPermission permission, boolean overwrite, int bufferSize, short replication, long blockSize, Progressable progress) throws IOException
@@ -86,16 +94,25 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
         return create(f, overwrite, true, bufferSize, replication, blockSize, progress, permission);
     }
     @Override
-    public FSDataOutputStream append(Path f, int bufferSize, Progressable progress) throws IOException
+    public FSDataOutputStream append(Path p, int bufferSize, Progressable progress) throws IOException
     {
-        if (!exists(f)) {
-            throw new FileNotFoundException("File " + f + " not found");
+        XASession tx = this.getRequestScopedTransaction();
+        File f = pathToFile(p);
+
+        try {
+            if (!txExists(tx, f)) {
+                throw new FileNotFoundException("File " + p + " not found");
+            }
         }
-        if (getFileStatus(f).isDirectory()) {
-            throw new IOException("Cannot append to a diretory (=" + f + " )");
+        catch (Exception e) {
+            throw new IOException(e);
         }
 
-        return new FSDataOutputStream(new BufferedOutputStream(createOutputStreamWithMode(f, true, null), bufferSize), statistics);
+        if (getFileStatus(p).isDirectory()) {
+            throw new IOException("Cannot append to a directory (=" + p + " )");
+        }
+
+        return new FSDataOutputStream(new BufferedOutputStream(createOutputStreamWithMode(p, true, null), bufferSize), statistics);
     }
     @Override
     public boolean rename(Path src, Path dst) throws IOException
@@ -246,14 +263,14 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
         return workingDir;
     }
     @Override
-    public boolean mkdirs(Path f, FsPermission permission) throws IOException
+    public boolean mkdirs(Path p, FsPermission permission) throws IOException
     {
-        if (f == null) {
+        if (p == null) {
             throw new IllegalArgumentException("mkdirs path arg is null");
         }
         XASession tx = this.getRequestScopedTransaction();
-        Path parent = f.getParent();
-        File p2f = pathToFile(f);
+        Path parent = p.getParent();
+        File f = pathToFile(p);
         File parent2f = null;
         boolean parent2fExists = false;
         if (parent != null) {
@@ -269,13 +286,13 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
             }
         }
         try {
-            if (this.txExists(tx, p2f) && !txExistsAndIsDirectory(tx, p2f)) {
+            if (this.txExists(tx, f) && !txExistsAndIsDirectory(tx, f)) {
                 throw new FileNotFoundException("Destination exists" +
-                                                " and is not a directory: " + p2f.getCanonicalPath());
+                                                " and is not a directory: " + f.getCanonicalPath());
             }
 
             return (parent == null || parent2fExists || mkdirs(parent)) &&
-                   (mkOneDirWithMode(tx, f, p2f, permission) || txExistsAndIsDirectory(tx, p2f));
+                   (mkOneDirWithMode(tx, f, permission) || txExistsAndIsDirectory(tx, f));
         }
         catch (Exception e) {
             throw new IOException(e);
@@ -315,25 +332,38 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
             return new Path(workingDir, f);
         }
     }
-    private FSDataOutputStream create(Path f, boolean overwrite, boolean createParent, int bufferSize, short replication, long blockSize, Progressable progress, FsPermission permission)
+    /**
+     * Note: overwrite means: if a file with this name already exists, then if true, the file will be overwritten, and if false an error will be thrown.
+     */
+    private FSDataOutputStream create(Path p, boolean overwrite, boolean createParent, int bufferSize, short replication, long blockSize, Progressable progress, FsPermission permission)
                     throws IOException
     {
-        if (exists(f) && !overwrite) {
-            throw new FileAlreadyExistsException("File already exists: " + f);
+        XASession tx = this.getRequestScopedTransaction();
+        File f = pathToFile(p);
+
+        try {
+            if (!overwrite && txExists(tx, f)) {
+                throw new FileAlreadyExistsException("File already exists: " + p);
+            }
+        }
+        catch (Exception e) {
+            throw new IOException(e);
         }
 
-        Path parent = f.getParent();
-
-        if (parent != null && !mkdirs(parent)) {
-            throw new IOException("Mkdirs failed to create " + parent.toString());
+        if (createParent) {
+            Path parent = p.getParent();
+            if (parent != null && !mkdirs(parent)) {
+                throw new IOException("Mkdirs failed to create " + parent.toString());
+            }
         }
-        return new FSDataOutputStream(new BufferedOutputStream(createOutputStreamWithMode(f, false, permission), bufferSize), statistics);
+
+        return new FSDataOutputStream(new BufferedOutputStream(createOutputStreamWithMode(p, false, permission), bufferSize), statistics);
     }
     protected OutputStream createOutputStreamWithMode(Path f, boolean append, FsPermission permission) throws IOException
     {
         return new LocalFSFileOutputStream(this.getRequestScopedTransaction(), f, append, permission);
     }
-    protected boolean mkOneDirWithMode(XASession tx, Path p, File p2f, FsPermission permission) throws IOException
+    protected boolean mkOneDirWithMode(XASession tx, File f, FsPermission permission) throws IOException
     {
         boolean retVal = false;
 
@@ -346,17 +376,17 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
         if (permission == null) {
             try {
                 //XADisk crashes if the file already exists
-                if (!this.txExists(tx, p2f)) {
-                    tx.createFile(p2f, true);
+                if (!this.txExists(tx, f)) {
+                    tx.createFile(f, true);
                 }
                 retVal = true;
             }
             catch (Exception e) {
-                throw new IOException("Caught exception while creating directory; " + p2f, e);
+                throw new IOException("Caught exception while creating directory; " + f, e);
             }
         }
         else {
-            throw new UnsupportedActionException("Creating directory with specific permissions is not supported by XADisk; " + p2f);
+            throw new UnsupportedActionException("Creating directory with specific permissions is not supported by XADisk; " + f);
 
             //            if (Shell.WINDOWS && NativeIO.isAvailable()) {
             //                try {
@@ -497,7 +527,6 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
     class LocalFSFileInputStream extends FSInputStream /*implements HasFileDescriptor*/
     {
         private XAFileInputStream fis;
-        private long position;
 
         public LocalFSFileInputStream(XASession tx, Path f) throws IOException
         {
@@ -521,13 +550,12 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
             catch (Exception e) {
                 throw new IOException(e);
             }
-            this.position = pos;
         }
 
         @Override
         public long getPos() throws IOException
         {
-            return this.position;
+            return this.fis.position();
         }
 
         @Override
@@ -577,7 +605,6 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
                     throw new IOException(e);
                 }
                 if (value >= 0) {
-                    this.position++;
                     statistics.incrementBytesRead(1);
                 }
                 return value;
@@ -598,8 +625,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
                 catch (Exception e) {
                     throw new IOException(e);
                 }
-                if (value > 0) {
-                    this.position += value;
+                if (value >= 0) {
                     statistics.incrementBytesRead(value);
                 }
                 return value;
@@ -619,9 +645,7 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
             catch (Exception e) {
                 throw new IOException(e);
             }
-            if (value > 0) {
-                this.position += value;
-            }
+
             return value;
         }
 
@@ -653,7 +677,12 @@ public class TransactionalRawLocalFileSystem extends org.apache.hadoop.fs.FileSy
                 try {
                     //Note: that createXAFileOutputStream() always appends to the file
                     if (!append && txExists(tx, file)) {
-                        tx.truncateFile(file, 0l);
+                        //Note that we encountered a bug under linux64 here, see https://java.net/jira/browse/XADISK-158
+                        //Apparently, setting the position (eg. zero here) and then appending to a file, doesn't append to the position,
+                        // but simply appends to the end of the file. So avoid using the truncate function altogether...
+                        //tx.truncateFile(file, 0l);
+                        tx.deleteFile(file);
+                        //Note: file is created in the test below
                     }
 
                     //method below needs the file to exist before we can write to it

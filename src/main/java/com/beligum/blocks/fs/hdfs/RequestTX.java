@@ -2,12 +2,12 @@ package com.beligum.blocks.fs.hdfs;
 
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
-import com.beligum.blocks.fs.hdfs.bitronix.XAResourceProducer;
+import com.beligum.blocks.config.StorageFactory;
+import com.beligum.blocks.fs.hdfs.bitronix.CustomBitronixResourceProducer;
 import com.beligum.blocks.fs.index.ifaces.IndexConnection;
 import org.xadisk.bridge.proxies.interfaces.XASession;
 
 import javax.transaction.Synchronization;
-import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAResource;
 import java.io.IOException;
@@ -56,10 +56,8 @@ public class RequestTX
     public synchronized void registerResource(XAResource xaResource) throws IOException
     {
         try {
-            //this will register a new producer for every type of XAResources we have
-            //note: the producer handles the lookup of the right xaResource internally (although it's not quite optimized yet...)
-            final String resourceName = xaResource.getClass().getCanonicalName();
-            XAResourceProducer.registerXAResource(resourceName, xaResource);
+            final CustomBitronixResourceProducer bitronixProducer = StorageFactory.getBitronixResourceProducer();
+            bitronixProducer.registerResource(xaResource);
             this.transaction.registerSynchronization(new Synchronization()
             {
                 @Override
@@ -69,7 +67,7 @@ public class RequestTX
                 @Override
                 public void afterCompletion(int status)
                 {
-                    XAResourceProducer.unregisterXAResource(resourceName, xaResource);
+                    bitronixProducer.unregisterResource(xaResource);
                 }
             });
 
@@ -193,7 +191,7 @@ public class RequestTX
                 try {
                     this.transaction.delistResource(r, flag);
                 }
-                catch (SystemException e) {
+                catch (Exception e) {
                     //let's swallow but log this as I think it's not that bad?
                     Logger.error("Error while delisting a transaction participant", e);
                 }

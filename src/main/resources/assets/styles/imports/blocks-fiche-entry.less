@@ -21,8 +21,13 @@ blocks-fiche-entry {
   .make-row();
   .clearfix();//doesn't seem to be inherited from make-row well...
 
-  margin-top: 5px;
-  margin-bottom: 5px;
+  margin-top: 15px;
+  //note: don't add a bottom margin, so we can easily re-style the doubles
+  margin-bottom: 0px;
+
+  &:first-of-type {
+    margin-top: 5px;
+  }
 
   //create a padding with a (possible) column border
   &:last-of-type {

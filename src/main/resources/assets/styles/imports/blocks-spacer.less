@@ -7,8 +7,10 @@ blocks-spacer {
 
   .clearfix;
 
-  min-height: @defaultHeight;
+  //mobile-first value, see below
+  display: none;
 
+  min-height: @defaultHeight;
   &.xs {
     min-height: @height_xs;
   }
@@ -23,5 +25,9 @@ blocks-spacer {
   }
   &.xl {
     min-height: @height_xl;
+  }
+
+  @media (min-width: @screen-sm-min) {
+    display: block;
   }
 }

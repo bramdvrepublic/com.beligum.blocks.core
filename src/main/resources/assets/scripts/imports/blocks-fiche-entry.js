@@ -196,6 +196,18 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                                     propElement.attr(BlocksConstants.TEXT_EDITOR_OPTIONS_ATTR, BlocksConstants.TEXT_EDITOR_OPTIONS_FORCE_INLINE + " " + BlocksConstants.TEXT_EDITOR_OPTIONS_NO_TOOLBAR);
                                     break;
                             }
+
+                            //this is a good place to iterate the fiche entries and mark the doubles
+                            var prev = null;
+                            $('blocks-fiche-entry [data-property='+BlocksConstants.FICHE_ENTRY_VALUE_CLASS+'] ['+BlocksConstants.FICHE_ENTRY_PROPERTY_CLASS+']').each(function() {
+                                var el = $(this);
+
+                                if (prev!=null && prev.attr(BlocksConstants.FICHE_ENTRY_PROPERTY_CLASS)==el.attr(BlocksConstants.FICHE_ENTRY_PROPERTY_CLASS)) {
+                                    el.parents('blocks-fiche-entry').addClass(BlocksConstants.FICHE_ENTRY_DOUBLE_CLASS);
+                                }
+
+                                prev = el;
+                            });
                         }
                     }
 
