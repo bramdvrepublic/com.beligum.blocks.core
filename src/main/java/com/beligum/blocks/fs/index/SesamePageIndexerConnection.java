@@ -380,14 +380,8 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     {
         //only need to do it once (at the beginnign of a method using a tx)
         if (!this.registeredTransaction) {
-            //Note: this check allows us to NOT join (expensive) a transaction
-            // when it's not strictly necessary. It also means that this indexation
-            // will not be transactional if no previous transaction was already started!
-            if (StorageFactory.hasCurrentRequestTx()) {
-
-                //attach this connection to the transaction manager
-                StorageFactory.getCurrentRequestTx().registerResource(this);
-            }
+            //attach this connection to the transaction manager
+            StorageFactory.getCurrentRequestTx().registerResource(this);
             this.registeredTransaction = true;
         }
     }

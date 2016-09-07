@@ -513,7 +513,7 @@ public class PageEndpoint
                             completed = true;
                         }
                         finally {
-                            //see above
+                            //see indexClear()
                             StorageFactory.releaseCurrentRequestTx(false);
                         }
                     }
