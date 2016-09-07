@@ -478,7 +478,7 @@ public class PageEndpoint
 
             for (String folder : this.folders) {
                 Logger.info("Entering next folder "+folder);
-                
+
                 FullPathGlobFilter pathFilter = null;
                 if (!StringUtils.isEmpty(filter)) {
                     pathFilter = new FullPathGlobFilter(filter);
