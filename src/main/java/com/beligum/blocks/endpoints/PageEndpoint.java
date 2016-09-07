@@ -297,7 +297,7 @@ public class PageEndpoint
     @GET
     @javax.ws.rs.Path("/index/all")
     @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING })
-    public synchronized Response indexAll(@QueryParam("start") Integer start, @QueryParam("size") Integer size, @QueryParam("folder") String folder,
+    public synchronized Response indexAll(@QueryParam("start") Integer start, @QueryParam("size") Integer size, @QueryParam("folder") List<String> folder,
                                           @QueryParam("filter") String filter, @QueryParam("depth") Integer depth)
                     throws Exception
     {
@@ -318,7 +318,7 @@ public class PageEndpoint
         if (currentIndexAllThread == null) {
             //will register itself in the static variable
             new ReindexThread(start, size, folder, filter, depth).start();
-            retVal = Response.ok("Launched new reindexation thread with start " + start + ", size " + size + ", folder " + folder + ", filter " + filter + ", depth " + depth);
+            retVal = Response.ok("Launched new reindexation thread with start " + start + ", size " + size + ", folder " + Arrays.toString(folder.toArray()) + ", filter " + filter + ", depth " + depth);
         }
         else {
             retVal = Response.ok("Can't start an index all action because there's a reindexing process running that was launched on " +
@@ -410,7 +410,7 @@ public class PageEndpoint
     {
         private final Integer start;
         private final Integer size;
-        private final String folder;
+        private final List<String> folders;
         private final String filter;
         private final int depth;
         private long startStamp;
@@ -418,11 +418,11 @@ public class PageEndpoint
 
         private PageIterator pageIterator;
 
-        public ReindexThread(final Integer start, final Integer size, final String folder, final String filter, final int depth)
+        public ReindexThread(final Integer start, final Integer size, final List<String> folders, final String filter, final int depth)
         {
             this.start = start;
             this.size = size;
-            this.folder = folder;
+            this.folders = folders;
             this.filter = filter;
             this.depth = depth;
 
@@ -434,7 +434,7 @@ public class PageEndpoint
         @Override
         public void run()
         {
-            Logger.info("Launching reindexation with start " + start + ", size " + size + ", folder " + folder + ", filter " + filter + ", depth " + depth);
+            Logger.info("Launching reindexation with start " + start + ", size " + size + ", folders " + Arrays.toString(folders.toArray()) + ", filter " + filter + ", depth " + depth);
 
             try {
                 currentIndexAllThread = this;
@@ -476,59 +476,67 @@ public class PageEndpoint
             int pageCounter = 0;
             boolean keepRunning = true;
 
-            FullPathGlobFilter pathFilter = null;
-            if (!StringUtils.isEmpty(filter)) {
-                pathFilter = new FullPathGlobFilter(filter);
-            }
-            this.pageIterator = getPageStore().getAll(true, folder, pathFilter, depth);
+            for (String folder : this.folders) {
+                Logger.info("Entering next folder "+folder);
+                
+                FullPathGlobFilter pathFilter = null;
+                if (!StringUtils.isEmpty(filter)) {
+                    pathFilter = new FullPathGlobFilter(filter);
+                }
+                this.pageIterator = getPageStore().getAll(true, folder, pathFilter, depth);
 
-            //note: read-only because we won't be changing the page, only the index
-            while (pageIterator.hasNext() && keepRunning && !cancel) {
-                final Page page = pageIterator.next();
+                //note: read-only because we won't be changing the page, only the index
+                while (pageIterator.hasNext() && keepRunning && !cancel) {
+                    final Page page = pageIterator.next();
 
-                if (generalCounter[0] >= start) {
-                    pageCounter++;
+                    if (generalCounter[0] >= start) {
+                        pageCounter++;
 
-                    //TODO the async code is buggy (indexation commits are not synchronized and they overflow)
-                    //                        TASK_EXECUTOR.submit(new Callable<Void>()
-                    //                        {
-                    //                            @Override
-                    //                            public Void call() throws Exception
-                    //                            {
-                    boolean completed = false;
-                    while (!completed) {
+                        //TODO the async code is buggy (indexation commits are not synchronized and they overflow)
+                        //                        TASK_EXECUTOR.submit(new Callable<Void>()
+                        //                        {
+                        //                            @Override
+                        //                            public Void call() throws Exception
+                        //                            {
+                        boolean completed = false;
+                        while (!completed) {
 
-                        //Note that both need a seperate try-catch because the NotIndexedException case
-                        // should be committed before the first one is tried again
-                        try {
-                            PageIndexConnection mainPageConn = StorageFactory.getMainPageIndexer().connect();
-                            PageIndexConnection triplestoreConn = StorageFactory.getTriplestoreIndexer().connect();
+                            //Note that both need a seperate try-catch because the NotIndexedException case
+                            // should be committed before the first one is tried again
+                            try {
+                                PageIndexConnection mainPageConn = StorageFactory.getMainPageIndexer().connect();
+                                PageIndexConnection triplestoreConn = StorageFactory.getTriplestoreIndexer().connect();
 
-                            Logger.info("Reindexing " + page.getPublicAbsoluteAddress() + " (" + pageCounter + "," + generalCounter[0] + ")");
-                            mainPageConn.update(page);
-                            triplestoreConn.update(page);
-                            generalCounter[0]++;
+                                Logger.info("Reindexing " + page.getPublicAbsoluteAddress() + " (" + pageCounter + "," + generalCounter[0] + ")");
+                                mainPageConn.update(page);
+                                triplestoreConn.update(page);
+                                generalCounter[0]++;
 
-                            //if no NotIndexedException was thrown, we can safely mark the indexation as completed
-                            completed = true;
+                                //if no NotIndexedException was thrown, we can safely mark the indexation as completed
+                                completed = true;
+                            }
+                            finally {
+                                //see indexClear()
+                                StorageFactory.releaseCurrentRequestTx(false);
+                            }
                         }
-                        finally {
-                            //see indexClear()
-                            StorageFactory.releaseCurrentRequestTx(false);
-                        }
+
+                        //return null;
+                        //}
+                        //});
+                    }
+                    else {
+                        generalCounter[0]++;
                     }
 
-                    //return null;
-                    //}
-                    //});
-                }
-                else {
-                    generalCounter[0]++;
+                    keepRunning = !(size != -1 && pageCounter >= size);
+                    if (!keepRunning) {
+                        Logger.info("Stopped reindexing because the maximal total size of " + size + " was reached");
+                    }
                 }
 
-                keepRunning = !(size != -1 && pageCounter >= size);
                 if (!keepRunning) {
-                    Logger.info("Stopped reindexing because the maximal total size of " + size + " was reached");
+                    break;
                 }
             }
 
