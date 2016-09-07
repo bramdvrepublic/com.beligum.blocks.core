@@ -78,8 +78,9 @@ public class GeonameQueryEndpoint implements RdfQueryEndpoint
                 UriBuilder builder = UriBuilder.fromUri("http://api.geonames.org/search")
                                                .queryParam("username", this.username)
                                                //no need to fetch the entire node; we'll do that during selection
-                                               //note: we selct MEDIUM instead of SHORT to get the full country name (for cities)
-                                               .queryParam("style", "MEDIUM")
+                                               //note: we select MEDIUM instead of SHORT to get the full country name (for cities)
+                                               //note: we select FULL instead of MEDIUM to get the parents-names to disambiguate in GeonameCitySuggestion.getSubTitle()
+                                               .queryParam("style", "FULL")
                                                .queryParam("maxRows", maxResults)
                                                //I think the default is "population", which seems to be more natural
                                                // (better to find a large, more-or-less-good match, than to find the very specific wrong match)
