@@ -134,14 +134,40 @@ blocks-search-results {
     a {
       display: block;
       margin: 25px auto 0 auto;
-      padding: 10px;
+      overflow: hidden;
+
+      //This is a big tweak/hack to make the boxes really a grid:
+      // all boxes are 120% of theirselves
+      // (actually meaning we have 100% for the image and 20% for the caption)
+
+      //note: this controls the space below the img
+      padding-bottom: 121%;
+      overflow: hidden;
+      position: relative;
 
       img {
-        margin: 0 auto;
+        @imgMargin: 2%;
+        position: absolute;
+        top: @imgMargin;
+        right: @imgMargin;
+        left: @imgMargin;
+        width: 100%-(2*@imgMargin);
       }
       .caption {
-        margin-top: 15px;
+
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+
+        //the margin top is now actually controlled by
+        // the (extra than 100%) padding-bottom of the a above
+        //margin-top: 15px;
         text-align: center;
+
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
     }
   }
