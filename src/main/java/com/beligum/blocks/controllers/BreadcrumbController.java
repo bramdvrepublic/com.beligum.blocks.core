@@ -48,6 +48,8 @@ public class BreadcrumbController extends DefaultTemplateController
     {
         LinkedList<Map.Entry<URI, String>> retVal = new LinkedList<>();
 
+        Locale currentLocale = R.i18nFactory().getOptimalLocale();
+
         PageIndexConnection conn = StorageFactory.getMainPageIndexer().connect();
         //Note: we should actually re-use the connection above but we have an interface mismatch
         LuceneQueryConnection queryConnection = StorageFactory.getMainPageQueryConnection();
@@ -74,6 +76,7 @@ public class BreadcrumbController extends DefaultTemplateController
 
                 BooleanQuery pageQuery = new BooleanQuery();
                 pageQuery.add(new TermQuery(new Term(Terms.sameAs.getCurieName().toString(), uri.toString())), BooleanClause.Occur.FILTER);
+                pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.language.name(), currentLocale.getLanguage())), BooleanClause.Occur.FILTER);
                 IndexSearchResult results = queryConnection.search(pageQuery, -1);
                 if (results.getTotalHits()>0) {
                     if (results.getTotalHits()>1) {
