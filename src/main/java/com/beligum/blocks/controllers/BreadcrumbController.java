@@ -1,15 +1,24 @@
 package com.beligum.blocks.controllers;
 
 import com.beligum.base.server.R;
+import com.beligum.base.utils.Logger;
 import com.beligum.base.utils.toolkit.StringFunctions;
 import com.beligum.blocks.config.StorageFactory;
+import com.beligum.blocks.fs.index.entries.IndexEntry;
+import com.beligum.blocks.fs.index.entries.pages.IndexSearchResult;
 import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
+import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.pages.ReadOnlyPage;
 import com.beligum.blocks.fs.pages.ifaces.Page;
+import com.beligum.blocks.rdf.ontology.factories.Terms;
 import com.beligum.blocks.templating.blocks.DefaultTemplateController;
 import org.apache.commons.collections.keyvalue.DefaultMapEntry;
 import org.apache.hadoop.fs.FileContext;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.TermQuery;
 
 import java.io.IOException;
 import java.net.URI;
@@ -40,6 +49,8 @@ public class BreadcrumbController extends DefaultTemplateController
         LinkedList<Map.Entry<URI, String>> retVal = new LinkedList<>();
 
         PageIndexConnection conn = StorageFactory.getMainPageIndexer().connect();
+        //Note: we should actually re-use the connection above but we have an interface mismatch
+        LuceneQueryConnection queryConnection = StorageFactory.getMainPageQueryConnection();
 
         URI uri = R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri();
         Set<String> encounteredIds = new HashSet<>();
@@ -49,9 +60,34 @@ public class BreadcrumbController extends DefaultTemplateController
 
             if (p!=null) {
                 //we're working top-down, do only the first (most specific) uri will be added, hope that's ok (otherwise we have doubles, which is not ok at all)
-                if (!encounteredIds.contains(p.getResource())) {
+                if (!encounteredIds.contains(p.getId())) {
                     retVal.add(new DefaultMapEntry(URI.create(p.getId()), p.getTitle()));
-                    encounteredIds.add(p.getResource());
+                    encounteredIds.add(p.getId());
+                }
+            }
+            else {
+                //This allows us to branch to an alias URL tree while searching for parents (especially useful for resource URLs)
+                //Eg. when building the breadcrumb for /resource/RCB/66503?lang=en
+                // and '/resource/RCB' is set as an alias for '/en/opzoeken' (meaning /en/opzoeken has the sameAs meta field '/resource/RCB')
+                // when we encounter the '/resource/RCB' path during searching for parents, we make the jump to the '/en/opzoeken' url (and it's parents),
+                // forgetting about the hierarchy of the original '/resource/RCB' path.
+
+                BooleanQuery pageQuery = new BooleanQuery();
+                pageQuery.add(new TermQuery(new Term(Terms.sameAs.getCurieName().toString(), uri.toString())), BooleanClause.Occur.FILTER);
+                IndexSearchResult results = queryConnection.search(pageQuery, -1);
+                if (results.getTotalHits()>0) {
+                    if (results.getTotalHits()>1) {
+                        Logger.warn("Watch out: got more than 1 ("+results.getTotalHits()+") sameAs result while building the breadcrumb for "+uri+"; only using first");
+                    }
+
+                    IndexEntry result = results.getResults().get(0);
+                    if (!encounteredIds.contains(result.getId())) {
+                        URI resultId = URI.create(result.getId());
+                        retVal.add(new DefaultMapEntry(resultId, result.getTitle()));
+                        encounteredIds.add(result.getId());
+                        //this effectively 'branches out' to the alias URL tree
+                        uri = resultId;
+                    }
                 }
             }
 

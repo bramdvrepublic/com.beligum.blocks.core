@@ -95,6 +95,23 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
             var combobox = this.addUniqueAttributeValueAsync(Sidebar, propElement, "Property type", PROPERTY_ATTR, endpointURL, "title", TERM_NAME_FIELD,
                 function changeListener(oldValueTerm, newValueTerm)
                 {
+                    //this is a good place to iterate the fiche entries and mark the doubles
+                    //(don't worry if it gets called multiple times, I just hope it's not too slow)
+                    //TODO: one issue remains if you drag an entry out (or in) a sequence, you need to focus it before it updates...
+                    var prev = null;
+                    $('blocks-fiche-entry [data-property='+BlocksConstants.FICHE_ENTRY_VALUE_CLASS+'] ['+BlocksConstants.FICHE_ENTRY_PROPERTY_CLASS+']').each(function() {
+                        var el = $(this);
+
+                        if (prev!=null && prev.attr(BlocksConstants.FICHE_ENTRY_PROPERTY_CLASS)==el.attr(BlocksConstants.FICHE_ENTRY_PROPERTY_CLASS)) {
+                            el.parents('blocks-fiche-entry').addClass(BlocksConstants.FICHE_ENTRY_DOUBLE_CLASS);
+                        }
+                        else {
+                            el.parents('blocks-fiche-entry').removeClass(BlocksConstants.FICHE_ENTRY_DOUBLE_CLASS);
+                        }
+
+                        prev = el;
+                    });
+
                     //for now, we don't allow the combobox to switch to an "empty" value, so ignore if that happens (probably during initialization)
                     if (!newValueTerm) {
                         return;
@@ -198,21 +215,6 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                                     propElement.attr(BlocksConstants.TEXT_EDITOR_OPTIONS_ATTR, BlocksConstants.TEXT_EDITOR_OPTIONS_FORCE_INLINE + " " + BlocksConstants.TEXT_EDITOR_OPTIONS_NO_TOOLBAR);
                                     break;
                             }
-
-                            //this is a good place to iterate the fiche entries and mark the doubles
-                            var prev = null;
-                            $('blocks-fiche-entry [data-property='+BlocksConstants.FICHE_ENTRY_VALUE_CLASS+'] ['+BlocksConstants.FICHE_ENTRY_PROPERTY_CLASS+']').each(function() {
-                                var el = $(this);
-
-                                if (prev!=null && prev.attr(BlocksConstants.FICHE_ENTRY_PROPERTY_CLASS)==el.attr(BlocksConstants.FICHE_ENTRY_PROPERTY_CLASS)) {
-                                    el.parents('blocks-fiche-entry').addClass(BlocksConstants.FICHE_ENTRY_DOUBLE_CLASS);
-                                }
-                                else {
-                                    el.parents('blocks-fiche-entry').removeClass(BlocksConstants.FICHE_ENTRY_DOUBLE_CLASS);
-                                }
-
-                                prev = el;
-                            });
                         }
                     }
 

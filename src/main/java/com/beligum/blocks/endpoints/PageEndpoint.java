@@ -535,7 +535,7 @@ public class PageEndpoint
                     }
                 }
 
-                if (!keepRunning) {
+                if (!keepRunning || cancel) {
                     break;
                 }
             }
