@@ -44,7 +44,7 @@ public class HdfsResource extends AbstractResource
     @Override
     public long getLastModifiedTime() throws IOException
     {
-        return Math.max((this.fileContext == null ? 0 : this.fileContext.getFileStatus(this.hdfsPath).getModificationTime()), this.getChildrenLastModificationTime());
+        return Math.max((this.fileContext == null ? this.getZeroLastModificationTime() : this.fileContext.getFileStatus(this.hdfsPath).getModificationTime()), this.getChildrenLastModificationTime());
     }
     @Override
     public long getSize() throws IOException
