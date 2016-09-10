@@ -211,56 +211,59 @@ public class StorageFactory
     {
         Cache<CacheKey, Object> txCache = getCurrentTxCache();
 
-        RequestTX tx = (RequestTX) txCache.get(CacheKeys.REQUEST_TRANSACTION);
-        if (tx != null) {
-            try {
-                if (forceRollback || tx.getStatus() != Status.STATUS_ACTIVE) {
-                    tx.rollback();
-                }
-                else {
-                    //this is the general case: try to commit and (try to) rollback on error
-                    try {
-                        tx.commit();
-                    }
-                    catch (Exception e) {
-                        try {
-                            Logger.warn("Caught exception while committing a file system transaction, trying to rollback...", e);
-                            tx.rollback();
-                        }
-                        catch (Exception e1) {
-                            //don't wait for the next reboot before trying to revert to a clean state; try it now
-                            //note that the reboot method is implemented so that it doesn't throw (another) exception, so we can rely on it's return value quite safely
-                            if (!StorageFactory.rebootPageStoreTransactionManager()) {
-                                throw new IOException(
-                                                "Exception caught while processing a file system transaction and the reboot because of a faulty rollback failed too; this is VERY bad and I don't really know what to do. You should investigate this!",
-                                                e1);
-                            }
-                            else {
-                                //we can't just swallow the exception; something's wrong and we should report it to the user
-                                throw new IOException(
-                                                "I was unable to commit a file system transaction and even the resulting rollback failed, but I did manage to reboot the filesystem. I'm adding the exception below;",
-                                                e1);
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception e) {
-                throw new IOException("Exception caught while processing a file system transaction; this is bad", e);
-            }
-            finally {
+        //happens when the server hasn't started up yet
+        if (txCache != null) {
+            RequestTX tx = (RequestTX) txCache.get(CacheKeys.REQUEST_TRANSACTION);
+            if (tx != null) {
                 try {
-                    tx.close();
+                    if (forceRollback || tx.getStatus() != Status.STATUS_ACTIVE) {
+                        tx.rollback();
+                    }
+                    else {
+                        //this is the general case: try to commit and (try to) rollback on error
+                        try {
+                            tx.commit();
+                        }
+                        catch (Exception e) {
+                            try {
+                                Logger.warn("Caught exception while committing a file system transaction, trying to rollback...", e);
+                                tx.rollback();
+                            }
+                            catch (Exception e1) {
+                                //don't wait for the next reboot before trying to revert to a clean state; try it now
+                                //note that the reboot method is implemented so that it doesn't throw (another) exception, so we can rely on it's return value quite safely
+                                if (!StorageFactory.rebootPageStoreTransactionManager()) {
+                                    throw new IOException(
+                                                    "Exception caught while processing a file system transaction and the reboot because of a faulty rollback failed too; this is VERY bad and I don't really know what to do. You should investigate this!",
+                                                    e1);
+                                }
+                                else {
+                                    //we can't just swallow the exception; something's wrong and we should report it to the user
+                                    throw new IOException(
+                                                    "I was unable to commit a file system transaction and even the resulting rollback failed, but I did manage to reboot the filesystem. I'm adding the exception below;",
+                                                    e1);
+                                }
+                            }
+                        }
+                    }
                 }
                 catch (Exception e) {
-                    throw new IOException("Exception caught while closing a file system transaction; this is bad", e);
+                    throw new IOException("Exception caught while processing a file system transaction; this is bad", e);
                 }
                 finally {
-                    //make sure we only do this once
-                    txCache.remove(CacheKeys.REQUEST_TRANSACTION);
+                    try {
+                        tx.close();
+                    }
+                    catch (Exception e) {
+                        throw new IOException("Exception caught while closing a file system transaction; this is bad", e);
+                    }
+                    finally {
+                        //make sure we only do this once
+                        txCache.remove(CacheKeys.REQUEST_TRANSACTION);
 
-                    //detects if we're using a fake transaction cache and releases it if necessary
-                    releaseCurrentTxCache();
+                        //detects if we're using a fake transaction cache and releases it if necessary
+                        releaseCurrentTxCache();
+                    }
                 }
             }
         }
@@ -434,13 +437,14 @@ public class StorageFactory
 
         //this means we're not in a request context (most probably in an async method),
         // so we'll boot up a fake request cache for this transaction
-        if (retVal == null) {
+        if (R.booted() && retVal == null) {
             Cache allRequestsCache = getFakeRequestCache();
 
             String currentCacheId = getFakeRequestId();
             retVal = (Cache<CacheKey, Object>) allRequestsCache.get(currentCacheId);
             if (retVal == null) {
-                Logger.warn("Building a fake TX (request) cache for id "+currentCacheId+" to support a long-running asynchronous execution. The cache currently holds "+allRequestsCache.size()+" entries. Please use this sparingly, it's quite untested...");
+                Logger.warn("Building a fake TX (request) cache for id " + currentCacheId + " to support a long-running asynchronous execution. The cache currently holds " + allRequestsCache.size() +
+                            " entries. Please use this sparingly, it's quite untested...");
                 //let's re-use the id as the name of the cache, hope that's ok...
                 allRequestsCache.put(currentCacheId, retVal = new HashMapCache<CacheKey, Object>(currentCacheId));
             }
@@ -452,11 +456,11 @@ public class StorageFactory
     {
         //detect if we're using a fake request cache and remove it if necessary
         Cache<CacheKey, Object> requestCache = R.cacheManager().getRequestCache();
-        if (requestCache==null) {
+        if (requestCache == null) {
             Cache allRequestsCache = getFakeRequestCache();
             String currentCacheId = getFakeRequestId();
             Cache<CacheKey, Object> fakeRequestCache = (Cache<CacheKey, Object>) allRequestsCache.get(currentCacheId);
-            if (fakeRequestCache!=null) {
+            if (fakeRequestCache != null) {
                 allRequestsCache.remove(currentCacheId);
             }
         }
