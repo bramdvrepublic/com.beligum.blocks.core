@@ -139,6 +139,9 @@ public abstract class AbstractImporter implements Importer
                         else if (literal.getDatatype().equals(XMLSchema.STRING)) {
                             newObject = factory.createLiteral(objectValueTrimmed, literal.getDatatype());
                         }
+                        else if (literal.getDatatype().equals(RDF.HTML)) {
+                            newObject = factory.createLiteral(objectValueTrimmed, literal.getDatatype());
+                        }
                         else {
                             throw new IOException("Encountered unsupported simple literal value, this shouldn't happen; " + literal.getDatatype());
                         }
