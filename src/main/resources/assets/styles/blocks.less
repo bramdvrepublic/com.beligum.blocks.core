@@ -514,7 +514,8 @@ ul.@{BLOCK_ACTIONS_CLASS} {
         }
         //make all dropdowns behave more like <select>s
         .dropdown,
-        .checkbox {
+        .checkbox,
+        .@{RADIO_GROUP_CLASS} {
           @textAlign: left;
           @formAlign: right;
           @caretAlign: right;
@@ -524,6 +525,12 @@ ul.@{BLOCK_ACTIONS_CLASS} {
 
           &.checkbox {
             top: -0.7em; //align it with the label
+          }
+
+          &.@{RADIO_GROUP_CLASS} {
+            .radio {
+              text-align: @textAlign;
+            }
           }
 
           .dropdown-toggle {

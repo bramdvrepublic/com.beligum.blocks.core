@@ -241,8 +241,11 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * element: element to change
          * labelText: name to show as label
          * values = array of objects {value: 'a value to change', name: 'name of the value}
+         * showTooltip: show the tooltips of the slider?
+         * changeListener: optional change listener
+         * attribute: set this if you want to change an attribute instead of the class
          * */
-        addSliderClass: function (Sidebar, element, labelText, values, showTooltip, changeListener)
+        addSliderClass: function (Sidebar, element, labelText, values, showTooltip, changeListener, attribute)
         {
             var id = Commons.generateId();
 
@@ -251,14 +254,29 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
             }
 
-            var initValue = 0;
+            //Note that this is an index in the values array
+            var initValue = undefined;
             for (var i = 0; i < values.length; i++) {
                 var c = values[i];
 
-                if (element.hasClass(c.value)) {
+                //we take the first value as the temp init value, but keep on looking for a better init value
+                if (initValue === undefined) {
                     initValue = i;
-                    //if we have a match, we use the first match
-                    break;
+                }
+
+                if (attribute) {
+                    if (element.attr(attribute) == c.value) {
+                        initValue = i;
+                        //if we have a match, we use the first match
+                        break;
+                    }
+                }
+                else {
+                    if (element.hasClass(c.value)) {
+                        initValue = i;
+                        //if we have a match, we use the first match
+                        break;
+                    }
                 }
             }
 
@@ -266,7 +284,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             var input = $('<input id="' + id + '" type="range" class="form-control" min="0" max="' + (values.length - 1) + '" step="1" value="' + initValue + '">').appendTo(inputGroup);
 
             //init the bootstrap-slider (see https://github.com/seiyria/bootstrap-slider)
-            input.slider({
+            var sliderWidget = input.slider({
                 id: id,
                 min: 0,
                 max: (values.length - 1),
@@ -279,29 +297,53 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 }
             });
 
-            input.on("change", function (oldValue, newValue)
+            input.on("change", function (event)
             {
                 // Call a method on the slider
-                var currentIdx = $(this).slider('getValue');
+                var currentIdx = sliderWidget.slider('getValue');
 
-                for (var i = 0; i < values.length; i++) {
-                    //this is the class linked to index i
-                    var className = values[i].value;
+                //sometimes, we call the val() method on the input directly (externally), followed by a call to .trigger('change') on the range input
+                //this check allows us to do just that and expect the same result because the slides seems to set a .value object and the manual trigger() does not
+                if (!event.value) {
+                    var inputIdx = parseInt($(this).val());
+                    sliderWidget.slider('setValue', inputIdx);
+                    event.value = {
+                        oldValue: currentIdx,
+                        newValue: inputIdx
+                    };
+                }
 
-                    //we remove all values, except for the new one
-                    if (i == currentIdx) {
-                        element.addClass(className);
-                    }
-                    else {
-                        element.removeClass(className);
+                if (attribute) {
+                    element.attr(attribute, values[currentIdx].value);
+                }
+                else {
+                    for (var i = 0; i < values.length; i++) {
+                        //this is the class linked to index i
+                        var val = values[i].value;
+
+                        //we remove all values, except for the new one
+                        if (i == currentIdx) {
+                            element.addClass(val);
+                        }
+                        else {
+                            element.removeClass(val);
+                        }
                     }
                 }
 
                 //propagate up if we have a someone listening
                 if (changeListener) {
-                    changeListener(oldValue, newValue);
+                    var oldValue = values[event.value.oldValue] || undefined;
+                    var newValue = values[event.value.newValue] || undefined;
+                    changeListener(oldValue ? oldValue.value : undefined, newValue ? newValue.value : undefined);
                 }
             });
+
+            //force a manual change if we're initing this slider,
+            //since we always have a value set with a slider
+            if (changeListener && initValue !== undefined) {
+                changeListener(undefined, values[initValue].value);
+            }
 
             return formGroup;
         },
@@ -1008,5 +1050,68 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             return formGroup;
         },
 
+        /**
+         * Create a vertical list of mutually exclusive radio buttons
+         *
+         * @param labelText
+         * @param initStateCallback
+         * @param switchStateCallback
+         * @param values array of objects with a label and value property (if a 'disabled' property is 'true', the radio will be disabled)
+         * @returns {*|jQuery|HTMLElement}
+         */
+        createRadioBox: function (labelText, initStateCallback, switchStateCallback, values)
+        {
+            var addRadio = function (formGroup, name, value, label, isDisabled, initCallback, changeCallback)
+            {
+                var radioEl = $('<div class="radio"' + (isDisabled ? ' disabled' : '') + '>').appendTo(formGroup);
+
+                var id = Commons.generateId();
+                var labelEl = $('<label for="' + id + '">').appendTo(radioEl);
+
+                var isChecked = false;
+                if (initCallback) {
+                    isChecked = initCallback(value);
+                }
+
+                var input = $('<input type="radio" id="' + id + '" name="' + name + '" value="' + value + '"' + (isChecked ? ' checked' : '') + '>').appendTo(labelEl);
+                if (label) {
+                    labelEl.append(label);
+                }
+
+                input.change(function (event)
+                {
+                    var newValue = $('input[name=\'' + name + '\']:checked').val();
+
+                    if (changeCallback) {
+                        changeCallback(newValue);
+                    }
+                });
+
+                //force a manual change if we're initing this radio,
+                //since we're actually changing from nothing to selected
+                if (isChecked && changeCallback) {
+                    changeCallback(value);
+                }
+
+                return radioEl;
+            };
+
+            // Create container for radios with label to add to sidebar
+            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '" />');
+            if (labelText) {
+                var label = ($('<label>' + labelText + '</label>')).appendTo(formGroup);
+            }
+
+            // Generate a common value to group the radios
+            var name = Commons.generateId();
+            var radioGroup = $('<div class="' + BlocksConstants.RADIO_GROUP_CLASS + '" />').appendTo(formGroup);
+
+            for (var i = 0; i < values.length; i++) {
+                var c = values[i];
+                addRadio(radioGroup, name, c.value, c.label, c.disabled, initStateCallback, switchStateCallback);
+            }
+
+            return formGroup;
+        },
     });
 }]);

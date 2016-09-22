@@ -9,6 +9,11 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
     var MIN_SIDEBAR_WIDTH = 200;
 
+    this.KEY_CODE_SHIFT = 16;
+
+    //-----VARIABLES-----
+    var keysPressed = [];
+
     //----MORE OR LESS THE START OF EVERYTHING----
     //note: the icon is set in blocks.less
     var menuStartButton = $('<a class="' + BlocksConstants.BLOCKS_START_BUTTON + '"></a>');
@@ -39,6 +44,9 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         var cookieState = SIDEBAR_STATE_NULL;
 
         if (show) {
+
+            //about to start up the side bar and modify the HTML
+            Broadcaster.send(Broadcaster.EVENTS.PRE_START_BLOCKS);
 
             cookieState = SIDEBAR_STATE_SHOW;
 
@@ -79,7 +87,9 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
                 if (!pierceThrough) {
                     //controls in the sidebar are enabled by default
-                    pierceThrough = UI.sidebar.find(control).length > 0;
+                    if (UI.sidebar) {
+                        pierceThrough = UI.sidebar.find(control).length > 0;
+                    }
                 }
 
                 //check if we clicked on the link, or on something inside a link
@@ -88,6 +98,11 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                     if (!control.is($(this))) {
                         pierceThrough = true;
                     }
+                }
+
+                //if shift is pressed, allow parse through (allow for easy navigation when you know what you're doing)
+                if (!pierceThrough) {
+                    pierceThrough = Frame.isKeyPressed(Frame.KEY_CODE_SHIFT);
                 }
 
                 if (pierceThrough) {
@@ -131,10 +146,18 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 //re-add the button (but with a changed icon)
                 $("body").append(menuStartButton);
                 enableSidebarDrag();
-                Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS, event);
+
+                //give ourself and the animation some time to settle before sending out the event
+                setTimeout(function ()
+                {
+                    Broadcaster.send(Broadcaster.EVENTS.START_BLOCKS, event);
+                }, 250);
             });
 
         } else {
+            //about to stop up the side bar and modify the HTML
+            Broadcaster.send(Broadcaster.EVENTS.PRE_STOP_BLOCKS);
+
             cookieState = SIDEBAR_STATE_HIDE;
             var CLOSE_SIDEBAR_WIDTH = 0.0;
             menuStartButton.hide().removeClass("open");
@@ -147,11 +170,12 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 $("body").empty();
                 $("body").append(content);
                 $(document).off("click.prevent_click_editing");
-                Broadcaster.send(Broadcaster.EVENTS.STOP_BLOCKS, event);
                 $("body").append(menuStartButton);
                 $("body").removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
 
                 clearContainerWidth();
+
+                Broadcaster.send(Broadcaster.EVENTS.STOP_BLOCKS, event);
             });
         }
 
@@ -416,6 +440,26 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         });
 
     });
+
+    $(document).on("keyup keydown", function (e)
+    {
+        switch (e.type) {
+            case "keydown" :
+                keysPressed.push(e.keyCode);
+                break;
+            case "keyup" :
+                var idx = keysPressed.indexOf(e.keyCode);
+                if (idx >= 0) {
+                    keysPressed.splice(idx, 1);
+                }
+                break;
+        }
+    });
+
+    this.isKeyPressed = function(code)
+    {
+        return keysPressed.indexOf(code) >= 0;
+    };
 
     //TODO SETUP THE KEYBOARD SHORTCUTS (messed up the editor)
     //$(document).keydown(function (e)

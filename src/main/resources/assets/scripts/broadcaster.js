@@ -43,7 +43,7 @@ base.plugin("blocks.core.Broadcaster", ["constants.base.core.internal", "blocks.
      */
     this.send = function (eventName, originalEvent, data)
     {
-        if (eventName == Broadcaster.EVENTS.START_BLOCKS) {
+        if (eventName == Broadcaster.EVENTS.START_BLOCKS || eventName == Broadcaster.EVENTS.PRE_START_BLOCKS) {
             Broadcaster.active = true;
         }
 
@@ -110,8 +110,10 @@ base.plugin("blocks.core.Broadcaster", ["constants.base.core.internal", "blocks.
     this.EVENTS.DOM_CHANGED = "DOM_CHANGED";
 
     // on/off
-    this.EVENTS.STOP_BLOCKS = "STOP_BLOCKS";
+    this.EVENTS.PRE_START_BLOCKS = "PRE_START_BLOCKS";
     this.EVENTS.START_BLOCKS = "START_BLOCKS";
+    this.EVENTS.PRE_STOP_BLOCKS = "PRE_STOP_BLOCKS";
+    this.EVENTS.STOP_BLOCKS = "STOP_BLOCKS";
     this.EVENTS.WILL_SAVE = "WILL_SAVE";
     this.EVENTS.DID_SAVE = "DID_SAVE";
 

@@ -1,9 +1,12 @@
 package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.config.SecurityConfiguration;
+import com.beligum.base.resources.ResourceRequestImpl;
+import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.security.PermissionRole;
 import com.beligum.base.security.PermissionsConfigurator;
 import com.beligum.base.server.R;
+import com.beligum.base.templating.ifaces.Template;
 import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
 import com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective;
@@ -16,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.net.URI;
 import java.nio.file.Path;
 import java.text.ParseException;
@@ -423,7 +427,7 @@ public abstract class HtmlTemplate
     {
         return displayType;
     }
-    private Iterable<Element> getInlineStyles(OutputDocument html)
+    private Iterable<Element> getInlineStyles(OutputDocument html) throws IOException
     {
         Iterable<Element> retVal = html.getSegment().getAllElements("style");
 
@@ -436,7 +440,7 @@ public abstract class HtmlTemplate
 
         return retVal;
     }
-    private Iterable<Element> getExternalStyles(OutputDocument html)
+    private Iterable<Element> getExternalStyles(OutputDocument html) throws IOException
     {
         Iterable<Element> retVal = html.getSegment().getAllElements("rel", styleLinkRelAttrValue);
 
@@ -454,7 +458,7 @@ public abstract class HtmlTemplate
 
         return retVal;
     }
-    private Iterable<Element> getInlineScripts(OutputDocument html)
+    private Iterable<Element> getInlineScripts(OutputDocument html) throws IOException
     {
         Iterable<Element> retVal = html.getSegment().getAllElements("script");
 
@@ -472,7 +476,7 @@ public abstract class HtmlTemplate
 
         return retVal;
     }
-    private Iterable<Element> getExternalScripts(OutputDocument html)
+    private Iterable<Element> getExternalScripts(OutputDocument html) throws IOException
     {
         Iterable<Element> retVal = html.getSegment().getAllElements("script");
 
@@ -490,18 +494,27 @@ public abstract class HtmlTemplate
 
         return retVal;
     }
-    private String buildResourceHtml(TemplateResourcesDirective.Argument type, Element element, String attr)
+    private String buildResourceHtml(TemplateResourcesDirective.Argument type, Element element, String attr) throws IOException
     {
         final boolean print = false;
         StringBuilder builder = new StringBuilder();
 
+        //this allows us to use velocity variables in the resources
+        Element parsedElement = null;
+        Template template = R.templateEngine().getNewTemplate(new ResourceRequestImpl(URI.create(this.getTemplateName()), Resource.MimeType.HTML), element.toString());
+        try (StringWriter sw = new StringWriter()) {
+            template.render(sw);
+            parsedElement = new Source(sw.toString()).getFirstElement();
+        }
+
         builder.append("#").append(TagTemplateResourceDirective.NAME).append("(").append(type.ordinal()).append(",").append(print).append(",'").append(attr).append("','")
-               .append(HtmlTemplate.getResourceRoleScope(element)).append("',").append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(")").append(element.toString())
+               .append(HtmlTemplate.getResourceRoleScope(parsedElement)).append("',").append(HtmlTemplate.getResourceModeScope(parsedElement).ordinal()).append(")").append(parsedElement.toString())
                .append("#end").append("\n");
 
         return builder.toString();
     }
     private Iterable<Element> addSuperTemplateResources(TemplateResourcesDirective.Argument type, StringBuilder html, Iterable<Element> templateElements, Iterable<Element> superTemplateElements, String attribute)
+                    throws IOException
     {
         Iterable<Element> retVal = templateElements;
 
