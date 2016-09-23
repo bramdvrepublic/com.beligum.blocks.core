@@ -386,7 +386,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     }
                     else {
                         if (hasAttr) {
-                            element.removeAttribute(attribute);
+                            element.removeAttr(attribute);
                         }
                     }
 
@@ -533,7 +533,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                             retVal = true;
                         }
                         else {
-                            element.removeAttribute(testValue)
+                            element.removeAttr(testValue)
                         }
                     }
 
@@ -605,6 +605,91 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     return element.html($.trim(val));
                 }, labelText, placeholderText, confirm);
         },
+
+        /**
+         * Create a vertical list of mutually exclusive radio buttons
+         *
+         * @param labelText
+         * @param attribute
+         * * @param values array of objects with a label and value property (if a 'disabled' property is 'true', the radio will be disabled)
+         * @param changeListener
+         * @returns {*|jQuery|HTMLElement}
+         */
+        addMutexAttribute: function (labelText, attribute, values, initialValue, changeListener)
+        {
+            var addRadio = function (formGroup, name, value, label, isDisabled, initCallback, changeCallback)
+            {
+                //Note: 'radio' is a bootstrap class
+                var radioEl = $('<div class="radio"' + (isDisabled ? ' disabled' : '') + '>').appendTo(formGroup);
+
+                var id = Commons.generateId();
+                var labelEl = $('<label for="' + id + '">').appendTo(radioEl);
+
+                var isChecked = false;
+                if (initCallback) {
+                    isChecked = initCallback(value);
+                }
+
+                var input = $('<input type="radio" id="' + id + '" name="' + name + '" value="' + value + '"' + (isChecked ? ' checked' : '') + '>').appendTo(labelEl);
+                if (label) {
+                    labelEl.append(label);
+                }
+
+                input.change(function (event)
+                {
+                    var newValue = $('input[name=\'' + name + '\']:checked').val();
+
+                    if (changeCallback) {
+                        changeCallback(newValue);
+                    }
+                });
+
+                //force a manual change if we're initing this radio,
+                //since we're actually changing from nothing to selected
+                if (isChecked && changeCallback) {
+                    changeCallback(value);
+                }
+
+                return radioEl;
+            };
+
+            // Generate a common value to group the radios
+            var name = Commons.generateId();
+
+            // Create container for radios with label to add to sidebar
+            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '" />');
+            if (labelText) {
+                //TODO the name is never used as Id (only as common name for all radio buttons), maybe add it somewhere?
+                var label = ($('<label for="'+name+'">' + labelText + '</label>')).appendTo(formGroup);
+            }
+
+            var radioGroup = $('<div class="' + BlocksConstants.RADIO_GROUP_CLASS + '" />').appendTo(formGroup);
+
+            var initStateCallback = function(value)
+            {
+                var retVal = false;
+
+                if (initialValue && value==initialValue) {
+                    retVal = true;
+                }
+
+                return retVal;
+            };
+
+            for (var i = 0; i < values.length; i++) {
+                var c = values[i];
+                addRadio(radioGroup, name, c.value, c.label, c.disabled, initStateCallback, changeListener);
+            }
+
+            return formGroup;
+        },
+        // addUniqueClass: function (Sidebar, element, labelText, values, changeListener)
+        // {
+        //     var id = Commons.generateId();
+        //     var content = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '" />');
+        //     content.append($('<label for="' + id + '">' + labelText + '</label>'));
+        //     var dropdown = $('<div class="dropdown"/>').appendTo(content);
+        // }
 
         //-----PRIVATE METHODS-----
         //These are more or less real private methods, used in the add* functions above
@@ -915,24 +1000,28 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
             dropdownMenu.empty();
 
             var activateAfterInit = null;
+            var activateAfterInitEl = null;
             for (var i = 0; i < values.length; i++) {
                 var c = values[i];
                 var li = $('<li />').appendTo(dropdownMenu);
                 var a = $('<a data-value="' + c.value + '">' + c.name + '</a>').appendTo(li);
 
-                a.click(function (event)
+                var clickHandler = function (event, manualElement)
                 {
-                    var combo = $(this).parents(".dropdown").find('.btn');
-                    var text = $(this).text();
-                    var newValue = $(this).data('value');
+                    //we need to re-create this variable in the closure because the loop overwrites the previous 'a's
+                    var linkElement = manualElement || $(this);
+
+                    var combo = linkElement.parents(".dropdown").find('.btn');
+                    var text = linkElement.text();
+                    var newValue = linkElement.data('value');
                     var oldValue = combo.val();
 
                     //make bootstrap dropdown behave like a regular <select>
                     combo.find('.text').text(text);
                     combo.val(newValue);
                     //save the selection to the dropdown menu
-                    $(this).parents(".dropdown").find('li').removeClass("active");
-                    $(this).parents("li").addClass("active");
+                    linkElement.parents(".dropdown").find('li').removeClass("active");
+                    linkElement.parents("li").addClass("active");
 
                     if (changeCallback) {
                         //Note that this will probably also fire when old == new, but that's acceptable since this way, the very first value is propagated up as well
@@ -945,18 +1034,21 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                     if (dropDown.attr('aria-expanded') == "true") {
                         dropDown.dropdown("toggle");
                     }
-                });
+                };
+
+                a.on("click", clickHandler);
 
                 if (initCallback) {
                     //only save the first match
                     if (activateAfterInit == null && initCallback(c.value)) {
-                        activateAfterInit = a;
+                        activateAfterInit = clickHandler;
+                        activateAfterInitEl = a;
                     }
                 }
             }
 
             if (activateAfterInit) {
-                activateAfterInit.click();
+                activateAfterInit(null, activateAfterInitEl);
             }
             // if we don' have anything to activate, make sure we get rid of the "Loading" entry
             // by reverting back to the default empty label
@@ -1046,70 +1138,6 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 toggleState(!oldState);
                 switchStateCallback(oldState, !oldState);
             });
-
-            return formGroup;
-        },
-
-        /**
-         * Create a vertical list of mutually exclusive radio buttons
-         *
-         * @param labelText
-         * @param initStateCallback
-         * @param switchStateCallback
-         * @param values array of objects with a label and value property (if a 'disabled' property is 'true', the radio will be disabled)
-         * @returns {*|jQuery|HTMLElement}
-         */
-        createRadioBox: function (labelText, initStateCallback, switchStateCallback, values)
-        {
-            var addRadio = function (formGroup, name, value, label, isDisabled, initCallback, changeCallback)
-            {
-                var radioEl = $('<div class="radio"' + (isDisabled ? ' disabled' : '') + '>').appendTo(formGroup);
-
-                var id = Commons.generateId();
-                var labelEl = $('<label for="' + id + '">').appendTo(radioEl);
-
-                var isChecked = false;
-                if (initCallback) {
-                    isChecked = initCallback(value);
-                }
-
-                var input = $('<input type="radio" id="' + id + '" name="' + name + '" value="' + value + '"' + (isChecked ? ' checked' : '') + '>').appendTo(labelEl);
-                if (label) {
-                    labelEl.append(label);
-                }
-
-                input.change(function (event)
-                {
-                    var newValue = $('input[name=\'' + name + '\']:checked').val();
-
-                    if (changeCallback) {
-                        changeCallback(newValue);
-                    }
-                });
-
-                //force a manual change if we're initing this radio,
-                //since we're actually changing from nothing to selected
-                if (isChecked && changeCallback) {
-                    changeCallback(value);
-                }
-
-                return radioEl;
-            };
-
-            // Create container for radios with label to add to sidebar
-            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '" />');
-            if (labelText) {
-                var label = ($('<label>' + labelText + '</label>')).appendTo(formGroup);
-            }
-
-            // Generate a common value to group the radios
-            var name = Commons.generateId();
-            var radioGroup = $('<div class="' + BlocksConstants.RADIO_GROUP_CLASS + '" />').appendTo(formGroup);
-
-            for (var i = 0; i < values.length; i++) {
-                var c = values[i];
-                addRadio(radioGroup, name, c.value, c.label, c.disabled, initStateCallback, switchStateCallback);
-            }
 
             return formGroup;
         },
