@@ -104,7 +104,9 @@ public class DefaultRdfPropertyIndexer implements RdfPropertyIndexer
             }
             else if (property.getDataType().equals(XSD.STRING)
                      || property.getDataType().equals(XSD.NORMALIZED_STRING)
-                     || property.getDataType().equals(RDF.LANGSTRING)) {
+                     || property.getDataType().equals(RDF.LANGSTRING)
+                     //this is a little tricky, but in the end it's just a string, right?
+                     || property.getDataType().equals(XSD.BASE64_BINARY)) {
                 String val = objLiteral.stringValue();
                 indexer.indexStringField(fieldName, val);
                 retVal = new RdfIndexer.IndexResult(val);

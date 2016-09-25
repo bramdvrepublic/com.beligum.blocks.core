@@ -25,7 +25,7 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
     //-----VARIABLES-----
     private RdfClass dataType;
     private InputType widgetType;
-    private InputTypeConfig widgetArgs;
+    private InputTypeConfig widgetConfig;
 
     //-----CONSTRUCTORS-----
     public RdfPropertyImpl(String name,
@@ -42,10 +42,10 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
                            MessagesFileEntry label,
                            RdfClass dataType,
                            InputType widgetType,
-                           InputTypeConfig widgetArgs,
+                           InputTypeConfig widgetConfig,
                            URI[] isSameAs)
     {
-        this(name, vocabulary, title, label, dataType, widgetType, widgetArgs, isSameAs, false);
+        this(name, vocabulary, title, label, dataType, widgetType, widgetConfig, isSameAs, false);
     }
     public RdfPropertyImpl(String name,
                            RdfVocabulary vocabulary,
@@ -53,7 +53,7 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
                            MessagesFileEntry label,
                            RdfClass dataType,
                            InputType widgetType,
-                           InputTypeConfig widgetArgs,
+                           InputTypeConfig widgetConfig,
                            URI[] isSameAs,
                            boolean isPublic)
     {
@@ -61,7 +61,7 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
 
         this.widgetType = widgetType;
         //make it uniform; no nulls
-        this.widgetArgs = widgetArgs == null ? new InputTypeConfig() : widgetArgs;
+        this.widgetConfig = widgetConfig == null ? new InputTypeConfig() : widgetConfig;
         this.dataType = dataType;
 
         //we don't have subclasses so don't worry about type checking (yet)
@@ -82,12 +82,12 @@ public class RdfPropertyImpl extends RdfClassImpl implements RdfProperty
     @Override
     public InputTypeConfig getWidgetConfig()
     {
-        return widgetArgs;
+        return widgetConfig;
     }
     @Override
     public void setWidgetConfig(InputTypeConfig config)
     {
-        this.widgetArgs = config;
+        this.widgetConfig = config;
     }
     @Override
     public void setEndpoint(RdfQueryEndpoint endpoint)

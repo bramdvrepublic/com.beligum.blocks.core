@@ -244,8 +244,8 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                         $.getJSON("/blocks/admin/page/block/" + name)
                             .done(function (data)
                             {
-                                addHeadResource(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_STYLES], name + "-in-style");
-                                addHeadResource(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES], name + "-ex-style");
+                                addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_STYLES], name + "-in-style");
+                                addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_STYLES], name + "-ex-style");
 
                                 if (data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML] && data[BlocksConstants.BLOCK_DATA_PROPERTY_HTML]!=="") {
                                     // whow, this is weird stuff!
@@ -261,8 +261,8 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                                     cancelled = false;
                                     Layouter.addNewBlockAtLocation(block, lastDropLocation.anchor, lastDropLocation.side, function onComplete()
                                     {
-                                        addHeadResource(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS], name + "-in-script", true);
-                                        addHeadResource(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS], name + "-ex-script", true);
+                                        addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_INLINE_SCRIPTS], name + "-in-script", true);
+                                        addHeadResources(data[BlocksConstants.BLOCK_DATA_PROPERTY_EXTERNAL_SCRIPTS], name + "-ex-script", true);
                                     });
                                 }
                                 else {
@@ -311,30 +311,39 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
         currentDraggedBlock = null;
     };
 
-    var addHeadResource = function (resourceArray, className, isScript)
+    var addHeadResources = function (resourceArray, className, isScript)
     {
         if (resourceArray != null && resourceArray.length > 0) {
             //remove existing ones
             $("head ." + className).remove();
-            for (var i = 0; i < resourceArray.length; i++) {
-                var newEl = $(resourceArray[i]);
-                newEl.addClass(className);
 
-                var srcAttr = newEl.attr("src");
-                $("head").append(newEl);
+            loadRecursiveHeadResources(resourceArray, 0, className, isScript);
+        }
+    };
+    var loadRecursiveHeadResources = function (resourceArray, idx, className, isScript)
+    {
+        if (idx<resourceArray.length) {
+            var resourceEl = $(resourceArray[idx]);
 
-                if (isScript && srcAttr) {
-                    $.getScript(srcAttr)
-                        .done(function (script, textStatus)
-                        {
-                            //this is needed to auto-wire the plugins (was a quick fix, hope it's ok)
-                            base.run();
-                        })
-                        .fail(function (xhr, textStatus, exception)
-                        {
-                            Notification.error(BlocksMessages.savePageError + (exception ? "; " + exception : ""), xhr);
-                        });
-                }
+            resourceEl.addClass(className);
+
+            var srcAttr = resourceEl.attr("src");
+            $("head").append(resourceEl);
+
+            if (isScript && srcAttr) {
+                $.getScript(srcAttr)
+                    .done(function (script, textStatus)
+                    {
+                        //this is needed to auto-wire the plugins (was a quick fix, hope it's ok)
+                        base.run();
+
+                        //recursive call to make sure the resources are loaded synchronously
+                        loadRecursiveHeadResources(resourceArray, idx+1, className, isScript);
+                    })
+                    .fail(function (xhr, textStatus, exception)
+                    {
+                        Notification.error(BlocksMessages.savePageError + (exception ? "; " + exception : ""), xhr);
+                    });
             }
         }
     };

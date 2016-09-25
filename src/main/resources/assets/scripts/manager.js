@@ -14,11 +14,15 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         //load in all the elements
         UI.init();
 
-        //note that this encapsulates DO_REFRESH_LAYOUT, but initializes a few other things first
-        Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, event);
+        //we activate everything after a little timeout to allow all the elements to fixate their final dimensions,
+        // so that the overlay bounding box fits nicely
+        setTimeout(function(){
+            //note that this encapsulates DO_REFRESH_LAYOUT, but initializes a few other things first
+            Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, event);
 
-        //start off by showing the layouter
-        Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
+            //start off by showing the layouter
+            Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
+        }, 250);
     });
 
     $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function (event)
@@ -72,6 +76,9 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
 
         //hide the overlays while redrawing
         Hover.removeHoverOverlays();
+
+        //make sure the page content wrapper block is at least the height of the body (to support good, natural blur, see comments below)
+        updatePageContentHeight();
 
         //we always start off with a focused page
         var pageBlock = Hover.createPageBlock();
@@ -197,6 +204,18 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
         }
     };
 
+    var updatePageContentHeight = function()
+    {
+        var body = $('html');
+        var bodyBottom = body.position().top + body.outerHeight(true);
+
+        var page = $('.' + Constants.PAGE_CONTENT_CLASS);
+        var pageBottom = page.position().top + page.outerHeight(true);
+        if (pageBottom<bodyBottom) {
+            page.outerHeight(bodyBottom - page.position().top);
+        }
+    };
+
     var enableFocusBlurDetection = function (block, focusedElement)
     {
         // this basically comes down to this:
@@ -220,6 +239,13 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
             //e.preventDefault();
             event.stopPropagation();
         });
+
+        //Note: everything focus/blur related is more or less depending on clicking on the  PAGE_CONTENT_CLASS block,
+        // so make sure it at least occupies the entire page (left of the sidebar) to create the illusion we can click
+        // outside any block (even when we're not clicking on another block) to have a block lose focus.
+        // Because setting the height of the PAGE_CONTENT_CLASS element using css was too error prone, we decided to set it using scripting,
+        // see above in updatePageContentHeight()
+        //Note 2: we can't eg; make this $(document), because it would blur too fast (eg. when clicking on the sidebar or alert dialogs)
         var page = $('.' + Constants.PAGE_CONTENT_CLASS);
         page.on("mousedown.manager_focus_end", function (event)
         {

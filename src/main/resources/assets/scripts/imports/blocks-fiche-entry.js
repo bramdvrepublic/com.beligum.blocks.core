@@ -391,7 +391,7 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                         case BlocksConstants.INPUT_TYPE_RESOURCE:
 
                             var defaultValue = '<p><i>Please search for a resource in the sidebar</i></p>';
-                            combobox.after(_this._createAutocompleteWidget(block, propElement, RESOURCE_ATTR, newValueTerm.widgetType, newValueTerm.widgetConfig, 'Resource', defaultValue,
+                            combobox.after(_this.createAutocompleteWidget(propElement, RESOURCE_ATTR, newValueTerm.widgetType, newValueTerm.widgetConfig, 'Resource', defaultValue,
                                 //Note: this function receives the entire object as it was returned from the server endpoint (class AutocompleteSuggestion)
                                 function setterFunction(propElement, initialValue, newValue)
                                 {
@@ -544,103 +544,6 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
             }
 
             return retVal;
-        },
-        _createAutocompleteWidget: function (block, propElement, contentAttr, inputTypeConstant, inputTypeArgs, labelText, initialValue, setterFunction)
-        {
-            var id = Commons.generateId();
-            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
-            formGroup.addClass(inputTypeConstant);
-            if (labelText) {
-                var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
-            }
-            var inputGroup = $('<div class="input-group"></div>').appendTo(formGroup);
-            var input = $('<input id="' + id + '" type="text" class="form-control typeahead" placeholder="Search...">').appendTo(inputGroup);
-
-            //init the typeahead plugin
-            var engine = new Bloodhound(
-                {
-                    queryTokenizer: Bloodhound.tokenizers.whitespace,
-                    datumTokenizer: Bloodhound.tokenizers.whitespace,
-                    remote: {
-                        //note: the prepare function below will add the correct query at the end
-                        url: inputTypeArgs[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT],
-                        prepare: function (query, settings)
-                        {
-                            settings.url = settings.url + encodeURIComponent(query);
-                            return settings;
-                        },
-                    },
-                });
-
-            var options = {
-                highlight: false,
-                minLength: 1,
-                hint: true,
-            };
-            var dataSet = {
-                name: id,
-                source: engine,
-                //workaround for bug https://github.com/twitter/typeahead.js/issues/1201#issuecomment-185854471
-                limit: parseInt(inputTypeArgs[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_MAXRESULTS]) - 1,
-                //sync this with the title field of com.beligum.blocks.fs.index.entries.PageIndexEntry
-                display: 'title',
-                templates: {
-                    empty: '<div class="tt-suggestion "' + BlocksConstants.INPUT_TYPE_RES_SUG_EMPTY_CLASS + '><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">' + 'No match for this query' + '</p></div>',
-                    //we add title (hover) tags as well because the css will probably chop it off (ellipsis overflow)
-                    suggestion: Handlebars.compile('<div><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '" title="{{title}}">{{title}}</p><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_SUBTITLE_CLASS + '" title="{{subTitle}}">{{subTitle}}</p></div>')
-                }
-            };
-            input.typeahead(options, dataSet);
-
-            //gets called when a real selection is done
-            input.bind('typeahead:select', function (ev, suggestion)
-            {
-                $.getJSON(inputTypeArgs[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT] + encodeURIComponent(suggestion.value))
-                    .done(function (data)
-                    {
-                        setterFunction(propElement, initialValue, data);
-                    })
-                    .fail(function (xhr, textStatus, exception)
-                    {
-                        Notification.error(BlocksMessages.generalServerDataError + (exception ? "; " + exception : ""), xhr);
-                    });
-            });
-
-            ////init and attach the change listener
-
-            var firstValue = propElement.attr(contentAttr);
-
-            //if the html widget is uninitialized or empty (because we empty it while resetting), try to set it to a default value
-            if (typeof firstValue === typeof undefined || firstValue === '') {
-                //initial value may be 0 or '', so check of type
-                if (typeof initialValue !== typeof undefined) {
-                    //signal the setter function to reset the tag
-                    setterFunction(propElement, initialValue, null);
-                }
-            }
-            else {
-                //this gives us a chance to skip this if it would be needed
-                if (typeof firstValue !== typeof undefined) {
-                    //if we have a real value, contact the resource endpoint to load the official name (not the more human friendly label) into the autocomplete box
-                    if (firstValue != initialValue) {
-                        $.getJSON(inputTypeArgs[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT] + encodeURIComponent(firstValue))
-                            .done(function (data)
-                            {
-                                //init the input
-                                input.typeahead('val', data.name);
-
-                                //don't think we need to re-set the html here, just init the autocomplete box
-                                //setterFunction(propElement, initialValue, data);
-                            })
-                            .fail(function (xhr, textStatus, exception)
-                            {
-                                Notification.error(BlocksMessages.generalServerDataError + (exception ? "; " + exception : ""), xhr);
-                            });
-                    }
-                }
-            }
-
-            return formGroup;
         },
         _dateTimeSetterFunction: function (_this, propElement, defaultValue, newValue)
         {

@@ -429,30 +429,33 @@ public abstract class HtmlTemplate
     }
     private Iterable<Element> getInlineStyles(OutputDocument html) throws IOException
     {
-        Iterable<Element> retVal = html.getSegment().getAllElements("style");
+        List<Element> retVal = new ArrayList<>();
 
-        Iterator<Element> iter = retVal.iterator();
+        Iterator<Element> iter = html.getSegment().getAllElements("style").iterator();
         while (iter.hasNext()) {
             Element element = iter.next();
-            //html.remove(retVal);
-            html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.inlineStyles, element, null));
+
+            Element parsedElement = this.renderResourceElement(element);
+            html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.inlineStyles, parsedElement, null));
+            retVal.add(parsedElement);
         }
 
         return retVal;
     }
     private Iterable<Element> getExternalStyles(OutputDocument html) throws IOException
     {
-        Iterable<Element> retVal = html.getSegment().getAllElements("rel", styleLinkRelAttrValue);
+        List<Element> retVal = new ArrayList<>();
 
-        Iterator<Element> iter = retVal.iterator();
+        Iterator<Element> iter = html.getSegment().getAllElements("rel", styleLinkRelAttrValue).iterator();
         while (iter.hasNext()) {
             Element element = iter.next();
             if (!element.getName().equals("link")) {
                 iter.remove();
             }
             else {
-                //html.remove(el);
-                html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.externalStyles, element, element.getAttributeValue("href")));
+                Element parsedElement = this.renderResourceElement(element);
+                html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.externalStyles, parsedElement, parsedElement.getAttributeValue("href")));
+                retVal.add(parsedElement);
             }
         }
 
@@ -460,17 +463,18 @@ public abstract class HtmlTemplate
     }
     private Iterable<Element> getInlineScripts(OutputDocument html) throws IOException
     {
-        Iterable<Element> retVal = html.getSegment().getAllElements("script");
+        List<Element> retVal = new ArrayList<>();
 
-        Iterator<Element> iter = retVal.iterator();
+        Iterator<Element> iter = html.getSegment().getAllElements("script").iterator();
         while (iter.hasNext()) {
             Element element = iter.next();
             if (element.getAttributeValue("src") != null) {
                 iter.remove();
             }
             else {
-                //html.remove(el);
-                html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.inlineScripts, element, null));
+                Element parsedElement = this.renderResourceElement(element);
+                html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.inlineScripts, parsedElement, null));
+                retVal.add(parsedElement);
             }
         }
 
@@ -478,17 +482,18 @@ public abstract class HtmlTemplate
     }
     private Iterable<Element> getExternalScripts(OutputDocument html) throws IOException
     {
-        Iterable<Element> retVal = html.getSegment().getAllElements("script");
+        List<Element> retVal = new ArrayList<>();
 
-        Iterator<Element> iter = retVal.iterator();
+        Iterator<Element> iter = html.getSegment().getAllElements("script").iterator();
         while (iter.hasNext()) {
             Element element = iter.next();
             if (element.getAttributeValue("src") == null) {
                 iter.remove();
             }
             else {
-                //html.remove(el);
-                html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.externalScripts, element, element.getAttributeValue("src")));
+                Element parsedElement = this.renderResourceElement(element);
+                html.replace(element, buildResourceHtml(TemplateResourcesDirective.Argument.externalScripts, parsedElement, parsedElement.getAttributeValue("src")));
+                retVal.add(parsedElement);
             }
         }
 
@@ -499,7 +504,18 @@ public abstract class HtmlTemplate
         final boolean print = false;
         StringBuilder builder = new StringBuilder();
 
-        //this allows us to use velocity variables in the resources
+        builder.append("#").append(TagTemplateResourceDirective.NAME).append("(").append(type.ordinal()).append(",").append(print).append(",'").append(attr).append("','")
+               .append(HtmlTemplate.getResourceRoleScope(element)).append("',").append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(")").append(element.toString())
+               .append("#end").append("\n");
+
+        return builder.toString();
+    }
+    /**
+     * Puts the element's html through the template engine to render out all needed context variables (constants/messages)
+     */
+    private Element renderResourceElement(Element element) throws IOException
+    {
+        //this allows us to use velocity variables in the resource URLs
         Element parsedElement = null;
         Template template = R.templateEngine().getNewTemplate(new ResourceRequestImpl(URI.create(this.getTemplateName()), Resource.MimeType.HTML), element.toString());
         try (StringWriter sw = new StringWriter()) {
@@ -507,11 +523,7 @@ public abstract class HtmlTemplate
             parsedElement = new Source(sw.toString()).getFirstElement();
         }
 
-        builder.append("#").append(TagTemplateResourceDirective.NAME).append("(").append(type.ordinal()).append(",").append(print).append(",'").append(attr).append("','")
-               .append(HtmlTemplate.getResourceRoleScope(parsedElement)).append("',").append(HtmlTemplate.getResourceModeScope(parsedElement).ordinal()).append(")").append(parsedElement.toString())
-               .append("#end").append("\n");
-
-        return builder.toString();
+        return parsedElement;
     }
     private Iterable<Element> addSuperTemplateResources(TemplateResourcesDirective.Argument type, StringBuilder html, Iterable<Element> templateElements, Iterable<Element> superTemplateElements, String attribute)
                     throws IOException

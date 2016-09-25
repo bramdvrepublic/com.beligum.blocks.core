@@ -205,27 +205,43 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          *
          * element: element to change
          * labelText: name to show as label
-         * value = the class you want to enable/disable
+         * value: the class you want to enable/disable
+         * changeListener: optional change listener
+         * attribute: set this if you want to change an attribute instead of the class
          * */
-        addOptionalClass: function (Sidebar, element, labelText, value, switchListener)
+        addOptionalClass: function (Sidebar, element, labelText, value, changeListener, attribute)
         {
             var retVal = this.createToggleButton(labelText,
                 function initStateCallback()
                 {
-                    return element.hasClass(value);
+                    if (attribute) {
+                        return element.hasAttribute(attribute);
+                    }
+                    else {
+                        return element.hasClass(value);
+                    }
                 },
 
                 function switchStateCallback(oldValue, newValue)
                 {
-                    if (newValue) {
-                        element.addClass(value);
-                    } else {
-                        element.removeClass(value);
+                    if (attribute) {
+                        if (newValue) {
+                            element.attr(attribute, '')
+                        } else {
+                            element.removeAttr(attribute)
+                        }
+                    }
+                    else {
+                        if (newValue) {
+                            element.addClass(value);
+                        } else {
+                            element.removeClass(value);
+                        }
                     }
 
                     //propagate up if we have a someone listening
-                    if (switchListener) {
-                        switchListener(oldValue, newValue);
+                    if (changeListener) {
+                        changeListener(oldValue, newValue);
                     }
                 },
                 BlocksMessages.toggleLabelYes,
@@ -305,11 +321,12 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 //sometimes, we call the val() method on the input directly (externally), followed by a call to .trigger('change') on the range input
                 //this check allows us to do just that and expect the same result because the slides seems to set a .value object and the manual trigger() does not
                 if (!event.value) {
-                    var inputIdx = parseInt($(this).val());
-                    sliderWidget.slider('setValue', inputIdx);
+                    var oldVal = currentIdx;
+                    currentIdx = parseInt($(this).val());
+                    sliderWidget.slider('setValue', currentIdx);
                     event.value = {
-                        oldValue: currentIdx,
-                        newValue: inputIdx
+                        oldValue: oldVal,
+                        newValue: currentIdx
                     };
                 }
 
@@ -615,7 +632,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
          * @param changeListener
          * @returns {*|jQuery|HTMLElement}
          */
-        addMutexAttribute: function (labelText, attribute, values, initialValue, changeListener)
+        addRadioAttribute: function (labelText, attribute, values, initialValue, changeListener)
         {
             var addRadio = function (formGroup, name, value, label, isDisabled, initCallback, changeCallback)
             {
@@ -1138,6 +1155,106 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 toggleState(!oldState);
                 switchStateCallback(oldState, !oldState);
             });
+
+            return formGroup;
+        },
+
+        createAutocompleteWidget: function (element, contentAttr, formGroupExtraClass, acEndpointOptions, labelText, initialValue, setterFunction)
+        {
+            var id = Commons.generateId();
+            var formGroup = $('<div class="' + BlocksConstants.INPUT_TYPE_WRAPPER_CLASS + '"></div>');
+            if (formGroupExtraClass) {
+                formGroup.addClass(formGroupExtraClass);
+            }
+            if (labelText) {
+                var label = ($('<label for="' + id + '">' + labelText + '</label>')).appendTo(formGroup);
+            }
+            var inputGroup = $('<div class="input-group"></div>').appendTo(formGroup);
+            var input = $('<input id="' + id + '" type="text" class="form-control typeahead" placeholder="Search...">').appendTo(inputGroup);
+
+            //init the typeahead plugin
+            var engine = new Bloodhound(
+                {
+                    queryTokenizer: Bloodhound.tokenizers.whitespace,
+                    datumTokenizer: Bloodhound.tokenizers.whitespace,
+                    remote: {
+                        //note: the prepare function below will add the correct query at the end
+                        url: acEndpointOptions[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_AC_ENDPOINT],
+                        prepare: function (query, settings)
+                        {
+                            settings.url = settings.url + encodeURIComponent(query);
+                            return settings;
+                        },
+                    },
+                });
+
+            var options = {
+                highlight: false,
+                minLength: 1,
+                hint: true,
+            };
+            var dataSet = {
+                name: id,
+                source: engine,
+                //workaround for bug https://github.com/twitter/typeahead.js/issues/1201#issuecomment-185854471
+                limit: parseInt(acEndpointOptions[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_MAXRESULTS]) - 1,
+                //sync this with the title field of com.beligum.blocks.fs.index.entries.PageIndexEntry
+                display: 'title',
+                templates: {
+                    empty: '<div class="tt-suggestion "' + BlocksConstants.INPUT_TYPE_RES_SUG_EMPTY_CLASS + '><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">' + 'No match for this query' + '</p></div>',
+                    //we add title (hover) tags as well because the css will probably chop it off (ellipsis overflow)
+                    suggestion: Handlebars.compile('<div><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '" title="{{title}}">{{title}}</p><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_SUBTITLE_CLASS + '" title="{{subTitle}}">{{subTitle}}</p></div>')
+                }
+            };
+            input.typeahead(options, dataSet);
+
+            //gets called when a real selection is done
+            input.bind('typeahead:select', function (ev, suggestion)
+            {
+                $.getJSON(acEndpointOptions[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT] + encodeURIComponent(suggestion.value))
+                    .done(function (data)
+                    {
+                        setterFunction(element, initialValue, data);
+                    })
+                    .fail(function (xhr, textStatus, exception)
+                    {
+                        Notification.error(BlocksMessages.generalServerDataError + (exception ? "; " + exception : ""), xhr);
+                    });
+            });
+
+            ////init and attach the change listener
+
+            var firstValue = element.attr(contentAttr);
+
+            //if the html widget is uninitialized or empty (because we empty it while resetting), try to set it to a default value
+            if (typeof firstValue === typeof undefined || firstValue === '') {
+                //initial value may be 0 or '', so check of type
+                if (typeof initialValue !== typeof undefined) {
+                    //signal the setter function to reset the tag
+                    setterFunction(element, initialValue, null);
+                }
+            }
+            else {
+                //this gives us a chance to skip this if it would be needed
+                if (typeof firstValue !== typeof undefined) {
+                    //if we have a real value, contact the resource endpoint to load the official name (not the more human friendly label) into the autocomplete box
+                    if (firstValue != initialValue) {
+                        $.getJSON(acEndpointOptions[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT] + encodeURIComponent(firstValue))
+                            .done(function (data)
+                            {
+                                //init the input
+                                input.typeahead('val', data.name);
+
+                                //don't think we need to re-set the html here, just init the autocomplete box
+                                //setterFunction(propElement, initialValue, data);
+                            })
+                            .fail(function (xhr, textStatus, exception)
+                            {
+                                Notification.error(BlocksMessages.generalServerDataError + (exception ? "; " + exception : ""), xhr);
+                            });
+                    }
+                }
+            }
 
             return formGroup;
         },

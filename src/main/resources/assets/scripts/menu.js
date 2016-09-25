@@ -5,7 +5,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     var SIDEBAR_STATE_NULL = "";
     var SIDEBAR_STATE_SHOW = "show";
     var SIDEBAR_STATE_HIDE = "hide";
-    var SIDEBAR_COOKIE_PATH = '';
+    var DEFAULT_COOKIE_OPTIONS = { path: '' };
 
     var MIN_SIDEBAR_WIDTH = 200;
 
@@ -121,7 +121,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             //make sure the value is OK and cleanup if not
             if (!$.isNumeric(cookieSidebarWidth)) {
                 cookieSidebarWidth = null;
-                Cookies.remove(BlocksConstants.COOKIE_SIDEBAR_WIDTH);
+                Cookies.remove(BlocksConstants.COOKIE_SIDEBAR_WIDTH, DEFAULT_COOKIE_OPTIONS);
             }
             else {
                 cookieSidebarWidth = parseInt(cookieSidebarWidth);
@@ -180,7 +180,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         }
 
         //Note: by default, the cookie is deleted when the browser is closed:
-        Cookies.set(BlocksConstants.COOKIE_SIDEBAR_STATE, cookieState, {path: SIDEBAR_COOKIE_PATH});
+        Cookies.set(BlocksConstants.COOKIE_SIDEBAR_STATE, cookieState, DEFAULT_COOKIE_OPTIONS);
     };
 
     var enableSidebarDrag = function ()
@@ -232,7 +232,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 //Broadcaster.send(Broadcaster.EVENTS.END_EDIT_FIELD, event);
 
                 //Note: by default, the cookie is deleted when the browser is closed:
-                Cookies.set(BlocksConstants.COOKIE_SIDEBAR_WIDTH, sidebarElement.width(), {path: SIDEBAR_COOKIE_PATH});
+                Cookies.set(BlocksConstants.COOKIE_SIDEBAR_WIDTH, sidebarElement.width(), DEFAULT_COOKIE_OPTIONS);
             });
         });
     };
