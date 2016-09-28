@@ -6,6 +6,7 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
     var MediumModule = this;
 
     var Editor = null;
+
     //default values, overridable
     var toolbarButtons = [Extensions.StylesPicker.NAME, 'bold', 'italic', 'underline', 'strike-through', 'superscript', Extensions.LinkInput.NAME, 'orderedlist', 'unorderedlist', 'justifyLeft', 'justifyCenter', 'justifyRight', 'removeFormat'];
     var toolbarButtonsInline = ['bold', 'italic', 'underline', 'superscript', 'removeFormat'];
@@ -31,10 +32,10 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
             MediumModule.removeEditor();
         }
 
-        var options = {};
-        toolbarOptions = {};
+        var options = {
+            buttonLabels: 'fontawesome'
+        };
 
-        options.buttonLabels = 'fontawesome';
         var stylePicker = new Extensions.StylesPicker({});
         stylePicker.setStyles(stylePickerStyles);
 
@@ -43,7 +44,11 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
         options.extensions[Extensions.LinkInput.NAME] = new Extensions.LinkInput({});
 
         if (!hideToolbar) {
+            var toolbarOptions = {};
+
+            //enable the toolbar always displaying in the same location relative to the medium-editor element.
             toolbarOptions.static = true;
+            //this enables updating the state of the toolbar buttons even when the selection is collapsed (there is no selection, just a cursor)
             toolbarOptions.updateOnEmptySelection = true;
             if (!inline) {
                 toolbarOptions.buttons = toolbarButtons;

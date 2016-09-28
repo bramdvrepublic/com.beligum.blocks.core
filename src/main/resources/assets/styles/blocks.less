@@ -389,6 +389,7 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   //  margin-top: @mainMenuHeight;
   width: 100% - @initSidebarWidth;
 
+  //TODO: error (activate the body overflow to hidden to see why)
   //this will make the left panel scroll independently from the sidebar
   //height: 100%;
   //overflow-y: auto;
@@ -405,7 +406,6 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   top: 0px;
   right: 0px;
   bottom: 0px;
-  overflow-y: auto;
   padding-left: @resizerWidth;
   .drop-shadow(-1px, 0px, 4px, 0.4);
   background-color: @bgColor;
@@ -477,6 +477,9 @@ ul.@{BLOCK_ACTIONS_CLASS} {
     height: 100%;
     margin-top: -@sidebarTabHeight;
     padding-top: @sidebarTabHeight;
+
+    //only scroll starting from this panel so the resize handler doesn't scroll away
+    overflow-y: auto;
   }
 
   .tab-pane {
@@ -505,7 +508,14 @@ ul.@{BLOCK_ACTIONS_CLASS} {
         }
       }
 
+      hr {
+        //small adjustment to make it look better
+        margin-bottom: 15px;
+      }
+
       .form-group {
+        .clearfix();
+
         .input-group {
           width: 100%;
           &.@{INPUT_WITH_BUTTONS_CLASS} {
@@ -528,8 +538,21 @@ ul.@{BLOCK_ACTIONS_CLASS} {
           }
 
           &.@{RADIO_GROUP_CLASS} {
+            //Because of the way radio groups look (a single label and a large vertical block of radios),
+            //the margin with a possibly next element looks off like there's too much spacing between them.
+            //This 'fixes' that situation.
+            margin-bottom: -20px;
+
             .radio {
               text-align: @textAlign;
+              //align the first radio with the label
+              &:first-child {
+                margin-top: 0;
+              }
+              //remove the margin of the last child because the form-group takes care of that
+              &:last-child {
+                margin-bottom: 0;
+              }
             }
           }
 
@@ -548,8 +571,14 @@ ul.@{BLOCK_ACTIONS_CLASS} {
             max-width: 240px; // a good default value so large strings make the dropdown scroll horizontally
             overflow: auto; //make the menu act like a combobox
             &:extend(.dropdown-menu-@{formAlign});
-            & > li > a {
-              cursor: pointer;
+            & > li {
+              //makes sense to align the values to the right
+              //because the list is aligned to the right of the combobox
+              text-align: right;
+
+              & > a {
+                cursor: pointer;
+              }
             }
           }
         }
@@ -711,6 +740,11 @@ blocks-image {
       .clearfix;
       margin: 10px; //reset bootstrap
 
+      h4 {
+        //adjust bootstrap defaults
+        margin-top: 12px;
+        margin-bottom: 0px;
+      }
       .preview,
       .caption {
         .pull-left;
@@ -788,6 +822,10 @@ blocks-image {
           .btn.active;
           .btn-default.active;
         }
+
+
+        .border-radius(0, 0, 0, 0) !important;
+        .box-shadow(none) !important;
       }
     }
   }

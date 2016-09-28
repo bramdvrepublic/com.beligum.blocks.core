@@ -163,6 +163,8 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
 
     this.reset = function ()
     {
+        this.unloadFinder();
+
         for (var i = 0; i < activeBlocks.length; i++) {
             var e = activeBlocks[i];
             if (e.widget) {
@@ -346,11 +348,13 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
         //'switch' back to the context tab
         $("#" + Constants.SIDEBAR_CONTEXT_TAB_ID).tab('show');
 
-        var contextTab = $("#" + Constants.SIDEBAR_CONTEXT_ID);
         var finderTab = $("#" + Constants.SIDEBAR_FILES_ID);
-        contextTab.removeClass(Constants.LOADING_CLASS);
-        finderTab.addClass(Constants.LOADING_CLASS);
-        finderTab.empty();
+        if (!finderTab.is(':empty')) {
+            var contextTab = $("#" + Constants.SIDEBAR_CONTEXT_ID);
+            contextTab.removeClass(Constants.LOADING_CLASS);
+            finderTab.addClass(Constants.LOADING_CLASS);
+            finderTab.html('');
+        }
     };
 
     // -----PRIVATE-----

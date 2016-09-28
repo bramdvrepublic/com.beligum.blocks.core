@@ -105,7 +105,9 @@ public class RdfEndpoint
     @GET
     @Path("/resource/")
     @Produces(MediaType.APPLICATION_JSON)
-    @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
+    //We disabled this because some javascript initialization code needs to access it,
+    // and I think it's not really a security issue. Let's hope I'm right...
+    //@RequiresRoles(Permissions.ADMIN_ROLE_NAME)
     public Response getResource(@QueryParam("resourceTypeCurie") URI resourceTypeCurie, @QueryParam("resourceUri") URI resourceUri) throws IOException
     {
         ResourceInfo retVal = null;

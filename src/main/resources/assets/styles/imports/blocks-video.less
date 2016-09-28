@@ -1,0 +1,41 @@
+//-----IMPORTS-----
+@import "/assets/webjars/bootstrap/3.3.4/less/variables.less";
+@import "/assets/webjars/bootstrap/3.3.4/less/mixins.less";
+@import "/assets/webjars/bootstrap/3.3.4/less/responsive-embed.less";
+@import "/constants/blocks/core?type=less";
+
+//-----STYLES-----
+blocks-video {
+
+  .embed-responsive;
+
+  &.@{VIDEO_ASPECT_16BY9_CLASS} {
+    //just copy/pasted and adapted this from the bootstrap less file
+    // to have flexible extension possibilities here
+    padding-bottom: 9.0 / 16.0 * 100%;
+
+    &.seamless {
+      padding-top: 17px;
+    }
+  }
+  &.@{VIDEO_ASPECT_4BY3_CLASS} {
+    padding-bottom: 3.0 / 4.0 * 100%;
+  }
+  &.@{VIDEO_ASPECT_1DOT85BY1_CLASS} {
+    padding-bottom: 1.0 / 1.85 * 100%;
+  }
+  &.@{VIDEO_ASPECT_2DOT39BY1_CLASS} {
+    padding-bottom: 1.0 / 2.39 * 100%;
+  }
+  &.@{VIDEO_ASPECT_1BY1_CLASS} {
+    padding-bottom: 1.0 / 1.0 * 100%;
+  }
+
+  video {
+
+  }
+
+  @media (min-width: @screen-sm-min) {
+
+  }
+}

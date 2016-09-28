@@ -912,7 +912,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
                     var finderOptions = {};
 
-                    //TODO make this MediaConstants.AJAX_URL
+                    //TODO make this MediaCommonsConstants.HDFS_URL_BASE
                     if (selectedFilePath && selectedFilePath.indexOf('/webhdfs') === 0) {
                         finderOptions.selectedFile = selectedFilePath;
                     }
@@ -1214,7 +1214,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 $.getJSON(acEndpointOptions[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT] + encodeURIComponent(suggestion.value))
                     .done(function (data)
                     {
-                        setterFunction(element, initialValue, data);
+                        setterFunction(element, data);
                     })
                     .fail(function (xhr, textStatus, exception)
                     {
@@ -1224,36 +1224,39 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
             ////init and attach the change listener
 
-            var firstValue = element.attr(contentAttr);
-
-            //if the html widget is uninitialized or empty (because we empty it while resetting), try to set it to a default value
-            if (typeof firstValue === typeof undefined || firstValue === '') {
-                //initial value may be 0 or '', so check of type
-                if (typeof initialValue !== typeof undefined) {
-                    //signal the setter function to reset the tag
-                    setterFunction(element, initialValue, null);
-                }
+            var firstValue = undefined;
+            if (typeof initialValue !== typeof undefined && initialValue!==null) {
+                firstValue = initialValue;
             }
             else {
-                //this gives us a chance to skip this if it would be needed
-                if (typeof firstValue !== typeof undefined) {
-                    //if we have a real value, contact the resource endpoint to load the official name (not the more human friendly label) into the autocomplete box
-                    if (firstValue != initialValue) {
-                        $.getJSON(acEndpointOptions[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT] + encodeURIComponent(firstValue))
-                            .done(function (data)
-                            {
-                                //init the input
-                                input.typeahead('val', data.name);
-
-                                //don't think we need to re-set the html here, just init the autocomplete box
-                                //setterFunction(propElement, initialValue, data);
-                            })
-                            .fail(function (xhr, textStatus, exception)
-                            {
-                                Notification.error(BlocksMessages.generalServerDataError + (exception ? "; " + exception : ""), xhr);
-                            });
-                    }
+                if (contentAttr) {
+                    firstValue = element.attr(contentAttr);
                 }
+            }
+
+            //this gives us a chance to skip this if it would be needed
+            if (firstValue) {
+                //if we have a real value, contact the resource endpoint to load the official name (not the more human friendly label) into the autocomplete box
+                $.getJSON(acEndpointOptions[BlocksConstants.INPUT_TYPE_CONFIG_RESOURCE_VAL_ENDPOINT] + encodeURIComponent(firstValue))
+                    .done(function (data)
+                    {
+                        //init autocomplete input box
+                        input.typeahead('val', data.name);
+
+                        //don't think we need to re-set the html here, just init the autocomplete box
+                        //Update: this used to be commented out, but our initialValue argument allows us to supply a scripted initial value (eg. not a property-attr saved initial value),
+                        //        so it's possible we want to fire up the setter function (which can do whatever it wants) with the data coming back from the server,
+                        //        so we re-activated it.
+                        setterFunction(element, data);
+                    })
+                    .fail(function (xhr, textStatus, exception)
+                    {
+                        Notification.error(BlocksMessages.generalServerDataError + (exception ? "; " + exception : ""), xhr);
+                    });
+            }
+            else {
+                //signal the setter function to reset the tag (with data==null)
+                setterFunction(element, null);
             }
 
             return formGroup;

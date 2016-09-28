@@ -211,9 +211,11 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
 
         var page = $('.' + Constants.PAGE_CONTENT_CLASS);
         var pageBottom = page.position().top + page.outerHeight(true);
-        if (pageBottom<bodyBottom) {
+        //Note: we must always set the out height to the body height (that's why it's commented out)
+        // because we want the page content to scroll independently from the sidebar (css is set to overflow-y auto)
+        //if (pageBottom<bodyBottom) {
             page.outerHeight(bodyBottom - page.position().top);
-        }
+        //}
     };
 
     var enableFocusBlurDetection = function (block, focusedElement)

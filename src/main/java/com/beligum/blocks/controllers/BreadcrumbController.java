@@ -46,6 +46,12 @@ public class BreadcrumbController extends DefaultTemplateController
      */
     public Iterator<Map.Entry<URI, String>> breadcrumbs() throws IOException
     {
+        return this.searchParentPages().descendingIterator();
+    }
+
+    //-----PROTECTED METHODS-----
+    protected LinkedList<Map.Entry<URI, String>> searchParentPages() throws IOException
+    {
         LinkedList<Map.Entry<URI, String>> retVal = new LinkedList<>();
 
         Locale currentLocale = R.i18nFactory().getOptimalLocale();
@@ -133,10 +139,8 @@ public class BreadcrumbController extends DefaultTemplateController
             }
         }
 
-        return retVal.descendingIterator();
+        return retVal;
     }
-
-    //-----PROTECTED METHODS-----
 
     //-----PRIVATE METHODS-----
     /**

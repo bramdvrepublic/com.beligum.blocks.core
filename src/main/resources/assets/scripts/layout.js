@@ -206,7 +206,8 @@ base.plugin("blocks.core.Layouter", ["blocks.core.Broadcaster", "constants.base.
             {
                 if (droppedContainer == null || droppedContainer == dropContainer) {
                     DOM.cleanup(dropContainer, finish);
-                } else {
+                }
+                else {
                     DOM.cleanup(droppedContainer, function ()
                     {
                     });

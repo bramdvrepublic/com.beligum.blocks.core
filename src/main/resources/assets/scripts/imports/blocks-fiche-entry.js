@@ -393,7 +393,7 @@ base.plugin("blocks.imports.BlocksFicheEntry", ["base.core.Class", "blocks.impor
                             var defaultValue = '<p><i>Please search for a resource in the sidebar</i></p>';
                             combobox.after(_this.createAutocompleteWidget(propElement, RESOURCE_ATTR, newValueTerm.widgetType, newValueTerm.widgetConfig, 'Resource', defaultValue,
                                 //Note: this function receives the entire object as it was returned from the server endpoint (class AutocompleteSuggestion)
-                                function setterFunction(propElement, initialValue, newValue)
+                                function setterFunction(propElement, newValue)
                                 {
                                     if (newValue && newValue.label != '') {
 

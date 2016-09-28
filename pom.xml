@@ -108,6 +108,11 @@
             <version>1.11.4</version>
         </dependency>
         <dependency>
+            <groupId>org.webjars.bower</groupId>
+            <artifactId>medium-editor</artifactId>
+            <version>5.14.4</version>
+        </dependency>
+        <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>bootstrap-slider</artifactId>
             <version>4.8.3</version>

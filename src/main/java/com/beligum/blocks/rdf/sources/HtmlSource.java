@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.FileContext;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Entities;
 import org.jsoup.select.Elements;
 
 import javax.ws.rs.core.UriBuilder;
@@ -50,6 +51,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
     protected Document document;
     protected Element htmlTag;
     protected HtmlAnalyzer htmlAnalyzer;
+    protected Entities.EscapeMode escapeMode;
 
     //-----CONSTRUCTORS-----
     protected HtmlSource(URI sourceAddress) throws IOException
@@ -57,6 +59,7 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
         this.sourceAddress = sourceAddress;
         this.document = null;
         this.htmlAnalyzer = null;
+        this.escapeMode = null;
     }
 
     //-----PUBLIC METHODS-----
@@ -86,6 +89,10 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
         //see http://tools.ietf.org/html/rfc4646 for ISO guidelines -> "shortest ISO 639 code"
         this.htmlTag.attr(HTML_ROOT_LANG_ATTR, R.i18nFactory().getOptimalLocale(this.sourceAddress).getLanguage());
 
+        //Note: RDFa (or XML) doesn't support DTDs, so we need to replace the Entity Sets with their numeric counterparts
+        // Eg. &nbsp; becomes &#160;
+        this.escapeMode = Entities.EscapeMode.xhtml;
+
         //NOTE that the search for the base resource uses the language set in the previous code, so make sure this comes after it
         this.updateBaseAttributes(fileContext, this.htmlTag);
 
@@ -105,10 +112,14 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
     }
     public InputStream openNewHtmlInputStream() throws IOException
     {
+
+
         return new ByteArrayInputStream(this.document.outputSettings(this.buildNewStreamOutputSettings(this.document).syntax(Document.OutputSettings.Syntax.html)).outerHtml().getBytes(this.document.charset()));
     }
     public InputStream openNewXHtmlInputStream() throws IOException
     {
+
+
         return new ByteArrayInputStream(this.document.outputSettings(this.buildNewStreamOutputSettings(this.document).syntax(Document.OutputSettings.Syntax.xml)).outerHtml().getBytes(this.document.charset()));
     }
 
@@ -276,7 +287,13 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
      */
     private Document.OutputSettings buildNewStreamOutputSettings(Document doc)
     {
-        return doc.outputSettings().indentAmount(0).prettyPrint(false);
+        Document.OutputSettings retVal = doc.outputSettings().indentAmount(0).prettyPrint(false);
+
+        if (this.escapeMode!=null) {
+            retVal.escapeMode(this.escapeMode);
+        }
+
+        return retVal;
     }
 
     //-----MANAGEMENT METHODS-----

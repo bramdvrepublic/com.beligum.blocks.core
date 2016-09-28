@@ -5,7 +5,8 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     var SIDEBAR_STATE_NULL = "";
     var SIDEBAR_STATE_SHOW = "show";
     var SIDEBAR_STATE_HIDE = "hide";
-    var DEFAULT_COOKIE_OPTIONS = { path: '' };
+    //Note: an empty paths means: take the path of the current page
+    var DEFAULT_COOKIE_OPTIONS = { path: '/' };
 
     var MIN_SIDEBAR_WIDTH = 200;
 

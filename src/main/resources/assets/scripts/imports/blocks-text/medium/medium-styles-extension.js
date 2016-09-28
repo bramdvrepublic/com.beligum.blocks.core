@@ -23,7 +23,7 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.im
 
     //-----CLASS DEFINITIONS-----
     //used this as a reference: https://github.com/arcs-/MediumButton
-    this.StylesPicker = Class.create(MediumEditor.FormExtension, {
+    this.StylesPicker = Class.create(MediumEditor.extensions.form, {
 
         //-----CONSTANTS-----
         STATIC: {
@@ -185,9 +185,9 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.im
         _findSelection: function ()
         {
             var blockContainerElementNames = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre'];
-            var elements = this.base.getSelection().getSelectedElements(this.document);
+            var elements = MediumEditor.selection.getSelectedElements(this.document);
             if (elements.length == 0) {
-                elements.push(this.base.getSelection().getSelectedParentElement(this.base.getSelection().getSelectionRange(this.document)));
+                elements.push(MediumEditor.selection.getSelectedParentElement(MediumEditor.selection.getSelectionRange(this.document)));
             }
             // Filter all elements that we will change with our style
             var parents = [];
@@ -250,10 +250,12 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.im
 
             //var inputActions = this.buildInputActions(Sidebar, true, true, null);
             //TODO add the inputActions to the constructor below, but make it work with the sidebar finder
-            var formGroup = dummyWidget.createTextInput(Sidebar, function getterFunction()
+            var formGroup = dummyWidget.createTextInput(Sidebar,
+                function getterFunction()
                 {
                     //return element.attr(attribute);
-                }, function setterFunction(val)
+                },
+                function setterFunction(val)
                 {
                     //return element.attr(attribute, val);
                 },
