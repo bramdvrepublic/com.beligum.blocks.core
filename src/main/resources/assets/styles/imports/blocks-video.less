@@ -2,9 +2,36 @@
 @import "/assets/webjars/bootstrap/3.3.4/less/variables.less";
 @import "/assets/webjars/bootstrap/3.3.4/less/mixins.less";
 @import "/assets/webjars/bootstrap/3.3.4/less/responsive-embed.less";
+@import "/assets/styles/imports/blocks-common.less";
 @import "/constants/blocks/core?type=less";
 
 //-----STYLES-----
+//make this block work with the default seamless class,
+// cause this is sort of the right place to do it
+&.@{SEAMLESS_CLASS} blocks-video, //this blocks is somewhere after a seamless parent
+blocks-video.@{SEAMLESS_CLASS} { //the blocks itself (subclassed) is made seamless
+  .seamless();
+
+  //this is the total extra width created by the seamlessness
+  // and needs to get translated to extra height
+  @extraSpace: @grid-gutter-width;
+  &.@{VIDEO_ASPECT_16BY9_CLASS} {
+    padding-top: @extraSpace / 16.0 * 9.0;
+  }
+  &.@{VIDEO_ASPECT_4BY3_CLASS} {
+    padding-top: @extraSpace / 4.0 * 3.0;
+  }
+  &.@{VIDEO_ASPECT_1DOT85BY1_CLASS} {
+    padding-top: @extraSpace / 1.85 * 1.0;
+  }
+  &.@{VIDEO_ASPECT_2DOT39BY1_CLASS} {
+    padding-top: @extraSpace / 2.39 * 1.0;
+  }
+  &.@{VIDEO_ASPECT_1BY1_CLASS} {
+    padding-top: @extraSpace / 1.0 * 1.0;
+  }
+}
+
 blocks-video {
 
   .embed-responsive;
@@ -13,10 +40,6 @@ blocks-video {
     //just copy/pasted and adapted this from the bootstrap less file
     // to have flexible extension possibilities here
     padding-bottom: 9.0 / 16.0 * 100%;
-
-    &.seamless {
-      padding-top: 17px;
-    }
   }
   &.@{VIDEO_ASPECT_4BY3_CLASS} {
     padding-bottom: 3.0 / 4.0 * 100%;

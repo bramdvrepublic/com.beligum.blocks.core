@@ -941,13 +941,19 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                         Sidebar.animateSidebarWidth(sidebarWidth);
                     };
 
-                    Sidebar.loadFinder(finderOptions);
                     // save sidebar width
                     sidebarWidth = $("." + BlocksConstants.PAGE_SIDEBAR_CLASS).outerWidth();
                     var windowWidth = $(window).width();
 
+                    //first move the sidebar, then load it, because we don't have a watcher that updates the components-size
+                    // (was problematic with the statusbar elements)
                     if (windowWidth / 2 > sidebarWidth) {
-                        Sidebar.animateSidebarWidth(windowWidth / 2);
+                        Sidebar.animateSidebarWidth(windowWidth / 2, function(){
+                            Sidebar.loadFinder(finderOptions);
+                        });
+                    }
+                    else {
+                        Sidebar.loadFinder(finderOptions);
                     }
                 };
 
