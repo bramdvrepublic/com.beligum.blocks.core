@@ -5,7 +5,7 @@
 
     <groupId>com.beligum.blocks</groupId>
     <artifactId>blocks-core</artifactId>
-    <version>0.2.28-SNAPSHOT</version>
+    <version>0.2.28</version>
     <packaging>jar</packaging>
 
     <url>http://www.beligum.com</url>
@@ -45,7 +45,7 @@
         <dependency>
             <groupId>com.beligum.base</groupId>
             <artifactId>base-core</artifactId>
-            <version>0.3.32-SNAPSHOT</version>
+            <version>0.3.32</version>
         </dependency>
         <dependency>
             <groupId>com.beligum.base</groupId>
