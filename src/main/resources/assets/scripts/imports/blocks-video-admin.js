@@ -6,6 +6,12 @@ base.plugin("blocks.imports.VideoAdmin", ["base.core.Class", "blocks.imports.Pro
     var VideoAdmin = this;
     this.TAGS = ["video"];
 
+    //check if the media classes are loaded
+    var MediaCommonsConstants = base.getPlugin("constants.blocks.media.commons");
+    if (!MediaCommonsConstants) {
+        throw Logger.error("Can't seem to find the media libraries; this shouldn't happen");
+    }
+
     (this.Class = Class.create(Property.Class, {
 
         //-----VARIABLES-----
@@ -37,32 +43,69 @@ base.plugin("blocks.imports.VideoAdmin", ["base.core.Class", "blocks.imports.Pro
 
             var videoEl = block.element.find('video');
 
-            var firstSrcEl = null;
-            videoEl.find('source').each(function ()
-            {
-                var retVal = true;
-
-                var sourceEl = $(this);
-                if (!firstSrcEl && sourceEl.hasAttribute('src') && sourceEl.attr('src') != '') {
-                    firstSrcEl = sourceEl;
-                    retVal = true;
-                }
-
-                return retVal;
-            });
+            //this gives us access to the plain JS api
+            var video = videoEl.get(0);
 
             var posterWidget = this.createTextInput(Sidebar,
                 function getterFunction()
                 {
-                    return videoEl.attr('poster');
+                    var retVal = null;
+
+                    retVal = videoEl.attr('poster');
+                    if (retVal) {
+                        //cut off any possible alias (we don't show it to the user)
+                        retVal = _this._trimAlias(retVal);
+                    }
+
+                    return retVal;
                 },
                 function setterFunction(val)
                 {
+                    videoEl.removeAttr('poster');
+
                     if (val && val !== '') {
-                        videoEl.attr('poster', val);
-                    }
-                    else {
-                        videoEl.removeAttr('poster');
+
+                        //make sure we start out with an unaliased version to build from
+                        var baseVal = _this._trimAlias(val);
+
+                        var mimeType = Mime.lookup(baseVal);
+
+                        //we support video (proxy) and image files
+                        var posterUrl = null;
+                        if (mimeType.indexOf('image/') == 0) {
+                            posterUrl = baseVal;
+                        }
+                        else if (mimeType.indexOf('video/') == 0) {
+                            if (baseVal.indexOf('/') == 0) {
+                                posterUrl = baseVal + MediaCommonsConstants.HDFS_URL_ALIAS_DIVIDER + MediaCommonsConstants.HDFS_URL_ALIAS_VIDEO_POSTER;
+                            }
+                        }
+
+                        if (posterUrl) {
+                            _this._loadPoster(posterUrl, MediaCommonsConstants, function callback(loadedUrl, error)
+                            {
+                                if (loadedUrl) {
+                                    videoEl.attr('poster', loadedUrl);
+
+                                    //note that we only save the aliased url in the poster attr, not show it to the user in the input
+                                    var basePosterUrl = _this._trimAlias(loadedUrl);
+
+                                    //Note: jquery val() doesn't trigger any events, do it manually
+                                    var posterInput = posterWidget.find('input:text');
+                                    if (posterInput.val() != basePosterUrl) {
+                                        posterInput.val(basePosterUrl);
+                                        //don't trigger the change or we'll have infinite recursion
+                                        //posterInput.trigger("change");
+                                    }
+
+                                    //make sure the video is always reloaded
+                                    video.load();
+                                }
+                                else {
+                                    Logger.error("Error caught while loading video thumbnail", error);
+                                }
+                            });
+                        }
                     }
                 },
                 BlocksMessages.widgetVideoPosterTitle,
@@ -73,85 +116,95 @@ base.plugin("blocks.imports.VideoAdmin", ["base.core.Class", "blocks.imports.Pro
             var sourceWidget = this.createTextInput(Sidebar,
                 function getterFunction()
                 {
-                    return firstSrcEl ? firstSrcEl.attr('src') : null;
+                    var retVal = null;
+
+                    retVal = videoEl.find('source').first().attr('src');
+                    if (retVal) {
+                        //cut off any possible alias (we don't show it to the user)
+                        retVal = _this._trimAlias(retVal);
+                    }
+
+                    return retVal;
                 },
                 function setterFunction(val)
                 {
                     videoEl.find('source').remove();
-                    //videoEl.removeAttr('poster');
 
                     if (val && val !== '') {
 
-                        //check if the media classes are loaded
-                        var MediaCommonsConstants = base.getPlugin("constants.blocks.media.commons");
-                        if (MediaCommonsConstants) {
+                        //only use the last timeout
+                        if (_this.videoSourceTimeout) {
+                            clearTimeout(_this.videoSourceTimeout);
+                            _this.videoSourceTimeout = null;
+                        }
 
-                            //only use the last timeout
-                            if (_this.videoSourceTimeout) {
-                                clearTimeout(_this.videoSourceTimeout);
-                                _this.videoSourceTimeout = null;
-                            }
+                        //request the mime type from the server and set it if we have it
+                        _this.videoSourceTimeout = setTimeout(function ()
+                        {
+                            //make sure we start out with an unaliased version to build from
+                            var baseVal = _this._trimAlias(val);
 
-                            //request the mime type from the server and set it if we have it
-                            _this.videoSourceTimeout = setTimeout(function ()
-                            {
-                                var mimeType = Mime.lookup(val);
+                            var mimeType = Mime.lookup(baseVal);
 
-                                if (mimeType.indexOf('video/') == 0) {
-                                    //this gives us access to the plain JS api
-                                    var video = videoEl.get(0);
+                            //we only support video files
+                            if (mimeType.indexOf('video/') == 0) {
 
-                                    //changing the source while playing doesn't work
-                                    if (!video.paused) {
-                                        video.pause();
+                                //changing the source while playing doesn't work
+                                if (!video.paused) {
+                                    video.pause();
+                                }
+
+                                //Note: we can't use the mime time of the original,
+                                // but make sure the server transcode settings support all in this list
+                                // and the constants are modeled after the syntax in the loop
+                                var formats = ["mp4"];
+                                for (var i = 0; i < formats.length; i++) {
+
+                                    //this is both the mime type and also (no coincidence) the constants of the alias proxy
+                                    var formatMime = "video/" + formats[i];
+
+                                    //if the url is a local url, append it with a proxy alias
+                                    var videoUrl = baseVal;
+                                    if (videoUrl.indexOf('/') == 0) {
+                                        videoUrl = baseVal + MediaCommonsConstants.HDFS_URL_ALIAS_DIVIDER + formatMime;
                                     }
 
-                                    //Note: we can't use the mime time of the original,
-                                    // but make sure the server transcode settings support all in this list
-                                    var formats = ["mp4"];
-                                    var baseVal = val.substring(val.lastIndexOf(MediaCommonsConstants.HDFS_URL_ALIAS_SEMI_AUTO));
-                                    for (var i = 0; i < formats.length; i++) {
-                                        var format = formats[i];
-                                        var formatMime = "video/" + format;
-                                        var alias = MediaCommonsConstants.HDFS_URL_ALIAS_SEMI_AUTO.replace(new RegExp('\\*', 'g'), format);
-                                        var aliasedUrl = baseVal + MediaCommonsConstants.HDFS_URL_ALIAS_DIVIDER + alias;
-                                        var newSrc = $('<source>').attr('src', aliasedUrl).attr('type', formatMime).prependTo(videoEl);
+                                    var newSrc = $('<source>').attr('src', videoUrl).attr('type', formatMime).prependTo(videoEl);
 
-                                        //because the first source file will be loaded on focus (see above),
-                                        // we need to sync the behavior with that input here
-                                        if (i == 0) {
-                                            var sourceInput = sourceWidget.find('input:text');
-                                            sourceInput.val(aliasedUrl);
+                                    //because the first source file will be loaded on focus (see above),
+                                    // we need to sync the behavior with that input here
+                                    if (i == 0) {
+                                        var sourceInput = sourceWidget.find('input:text');
+                                        //note that we only save the aliased url in the source element, not show it to the user in the input
+                                        var baseVideoUrl = _this._trimAlias(videoUrl);
+                                        if (sourceInput.val() != baseVideoUrl) {
+                                            sourceInput.val(baseVideoUrl);
                                             //don't trigger the change or we'll have infinite recursion
                                             //sourceInput.trigger("change");
                                         }
-                                    }
 
-                                    _this._loadPoster(baseVal, MediaCommonsConstants, function callback(posterUrl, error)
-                                    {
-                                        if (posterUrl) {
-                                            //Note: jquery val() doesn't trigger any events, do it manually
-                                            var posterInput = posterWidget.find('input:text');
-                                            posterInput.val(posterUrl);
+                                        //we propagate the video change to the poster input by passing the video file and letting the code above do it's work
+                                        var posterInput = posterWidget.find('input:text');
+                                        if (posterInput.val() != baseVideoUrl) {
+                                            posterInput.val(baseVideoUrl);
+                                            //we do need to trigger this one to activate it
                                             posterInput.trigger("change");
                                         }
-                                        else {
-                                            Logger.error("Error caught while loading video thumbnail", error);
-                                        }
+                                    }
+                                }
+                            }
+                            else {
+                                //Annoying?
+                                //Notification.error(BlocksMessages.widgetVideoErrorNoVideoFile);
+                            }
 
-                                        //make sure the video is reloaded
-                                        video.load();
-                                    });
-                                }
-                                else {
-                                    //Annoying?
-                                    //Notification.error(BlocksMessages.widgetVideoErrorNoVideoFile);
-                                }
-                            }, 500);
-                        }
-                        else {
-                            Logger.error("Can't seem to find the media libraries; this shouldn't happen");
-                        }
+                            //make sure the video is always reloaded
+                            video.load();
+                        }, 500);
+                    }
+                    else {
+                        //also reload the video if the value is cleared
+                        video.load();
                     }
                 },
                 BlocksMessages.widgetVideoSourceTitle,
@@ -177,8 +230,9 @@ base.plugin("blocks.imports.VideoAdmin", ["base.core.Class", "blocks.imports.Pro
             retVal.push(this.addOptionalClass(Sidebar, videoEl, BlocksMessages.widgetVideoMutedTitle, null, null, 'muted'));
 
             var unsupportedMessage = BlocksMessages.widgetVideoUnsupported1;
-            if (firstSrcEl) {
-                unsupportedMessage += Commons.format(BlocksMessages.widgetVideoUnsupported2, firstSrcEl.attr('src'));
+            var firstSrc = videoEl.find('source').first().attr('src');
+            if (firstSrc) {
+                unsupportedMessage += Commons.format(BlocksMessages.widgetVideoUnsupported2, firstSrc);
             }
             unsupportedMessage += ".";
 
@@ -197,18 +251,27 @@ base.plugin("blocks.imports.VideoAdmin", ["base.core.Class", "blocks.imports.Pro
         },
 
         //-----PRIVATE FUNCTIONS-----
-        _loadPoster: function (videoUrl, MediaCommonsConstants, callback)
+        _trimAlias: function (val)
+        {
+            var retVal = val;
+
+            var idx = retVal.lastIndexOf(MediaCommonsConstants.HDFS_URL_ALIAS_DIVIDER);
+            if (idx >= 0) {
+                retVal = retVal.substring(0, idx);
+            }
+
+            return retVal;
+        },
+        _loadPoster: function (posterUrl, MediaCommonsConstants, callback)
         {
             var retVal = null;
 
             if (callback) {
                 try {
-                    var thumbUrl = videoUrl + MediaCommonsConstants.HDFS_URL_ALIAS_DIVIDER + MediaCommonsConstants.HDFS_URL_ALIAS_FINDER_THUMB;
-
                     var thumb = $('<img/>')
                     thumb.on('load', function ()
                     {
-                        callback(thumb.attr('src'));
+                        callback(posterUrl);
                     });
                     thumb.on('error', function (e)
                     {
@@ -219,7 +282,7 @@ base.plugin("blocks.imports.VideoAdmin", ["base.core.Class", "blocks.imports.Pro
                     });
 
                     //now try to fire up the loading
-                    thumb.attr("src", thumbUrl);
+                    thumb.attr("src", posterUrl);
                 }
                 catch (e) {
                     callback(null, e);
