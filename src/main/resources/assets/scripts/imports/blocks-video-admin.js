@@ -16,6 +16,7 @@ base.plugin("blocks.imports.VideoAdmin", ["base.core.Class", "blocks.imports.Pro
 
         //-----VARIABLES-----
         videoSourceTimeout: null,
+        videoEl: null,
 
         //-----CONSTRUCTORS-----
         constructor: function ()
@@ -30,10 +31,15 @@ base.plugin("blocks.imports.VideoAdmin", ["base.core.Class", "blocks.imports.Pro
         focus: function (block, element, hotspot, event)
         {
             VideoAdmin.Class.Super.prototype.focus.call(this, block, element, hotspot, event);
+
+            this.videoEl = block.element.find('video');
+            this._videoPause(true);
         },
         blur: function (block, element)
         {
             VideoAdmin.Class.Super.prototype.blur.call(this, block, element);
+
+            this.videoEl = null;
         },
         getConfigs: function (block, element)
         {
@@ -41,17 +47,12 @@ base.plugin("blocks.imports.VideoAdmin", ["base.core.Class", "blocks.imports.Pro
 
             var retVal = VideoAdmin.Class.Super.prototype.getConfigs.call(this, block, element);
 
-            var videoEl = block.element.find('video');
-
-            //this gives us access to the plain JS api
-            var video = videoEl.get(0);
-
             var posterWidget = this.createTextInput(Sidebar,
                 function getterFunction()
                 {
                     var retVal = null;
 
-                    retVal = videoEl.attr('poster');
+                    retVal = _this.videoEl.attr('poster');
                     if (retVal) {
                         //cut off any possible alias (we don't show it to the user)
                         retVal = _this._trimAlias(retVal);
@@ -61,7 +62,7 @@ base.plugin("blocks.imports.VideoAdmin", ["base.core.Class", "blocks.imports.Pro
                 },
                 function setterFunction(val)
                 {
-                    videoEl.removeAttr('poster');
+                    _this.videoEl.removeAttr('poster');
 
                     if (val && val !== '') {
 
@@ -85,7 +86,7 @@ base.plugin("blocks.imports.VideoAdmin", ["base.core.Class", "blocks.imports.Pro
                             _this._loadPoster(posterUrl, MediaCommonsConstants, function callback(loadedUrl, error)
                             {
                                 if (loadedUrl) {
-                                    videoEl.attr('poster', loadedUrl);
+                                    _this.videoEl.attr('poster', loadedUrl);
 
                                     //note that we only save the aliased url in the poster attr, not show it to the user in the input
                                     var basePosterUrl = _this._trimAlias(loadedUrl);
@@ -97,15 +98,20 @@ base.plugin("blocks.imports.VideoAdmin", ["base.core.Class", "blocks.imports.Pro
                                         //don't trigger the change or we'll have infinite recursion
                                         //posterInput.trigger("change");
                                     }
-
-                                    //make sure the video is always reloaded
-                                    video.load();
                                 }
                                 else {
                                     Logger.error("Error caught while loading video thumbnail", error);
                                 }
+
+                                _this._videoReload();
                             });
                         }
+                        else {
+                            _this._videoReload();
+                        }
+                    }
+                    else {
+                        _this._videoReload();
                     }
                 },
                 BlocksMessages.widgetVideoPosterTitle,
@@ -118,7 +124,7 @@ base.plugin("blocks.imports.VideoAdmin", ["base.core.Class", "blocks.imports.Pro
                 {
                     var retVal = null;
 
-                    retVal = videoEl.find('source').first().attr('src');
+                    retVal = _this.videoEl.find('source').first().attr('src');
                     if (retVal) {
                         //cut off any possible alias (we don't show it to the user)
                         retVal = _this._trimAlias(retVal);
@@ -128,7 +134,7 @@ base.plugin("blocks.imports.VideoAdmin", ["base.core.Class", "blocks.imports.Pro
                 },
                 function setterFunction(val)
                 {
-                    videoEl.find('source').remove();
+                    _this.videoEl.find('source').remove();
 
                     if (val && val !== '') {
 
@@ -150,9 +156,7 @@ base.plugin("blocks.imports.VideoAdmin", ["base.core.Class", "blocks.imports.Pro
                             if (mimeType.indexOf('video/') == 0) {
 
                                 //changing the source while playing doesn't work
-                                if (!video.paused) {
-                                    video.pause();
-                                }
+                                _this._videoPause(true);
 
                                 //Note: we can't use the mime time of the original,
                                 // but make sure the server transcode settings support all in this list
@@ -169,7 +173,7 @@ base.plugin("blocks.imports.VideoAdmin", ["base.core.Class", "blocks.imports.Pro
                                         videoUrl = baseVal + MediaCommonsConstants.HDFS_URL_ALIAS_DIVIDER + formatMime;
                                     }
 
-                                    var newSrc = $('<source>').attr('src', videoUrl).attr('type', formatMime).prependTo(videoEl);
+                                    var newSrc = $('<source>').attr('src', videoUrl).attr('type', formatMime).prependTo(_this.videoEl);
 
                                     //because the first source file will be loaded on focus (see above),
                                     // we need to sync the behavior with that input here
@@ -199,12 +203,12 @@ base.plugin("blocks.imports.VideoAdmin", ["base.core.Class", "blocks.imports.Pro
                             }
 
                             //make sure the video is always reloaded
-                            video.load();
+                            _this._videoReload();
                         }, 500);
                     }
                     else {
                         //also reload the video if the value is cleared
-                        video.load();
+                        _this._videoReload();
                     }
                 },
                 BlocksMessages.widgetVideoSourceTitle,
@@ -224,20 +228,20 @@ base.plugin("blocks.imports.VideoAdmin", ["base.core.Class", "blocks.imports.Pro
             ]));
 
             //Note: the 'controls' attr is the html5 one
-            retVal.push(this.addOptionalClass(Sidebar, videoEl, BlocksMessages.widgetVideoControlsTitle, null, null, 'controls'));
-            retVal.push(this.addOptionalClass(Sidebar, videoEl, BlocksMessages.widgetVideoAutoplayTitle, null, null, 'autoplay'));
-            retVal.push(this.addOptionalClass(Sidebar, videoEl, BlocksMessages.widgetVideoLoopTitle, null, null, 'loop'));
-            retVal.push(this.addOptionalClass(Sidebar, videoEl, BlocksMessages.widgetVideoMutedTitle, null, null, 'muted'));
+            retVal.push(this.addOptionalClass(Sidebar, _this.videoEl, BlocksMessages.widgetVideoControlsTitle, null, null, 'controls'));
+            retVal.push(this.addOptionalClass(Sidebar, _this.videoEl, BlocksMessages.widgetVideoAutoplayTitle, null, null, 'autoplay'));
+            retVal.push(this.addOptionalClass(Sidebar, _this.videoEl, BlocksMessages.widgetVideoLoopTitle, null, null, 'loop'));
+            retVal.push(this.addOptionalClass(Sidebar, _this.videoEl, BlocksMessages.widgetVideoMutedTitle, null, null, 'muted'));
 
             var unsupportedMessage = BlocksMessages.widgetVideoUnsupported1;
-            var firstSrc = videoEl.find('source').first().attr('src');
+            var firstSrc = _this.videoEl.find('source').first().attr('src');
             if (firstSrc) {
                 unsupportedMessage += Commons.format(BlocksMessages.widgetVideoUnsupported2, firstSrc);
             }
             unsupportedMessage += ".";
 
             //replaces the default text content, not any of the nodes
-            videoEl.contents().filter(function ()
+            _this.videoEl.contents().filter(function ()
             {
                 //Note: text nodes use the code 3
                 return this.nodeType == 3;
@@ -290,6 +294,33 @@ base.plugin("blocks.imports.VideoAdmin", ["base.core.Class", "blocks.imports.Pro
             }
 
             return retVal;
+        },
+        _videoReload: function()
+        {
+            if (this.videoEl && this.videoEl.length) {
+                this.videoEl.get(0).load();
+            }
+        },
+        _videoPlaying: function()
+        {
+            var retVal = false;
+
+            if (this.videoEl && this.videoEl.length) {
+                retVal = !this.videoEl.get(0).paused;
+            }
+
+            return retVal;
+        },
+        _videoPause: function(pause)
+        {
+            if (this.videoEl && this.videoEl.length) {
+                if (pause) {
+                    this.videoEl.get(0).pause();
+                }
+                else {
+                    this.videoEl.get(0).play();
+                }
+            }
         }
 
     })).register(this.TAGS);
