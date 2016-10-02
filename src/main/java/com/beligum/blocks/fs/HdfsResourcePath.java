@@ -13,6 +13,7 @@ import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Path;
 import org.apache.tika.mime.MediaType;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -108,7 +109,8 @@ public class HdfsResourcePath implements ResourcePath
 
                 if (this.cachedMimeType == null) {
                     String mimeType = null;
-                    try (InputStream is = this.fileContext.open(this.localPath)) {
+                    //Note: the buffered input stream is needed for correct Mime detection !!
+                    try (InputStream is = new BufferedInputStream(this.fileContext.open(this.localPath))) {
                         mimeType = FileFunctions.getMimeType(is, this.localPath.getName());
                         newlyDetected = true;
                     }
