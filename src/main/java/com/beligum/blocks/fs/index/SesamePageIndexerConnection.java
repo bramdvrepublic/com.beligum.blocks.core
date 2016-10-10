@@ -7,6 +7,7 @@ import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.entries.IndexEntry;
 import com.beligum.blocks.fs.index.entries.pages.IndexSearchResult;
 import com.beligum.blocks.fs.index.entries.pages.PageIndexEntry;
+import com.beligum.blocks.fs.index.entries.pages.SparqlIndexEntry;
 import com.beligum.blocks.fs.index.ifaces.Indexer;
 import com.beligum.blocks.fs.index.ifaces.LuceneQueryConnection;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
@@ -22,9 +23,14 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.TermQuery;
 import org.openrdf.model.IRI;
+import org.openrdf.model.Model;
 import org.openrdf.model.Value;
-import org.openrdf.query.*;
+import org.openrdf.query.QueryLanguage;
+import org.openrdf.query.QueryResults;
+import org.openrdf.query.TupleQuery;
+import org.openrdf.query.TupleQueryResult;
 import org.openrdf.repository.RepositoryException;
+import org.openrdf.repository.sail.SailGraphQuery;
 import org.openrdf.repository.sail.SailRepositoryConnection;
 import org.openrdf.sail.lucene.LuceneSailSchema;
 
@@ -42,6 +48,8 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
 {
     //-----CONSTANTS-----
     public static final String SPARQL_SUBJECT_BINDING_NAME = "s";
+    public static final String SPARQL_PREDICATE_BINDING_NAME = "p";
+    public static final String SPARQL_OBJECT_BINDING_NAME = "o";
 
     //decide if we build a simple boolean lucene query or build a bitmap (by using TermsQuery) when searching for subjectURIs
     //Note: I think it's better to disable this for smaller (expected) sets and enable it when you're expecting large results...
@@ -89,34 +97,58 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
     @Override
     public PageIndexEntry get(URI key) throws IOException
     {
-        //TODO
-        String queryString = "PREFIX search:   <" + LuceneSailSchema.NAMESPACE + "> \n" +
-                             "SELECT ?x ?score ?snippet WHERE {?x search:matches [\n" +
-                             "search:query \"aimé\"; \n" +
-                             "search:property <http://www.mot.be/ontology/comment>; \n" +
-                             "search:score ?score; \n" +
-                             "search:snippet ?snippet ] }";
+        SparqlIndexEntry retVal = null;
 
-        TupleQuery query = connection.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
-
-        try (TupleQueryResult result = query.evaluate()) {
-            if (!result.hasNext()) {
-                System.out.println("-------- NO MATCHES!! ---------");
-            }
-            else {
-                System.out.println("-------- FOUND MATCHES ---------");
-                // print the results
-                while (result.hasNext()) {
-                    BindingSet bindings = result.next();
-                    System.out.println("found match: ");
-                    for (Binding binding : bindings) {
-                        System.out.println(" " + binding.getName() + ": " + binding.getValue());
-                    }
-                }
-            }
+        URI subject = key;
+        if (!subject.isAbsolute()) {
+            subject = R.configuration().getSiteDomain().resolve(subject);
         }
 
-        return null;
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("PREFIX ").append(Settings.instance().getRdfOntologyPrefix()).append(": <").append(Settings.instance().getRdfOntologyUri()).append("> \n");
+        queryBuilder.append("\n");
+        queryBuilder.append("CONSTRUCT")
+                    .append(" WHERE {\n")
+                    .append("\t").append("<").append(subject.toString()).append(">")
+                    .append(" ?").append(SPARQL_PREDICATE_BINDING_NAME)
+                    .append(" ?").append(SPARQL_OBJECT_BINDING_NAME)
+                    .append(" .\n")
+                    .append("}")
+        ;
+
+        //TODO maybe it's better to iterate the predicates once and build a HashMap instead of pointing to the model?
+        //Depends on where we're going with the other functions below, we need to implemente a general OO RDF Mapper
+        SailGraphQuery query = connection.prepareGraphQuery(QueryLanguage.SPARQL, queryBuilder.toString(), R.configuration().getSiteDomain().toString());
+        Model resultModel = QueryResults.asModel(query.evaluate());
+        if (!resultModel.isEmpty()) {
+            retVal = new SparqlIndexEntry(subject.toString(), resultModel);
+        }
+
+        // SELECT alternative...
+        //
+        //        StringBuilder queryBuilder = new StringBuilder();
+        //        queryBuilder.append("PREFIX ").append(Settings.instance().getRdfOntologyPrefix()).append(": <").append(Settings.instance().getRdfOntologyUri()).append("> \n");
+        //        queryBuilder.append("\n");
+        //        queryBuilder.append("SELECT")
+        //                    .append(" ?").append(SPARQL_PREDICATE_BINDING_NAME)
+        //                    .append(" ?").append(SPARQL_OBJECT_BINDING_NAME)
+        //                    .append(" WHERE {\n")
+        //                    .append("\t").append("<").append(subject.toString()).append(">")
+        //                    .append(" ?").append(SPARQL_PREDICATE_BINDING_NAME)
+        //                    .append(" ?").append(SPARQL_OBJECT_BINDING_NAME)
+        //                    .append(" .\n")
+        //                    .append("}")
+        //        ;
+        //
+        //        TupleQuery query = connection.prepareTupleQuery(QueryLanguage.SPARQL, queryBuilder.toString(), R.configuration().getSiteDomain().toString());
+        //        try (TupleQueryResult result = query.evaluate()) {
+        //            while (result.hasNext()) {
+        //                Value predicate = result.next().getValue(SPARQL_PREDICATE_BINDING_NAME);
+        //                Value object = result.next().getValue(SPARQL_OBJECT_BINDING_NAME);
+        //            }
+        //        }
+
+        return retVal;
     }
     @Override
     public void delete(Page page) throws IOException
@@ -236,7 +268,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
         int count = 0;
         String siteDomain = R.configuration().getSiteDomain().toString();
         String resourceField = PageIndexEntry.Field.resource.name();
-        String languageStr = language.getLanguage();
+        String languageStr = language == null ? null : language.getLanguage();
         //Connect with the page indexer here so we can re-use the connection for all results
         LuceneQueryConnection luceneConnection = StorageFactory.getMainPageQueryConnection();
 
@@ -290,7 +322,9 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
                         luceneQuery.add(new TermsQuery(ids), BooleanClause.Occur.MUST);
                         break;
                 }
-                luceneQuery.add(new TermQuery(new Term(PageIndexEntry.Field.language.name(), languageStr)), BooleanClause.Occur.MUST);
+                if (languageStr != null) {
+                    luceneQuery.add(new TermQuery(new Term(PageIndexEntry.Field.language.name(), languageStr)), BooleanClause.Occur.MUST);
+                }
 
                 retVal = luceneConnection.search(luceneQuery, count);
             }
@@ -395,7 +429,7 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
                 if (tryLocalRdfCurie) {
                     //if it's not absolute (eg. it doesn't start with http://..., this means the relativize 'succeeded' and the retVal starts with the RDF ontology URI)
                     URI curie = RdfTools.fullToCurie(retVal);
-                    if (curie!=null) {
+                    if (curie != null) {
                         retVal = curie;
                     }
                 }
@@ -432,7 +466,9 @@ public class SesamePageIndexerConnection extends AbstractIndexConnection impleme
             try {
                 org.apache.lucene.search.BooleanQuery pageQuery = new org.apache.lucene.search.BooleanQuery();
                 pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.resource.name(), this.subject)), BooleanClause.Occur.MUST);
-                pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.language.name(), this.language)), BooleanClause.Occur.MUST);
+                if (this.language != null) {
+                    pageQuery.add(new TermQuery(new Term(PageIndexEntry.Field.language.name(), this.language)), BooleanClause.Occur.MUST);
+                }
                 List<IndexEntry> page = luceneConnection.search(pageQuery, 1).getResults();
 
                 if (!page.isEmpty()) {
