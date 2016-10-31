@@ -195,20 +195,28 @@ public class PageEndpoint
                                    Permissions.PAGE_MODIFY_PERMISSION_STRING })
     public Response savePage(@QueryParam("url") URI url, String content) throws Exception
     {
-        //for safety and uniformity
-        url = this.preprocessUri(url);
+        try {
+            //for safety and uniformity
+            url = this.preprocessUri(url);
 
-        //this just wraps the raw data coming in
-        HtmlSource source = new HtmlStringSource(url, content);
+            //this just wraps the raw data coming in
+            HtmlSource source = new HtmlStringSource(url, content);
 
-        //save the file to disk and pull all the proxies etc
-        Page savedPage = getPageStore().save(source, new PersonRepository().get(Authentication.getCurrentPrincipal()));
+            //save the file to disk and pull all the proxies etc
+            Page savedPage = getPageStore().save(source, new PersonRepository().get(Authentication.getCurrentPrincipal()));
 
-        //above method returns null if nothing changed (so nothing to re-index)
-        if (savedPage != null) {
-            //Note: transaction handling is done through the global XA transaction
-            getMainPageIndexer().connect().update(savedPage);
-            getTriplestoreIndexer().connect().update(savedPage);
+            //above method returns null if nothing changed (so nothing to re-index)
+            if (savedPage != null) {
+                //Note: transaction handling is done through the global XA transaction
+                getMainPageIndexer().connect().update(savedPage);
+                getTriplestoreIndexer().connect().update(savedPage);
+            }
+        }
+        //TODO this is just for debugging weird issues -> throw away when found
+        catch (Throwable e) {
+            final String delim = "---------------------------------------------------";
+            Logger.error("Caught error (and explicitly logging it) while saving page; "+url+"\n"+delim+"\n"+content+"\n"+delim, e);
+            throw e;
         }
 
         return Response.ok().build();
