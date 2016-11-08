@@ -360,6 +360,7 @@ iframe.edit {
 }
 
 ul.@{BLOCK_ACTIONS_CLASS} {
+  &:extend(.form-group);
   list-style-type: none;
   padding-left: 0;
 
@@ -572,9 +573,9 @@ ul.@{BLOCK_ACTIONS_CLASS} {
             overflow: auto; //make the menu act like a combobox
             &:extend(.dropdown-menu-@{formAlign});
             & > li {
-              //makes sense to align the values to the right
-              //because the list is aligned to the right of the combobox
-              text-align: right;
+              //it's a bit weird to align long lists of text to the right,
+              //don't do it, it's difficult to read (although the menu itself is aligned to the right)
+              text-align: left;
 
               & > a {
                 cursor: pointer;

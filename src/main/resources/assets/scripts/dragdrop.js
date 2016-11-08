@@ -326,10 +326,9 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
             var resourceEl = $(resourceArray[idx]);
 
             resourceEl.addClass(className);
-
-            var srcAttr = resourceEl.attr("src");
             $("head").append(resourceEl);
 
+            var srcAttr = resourceEl.attr("src");
             if (isScript && srcAttr) {
                 $.getScript(srcAttr)
                     .done(function (script, textStatus)
@@ -344,6 +343,9 @@ base.plugin("blocks.core.DragDrop", ["blocks.core.Broadcaster", "blocks.core.Lay
                     {
                         Notification.error(BlocksMessages.savePageError + (exception ? "; " + exception : ""), xhr);
                     });
+            }
+            else {
+                loadRecursiveHeadResources(resourceArray, idx+1, className, isScript);
             }
         }
     };

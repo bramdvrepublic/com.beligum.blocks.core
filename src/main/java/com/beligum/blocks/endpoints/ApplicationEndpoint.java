@@ -73,12 +73,29 @@ public class ApplicationEndpoint
             randomPage = "/" + randomPage;
         }
 
-        //security; rebuild the url instead of blindly accepting what comes in
-        //note: the randomURL doesn't include the query params; get them from the requestContext
-        URI requestedUri = UriBuilder.fromUri(R.configuration().getSiteDomain()).replacePath(randomPage.toString())
-                                     .replaceQuery(R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri().getQuery()).build();
+        //We allow the user to create any kind of URL since it can be typed in the browser
+        //However, the address is somehow mapped to disk, so make sure it's valid or redirect to an auto-fixed
+        //address when it's not valid. Because we'll parse the URL extensively, let's do it here, early on (see below)
+        String safePage = this.safePagePath(randomPage);
 
-        if (retVal==null) {
+        //security; rebuild the url instead of blindly accepting what comes in
+        URI requestedUri = UriBuilder.fromUri(R.configuration().getSiteDomain()).replacePath(safePage)
+                                     //note: the randomURL doesn't include the query params; get them from the requestContext
+                                     .replaceQuery(R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri().getQuery())
+                                     .build();
+
+        //force-redirect to a safe URL if we have permission, otherwise we assume the page doesn't exist,
+        // because it should never have been created in the first place (watch out with backwards compatibility though...)
+        if (!randomPage.equals(safePage)) {
+            if (!SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
+                throw new NotFoundException("Can't find this page because it's path ('"+randomPage+"') is invalid/unsafe; " + requestedUri);
+            }
+            else {
+                retVal = Response.seeOther(requestedUri);
+            }
+        }
+
+        if (retVal == null) {
             Page page = new ReadOnlyPage(requestedUri);
             // Since we allow the user to create pretty url's, it's mime type will not always be clear.
             // But not this endpoint only accepts HTML requests, so force the mime type
@@ -203,6 +220,8 @@ public class ApplicationEndpoint
                             // but when there's no such locale found, we try to redirect to the one requested by the browser
                             // and if all fails, we redirect to the default, configured locale
                             Locale requestedUriLocale = R.i18nFactory().getUrlLocale(requestedUri);
+
+                            //OPTION 4: no language in the URL, redirect to a new address with a detected language
                             if (requestedUriLocale == null) {
 
                                 //if a request comes in without URL language, we launch some heuristics to fill it in:
@@ -217,11 +236,12 @@ public class ApplicationEndpoint
 
                                 // 2) detect the language of the client's browser (keeping some settings into account)
                                 // 3) revert to default language if the requested browser's language is unsupported or if all else fails
-                                if (redirectLocale==null) {
+                                if (redirectLocale == null) {
                                     redirectLocale = R.i18nFactory().getBrowserLocale();
                                     //if the requested locale is supported by the site, use it, otherwise use the default locale
                                     //if the default is forced, use it no matter what
-                                    if (redirectLocale == null || Settings.instance().getForceRedirectToDefaultLocale() || !R.configuration().getLanguages().containsKey(redirectLocale.getLanguage())) {
+                                    if (redirectLocale == null || Settings.instance().getForceRedirectToDefaultLocale() ||
+                                        !R.configuration().getLanguages().containsKey(redirectLocale.getLanguage())) {
                                         redirectLocale = R.configuration().getDefaultLanguage();
                                     }
                                 }
@@ -241,6 +261,7 @@ public class ApplicationEndpoint
                                 }
                             }
 
+                            //this means we haven't redirected away to an address with a language
                             if (retVal == null) {
                                 if (!SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
                                     throw new NotFoundException("Can't find this page and you have no rights to create it; " + randomPage);
@@ -288,7 +309,7 @@ public class ApplicationEndpoint
                                             throw new InternalServerErrorException("Requested to create a new page with an invalid page template name; " + newPageTemplateName);
                                         }
                                     }
-                                    //OPTION 6: empty flash cache; show the page templates list
+                                    //OPTION 6: URL is not safe: fix it and redirect
                                     else {
                                         Template newPageTemplateList = new_page.get().getNewTemplate();
                                         newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_URL.getValue(), requestedUri.toString());
@@ -370,5 +391,36 @@ public class ApplicationEndpoint
         Collections.sort(pageTemplates, new MapComparator(core.Entries.NEW_PAGE_TEMPLATE_TITLE.getValue()));
 
         return pageTemplates;
+    }
+    /**
+     * This is modified version of StringFunctions.prepareSeoValue()
+     */
+    private String safePagePath(String path)
+    {
+        String retVal = path.trim();
+
+        if (!StringUtils.isEmpty(retVal)) {
+            //convert all special chars to ASCII
+            retVal = StringFunctions.webNormalizeString(retVal);
+            //this might be extended later on (note that we need to allow slashes because the path might have multiple segments)
+            retVal = retVal.replaceAll("[^a-zA-Z_0-9 -/]", "");
+            //replace whitespace with dashes
+            retVal = retVal.replaceAll("\\s+", "-");
+            //replace double dashes with single dashes
+            retVal = retVal.replaceAll("-+", "-");
+            //make sure the path doesn't begin or end with a dash
+            retVal = StringUtils.strip(retVal, "-");
+
+            //Note: don't do a toLowerCase, it messes up a lot of resource-addresses, eg. /resource/SmithMark/360
+
+            //see for inspiration: http://stackoverflow.com/questions/417142/what-is-the-maximum-length-of-a-url-in-different-browsers
+            final int MAX_LENGTH = 2000;
+            if (retVal.length() > MAX_LENGTH) {
+                retVal = retVal.substring(0, MAX_LENGTH);
+                retVal = retVal.substring(0, retVal.lastIndexOf("-"));
+            }
+        }
+
+        return retVal;
     }
 }

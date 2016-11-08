@@ -4,7 +4,7 @@
 /*
  * This is the abstract superclass that all widgets need to extend
  */
-base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.core", "base.core.Class", "base.core.Commons", "blocks.core.Notification", function (BlocksConstants, BlocksMessages, Class, Commons, Notification)
+base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.core", "constants.blocks.media.core", "base.core.Class", "base.core.Commons", "blocks.core.Notification", function (BlocksConstants, BlocksMessages, MediaConstants, Class, Commons, Notification)
 {
     var Widget = this;
 
@@ -914,16 +914,22 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
 
                     //TODO make this MediaCommonsConstants.HDFS_URL_BASE
                     if (selectedFilePath && selectedFilePath.indexOf('/webhdfs') === 0) {
-                        finderOptions.selectedFile = selectedFilePath;
+                        //decode it as the reverse of the encode below
+                        finderOptions[MediaConstants.FINDER_OPTIONS_SELECTED_FILE] = decodeURI(selectedFilePath);
                     }
 
                     finderOptions.onSelect = function (selectedFileUrls)
                     {
                         if (selectedFileUrls.length > 0) {
+                            //we can only select the first one
                             var fileUrl = selectedFileUrls[0];
                             if (fileUrl.charAt(0) !== "/") {
                                 fileUrl = "/" + fileUrl;
                             }
+
+                            //make sure special chars (like spaces) are parsed into valid URLs (eg. very important for RDFa parsing)
+                            //Note: don't use encodeURIComponent() or all slashes will be encoded too...
+                            fileUrl = encodeURI(fileUrl);
 
                             input.val(fileUrl);
                             input.change();
@@ -1209,7 +1215,7 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                 templates: {
                     empty: '<div class="tt-suggestion "' + BlocksConstants.INPUT_TYPE_RES_SUG_EMPTY_CLASS + '><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">' + 'No match for this query' + '</p></div>',
                     //we add title (hover) tags as well because the css will probably chop it off (ellipsis overflow)
-                    suggestion: Handlebars.compile('<div><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '" title="{{title}}">{{title}}</p><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_SUBTITLE_CLASS + '" title="{{subTitle}}">{{subTitle}}</p></div>')
+                    suggestion: Handlebars.compile('<div title="{{title}} - {{subTitle}}"><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">{{title}}</p><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_SUBTITLE_CLASS + '">{{subTitle}}</p></div>')
                 }
             };
             input.typeahead(options, dataSet);
