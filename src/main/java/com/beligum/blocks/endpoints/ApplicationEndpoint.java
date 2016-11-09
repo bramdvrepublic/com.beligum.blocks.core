@@ -87,11 +87,11 @@ public class ApplicationEndpoint
         //force-redirect to a safe URL if we have permission, otherwise we assume the page doesn't exist,
         // because it should never have been created in the first place (watch out with backwards compatibility though...)
         if (!randomPage.equals(safePage)) {
-            if (!SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
-                throw new NotFoundException("Can't find this page because it's path ('"+randomPage+"') is invalid/unsafe; " + requestedUri);
+            if (SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
+                retVal = Response.seeOther(requestedUri);
             }
             else {
-                retVal = Response.seeOther(requestedUri);
+                throw new NotFoundException("Can't find this page because it's path ('" + randomPage + "') is invalid or unsafe; " + requestedUri);
             }
         }
 
@@ -99,10 +99,8 @@ public class ApplicationEndpoint
             Page page = new ReadOnlyPage(requestedUri);
             // Since we allow the user to create pretty url's, it's mime type will not always be clear.
             // But not this endpoint only accepts HTML requests, so force the mime type
-            Resource
-                            resource =
-                            R.resourceFactory()
-                             .lookup(new HdfsResource(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), page.getResourcePath().getFileContext(), page.getNormalizedPageProxyPath()));
+            Resource resource = R.resourceFactory()
+                                 .lookup(new HdfsResource(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), page.getResourcePath().getFileContext(), page.getNormalizedPageProxyPath()));
 
             Locale optimalLocale = R.i18nFactory().getOptimalLocale();
             URI externalRedirectUri = null;
@@ -403,7 +401,7 @@ public class ApplicationEndpoint
             //convert all special chars to ASCII
             retVal = StringFunctions.webNormalizeString(retVal);
             //this might be extended later on (note that we need to allow slashes because the path might have multiple segments)
-            retVal = retVal.replaceAll("[^a-zA-Z_0-9 -/]", "");
+            retVal = retVal.replaceAll("[^a-zA-Z0-9_ \\-/.]", "");
             //replace whitespace with dashes
             retVal = retVal.replaceAll("\\s+", "-");
             //replace double dashes with single dashes
