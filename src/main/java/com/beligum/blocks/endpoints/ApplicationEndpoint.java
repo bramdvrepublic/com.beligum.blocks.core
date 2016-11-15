@@ -73,27 +73,11 @@ public class ApplicationEndpoint
             randomPage = "/" + randomPage;
         }
 
-        //We allow the user to create any kind of URL since it can be typed in the browser
-        //However, the address is somehow mapped to disk, so make sure it's valid or redirect to an auto-fixed
-        //address when it's not valid. Because we'll parse the URL extensively, let's do it here, early on (see below)
-        String safePage = this.safePagePath(randomPage);
-
         //security; rebuild the url instead of blindly accepting what comes in
-        URI requestedUri = UriBuilder.fromUri(R.configuration().getSiteDomain()).replacePath(safePage)
+        URI requestedUri = UriBuilder.fromUri(R.configuration().getSiteDomain()).replacePath(randomPage)
                                      //note: the randomURL doesn't include the query params; get them from the requestContext
                                      .replaceQuery(R.requestContext().getJaxRsRequest().getUriInfo().getRequestUri().getQuery())
                                      .build();
-
-        //force-redirect to a safe URL if we have permission, otherwise we assume the page doesn't exist,
-        // because it should never have been created in the first place (watch out with backwards compatibility though...)
-        if (!randomPage.equals(safePage)) {
-            if (SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
-                retVal = Response.seeOther(requestedUri);
-            }
-            else {
-                throw new NotFoundException("Can't find this page because it's path ('" + randomPage + "') is invalid or unsafe; " + requestedUri);
-            }
-        }
 
         if (retVal == null) {
             Page page = new ReadOnlyPage(requestedUri);
@@ -152,7 +136,8 @@ public class ApplicationEndpoint
                 // - OPTION 3: the page doesn't exist & the user has no rights -> 404
                 // - OPTION 4: the page doesn't exist & the user has create rights & no language present -> try to detect a decent language and redirect to a language-prefixed url (recursive call with roundtrip)
                 // - OPTION 5: the page doesn't exist & the user has create rights & language is present & page template in flash cache -> render a page template instance (not yet persisted)
-                // - OPTION 6: the page doesn't exist & the user has create rights & language is present & nothing in flash cache -> show new page selection list
+                // - OPTION 6: the page doesn't exist & the user has create rights & language is present & nothing in flash cache & page slug is unsafe -> redirect to safe variant
+                // - OPTION 7: the page doesn't exist & the user has create rights & language is present & nothing in flash cache & page slug is safe -> show new page selection list
                 else {
 
                     //OPTION 1: before we give up and say the page doesn't exist, search for it's aliases first
@@ -306,15 +291,28 @@ public class ApplicationEndpoint
                                             throw new InternalServerErrorException("Requested to create a new page with an invalid page template name; " + newPageTemplateName);
                                         }
                                     }
-                                    //OPTION 6: URL is not safe: fix it and redirect
+                                    //here, the page doesn't exist, but we can create it
                                     else {
-                                        Template newPageTemplateList = new_page.get().getNewTemplate();
-                                        newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_URL.getValue(), requestedUri.toString());
-                                        newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TEMPLATES.getValue(), this.buildLocalizedPageTemplateMap());
 
-                                        //Note: we don't set the edit mode for safety: it makes sure the user has no means to save the in-between selection page
+                                        //We allow the user to create any kind of URL since it can be typed in the browser
+                                        //However, the address is somehow mapped to disk, so make sure it's valid or redirect to an auto-fixed
+                                        //address when it's not valid. Because we'll parse the URL extensively, let's do it here, early on (see below)
+                                        String safePage = this.safePagePath(randomPage);
 
-                                        retVal = Response.ok(newPageTemplateList);
+                                        //OPTION 6: URL is not safe: fix it and redirect
+                                        if (!randomPage.equals(safePage)) {
+                                            retVal = Response.seeOther(UriBuilder.fromUri(requestedUri).replacePath(safePage).build());
+                                        }
+                                        //OPTION 7: show the create-new page list
+                                        else {
+                                            Template newPageTemplateList = new_page.get().getNewTemplate();
+                                            newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_URL.getValue(), requestedUri.toString());
+                                            newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TEMPLATES.getValue(), this.buildLocalizedPageTemplateMap());
+
+                                            //Note: we don't set the edit mode for safety: it makes sure the user has no means to save the in-between selection page
+
+                                            retVal = Response.ok(newPageTemplateList);
+                                        }
                                     }
                                 }
                             }
