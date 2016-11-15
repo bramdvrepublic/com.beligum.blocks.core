@@ -30,6 +30,7 @@ import org.apache.lucene.store.FSDirectory;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -262,7 +263,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
     }
     private void printLuceneIndex() throws IOException
     {
-        Directory dir = FSDirectory.open(Settings.instance().getPageMainIndexFolder());
+        Directory dir = FSDirectory.open(Paths.get(Settings.instance().getPageMainIndexFolder()));
 
         try (IndexReader reader = DirectoryReader.open(dir)) {
             int numDocs = reader.numDocs();
@@ -278,7 +279,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
             //make sure the basic structure to read stuff exists
             this.assertBasicStructure();
 
-            IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Settings.instance().getPageMainIndexFolder()));
+            IndexReader indexReader = DirectoryReader.open(FSDirectory.open(Paths.get(Settings.instance().getPageMainIndexFolder())));
             IndexSearcher indexSearcher = new IndexSearcher(indexReader);
 
             R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_SEARCHER, indexSearcher);
@@ -327,7 +328,8 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
      */
     private IndexWriter buildNewLuceneIndexWriter() throws IOException
     {
-        final java.nio.file.Path docDir = Settings.instance().getPageMainIndexFolder();
+        final java.nio.file.Path docDir = Paths.get(Settings.instance().getPageMainIndexFolder());
+
         if (!Files.exists(docDir)) {
             Files.createDirectories(docDir);
         }
@@ -343,7 +345,7 @@ public class LucenePageIndexerConnection extends AbstractIndexConnection impleme
         //we built it at least once, save that for later checking
         R.cacheManager().getApplicationCache().put(CacheKeys.LUCENE_INDEX_BOOTED, true);
 
-        return new IndexWriter(FSDirectory.open(Settings.instance().getPageMainIndexFolder()), iwc);
+        return new IndexWriter(FSDirectory.open(docDir), iwc);
     }
     private void assertBasicStructure() throws IOException
     {

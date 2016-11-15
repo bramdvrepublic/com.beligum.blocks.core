@@ -32,6 +32,8 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.im
         },
 
         editorStyles: [],
+        //will keep an object with tag names that contain objects
+        allTags: {},
 
         //-----CONSTRUCTORS-----
         constructor: function (options)
@@ -118,8 +120,53 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.im
             var button = $('<div class="dropdown btn-group medium-editor-action"/>');
             var toggle = $('<button id="' + id + '" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Style <span class="caret"></span></button>');
 
-            var styles = $('<ul class="dropdown-menu" aria-labelledby="' + id + '"/>');
+            //indicate the selected style on opening of the dropdown
+            var _this = this;
+            toggle.click(function (e)
+            {
+                //only trigger while opening, not on close
+                if (toggle.attr('aria-expanded') == 'false') {
+                    //reset all combo list items
+                    button.find('ul.dropdown-menu li').removeClass('active');
 
+                    var selectedElements = _this._findSelection();
+                    for (var i = 0; i < selectedElements.length; i++) {
+                        var el = selectedElements[i];
+
+                        var ref = _this.allTags[el.tagName];
+                        if (ref) {
+                            //this will hold the selected ref-class entry
+                            var selected = null;
+
+                            //first, we try to find the most specific class by iterating over all classes of the element
+                            // and see if we have something configured for that class -> in that case, both tag and class match
+                            if (el.element.hasAttribute('class')) {
+                                var elClasses = el.element.attr('class').trim().split(" ");
+                                for (var i = 0; i < elClasses.length; ++i) {
+                                    var cl = ref[elClasses[i]];
+                                    if (cl) {
+                                        selected = cl;
+                                    }
+                                }
+                            }
+
+                            //if nothing was found, we stil know the tag name is right,
+                            // so try the general-case (with empty class name)
+                            if (!selected) {
+                                selected = ref[''];
+                            }
+
+                            //if we found something, mark it selected
+                            if (selected) {
+                                selected.li.addClass('active');
+                            }
+                        }
+                    }
+                }
+            });
+
+            this.allTags = {};
+            var styles = $('<ul class="dropdown-menu" aria-labelledby="' + id + '"/>');
             for (var i = 0; i < this.editorStyles.length; i++) {
                 var val = this.editorStyles[i];
 
@@ -142,7 +189,35 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.im
                         $('#' + id).dropdown("toggle");
                     }.bind(this));
 
-                    styles.append($('<li></li>').append(btn));
+
+                    var newLi = $('<li></li>').append(btn);
+                    styles.append(newLi);
+
+                    //save everything in a structured list
+                    //let's void weird config values
+                    if (val.value.indexOf(':') >= 0) {
+                        var config = val.value.split(':');
+                        var tag = config[0].trim().toLowerCase();
+                        var clazz = config[1].trim();
+                        //uniformly handle empty classes
+                        if (!clazz) {
+                            clazz = '';
+                        }
+                        //don't keep references to empty tags
+                        if (tag && tag !== '') {
+                            //new entry, create the object
+                            if (!(tag in this.allTags)) {
+                                this.allTags[tag] = {};
+                            }
+
+                            //create a structure (the li will be filled later on, see below)
+                            this.allTags[tag][clazz] = {
+                                'text': val.text,
+                                'value': val.value,
+                                'li': newLi
+                            };
+                        }
+                    }
                 }
             }
 
@@ -155,22 +230,22 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.im
             this.base.saveSelection();
 
             var arguments = configValue.split(':');
-            var tag = arguments[0].trim();
-            var classes = arguments[1].trim();
+            var tag = arguments[0].trim().toLowerCase();
+            var clazz = arguments[1].trim();
 
             var selectedElements = this._findSelection();
 
             for (var i = 0; i < selectedElements.length; i++) {
                 var el = selectedElements[i].element;
                 if (tag != "") {
-                    var ne = $("<" + tag + "/>");
-                    ne.html(el.html());
-                    el.replaceWith(ne);
-                    selectedElements[i].element = ne;
+                    var newEl = $("<" + tag + "/>");
+                    newEl.html(el.html());
+                    el.replaceWith(newEl);
+                    selectedElements[i].element = newEl;
                 }
 
-                if (classes != "") {
-                    selectedElements[i].element.addClass(arguments[1].trim());
+                if (clazz != "") {
+                    selectedElements[i].element.addClass(clazz);
                 } else {
                     selectedElements[i].element.removeAttr("class");
                 }
@@ -184,7 +259,6 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.im
         },
         _findSelection: function ()
         {
-            var blockContainerElementNames = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre'];
             var elements = MediumEditor.selection.getSelectedElements(this.document);
             if (elements.length == 0) {
                 elements.push(MediumEditor.selection.getSelectedParentElement(MediumEditor.selection.getSelectionRange(this.document)));
@@ -198,7 +272,7 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.im
                 // so filter the children out
                 if (lastElement == null || lastElement.has(el).length == 0) {
                     //don't let the loop go all the way up the DOM, block at body
-                    while (!el.attr("content-editable") && el[0].nodeName.toLowerCase() !== "body" && blockContainerElementNames.indexOf(el[0].nodeName.toLowerCase()) == -1) {
+                    while (!el.attr("content-editable") && el[0].nodeName.toLowerCase() !== "body" && !(el[0].nodeName.toLowerCase() in this.allTags)) {
                         el = el.parent()
                     }
                     //if we searched all the way up till the body, we couldn't find the parent and something's wrong

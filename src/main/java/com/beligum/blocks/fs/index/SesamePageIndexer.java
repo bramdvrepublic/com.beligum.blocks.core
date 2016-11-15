@@ -11,6 +11,8 @@ import org.openrdf.sail.lucene.LuceneSail;
 import org.openrdf.sail.nativerdf.NativeStore;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 /**
  * Created by bram on 1/26/16.
@@ -58,12 +60,25 @@ public class SesamePageIndexer implements PageIndexer
             if (!R.cacheManager().getApplicationCache().containsKey(CacheKeys.TRIPLESTORE_ENGINE)) {
 
                 try {
+                    final java.nio.file.Path tsDir = Paths.get(Settings.instance().getPageTripleStoreFolder());
+                    if (!Files.exists(tsDir)) {
+                        Files.createDirectories(tsDir);
+                    }
+
                     //create the repository for the linked data
-                    NativeStore dataRepo = new NativeStore(Settings.instance().getPageTripleStoreFolder().resolve(DATA_SUBDIR).toFile());
+                    final java.nio.file.Path dataDir = tsDir.resolve(DATA_SUBDIR);
+                    if (!Files.exists(dataDir)) {
+                        Files.createDirectories(dataDir);
+                    }
+                    NativeStore dataRepo = new NativeStore(dataDir.toFile());
 
                     //create the repository for the lucene index
                     LuceneSail indexRepo = new LuceneSail();
-                    indexRepo.setParameter(LuceneSail.LUCENE_DIR_KEY, Settings.instance().getPageTripleStoreFolder().resolve(SesamePageIndexer.INDEX_SUBDIR).toFile().getAbsolutePath());
+                    final java.nio.file.Path indexDir = tsDir.resolve(INDEX_SUBDIR);
+                    if (!Files.exists(indexDir)) {
+                        Files.createDirectories(indexDir);
+                    }
+                    indexRepo.setParameter(LuceneSail.LUCENE_DIR_KEY, indexDir.toFile().getAbsolutePath());
 
                     //link both together
                     indexRepo.setBaseSail(dataRepo);

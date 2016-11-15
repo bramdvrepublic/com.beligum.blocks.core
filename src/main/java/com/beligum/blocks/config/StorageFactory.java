@@ -39,9 +39,11 @@ import org.xadisk.filesystem.standalone.StandaloneFileSystemConfiguration;
 import javax.transaction.Status;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -289,9 +291,14 @@ public class StorageFactory
     {
         synchronized (txManagerLock) {
             if (!cacheManager().getApplicationCache().containsKey(CacheKeys.XADISK_FILE_SYSTEM)) {
-                File dir = Settings.instance().getPagesStoreJournalDir();
+                URI dir = Settings.instance().getPagesStoreJournalDir();
                 if (dir != null) {
-                    StandaloneFileSystemConfiguration cfg = new StandaloneFileSystemConfiguration(dir.getAbsolutePath(), Settings.instance().getPagesStoreJournalId());
+                    Path journalDir = Paths.get(dir);
+                    if (!Files.exists(journalDir)) {
+                        Files.createDirectories(journalDir);
+                    }
+
+                    StandaloneFileSystemConfiguration cfg = new StandaloneFileSystemConfiguration(journalDir.toFile().getAbsolutePath(), Settings.instance().getPagesStoreJournalId());
                     //cfg.setTransactionTimeout(Settings.instance().getSubTransactionTimeoutSeconds());
 
                     XAFileSystem xafs = XAFileSystemProxy.bootNativeXAFileSystem(cfg);

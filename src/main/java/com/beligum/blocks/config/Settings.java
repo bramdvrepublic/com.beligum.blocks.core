@@ -7,8 +7,8 @@ import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.transaction.TransactionManager;
-import java.io.File;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -23,34 +23,46 @@ public class Settings
     public static final String RESOURCE_ENDPOINT = "/resource/";
 
     private static final String TRANSACTIONS_PROPERTIES_KEY = "blocks.core.transactions.properties.property";
-    private static final String PAGES_HDFS_PROPERTIES_KEY = "blocks.core.pages.hdfs.properties.property";
     private static final String TRANSACTION_MANAGER_KEY = "blocks.core.transactions.transaction-manager";
     private static final String TRANSACTION_TIMEOUT_KEY = "blocks.core.transactions.timeout";
+    private static final int DEFAULT_TRANSACTION_TIMEOUT_MILLIS = 16000;
+    private static final Map<String, String> DEFAULT_TRANSACTION_MANAGER_PROPS = ImmutableMap.<String, String>builder().build();
 
-    private static final String DEFAULT_FILE_EXT = ".html";
-    private static final String DEFAULT_LOCK_FILE_EXT = ".lock";
+    private static final String CONTEXT_LOCAL_ROOT_DIR_KEY = "blocks.core.context.local.root-dir";
+    private static final String CONTEXT_DEFAULT_PAGES_DIR = "pages";
+    //this constant wil be used from the blocks-media module, but is defined here to group the subdirs together a little bit...
+    public static final String CONTEXT_DEFAULT_MEDIA_DIR = "media";
+
+    private static final String PAGES_HDFS_PROPERTIES_KEY = "blocks.core.pages.hdfs.properties.property";
+    private static final String PAGES_DEFAULT_FILE_EXT = ".html";
+    private static final String PAGES_DEFAULT_LOCK_FILE_EXT = ".lock";
+    private static final String PAGES_DEFAULT_INDEX_FOLDER = "index";
+    private static final String PAGES_DEFAULT_JOURNAL_FOLDER = "journal";
+    private static final String PAGES_DEFAULT_TRIPLESTORE_FOLDER = "triplestore";
+    //currently unused because it's configured through <system-properties> in base-core
+    private static final String PAGES_DEFAULT_TRANSACTIONS_FOLDER = "tx";
+    private static final String PAGES_DEFAULT_DATA_FOLDER = "data";
 
     private static final String DEFAULT_XADISK_INSTANCE_ID = "xa-1";
     private static final long DEFAULT_XADISK_BOOT_TIMEOUT = 60 * 1000; //1 minute
     private static final String DEFAULT_GEONAMES_USERNAME = "demo";
-    private static final int DEFAULT_TRANSACTION_TIMEOUT_MILLIS = 16000;
-    private static final Map<String, String> DEFAULT_TRANSACTION_MANAGER_PROPS = ImmutableMap.<String, String>builder()
-                    .build();
 
     private static Settings instance;
+    private URI cachedContextLocalRootDir;
     private URI cachedRdfOntologyUri;
     private boolean triedRdfOntologyUri;
     private URI cachedPagesStorePath;
     private URI cachedPagesViewPath;
+    private URI cachedPagesStoreJournalDir;
+    private URI cachedPagesMainIndexDir;
+    private URI cachedPagesTripleStoreDir;
     private Class<? extends TransactionManager> cachedTransactionManagerClass;
     protected HashMap<String, String> cachedTransactionsProperties = null;
-    private File cachedPagesStoreJournalDir;
     protected HashMap<String, String> cachedHdfsProperties = null;
     protected HashMap<String, String> cachedEsProperties = null;
-    private Path cachedPagesMainIndexDir;
-    private Path cachedPagesTripleStoreDir;
     private String cachedPagesFileExtension;
     private String cachedPagesLockFileExtension;
+    private String cachedGeonamesUsername;
 
     private Settings()
     {
@@ -66,11 +78,59 @@ public class Settings
 
     public boolean hasBlocksConfig()
     {
-        return R.configuration().getMaxIndex("blocks")>=0;
+        return R.configuration().getMaxIndex("blocks") >= 0;
     }
     public boolean hasBlocksCoreConfig()
     {
-        return R.configuration().getMaxIndex("blocks.core")>=0;
+        return R.configuration().getMaxIndex("blocks.core") >= 0;
+    }
+    public URI getLocalContextRootDir()
+    {
+        if (this.cachedContextLocalRootDir == null) {
+            String dir = R.configuration().getString(CONTEXT_LOCAL_ROOT_DIR_KEY, null);
+            if (!StringUtils.isEmpty(dir)) {
+                //this is used to resolve files on, so make sure it's always a formal directory
+                if (!dir.endsWith("/")) {
+                    dir += "/";
+                }
+
+                this.cachedContextLocalRootDir = URI.create(dir);
+
+                //make sure we have a schema
+                if (StringUtils.isEmpty(this.cachedContextLocalRootDir.getScheme())) {
+                    //setting-name says we're in local context, so add the default local "file" schema prefix
+                    this.cachedContextLocalRootDir = URI.create("file" + "://" + this.cachedContextLocalRootDir.toString());
+                }
+            }
+
+            if (this.cachedContextLocalRootDir == null) {
+                throw new RuntimeException("Unable to find the context root dir setting (" + CONTEXT_LOCAL_ROOT_DIR_KEY + "), can't continue");
+            }
+        }
+
+        return this.cachedContextLocalRootDir;
+    }
+    public URI getLocalContextSubdir(String subdirName, boolean checkIfExists)
+    {
+        if (!subdirName.endsWith("/")) {
+            subdirName = subdirName + "/";
+        }
+
+        URI retVal = Settings.instance().getLocalContextRootDir().resolve(subdirName);
+
+        if (checkIfExists) {
+            Path localPagesRoot = Paths.get(retVal);
+            if (!Files.exists(localPagesRoot)) {
+                try {
+                    Files.createDirectories(localPagesRoot);
+                }
+                catch (Exception e) {
+                    throw new RuntimeException("Error while creating the pages root dir, can't continue; " + localPagesRoot, e);
+                }
+            }
+        }
+
+        return retVal;
     }
     /**
      * Flag that indicates if we should redirect to the default locale of the site on creating a language-less new page.
@@ -89,7 +149,7 @@ public class Settings
                 this.cachedTransactionManagerClass = (Class<? extends TransactionManager>) Class.forName(classname);
             }
             catch (ClassNotFoundException e) {
-                throw new RuntimeException("Unable to instantiate configured transaction manager for class "+classname, e);
+                throw new RuntimeException("Unable to instantiate configured transaction manager for class " + classname, e);
             }
         }
 
@@ -107,7 +167,7 @@ public class Settings
             }
 
             //Don't default values that have been set explicitly
-            for (Map.Entry<String, String> e: DEFAULT_TRANSACTION_MANAGER_PROPS.entrySet()) {
+            for (Map.Entry<String, String> e : DEFAULT_TRANSACTION_MANAGER_PROPS.entrySet()) {
                 if (!this.cachedTransactionsProperties.containsKey(e.getKey())) {
                     this.cachedTransactionsProperties.put(e.getKey(), e.getValue());
                 }
@@ -130,12 +190,21 @@ public class Settings
     public URI getPagesStorePath()
     {
         if (this.cachedPagesStorePath == null) {
-            String path = R.configuration().getString("blocks.core.pages.store-path");
-            //this is used to resolve files on, so make sure it's always a formal directory
-            if (!path.endsWith("/")) {
-                path += "/";
+            String dir = R.configuration().getString("blocks.core.pages.store-path");
+
+            if (!StringUtils.isEmpty(dir)) {
+                Logger.warn("Using custom pages data dir; " + dir);
+
+                //this is used to resolve files on, so make sure it's always a formal directory
+                if (!dir.endsWith("/")) {
+                    dir += "/";
+                }
+
+                this.cachedPagesStorePath = URI.create(dir);
             }
-            this.cachedPagesStorePath = URI.create(path);
+            else {
+                this.cachedPagesStorePath = this.getPagesRoot().resolve(PAGES_DEFAULT_DATA_FOLDER+"/");
+            }
 
             if (StringUtils.isEmpty(this.cachedPagesStorePath.getScheme())) {
                 //make sure we have a schema
@@ -150,39 +219,100 @@ public class Settings
     public URI getPagesViewPath()
     {
         if (this.cachedPagesViewPath == null) {
-            String path = R.configuration().getString("blocks.core.pages.view-path", null);
-            if (path == null) {
-                this.cachedPagesViewPath = URI.create(StorageFactory.DEFAULT_PAGES_VIEW_FS_SCHEME + ":" + this.getPagesStorePath().getSchemeSpecificPart());
-                Logger.info("No pages view store path configured, trying to build a local view path based on the pages store path; " + this.cachedPagesViewPath);
+            String dir = R.configuration().getString("blocks.core.pages.view-path", null);
+
+            if (!StringUtils.isEmpty(dir)) {
+                Logger.warn("Using custom pages view path; " + dir);
+
+                //this is used to resolve files on, so make sure it's always a formal directory
+                if (!dir.endsWith("/")) {
+                    dir += "/";
+                }
+
+                this.cachedPagesViewPath = URI.create(dir);
             }
             else {
-                //this is used to resolve files on, so make sure it's always a formal directory
-                if (!path.endsWith("/")) {
-                    path += "/";
-                }
-                this.cachedPagesViewPath = URI.create(path);
+                this.cachedPagesViewPath = URI.create(StorageFactory.DEFAULT_PAGES_VIEW_FS_SCHEME + ":" + this.getPagesStorePath().getSchemeSpecificPart());
+                Logger.warn("No pages view store path configured, trying to build a local view path based on the pages store path; " + this.cachedPagesViewPath);
             }
 
+            //make sure we have a schema
             if (StringUtils.isEmpty(this.cachedPagesViewPath.getScheme())) {
-                //make sure we have a schema
                 this.cachedPagesViewPath = URI.create(StorageFactory.DEFAULT_PAGES_VIEW_FS_SCHEME + "://" + this.cachedPagesViewPath.toString());
-                Logger.warn("The page store path doesn't have a schema, adding the HDFS '" + StorageFactory.DEFAULT_PAGES_VIEW_FS_SCHEME + "://' prefix to use the local file system; " + this.cachedPagesViewPath.toString());
+                Logger.warn("The page store path doesn't have a schema, adding the HDFS '" + StorageFactory.DEFAULT_PAGES_VIEW_FS_SCHEME + "://' prefix to use the local file system; " +
+                            this.cachedPagesViewPath.toString());
             }
         }
 
         return this.cachedPagesViewPath;
     }
-    public File getPagesStoreJournalDir()
+    public URI getPagesStoreJournalDir()
     {
         if (this.cachedPagesStoreJournalDir == null) {
+            String dir = R.configuration().getString("blocks.core.pages.journal-dir", null);
+
             //Note: the journal dir resides on the local, naked file system, watch out you don't point to a dir in the distributed or transactional fs
-            String path = R.configuration().getString("blocks.core.pages.journal-dir");
-            if (!StringUtils.isEmpty(path)) {
-                this.cachedPagesStoreJournalDir = new File(path);
+            if (dir != null) {
+                Logger.warn("Using custom pages journal dir; " + dir);
+
+                //this is used to resolve files on, so make sure it's always a formal directory
+                if (!dir.endsWith("/")) {
+                    dir += "/";
+                }
+
+                this.cachedPagesStoreJournalDir = URI.create(dir);
+            }
+            else {
+                this.cachedPagesStoreJournalDir = this.getPagesRoot().resolve(PAGES_DEFAULT_JOURNAL_FOLDER+"/");
             }
         }
 
         return this.cachedPagesStoreJournalDir;
+    }
+    public URI getPageMainIndexFolder()
+    {
+        if (this.cachedPagesMainIndexDir == null) {
+            String dir = R.configuration().getString("blocks.core.pages.main-index.dir", null);
+
+            //Note: the journal dir resides on the local, naked file system, watch out you don't point to a dir in the distributed or transactional fs
+            if (dir != null) {
+                Logger.warn("Using custom pages index dir; " + dir);
+
+                //this is used to resolve files on, so make sure it's always a formal directory
+                if (!dir.endsWith("/")) {
+                    dir += "/";
+                }
+
+                this.cachedPagesMainIndexDir = URI.create(dir);
+            }
+            else {
+                this.cachedPagesMainIndexDir = this.getPagesRoot().resolve(PAGES_DEFAULT_INDEX_FOLDER+"/");
+            }
+        }
+
+        return this.cachedPagesMainIndexDir;
+    }
+    public URI getPageTripleStoreFolder()
+    {
+        if (this.cachedPagesTripleStoreDir == null) {
+            String dir = R.configuration().getString("blocks.core.pages.triple-store.dir", null);
+
+            if (dir != null) {
+                Logger.warn("Using custom pages triple store dir; " + dir);
+
+                //this is used to resolve files on, so make sure it's always a formal directory
+                if (!dir.endsWith("/")) {
+                    dir += "/";
+                }
+
+                this.cachedPagesTripleStoreDir = URI.create(dir);
+            }
+            else {
+                this.cachedPagesTripleStoreDir = this.getPagesRoot().resolve(PAGES_DEFAULT_TRIPLESTORE_FOLDER+"/");
+            }
+        }
+
+        return this.cachedPagesTripleStoreDir;
     }
     public String getPagesStoreJournalId()
     {
@@ -211,8 +341,8 @@ public class Settings
      */
     public String getPagesFileExtension()
     {
-        if (this.cachedPagesFileExtension==null) {
-            this.cachedPagesFileExtension = R.configuration().getString("blocks.core.pages.file-ext", DEFAULT_FILE_EXT);
+        if (this.cachedPagesFileExtension == null) {
+            this.cachedPagesFileExtension = R.configuration().getString("blocks.core.pages.file-ext", PAGES_DEFAULT_FILE_EXT);
         }
 
         return this.cachedPagesFileExtension;
@@ -222,29 +352,11 @@ public class Settings
      */
     public String getPagesLockFileExtension()
     {
-        if (this.cachedPagesLockFileExtension==null) {
-            this.cachedPagesLockFileExtension = R.configuration().getString("blocks.core.pages.lock-file-ext", DEFAULT_LOCK_FILE_EXT);
+        if (this.cachedPagesLockFileExtension == null) {
+            this.cachedPagesLockFileExtension = R.configuration().getString("blocks.core.pages.lock-file-ext", PAGES_DEFAULT_LOCK_FILE_EXT);
         }
 
         return this.cachedPagesLockFileExtension;
-    }
-    public Path getPageMainIndexFolder()
-    {
-        if (this.cachedPagesMainIndexDir == null) {
-            //Note: the journal dir resides on the local, naked file system, watch out you don't point to a dir in the distributed or transactional fs
-            this.cachedPagesMainIndexDir = Paths.get(R.configuration().getString("blocks.core.pages.main-index.dir"));
-        }
-
-        return this.cachedPagesMainIndexDir;
-    }
-    public Path getPageTripleStoreFolder()
-    {
-        if (this.cachedPagesTripleStoreDir == null) {
-            //Note: the journal dir resides on the local, naked file system, watch out you don't point to a dir in the distributed or transactional fs
-            this.cachedPagesTripleStoreDir = Paths.get(R.configuration().getString("blocks.core.pages.triple-store.dir"));
-        }
-
-        return this.cachedPagesTripleStoreDir;
     }
     public URI getRdfOntologyUri()
     {
@@ -269,23 +381,20 @@ public class Settings
     }
     public String getGeonamesUsername()
     {
-        String retVal = R.configuration().getString("blocks.core.geonames.username", null);
-        if (retVal==null) {
-            Logger.warn("No geonames username specified, using default username '"+DEFAULT_GEONAMES_USERNAME+"', but this is not optimal...");
-            retVal = DEFAULT_GEONAMES_USERNAME;
+        if (this.cachedGeonamesUsername==null) {
+            this.cachedGeonamesUsername = R.configuration().getString("blocks.core.geonames.username", null);
+            if (this.cachedGeonamesUsername == null) {
+                Logger.warn("No geonames username specified, using default username '" + DEFAULT_GEONAMES_USERNAME + "', but this is not optimal...");
+                this.cachedGeonamesUsername = DEFAULT_GEONAMES_USERNAME;
+            }
         }
 
-        return retVal;
+        return this.cachedGeonamesUsername;
     }
-    public String getGoogleMapsApiKey()
+
+    //-----PRIVATE METHODS-----
+    private URI getPagesRoot()
     {
-        String retVal = R.configuration().getString("blocks.core.google-maps.api-key", null);
-
-        if (retVal==null) {
-            Logger.warn("No Google Maps API key specified, using empty string, but this will probably yield errors...");
-            retVal = "";
-        }
-
-        return retVal;
+        return getLocalContextSubdir(CONTEXT_DEFAULT_PAGES_DIR, true);
     }
 }

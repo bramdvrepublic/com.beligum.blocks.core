@@ -294,9 +294,8 @@ public class ApplicationEndpoint
                                         //check if the name exists and is all right
                                         HtmlTemplate pageTemplate = HtmlParser.getTemplateCache().getByTagName(newPageTemplateName);
                                         if (pageTemplate != null && pageTemplate instanceof PageTemplate) {
-                                            Template
-                                                            newPageInstance =
-                                                            R.templateEngine().getNewTemplate(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), pageTemplate.createNewHtmlInstance());
+                                            Template newPageInstance = R.templateEngine().getNewTemplate(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML),
+                                                                                                         pageTemplate.createNewHtmlInstance());
 
                                             //this will allow the blocks javascript/css to be included
                                             this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, newPageInstance);
@@ -312,6 +311,8 @@ public class ApplicationEndpoint
                                         Template newPageTemplateList = new_page.get().getNewTemplate();
                                         newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_URL.getValue(), requestedUri.toString());
                                         newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TEMPLATES.getValue(), this.buildLocalizedPageTemplateMap());
+
+                                        //Note: we don't set the edit mode for safety: it makes sure the user has no means to save the in-between selection page
 
                                         retVal = Response.ok(newPageTemplateList);
                                     }

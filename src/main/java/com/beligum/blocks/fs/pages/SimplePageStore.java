@@ -2,6 +2,7 @@ package com.beligum.blocks.fs.pages;
 
 import com.beligum.base.auth.models.Person;
 import com.beligum.base.server.R;
+import com.beligum.base.utils.Logger;
 import com.beligum.blocks.config.Settings;
 import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.HdfsResourcePath;
@@ -54,9 +55,10 @@ public class SimplePageStore implements PageStore
     @Override
     public void init() throws IOException
     {
-        Path pagesRoot = new Path(settings.getPagesStorePath());
+        Path pagesRoot = new Path(this.settings.getPagesStorePath());
         FileContext fs = StorageFactory.getPageStoreFileSystem();
-        if (fs.util().exists(pagesRoot) && settings.getDeleteLocksOnStartup()) {
+        if (fs.util().exists(pagesRoot) && this.settings.getDeleteLocksOnStartup()) {
+            Logger.warn("Deleting all (possibly stale) lock files under pages root, this might take some time; "+pagesRoot);
             HdfsUtils.recursiveDeleteLockFiles(fs, pagesRoot);
         }
     }

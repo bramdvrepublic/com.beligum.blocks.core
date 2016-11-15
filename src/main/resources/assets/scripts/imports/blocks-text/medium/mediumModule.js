@@ -36,11 +36,18 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
             buttonLabels: 'fontawesome'
         };
 
-        var stylePicker = new Extensions.StylesPicker({});
-        stylePicker.setStyles(stylePickerStyles);
+        var stylePicker = null;
+        if (stylePickerStyles && stylePickerStyles.length>0) {
+            stylePicker = new Extensions.StylesPicker({});
+            stylePicker.setStyles(stylePickerStyles);
+        }
 
         options.extensions = {};
-        options.extensions[Extensions.StylesPicker.NAME] = stylePicker;
+
+        //don't add the styles combobox if we don't have styles
+        if (stylePicker) {
+            options.extensions[Extensions.StylesPicker.NAME] = stylePicker;
+        }
         options.extensions[Extensions.LinkInput.NAME] = new Extensions.LinkInput({});
 
         if (!hideToolbar) {
