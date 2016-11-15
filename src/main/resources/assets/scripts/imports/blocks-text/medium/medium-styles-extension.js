@@ -2,7 +2,7 @@
  * Created by wouter on 8/07/15.
  */
 
-base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.imports.Widget", "blocks.core.Sidebar", "base.core.Commons", function (Class, Widget, Sidebar, Commons)
+base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.imports.Widget", "blocks.core.Sidebar", "base.core.Commons", "constants.blocks.core", function (Class, Widget, Sidebar, Commons, BlocksConstants)
 {
     var MediumEditorExtensions = this;
 
@@ -117,7 +117,7 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.im
         _createButtonElement: function ()
         {
             var id = Commons.generateId();
-            var button = $('<div class="dropdown btn-group medium-editor-action"/>');
+            var button = $('<div class="dropdown btn-group '+BlocksConstants.TEXT_EDITOR_STYLES_CLASS+'"/>');
             var toggle = $('<button id="' + id + '" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Style <span class="caret"></span></button>');
 
             //indicate the selected style on opening of the dropdown

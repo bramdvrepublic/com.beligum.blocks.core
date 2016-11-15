@@ -860,6 +860,26 @@ ul.@{BLOCK_ACTIONS_CLASS} {
   }
 }
 
+.@{TEXT_EDITOR_STYLES_CLASS} {
+  ul {
+    li {
+      &.active {
+        a {
+          //we diminish the color a bit because bright primary is very bright
+          background-color: lighten(@dropdown-link-active-bg, 45%);
+          color: @dropdown-link-color;
+
+          //normal hover re-activates the bright primary, override
+          &:hover {
+            color: @dropdown-link-hover-color;
+            background-color: @dropdown-link-hover-bg;
+          }
+        }
+      }
+    }
+  }
+}
+
 
 
 
