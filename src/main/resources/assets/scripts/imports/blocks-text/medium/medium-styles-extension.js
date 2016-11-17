@@ -117,7 +117,7 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.im
         _createButtonElement: function ()
         {
             var id = Commons.generateId();
-            var button = $('<div class="dropdown btn-group '+BlocksConstants.TEXT_EDITOR_STYLES_CLASS+'"/>');
+            var button = $('<div class="dropdown btn-group ' + BlocksConstants.TEXT_EDITOR_STYLES_CLASS + '"/>');
             var toggle = $('<button id="' + id + '" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Style <span class="caret"></span></button>');
 
             //indicate the selected style on opening of the dropdown
@@ -129,37 +129,13 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.im
                     //reset all combo list items
                     button.find('ul.dropdown-menu li').removeClass('active');
 
-                    var selectedElements = _this._findSelection();
+                    var selectedElements = _this._findSelectedElements();
                     for (var i = 0; i < selectedElements.length; i++) {
                         var el = selectedElements[i];
 
-                        var ref = _this.allTags[el.tagName];
-                        if (ref) {
-                            //this will hold the selected ref-class entry
-                            var selected = null;
-
-                            //first, we try to find the most specific class by iterating over all classes of the element
-                            // and see if we have something configured for that class -> in that case, both tag and class match
-                            if (el.element.hasAttribute('class')) {
-                                var elClasses = el.element.attr('class').trim().split(" ");
-                                for (var i = 0; i < elClasses.length; ++i) {
-                                    var cl = ref[elClasses[i]];
-                                    if (cl) {
-                                        selected = cl;
-                                    }
-                                }
-                            }
-
-                            //if nothing was found, we stil know the tag name is right,
-                            // so try the general-case (with empty class name)
-                            if (!selected) {
-                                selected = ref[''];
-                            }
-
-                            //if we found something, mark it selected
-                            if (selected) {
-                                selected.li.addClass('active');
-                            }
+                        //contains a reference in our allTags structure
+                        if (el.ref) {
+                            el.ref.li.addClass('active');
                         }
                     }
                 }
@@ -199,24 +175,27 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.im
                         var config = val.value.split(':');
                         var tag = config[0].trim().toLowerCase();
                         var clazz = config[1].trim();
-                        //uniformly handle empty classes
+                        //uniformly handle empty tags and classes
+                        if (!tag) {
+                            tag = '';
+                        }
                         if (!clazz) {
                             clazz = '';
                         }
                         //don't keep references to empty tags
-                        if (tag && tag !== '') {
-                            //new entry, create the object
-                            if (!(tag in this.allTags)) {
-                                this.allTags[tag] = {};
-                            }
-
-                            //create a structure (the li will be filled later on, see below)
-                            this.allTags[tag][clazz] = {
-                                'text': val.text,
-                                'value': val.value,
-                                'li': newLi
-                            };
+                        //new entry, create the object
+                        if (!(tag in this.allTags)) {
+                            this.allTags[tag] = {};
                         }
+
+                        //create a structure (the li will be filled later on, see below)
+                        this.allTags[tag][clazz] = {
+                            tag: tag,
+                            clazz: clazz,
+                            text: val.text,
+                            value: val.value,
+                            li: newLi
+                        };
                     }
                 }
             }
@@ -233,7 +212,7 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.im
             var tag = arguments[0].trim().toLowerCase();
             var clazz = arguments[1].trim();
 
-            var selectedElements = this._findSelection();
+            var selectedElements = this._findSelectedElements();
 
             for (var i = 0; i < selectedElements.length; i++) {
                 var el = selectedElements[i].element;
@@ -246,7 +225,8 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.im
 
                 if (clazz != "") {
                     selectedElements[i].element.addClass(clazz);
-                } else {
+                }
+                else {
                     selectedElements[i].element.removeAttr("class");
                 }
             }
@@ -257,41 +237,81 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.im
             //re-positions the toolbar
             this.base.checkSelection();
         },
-        _findSelection: function ()
+        _findSelectedElements: function ()
         {
+            var _this = this;
+            //this will contain all the elements that are currently selected, both parents and children (eg. both <a> and <p> if nested)
             var elements = MediumEditor.selection.getSelectedElements(this.document);
             if (elements.length == 0) {
                 elements.push(MediumEditor.selection.getSelectedParentElement(MediumEditor.selection.getSelectionRange(this.document)));
             }
+
             // Filter all elements that we will change with our style
-            var parents = [];
-            var lastElement = null;
+            var retVal = [];
             for (var i = 0; i < elements.length; i++) {
                 var el = $(elements[i]);
-                // From all selected elements, we need only the root block elements
-                // so filter the children out
-                if (lastElement == null || lastElement.has(el).length == 0) {
-                    //don't let the loop go all the way up the DOM, block at body
-                    while (!el.attr("content-editable") && el[0].nodeName.toLowerCase() !== "body" && !(el[0].nodeName.toLowerCase() in this.allTags)) {
-                        el = el.parent()
-                    }
-                    //if we searched all the way up till the body, we couldn't find the parent and something's wrong
-                    if (el[0].nodeName.toLowerCase() !== "body") {
-                        lastElement = el;
-                        // only block elements inside our container can be styled
-                        if (!el.attr("content-editable")) {
-                            // store original values so we can restore on cancel
-                            var block = {};
-                            block.element = el;
-                            block.classes = el.attr("class") ? el.attr("class") : "";
-                            block.tagName = el[0].tagName.toLowerCase();
-                            parents.push(block);
+                var elTag = el[0].nodeName.toLowerCase();
+
+                //1: only select elements _inside_ our editor (note that Medium Editor overloads the standard content-editable attribute)
+                //2: safety check: don't let the loop go all the way up the DOM, block at body
+                while (!el.attr("content-editable") && elTag !== "body") {
+
+                    //We distinguish between three major cases:
+                    // 1) Both class and tag match (eg. h1:red)
+                    // 2) Only tag matches (eg. h1:)
+                    // 3) Only class matches (eg. :red)
+
+                    //1) and 2)
+                    if (elTag in this.allTags) {
+                        //1) first try to find the most specific match: tag+class
+                        var addedNew = false;
+                        $.each(this.allTags[elTag], function (key, value)
+                        {
+                            if (key!='' && el.hasClass(key)) {
+                                retVal.push({
+                                    element: el,
+                                    nodeName: elTag,
+                                    ref: _this.allTags[elTag][key]
+                                });
+                                addedNew = true;
+                            }
+                        });
+
+                        //2) if no matching class was found, use the general case
+                        //note that we nee to include this match because this method is also used to return matches that will receive a new class
+                        if (!addedNew) {
+                            retVal.push({
+                                element: el,
+                                nodeName: elTag,
+                                ref: this.allTags[elTag]['']
+                            });
                         }
                     }
+
+                    //3)
+                    //Note: the empty tag is used to store all the general classes; it must be there to make sense
+                    //Also note this always need to run, because we can have multiple matches
+                    if (this.allTags['']) {
+                        //iterate over all general classes
+                        $.each(this.allTags[''], function (key, value)
+                        {
+                            if (key!='' && el.hasClass(key)) {
+                                retVal.push({
+                                    element: el,
+                                    nodeName: elTag,
+                                    ref: _this.allTags[''][key]
+                                });
+                            }
+                        });
+                    }
+
+                    //Move up the tag hierarchy
+                    el = el.parent();
+                    elTag = el[0].nodeName.toLowerCase();
                 }
             }
 
-            return parents;
+            return retVal;
         }
     });
 

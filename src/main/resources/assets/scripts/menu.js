@@ -351,7 +351,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         var dialog = new BootstrapDialog({
             type: BootstrapDialog.TYPE_PRIMARY,
             title: 'Saving ...',
-            message: 'Please wait while we save the page. This can take a few seconds',
+            message: 'Please wait while we save the page. This can take a few seconds.',
             buttons: []
         });
 
@@ -385,34 +385,46 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
         var onConfirm = function ()
         {
+            var dialog = new BootstrapDialog({
+                type: BootstrapDialog.TYPE_PRIMARY,
+                title: 'Deleting ...',
+                message: 'Please wait while we delete the page. This can take a few seconds.',
+                buttons: []
+            });
+
+            dialog.open();
+
             $.ajax({
-                    type: 'DELETE',
-                    url: "/blocks/admin/page/delete",
-                    data: document.URL,
-                    contentType: 'application/json; charset=UTF-8',
-                    success: function (url, textStatus, response)
-                    {
-                        if (url) {
-                            window.location = url;
-                        } else {
-                            location.reload();
-                        }
-                    },
-                    error: function (response, textStatus, errorThrown)
-                    {
-                        var message = response.status == 400 ? response.responseText : "An error occurred while deleting the page.";
-                        Notification.dialog("Error", "<div>" + message + "</div>", function ()
-                        {
-                        });
+                type: 'DELETE',
+                url: "/blocks/admin/page/delete",
+                data: document.URL,
+                contentType: 'application/json; charset=UTF-8',
+            })
+                .done(function (url, textStatus, response)
+                {
+                    if (url) {
+                        window.location = url;
+                    } else {
+                        location.reload();
                     }
-                }
-            )
+                })
+                .fail(function (xhr, textStatus, exception)
+                {
+                    var message = response.status == 400 ? response.responseText : "An error occurred while deleting the page.";
+                    Notification.dialog("Error", "<div>" + message + "</div>", function ()
+                    {
+                    });
+                })
+                .always(function ()
+                {
+                    dialog.close();
+                });
         };
 
         BootstrapDialog.show({
             title: "Delete page",
             type: BootstrapDialog.TYPE_DANGER,
-            message: "<div>Do you want to delete this page and all it's translations?</div>",
+            message: "<div>Are you sure you want to delete this page?</div>",
             buttons: [
                 {
                     id: 'btn-close',

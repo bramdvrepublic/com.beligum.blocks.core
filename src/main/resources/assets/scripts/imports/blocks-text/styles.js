@@ -5,7 +5,7 @@
  * Created by wouter on 17/07/15.
  */
 
-base.plugin("mot.site.styles", ["messages.blocks.core", function (Messages)
+base.plugin("blocks.core.MediumEditorStyles", ["messages.blocks.core", function (Messages)
 {
     //-----EDITOR STYLES-----
     //possible it's not loaded (eg. because the block wasn't used in the page)

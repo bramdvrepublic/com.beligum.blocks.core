@@ -789,11 +789,14 @@ ul.@{BLOCK_ACTIONS_CLASS} {
 }
 
 .medium-editor-toolbar {
-  left: 0;
   position: absolute;
-  top: 0;
   visibility: hidden;
   z-index: 2000;
+  //these will be set in JS
+  top: 0;
+  left: 0;
+  //needed to align the toolbar with the dotted border of the active block
+  margin-left: -1px;
 
   .form-inline();
   &:extend(.form-inline);
@@ -865,9 +868,24 @@ ul.@{BLOCK_ACTIONS_CLASS} {
     li {
       &.active {
         a {
-          //we diminish the color a bit because bright primary is very bright
-          background-color: lighten(@dropdown-link-active-bg, 45%);
+          @activePadding: 20px;
+
+          padding-left: @activePadding;
+          &:before {
+            content: "\f111";
+            font-family: FontAwesome;
+            display: inline-block;
+            margin-left: -@activePadding;
+            width: @activePadding;
+            text-align: center;
+            font-size: 0.6em;
+            color: rgba(0,0,0,.3);
+            text-shadow: 0px 1px 0px rgba(255,255,255,.3), 0px -1px 0px rgba(0,0,0,.3);
+          }
+
+          //revert the colors, we'll use bullets instead
           color: @dropdown-link-color;
+          background-color: transparent;
 
           //normal hover re-activates the bright primary, override
           &:hover {
