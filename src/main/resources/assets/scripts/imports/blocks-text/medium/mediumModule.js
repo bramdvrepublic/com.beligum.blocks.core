@@ -5,7 +5,7 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
 {
     var MediumModule = this;
 
-    var Editor = null;
+    var mediumEditor = null;
 
     //default values, overridable
     var toolbarButtons = [Extensions.StylesPicker.NAME, 'bold', 'italic', 'underline', 'strike-through', 'superscript', Extensions.LinkInput.NAME, 'orderedlist', 'unorderedlist', 'justifyLeft', 'justifyCenter', 'justifyRight', 'removeFormat'];
@@ -17,8 +17,8 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
     this.getToolbarElement = function ()
     {
         var retVal = null;
-        if (Editor != null) {
-            var toolbarExt = Editor.getExtensionByName("toolbar");
+        if (mediumEditor != null) {
+            var toolbarExt = mediumEditor.getExtensionByName("toolbar");
             if (toolbarExt) {
                 retVal = toolbarExt.getToolbarElement();
             }
@@ -28,7 +28,7 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
 
     this.getEditor = function (element, inline, hideToolbar)
     {
-        if (Editor != null) {
+        if (mediumEditor != null) {
             MediumModule.removeEditor();
         }
 
@@ -74,17 +74,17 @@ base.plugin("blocks.core.MediumEditor", ["blocks.core.MediumEditorExtensions", f
 
         options.disableReturn = inline;
 
-        Editor = new MediumEditor(element[0], options);
+        mediumEditor = new MediumEditor(element[0], options);
 
-        return Editor;
+        return mediumEditor;
     };
 
     this.removeEditor = function (element)
     {
-        if (Editor != null) {
-            Editor.destroy();
+        if (mediumEditor != null) {
+            mediumEditor.destroy();
         }
-        Editor = null;
+        mediumEditor = null;
     };
 
     this.setToolbarButtons = function (buttonArray)

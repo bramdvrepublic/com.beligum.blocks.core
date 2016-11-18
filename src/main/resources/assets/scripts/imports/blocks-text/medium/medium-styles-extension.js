@@ -218,16 +218,18 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.im
                 var el = selectedElements[i].element;
                 if (tag != "") {
                     var newEl = $("<" + tag + "/>");
-                    newEl.html(el.html());
+                    //to be on the safe (and easy) side, we use .text() instead of .html()
+                    // because it resulted in way too many outlier errors
+                    newEl.html(el.text());
                     el.replaceWith(newEl);
-                    selectedElements[i].element = newEl;
+                    el = newEl;
                 }
 
                 if (clazz != "") {
-                    selectedElements[i].element.addClass(clazz);
+                    el.addClass(clazz);
                 }
                 else {
-                    selectedElements[i].element.removeAttr("class");
+                    el.removeAttr("class");
                 }
             }
 
@@ -246,68 +248,87 @@ base.plugin("blocks.core.MediumEditorExtensions", ["base.core.Class", "blocks.im
                 elements.push(MediumEditor.selection.getSelectedParentElement(MediumEditor.selection.getSelectionRange(this.document)));
             }
 
-            // Filter all elements that we will change with our style
-            var retVal = [];
+            //we'll filter the list of elements to only keep the top-level (eg. the ones just below the "contenteditable")
+            //and eliminate doubles in the mean time
+            var filtered = [];
+            var filteredNative = [];
             for (var i = 0; i < elements.length; i++) {
                 var el = $(elements[i]);
+                var selected = undefined;
+
+                //1: only select elements _inside_ our editor (note that Medium Editor overloads the standard contenteditable attribute)
+                //2: safety check: don't let the loop go all the way up the DOM, block at body
+                while (!selected && !el.attr("contenteditable") && el[0].nodeName.toLowerCase() !== "body") {
+                    var parent = el.parent();
+
+                    if (parent.attr("contenteditable")) {
+                        selected = el;
+                    }
+                    else {
+                        el = el.parent();
+                    }
+                }
+
+                var index = $.inArray(selected[0], filteredNative);
+                if (index < 0) {
+                    filteredNative.push(selected[0]);
+                    filtered.push(selected);
+                }
+            }
+
+            // Filter all elements that we will change with our style
+            var retVal = [];
+            for (var i = 0; i < filtered.length; i++) {
+                var el = $(filtered[i]);
                 var elTag = el[0].nodeName.toLowerCase();
 
-                //1: only select elements _inside_ our editor (note that Medium Editor overloads the standard content-editable attribute)
-                //2: safety check: don't let the loop go all the way up the DOM, block at body
-                while (!el.attr("content-editable") && elTag !== "body") {
+                //We distinguish between three major cases:
+                // 1) Both class and tag match (eg. h1:red)
+                // 2) Only tag matches (eg. h1:)
+                // 3) Only class matches (eg. :red)
 
-                    //We distinguish between three major cases:
-                    // 1) Both class and tag match (eg. h1:red)
-                    // 2) Only tag matches (eg. h1:)
-                    // 3) Only class matches (eg. :red)
-
-                    //1) and 2)
-                    if (elTag in this.allTags) {
-                        //1) first try to find the most specific match: tag+class
-                        var addedNew = false;
-                        $.each(this.allTags[elTag], function (key, value)
-                        {
-                            if (key!='' && el.hasClass(key)) {
-                                retVal.push({
-                                    element: el,
-                                    nodeName: elTag,
-                                    ref: _this.allTags[elTag][key]
-                                });
-                                addedNew = true;
-                            }
-                        });
-
-                        //2) if no matching class was found, use the general case
-                        //note that we nee to include this match because this method is also used to return matches that will receive a new class
-                        if (!addedNew) {
+                //1) and 2)
+                if (elTag in this.allTags) {
+                    //1) first try to find the most specific match: tag+class
+                    var addedNew = false;
+                    $.each(this.allTags[elTag], function (key, value)
+                    {
+                        if (key != '' && el.hasClass(key)) {
                             retVal.push({
                                 element: el,
                                 nodeName: elTag,
-                                ref: this.allTags[elTag]['']
+                                ref: _this.allTags[elTag][key]
                             });
+                            addedNew = true;
                         }
-                    }
+                    });
 
-                    //3)
-                    //Note: the empty tag is used to store all the general classes; it must be there to make sense
-                    //Also note this always need to run, because we can have multiple matches
-                    if (this.allTags['']) {
-                        //iterate over all general classes
-                        $.each(this.allTags[''], function (key, value)
-                        {
-                            if (key!='' && el.hasClass(key)) {
-                                retVal.push({
-                                    element: el,
-                                    nodeName: elTag,
-                                    ref: _this.allTags[''][key]
-                                });
-                            }
+                    //2) if no matching class was found, use the general case
+                    //note that we nee to include this match because this method is also used to return matches that will receive a new class
+                    if (!addedNew) {
+                        retVal.push({
+                            element: el,
+                            nodeName: elTag,
+                            ref: this.allTags[elTag]['']
                         });
                     }
+                }
 
-                    //Move up the tag hierarchy
-                    el = el.parent();
-                    elTag = el[0].nodeName.toLowerCase();
+                //3)
+                //Note: the empty tag is used to store all the general classes; it must be there to make sense
+                //Also note this always need to run, because we can have multiple matches
+                if (this.allTags['']) {
+                    //iterate over all general classes
+                    $.each(this.allTags[''], function (key, value)
+                    {
+                        if (key != '' && el.hasClass(key)) {
+                            retVal.push({
+                                element: el,
+                                nodeName: elTag,
+                                ref: _this.allTags[''][key]
+                            });
+                        }
+                    });
                 }
             }
 
