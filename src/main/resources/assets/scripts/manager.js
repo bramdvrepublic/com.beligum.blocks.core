@@ -16,13 +16,14 @@ base.plugin("blocks.core.Manager", ["constants.blocks.core", "blocks.core.Broadc
 
         //we activate everything after a little timeout to allow all the elements to fixate their final dimensions,
         // so that the overlay bounding box fits nicely
+        //Note: not anymore, fixed it
         setTimeout(function(){
             //note that this encapsulates DO_REFRESH_LAYOUT, but initializes a few other things first
             Broadcaster.send(Broadcaster.EVENTS.DOM_CHANGED, event);
 
             //start off by showing the layouter
             Broadcaster.send(Broadcaster.EVENTS.ACTIVATE_MOUSE, event);
-        }, 250);
+        }, 0);
     });
 
     $(document).on(Broadcaster.EVENTS.STOP_BLOCKS, function (event)

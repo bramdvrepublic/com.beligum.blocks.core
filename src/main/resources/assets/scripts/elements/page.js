@@ -26,10 +26,10 @@ base.plugin("blocks.core.Elements.Page", ["base.core.Class", "constants.blocks.c
             for (var i = 0; i < childcount; i++) {
                 var child = $(children[i]);
                 if (child[0].tagName == "BLOCKS-LAYOUT") {
-                    var b = new blocks.elements.Container($(child.children(".container")[0]), this, index);
+                    var b = new blocks.elements.Container($(child.children("[property=container], [data-property=container]")[0]), this, index);
                     this.children.push(b);
                     index++;
-                } else if (child.hasAttribute("property")) {
+                } else if (child.hasAttribute("property") || child.hasAttribute("data-property")) {
                     var b = new blocks.elements.Property(child, this, index);
                     this.children.push(b);
                     index++;

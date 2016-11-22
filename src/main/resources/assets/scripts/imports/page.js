@@ -73,7 +73,7 @@ base.plugin("blocks.imports.Page", ["base.core.Class", "blocks.imports.Widget", 
                 $("head").append(title);
             }
 
-            if (title.hasAttribute("property")) {
+            if (title.hasAttribute("property") || title.hasAttribute("data-property")) {
                 retVal.push(this.addValueHtml(Sidebar, title, "Page title", "Enter a title for this page", false));
             }
 
