@@ -6,9 +6,13 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     var SIDEBAR_STATE_SHOW = "show";
     var SIDEBAR_STATE_HIDE = "hide";
     //Note: an empty paths means: take the path of the current page
-    var DEFAULT_COOKIE_OPTIONS = { path: '/' };
+    var DEFAULT_COOKIE_OPTIONS = {path: '/'};
 
     var MIN_SIDEBAR_WIDTH = 200;
+
+    //note that because we set a container width on the blocks-layout in some styles (eg. sticky footers and full background-colors),
+    //we need to scale it along with the container inside it
+    var CONTAINERS_SELECTOR = ".container, blocks-layout";
 
     this.KEY_CODE_SHIFT = 16;
 
@@ -252,9 +256,11 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     var updateContainerWidth = function ()
     {
         var wrapper = $("." + BlocksConstants.PAGE_CONTENT_CLASS);
-        var containers = $(".container");
+        var containers = $(CONTAINERS_SELECTOR);
+
         //TODO this is dangerous to blindly do this
         containers.removeAttr("style");
+
         if (wrapper.length > 0) {
             var wrapperWidth = wrapper.outerWidth();
             var containerWidth = containers.outerWidth();
@@ -267,7 +273,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     //method to clear the manual container width from above; sync them
     var clearContainerWidth = function ()
     {
-        $(".container").css("width", "");
+        $(CONTAINERS_SELECTOR).css("width", "");
     };
 
     // On Window resize
@@ -312,8 +318,8 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
         //it's possible the content of the sidebar made it grow/shrink;
         //this will alter the content wrapper class if it did (and fire a re-layout)
-        var contentWidth =  $(window).width() - sidebarElement.outerWidth();
-        if (wrapper.outerWidth()!=contentWidth) {
+        var contentWidth = $(window).width() - sidebarElement.outerWidth();
+        if (wrapper.outerWidth() != contentWidth) {
             wrapper.css("width", contentWidth + "px");
             Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, event);
         }
@@ -328,7 +334,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
         //the idea is to send the entire page to the server and let it only save the correct tags (eg. with property and data-property attributes)
         // remove the widths from the containers
-        $(".container").removeAttr("style");
+        $(CONTAINERS_SELECTOR).removeAttr("style");
 
         //the sidebar is open now. We used to send everything to the server, letting it to handle the sidebar HTML code on its own,
         // but it's too much hassle and too simple for us to 'close' the sidebar now. So let's just take the html in the wrapper and create
@@ -483,7 +489,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         }
     });
 
-    this.isKeyPressed = function(code)
+    this.isKeyPressed = function (code)
     {
         return keysPressed.indexOf(code) >= 0;
     };
