@@ -252,20 +252,9 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     var updateContainerWidth = function ()
     {
         var wrapper = $("." + BlocksConstants.PAGE_CONTENT_CLASS);
-
-        //it's possible the content of the sidebar make it grow/shrink;
-        //this will alter the content wrapper class if it did (and fire a re-layout)
-        var contentWidth =  $(window).width() - sidebarElement.outerWidth();
-        if (wrapper.outerWidth()!=contentWidth) {
-            wrapper.css("width", contentWidth + "px");
-            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, event);
-        }
-
         var containers = $(".container");
-
         //TODO this is dangerous to blindly do this
         containers.removeAttr("style");
-
         if (wrapper.length > 0) {
             var wrapperWidth = wrapper.outerWidth();
             var containerWidth = containers.outerWidth();
@@ -308,13 +297,26 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     });
 
     //before updating the layout, make sure the container width is set properly
-    $(document).on(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT+' '+Broadcaster.EVENTS.DOM_CHANGED, function (event)
+    $(document).on(Broadcaster.EVENTS.WILL_REFRESH_LAYOUT, function (event)
     {
         // check size page content
         // find containers and get width
         // if container width is greater then page content width
         // set container width to pagecontent width - 20
         updateContainerWidth();
+    });
+
+    $(document).on(Broadcaster.EVENTS.DOM_CHANGED, function (event)
+    {
+        var wrapper = $("." + BlocksConstants.PAGE_CONTENT_CLASS);
+
+        //it's possible the content of the sidebar made it grow/shrink;
+        //this will alter the content wrapper class if it did (and fire a re-layout)
+        var contentWidth =  $(window).width() - sidebarElement.outerWidth();
+        if (wrapper.outerWidth()!=contentWidth) {
+            wrapper.css("width", contentWidth + "px");
+            Broadcaster.send(Broadcaster.EVENTS.DO_REFRESH_LAYOUT, event);
+        }
     });
 
     /*
