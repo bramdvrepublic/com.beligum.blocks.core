@@ -1,5 +1,6 @@
 package com.beligum.blocks.templating.blocks;
 
+import com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective;
 import com.google.common.collect.Iterators;
 
 import java.io.StringWriter;
@@ -149,6 +150,8 @@ public class TemplateResources
     //-----PRIVATE CLASSES-----
     public abstract class Resource
     {
+        //type of this class so we can use it in switch statements
+        protected TemplateResourcesDirective.Argument type;
         //this is the value that will be used to compare two resources
         protected String equalsValue;
         //this is the publicly accessible value
@@ -156,20 +159,29 @@ public class TemplateResources
         //this is the position in the output writer the resource should be written (if not handled otherwise)
         protected int bufferPosition;
 
-        protected Resource(String value, int bufferPosition)
+        protected Resource(TemplateResourcesDirective.Argument type, String value, int bufferPosition)
         {
-            this(value, value, bufferPosition);
+            this(type, value, value, bufferPosition);
         }
-        protected Resource(String equalsValue, String value, int bufferPosition)
+        protected Resource(TemplateResourcesDirective.Argument type, String equalsValue, String value, int bufferPosition)
         {
+            this.type = type;
             this.equalsValue = equalsValue;
             this.value = value;
             this.bufferPosition = bufferPosition;
         }
 
+        public TemplateResourcesDirective.Argument getType()
+        {
+            return type;
+        }
         public String getValue()
         {
             return this.value;
+        }
+        public String getEqualsValue()
+        {
+            return equalsValue;
         }
 
         @Override
@@ -201,7 +213,7 @@ public class TemplateResources
     {
         public InlineStyle(String value, int bufferPosition)
         {
-            super(value, bufferPosition);
+            super(TemplateResourcesDirective.Argument.inlineStyles, value, bufferPosition);
         }
     }
 
@@ -209,7 +221,7 @@ public class TemplateResources
     {
         public ExternalStyle(String href, String element, int bufferPosition)
         {
-            super(href, element, bufferPosition);
+            super(TemplateResourcesDirective.Argument.externalStyles, href, element, bufferPosition);
         }
     }
 
@@ -217,7 +229,7 @@ public class TemplateResources
     {
         public InlineScript(String value, int bufferPosition)
         {
-            super(value, bufferPosition);
+            super(TemplateResourcesDirective.Argument.inlineScripts, value, bufferPosition);
         }
     }
 
@@ -225,7 +237,7 @@ public class TemplateResources
     {
         public ExternalScript(String src, String element, int bufferPosition)
         {
-            super(src, element, bufferPosition);
+            super(TemplateResourcesDirective.Argument.externalScripts, src, element, bufferPosition);
         }
     }
 }

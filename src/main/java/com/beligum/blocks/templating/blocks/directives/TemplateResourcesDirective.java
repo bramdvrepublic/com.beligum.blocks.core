@@ -1,5 +1,6 @@
 package com.beligum.blocks.templating.blocks.directives;
 
+import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.velocity.directives.VelocityDirective;
 import com.beligum.blocks.templating.blocks.TemplateResources;
@@ -36,13 +37,23 @@ public class TemplateResourcesDirective extends Directive
 
     public enum Argument
     {
-        inlineStyles,
-        externalStyles,
-        styles,
-        inlineScripts,
-        externalScripts,
-        scripts,
-        all,;
+        inlineStyles(Resource.MimeType.CSS),
+        externalStyles(Resource.MimeType.CSS),
+        styles(Resource.MimeType.CSS),
+        inlineScripts(Resource.MimeType.JAVASCRIPT),
+        externalScripts(Resource.MimeType.JAVASCRIPT),
+        scripts(Resource.MimeType.JAVASCRIPT),
+        all(null),;
+
+        private Resource.MimeType matchingMimeType;
+        Argument(Resource.MimeType matchingMimeType)
+        {
+            this.matchingMimeType = matchingMimeType;
+        }
+        public Resource.MimeType getMatchingMimeType()
+        {
+            return matchingMimeType;
+        }
     }
 
     //-----VARIABLES-----
