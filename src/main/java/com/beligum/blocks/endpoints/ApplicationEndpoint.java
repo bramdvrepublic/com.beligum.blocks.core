@@ -82,7 +82,7 @@ public class ApplicationEndpoint
         if (retVal == null) {
             Page page = new ReadOnlyPage(requestedUri);
             // Since we allow the user to create pretty url's, it's mime type will not always be clear.
-            // But not this endpoint only accepts HTML requests, so force the mime type
+            // But note this endpoint only accepts HTML requests, so force the mime type
             Resource resource = R.resourceFactory()
                                  .lookup(new HdfsResource(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), page.getResourcePath().getFileContext(), page.getNormalizedPageProxyPath()));
 

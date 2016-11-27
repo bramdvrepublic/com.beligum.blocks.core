@@ -3,6 +3,7 @@ package com.beligum.blocks.config;
 import bitronix.tm.BitronixTransactionManager;
 import bitronix.tm.resource.ResourceRegistrar;
 import bitronix.tm.resource.common.XAResourceProducer;
+import ch.qos.logback.classic.Level;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.server.R;
 import com.beligum.base.server.ifaces.ServerLifecycleListener;
@@ -11,6 +12,8 @@ import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.endpoints.PageEndpoint;
 import com.beligum.blocks.fs.index.ifaces.Indexer;
 import com.beligum.blocks.templating.blocks.HtmlParser;
+import net.htmlparser.jericho.Config;
+import net.htmlparser.jericho.LoggerProvider;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Server;
 import org.glassfish.jersey.server.spi.Container;
@@ -38,6 +41,12 @@ public class ServerStartStopListener implements ServerLifecycleListener
         if (Settings.instance().hasBlocksCoreConfig()) {
             //let all .html files pass through our HtmlParser
             R.resourceFactory().registerParser(Resource.MimeType.HTML, new HtmlParser());
+
+            //the Jericho logger is quite verbose with error messages when it comes to parsing our Velocity-annotated html tags,
+            //so let's disable it's logger in any other level than debug mode
+            if (R.configuration().getLogConfig().getLogLevel().isGreaterOrEqual(Level.INFO)) {
+                Config.LoggerProvider = LoggerProvider.DISABLED;
+            }
 
             //we might as well pre-load the templates here
             HtmlParser.getTemplateCache();

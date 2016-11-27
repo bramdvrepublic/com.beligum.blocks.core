@@ -1,7 +1,5 @@
 package com.beligum.blocks.templating.blocks.directives;
 
-import com.beligum.base.endpoints.AssetsEndpoint;
-import com.beligum.base.resources.VirtualFolder;
 import com.beligum.base.resources.resolvers.JoinResolver;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.velocity.directives.VelocityDirective;
@@ -150,8 +148,6 @@ public class PageTemplateWrapperDirective extends Directive
     //-----PRIVATE METHODS-----
     private int writeResources(Iterable<TemplateResources.Resource> resources, StringBuffer buffer, int position) throws IOException
     {
-        boolean pack = false;
-
         //this will be incrementally augmented with a all hashes
         int hash = 0;
         //this is what will be inserted
@@ -165,7 +161,7 @@ public class PageTemplateWrapperDirective extends Directive
         ByteArrayDataOutput hashBuf = ByteStreams.newDataOutput();
         List<SourceFile> inputs = new ArrayList<>();
         for (TemplateResources.Resource res : resources) {
-            if (!pack) {
+            if (!R.configuration().getResourceConfig().getPackResources()) {
                 sb.append(res.getValue());
                 sb.append("\n");
             }
@@ -183,6 +179,13 @@ public class PageTemplateWrapperDirective extends Directive
                     //Note: for now, we won't be joining inline code, just render it out
                     case inlineStyles:
                     case inlineScripts:
+
+                        //for now, we don't register inline styles/scripts,
+                        // so we need to output any saved up assets here to maintain correct order
+                        this.registerAssetPack(hash, lastType, currentAssetPack, sb);
+                        hash = 0;
+                        lastType = res.getType();
+                        currentAssetPack = new ArrayList<>();
 
                         sb.append(res.getValue());
                         sb.append("\n");
@@ -230,17 +233,14 @@ public class PageTemplateWrapperDirective extends Directive
         //      in a relatively compressed way. Drawback is it generates very long URLs though (300+ chars for a basic admin page), but we might
         //      consider it for later use if we run into caching problems
         String cacheKey = StringFunctions.intToBase64(hash, true);
-        String joinPath = AssetsEndpoint.PUBLIC_ASSETS_PATH_PREFIX + VirtualFolder.ASSETS_JOIN_VIRTUAL_FOLDER.getFolderName() + "/" + cacheKey;
-        URI joinUri = R.configuration().getSiteDomain().resolve(joinPath);
 
-        JoinResolver.instance().registerAssetPack(joinUri, lastType.getMatchingMimeType(), currentAssetPack);
-
+        URI joinUri = JoinResolver.instance().registerAssetPack(cacheKey, lastType.getMatchingMimeType(), currentAssetPack);
         String mimeType = lastType.getMatchingMimeType().getMimeType().toString();
         if (lastType == TemplateResourcesDirective.Argument.externalStyles) {
-            sb.append("<link rel=\"stylesheet\" type=\"" + mimeType + "\" href=\"" + joinPath + "\">");
+            sb.append("<link rel=\"stylesheet\" type=\"" + mimeType + "\" href=\"" + joinUri.toString() + "\">");
         }
         else {
-            sb.append("<script " + "type=\"" + mimeType + "\" src=\"" + joinPath + "\"></script>");
+            sb.append("<script " + "type=\"" + mimeType + "\" src=\"" + joinUri.toString() + "\"></script>");
         }
         sb.append("\n");
 

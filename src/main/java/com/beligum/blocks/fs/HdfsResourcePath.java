@@ -244,6 +244,9 @@ public class HdfsResourcePath implements ResourcePath
             throw new IOException("Unable to create lock file because of an error or because (in the mean time) it already existed; " + lock);
         }
 
+        //Since we're the one creating it, it makes sense (if anything goes wrong while releasing the lock) to remove it on JVM shutdown.
+        this.fileContext.deleteOnExit(lock);
+
         return new LockFile(this, lock);
     }
     @Override

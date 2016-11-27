@@ -504,9 +504,10 @@ public abstract class HtmlTemplate
         final boolean print = false;
         StringBuilder builder = new StringBuilder();
 
+        //Note: we don't append a newline: it clouds the output html with too much extra whitespace...
         builder.append("#").append(TagTemplateResourceDirective.NAME).append("(").append(type.ordinal()).append(",").append(print).append(",'").append(attr).append("','")
                .append(HtmlTemplate.getResourceRoleScope(element)).append("',").append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(")").append(element.toString())
-               .append("#end").append("\n");
+               .append("#end");
 
         return builder.toString();
     }

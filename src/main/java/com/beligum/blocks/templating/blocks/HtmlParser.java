@@ -5,6 +5,7 @@ import com.beligum.base.resources.SizedInputStreamImpl;
 import com.beligum.base.resources.ifaces.Parser;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.SizedInputStream;
+import com.beligum.base.resources.mappers.MinifiedInputStream;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;
@@ -19,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,8 +40,7 @@ import java.util.regex.Pattern;
 public class HtmlParser implements Parser
 {
     //-----CONSTANTS-----
-
-    //-----VARIABLES-----
+    private static final String NEWLINE = "\n";
     private static final Pattern notEmptyPropertyAttrValue = Pattern.compile(".+");
     //this is the name of the RDFa property attribute (eg. the one that plays a role while parsing RDFa)
     public static final String RDF_PROPERTY_ATTR = "property";
@@ -53,6 +54,8 @@ public class HtmlParser implements Parser
     //the prefix data- makes sure we're W3C compliant
     public static final String HTML_ROOT_TEMPLATE_ATTR = "data-template";
     public static final String HTML_ROOT_ARGS_VARIABLE_NAME = "HTML_TAG_ARGS";
+
+    //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
     public HtmlParser()
@@ -72,6 +75,8 @@ public class HtmlParser implements Parser
     @Override
     public SizedInputStream parse(Resource resource) throws IOException
     {
+        SizedInputStream retVal = null;
+
         try {
             TemplateCache templateCache = this.getTemplateCache();
 
@@ -97,7 +102,7 @@ public class HtmlParser implements Parser
             // store the external references and replace the source with the html in the <template> tag
 
             HtmlTemplate template = templateCache.getByRelativePath(resource.getUri().getPath());
-            if (template!=null) {
+            if (template != null) {
                 OutputDocument output = this.processHtmlTemplate(resource, source, template);
                 //replace the source with the (parsed) <template> content
                 source = new Source(output.toString());
@@ -105,24 +110,28 @@ public class HtmlParser implements Parser
 
             OutputDocument output = this.processResource(resource, source);
 
-            StringBuilder retVal = new StringBuilder();
-
-            String outputStr = output.toString();
+            StringBuilder sb = new StringBuilder();
             if (htmlPage) {
-                retVal.append("#").append(PageTemplateWrapperDirective.NAME).append("()").append("\n");
-                retVal.append(outputStr);
-                retVal.append("#end");
+                sb.append("#").append(PageTemplateWrapperDirective.NAME).append("()").append(NEWLINE);
+                sb.append(output.toString());
+                sb.append("#end");
             }
             else {
-                retVal.append(outputStr);
+                sb.append(output.toString());
             }
 
-            byte[] bytes = retVal.toString().getBytes(Charsets.UTF_8);
-            return new SizedInputStreamImpl(new ByteArrayInputStream(bytes), bytes.length);
+            if (R.configuration().getResourceConfig().getMinifyResources()) {
+                retVal = new SizedInputStreamImpl(new MinifiedInputStream(new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8)), resource.getUri(), resource.getMimeType()));
+            }
+            else {
+                retVal = new SizedInputStreamImpl(sb.toString());
+            }
         }
         catch (Exception e) {
             throw new IOException("Caught exception while parsing html file", e);
         }
+
+        return retVal;
     }
     @Override
     public Resource.MimeType getParsedMimeType(Resource resource)
@@ -146,7 +155,7 @@ public class HtmlParser implements Parser
                 Element element = ((StartTag) node).getElement();
 
                 HtmlTemplate template = templateCache.getByTagName(element.getName());
-                if (template!=null) {
+                if (template != null) {
                     StringBuilder parsedInstance = this.processTemplateInstance(resource, element, template);
                     retVal.replace(element, parsedInstance);
                 }
@@ -282,7 +291,7 @@ public class HtmlParser implements Parser
                 builder.append(Attributes.generateHTML(attributes));
             }
             //close the start tag
-            builder.append(">").append("\n");
+            builder.append(">").append(NEWLINE);
         }
         // page templates are never rendered out (because their 'instance' is actually the <html> element)
         // but we use a little trick to render the arguments of their instance tag: we set a special velocity variable
@@ -300,7 +309,7 @@ public class HtmlParser implements Parser
                 //we use a regular #define because we don't have a stack context yet (not very problematic because we only have one page template per page)
                 if (!attributes.isEmpty()) {
                     //note: don't worry about a leading space that separates the value of the variable with the "html" word in the <html> tag, because generateHTML generates it
-                    builder.append("#define($").append(HTML_ROOT_ARGS_VARIABLE_NAME).append(")").append(Attributes.generateHTML(attributes)).append("#end").append("\n");
+                    builder.append("#define($").append(HTML_ROOT_ARGS_VARIABLE_NAME).append(")").append(Attributes.generateHTML(attributes)).append("#end").append(NEWLINE);
                 }
             }
         }
@@ -313,7 +322,7 @@ public class HtmlParser implements Parser
             String value = attribute.getValue();
             builder.append(",\"").append(attribute.getKey()).append("\",\"").append(value == null ? "" : value).append("\"");
         }
-        builder.append(")").append("\n");
+        builder.append(")").append(NEWLINE);
 
         //define the properties in the context
         for (Token token : properties) {
@@ -323,7 +332,7 @@ public class HtmlParser implements Parser
                 //this allows us to assign multiple tags to a single property key
                 for (String value : ((PropertyToken) token).getValues()) {
                     builder.append("#").append(TemplateInstanceStackDirective.NAME).append("(").append(TemplateInstanceStackDirective.Action.DEFINE.ordinal()).append(",\"")
-                           .append(propertyToken.getProperty()).append("\")").append(value).append("#end").append("\n");
+                           .append(propertyToken.getProperty()).append("\")").append(value).append("#end").append(NEWLINE);
                 }
             }
             //otherwise it's something else, stored in the key
@@ -341,7 +350,7 @@ public class HtmlParser implements Parser
         }
         resource.addChild(htmlTemplateResource);
 
-        try (InputStream is = R.resourceFactory().get(htmlTemplate.getRelativePath().toUri()).newInputStream()) {
+        try (InputStream is = htmlTemplateResource.newInputStream()) {
             builder.append(IOUtils.toString(is));
         }
 
@@ -354,11 +363,11 @@ public class HtmlParser implements Parser
         //                    }
         //                    else {
         //                        //use a classic parse to parse the defines from above
-        //                        builder.append("#parse('").append(htmlTemplate.getRelativePath()).append("')").append("\n");
+        //                        builder.append("#parse('").append(htmlTemplate.getRelativePath()).append("')").append(NEWLINE);
         //                    }
 
         //pop the controller
-        builder.append("#end").append("\n");
+        builder.append("#end").append(NEWLINE);
 
         //the end tag
         if (renderTag != null) {
@@ -371,11 +380,11 @@ public class HtmlParser implements Parser
         //replace the tag in the output with it's instance
         //output.replace(templateInstance, builder);
 
-//        if (replaced) {
-//            //if we don't do this, and the inner tag templates get processed first, it will be overwritten by the output of the outer tag template
-//            source = new Source(output.toString());
-//            output = new OutputDocument(source);
-//        }
+        //        if (replaced) {
+        //            //if we don't do this, and the inner tag templates get processed first, it will be overwritten by the output of the outer tag template
+        //            source = new Source(output.toString());
+        //            output = new OutputDocument(source);
+        //        }
 
         return builder;
     }
@@ -506,8 +515,8 @@ public class HtmlParser implements Parser
                     line = line.substring(0, commentIdx);
                 }
                 //if the entire line got eaten, I assume we can discard it
-                if (!StringUtils.isEmpty(line)) {
-                    retVal.append(line).append("\n");
+                if (!StringUtils.isEmpty(line.trim())) {
+                    retVal.append(line).append(NEWLINE);
                 }
             }
         }
