@@ -59,12 +59,28 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
             menuStartButton.remove();
 
             // put body content in wrapper
-            var body = $("body").html();
-            $("body").empty();
+            var body = $("body");
+
+            // Needs some explaining:
+            // If we wrap the body with our blocks-page-content element,
+            // the scripts at the bottom of the page seem to cause errors.
+            // So we will pull them out of the body and insert them as siblings of the body.
+            // Note that this is designed to wrap scripts that don't render anything out, so watch out
+            // if you use it for other purposes; it will break the design/behaviour of the sidebar.
+            var ignoredBody = body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS);
+            // When closing the sidebar, we need in-order insert-placeholders, so insert those here.
+            ignoredBody.after('<div class="' + BlocksConstants.PAGE_IGNORE_CLASS + '" />');
+            //detach is like remove() but without the releasing of memory structures
+            ignoredBody.detach();
+
+            var bodyHtml = body.html();
+            body.empty();
             //wrap the content of the body in the class and add that again to the body
-            $("body").append($("<div class='" + BlocksConstants.PAGE_CONTENT_CLASS + "' />").append(body));
-            $("body").append(sidebarElement);
-            $("body").addClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
+            body.append($('<div class="' + BlocksConstants.PAGE_CONTENT_CLASS + '" />').append(bodyHtml));
+            //temporarily put them here
+            body.append(ignoredBody);
+            body.append(sidebarElement);
+            body.addClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
 
             // Prevent clicking on links while in editing mode
             $(document).on("click.prevent_click_editing", "a, button", function (e)
@@ -172,12 +188,25 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 disableSidebarDrag();
                 menuStartButton.show();
 
-                var content = $("." + BlocksConstants.PAGE_CONTENT_CLASS).html();
-                $("body").empty();
-                $("body").append(content);
+                var body = $("body");
+                var content = $('.' + BlocksConstants.PAGE_CONTENT_CLASS);
+
+                //this will select all (original) ignored content tags, excluding the placeholders
+                var ignoredContent = body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS + ':not(.' + BlocksConstants.PAGE_CONTENT_CLASS + ' .' + BlocksConstants.PAGE_IGNORE_CLASS+')');
+                ignoredContent.detach();
+
+                var content = content.html();
+                body.empty();
+                body.append(content);
+
+                //this will loop the ignored content and put them back in the placeholders in-order
+                body.find('.' + BlocksConstants.PAGE_IGNORE_CLASS).each(function(idx) {
+                    $(this).replaceWith(ignoredContent[idx]);
+                });
+
                 $(document).off("click.prevent_click_editing");
-                $("body").append(menuStartButton);
-                $("body").removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
+                body.append(menuStartButton);
+                body.removeClass(BlocksConstants.BODY_EDIT_MODE_CLASS);
 
                 clearContainerWidth();
 

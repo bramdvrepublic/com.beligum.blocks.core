@@ -33,6 +33,9 @@ public class HdfsResourcePath implements ResourcePath
     protected static final String LOCK_FILE_PREFIX = ".";
     protected static final long DEFAULT_LOCK_BACK_OFF = 100;
     protected static final long DEFAULT_LOCK_TIMEOUT = 5000;
+    //let's (possibly stale) locks only live for maximum one hour since that should be enough time
+    //to do what we want to do.
+    protected static final long DEFAULT_LOCK_MAX_AGE = 1000 * 60 * 60;
 
     //-----VARIABLES-----
     private URI publicAddress;
@@ -225,6 +228,14 @@ public class HdfsResourcePath implements ResourcePath
 
         Path lock = this.getLockFile();
 
+        //this is some auto-cleanup code; delete (stale) lock file older than one hour
+        if (this.fileContext.util().exists(lock)) {
+            if (System.currentTimeMillis() - this.fileContext.getFileStatus(lock).getModificationTime() >= DEFAULT_LOCK_MAX_AGE) {
+                Logger.info("Deleting stale lock file; " + lock);
+                this.fileContext.delete(lock, false);
+            }
+        }
+
         while (this.fileContext.util().exists(lock)) {
             try {
                 Thread.sleep(DEFAULT_LOCK_BACK_OFF);
@@ -325,7 +336,7 @@ public class HdfsResourcePath implements ResourcePath
         Path retVal = null;
 
         Path parent = path.getParent();
-        if (parent!=null) {
+        if (parent != null) {
             retVal = new Path(parent, LOCK_FILE_PREFIX + path.getName() + Settings.instance().getPagesLockFileExtension());
         }
 
