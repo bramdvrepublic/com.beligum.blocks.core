@@ -8,18 +8,9 @@
 
 <link href="/assets/styles/imports/blocks-carousel.less" rel="stylesheet"/>
 
-<script src="/assets/scripts/imports/blocks-carousel.js" type="application/javascript" data-scope-role="admin"></script>
-<script src="/assets/scripts/imports/blocks-carousel-text.js" type="application/javascript" data-scope-role="admin"></script>
-
-## we need this to be outside of the file above because it should always be called (also outside of the data-scope-role))
-## Note that this is needed to auto-activate the carousel on page load
-<script type="application/javascript">
-    //init the carousels on the page
-    $(document).ready(function ()
-    {
-        $('.carousel').carousel({});
-    });
-</script>
+<script src="/assets/scripts/imports/blocks-carousel.js" type="application/javascript"></script>
+<script src="/assets/scripts/imports/blocks-carousel-admin.js" type="application/javascript" data-scope-role="admin"></script>
+<script src="/assets/scripts/imports/blocks-carousel-admin-text.js" type="application/javascript" data-scope-role="admin"></script>
 
 ## widget needs the scripts of blocks-image (TODO refactor this in one file?)
 <script src="/assets/scripts/imports/blocks-image.js" type="application/javascript" data-scope-role="admin"></script>

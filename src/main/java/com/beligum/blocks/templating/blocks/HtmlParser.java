@@ -5,7 +5,7 @@ import com.beligum.base.resources.SizedInputStreamImpl;
 import com.beligum.base.resources.ifaces.Parser;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.resources.ifaces.SizedInputStream;
-import com.beligum.base.resources.mappers.MinifiedInputStream;
+import com.beligum.base.resources.parsers.MinifiedInputStream;
 import com.beligum.base.server.R;
 import com.beligum.base.utils.Logger;
 import com.beligum.blocks.caching.CacheKeys;

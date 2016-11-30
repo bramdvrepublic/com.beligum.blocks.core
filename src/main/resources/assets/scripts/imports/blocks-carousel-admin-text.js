@@ -1,4 +1,4 @@
-base.plugin("blocks.imports.BlocksCarouselText", ["base.core.Class", "blocks.imports.Text", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.MediumEditor", "blocks.core.Sidebar", function (Class, Text, BlocksConstants, BlocksMessages, Broadcaster, Editor, Sidebar)
+base.plugin("blocks.imports.BlocksCarouselAdminText", ["base.core.Class", "blocks.imports.Text", "constants.blocks.core", "messages.blocks.core", "blocks.core.Broadcaster", "blocks.core.MediumEditor", "blocks.core.Sidebar", function (Class, Text, BlocksConstants, BlocksMessages, Broadcaster, Editor, Sidebar)
 {
     var BlocksCarouselText = this;
     this.TAGS = ["blocks-carousel div[property]", "blocks-carousel span[property]"];

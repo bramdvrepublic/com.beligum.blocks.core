@@ -205,11 +205,15 @@ public class PageEndpoint
             //save the file to disk and pull all the proxies etc
             Page savedPage = getPageStore().save(source, new PersonRepository().get(Authentication.getCurrentPrincipal()));
 
-            //above method returns null if nothing changed (so nothing to re-index)
+            //above method returns null if nothing changed
             if (savedPage != null) {
                 //Note: transaction handling is done through the global XA transaction
                 getMainPageIndexer().connect().update(savedPage);
                 getTriplestoreIndexer().connect().update(savedPage);
+
+                //make sure we evict all possible cached values (mainly in production)
+                R.resourceFactory().wipeCacheFor(savedPage.getPublicAbsoluteAddress());
+                R.resourceFactory().wipeCacheFor(savedPage.getPublicRelativeAddress());
             }
         }
         //TODO this is just for debugging weird issues -> throw away when found
@@ -233,9 +237,14 @@ public class PageEndpoint
         //save the file to disk and pull all the proxies etc
         Page deletedPage = getPageStore().delete(URI.create(uri), new PersonRepository().get(Authentication.getCurrentPrincipal()));
 
+        //above method returns null if nothing changed
         if (deletedPage != null) {
             getMainPageIndexer().connect().delete(deletedPage);
             getTriplestoreIndexer().connect().delete(deletedPage);
+
+            //make sure we evict all possible cached values (mainly in production)
+            R.resourceFactory().wipeCacheFor(deletedPage.getPublicAbsoluteAddress());
+            R.resourceFactory().wipeCacheFor(deletedPage.getPublicRelativeAddress());
         }
 
         return Response.ok().build();
