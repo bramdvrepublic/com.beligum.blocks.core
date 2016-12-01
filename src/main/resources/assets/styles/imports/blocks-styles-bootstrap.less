@@ -3,13 +3,19 @@
 
 // Core variables and mixins
 @import "/assets/webjars/bootstrap/3.3.4/less/variables.less";
-@icon-font-path: "/assets/webjars/bootstrap/3.3.4/fonts/";
+//Possibly override bootstrap variables above (and allow sub-projects to override this file)
+@import "/assets/styles/imports/blocks-styles-bootstrap-variables.less";
 @import "/assets/webjars/bootstrap/3.3.4/less/mixins.less";
 
 // Reset and dependencies
 @import "/assets/webjars/bootstrap/3.3.4/less/normalize.less";
 @import "/assets/webjars/bootstrap/3.3.4/less/print.less";
-@import "/assets/webjars/bootstrap/3.3.4/less/glyphicons.less";
+//we won't include the glyphicons here for performance sake:
+//- at first, we don't use it in the core blocks libraries (but fontawesome instead)
+//- secondly, this file is generally included in the page header and the @font-face is a blocking css rule,
+//  so by skipping it, we augment performance on all pages.
+//If you want it, just include it again in the footer of the page.
+//@import "/assets/webjars/bootstrap/3.3.4/less/glyphicons.less";
 
 // Core CSS
 @import "/assets/webjars/bootstrap/3.3.4/less/scaffolding.less";
@@ -52,23 +58,3 @@
 // Utility classes
 @import "/assets/webjars/bootstrap/3.3.4/less/utilities.less";
 @import "/assets/webjars/bootstrap/3.3.4/less/responsive-utilities.less";
-
-
-//-----FONT AWESOME-----
-//@import "/assets/webjars/font-awesome/4.3.0/less/font-awesome.less";
-
-//this seems to be the only way to override the less variable
-@import "/assets/webjars/font-awesome/4.3.0/less/variables.less";
-@fa-font-path: "/assets/webjars/font-awesome/4.3.0/fonts";
-@import "/assets/webjars/font-awesome/4.3.0/less/mixins.less";
-@import "/assets/webjars/font-awesome/4.3.0/less/path.less";
-@import "/assets/webjars/font-awesome/4.3.0/less/core.less";
-@import "/assets/webjars/font-awesome/4.3.0/less/larger.less";
-@import "/assets/webjars/font-awesome/4.3.0/less/fixed-width.less";
-@import "/assets/webjars/font-awesome/4.3.0/less/list.less";
-@import "/assets/webjars/font-awesome/4.3.0/less/bordered-pulled.less";
-@import "/assets/webjars/font-awesome/4.3.0/less/animated.less";
-@import "/assets/webjars/font-awesome/4.3.0/less/rotated-flipped.less";
-@import "/assets/webjars/font-awesome/4.3.0/less/stacked.less";
-@import "/assets/webjars/font-awesome/4.3.0/less/icons.less";
-

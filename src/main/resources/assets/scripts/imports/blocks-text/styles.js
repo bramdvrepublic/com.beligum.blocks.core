@@ -5,7 +5,7 @@
  * Created by wouter on 17/07/15.
  */
 
-base.plugin("blocks.core.MediumEditorStyles", ["messages.blocks.core", function (Messages)
+base.plugin("blocks.core.MediumEditorStyles", ["messages.blocks.core", function (BlocksMessages)
 {
     //-----EDITOR STYLES-----
     //possible it's not loaded (eg. because the block wasn't used in the page)
@@ -18,14 +18,14 @@ base.plugin("blocks.core.MediumEditorStyles", ["messages.blocks.core", function 
         // text is the text in the dropdown
         MediumEditor.setStylePickerStyles([
 
-            {text: null, value: '<li class="dropdown-header">' + Messages.styles_sectionText + '</li>'},
-            {text: Messages.styles_p, value: "p:"},
+            {text: null, value: '<li class="dropdown-header">' + BlocksMessages.widgetTextStyles_sectionTitles + '</li>'},
+            {text: BlocksMessages.widgetTextStyles_h1, value: "h1:"},
+            {text: BlocksMessages.widgetTextStyles_h2, value: "h2:"},
+            {text: BlocksMessages.widgetTextStyles_h3, value: "h3:"},
             {text: null, value: '<li role="separator" class="divider"></li>'},
 
-            {text: null, value: '<li class="dropdown-header">' + Messages.styles_sectionTitles + '</li>'},
-            {text: Messages.styles_h1, value: "h1:"},
-            {text: Messages.styles_h2, value: "h2:"},
-            {text: Messages.styles_h3, value: "h3:"},
+            {text: null, value: '<li class="dropdown-header">' + BlocksMessages.widgetTextStyles_sectionText + '</li>'},
+            {text: BlocksMessages.widgetTextStyles_p, value: "p:"},
             {text: null, value: '<li role="separator" class="divider"></li>'},
         ]);
     }

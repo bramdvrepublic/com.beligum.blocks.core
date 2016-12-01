@@ -43,6 +43,9 @@ public abstract class HtmlTemplate
     //set to 'edit' if you only want the resource to be included if the $BLOCKS_MODE variable is set
     public static final String ATTRIBUTE_RESOURCE_MODE_SCOPE = "data-scope-mode";
 
+    //set to 'inline' to skip this resource during the resource collecting phase and instead render it out where it's defined
+    public static final String ATTRIBUTE_RESOURCE_RENDER_TYPE = "data-render-type";
+
     // set this attribute on an instance to not render the tag itself, but mimic another tag name
     // (eg <blocks-text data-render-tag="div"> to render out a <div> instead of a <blocks-text>)
     // Beware: this will make the tag's direction server-to-client only!!
@@ -54,6 +57,13 @@ public abstract class HtmlTemplate
         UNDEFINED,
         EMPTY,
         edit
+    }
+
+    public enum ResourceRenderType
+    {
+        UNDEFINED,
+        EMPTY,
+        inline
     }
 
     public enum MetaProperty
@@ -328,12 +338,18 @@ public abstract class HtmlTemplate
         //prepend the html with the parent resources if it's there
         if (superTemplate != null) {
             StringBuilder superTemplateResourceHtml = new StringBuilder();
-            this.inlineStyleElements = addSuperTemplateResources(TemplateResourcesDirective.Argument.inlineStyles, superTemplateResourceHtml, this.inlineStyleElements, superTemplate.getAllInlineStyleElements(), null);
+            this.inlineStyleElements =
+                            addSuperTemplateResources(TemplateResourcesDirective.Argument.inlineStyles, superTemplateResourceHtml, this.inlineStyleElements, superTemplate.getAllInlineStyleElements(),
+                                                      null);
             this.externalStyleElements =
-                            addSuperTemplateResources(TemplateResourcesDirective.Argument.externalStyles, superTemplateResourceHtml, this.externalStyleElements, superTemplate.getAllExternalStyleElements(), "href");
-            this.inlineScriptElements = addSuperTemplateResources(TemplateResourcesDirective.Argument.inlineScripts, superTemplateResourceHtml, this.inlineScriptElements, superTemplate.getAllInlineScriptElements(), null);
+                            addSuperTemplateResources(TemplateResourcesDirective.Argument.externalStyles, superTemplateResourceHtml, this.externalStyleElements,
+                                                      superTemplate.getAllExternalStyleElements(), "href");
+            this.inlineScriptElements =
+                            addSuperTemplateResources(TemplateResourcesDirective.Argument.inlineScripts, superTemplateResourceHtml, this.inlineScriptElements,
+                                                      superTemplate.getAllInlineScriptElements(), null);
             this.externalScriptElements =
-                            addSuperTemplateResources(TemplateResourcesDirective.Argument.externalScripts, superTemplateResourceHtml, this.externalScriptElements, superTemplate.getAllExternalScriptElements(), "src");
+                            addSuperTemplateResources(TemplateResourcesDirective.Argument.externalScripts, superTemplateResourceHtml, this.externalScriptElements,
+                                                      superTemplate.getAllExternalScriptElements(), "src");
             tempHtml.insert(0, superTemplateResourceHtml);
         }
 
@@ -505,8 +521,17 @@ public abstract class HtmlTemplate
         StringBuilder builder = new StringBuilder();
 
         //Note: we don't append a newline: it clouds the output html with too much extra whitespace...
-        builder.append("#").append(TagTemplateResourceDirective.NAME).append("(").append(type.ordinal()).append(",").append(print).append(",'").append(attr).append("','")
-               .append(HtmlTemplate.getResourceRoleScope(element)).append("',").append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(")").append(element.toString())
+        builder.append("#").append(TagTemplateResourceDirective.NAME).append("(")
+
+               .append(type.ordinal()).append(",")
+               .append(print).append(",'")
+               .append(attr).append("','")
+               .append(HtmlTemplate.getResourceRoleScope(element)).append("',")
+               .append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(",")
+               .append(HtmlTemplate.getResourceRenderType(element).ordinal())
+
+               .append(")")
+               .append(element.toString())
                .append("#end");
 
         return builder.toString();
@@ -526,7 +551,8 @@ public abstract class HtmlTemplate
 
         return parsedElement;
     }
-    private Iterable<Element> addSuperTemplateResources(TemplateResourcesDirective.Argument type, StringBuilder html, Iterable<Element> templateElements, Iterable<Element> superTemplateElements, String attribute)
+    private Iterable<Element> addSuperTemplateResources(TemplateResourcesDirective.Argument type, StringBuilder html, Iterable<Element> templateElements, Iterable<Element> superTemplateElements,
+                                                        String attribute)
                     throws IOException
     {
         Iterable<Element> retVal = templateElements;
@@ -547,7 +573,7 @@ public abstract class HtmlTemplate
         Attribute scope = resource.getAttributes().get(ATTRIBUTE_RESOURCE_ROLE_SCOPE);
         if (scope != null && !StringUtils.isEmpty(scope.getValue())) {
             SecurityConfiguration securityConfig = R.configuration().getSecurityConfig();
-            if (securityConfig!=null) {
+            if (securityConfig != null) {
                 retVal = securityConfig.lookupPermissionRole(scope.getValue());
             }
         }
@@ -573,6 +599,24 @@ public abstract class HtmlTemplate
         else {
             //this will throw an exception if nothing was found
             retVal = ResourceScopeMode.valueOf(scope.getValue());
+        }
+
+        return retVal;
+    }
+    public static ResourceRenderType getResourceRenderType(Element resource)
+    {
+        ResourceRenderType retVal = null;
+
+        Attribute scope = resource.getAttributes().get(ATTRIBUTE_RESOURCE_RENDER_TYPE);
+        if (scope == null) {
+            retVal = ResourceRenderType.UNDEFINED;
+        }
+        else if (StringUtils.isEmpty(scope.getValue())) {
+            retVal = ResourceRenderType.EMPTY;
+        }
+        else {
+            //this will throw an exception if nothing was found
+            retVal = ResourceRenderType.valueOf(scope.getValue());
         }
 
         return retVal;

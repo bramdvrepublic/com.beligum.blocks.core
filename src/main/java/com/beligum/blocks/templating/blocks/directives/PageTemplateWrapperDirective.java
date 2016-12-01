@@ -240,7 +240,8 @@ public class PageTemplateWrapperDirective extends Directive
             sb.append("<link rel=\"stylesheet\" type=\"" + mimeType + "\" href=\"" + joinUri.toString() + "\">");
         }
         else {
-            sb.append("<script " + "type=\"" + mimeType + "\" src=\"" + joinUri.toString() + "\"></script>");
+            String async = R.configuration().getResourceConfig().getEnableAsyncResources() ? "async " : "";
+            sb.append("<script " + async + "type=\"" + mimeType + "\" src=\"" + joinUri.toString() + "\"></script>");
         }
         sb.append("\n");
 

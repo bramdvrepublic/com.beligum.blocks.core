@@ -189,7 +189,9 @@ base.plugin("blocks.imports.Widget", ["constants.blocks.core", "messages.blocks.
                         element.removeClass(values[i].value);
                     }
 
-                    element.addClass(newValue);
+                    if (newValue) {
+                        element.addClass(newValue);
+                    }
 
                     //propagate up if we have a someone listening
                     if (changeListener) {

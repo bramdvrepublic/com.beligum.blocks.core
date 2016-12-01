@@ -1,32 +1,31 @@
 <meta property="blocks:display" content="hidden">
 
 ## -----COMMON IMPORTS-----
-## this will import the bootstrap and fontawesome with the right paths so relative paths works while minimizing
-<link href="/assets/styles/imports/blocks-styles.less" rel="stylesheet"/>
 
-<link href="/assets/webjars/bootstrap-dialog/1.34.3/css/bootstrap-dialog.css" rel="stylesheet"/>
+## this will import the bootstrap with the right paths so relative paths works while minimizing
+## Note that we don't include fontawesome here, because we prefer to add it in the footer of the page for performance reasons.
+## If you want it, just add it again (see below) in the footer of the page and the resource parser will eliminate any possible doubles.
+<link href="/assets/styles/imports/blocks-styles-bootstrap.less" rel="stylesheet">
+
+<link href="/assets/webjars/bootstrap-dialog/1.34.3/css/bootstrap-dialog.css" rel="stylesheet">
 
 ## dynamic page with reset code for the imports
-<link href="/templates/styles/imports/reset.css" rel="stylesheet"/>
-
+<link href="/templates/styles/imports/reset.css" rel="stylesheet">
 
 
 ## -----ADMIN IMPORTS-----
-## this $BLOCKS_MODE is set server-side
-#if($PRINCIPAL)
+## if we reach this part, we need to include it no matter what
+<link href="/assets/styles/imports/blocks-styles-fontawesome.less" rel="stylesheet" data-scope-role="user">
 
 ## all styles for the sidebar, etc; always included (because we also need some styles for the select-template page)
-<link href="/assets/styles/blocks.less" rel="stylesheet"/>
+<link href="/assets/styles/blocks.less" rel="stylesheet" data-scope-role="user">
 
-    #if($BLOCKS_MODE=="edit")
-    <link href="/assets/webjars/bootstrap-toggle/2.2.0/css/bootstrap-toggle.css" rel="stylesheet"/>
-    <link href="/assets/webjars/bootstrap-slider/4.8.3/css/bootstrap-slider.css" rel="stylesheet"/>
 
-    ## for autocomplete widget in widget.js
-    <link href="/assets/styles/imports/blocks-fiche-entry/typeaheadjs.css" rel="stylesheet"/>
-    #end
+## -----ADMIN + EDIT IMPORTS-----
+<link href="/assets/webjars/bootstrap-toggle/2.2.0/css/bootstrap-toggle.css" rel="stylesheet" data-scope-role="user" data-scope-mode="edit">
+<link href="/assets/webjars/bootstrap-slider/4.8.3/css/bootstrap-slider.css" rel="stylesheet" data-scope-role="user" data-scope-mode="edit">
+<link href="/assets/styles/imports/blocks-fiche-entry/typeaheadjs.css" rel="stylesheet" data-scope-role="user" data-scope-mode="edit">
 
-#end
 
 ## just to make it a template
 <template></template>
