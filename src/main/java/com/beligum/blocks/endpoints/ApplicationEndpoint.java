@@ -20,6 +20,7 @@ import com.beligum.blocks.fs.pages.ReadOnlyPage;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ontology.factories.Terms;
+import com.beligum.blocks.rdf.sources.HtmlSource;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
@@ -28,7 +29,9 @@ import com.beligum.blocks.templating.blocks.TemplateCache;
 import com.beligum.blocks.utils.comparators.MapComparator;
 import gen.com.beligum.blocks.core.constants.blocks.core;
 import gen.com.beligum.blocks.core.fs.html.views.new_page;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.fs.FileContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -37,8 +40,9 @@ import org.apache.shiro.SecurityUtils;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriBuilder;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
@@ -81,10 +85,11 @@ public class ApplicationEndpoint
 
         if (retVal == null) {
             Page page = new ReadOnlyPage(requestedUri);
+            FileContext fileContext = page.getResourcePath().getFileContext();
             // Since we allow the user to create pretty url's, it's mime type will not always be clear.
             // But note this endpoint only accepts HTML requests, so force the mime type
             Resource resource = R.resourceFactory()
-                                 .lookup(new HdfsResource(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), page.getResourcePath().getFileContext(), page.getNormalizedPageProxyPath()));
+                                 .lookup(new HdfsResource(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), fileContext, page.getNormalizedPageProxyPath()));
 
             Locale optimalLocale = R.i18nFactory().getOptimalLocale();
             URI externalRedirectUri = null;
@@ -267,10 +272,12 @@ public class ApplicationEndpoint
                                         }
                                     }
 
-                                    //this means we redirected from the new-template-selection page
+                                    //this means we redirected from the new-page-selection page
                                     String newPageTemplateName = null;
+                                    String newPageCopyUrl = null;
                                     if (R.cacheManager().getFlashCache().getTransferredEntries() != null) {
                                         newPageTemplateName = (String) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_TEMPLATE_NAME.name());
+                                        newPageCopyUrl = (String) R.cacheManager().getFlashCache().getTransferredEntries().get(CacheKeys.NEW_PAGE_COPY_URL.name());
                                     }
 
                                     //OPTION 5: there's a template-selection in the flash cache (we came from the page-selection page)
@@ -291,6 +298,29 @@ public class ApplicationEndpoint
                                             throw new InternalServerErrorException("Requested to create a new page with an invalid page template name; " + newPageTemplateName);
                                         }
                                     }
+                                    else if (!StringUtils.isEmpty(newPageCopyUrl)) {
+
+                                        Page copyPage = new ReadOnlyPage(URI.create(newPageCopyUrl));
+
+                                        if (fileContext.util().exists(copyPage.getResourcePath().getLocalPath())) {
+                                            HtmlSource html = copyPage.readOriginalHtml();
+                                            html.prepareForCopying(fileContext);
+
+                                            retVal = Response.ok(new StreamingOutput()
+                                            {
+                                                @Override
+                                                public void write(OutputStream out) throws IOException, WebApplicationException
+                                                {
+                                                    try (InputStream is = html.openNewInputStream()) {
+                                                        IOUtils.copy(is, out);
+                                                    }
+                                                }
+                                            }).type(Resource.MimeType.HTML.toString());
+                                        }
+                                        else {
+                                            throw new InternalServerErrorException("Requested to create a new page with an unknown page to copy from; " + newPageCopyUrl);
+                                        }
+                                    }
                                     //here, the page doesn't exist, but we can create it
                                     else {
 
@@ -308,6 +338,7 @@ public class ApplicationEndpoint
                                             Template newPageTemplateList = new_page.get().getNewTemplate();
                                             newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_URL.getValue(), requestedUri.toString());
                                             newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TEMPLATES.getValue(), this.buildLocalizedPageTemplateMap());
+                                            newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TRANSLATIONS.getValue(), this.buildTranslatedPagesMap(fileContext, requestedUri));
 
                                             //Note: we don't set the edit mode for safety: it makes sure the user has no means to save the in-between selection page
 
@@ -338,8 +369,9 @@ public class ApplicationEndpoint
     }
     private List<Map<String, String>> buildLocalizedPageTemplateMap()
     {
+        List<Map<String, String>> retVal = new ArrayList<>();
+
         TemplateCache cache = HtmlParser.getTemplateCache();
-        List<Map<String, String>> pageTemplates = new ArrayList<>();
         Locale requestLocale = I18nFactory.instance().getOptimalLocale();
         for (HtmlTemplate template : cache.values()) {
             if (template instanceof PageTemplate) {
@@ -381,13 +413,37 @@ public class ApplicationEndpoint
                 pageTemplate.put(core.Entries.NEW_PAGE_TEMPLATE_TITLE.getValue(), title);
                 pageTemplate.put(core.Entries.NEW_PAGE_TEMPLATE_DESCRIPTION.getValue(), description);
 
-                pageTemplates.add(pageTemplate);
+                retVal.add(pageTemplate);
             }
         }
 
-        Collections.sort(pageTemplates, new MapComparator(core.Entries.NEW_PAGE_TEMPLATE_TITLE.getValue()));
+        Collections.sort(retVal, new MapComparator(core.Entries.NEW_PAGE_TEMPLATE_TITLE.getValue()));
 
-        return pageTemplates;
+        return retVal;
+    }
+    private Map<Locale, Page> buildTranslatedPagesMap(FileContext fileContext, URI currentPage) throws IOException
+    {
+        Map<Locale, Page> retVal = new LinkedHashMap<>();
+
+        Locale thisLang = R.i18nFactory().getUrlLocale(currentPage);
+        Map<String, Locale> siteLanguages = R.configuration().getLanguages();
+
+        for (Map.Entry<String, Locale> l : siteLanguages.entrySet()) {
+            Locale lang = l.getValue();
+            //we're searching for a translation, not the same language
+            if (!lang.equals(thisLang)) {
+                UriBuilder translatedUri = UriBuilder.fromUri(currentPage);
+                if (R.i18nFactory().getUrlLocale(currentPage, translatedUri, lang) != null) {
+                    URI transPagePublicUri = translatedUri.build();
+                    Page transPage = new ReadOnlyPage(transPagePublicUri);
+                    if (fileContext.util().exists(transPage.getResourcePath().getLocalPath())) {
+                        retVal.put(lang, transPage);
+                    }
+                }
+            }
+        }
+
+        return retVal;
     }
     /**
      * This is modified version of StringFunctions.prepareSeoValue()

@@ -1,37 +1,39 @@
 // Overlay when editing and for dialogs
-@import "/constants/blocks/core?type=less";
-@import "/constants/blocks/media/core?type=less";
-
+@import (reference) "/constants/blocks/core?type=less";
+@import (reference) "/constants/blocks/media/core?type=less";
 //-----LIBRARIES-----
-@import "/assets/webjars/less-animate/1.0.0/source/pulse.less";
-@import "/assets/webjars/font-awesome/4.3.0/less/variables.less";
-@import "/assets/webjars/font-awesome/4.3.0/less/core.less";
-@import "/assets/webjars/font-awesome/4.3.0/less/icons.less";
-@import "/assets/webjars/font-awesome/4.3.0/less/animated.less";
-@import "/assets/webjars/font-awesome/4.3.0/less/mixins.less";
-@import "/assets/webjars/font-awesome/4.3.0/less/rotated-flipped.less";
-@import "/assets/styles/loader.less";
-@import "/assets/styles/finder.less";
+@import (reference) "/assets/webjars/less-animate/1.0.0/source/pulse.less";
+@import (reference) "/assets/webjars/font-awesome/4.3.0/less/variables.less";
+@import (reference) "/assets/webjars/font-awesome/4.3.0/less/core.less";
+@import (reference) "/assets/webjars/font-awesome/4.3.0/less/icons.less";
+@import (reference) "/assets/webjars/font-awesome/4.3.0/less/animated.less";
+@import (reference) "/assets/webjars/font-awesome/4.3.0/less/mixins.less";
+@import (reference) "/assets/webjars/font-awesome/4.3.0/less/rotated-flipped.less";
+@import (reference) "/assets/webjars/font-awesome/4.3.0/less/fixed-width.less";
+@import (reference) "/assets/webjars/font-awesome/4.3.0/less/larger.less";
+@import (reference) "/assets/webjars/font-awesome/4.3.0/less/list.less";
+@import (reference) "/assets/styles/loader.less";
+@import (reference) "/assets/styles/finder.less";
 
 @finderBgColor: #ffffff;
 
 //-----BASIC BOOTSTRAP MIXINS-----
-@import "/assets/webjars/bootstrap/3.3.4/less/variables.less";
-@import "/assets/webjars/bootstrap/3.3.4/less/mixins.less";
-@import "/assets/webjars/bootstrap/3.3.4/less/utilities.less";
+@import (reference) "/assets/webjars/bootstrap/3.3.4/less/variables.less";
+@import (reference) "/assets/webjars/bootstrap/3.3.4/less/mixins.less";
+@import (reference) "/assets/webjars/bootstrap/3.3.4/less/utilities.less";
 // Reset and dependencies
-@import "/assets/webjars/bootstrap/3.3.4/less/normalize.less";
+@import (reference) "/assets/webjars/bootstrap/3.3.4/less/normalize.less";
 // Core CSS
-@import "/assets/webjars/bootstrap/3.3.4/less/buttons.less";
-@import "/assets/webjars/bootstrap/3.3.4/less/forms.less";
+@import (reference) "/assets/webjars/bootstrap/3.3.4/less/buttons.less";
+@import (reference) "/assets/webjars/bootstrap/3.3.4/less/forms.less";
 // Components
-@import "/assets/webjars/bootstrap/3.3.4/less/dropdowns.less";
-@import "/assets/webjars/bootstrap/3.3.4/less/button-groups.less";
-@import "/assets/webjars/bootstrap/3.3.4/less/input-groups.less";
-@import "/assets/webjars/bootstrap/3.3.4/less/panels.less";
-@import "/assets/webjars/bootstrap/3.3.4/less/type.less";
-@import "/assets/webjars/bootstrap/3.3.4/less/thumbnails.less";
-@import "/assets/webjars/bootstrap/3.3.4/less/wells.less";
+@import (reference) "/assets/webjars/bootstrap/3.3.4/less/dropdowns.less";
+@import (reference) "/assets/webjars/bootstrap/3.3.4/less/button-groups.less";
+@import (reference) "/assets/webjars/bootstrap/3.3.4/less/input-groups.less";
+@import (reference) "/assets/webjars/bootstrap/3.3.4/less/panels.less";
+@import (reference) "/assets/webjars/bootstrap/3.3.4/less/type.less";
+@import (reference) "/assets/webjars/bootstrap/3.3.4/less/thumbnails.less";
+@import (reference) "/assets/webjars/bootstrap/3.3.4/less/wells.less";
 
 //-----MIXINS-----
 //note that this requires a relatively positioned parent
@@ -168,11 +170,11 @@ body.@{BODY_EDIT_MODE_CLASS} {
 }
 
 .list-group {
-  //add some nice striping
+  //add some nice (ugly) striping
   & > .list-group-item:nth-child(odd) {
-    background-color: lighten(@btn-primary-bg, 50%);
+    //background-color: lighten(@btn-primary-bg, 50%);
     &:hover {
-      background-color: lighten(@btn-primary-bg, 45%);
+      //background-color: lighten(@btn-primary-bg, 45%);
     }
   }
 }
@@ -242,21 +244,21 @@ body.@{BODY_EDIT_MODE_CLASS} {
   border: none;
   &.@{BLOCKS_DROPSPOT_CLASS}-top,
   &.@{BLOCKS_DROPSPOT_CLASS}-bottom {
-    background: -moz-linear-gradient(left,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* FF3.6+ */
-    background: -webkit-gradient(linear, left top, right top, color-stop(0%,@stopColor), color-stop(@startPct,@startColor), color-stop(50%,@startColor), color-stop(@stopPct,@startColor), color-stop(100%,@stopColor)); /* Chrome,Safari4+ */
-    background: -webkit-linear-gradient(left,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Chrome10+,Safari5.1+ */
-    background: -o-linear-gradient(left,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Opera 11.10+ */
-    background: -ms-linear-gradient(left,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* IE10+ */
-    background: linear-gradient(to right,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* W3C */
+    background: -moz-linear-gradient(left, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* FF3.6+ */
+    background: -webkit-gradient(linear, left top, right top, color-stop(0%, @stopColor), color-stop(@startPct, @startColor), color-stop(50%, @startColor), color-stop(@stopPct, @startColor), color-stop(100%, @stopColor)); /* Chrome,Safari4+ */
+    background: -webkit-linear-gradient(left, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Chrome10+,Safari5.1+ */
+    background: -o-linear-gradient(left, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Opera 11.10+ */
+    background: -ms-linear-gradient(left, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* IE10+ */
+    background: linear-gradient(to right, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* W3C */
   }
   &.@{BLOCKS_DROPSPOT_CLASS}-right,
   &.@{BLOCKS_DROPSPOT_CLASS}-left {
-    background: -moz-linear-gradient(top,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* FF3.6+ */
-    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,@stopColor), color-stop(@startPct,@startColor), color-stop(50%,@startColor), color-stop(@stopPct,@startColor), color-stop(100%,@stopColor)); /* Chrome,Safari4+ */
-    background: -webkit-linear-gradient(top,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Chrome10+,Safari5.1+ */
-    background: -o-linear-gradient(top,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Opera 11.10+ */
-    background: -ms-linear-gradient(top,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* IE10+ */
-    background: linear-gradient(to bottom,  @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* W3C */
+    background: -moz-linear-gradient(top, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* FF3.6+ */
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, @stopColor), color-stop(@startPct, @startColor), color-stop(50%, @startColor), color-stop(@stopPct, @startColor), color-stop(100%, @stopColor)); /* Chrome,Safari4+ */
+    background: -webkit-linear-gradient(top, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Chrome10+,Safari5.1+ */
+    background: -o-linear-gradient(top, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* Opera 11.10+ */
+    background: -ms-linear-gradient(top, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* IE10+ */
+    background: linear-gradient(to bottom, @stopColor 0%, @startColor @startPct, @startColor 50%, @startColor @stopPct, @stopColor 100%); /* W3C */
   }
 }
 
@@ -728,50 +730,158 @@ ul.@{BLOCK_ACTIONS_CLASS} {
 
 .@{NEW_BLOCK_MODAL_CLASS},
 .@{NEW_PAGE_CLASS} {
-  .list-group {
-    max-width: 600px;
-    max-height: 400px;
-    overflow-y: auto;
-    .list-group-item {
-      .clearfix;
-      margin: 10px; //reset bootstrap
 
-      h4 {
-        //adjust bootstrap defaults
-        margin-top: 12px;
-        margin-bottom: 0px;
+  .actions-group {
+
+    margin-top: 40px;
+    padding: 0;
+
+    @actions-hor-padding: 40px;
+    .actions {
+      border-right: 1px solid @btn-default-border;
+    }
+    &:nth-child(odd) {
+      .actions {
+        padding-left: @actions-hor-padding;
+        padding-right: @actions-hor-padding;
       }
-      .preview,
-      .caption {
-        .pull-left;
+    }
+    &:nth-child(even) {
+      .actions {
+        padding-left: @actions-hor-padding;
+        padding-right: @actions-hor-padding;
+      }
+    }
+    &:last-child {
+      .actions {
+        border-right: none;
+      }
+    }
+
+    & > .title {
+      text-align: center;
+      font-size: 1.2em;
+
+      .number {
+        display: block;
+        margin: 0 auto 15px auto;
+        text-align: center;
+        color: @brand-primary;
+        .opacity(.3);
+
+        .digit {
+          line-height: 100%;
+          font-weight: bold;
+          font-family: sans-serif;
+        }
       }
 
-      .preview {
-        .thumbnail;
-        .fa {
-          display: block;
-          background-color: #FFFFFF;
-          color: @btn-default-border;
+      &:after {
+        display: block;
+        content: attr(data-placeholder) !important;
+        height: 1px;
+        border-bottom: 1px solid @btn-default-border;
+        padding-top: 25px;
+        margin-bottom: 25px;
+        width: 5%;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    }
 
-          @size: 50px;
-          @fontSize: @size * 0.8;
-          font-size: @fontSize;
-          width: @size;
-          height: @size;
-          line-height: @size + ((@size - @fontSize)/2); //more or less does the trick
-          text-align: center;
-          .opacity(0.5);
+    .translations {
+      //vertical align with left side
+      padding-top: 10px;
+
+      p {
+
+      }
+      ul {
+        &:extend(.fa-ul all);
+
+        li {
+          .fa {
+            &:extend(.fa-li all);
+            color: @brand-primary;
+          }
+          a {
+            color: @brand-primary;
+          }
+        }
+      }
+    }
+
+    .list-group {
+
+      .list-group-item {
+        .clearfix;
+
+        //looks better without borders
+        border: none;
+
+        .preview,
+        .caption {
         }
 
-        margin: 0 20px 0 0; //reset bootstrap thumbnail
-      }
-      .caption {
-        p {
-          margin-bottom: 0; //reset
+        @preview-size: 24px;
+        @preview-margin: (@grid-gutter-width / 2);
+
+        .preview {
+          width: @preview-size;
+          height: @preview-size;
+          margin-right: @preview-margin;
+
+          //float on the icon and not the caption is the right way
+          float: left;
+
+          .fa {
+            color: tint(@brand-primary, 50%);
+
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+
+            &:before {
+              position: absolute;
+              font-size: @preview-size;
+              top: 50%;
+              left: 50%;
+              margin: -(@preview-size/2) 0 0 -(@preview-size/2);
+            }
+          }
+        }
+        .caption {
+
+          //disable this if you want the text to float around the preview
+          padding-left: @preview-size + @preview-margin;
+
+          line-height: 1em;
+
+          * {
+            display: block;
+            margin: 0;
+            padding: 0;
+
+            &.title {
+              color: @brand-primary;
+              padding-top: 2px;
+            }
+            &.description {
+              .opacity(0.8);
+              padding-top: 3px;
+            }
+          }
         }
       }
     }
   }
+}
+
+.@{NEW_BLOCK_MODAL_CLASS} {
+  //max-width: 600px;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 //-----MEDIUM EDITOR-----
@@ -821,7 +931,6 @@ ul.@{BLOCK_ACTIONS_CLASS} {
           .btn.active;
           .btn-default.active;
         }
-
 
         .border-radius(0, 0, 0, 0) !important;
         .box-shadow(none) !important;
@@ -879,8 +988,8 @@ ul.@{BLOCK_ACTIONS_CLASS} {
             width: @activePadding;
             text-align: center;
             font-size: 0.6em;
-            color: rgba(0,0,0,.3);
-            text-shadow: 0px 1px 0px rgba(255,255,255,.3), 0px -1px 0px rgba(0,0,0,.3);
+            color: rgba(0, 0, 0, .3);
+            text-shadow: 0px 1px 0px rgba(255, 255, 255, .3), 0px -1px 0px rgba(0, 0, 0, .3);
           }
 
           //revert the colors, we'll use bullets instead

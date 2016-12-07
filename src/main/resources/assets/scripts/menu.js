@@ -121,19 +121,37 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                     }
                 }
 
+                //since the selector of this handler only manages <a> and <button>, we only have two options
+                var newLocation = null;
+
                 //if shift is pressed, allow parse through (allow for easy navigation when you know what you're doing)
                 if (!pierceThrough) {
                     pierceThrough = Frame.isKeyPressed(Frame.KEY_CODE_SHIFT);
+                    if (pierceThrough) {
+                        var tag = control.prop("tagName").toLowerCase();
+                        //for now, we only support regular links, because buttons are harder to implement...
+                        if (tag=="a") {
+                            newLocation = control.attr("href");
+                        }
+                        else {
+                            pierceThrough = false;
+                            Logger.warn("Unsupported tag name encountered while handling a force-click; "+tag);
+                        }
+                    }
                 }
 
                 if (pierceThrough) {
-                    //NOOP
+                    if (newLocation) {
+                        window.location = newLocation;
+                    }
                 }
                 else {
                     e.preventDefault();
                     Notification.warn(BlocksMessages.clicksDisabledWhileEditing);
                 }
 
+                //Returning false from an event handler will automatically call
+                // event.stopPropagation() and event.preventDefault().
                 return !pierceThrough;
             });
 
@@ -459,6 +477,8 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 })
                 .fail(function (xhr, textStatus, exception)
                 {
+                    dialog.close();
+
                     var message = response.status == 400 ? response.responseText : "An error occurred while deleting the page.";
                     Notification.dialog("Error", "<div>" + message + "</div>", function ()
                     {
@@ -466,7 +486,10 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 })
                 .always(function ()
                 {
-                    dialog.close();
+                    //Note: we don't close it here, but in the fail() instead,
+                    // because the done() does a redirect and thus displays the message all
+                    // the way to the end
+                    //dialog.close();
                 });
         };
 
@@ -507,20 +530,17 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     {
         switch (e.type) {
             case "keydown" :
-                keysPressed.push(e.keyCode);
+                keysPressed[e.keyCode] = true;
                 break;
             case "keyup" :
-                var idx = keysPressed.indexOf(e.keyCode);
-                if (idx >= 0) {
-                    keysPressed.splice(idx, 1);
-                }
+                keysPressed[e.keyCode] = false;
                 break;
         }
     });
 
     this.isKeyPressed = function (code)
     {
-        return keysPressed.indexOf(code) >= 0;
+        return keysPressed[code] === true;
     };
 
     //TODO SETUP THE KEYBOARD SHORTCUTS (messed up the editor)

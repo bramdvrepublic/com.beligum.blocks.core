@@ -45,6 +45,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.beligum.blocks.config.StorageFactory.*;
+import static gen.com.beligum.blocks.core.constants.blocks.core.*;
 
 /**
  * Created by bram on 2/10/16.
@@ -89,24 +90,33 @@ public class PageEndpoint
     @GET
     @Path("/template")
     @RequiresPermissions(value = { Permissions.PAGE_CREATE_PERMISSION_STRING })
-    public Response getPageTemplate(@QueryParam("page_url") String pageUrl,
-                                    @QueryParam("page_class_name") String pageTemplateName) throws URISyntaxException
+    public Response getPageTemplate(@QueryParam(NEW_PAGE_URL_PARAM) String pageUrl,
+                                    @QueryParam(NEW_PAGE_TEMPLATE_PARAM) String pageTemplateName,
+                                    @QueryParam(NEW_PAGE_COPY_URL_PARAM) String pageCopyUrl) throws URISyntaxException
     {
         if (StringUtils.isEmpty(pageUrl)) {
             throw new InternalServerErrorException(core.Entries.newPageNoUrlError.getI18nValue());
         }
-        if (StringUtils.isEmpty(pageTemplateName)) {
-            throw new InternalServerErrorException(core.Entries.newPageNoTemplatenameError.getI18nValue());
-        }
-        PageTemplate pageTemplate = (PageTemplate) HtmlParser.getTemplateCache().getByTagName(pageTemplateName);
-        if (pageTemplate == null) {
-            throw new InternalServerErrorException(core.Entries.newPageUnknownTemplateError.getI18nValue());
-        }
+        else {
+            boolean processed = false;
 
-        R.cacheManager().getFlashCache().put(CacheKeys.NEW_PAGE_TEMPLATE_NAME.name(), pageTemplateName);
+            if (!StringUtils.isEmpty(pageTemplateName)) {
+                R.cacheManager().getFlashCache().put(CacheKeys.NEW_PAGE_TEMPLATE_NAME.name(), pageTemplateName);
+                processed = true;
+            }
 
-        //redirect to the requested page with the flash cache filled in
-        return Response.seeOther(new URI(pageUrl)).build();
+            if (!StringUtils.isEmpty(pageCopyUrl)) {
+                R.cacheManager().getFlashCache().put(CacheKeys.NEW_PAGE_COPY_URL.name(), pageCopyUrl);
+                processed = true;
+            }
+
+            if (!processed) {
+                throw new InternalServerErrorException(core.Entries.newPageNoDataError.getI18nValue());
+            }
+
+            //redirect to the requested page with the flash cache filled in
+            return Response.seeOther(new URI(pageUrl)).build();
+        }
     }
 
     /**

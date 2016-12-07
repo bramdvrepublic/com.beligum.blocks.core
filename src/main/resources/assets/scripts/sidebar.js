@@ -111,9 +111,9 @@ base.plugin("blocks.core.Sidebar", ["blocks.core.Broadcaster", "constants.blocks
                 windowTitle = title + '<i class="fa fa-fw fa-angle-right"/>' + blockTitle;
             }
 
-            //we'll expand all windows by default, except the row
+            //we'll expand all windows by default, except the row and column
             var collapsed = false;
-            if (e.block instanceof blocks.elements.Row) {
+            if (e.block instanceof blocks.elements.Row || e.block instanceof blocks.elements.Column) {
                 collapsed = true;
             }
             //if we're showing the controls for a block, close the window panel

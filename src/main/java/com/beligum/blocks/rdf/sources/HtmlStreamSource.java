@@ -49,6 +49,8 @@ public class HtmlStreamSource extends HtmlSource
         super(sourceAddress);
 
         this.construct(sourceAddress, stream);
+
+        this.initDocument();
     }
 
     //-----PUBLIC METHODS-----

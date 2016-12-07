@@ -4,11 +4,10 @@
         ## Note: constant will pierce through the click-blocker
             <a href="javascript:void(0)" class="list-group-item" data-value="$block[$CONSTANTS.blocks.core.NEW_BLOCK_NAME]" $CONSTANTS.blocks.core.FORCE_CLICK_ATTR>
                 <div class="preview">
-                    <i class="fa fa-fw #if($block[$CONSTANTS.blocks.core.NEW_BLOCK_ICON])$block[$CONSTANTS.blocks.core.NEW_BLOCK_ICON]#{else}fa-square-o#end"></i>
+                    <i class="fa #if($block[$CONSTANTS.blocks.core.NEW_BLOCK_ICON])$block[$CONSTANTS.blocks.core.NEW_BLOCK_ICON]#{else}fa-square-o#end"></i>
                 </div>
                 <div class="caption">
                     <h4>$block[$CONSTANTS.blocks.core.NEW_BLOCK_TITLE]</h4>
-
                     <p>
                         $block[$CONSTANTS.blocks.core.NEW_BLOCK_DESCRIPTION]
                     </p>

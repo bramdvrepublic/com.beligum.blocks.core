@@ -30,6 +30,11 @@ public interface Source
     void prepareForSaving(FileContext fileContext) throws IOException;
 
     /**
+     * Prepare this source (perform all required processing) for using it as the source for a new page
+     */
+    void prepareForCopying(FileContext fileContext) throws IOException;
+
+    /**
      * @return a newly created stream for reading the contents of this source
      */
     InputStream openNewInputStream() throws IOException;

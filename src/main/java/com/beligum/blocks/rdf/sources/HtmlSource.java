@@ -102,6 +102,19 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
         //force a re-analyze (and hope it hasn't been analyzed yet)
         this.htmlAnalyzer = null;
     }
+    @Override
+    public void prepareForCopying(FileContext fileContext) throws IOException
+    {
+        //We'll remove all attributes we know so the new page doesn't have
+        // any backreferences to the old page we're copying from.
+        //Note: we can't just delete all attributes because we eg. can't touch the page template attribute
+
+        this.htmlTag.removeAttr(HTML_ROOT_LANG_ATTR);
+        this.htmlTag.removeAttr(HTML_ROOT_PREFIX_ATTR);
+        this.htmlTag.removeAttr(HTML_ROOT_SUBJECT_ATTR);
+        this.htmlTag.removeAttr(HTML_ROOT_TYPEOF_ATTR);
+        this.htmlTag.removeAttr(HTML_ROOT_VOCAB_ATTR);
+    }
     /**
      * Note that by default this will return _X_HTML
      */
@@ -112,14 +125,10 @@ public abstract class HtmlSource implements com.beligum.blocks.rdf.ifaces.Source
     }
     public InputStream openNewHtmlInputStream() throws IOException
     {
-
-
         return new ByteArrayInputStream(this.document.outputSettings(this.buildNewStreamOutputSettings(this.document).syntax(Document.OutputSettings.Syntax.html)).outerHtml().getBytes(this.document.charset()));
     }
     public InputStream openNewXHtmlInputStream() throws IOException
     {
-
-
         return new ByteArrayInputStream(this.document.outputSettings(this.buildNewStreamOutputSettings(this.document).syntax(Document.OutputSettings.Syntax.xml)).outerHtml().getBytes(this.document.charset()));
     }
 

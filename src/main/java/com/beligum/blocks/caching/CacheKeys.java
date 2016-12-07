@@ -31,8 +31,10 @@ public enum CacheKeys implements CacheKey
     REQUEST_TRANSACTION,
     //application cache key to store the triplestore engine
     TRIPLESTORE_ENGINE,
-    //flash cache key that holds the temporarily selected new page tempalte
+    //flash cache key that holds the temporarily selected new page template
     NEW_PAGE_TEMPLATE_NAME,
+    //flash cache key that holds the temporarily selected new page URL to copy from
+    NEW_PAGE_COPY_URL,
     //Application cache key that hold the flag that indicates the basic lucene structures exist
     LUCENE_INDEX_BOOTED,
     //Application cache key that hold the lucene index writer
