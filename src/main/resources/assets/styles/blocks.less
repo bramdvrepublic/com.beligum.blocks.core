@@ -1,6 +1,7 @@
 // Overlay when editing and for dialogs
 @import (reference) "/constants/blocks/core?type=less";
 @import (reference) "/constants/blocks/media/core?type=less";
+
 //-----LIBRARIES-----
 @import (reference) "/assets/webjars/less-animate/1.0.0/source/pulse.less";
 @import (reference) "/assets/webjars/font-awesome/4.3.0/less/variables.less";
@@ -12,8 +13,10 @@
 @import (reference) "/assets/webjars/font-awesome/4.3.0/less/fixed-width.less";
 @import (reference) "/assets/webjars/font-awesome/4.3.0/less/larger.less";
 @import (reference) "/assets/webjars/font-awesome/4.3.0/less/list.less";
+
 @import (reference) "/assets/styles/loader.less";
-@import (reference) "/assets/styles/finder.less";
+//Note: this is no references, we need to include it entirely
+@import "/assets/styles/finder.less";
 
 @finderBgColor: #ffffff;
 
@@ -806,6 +809,48 @@ ul.@{BLOCK_ACTIONS_CLASS} {
           }
           a {
             color: @brand-primary;
+          }
+        }
+      }
+    }
+
+    .copy {
+      input {
+        //scale down a little
+        width: 80%;
+      }
+
+      //typeahead menu wrapper
+      .tt-menu {
+
+        //typeahead suggestion entry wrapper
+        .tt-suggestion {
+
+          cursor: pointer;
+
+          //individiual sub-sections in a suggestion box
+          p {
+            max-width: 220px;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow-x: hidden;
+            margin-right: 10px;
+
+            &.@{INPUT_TYPE_RES_SUG_TITLE_CLASS} {
+              font-weight: bold;
+              margin: 0;
+            }
+            &.@{INPUT_TYPE_RES_SUG_SUBTITLE_CLASS} {
+              font-size: 0.8em;
+              margin: 0;
+            }
+          }
+
+          &.@{INPUT_TYPE_RES_SUG_EMPTY_CLASS} {
+            p.@{INPUT_TYPE_RES_SUG_TITLE_CLASS} {
+              font-weight: normal;
+              font-style: italic;
+            }
           }
         }
       }

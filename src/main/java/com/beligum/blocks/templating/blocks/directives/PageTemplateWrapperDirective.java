@@ -8,6 +8,7 @@ import com.beligum.blocks.templating.blocks.TemplateResources;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import com.google.javascript.jscomp.SourceFile;
+import org.apache.commons.io.IOUtils;
 import org.apache.velocity.context.InternalContextAdapter;
 import org.apache.velocity.exception.MethodInvocationException;
 import org.apache.velocity.exception.ParseErrorException;
@@ -18,11 +19,14 @@ import org.apache.velocity.runtime.directive.Directive;
 import org.apache.velocity.runtime.parser.node.Node;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by bram on 5/28/15.
@@ -34,6 +38,8 @@ public class PageTemplateWrapperDirective extends Directive
     public static final String NAME = "ptwd";
 
     //-----VARIABLES-----
+    //ugly static cache, but should remain fairly small and is only used when inlining is enabled
+    private static Map<URI, Long> assetPackSizeCache = new HashMap<>();
 
     //-----CONSTRUCTORS-----
 
@@ -237,11 +243,42 @@ public class PageTemplateWrapperDirective extends Directive
         URI joinUri = JoinResolver.instance().registerAssetPack(cacheKey, lastType.getMatchingMimeType(), currentAssetPack);
         String mimeType = lastType.getMatchingMimeType().getMimeType().toString();
         if (lastType == TemplateResourcesDirective.Argument.externalStyles) {
-            sb.append("<link rel=\"stylesheet\" type=\"" + mimeType + "\" href=\"" + joinUri.toString() + "\">");
+            //let's see if we can optimize this page by inlining this styles
+            //See https://developers.google.com/speed/docs/insights/OptimizeCSSDelivery for details
+            //Note: the limits come from the sizes of the inlined styles and scripts of that Google page:
+            //      - <style> = 49K
+            //      - <script> = 139K
+            boolean inlined = false;
+            if (R.configuration().getResourceConfig().getEnableInlineResources()) {
+                long size = this.fetchRemoteSize(joinUri);
+                if (size <= R.configuration().getResourceConfig().getInlineStylesThreshold()) {
+                    sb.append("<style>");
+                    sb.append(this.fetchRemoteContent(joinUri));
+                    sb.append("</style>");
+                    inlined = true;
+                }
+            }
+
+            if (!inlined) {
+                sb.append("<link rel=\"stylesheet\" type=\"" + mimeType + "\" href=\"" + joinUri.toString() + "\">");
+            }
         }
         else {
-            String async = R.configuration().getResourceConfig().getEnableAsyncResources() ? "async " : "";
-            sb.append("<script " + async + "type=\"" + mimeType + "\" src=\"" + joinUri.toString() + "\"></script>");
+            boolean inlined = false;
+            if (R.configuration().getResourceConfig().getEnableInlineResources()) {
+                long size = this.fetchRemoteSize(joinUri);
+                if (size <= R.configuration().getResourceConfig().getInlineScriptsThreshold()) {
+                    sb.append("<script>");
+                    sb.append(this.fetchRemoteContent(joinUri));
+                    sb.append("</script>");
+                    inlined = true;
+                }
+            }
+
+            if (!inlined) {
+                String async = R.configuration().getResourceConfig().getEnableAsyncResources() ? "async " : "";
+                sb.append("<script " + async + "type=\"" + mimeType + "\" src=\"" + joinUri.toString() + "\"></script>");
+            }
         }
         sb.append("\n");
 
@@ -273,5 +310,38 @@ public class PageTemplateWrapperDirective extends Directive
         //                finally {
         //                    IOUtils.closeQuietly(is);
         //                }
+    }
+    private static final String STREAM_TAIL = "\n";
+    private static final int STREAM_TAIL_LEN = STREAM_TAIL.getBytes().length;
+    /**
+     * Note that we use caching here (because it's always checked when inlining is enabled),
+     * but stream the content from the URL when there's a match, but it should be fairly fast
+     * because it comes from this same server.
+     */
+    private long fetchRemoteSize(URI assetPack) throws IOException
+    {
+        Long retVal = null;
+
+        if (assetPackSizeCache.containsKey(assetPack)) {
+            retVal = assetPackSizeCache.get(assetPack);
+        }
+
+        if (retVal == null) {
+            //contact the remote side to fetch the value
+            retVal = Long.valueOf(assetPack.toURL().openConnection().getContentLength());
+
+            //we only cache it in production so it can reload all possible changesh in dev mode
+            if (R.configuration().getProduction()) {
+                assetPackSizeCache.put(assetPack, retVal);
+            }
+        }
+
+        return retVal;
+    }
+    private String fetchRemoteContent(URI assetPack) throws IOException
+    {
+        try (InputStream is = assetPack.toURL().openStream()) {
+            return IOUtils.toString(is) + STREAM_TAIL;
+        }
     }
 }

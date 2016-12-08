@@ -341,6 +341,7 @@ public class ApplicationEndpoint
                                             newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TRANSLATIONS.getValue(), this.buildTranslatedPagesMap(fileContext, requestedUri));
 
                                             //Note: we don't set the edit mode for safety: it makes sure the user has no means to save the in-between selection page
+                                            this.setBlocksMode(HtmlTemplate.ResourceScopeMode.create, newPageTemplateList);
 
                                             retVal = Response.ok(newPageTemplateList);
                                         }

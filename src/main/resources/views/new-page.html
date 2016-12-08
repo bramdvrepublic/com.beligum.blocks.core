@@ -67,14 +67,25 @@
 
                                 <ul>
                                     #foreach($page in $CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_TRANSLATIONS])
-                                    ## TODO getDisplayLanguage()) should actually change according to the browser locale eg. like $page.language.getDisplayLanguage($LOCALE) (but not optimal locale)
                                         <li>
-                                            <i class="fa fa-copy"></i><a href="$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_ENDPOINT?$CONSTANTS.blocks.core.NEW_PAGE_URL_PARAM=$TOOLKIT.esc.url($CONTEXT[$CONSTANTS.blocks.core.NEW_PAGE_TEMPLATE_URL])&$CONSTANTS.blocks.core.NEW_PAGE_COPY_URL_PARAM=$TOOLKIT.esc.url($page.publicAbsoluteAddress)">$page.language.getDisplayLanguage()</a>
+                                        ## TODO getDisplayLanguage()) should actually change according to the browser locale eg. like $page.language.getDisplayLanguage($LOCALE) (but not optimal locale)
+                                            <i class="fa fa-copy"></i><a href="javascript:void(0)" $CONSTANTS.blocks.core.NEW_PAGE_TRANSLATION_ATTR="$page.publicAbsoluteAddress">$page.language.getDisplayLanguage()</a>
                                         </li>
                                     #end
                                 </ul>
                             #end
 
+                            <hr>
+
+                        </div>
+
+                        <div class="copy">
+                            <p>
+                                $MESSAGES.blocks.core.newPageCopyTitle
+                            </p>
+                            <div>
+                                <input type="text" class="form-control typeahead" placeholder="$MESSAGES.blocks.core.newPageCopyPlaceholder">
+                            </div>
                         </div>
                     </div>
 

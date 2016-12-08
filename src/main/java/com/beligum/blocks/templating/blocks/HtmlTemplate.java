@@ -56,6 +56,7 @@ public abstract class HtmlTemplate
     {
         UNDEFINED,
         EMPTY,
+        create,
         edit
     }
 

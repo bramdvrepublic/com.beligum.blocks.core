@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 
+import static gen.com.beligum.blocks.core.constants.blocks.core.*;
+
 /**
  * Created by bram on 2/25/16.
  */
@@ -50,7 +52,7 @@ public class RdfEndpoint
     @Path("/properties/")
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
-    public Response getProperties(@QueryParam("resourceTypeCurie") URI resourceTypeCurie) throws IOException
+    public Response getProperties(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie) throws IOException
     {
         Set<RdfProperty> retVal = null;
 
@@ -79,7 +81,7 @@ public class RdfEndpoint
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
     //Note: the "query" parameter needs to be last, because the JS side just appends the query string to this URL
-    public Response getResources(@QueryParam("resourceTypeCurie") URI resourceTypeCurie, @QueryParam("maxResults") int maxResults, @QueryParam("prefixSearch") @DefaultValue("true") boolean prefixSearch, /* keep this last */@QueryParam("query") String query) throws IOException
+    public Response getResources(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie, @QueryParam(RDF_MAX_RESULTS_PARAM) int maxResults, @QueryParam(RDF_PREFIX_SEARCH_PARAM) @DefaultValue("true") boolean prefixSearch, /* keep this last */@QueryParam(RDF_QUERY_PARAM) String query) throws IOException
     {
         Collection<AutocompleteSuggestion> retVal = new ArrayList<>();
 
@@ -108,7 +110,7 @@ public class RdfEndpoint
     //We disabled this because some javascript initialization code needs to access it,
     // and I think it's not really a security issue. Let's hope I'm right...
     //@RequiresRoles(Permissions.ADMIN_ROLE_NAME)
-    public Response getResource(@QueryParam("resourceTypeCurie") URI resourceTypeCurie, @QueryParam("resourceUri") URI resourceUri) throws IOException
+    public Response getResource(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie, @QueryParam(RDF_RES_URI_PARAM) URI resourceUri) throws IOException
     {
         ResourceInfo retVal = null;
 
