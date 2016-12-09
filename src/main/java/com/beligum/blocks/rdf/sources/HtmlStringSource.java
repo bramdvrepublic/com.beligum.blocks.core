@@ -4,7 +4,6 @@ import org.jsoup.Jsoup;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 
 /**
  * Created by bram on 1/24/16.
@@ -16,7 +15,7 @@ public class HtmlStringSource extends HtmlSource
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
-    public HtmlStringSource(URI sourceAddress, String html) throws IOException, URISyntaxException
+    public HtmlStringSource(URI sourceAddress, String html) throws IOException
     {
         super(sourceAddress);
 

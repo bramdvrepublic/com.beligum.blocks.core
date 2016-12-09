@@ -68,9 +68,13 @@ public interface Page
 
     /**
      * Creates a new html (stream) source based on the stored original file on disk.
-     * @return
      */
     HtmlSource readOriginalHtml() throws IOException;
+
+    /**
+     * Creates a new html (stream) source based on the rendered normalized html on disk.
+     */
+    HtmlSource readNormalizedHtml() throws IOException;
 
     /**
      * Create the log writer for this page to write to the "LOG" file in the meta dot folder.

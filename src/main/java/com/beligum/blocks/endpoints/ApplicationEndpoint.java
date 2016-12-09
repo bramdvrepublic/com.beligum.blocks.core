@@ -3,6 +3,7 @@ package com.beligum.blocks.endpoints;
 import com.beligum.base.i18n.I18nFactory;
 import com.beligum.base.resources.ResourceRequestImpl;
 import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.resources.mappers.StringResource;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.ifaces.Template;
 import com.beligum.base.utils.toolkit.StringFunctions;
@@ -21,6 +22,7 @@ import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ontology.factories.Terms;
 import com.beligum.blocks.rdf.sources.HtmlSource;
+import com.beligum.blocks.rdf.sources.HtmlStringSource;
 import com.beligum.blocks.security.Permissions;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import com.beligum.blocks.templating.blocks.HtmlTemplate;
@@ -40,9 +42,11 @@ import org.apache.shiro.SecurityUtils;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriBuilder;
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
@@ -302,20 +306,38 @@ public class ApplicationEndpoint
 
                                         Page copyPage = new ReadOnlyPage(URI.create(newPageCopyUrl));
 
+                                        //First, we'll read in the normalized code of the copy page (important: in edit mode).
+                                        //Note that we need to read the normalized version because the templates might have changed in the mean time (between store and copy)
+                                        //then, we'll adapt the html a little bit by calling prepareForCopying() on it
+                                        //Finally, we'll render it out in a new template, again in edit mode.
                                         if (fileContext.util().exists(copyPage.getResourcePath().getLocalPath())) {
-                                            HtmlSource html = copyPage.readOriginalHtml();
+
+                                            Resource copyResource = R.resourceFactory().lookup(new HdfsResource(new ResourceRequestImpl(copyPage.getPublicAbsoluteAddress(), Resource.MimeType.HTML),
+                                                                                                                copyPage.getResourcePath().getFileContext(), copyPage.getNormalizedPageProxyPath()));
+
+                                            //note: no need to wrap in an auto-close because the .close() on a StringWriter is a NOOP
+                                            Writer writer = new StringWriter();
+
+                                            //we need to pull the normalized html through the template engine for this to work
+                                            Template copyTemplate = R.templateEngine().getNewTemplate(copyResource);
+
+                                            //this is the reason we can't just use page.readNormalizedHtml()
+                                            this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, copyTemplate);
+
+                                            copyTemplate.render(writer);
+
+                                            HtmlSource html = new HtmlStringSource(copyPage.getPublicAbsoluteAddress(), writer.toString());
                                             html.prepareForCopying(fileContext);
 
-                                            retVal = Response.ok(new StreamingOutput()
-                                            {
-                                                @Override
-                                                public void write(OutputStream out) throws IOException, WebApplicationException
-                                                {
-                                                    try (InputStream is = html.openNewInputStream()) {
-                                                        IOUtils.copy(is, out);
-                                                    }
-                                                }
-                                            }).type(Resource.MimeType.HTML.toString());
+                                            Template template = null;
+                                            try (InputStream is = html.openNewInputStream()) {
+                                                template = R.templateEngine().getNewTemplate(new StringResource(new ResourceRequestImpl(requestedUri, Resource.MimeType.HTML), IOUtils.toString(is)));
+                                            }
+
+                                            //this will allow the blocks javascript/css to be included
+                                            this.setBlocksMode(HtmlTemplate.ResourceScopeMode.edit, template);
+
+                                            retVal = Response.ok(template);
                                         }
                                         else {
                                             throw new InternalServerErrorException("Requested to create a new page with an unknown page to copy from; " + newPageCopyUrl);

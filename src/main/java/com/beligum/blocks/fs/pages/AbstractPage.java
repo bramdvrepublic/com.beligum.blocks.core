@@ -1,13 +1,17 @@
 package com.beligum.blocks.fs.pages;
 
 import com.beligum.base.i18n.I18nFactory;
+import com.beligum.base.resources.ResourceRequestImpl;
+import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.server.R;
 import com.beligum.blocks.config.Settings;
+import com.beligum.blocks.fs.HdfsResource;
 import com.beligum.blocks.fs.ifaces.ResourcePath;
 import com.beligum.blocks.fs.pages.ifaces.Page;
 import com.beligum.blocks.rdf.ifaces.Importer;
 import com.beligum.blocks.rdf.sources.HtmlSource;
 import com.beligum.blocks.rdf.sources.HtmlStreamSource;
+import com.beligum.blocks.rdf.sources.HtmlStringSource;
 import com.beligum.blocks.utils.RdfTools;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -17,6 +21,8 @@ import org.openrdf.model.Model;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.net.URI;
 import java.util.Locale;
 
@@ -208,6 +214,20 @@ public abstract class AbstractPage implements Page
         try (InputStream is = this.getResourcePath().getFileContext().open(this.getResourcePath().getLocalPath())) {
             return new HtmlStreamSource(this.getPublicAbsoluteAddress(), is);
         }
+    }
+    @Override
+    public HtmlSource readNormalizedHtml() throws IOException
+    {
+        Resource resource = R.resourceFactory().lookup(new HdfsResource(new ResourceRequestImpl(this.getPublicAbsoluteAddress(), Resource.MimeType.HTML),
+                                                                        this.getResourcePath().getFileContext(), this.getNormalizedPageProxyPath()));
+
+        //note: no need to wrap in an auto-close because the .close() on a StringWriter is a NOOP
+        Writer writer = new StringWriter();
+
+        //we need to pull the normalized html through the template engine for this to work
+        R.templateEngine().getNewTemplate(resource).render(writer);
+
+        return new HtmlStringSource(this.getPublicAbsoluteAddress(), writer.toString());
     }
     @Override
     public Model readRdfModel() throws IOException

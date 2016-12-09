@@ -15,9 +15,11 @@ base.plugin("blocks.core.NewPage", ["base.core.Class", "constants.blocks.core", 
 
     var input = $('.' + BlocksConstants.NEW_PAGE_CLASS + ' .actions .copy input');
 
+    var MAX_RESULTS = 10;
     var acEndpointURL = BlocksConstants.RDF_RESOURCES_ENDPOINT + '?'
-        + BlocksConstants.RDF_RES_TYPE_CURIE_PARAM + '=' + '' + '&'
-        + BlocksConstants.RDF_MAX_RESULTS_PARAM + '=' + 10 + '&'
+            //we want to search for all types, so don't specify a type curie
+        //+ BlocksConstants.RDF_RES_TYPE_CURIE_PARAM + '=' + '' + '&'
+        + BlocksConstants.RDF_MAX_RESULTS_PARAM + '=' + MAX_RESULTS + '&'
         + BlocksConstants.RDF_PREFIX_SEARCH_PARAM + '=true' + '&'
         + BlocksConstants.RDF_QUERY_PARAM + '=';
 
@@ -51,7 +53,7 @@ base.plugin("blocks.core.NewPage", ["base.core.Class", "constants.blocks.core", 
         //sync this with the title field of com.beligum.blocks.fs.index.entries.PageIndexEntry
         display: 'title',
         templates: {
-            empty: '<div class="tt-suggestion "' + BlocksConstants.INPUT_TYPE_RES_SUG_EMPTY_CLASS + '><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">' + 'No match for this query' + '</p></div>',
+            empty: '<div class="tt-suggestion "' + BlocksConstants.INPUT_TYPE_RES_SUG_EMPTY_CLASS + '><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">' + BlocksMessages.emptySearchResultsTitle + '</p></div>',
             //we add title (hover) tags as well because the css will probably chop it off (ellipsis overflow)
             suggestion: Handlebars.compile('<div title="{{title}} - {{subTitle}}"><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_TITLE_CLASS + '">{{title}}</p><p class="' + BlocksConstants.INPUT_TYPE_RES_SUG_SUBTITLE_CLASS + '">{{subTitle}}</p></div>')
         }

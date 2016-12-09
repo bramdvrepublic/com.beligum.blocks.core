@@ -9,8 +9,10 @@ import com.beligum.blocks.endpoints.ifaces.ResourceInfo;
 import com.beligum.blocks.rdf.ifaces.RdfClass;
 import com.beligum.blocks.rdf.ifaces.RdfProperty;
 import com.beligum.blocks.rdf.ontology.RdfClassImpl;
+import com.beligum.blocks.rdf.ontology.vocabularies.endpoints.SettingsQueryEndpoint;
 import com.beligum.blocks.security.Permissions;
 import gen.com.beligum.blocks.core.messages.blocks.core;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 
 import javax.ws.rs.*;
@@ -31,8 +33,15 @@ import static gen.com.beligum.blocks.core.constants.blocks.core.*;
 public class RdfEndpoint
 {
     //-----CONSTANTS-----
-    //Note: the null-valued vocabulary indicates a dummy class
-    public static final RdfClass SEARCH_ALL = new RdfClassImpl("All", null, core.Entries.searchClassAllTitle, core.Entries.searchClassAllLabel);
+    //Note: the null-valued vocabulary indicates a dummy class to support search-all functionality
+    public static final RdfClass SEARCH_ALL = new RdfClassImpl("All",
+                                                               null,
+                                                               core.Entries.searchClassAllTitle,
+                                                               core.Entries.searchClassAllLabel,
+                                                               new URI[] {},
+                                                               false,
+                                                               new SettingsQueryEndpoint(),
+                                                               null);
 
     //-----VARIABLES-----
 
@@ -62,7 +71,7 @@ public class RdfEndpoint
                 Set<RdfProperty> classProps = rdfClass.getProperties();
                 //note that the javadoc of getProperties() says that we returns all properties if this returns null (which will be true later on),
                 // but if it returns the empty array, no properties should be returned.
-                if (classProps!=null) {
+                if (classProps != null) {
                     retVal = classProps;
                 }
             }
@@ -81,11 +90,20 @@ public class RdfEndpoint
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRoles(Permissions.ADMIN_ROLE_NAME)
     //Note: the "query" parameter needs to be last, because the JS side just appends the query string to this URL
-    public Response getResources(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie, @QueryParam(RDF_MAX_RESULTS_PARAM) int maxResults, @QueryParam(RDF_PREFIX_SEARCH_PARAM) @DefaultValue("true") boolean prefixSearch, /* keep this last */@QueryParam(RDF_QUERY_PARAM) String query) throws IOException
+    public Response getResources(@QueryParam(RDF_RES_TYPE_CURIE_PARAM) URI resourceTypeCurie, @QueryParam(RDF_MAX_RESULTS_PARAM) int maxResults,
+                                 @QueryParam(RDF_PREFIX_SEARCH_PARAM) @DefaultValue("true") boolean prefixSearch, /* keep this last */@QueryParam(RDF_QUERY_PARAM) String query) throws IOException
     {
         Collection<AutocompleteSuggestion> retVal = new ArrayList<>();
 
-        RdfClass rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
+        //support a search-all-types-query when the type is empty
+        RdfClass rdfClass = null;
+        if (resourceTypeCurie == null || StringUtils.isEmpty(resourceTypeCurie.toString())) {
+            rdfClass = SEARCH_ALL;
+        }
+        else {
+            rdfClass = RdfFactory.getClassForResourceType(resourceTypeCurie);
+        }
+
         if (rdfClass != null) {
             RdfQueryEndpoint endpoint = rdfClass.getEndpoint();
             if (endpoint != null) {
@@ -94,11 +112,11 @@ public class RdfEndpoint
                     queryType = RdfQueryEndpoint.QueryType.STARTS_WITH;
                 }
 
-                retVal = endpoint.search(rdfClass, query, queryType, R.i18nFactory().getOptimalRefererLocale(), maxResults);
+                retVal = endpoint.search(rdfClass == SEARCH_ALL ? null : rdfClass, query, queryType, R.i18nFactory().getOptimalRefererLocale(), maxResults);
             }
         }
         else {
-            Logger.warn("Encountered unknown resource type; "+resourceTypeCurie);
+            Logger.warn("Encountered unknown resource type; " + resourceTypeCurie);
         }
 
         return Response.ok(retVal).build();
@@ -122,7 +140,7 @@ public class RdfEndpoint
             }
         }
         else {
-            Logger.warn("Encountered unknown resource type; "+resourceTypeCurie);
+            Logger.warn("Encountered unknown resource type; " + resourceTypeCurie);
         }
 
         if (retVal == null) {

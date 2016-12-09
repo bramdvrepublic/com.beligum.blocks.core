@@ -46,7 +46,10 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
 
         BooleanQuery mainQuery = new BooleanQuery();
 
-        mainQuery.add(new TermQuery(new Term(PageIndexEntry.Field.typeOf.name(), resourceType.getCurieName().toString())), BooleanClause.Occur.FILTER);
+        //let's support search-all-type queries when this is null
+        if (resourceType != null) {
+            mainQuery.add(new TermQuery(new Term(PageIndexEntry.Field.typeOf.name(), resourceType.getCurieName().toString())), BooleanClause.Occur.FILTER);
+        }
 
         BooleanQuery subQuery = new BooleanQuery();
         boolean complexWildcard = queryType == QueryType.FULL ? false : true;
@@ -74,6 +77,8 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
             URI pageId = URI.create(page.getId());
             URI resourceUri = URI.create(page.getResource());
             EntryWithIndex<PageIndexEntry> selectedEntry = langMapping.get(resourceUri);
+            //small optimization to re-use the passed resourceType if we have it so we don't need to parse the string
+            URI resourceTypeCurie = resourceType == null ? URI.create(page.getTypeOf()) : resourceType.getCurieName();
             //this means we have a double result with a different language, so we need to select which language we want to return
             // or else we'll be returning doubles, which is annoying
             if (selectedEntry != null) {
@@ -84,14 +89,14 @@ public class SettingsQueryEndpoint implements RdfQueryEndpoint
                 int selectedLangScore = PageIndexEntry.getLanguageScore(selectedEntry.entry, language);
                 if (entryLangScore > selectedLangScore) {
                     //replace the entry in the result list
-                    retVal.set(selectedEntry.index, new ResourceSuggestion(resourceUri, resourceType.getCurieName(), page.getTitle(), pageId.getPath()));
+                    retVal.set(selectedEntry.index, new ResourceSuggestion(resourceUri, resourceTypeCurie, page.getTitle(), pageId.getPath()));
                     //replace the entry in the lang mapping
                     langMapping.replace(resourceUri, new EntryWithIndex(page, selectedEntry.index));
                 }
             }
             else {
                 //Note: the ID of a page is also it's public address, but for the returned ID, we use the resource URI, which is the base ID that describes the 'concept' behind the page
-                retVal.add(new ResourceSuggestion(resourceUri, resourceType.getCurieName(), page.getTitle(), pageId.getPath()));
+                retVal.add(new ResourceSuggestion(resourceUri, resourceTypeCurie, page.getTitle(), pageId.getPath()));
                 langMapping.put(resourceUri, new EntryWithIndex(page, retVal.size() - 1));
             }
         }
