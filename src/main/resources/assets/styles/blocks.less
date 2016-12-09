@@ -735,8 +735,11 @@ ul.@{BLOCK_ACTIONS_CLASS} {
 .@{NEW_PAGE_CLASS} {
 
   .actions-group {
-
     margin-top: 40px;
+  }
+
+  .actions-group,
+  .modal-body {
     padding: 0;
 
     @actions-hor-padding: 40px;
@@ -924,9 +927,11 @@ ul.@{BLOCK_ACTIONS_CLASS} {
 }
 
 .@{NEW_BLOCK_MODAL_CLASS} {
-  //max-width: 600px;
-  max-height: 400px;
-  overflow-y: auto;
+  .modal-body {
+    //max-width: 600px;
+    max-height: 400px;
+    overflow-y: auto;
+  }
 }
 
 //-----MEDIUM EDITOR-----
