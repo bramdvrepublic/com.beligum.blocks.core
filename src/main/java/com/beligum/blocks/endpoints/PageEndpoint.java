@@ -1,7 +1,9 @@
 package com.beligum.blocks.endpoints;
 
+import com.beligum.base.auth.models.Person;
 import com.beligum.base.auth.repositories.PersonRepository;
 import com.beligum.base.i18n.I18nFactory;
+import com.beligum.base.resources.ResourceFactory;
 import com.beligum.base.resources.ResourceRequestImpl;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.security.Authentication;
@@ -13,7 +15,9 @@ import com.beligum.blocks.config.StorageFactory;
 import com.beligum.blocks.fs.index.ifaces.PageIndexConnection;
 import com.beligum.blocks.fs.pages.FullPathGlobFilter;
 import com.beligum.blocks.fs.pages.PageIterator;
+import com.beligum.blocks.fs.pages.ReadOnlyPage;
 import com.beligum.blocks.fs.pages.ifaces.Page;
+import com.beligum.blocks.fs.pages.ifaces.PageStore;
 import com.beligum.blocks.rdf.sources.HtmlSource;
 import com.beligum.blocks.rdf.sources.HtmlStringSource;
 import com.beligum.blocks.security.Permissions;
@@ -244,18 +248,37 @@ public class PageEndpoint
     //Note that we can't make the uri an URI, because it's incompatible with the client side
     public Response deletePage(String uri) throws Exception
     {
-        //save the file to disk and pull all the proxies etc
-        Page deletedPage = getPageStore().delete(URI.create(uri), new PersonRepository().get(Authentication.getCurrentPrincipal()));
+        this.doDeletePage(getPageStore(),
+                          getMainPageIndexer().connect(),
+                          getTriplestoreIndexer().connect(),
+                          new PersonRepository().get(Authentication.getCurrentPrincipal()),
+                          R.resourceFactory(),
+                          new ReadOnlyPage(URI.create(uri)));
 
-        //above method returns null if nothing changed
-        if (deletedPage != null) {
-            getMainPageIndexer().connect().delete(deletedPage);
-            getTriplestoreIndexer().connect().delete(deletedPage);
+        return Response.ok().build();
+    }
 
-            //make sure we evict all possible cached values (mainly in production)
-            R.resourceFactory().wipeCacheFor(deletedPage.getPublicAbsoluteAddress());
-            R.resourceFactory().wipeCacheFor(deletedPage.getPublicRelativeAddress());
+    @DELETE
+    @Path("/delete/all")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RequiresPermissions(value = { Permissions.PAGE_MODIFY_PERMISSION_STRING,
+                                   Permissions.PAGE_DELETE_PERMISSION_STRING })
+    //Note that we can't make the uri an URI, because it's incompatible with the client side
+    public Response deletePageAndTranslations(String uri) throws Exception
+    {
+        PageStore pageStore = getPageStore();
+        PageIndexConnection mainPageIndexer = getMainPageIndexer().connect();
+        PageIndexConnection triplestoreIndexer = getTriplestoreIndexer().connect();
+        Person currentPrincipal = new PersonRepository().get(Authentication.getCurrentPrincipal());
+
+        Page page = new ReadOnlyPage(URI.create(uri));
+
+        //first, delete the translations, then delete the first one
+        for (Map.Entry<Locale, Page> e : page.getTranslations().entrySet()) {
+            this.doDeletePage(pageStore, mainPageIndexer, triplestoreIndexer, currentPrincipal, R.resourceFactory(), e.getValue());
         }
+
+        this.doDeletePage(pageStore, mainPageIndexer, triplestoreIndexer, currentPrincipal, R.resourceFactory(), page);
 
         return Response.ok().build();
     }
@@ -431,6 +454,21 @@ public class PageEndpoint
         }
 
         return retVal;
+    }
+    private void doDeletePage(PageStore pageStore, PageIndexConnection mainPageIndexer, PageIndexConnection triplestoreIndexer, Person currentPrincipal, ResourceFactory resourceFactory, Page page) throws IOException
+    {
+        //fist delete the page on disk, then delete all indexes
+        Page deletedPage = pageStore.delete(page.getPublicAbsoluteAddress(), currentPrincipal);
+
+        //above method returns null if nothing changed
+        if (deletedPage != null) {
+            mainPageIndexer.delete(deletedPage);
+            triplestoreIndexer.delete(deletedPage);
+
+            //make sure we evict all possible cached values (mainly in production)
+            resourceFactory.wipeCacheFor(deletedPage.getPublicAbsoluteAddress());
+            resourceFactory.wipeCacheFor(deletedPage.getPublicRelativeAddress());
+        }
     }
 
     private static class ReindexThread extends Thread

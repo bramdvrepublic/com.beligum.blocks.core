@@ -24,7 +24,9 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URI;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Created by bram on 1/27/16.
@@ -238,6 +240,31 @@ public abstract class AbstractPage implements Page
         Importer rdfImporter = this.createImporter(this.getRdfExportFileFormat());
         try (InputStream is = this.getResourcePath().getFileContext().open(this.getRdfExportFile())) {
             retVal = rdfImporter.importDocument(is, this.getPublicRelativeAddress());
+        }
+
+        return retVal;
+    }
+    @Override
+    public Map<Locale, Page> getTranslations() throws IOException
+    {
+        Map<Locale, Page> retVal = new LinkedHashMap<>();
+
+        Locale thisLang = this.getLanguage();
+        Map<String, Locale> siteLanguages = R.configuration().getLanguages();
+
+        for (Map.Entry<String, Locale> l : siteLanguages.entrySet()) {
+            Locale lang = l.getValue();
+            //we're searching for a translation, not the same language
+            if (!lang.equals(thisLang)) {
+                UriBuilder translatedUri = UriBuilder.fromUri(this.getPublicAbsoluteAddress());
+                if (R.i18nFactory().getUrlLocale(this.getPublicAbsoluteAddress(), translatedUri, lang) != null) {
+                    URI transPagePublicUri = translatedUri.build();
+                    Page transPage = new ReadOnlyPage(transPagePublicUri);
+                    if (this.getResourcePath().getFileContext().util().exists(transPage.getResourcePath().getLocalPath())) {
+                        retVal.put(lang, transPage);
+                    }
+                }
+            }
         }
 
         return retVal;

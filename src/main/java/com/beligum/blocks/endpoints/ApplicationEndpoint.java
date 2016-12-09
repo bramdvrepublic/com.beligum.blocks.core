@@ -360,7 +360,7 @@ public class ApplicationEndpoint
                                             Template newPageTemplateList = new_page.get().getNewTemplate();
                                             newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_URL.getValue(), requestedUri.toString());
                                             newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TEMPLATES.getValue(), this.buildLocalizedPageTemplateMap());
-                                            newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TRANSLATIONS.getValue(), this.buildTranslatedPagesMap(fileContext, requestedUri));
+                                            newPageTemplateList.set(core.Entries.NEW_PAGE_TEMPLATE_TRANSLATIONS.getValue(), page.getTranslations());
 
                                             //Note: we don't set the edit mode for safety: it makes sure the user has no means to save the in-between selection page
                                             this.setBlocksMode(HtmlTemplate.ResourceScopeMode.create, newPageTemplateList);
@@ -441,30 +441,6 @@ public class ApplicationEndpoint
         }
 
         Collections.sort(retVal, new MapComparator(core.Entries.NEW_PAGE_TEMPLATE_TITLE.getValue()));
-
-        return retVal;
-    }
-    private Map<Locale, Page> buildTranslatedPagesMap(FileContext fileContext, URI currentPage) throws IOException
-    {
-        Map<Locale, Page> retVal = new LinkedHashMap<>();
-
-        Locale thisLang = R.i18nFactory().getUrlLocale(currentPage);
-        Map<String, Locale> siteLanguages = R.configuration().getLanguages();
-
-        for (Map.Entry<String, Locale> l : siteLanguages.entrySet()) {
-            Locale lang = l.getValue();
-            //we're searching for a translation, not the same language
-            if (!lang.equals(thisLang)) {
-                UriBuilder translatedUri = UriBuilder.fromUri(currentPage);
-                if (R.i18nFactory().getUrlLocale(currentPage, translatedUri, lang) != null) {
-                    URI transPagePublicUri = translatedUri.build();
-                    Page transPage = new ReadOnlyPage(transPagePublicUri);
-                    if (fileContext.util().exists(transPage.getResourcePath().getLocalPath())) {
-                        retVal.put(lang, transPage);
-                    }
-                }
-            }
-        }
 
         return retVal;
     }

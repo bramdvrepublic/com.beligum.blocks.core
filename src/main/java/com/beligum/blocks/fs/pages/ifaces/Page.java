@@ -14,6 +14,7 @@ import org.openrdf.model.Model;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Created by bram on 1/14/16.
@@ -119,4 +120,10 @@ public interface Page
      * Note: nothing is cached, this is just a convenience method.
      */
     Model readRdfModel() throws IOException;
+
+    /**
+     * Iterates the registered site languages and checks if we have translations stored of this page for each language
+     */
+    Map<Locale, Page> getTranslations() throws IOException;
+
 }

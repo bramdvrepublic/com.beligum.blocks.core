@@ -417,8 +417,8 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
         var dialog = new BootstrapDialog({
             type: BootstrapDialog.TYPE_PRIMARY,
-            title: 'Saving ...',
-            message: 'Please wait while we save the page. This can take a few seconds.',
+            title: BlocksMessages.savePageDialogTitle,
+            message: BlocksMessages.savePageDialogMessage,
             buttons: []
         });
 
@@ -450,12 +450,12 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
     $(document).on("click", "." + BlocksConstants.DELETE_PAGE_BUTTON, function (event)
     {
         Broadcaster.send(Broadcaster.EVENTS.DEACTIVATE_MOUSE, event);
-        var onConfirm = function ()
+        var onConfirm = function (deleteAllTranslations)
         {
             var dialog = new BootstrapDialog({
-                type: BootstrapDialog.TYPE_PRIMARY,
-                title: 'Deleting ...',
-                message: 'Please wait while we delete the page. This can take a few seconds.',
+                type: BootstrapDialog.TYPE_DANGER,
+                title: BlocksMessages.deletingPageDialogTitle,
+                message: BlocksMessages.deletingPageDialogMessage,
                 buttons: []
             });
 
@@ -463,7 +463,7 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
 
             $.ajax({
                 type: 'DELETE',
-                url: "/blocks/admin/page/delete",
+                url: deleteAllTranslations ? BlocksConstants.DELETE_PAGE_ALL_ENDPOINT : BlocksConstants.DELETE_PAGE_ENDPOINT,
                 data: document.URL,
                 contentType: 'application/json; charset=UTF-8',
             })
@@ -471,18 +471,15 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
                 {
                     if (url) {
                         window.location = url;
-                    } else {
+                    }
+                    else {
                         location.reload();
                     }
                 })
                 .fail(function (xhr, textStatus, exception)
                 {
                     dialog.close();
-
-                    var message = response.status == 400 ? response.responseText : "An error occurred while deleting the page.";
-                    Notification.dialog("Error", "<div>" + message + "</div>", function ()
-                    {
-                    });
+                    Notification.error(BlocksMessages.deletingPageErrorMessage + (exception ? "; " + exception : ""), xhr);
                 })
                 .always(function ()
                 {
@@ -494,29 +491,40 @@ base.plugin("blocks.core.Frame", ["blocks.core.Broadcaster", "blocks.core.Notifi
         };
 
         BootstrapDialog.show({
-            title: "Delete page",
+            title: BlocksMessages.deletePageDialogTitle,
             type: BootstrapDialog.TYPE_DANGER,
-            message: "<div>Are you sure you want to delete this page?</div>",
+            message: BlocksMessages.deletePageDialogMessage,
             buttons: [
                 {
+                    id: 'btn-ok',
+                    label: BlocksMessages.deletePageDialogConfirmSingle,
+                    cssClass: 'btn-danger',
+                    action: function (dialogRef)
+                    {
+                        onConfirm(false);
+                        dialogRef.close();
+                    }
+
+                },
+                {
+                    id: 'btn-ok',
+                    label: BlocksMessages.deletePageDialogConfirmAll,
+                    cssClass: 'btn-danger',
+                    action: function (dialogRef)
+                    {
+                        onConfirm(true);
+                        dialogRef.close();
+                    }
+
+                },
+                {
                     id: 'btn-close',
-                    label: 'Cancel',
+                    label: BlocksMessages.cancel,
                     action: function (dialogRef)
                     {
                         dialogRef.close();
                     }
                 },
-                {
-                    id: 'btn-ok',
-                    label: 'Ok',
-                    cssClass: 'btn-danger',
-                    action: function (dialogRef)
-                    {
-                        onConfirm();
-                        dialogRef.close();
-                    }
-
-                }
             ],
             onhide: function ()
             {
