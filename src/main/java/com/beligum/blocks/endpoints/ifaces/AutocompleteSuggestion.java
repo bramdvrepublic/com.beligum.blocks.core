@@ -19,6 +19,13 @@ public interface AutocompleteSuggestion
     URI getResourceType();
 
     /**
+     * The address of the public page of this suggestion (where you can surf to to get more information about this suggestion).
+     * In case of a resource suggestion, this will be the public page (in a suitable language) of the resource.
+     * In case of an enum suggestion, this will probably be null.
+     */
+    URI getPublicPage();
+
+    /**
      * The main name to display to the user for this suggestions (eg. the top line in the auto-complete results entry)
      */
     String getTitle();

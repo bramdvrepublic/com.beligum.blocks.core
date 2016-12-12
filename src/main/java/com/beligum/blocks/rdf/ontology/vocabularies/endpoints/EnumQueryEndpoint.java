@@ -134,6 +134,11 @@ public class EnumQueryEndpoint implements RdfQueryEndpoint
             return resourceType.getCurieName();
         }
         @Override
+        public URI getPublicPage()
+        {
+            return null;
+        }
+        @Override
         public String getTitle()
         {
             //Note: this will most likely be called from a AJAX call from the admin interface;
@@ -207,6 +212,11 @@ public class EnumQueryEndpoint implements RdfQueryEndpoint
         public URI getResourceType()
         {
             return this.suggestion == null ? null : this.suggestion.getResourceType();
+        }
+        @Override
+        public URI getPublicPage()
+        {
+            return null;
         }
         @Override
         public String getTitle()

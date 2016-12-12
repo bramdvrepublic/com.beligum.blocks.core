@@ -14,16 +14,18 @@ public class ResourceSuggestion implements AutocompleteSuggestion
     //-----VARIABLES-----
     private URI resourceId;
     private URI resourceType;
+    private URI page;
     private String title;
     private String subTitle;
 
     //-----CONSTRUCTORS-----
-    public ResourceSuggestion(URI resourceId, URI resourceType, String title, String subTitle)
+    public ResourceSuggestion(URI resourceId, URI resourceType, URI page, String title, String subTitle)
     {
         this.resourceId = resourceId;
         this.resourceType = resourceType;
         this.title = title;
         this.subTitle = subTitle;
+        this.page = page;
     }
 
     //-----PUBLIC METHODS-----
@@ -32,9 +34,15 @@ public class ResourceSuggestion implements AutocompleteSuggestion
     {
         return resourceId == null ? null : resourceId.toString();
     }
+    @Override
     public URI getResourceType()
     {
         return resourceType;
+    }
+    @Override
+    public URI getPublicPage()
+    {
+        return page;
     }
     @Override
     public String getTitle()

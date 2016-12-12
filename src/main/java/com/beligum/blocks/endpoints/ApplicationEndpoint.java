@@ -162,6 +162,17 @@ public class ApplicationEndpoint
                     //makes sense to make room for as much language-triples as we have clauses
                     IndexSearchResult results = queryConnection.search(pageQuery, pageQuery.clauses().size() * R.configuration().getLanguages().size());
                     PageIndexEntry selectedEntry = PageIndexEntry.selectBestForLanguage(results, optimalLocale);
+
+                    //this detects if the above search matched on the resource uri (and not the sameAs) when we're editing pages
+                    //it needs to jump out of the redirect in this case because when creating a new resource page in eg. english,
+                    //and we want to create it's translation, it would redirect back to the english page instead of allowing us to
+                    //create the translated page
+                    if (selectedEntry!=null && SecurityUtils.getSubject().isPermitted(Permissions.Action.PAGE_MODIFY.getPermission())) {
+                        if (selectedEntry.getResource().equals(searchUri)) {
+                            selectedEntry = null;
+                        }
+                    }
+
                     if (selectedEntry != null) {
                         //we'll redirect to the id (eg. the public URI of the page) of the found resource
                         retVal = Response.seeOther(URI.create(selectedEntry.getId()));
@@ -299,7 +310,7 @@ public class ApplicationEndpoint
                                             retVal = Response.ok(newPageInstance);
                                         }
                                         else {
-                                            throw new InternalServerErrorException("Requested to create a new page with an invalid page template name; " + newPageTemplateName);
+                                            throw new InternalServerErrorException("Requested to create a new page ("+requestedUri+") with an invalid page template name; " + newPageTemplateName);
                                         }
                                     }
                                     else if (!StringUtils.isEmpty(newPageCopyUrl)) {
@@ -340,7 +351,7 @@ public class ApplicationEndpoint
                                             retVal = Response.ok(template);
                                         }
                                         else {
-                                            throw new InternalServerErrorException("Requested to create a new page with an unknown page to copy from; " + newPageCopyUrl);
+                                            throw new InternalServerErrorException("Requested to create a new page ("+requestedUri+") with an unknown page to copy from; " + newPageCopyUrl);
                                         }
                                     }
                                     //here, the page doesn't exist, but we can create it

@@ -36,6 +36,12 @@ public abstract class AbstractGeonameSuggestion extends AbstractGeoname implemen
         return resourceType;
     }
     @Override
+    public URI getPublicPage()
+    {
+        //Note: it makes sense to return the resource address as the public page; the application endpoint will decide what to do with it
+        return RdfTools.createRelativeResourceId(RdfFactory.getClassForResourceType(this.getResourceType()), geonameId);
+    }
+    @Override
     public String getTitle()
     {
         return name;
