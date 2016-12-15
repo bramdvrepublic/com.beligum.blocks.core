@@ -143,7 +143,7 @@ public class ApplicationEndpoint
                 // - OPTION 1: the page doesn't exist, but we can find another page with the URL as alias -> redirect to the correct URL of that page
                 // - OPTION 2: the page doesn't exist, but we can find a similar page in another language -> extract the resource-uri from that page and reverse-lookup the public URI in the requested language
                 // - OPTION 3: the page doesn't exist & the user has no rights -> 404
-                // - OPTION 4: the page doesn't exist & the user has create rights & no language present -> try to detect a decent language and redirect to a language-prefixed url (recursive call with roundtrip)
+                // - OPTION 4: the page doesn't exist & the user has create rights & no language present -> try to detectAndReplace a decent language and redirect to a language-prefixed url (recursive call with roundtrip)
                 // - OPTION 5: the page doesn't exist & the user has create rights & language is present & page template in flash cache -> render a page template instance (not yet persisted)
                 // - OPTION 6: the page doesn't exist & the user has create rights & language is present & nothing in flash cache & page slug is unsafe -> redirect to safe variant
                 // - OPTION 7: the page doesn't exist & the user has create rights & language is present & nothing in flash cache & page slug is safe -> show new page selection list
@@ -237,7 +237,7 @@ public class ApplicationEndpoint
                                     }
                                 }
 
-                                // 2) detect the language of the client's browser (keeping some settings into account)
+                                // 2) detectAndReplace the language of the client's browser (keeping some settings into account)
                                 // 3) revert to default language if the requested browser's language is unsupported or if all else fails
                                 if (redirectLocale == null) {
                                     redirectLocale = R.i18nFactory().getBrowserLocale();

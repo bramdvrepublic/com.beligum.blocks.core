@@ -86,7 +86,7 @@ public class PageEndpoint
      * When a new page (a non-existing page) is requested, the (logged-in) user is presented with a list of page templates.
      * This endpoint is called when a page template is selected from that list.
      * Basically, we redirect back to the url where the page has to be created and put the name of the pagetemplate in the flashcache,
-     * so the root endpoint (ApplicationEndpoint.getPageNew()) can detect what to do.
+     * so the root endpoint (ApplicationEndpoint.getPageNew()) can detectAndReplace what to do.
      *
      * @param pageUrl          the url of the new page to be created
      * @param pageTemplateName the name of the page template to use for the new page

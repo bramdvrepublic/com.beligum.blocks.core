@@ -69,8 +69,6 @@ public class TagTemplate extends HtmlTemplate
     @Override
     protected void saveHtml(OutputDocument document, HtmlTemplate superTemplate)
     {
-        Segment retVal = null;
-
         //first, we need to render it out, because we've changed it a lot, and any query
         // on the non-rendered version will be wrong (querying the original)
         Segment documentSource = new Source(document.toString());
@@ -81,7 +79,6 @@ public class TagTemplate extends HtmlTemplate
         //now we want to unwrap the <template> tag
         // note that it's not enough to return the content of that tag,
         // because we want to keep the wrapped resources outside the template too...
-        OutputDocument htmlDoc = new OutputDocument(documentSource);
 
         //Note: don't append 'superTemplate.getPrefixHtml()' because it's already there, we copied it in (see HtmlTemplate.init())
         StringBuilder prefix = new StringBuilder();

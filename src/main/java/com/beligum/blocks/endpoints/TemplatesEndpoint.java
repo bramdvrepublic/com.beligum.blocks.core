@@ -2,8 +2,8 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.annotations.JavascriptPackage;
 import com.beligum.base.endpoints.AssetsEndpoint;
-import com.beligum.base.server.R;
 import com.beligum.base.resources.ifaces.Resource;
+import com.beligum.base.server.R;
 import com.beligum.blocks.templating.blocks.HtmlParser;
 import gen.com.beligum.blocks.core.fs.html.views.snippets.side;
 import org.apache.commons.io.FilenameUtils;
@@ -21,9 +21,11 @@ import java.net.URI;
  * Created by bas on 21.10.14.
  * Class extending assets-endpoint to enable template-loading from the "templates"-package instead of from the "assets"-package
  */
-@Path("/templates")
-public class TemplatesEndpoint extends AssetsEndpoint
+@Path(TemplatesEndpoint.ENDPOINT_PREFIX)
+public class TemplatesEndpoint
 {
+    protected static final String ENDPOINT_PREFIX = "/templates";
+
     @GET
     @Path("/sidebar")
     public Response getSidebar()
@@ -64,6 +66,6 @@ public class TemplatesEndpoint extends AssetsEndpoint
         final String resourcePath = "/templates/" + FilenameUtils.normalize(name);
         URI requestUri = UriBuilder.fromUri(uriInfo.getRequestUri()).replacePath(resourcePath).build();
 
-        return streamResource(R.resourceFactory().get(requestUri));
+        return AssetsEndpoint.streamResource(R.resourceFactory().get(requestUri), false);
     }
 }

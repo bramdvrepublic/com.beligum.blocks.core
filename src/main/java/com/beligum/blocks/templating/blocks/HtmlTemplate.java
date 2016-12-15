@@ -43,8 +43,8 @@ public abstract class HtmlTemplate
     //set to 'edit' if you only want the resource to be included if the $BLOCKS_MODE variable is set
     public static final String ATTRIBUTE_RESOURCE_MODE_SCOPE = "data-scope-mode";
 
-    //set to 'inline' to skip this resource during the resource collecting phase and instead render it out where it's defined
-    public static final String ATTRIBUTE_RESOURCE_RENDER_TYPE = "data-render-type";
+    //set to 'skip' to skip this resource during the resource collecting phase and instead render it out where it's defined
+    public static final String ATTRIBUTE_RESOURCE_JOIN_HINT = "data-join-hint";
 
     // set this attribute on an instance to not render the tag itself, but mimic another tag name
     // (eg <blocks-text data-render-tag="div"> to render out a <div> instead of a <blocks-text>)
@@ -60,11 +60,11 @@ public abstract class HtmlTemplate
         edit
     }
 
-    public enum ResourceRenderType
+    public enum ResourceJoinHint
     {
         UNDEFINED,
         EMPTY,
-        inline
+        skip
     }
 
     public enum MetaProperty
@@ -529,7 +529,7 @@ public abstract class HtmlTemplate
                .append(attr).append("','")
                .append(HtmlTemplate.getResourceRoleScope(element)).append("',")
                .append(HtmlTemplate.getResourceModeScope(element).ordinal()).append(",")
-               .append(HtmlTemplate.getResourceRenderType(element).ordinal())
+               .append(HtmlTemplate.getResourceJoinHint(element).ordinal())
 
                .append(")")
                .append(element.toString())
@@ -604,20 +604,20 @@ public abstract class HtmlTemplate
 
         return retVal;
     }
-    public static ResourceRenderType getResourceRenderType(Element resource)
+    public static ResourceJoinHint getResourceJoinHint(Element resource)
     {
-        ResourceRenderType retVal = null;
+        ResourceJoinHint retVal = null;
 
-        Attribute scope = resource.getAttributes().get(ATTRIBUTE_RESOURCE_RENDER_TYPE);
+        Attribute scope = resource.getAttributes().get(ATTRIBUTE_RESOURCE_JOIN_HINT);
         if (scope == null) {
-            retVal = ResourceRenderType.UNDEFINED;
+            retVal = ResourceJoinHint.UNDEFINED;
         }
         else if (StringUtils.isEmpty(scope.getValue())) {
-            retVal = ResourceRenderType.EMPTY;
+            retVal = ResourceJoinHint.EMPTY;
         }
         else {
             //this will throw an exception if nothing was found
-            retVal = ResourceRenderType.valueOf(scope.getValue());
+            retVal = ResourceJoinHint.valueOf(scope.getValue());
         }
 
         return retVal;

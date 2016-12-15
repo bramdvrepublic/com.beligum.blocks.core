@@ -12,6 +12,7 @@ import com.beligum.blocks.caching.CacheKeys;
 import com.beligum.blocks.templating.blocks.directives.PageTemplateWrapperDirective;
 import com.beligum.blocks.templating.blocks.directives.TagTemplateResourceDirective;
 import com.beligum.blocks.templating.blocks.directives.TemplateInstanceStackDirective;
+import com.google.common.collect.Sets;
 import net.htmlparser.jericho.*;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
@@ -55,6 +56,33 @@ public class HtmlParser implements Parser
     public static final String HTML_ROOT_TEMPLATE_ATTR = "data-template";
     public static final String HTML_ROOT_ARGS_VARIABLE_NAME = "HTML_TAG_ARGS";
 
+    //used this: http://stackoverflow.com/questions/2725156/complete-list-of-html-tag-attributes-which-have-a-url-value
+    public static final Set<String> ALL_SIMPLE_URL_ATTR = Sets.newHashSet(
+                    "action",
+                    "background",
+                    "cite",
+                    "classid",
+                    "codebase",
+                    "data",
+                    "dynsrc",
+                    "formaction",
+                    "href",
+                    "icon",
+                    "longdesc",
+                    "lowsrc",
+                    "manifest",
+                    "poster",
+                    "profile",
+                    "src",
+                    "usemap"
+    );
+    public static final Set<String> ALL_COMPLEX_URL_ATTR = Sets.newHashSet(
+                    "srcset",
+                    "archive",
+                    "content",
+                    "style"
+    );
+
     //-----VARIABLES-----
 
     //-----CONSTRUCTORS-----
@@ -91,7 +119,7 @@ public class HtmlParser implements Parser
             Source source = new Source(this.eatVelocityComments(resource));
 
             // this one was a bit problematic: we would like to surround all returning html with a #ptwd directive,
-            // but we can't have it twice, so it's kind of hard to detect the outer resource where we should add it.
+            // but we can't have it twice, so it's kind of hard to detectAndReplace the outer resource where we should add it.
             // Note that we can't really use a detector like 'template instanceof PageTemplate' below because we want
             // regular Velocity templates to be wrapped too (eg. #parse("/templates/main.html"))
             // So we switched to detecting all _source_ (not the output or we'll wrap page templates as well and end up with doubles)
@@ -154,15 +182,39 @@ public class HtmlParser implements Parser
             if (node instanceof StartTag) {
                 Element element = ((StartTag) node).getElement();
 
+                if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
+                    Attributes attributes = element.getAttributes();
+                    if (attributes != null) {
+                        for (Attribute att : attributes) {
+                            String val = att.getValue();
+                            if (ALL_SIMPLE_URL_ATTR.contains(att.getName().toLowerCase())) {
+                                if (!StringUtils.isEmpty(val)) {
+                                    //If we try to fingerprint a URI with a space, the whole system will break (because of the URI constructor).
+                                    //So it's better to log an error here and skip fingerprinting
+                                    if (val.contains(" ")) {
+                                        Logger.error("Encountered an invalid URI containing a space character (of attribute "+att.getName()+"), so I'm skipping fingerprinting for now. Please fix this! "+val);
+                                    }
+                                    else {
+                                        //Note: the URI parsing will validate the attributes too...
+                                        retVal.replace(att, att.getName() + "=\"" + R.resourceFactory().fingerprintUri(URI.create(val.trim())) + "\"");
+                                    }
+                                }
+                            }
+                            else if (ALL_COMPLEX_URL_ATTR.contains(att.getName().toLowerCase())) {
+                                //note that we can't check for spaces here, let's just hope for the best...
+                                if (!StringUtils.isEmpty(val)) {
+                                    retVal.replace(att, att.getName() + "=\"" + R.resourceFactory().fingerprintUris(val.trim()) + "\"");
+                                }
+                            }
+                        }
+                    }
+                }
+
                 HtmlTemplate template = templateCache.getByTagName(element.getName());
                 if (template != null) {
                     StringBuilder parsedInstance = this.processTemplateInstance(resource, element, template);
                     retVal.replace(element, parsedInstance);
                 }
-
-                // Note: this first check check if the tag (eg. a <link> tag that's not closed; eg. that's not <link/>)
-                // occurs. For more details, see http://jericho.htmlparser.net/docs/javadoc/net/htmlparser/jericho/Element.html
-                boolean isVoidTag = element.getStartTag().equals(element);
             }
         }
 

@@ -230,6 +230,18 @@ public class Terms implements RdfResourceFactory
                                                                 },
                                                                 false);
 
+    //TODO integrate this in the blocks-video block
+    public static final RdfProperty video = new RdfPropertyImpl("video",
+                                                                SettingsVocabulary.INSTANCE,
+                                                                ontology.Entries.propertyTitle_video,
+                                                                ontology.Entries.propertyLabel_video,
+                                                                XSD.ANY_URI,
+                                                                InputType.Uri,
+                                                                null,
+                                                                new URI[] {
+                                                                },
+                                                                false);
+
     public static final RdfProperty description = new RdfPropertyImpl("description",
                                                                       SettingsVocabulary.INSTANCE,
                                                                       ontology.Entries.propertyTitle_description,

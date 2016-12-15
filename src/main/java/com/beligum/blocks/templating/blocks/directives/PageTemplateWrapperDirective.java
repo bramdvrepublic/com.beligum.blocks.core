@@ -4,10 +4,8 @@ import com.beligum.base.resources.resolvers.JoinResolver;
 import com.beligum.base.server.R;
 import com.beligum.base.templating.velocity.directives.VelocityDirective;
 import com.beligum.base.utils.toolkit.StringFunctions;
+import com.beligum.blocks.templating.blocks.HtmlTemplate;
 import com.beligum.blocks.templating.blocks.TemplateResources;
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
-import com.google.javascript.jscomp.SourceFile;
 import org.apache.commons.io.IOUtils;
 import org.apache.velocity.context.InternalContextAdapter;
 import org.apache.velocity.exception.MethodInvocationException;
@@ -27,6 +25,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.beligum.blocks.templating.blocks.directives.TemplateResourcesDirective.Argument.externalStyles;
 
 /**
  * Created by bram on 5/28/15.
@@ -162,14 +162,28 @@ public class PageTemplateWrapperDirective extends Directive
         TemplateResourcesDirective.Argument lastType = null;
         //this will hold a segmented list of to-join assets
         List<URI> currentAssetPack = null;
+        //this can be passed by reference to accumulate inlined bytes
+        InlinedBytesAccumulator accumulator = new InlinedBytesAccumulator();
 
-        StringBuilder hashes = new StringBuilder();
-        ByteArrayDataOutput hashBuf = ByteStreams.newDataOutput();
-        List<SourceFile> inputs = new ArrayList<>();
         for (TemplateResources.Resource res : resources) {
-            if (!R.configuration().getResourceConfig().getPackResources()) {
-                sb.append(res.getValue());
-                sb.append("\n");
+            if (!R.configuration().getResourceConfig().getPackResources() || res.getJoinHint() == HtmlTemplate.ResourceJoinHint.skip) {
+
+                //let's see if we need and can inline this resource
+                boolean inlined = false;
+                if (R.configuration().getResourceConfig().getEnableInlineResources()) {
+                    switch (res.getType()) {
+                        case externalStyles:
+                        case externalScripts:
+                            inlined = this.inlineResource(res, sb, accumulator);
+                            break;
+                    }
+                }
+
+                //if we didn't inline it, we just copy over the incoming html
+                if (!inlined) {
+                    sb.append(res.getValue());
+                    sb.append("\n");
+                }
             }
             //no need to calculate extra stuff if it's disabled anyway
             else {
@@ -188,7 +202,7 @@ public class PageTemplateWrapperDirective extends Directive
 
                         //for now, we don't register inline styles/scripts,
                         // so we need to output any saved up assets here to maintain correct order
-                        this.registerAssetPack(hash, lastType, currentAssetPack, sb);
+                        this.registerAssetPack(hash, lastType, currentAssetPack, sb, accumulator);
                         hash = 0;
                         lastType = res.getType();
                         currentAssetPack = new ArrayList<>();
@@ -202,7 +216,7 @@ public class PageTemplateWrapperDirective extends Directive
 
                         //we only join consecutive types; break, register and reset if we encounter a non-consecutive type
                         if (!lastType.equals(res.getType())) {
-                            this.registerAssetPack(hash, lastType, currentAssetPack, sb);
+                            this.registerAssetPack(hash, lastType, currentAssetPack, sb, accumulator);
 
                             hash = 0;
                             lastType = res.getType();
@@ -227,13 +241,14 @@ public class PageTemplateWrapperDirective extends Directive
 
         //make sure we register the last pending assets after the loop
         if (currentAssetPack != null && !currentAssetPack.isEmpty()) {
-            this.registerAssetPack(hash, lastType, currentAssetPack, sb);
+            this.registerAssetPack(hash, lastType, currentAssetPack, sb, accumulator);
         }
 
         buffer.insert(position, sb);
         return sb.length();
     }
-    private void registerAssetPack(int hash, TemplateResourcesDirective.Argument lastType, List<URI> currentAssetPack, StringBuilder sb) throws IOException
+    private void registerAssetPack(int hash, TemplateResourcesDirective.Argument lastType, List<URI> currentAssetPack, StringBuilder sb,
+                                   InlinedBytesAccumulator accumulator) throws IOException
     {
         //Note: see the commented code below; it uses a different approach so we can re-build the list of assets from it's cache key
         //      in a relatively compressed way. Drawback is it generates very long URLs though (300+ chars for a basic admin page), but we might
@@ -241,41 +256,19 @@ public class PageTemplateWrapperDirective extends Directive
         String cacheKey = StringFunctions.intToBase64(hash, true);
 
         URI joinUri = JoinResolver.instance().registerAssetPack(cacheKey, lastType.getMatchingMimeType(), currentAssetPack);
+        //don't forget to fingerprint the asset pack if it's enabled
+        if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
+            joinUri = URI.create(R.resourceFactory().fingerprintUri(joinUri));
+        }
+
         String mimeType = lastType.getMatchingMimeType().getMimeType().toString();
         if (lastType == TemplateResourcesDirective.Argument.externalStyles) {
-            //let's see if we can optimize this page by inlining this styles
-            //See https://developers.google.com/speed/docs/insights/OptimizeCSSDelivery for details
-            //Note: the limits come from the sizes of the inlined styles and scripts of that Google page:
-            //      - <style> = 49K
-            //      - <script> = 139K
-            boolean inlined = false;
-            if (R.configuration().getResourceConfig().getEnableInlineResources()) {
-                long size = this.fetchRemoteSize(joinUri);
-                if (size <= R.configuration().getResourceConfig().getInlineStylesThreshold()) {
-                    sb.append("<style>");
-                    sb.append(this.fetchRemoteContent(joinUri));
-                    sb.append("</style>");
-                    inlined = true;
-                }
-            }
-
-            if (!inlined) {
+            if (!this.inlineResource(joinUri, lastType, sb, accumulator)) {
                 sb.append("<link rel=\"stylesheet\" type=\"" + mimeType + "\" href=\"" + joinUri.toString() + "\">");
             }
         }
         else {
-            boolean inlined = false;
-            if (R.configuration().getResourceConfig().getEnableInlineResources()) {
-                long size = this.fetchRemoteSize(joinUri);
-                if (size <= R.configuration().getResourceConfig().getInlineScriptsThreshold()) {
-                    sb.append("<script>");
-                    sb.append(this.fetchRemoteContent(joinUri));
-                    sb.append("</script>");
-                    inlined = true;
-                }
-            }
-
-            if (!inlined) {
+            if (!this.inlineResource(joinUri, lastType, sb, accumulator)) {
                 String async = R.configuration().getResourceConfig().getEnableAsyncResources() ? "async " : "";
                 sb.append("<script " + async + "type=\"" + mimeType + "\" src=\"" + joinUri.toString() + "\"></script>");
             }
@@ -311,6 +304,47 @@ public class PageTemplateWrapperDirective extends Directive
         //                    IOUtils.closeQuietly(is);
         //                }
     }
+    /**
+     * Checks and sees if we can optimize this page by inlining this resource
+     * See https://developers.google.com/speed/docs/insights/OptimizeCSSDelivery for details
+     * Note: the limits come from the sizes of the inlined styles and scripts of that Google page:
+     * - <style> = 49K
+     * - <script> = 139K
+     */
+    private boolean inlineResource(TemplateResources.Resource res, StringBuilder sb, InlinedBytesAccumulator accumulator) throws IOException
+    {
+        //Note that the equalsValue will contain the resource-URL for externalStyles and externalScripts
+        return this.inlineResource(URI.create(res.getEqualsValue()), res.getType(), sb, accumulator);
+    }
+    private boolean inlineResource(URI uri, TemplateResourcesDirective.Argument type, StringBuilder sb, InlinedBytesAccumulator accumulator) throws IOException
+    {
+        boolean retVal = false;
+
+        //make the format universal so we can join local and non-local resources easily
+        if (!uri.isAbsolute()) {
+            uri = R.configuration().getSiteDomain().resolve(uri);
+        }
+
+        long size = this.fetchRemoteSize(uri);
+        if (accumulator.accumulate(size, type)) {
+            String content = this.fetchRemoteContent(uri);
+            //if we're pulling in a remote style, we might as well fingerprint the remote URIs
+            //this is especiallly handy when using font-packs!
+            //Note: haven't dared to enable this for scripts because I haven't tested it yet...
+            if (R.configuration().getResourceConfig().getEnableFingerprintedResources()) {
+                if (type == externalStyles) {
+                    content = R.resourceFactory().fingerprintUris(content);
+                }
+            }
+
+            sb.append(this.getInlineStartTagFor(type));
+            sb.append(content);
+            sb.append(this.getInlineEndTagFor(type));
+            retVal = true;
+        }
+
+        return retVal;
+    }
     private static final String STREAM_TAIL = "\n";
     private static final int STREAM_TAIL_LEN = STREAM_TAIL.getBytes().length;
     /**
@@ -342,6 +376,84 @@ public class PageTemplateWrapperDirective extends Directive
     {
         try (InputStream is = assetPack.toURL().openStream()) {
             return IOUtils.toString(is) + STREAM_TAIL;
+        }
+    }
+    private String getInlineStartTagFor(TemplateResourcesDirective.Argument type) throws IOException
+    {
+        return "<" + this.getTagInnerFor(type) + ">";
+    }
+    private String getInlineEndTagFor(TemplateResourcesDirective.Argument type) throws IOException
+    {
+        return "</" + this.getTagInnerFor(type) + ">";
+    }
+    private String getTagInnerFor(TemplateResourcesDirective.Argument type) throws IOException
+    {
+        String retVal = null;
+
+        switch (type) {
+            case inlineStyles:
+            case externalStyles:
+            case styles:
+
+                retVal = "style";
+                break;
+
+            case inlineScripts:
+            case externalScripts:
+            case scripts:
+
+                retVal = "script";
+                break;
+
+            default:
+                throw new IOException("Encountered unimplemented resource type while getting the inner tag for it, this shouldn't happen; " + type);
+        }
+
+        return retVal;
+    }
+    private class InlinedBytesAccumulator
+    {
+        private long STYLE_THRES = R.configuration().getResourceConfig().getInlineStylesThreshold();
+        private long SCRIPT_THRES = R.configuration().getResourceConfig().getInlineScriptsThreshold();
+        private long STYLE_TOTAL_THRES = R.configuration().getResourceConfig().getInlineStylesTotalThreshold();
+        private long SCRIPT_TOTAL_THRES = R.configuration().getResourceConfig().getInlineScriptsTotalThreshold();
+        private long TOTAL_THRES = R.configuration().getResourceConfig().getInlineTotalThreshold();
+
+        private long styleBytes = 0;
+        private long scriptBytes = 0;
+
+        public boolean accumulate(long bytes, TemplateResourcesDirective.Argument type) throws IOException
+        {
+            boolean retVal = false;
+
+            switch (type) {
+                case inlineStyles:
+                case externalStyles:
+                case styles:
+
+                    if (bytes <= STYLE_THRES && this.styleBytes + bytes <= STYLE_TOTAL_THRES && this.styleBytes + this.scriptBytes + bytes <= TOTAL_THRES) {
+                        this.styleBytes += bytes;
+                        retVal = true;
+                    }
+
+                    break;
+
+                case inlineScripts:
+                case externalScripts:
+                case scripts:
+
+                    if (bytes <= SCRIPT_THRES && this.scriptBytes + bytes <= SCRIPT_TOTAL_THRES && this.styleBytes + this.scriptBytes + bytes <= TOTAL_THRES) {
+                        this.scriptBytes += bytes;
+                        retVal = true;
+                    }
+
+                    break;
+
+                default:
+                    throw new IOException("Encountered unimplemented resource type while accumulating a threshold, this shouldn't happen; " + type);
+            }
+
+            return retVal;
         }
     }
 }

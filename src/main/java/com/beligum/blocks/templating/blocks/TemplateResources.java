@@ -104,21 +104,21 @@ public class TemplateResources
             }
         };
     }
-    public boolean addInlineStyle(boolean print, String value, StringWriter writer)
+    public boolean addInlineStyle(boolean print, String value, StringWriter writer, HtmlTemplate.ResourceJoinHint joinHint)
     {
-        return this.addResource(print, new InlineStyle(value, writer.getBuffer().length()), this.styles);
+        return this.addResource(print, new InlineStyle(value, writer.getBuffer().length(), joinHint), this.styles);
     }
-    public boolean addExternalStyle(boolean print, String href, String element, StringWriter writer)
+    public boolean addExternalStyle(boolean print, String href, String element, StringWriter writer, HtmlTemplate.ResourceJoinHint joinHint)
     {
-        return this.addResource(print, new ExternalStyle(href, element, writer.getBuffer().length()), this.styles);
+        return this.addResource(print, new ExternalStyle(href, element, writer.getBuffer().length(), joinHint), this.styles);
     }
-    public boolean addInlineScript(boolean print, String value, StringWriter writer)
+    public boolean addInlineScript(boolean print, String value, StringWriter writer, HtmlTemplate.ResourceJoinHint joinHint)
     {
-        return this.addResource(print, new InlineScript(value, writer.getBuffer().length()), this.scripts);
+        return this.addResource(print, new InlineScript(value, writer.getBuffer().length(), joinHint), this.scripts);
     }
-    public boolean addExternalScript(boolean print, String src, String element, StringWriter writer)
+    public boolean addExternalScript(boolean print, String src, String element, StringWriter writer, HtmlTemplate.ResourceJoinHint joinHint)
     {
-        return this.addResource(print, new ExternalScript(src, element, writer.getBuffer().length()), this.scripts);
+        return this.addResource(print, new ExternalScript(src, element, writer.getBuffer().length(), joinHint), this.scripts);
     }
 
     //-----PROTECTED METHODS-----
@@ -158,17 +158,20 @@ public class TemplateResources
         protected String value;
         //this is the position in the output writer the resource should be written (if not handled otherwise)
         protected int bufferPosition;
+        //hints to the joiner system as to decide what to do (like 'don't join')
+        protected HtmlTemplate.ResourceJoinHint joinHint;
 
-        protected Resource(TemplateResourcesDirective.Argument type, String value, int bufferPosition)
+        protected Resource(TemplateResourcesDirective.Argument type, String value, int bufferPosition, HtmlTemplate.ResourceJoinHint joinHint)
         {
-            this(type, value, value, bufferPosition);
+            this(type, value, value, bufferPosition, joinHint);
         }
-        protected Resource(TemplateResourcesDirective.Argument type, String equalsValue, String value, int bufferPosition)
+        protected Resource(TemplateResourcesDirective.Argument type, String equalsValue, String value, int bufferPosition, HtmlTemplate.ResourceJoinHint joinHint)
         {
             this.type = type;
             this.equalsValue = equalsValue;
             this.value = value;
             this.bufferPosition = bufferPosition;
+            this.joinHint = joinHint;
         }
 
         public TemplateResourcesDirective.Argument getType()
@@ -183,7 +186,10 @@ public class TemplateResources
         {
             return equalsValue;
         }
-
+        public HtmlTemplate.ResourceJoinHint getJoinHint()
+        {
+            return joinHint;
+        }
         @Override
         public String toString()
         {
@@ -211,33 +217,33 @@ public class TemplateResources
 
     public class InlineStyle extends Resource
     {
-        public InlineStyle(String value, int bufferPosition)
+        public InlineStyle(String value, int bufferPosition, HtmlTemplate.ResourceJoinHint joinHint)
         {
-            super(TemplateResourcesDirective.Argument.inlineStyles, value, bufferPosition);
+            super(TemplateResourcesDirective.Argument.inlineStyles, value, bufferPosition, joinHint);
         }
     }
 
     public class ExternalStyle extends Resource
     {
-        public ExternalStyle(String href, String element, int bufferPosition)
+        public ExternalStyle(String href, String element, int bufferPosition, HtmlTemplate.ResourceJoinHint joinHint)
         {
-            super(TemplateResourcesDirective.Argument.externalStyles, href, element, bufferPosition);
+            super(TemplateResourcesDirective.Argument.externalStyles, href, element, bufferPosition, joinHint);
         }
     }
 
     public class InlineScript extends Resource
     {
-        public InlineScript(String value, int bufferPosition)
+        public InlineScript(String value, int bufferPosition, HtmlTemplate.ResourceJoinHint joinHint)
         {
-            super(TemplateResourcesDirective.Argument.inlineScripts, value, bufferPosition);
+            super(TemplateResourcesDirective.Argument.inlineScripts, value, bufferPosition, joinHint);
         }
     }
 
     public class ExternalScript extends Resource
     {
-        public ExternalScript(String src, String element, int bufferPosition)
+        public ExternalScript(String src, String element, int bufferPosition, HtmlTemplate.ResourceJoinHint joinHint)
         {
-            super(TemplateResourcesDirective.Argument.externalScripts, src, element, bufferPosition);
+            super(TemplateResourcesDirective.Argument.externalScripts, src, element, bufferPosition, joinHint);
         }
     }
 }

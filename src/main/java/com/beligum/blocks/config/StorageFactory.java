@@ -461,7 +461,7 @@ public class StorageFactory
     }
     private static void releaseCurrentTxCache()
     {
-        //detect if we're using a fake request cache and remove it if necessary
+        //detectAndReplace if we're using a fake request cache and remove it if necessary
         Cache<CacheKey, Object> requestCache = R.cacheManager().getRequestCache();
         if (requestCache == null) {
             Cache allRequestsCache = getFakeRequestCache();

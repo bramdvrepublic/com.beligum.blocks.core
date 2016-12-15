@@ -58,6 +58,11 @@ public abstract class AbstractPage implements Page
     {
         //First, preparse the uri
 
+        //Note: this code is meant to be used with an absolute public uri, so make sure it's uniform
+        if (!publicUri.isAbsolute()) {
+            publicUri = R.configuration().getSiteDomain().resolve(publicUri);
+        }
+
         //we start off by stripping (and extracting) the language parameters from the URI
         UriBuilder uriBuilder = UriBuilder.fromUri(publicUri);
 
