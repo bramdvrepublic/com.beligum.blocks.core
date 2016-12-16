@@ -1,6 +1,7 @@
 package com.beligum.blocks.templating.blocks;
 
 import com.beligum.base.resources.ClasspathSearchResult;
+import com.beligum.base.resources.ResourceRequestImpl;
 import com.beligum.base.resources.SizedInputStreamImpl;
 import com.beligum.base.resources.ifaces.Parser;
 import com.beligum.base.resources.ifaces.Resource;
@@ -18,6 +19,7 @@ import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.ws.rs.core.UriBuilder;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
@@ -189,15 +191,10 @@ public class HtmlParser implements Parser
                             String val = att.getValue();
                             if (ALL_SIMPLE_URL_ATTR.contains(att.getName().toLowerCase())) {
                                 if (!StringUtils.isEmpty(val)) {
-                                    //If we try to fingerprint a URI with a space, the whole system will break (because of the URI constructor).
-                                    //So it's better to log an error here and skip fingerprinting
-                                    if (val.contains(" ")) {
-                                        Logger.error("Encountered an invalid URI containing a space character (of attribute "+att.getName()+"), so I'm skipping fingerprinting for now. Please fix this! "+val);
-                                    }
-                                    else {
-                                        //Note: the URI parsing will validate the attributes too...
-                                        retVal.replace(att, att.getName() + "=\"" + R.resourceFactory().fingerprintUri(URI.create(val.trim())) + "\"");
-                                    }
+                                    //Note: we can't just use URI.create() here because of legacy issues with saved URIs with spaces because there
+                                    // was an old bug that allowed such illegal URIs to be selected by the finder...
+                                    URI uri = UriBuilder.fromUri(val.trim()).build();
+                                    retVal.replace(att, att.getName() + "=\"" + R.resourceFactory().fingerprintUri(uri) + "\"");
                                 }
                             }
                             else if (ALL_COMPLEX_URL_ATTR.contains(att.getName().toLowerCase())) {
@@ -396,7 +393,7 @@ public class HtmlParser implements Parser
         //Note: this is the new and improved version of the code below, but it's still not optimal:
         // we should refactor the way the HtmlTemplates are handled, especially, this is probably not the place to look up
         // the resource here...
-        Resource htmlTemplateResource = R.resourceFactory().get(URI.create(htmlTemplate.getRelativePath().toString()));
+        Resource htmlTemplateResource = R.resourceFactory().get(new ResourceRequestImpl(URI.create(htmlTemplate.getRelativePath().toString())));
         if (htmlTemplateResource == null) {
             throw new IOException("Encountered a html template that doesn't seem to exist. This shouldn't happen. " + htmlTemplate.getRelativePath());
         }

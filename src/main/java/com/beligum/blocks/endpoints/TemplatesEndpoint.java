@@ -2,6 +2,7 @@ package com.beligum.blocks.endpoints;
 
 import com.beligum.base.annotations.JavascriptPackage;
 import com.beligum.base.endpoints.AssetsEndpoint;
+import com.beligum.base.resources.ResourceRequestImpl;
 import com.beligum.base.resources.ifaces.Resource;
 import com.beligum.base.server.R;
 import com.beligum.blocks.templating.blocks.HtmlParser;
@@ -66,6 +67,6 @@ public class TemplatesEndpoint
         final String resourcePath = "/templates/" + FilenameUtils.normalize(name);
         URI requestUri = UriBuilder.fromUri(uriInfo.getRequestUri()).replacePath(resourcePath).build();
 
-        return AssetsEndpoint.streamResource(R.resourceFactory().get(requestUri), false);
+        return AssetsEndpoint.streamResource(R.resourceFactory().get(new ResourceRequestImpl(requestUri)));
     }
 }
